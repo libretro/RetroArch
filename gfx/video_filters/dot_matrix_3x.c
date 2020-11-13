@@ -29,24 +29,10 @@
 /* Default grid colour: pure white */
 #define DOT_MATRIX_3X_DEFAULT_GRID_COLOR 0xFFFFFF
 
-#define DOT_MATRIX_3X_WEIGHT_10_6(c10, c6) (((c10 << 3) + (c10 << 1) + (c6 << 2) + (c6 << 1)) >> 4)
-
 typedef struct
 {
-   struct
-   {
-      uint32_t r;
-      uint32_t g;
-      uint32_t b;
-   } xrgb8888;
-
-   struct
-   {
-      uint16_t r;
-      uint16_t g;
-      uint16_t b;
-   } rgb565;
-
+   uint32_t xrgb8888;
+   uint16_t rgb565;
 } dot_matrix_3x_grid_color_t;
 
 struct softfilter_thread_data
@@ -96,15 +82,14 @@ static void dot_matrix_3x_initialize(struct filter_data *filt,
    config->get_hex(userdata, "grid_color", &grid_color,
          DOT_MATRIX_3X_DEFAULT_GRID_COLOR);
 
-   /* Split into 5bit RGB components */
-   filt->grid_color.rgb565.r = (grid_color >> 19) & 0x1F;
-   filt->grid_color.rgb565.g = (grid_color >> 11) & 0x1F;
-   filt->grid_color.rgb565.b = (grid_color >>  3) & 0x1F;
+   /* Raw colour is already in XRGB8888 format */
+   filt->grid_color.xrgb8888 = (uint32_t)grid_color;
 
-   /* Split into 8bit RGB components */
-   filt->grid_color.xrgb8888.r = (grid_color >> 16) & 0xFF;
-   filt->grid_color.xrgb8888.g = (grid_color >>  8) & 0xFF;
-   filt->grid_color.xrgb8888.b =  grid_color        & 0xFF;
+   /* Convert to RGB565 */
+   filt->grid_color.rgb565 =
+         (((grid_color >> 19) & 0x1F) << 11) |
+         (((grid_color >> 11) & 0x1F) <<  6) |
+          ((grid_color >>  3) & 0x1F);
 }
 
 static void *dot_matrix_3x_generic_create(const struct softfilter_config *config,
@@ -161,9 +146,7 @@ static void dot_matrix_3x_work_cb_rgb565(void *data, void *thread_data)
    uint16_t *output                   = (uint16_t*)thr->out_data;
    uint16_t in_stride                 = (uint16_t)(thr->in_pitch >> 1);
    uint16_t out_stride                = (uint16_t)(thr->out_pitch >> 1);
-   uint16_t base_grid_r               = filt->grid_color.rgb565.r;
-   uint16_t base_grid_g               = filt->grid_color.rgb565.g;
-   uint16_t base_grid_b               = filt->grid_color.rgb565.b;
+   uint16_t base_grid_color           = filt->grid_color.rgb565;
    uint16_t x, y;
 
    for (y = 0; y < thr->height; ++y)
@@ -172,17 +155,28 @@ static void dot_matrix_3x_work_cb_rgb565(void *data, void *thread_data)
 
       for (x = 0; x < thr->width; ++x)
       {
-         uint16_t *out_line_ptr = out_ptr;
-         uint16_t pixel_color   = *(input + x);
-         uint16_t pixel_r       = (pixel_color >> 11 & 0x1F);
-         uint16_t pixel_g       = (pixel_color >>  6 & 0x1F);
-         uint16_t pixel_b       = (pixel_color       & 0x1F);
+         uint16_t *out_line_ptr        = out_ptr;
+         uint16_t pixel_color          = *(input + x);
+
          /* Get grid colour
-          * > 10:6 mix of pixel_color:base_grid_color */
-         uint16_t grid_r        = DOT_MATRIX_3X_WEIGHT_10_6(pixel_r, base_grid_r);
-         uint16_t grid_g        = DOT_MATRIX_3X_WEIGHT_10_6(pixel_g, base_grid_g);
-         uint16_t grid_b        = DOT_MATRIX_3X_WEIGHT_10_6(pixel_b, base_grid_b);
-         uint16_t grid_color    = (grid_r << 11) | (grid_g << 6) | grid_b;
+          * > 10:6 mix of pixel_color:base_grid_color
+          * > Achieved by combining a 50:50 mix with a 75:25 mix */
+
+         /* 50:50 mix of pixel_color:base_grid_color
+          * > Round down */
+         uint16_t pixel50_grid50_color = (pixel_color + base_grid_color -
+               ((pixel_color ^ base_grid_color) & 0x821)) >> 1;
+         /* 75:25 mix of pixel_color:base_grid_color
+          * > Round down */
+         uint16_t pixel75_grid25_color = (pixel_color + pixel50_grid50_color -
+               ((pixel_color ^ pixel50_grid50_color) & 0x821)) >> 1;
+         /* 10:6 mix of pixel_color:base_grid_color
+          * > Round up */
+         uint16_t grid_color           = (pixel50_grid50_color + pixel75_grid25_color +
+               ((pixel50_grid50_color ^ pixel75_grid25_color) & 0x821)) >> 1;
+
+         /* c.f "Mixing Packed RGB Pixels Efficiently"
+          * http://blargg.8bitalley.com/info/rgb_mixing.html */
 
          /* - Pixel layout (p = pixel, g = grid) -
           * Before:  After:
@@ -224,9 +218,7 @@ static void dot_matrix_3x_work_cb_xrgb8888(void *data, void *thread_data)
    uint32_t *output                   = (uint32_t*)thr->out_data;
    uint32_t in_stride                 = (uint32_t)(thr->in_pitch >> 2);
    uint32_t out_stride                = (uint32_t)(thr->out_pitch >> 2);
-   uint32_t base_grid_r               = filt->grid_color.xrgb8888.r;
-   uint32_t base_grid_g               = filt->grid_color.xrgb8888.g;
-   uint32_t base_grid_b               = filt->grid_color.xrgb8888.b;
+   uint32_t base_grid_color           = filt->grid_color.xrgb8888;
    uint32_t x, y;
 
    for (y = 0; y < thr->height; ++y)
@@ -235,17 +227,28 @@ static void dot_matrix_3x_work_cb_xrgb8888(void *data, void *thread_data)
 
       for (x = 0; x < thr->width; ++x)
       {
-         uint32_t *out_line_ptr = out_ptr;
-         uint32_t pixel_color   = *(input + x);
-         uint32_t pixel_r       = (pixel_color >> 16 & 0xFF);
-         uint32_t pixel_g       = (pixel_color >>  8 & 0xFF);
-         uint32_t pixel_b       = (pixel_color       & 0xFF);
+         uint32_t *out_line_ptr        = out_ptr;
+         uint32_t pixel_color          = *(input + x);
+
          /* Get grid colour
-          * > 10:6 mix of pixel_color:base_grid_color */
-         uint32_t grid_r        = DOT_MATRIX_3X_WEIGHT_10_6(pixel_r, base_grid_r);
-         uint32_t grid_g        = DOT_MATRIX_3X_WEIGHT_10_6(pixel_g, base_grid_g);
-         uint32_t grid_b        = DOT_MATRIX_3X_WEIGHT_10_6(pixel_b, base_grid_b);
-         uint32_t grid_color    = (grid_r << 16) | (grid_g << 8) | grid_b;
+          * > 10:6 mix of pixel_color:base_grid_color
+          * > Achieved by combining a 50:50 mix with a 75:25 mix */
+
+         /* 50:50 mix of pixel_color:base_grid_color
+          * > Round down */
+         uint32_t pixel50_grid50_color = (pixel_color + base_grid_color -
+               ((pixel_color ^ base_grid_color) & 0x1010101)) >> 1;
+         /* 75:25 mix of pixel_color:base_grid_color
+          * > Round down */
+         uint32_t pixel75_grid25_color = (pixel_color + pixel50_grid50_color -
+               ((pixel_color ^ pixel50_grid50_color) & 0x1010101)) >> 1;
+         /* 10:6 mix of pixel_color:base_grid_color
+          * > Round up */
+         uint32_t grid_color           = (pixel50_grid50_color + pixel75_grid25_color +
+               ((pixel50_grid50_color ^ pixel75_grid25_color) & 0x1010101)) >> 1;
+
+         /* c.f "Mixing Packed RGB Pixels Efficiently"
+          * http://blargg.8bitalley.com/info/rgb_mixing.html */
 
          /* - Pixel layout (p = pixel, g = grid) -
           * Before:  After:

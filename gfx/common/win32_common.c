@@ -961,6 +961,14 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             keysym             = (unsigned)wparam;
             /* fix key binding issues on winraw when 
              * DirectInput is not available */
+            switch (keysym)
+            {
+               /* Mod handling done in winraw_callback */
+               case VK_SHIFT:
+               case VK_CONTROL:
+               case VK_MENU:
+                  return 0;
+            }
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
@@ -1054,6 +1062,13 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                keysym |= 0x80;
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
+            switch (keycode)
+            {
+               /* L+R Shift handling done in dinput_poll */
+               case RETROK_LSHIFT:
+               case RETROK_RSHIFT:
+                  return 0;
+            }
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);

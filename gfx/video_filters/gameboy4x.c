@@ -239,6 +239,9 @@ static void gameboy4x_work_cb_rgb565(void *data, void *thread_data)
          uint16_t out_shadow_color;
          uint16_t out_grid_color;
          uint16_t lut_index;
+         uint16_t row_a_color[4];
+         uint16_t row_b_color[4];
+         uint16_t row_c_color[4];
 
          /* Calculate mean value of the 3 RGB
           * colour components */
@@ -266,32 +269,35 @@ static void gameboy4x_work_cb_rgb565(void *data, void *thread_data)
           *          (s)(s)(s)(g)
           */
 
+         row_a_color[0] = out_grid_color;
+         row_a_color[1] = out_pixel_color;
+         row_a_color[2] = out_pixel_color;
+         row_a_color[3] = out_pixel_color;
+
+         row_b_color[0] = out_shadow_color;
+         row_b_color[1] = out_pixel_color;
+         row_b_color[2] = out_pixel_color;
+         row_b_color[3] = out_pixel_color;
+
+         row_c_color[0] = out_shadow_color;
+         row_c_color[1] = out_shadow_color;
+         row_c_color[2] = out_shadow_color;
+         row_c_color[3] = out_grid_color;
+
          /* Row 1: (g)(p)(p)(p) */
-         *out_line_ptr       = out_grid_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_a_color, sizeof(row_a_color));
          out_line_ptr       += out_stride;
 
          /* Row 2: (s)(p)(p)(p) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_b_color, sizeof(row_b_color));
          out_line_ptr       += out_stride;
 
          /* Row 3: (s)(p)(p)(p) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_b_color, sizeof(row_b_color));
          out_line_ptr       += out_stride;
 
          /* Row 4: (s)(s)(s)(g) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_shadow_color;
-         *(out_line_ptr + 2) = out_shadow_color;
-         *(out_line_ptr + 3) = out_grid_color;
+         memcpy(out_line_ptr, row_c_color, sizeof(row_c_color));
 
          out_ptr += 4;
       }
@@ -330,6 +336,9 @@ static void gameboy4x_work_cb_xrgb8888(void *data, void *thread_data)
          uint32_t out_shadow_color;
          uint32_t out_grid_color;
          uint32_t lut_index;
+         uint32_t row_a_color[4];
+         uint32_t row_b_color[4];
+         uint32_t row_c_color[4];
 
          /* Calculate mean value of the 3 RGB
           * colour components */
@@ -357,32 +366,35 @@ static void gameboy4x_work_cb_xrgb8888(void *data, void *thread_data)
           *          (s)(s)(s)(g)
           */
 
+         row_a_color[0] = out_grid_color;
+         row_a_color[1] = out_pixel_color;
+         row_a_color[2] = out_pixel_color;
+         row_a_color[3] = out_pixel_color;
+
+         row_b_color[0] = out_shadow_color;
+         row_b_color[1] = out_pixel_color;
+         row_b_color[2] = out_pixel_color;
+         row_b_color[3] = out_pixel_color;
+
+         row_c_color[0] = out_shadow_color;
+         row_c_color[1] = out_shadow_color;
+         row_c_color[2] = out_shadow_color;
+         row_c_color[3] = out_grid_color;
+
          /* Row 1: (g)(p)(p)(p) */
-         *out_line_ptr       = out_grid_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_a_color, sizeof(row_a_color));
          out_line_ptr       += out_stride;
 
          /* Row 2: (s)(p)(p)(p) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_b_color, sizeof(row_b_color));
          out_line_ptr       += out_stride;
 
          /* Row 3: (s)(p)(p)(p) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_b_color, sizeof(row_b_color));
          out_line_ptr       += out_stride;
 
          /* Row 4: (s)(s)(s)(g) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_shadow_color;
-         *(out_line_ptr + 2) = out_shadow_color;
-         *(out_line_ptr + 3) = out_grid_color;
+         memcpy(out_line_ptr, row_c_color, sizeof(row_c_color));
 
          out_ptr += 4;
       }

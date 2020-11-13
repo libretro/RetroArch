@@ -57,7 +57,9 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "state.h"
 #include "texture_callbacks.h"
 
-#define SET_GL_ERROR(x) vgl_error = x; return;
+#define SET_GL_ERROR(x) \
+	vgl_error = x;      \
+	return;
 
 // Texture environment mode
 typedef enum texEnvMode {
@@ -163,6 +165,8 @@ extern uint16_t *depth_clear_indices; // Memblock starting address for clear scr
 // Clear screen shaders
 extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
 extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
+
+extern GLboolean fast_texture_compression; // Hints for texture compression
 
 /* gxm.c */
 void initGxm(void); // Inits sceGxm

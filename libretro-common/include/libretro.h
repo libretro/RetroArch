@@ -712,6 +712,9 @@ enum retro_mod
                                             * state of rumble motors in controllers.
                                             * A strong and weak motor is supported, and they can be
                                             * controlled indepedently.
+                                            * Should be called from either retro_init() or retro_load_game().
+                                            * Should not be called from retro_set_environment().
+                                            * Returns false if rumble functionality is unavailable.
                                             */
 #define RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES 24
                                            /* uint64_t * --

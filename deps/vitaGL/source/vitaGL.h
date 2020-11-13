@@ -127,6 +127,9 @@ extern "C" {
 #define GL_DEPTH_BITS                         0x0D56
 #define GL_STENCIL_BITS                       0x0D57
 #define GL_TEXTURE_2D                         0x0DE1
+#define GL_DONT_CARE                          0x1100
+#define GL_FASTEST                            0x1101
+#define GL_NICEST                             0x1102
 #define GL_BYTE                               0x1400
 #define GL_UNSIGNED_BYTE                      0x1401
 #define GL_SHORT                              0x1402
@@ -238,6 +241,7 @@ extern "C" {
 #define GL_TEXTURE30                          0x84DE
 #define GL_TEXTURE31                          0x84DF
 #define GL_ACTIVE_TEXTURE                     0x84E0
+#define GL_TEXTURE_COMPRESSION_HINT           0x84EF
 #define GL_TEXTURE_LOD_BIAS                   0x8501
 #define GL_INCR_WRAP                          0x8507
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS     0x86A2
@@ -356,6 +360,7 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 const GLubyte *glGetString(GLenum name);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
+void glHint(GLenum target, GLenum mode);
 GLboolean glIsEnabled(GLenum cap);
 void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
@@ -425,7 +430,7 @@ void vglVertexPointerMapped(const GLvoid *pointer);
 
 // VGL_EXT_gxp_shaders extension implementation
 void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type);
-void vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride);
+GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride);
 void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer);
 void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer);
 

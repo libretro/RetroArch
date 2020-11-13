@@ -802,22 +802,30 @@ static bool font_init_first(
  * Neutral :
  * 0020 - 002F : 001xxxxx (c & 0xE0) == 0x20
  * Arabic:
- * 0600 - 07FF : 11011xxx (c & 0xF8) == 0xD8 (2 bytes)
- * 0800 - 08FF : 11100000 101000xx  c == 0xE0 && (c1 & 0xAC) == 0xA0 (3 bytes) */
+ * 0600 - 06FF : 110110xx (c & 0xFC) == 0xD8 (2 bytes) */
 
 /* clang-format off */
 #define IS_ASCII(p)        ((*(p)&0x80) == 0x00)
 #define IS_MBSTART(p)      ((*(p)&0xC0) == 0xC0)
 #define IS_MBCONT(p)       ((*(p)&0xC0) == 0x80)
 #define IS_DIR_NEUTRAL(p)  ((*(p)&0xE0) == 0x20)
-#define IS_ARABIC0(p)      ((*(p)&0xF8) == 0xD8)
-#define IS_ARABIC1(p)      ((*(p) == 0xE0) && ((*((p) + 1) & 0xAC) == 0xA0))
-#define IS_ARABIC(p)       (IS_ARABIC0(p) || IS_ARABIC1(p))
+#define IS_ARABIC(p)       ((*(p)&0xFC) == 0xD8)
 #define IS_RTL(p)          IS_ARABIC(p)
+#define GET_ID_ARABIC(p)   (((unsigned char)(p)[0] << 6) | ((unsigned char)(p)[1] & 0x3F))
 
 /* 0x0620 to 0x064F */
-static const unsigned arabic_shape_map[0x50 - 0x20][0x4] = {
-   { 0 },                              /* 0x0620 */
+static const unsigned arabic_shape_map[0x100][0x4] = {
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0600 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0610 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 },                               /* 0x0620 */
    { 0xFE80 },
    { 0xFE81, 0xFE82 },
    { 0xFE83, 0xFE84 },
@@ -843,99 +851,189 @@ static const unsigned arabic_shape_map[0x50 - 0x20][0x4] = {
    { 0xFEB9, 0xFEBA, 0xFEBB, 0xFEBC },
    { 0xFEBD, 0xFEBE, 0xFEBF, 0xFEC0 },
    { 0xFEC1, 0xFEC2, 0xFEC3, 0xFEC4 },
-   { 0xFEC5, 0xFEC6, 0xFEC7, 0xFEC8 },
 
+   { 0xFEC5, 0xFEC6, 0xFEC7, 0xFEC8 },
    { 0xFEC9, 0xFECA, 0xFECB, 0xFECC },
    { 0xFECD, 0xFECE, 0xFECF, 0xFED0 },
    { 0 },
-   { 0 },
-   { 0 },
-   { 0 },
-   { 0 },
-   { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
 
-   { 0xFED1, 0xFED2, 0xFED3, 0xFED4 }, /* 0x0640 */
+   { 0 },                               /* 0x0640 */
+   { 0xFED1, 0xFED2, 0xFED3, 0xFED4 },
    { 0xFED5, 0xFED6, 0xFED7, 0xFED8 },
    { 0xFED9, 0xFEDA, 0xFEDB, 0xFEDC },
    { 0xFEDD, 0xFEDE, 0xFEDF, 0xFEE0 },
    { 0xFEE1, 0xFEE2, 0xFEE3, 0xFEE4 },
    { 0xFEE5, 0xFEE6, 0xFEE7, 0xFEE8 },
    { 0xFEE9, 0xFEEA, 0xFEEB, 0xFEEC },
-   { 0xFEED, 0xFEEE },
 
+   { 0xFEED, 0xFEEE },
    { 0xFEEF, 0xFEF0, 0xFBE8, 0xFBE9 },
    { 0xFEF1, 0xFEF2, 0xFEF3, 0xFEF4 },
+   { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0650 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0660 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0670 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 }, { 0 },
+   { 0xFB56, 0xFB57, 0xFB58, 0xFB59 },
+   { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0680 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0690 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06A0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 },
+   { 0xFB8E, 0xFB8F, 0xFB90, 0xFB91 },
+   { 0 }, { 0 },
+
+   { 0 }, { 0 }, { 0 },
+   { 0xFB92, 0xFB93, 0xFB94, 0xFB95 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06B0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06C0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0xFBFC, 0xFBFD, 0xFBFE, 0xFBFF },
+   { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06D0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06E0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06F0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
 };
 /* clang-format on */
 
 static INLINE unsigned font_get_replacement(const char* src, const char* start)
 {
-   if ((*src & 0xFC) == 0xD8) /* 0x0600 to 0x06FF */
+   if (IS_ARABIC(src)) /* 0x0600 to 0x06FF */
    {
       unsigned      result         = 0;
       bool          prev_connected = false;
       bool          next_connected = false;
-      unsigned char id             = ((unsigned char)src[0] << 6) | ((unsigned char)src[1] & 0x3F);
-      const char*   prev1          = src - 2;
-      const char*   prev2          = src - 4;
+      unsigned char id             = GET_ID_ARABIC(src);
+      const char*   prev           = src - 2;
+      const char*   next           = src + 2;
 
-      if (id < 0x21 || id > 0x4A)
-         return 0;
-
-      if (prev2 < start)
+      if ((prev >= start) && IS_ARABIC(prev))
       {
-         prev2 = NULL;
-         if (prev1 < start)
-            prev1 = NULL;
-      }
+         unsigned char prev_id = GET_ID_ARABIC(prev);
 
-      if (prev1 && (*prev1 & 0xFC) == 0xD8)
-      {
-         unsigned char prev1_id = 0;
+         /* nonspacing diacritics 0x4b -- 0x5f */
+         while (prev_id > 0x4A && prev_id < 0x60)
+         {
+            prev -= 2;
+            if ((prev >= start) && IS_ARABIC(prev))
+               prev_id = GET_ID_ARABIC(prev);
+            else
+               break;
+         }
 
-         if (prev1)
-            prev1_id = ((unsigned char)prev1[0] << 6) | ((unsigned char)prev1[1] & 0x3F);
 
-         if (prev1_id == 0x44)
+         if (prev_id == 0x44) /* Arabic Letter Lam */
          {
             unsigned char prev2_id = 0;
+            const char*   prev2    = prev - 2;
 
-            if (prev2)
+            if (prev2 >= start)
                prev2_id = (prev2[0] << 6) | (prev2[1] & 0x3F);
 
-            if (prev2_id > 0x20 || prev2_id < 0x50)
-               prev_connected = !!arabic_shape_map[prev2_id - 0x20][2];
+            /* nonspacing diacritics 0x4b -- 0x5f */
+            while (prev2_id > 0x4A && prev2_id < 0x60)
+            {
+               prev2 -= 2;
+               if ((prev2 >= start) && IS_ARABIC(prev2))
+                  prev2_id = GET_ID_ARABIC(prev2);
+               else
+                  break;
+            }
+
+            prev_connected = !!arabic_shape_map[prev2_id][2];
 
             switch (id)
             {
-               case 0x22:
+               case 0x22: /* Arabic Letter Alef with Madda Above */
                   return 0xFEF5 + prev_connected;
-               case 0x23:
+               case 0x23: /* Arabic Letter Alef with Hamza Above */
                   return 0xFEF7 + prev_connected;
-               case 0x25:
+               case 0x25: /* Arabic Letter Alef with Hamza Below */
                   return 0xFEF9 + prev_connected;
-               case 0x27:
+               case 0x27: /* Arabic Letter Alef */
                   return 0xFEFB + prev_connected;
             }
          }
-         if (prev1_id > 0x20 || prev1_id < 0x50)
-            prev_connected = !!arabic_shape_map[prev1_id - 0x20][2];
+         prev_connected = !!arabic_shape_map[prev_id][2];
       }
 
-      if ((src[2] & 0xFC) == 0xD8)
+      if (IS_ARABIC(next))
       {
-         unsigned char next_id = ((unsigned char)src[2] << 6) | ((unsigned char)src[3] & 0x3F);
+         unsigned char next_id = GET_ID_ARABIC(next);
 
-         if (next_id > 0x20 || next_id < 0x50)
-            next_connected = true;
+         /* nonspacing diacritics 0x4b -- 0x5f */
+         while (next_id > 0x4A && next_id < 0x60)
+         {
+            next += 2;
+            if (IS_ARABIC(next))
+               next_id = GET_ID_ARABIC(next);
+            else
+               break;
+         }
+
+         next_connected = !!arabic_shape_map[next_id][1];
       }
 
-      result = arabic_shape_map[id - 0x20][prev_connected | (next_connected << 1)];
+      result = arabic_shape_map[id][prev_connected | (next_connected << 1)];
 
       if (result)
          return result;
 
-      return arabic_shape_map[id - 0x20][prev_connected];
+      return arabic_shape_map[id][prev_connected];
    }
 
    return 0;
@@ -961,22 +1059,17 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
       if (reverse)
       {
          src--;
-         while (IS_MBCONT(src))
-         {
+         while (src > (const unsigned char*)msg && IS_MBCONT(src))
             src--;
 
-            if (src == (const unsigned char*)msg)
-               goto end;
-         }
-
-         if (IS_RTL(src) || IS_DIR_NEUTRAL(src))
+         if (src >= (const unsigned char*)msg && (IS_RTL(src) || IS_DIR_NEUTRAL(src)))
          {
             unsigned replacement = font_get_replacement((const char*)src, msg);
             if (replacement)
             {
                if (replacement < 0x80)
                   *dst++ = replacement;
-               else if (replacement < 0x8000)
+               else if (replacement < 0x800)
                {
                   *dst++ = 0xC0 | (replacement >> 6);
                   *dst++ = 0x80 | (replacement & 0x3F);
@@ -1030,7 +1123,7 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
             *dst++ = *src++;
       }
    }
-end:
+
    *dst = '\0';
 
    return (char*)dst_buffer;

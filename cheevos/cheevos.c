@@ -1207,11 +1207,22 @@ void rcheevos_populate_menu(void* data)
 
    if (i == 0)
    {
-      menu_entries_append_enum(info->list,
+      if (!settings->arrays.cheevos_token[0])
+      {
+         menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN),
+            msg_hash_to_str(MENU_ENUM_LABEL_NOT_LOGGED_IN),
+            MENU_ENUM_LABEL_NOT_LOGGED_IN,
+            FILE_TYPE_NONE, 0, 0);
+      }
+      else
+      {
+         menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY),
             MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
             FILE_TYPE_NONE, 0, 0);
+      }
    }
 #endif
 }
@@ -1620,8 +1631,9 @@ void rcheevos_validate_config_settings(void)
 
             for (; disallowed_setting->setting; ++disallowed_setting)
             {
+               size_t key_len;
                key            = disallowed_setting->setting;
-               size_t key_len = strlen(key);
+               key_len        = strlen(key);
 
                if (key[key_len - 1] == '*')
                {

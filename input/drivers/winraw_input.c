@@ -407,6 +407,45 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    }
 }
 
+static void winraw_keyboard_mods(RAWINPUT *ri)
+{
+   unsigned keycode = 0;
+   unsigned flags   = ri->data.keyboard.Flags;
+
+   switch (ri->data.keyboard.MakeCode)
+   {
+      /* Left Control + Right Control */
+      case 29:
+         keycode = input_keymaps_translate_keysym_to_rk(
+               (flags & RI_KEY_E0) ? VK_RCONTROL : VK_LCONTROL);
+         input_keyboard_event(flags & RI_KEY_BREAK ? 0 : 1, keycode,
+               0, RETROKMOD_CTRL, RETRO_DEVICE_KEYBOARD);
+         break;
+
+      /* Left Shift */
+      case 42:
+         keycode = input_keymaps_translate_keysym_to_rk(VK_LSHIFT);
+         input_keyboard_event(flags & RI_KEY_BREAK ? 0 : 1, keycode,
+               0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
+         break;
+
+      /* Right Shift */
+      case 54:
+         keycode = input_keymaps_translate_keysym_to_rk(VK_RSHIFT);
+         input_keyboard_event(flags & RI_KEY_BREAK ? 0 : 1, keycode,
+               0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
+         break;
+
+      /* Left Alt + Right Alt */
+      case 56:
+         keycode = input_keymaps_translate_keysym_to_rk(
+               (flags & RI_KEY_E0) ? VK_RMENU : VK_LMENU);
+         input_keyboard_event(flags & RI_KEY_BREAK ? 0 : 1, keycode,
+               0, RETROKMOD_ALT, RETRO_DEVICE_KEYBOARD);
+         break;
+   }
+}
+
 static LRESULT CALLBACK winraw_callback(
       HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
 {
@@ -432,6 +471,16 @@ static LRESULT CALLBACK winraw_callback(
    switch (ri->header.dwType)
    {
       case RIM_TYPEKEYBOARD:
+         /* following keys are not handled by windows raw input api */
+         wr->keyboard.keys[VK_LCONTROL] = GetAsyncKeyState(VK_LCONTROL) >> 1 ? 1 : 0;
+         wr->keyboard.keys[VK_RCONTROL] = GetAsyncKeyState(VK_RCONTROL) >> 1 ? 1 : 0;
+         wr->keyboard.keys[VK_LMENU]    = GetAsyncKeyState(VK_LMENU)    >> 1 ? 1 : 0;
+         wr->keyboard.keys[VK_RMENU]    = GetAsyncKeyState(VK_RMENU)    >> 1 ? 1 : 0;
+         wr->keyboard.keys[VK_LSHIFT]   = GetAsyncKeyState(VK_LSHIFT)   >> 1 ? 1 : 0;
+         wr->keyboard.keys[VK_RSHIFT]   = GetAsyncKeyState(VK_RSHIFT)   >> 1 ? 1 : 0;
+
+         winraw_keyboard_mods(ri);
+
          if (ri->data.keyboard.Message == WM_KEYDOWN)
             wr->keyboard.keys[ri->data.keyboard.VKey] = 1;
          else if (ri->data.keyboard.Message == WM_KEYUP)
@@ -509,14 +558,6 @@ static void winraw_poll(void *data)
 {
    unsigned i;
    winraw_input_t *wr = (winraw_input_t*)data;
-
-   /* following keys are not handled by windows raw input api */
-   wr->keyboard.keys[VK_LCONTROL] = GetAsyncKeyState(VK_LCONTROL) >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_RCONTROL] = GetAsyncKeyState(VK_RCONTROL) >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_LMENU]    = GetAsyncKeyState(VK_LMENU)    >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_RMENU]    = GetAsyncKeyState(VK_RMENU)    >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_LSHIFT]   = GetAsyncKeyState(VK_LSHIFT)   >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_RSHIFT]   = GetAsyncKeyState(VK_RSHIFT)   >> 1 ? 1 : 0;
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {

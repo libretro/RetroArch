@@ -463,53 +463,84 @@ static bool config_file_parse_line(config_file_t *conf,
    if (comment)
    {
       config_file_t sub_conf;
+      bool include_found       = false;
+      bool reference_found     = false;
       char real_path[PATH_MAX_LENGTH];
       char *path               = NULL;
       char *include_line       = NULL;
+      char *reference_line     = NULL;
+
+      include_found = string_starts_with_size(comment, "include ",
+                                          STRLEN_CONST("include "));
+      reference_found = string_starts_with_size(comment, "reference ",
+                                          STRLEN_CONST("reference "));
+
+      /* All comments except those starting with the include or 
+       * reference directive are ignored */
+      if (!include_found && !reference_found)
+         return false;
 
       /* Starting a line with an 'include' directive
-       * appends a sub-config file
-       * > All other comments are ignored */
-      if (!string_starts_with_size(comment, "include ",
-               STRLEN_CONST("include ")))
-         return false;
-
-      include_line = comment + STRLEN_CONST("include ");
-
-      if (string_is_empty(include_line))
-         return false;
-
-      path = config_file_extract_value(include_line, false);
-
-      if (!path)
-         return false;
-
-      if (     string_is_empty(path)
-            || conf->include_depth >= MAX_INCLUDE_DEPTH)
+       * appends a sub-config file */
+      if (include_found)
       {
-         free(path);
-         return false;
-      }
+         include_line = comment + STRLEN_CONST("include ");
 
-      real_path[0]         = '\0';
-      config_file_add_sub_conf(conf, path,
+         if (string_is_empty(include_line))
+            return false;
+
+         path = config_file_extract_value(include_line, false);
+
+         if (!path)
+            return false;
+
+         if (     string_is_empty(path)
+               || conf->include_depth >= MAX_INCLUDE_DEPTH)
+         {
+            free(path);
+            return false;
+         }
+
+         real_path[0]         = '\0';
+         config_file_add_sub_conf(conf, path,
             real_path, sizeof(real_path), cb);
 
-      config_file_initialize(&sub_conf);
+         config_file_initialize(&sub_conf);
 
-      switch (config_file_load_internal(&sub_conf, real_path,
-               conf->include_depth + 1, cb))
+         switch (config_file_load_internal(&sub_conf, real_path,
+            conf->include_depth + 1, cb))
+         {
+            case 0:
+               /* Pilfer internal list. */
+               config_file_add_child_list(conf, &sub_conf);
+               /* fall-through to deinitialize */
+            case -1:
+               config_file_deinitialize(&sub_conf);
+               break;
+            case 1:
+            default:
+               break;
+         }
+      }
+
+      /* Starting a line with an 'reference' directive
+       * sets the reference path */
+      if (reference_found)
       {
-         case 0:
-            /* Pilfer internal list. */
-            config_file_add_child_list(conf, &sub_conf);
-            /* fall-through to deinitialize */
-         case -1:
-            config_file_deinitialize(&sub_conf);
-            break;
-         case 1:
-         default:
-            break;
+         reference_line = comment + STRLEN_CONST("reference ");
+
+         if (string_is_empty(reference_line))
+            return false;
+
+         path = config_file_extract_value(reference_line, false);
+
+         if (!path)
+            return false;
+
+         config_file_set_reference_path(conf, path);
+
+         if (!path)
+            return false;
       }
 
       free(path);
@@ -617,6 +648,22 @@ static int config_file_from_string_internal(
    return 0;
 }
 
+void config_file_set_reference_path(config_file_t *conf, char *path)
+{
+   /* If a relative path the input path is desired the caller is
+    * responsible for preparing and supplying the relative path*/
+   if (!conf)
+      return;
+
+   if (conf->reference)
+   {
+      free(conf->reference);
+      conf->reference = NULL;
+   }
+
+
+   conf->reference = strdup(path);
+}
 
 bool config_file_deinitialize(config_file_t *conf)
 {
@@ -655,6 +702,9 @@ bool config_file_deinitialize(config_file_t *conf)
       if (hold)
          free(hold);
    }
+
+   if (conf->reference)
+      free(conf->reference);
 
    if (conf->path)
       free(conf->path);
@@ -774,6 +824,7 @@ void config_file_initialize(struct config_file *conf)
    conf->entries                  = NULL;
    conf->tail                     = NULL;
    conf->last                     = NULL;
+   conf->reference                = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
    conf->guaranteed_no_duplicates = false;
@@ -1053,11 +1104,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       if (entry)
       {
          /* An entry corresponding to 'key' already exists
-          * > Check if it's read only */
-         if (entry->readonly)
-            return;
-
-         /* Check whether value is currently set */
+          * > Check whether value is currently set */
          if (entry->value)
          {
             /* Do nothing if value is unchanged */
@@ -1069,9 +1116,12 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
             free(entry->value);
          }
 
-         /* Update value */
-         entry->value   = strdup(val);
-         conf->modified = true;
+         /* Update value
+          * > Note that once a value is set, it
+          *   is no longer considered 'read only' */
+         entry->value    = strdup(val);
+         entry->readonly = false;
+         conf->modified  = true;
          return;
       }
    }
@@ -1245,14 +1295,10 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
-   while (includes)
-   {
-      char cad[256];
-      snprintf(cad, sizeof(cad), 
-            "#include %s\n", includes->path);
-      orbisWrite(fd, cad, strlen(cad));
-      includes = includes->next;
-   }
+  
+   if (conf->reference)
+      fprintf(file, "#reference \"%s\"\n", conf->reference);
+
 
    list          = config_file_merge_sort_linked_list(
          (struct config_entry_list*)conf->entries,
@@ -1270,6 +1316,21 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
       }
       list = list->next;
    }
+
+   /* Config files are read from the top down - if
+    * duplicate entries are found then the topmost
+    * one in the list takes precedence. This means
+    * '#include' directives must go *after* individual
+    * config entries, otherwise they will override
+    * any custom-set values */
+   while (includes)
+   {
+      char cad[256];
+      snprintf(cad, sizeof(cad),
+            "#include %s\n", includes->path);
+      orbisWrite(fd, cad, strlen(cad));
+      includes = includes->next;
+   }
 }
 #endif
 
@@ -1278,11 +1339,8 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
 
-   while (includes)
-   {
-      fprintf(file, "#include \"%s\"\n", includes->path);
-      includes = includes->next;
-   }
+   if (conf->reference)
+      fprintf(file, "#reference \"%s\"\n", conf->reference);
 
    if (sort)
       list = config_file_merge_sort_linked_list(
@@ -1298,6 +1356,18 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
       if (!list->readonly && list->key)
          fprintf(file, "%s = \"%s\"\n", list->key, list->value);
       list = list->next;
+   }
+
+   /* Config files are read from the top down - if
+    * duplicate entries are found then the topmost
+    * one in the list takes precedence. This means
+    * '#include' directives must go *after* individual
+    * config entries, otherwise they will override
+    * any custom-set values */
+   while (includes)
+   {
+      fprintf(file, "#include \"%s\"\n", includes->path);
+      includes = includes->next;
    }
 }
 

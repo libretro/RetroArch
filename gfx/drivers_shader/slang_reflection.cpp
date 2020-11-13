@@ -600,8 +600,10 @@ bool slang_reflect(
       }
       else if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {
-         RARCH_ERR("[slang]: Non-semantic textures not supported yet, "
-                   "Probably a texture name or pass alias is not found. \n");
+         RARCH_ERR("[slang]: Texture name '%s' not found in semantic map, "
+                   "Probably the texture name or pass alias is not defined "
+                   "in the preset (Non-semantic textures not supported yet)\n", 
+                   fragment.sampled_images[i].name.c_str());
          return false;
       }
 
