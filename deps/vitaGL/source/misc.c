@@ -22,6 +22,7 @@
  */
 
 #include "shared.h"
+GLboolean fast_texture_compression = GL_FALSE; // Hints for texture compression
 
 static void update_fogging_state() {
 	if (fogging) {
@@ -541,6 +542,24 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 		vector4f temp;
 		vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_plane0_eq);
 		memcpy_neon(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
+void glHint(GLenum target, GLenum mode) {
+	switch (target) {
+	case GL_TEXTURE_COMPRESSION_HINT:
+		switch (mode) {
+		case GL_FASTEST:
+			fast_texture_compression = GL_TRUE;
+			break;
+		default:
+			fast_texture_compression = GL_FALSE;
+			break;
+		}
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
