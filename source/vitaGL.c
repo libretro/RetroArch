@@ -679,12 +679,6 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id = 0;
 		texture_units[i].enabled = GL_FALSE;
-		texture_units[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-		texture_units[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-		texture_units[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-		texture_units[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-		texture_units[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-		texture_units[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
 	}
 
 	// Init texture slots
@@ -711,6 +705,9 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	// Mapping newlib heap into sceGxm
 	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+
+	// Allocating default texture object
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 }
 
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {

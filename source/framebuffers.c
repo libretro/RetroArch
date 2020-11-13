@@ -89,16 +89,18 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 #endif
 	while (n > 0) {
 		framebuffer *fb = (framebuffer *)framebuffers[n--];
-		fb->active = 0;
-		if (fb->target) {
-			sceGxmDestroyRenderTarget(fb->target);
-			fb->target = NULL;
-		}
-		if (fb->depth_buffer_addr) {
-			mempool_free(fb->depth_buffer_addr, fb->depth_buffer_mem_type);
-			mempool_free(fb->stencil_buffer_addr, fb->stencil_buffer_mem_type);
-			fb->depth_buffer_addr = NULL;
-			fb->stencil_buffer_addr = NULL;
+		if (fb) {
+			fb->active = 0;
+			if (fb->target) {
+				sceGxmDestroyRenderTarget(fb->target);
+				fb->target = NULL;
+			}
+			if (fb->depth_buffer_addr) {
+				mempool_free(fb->depth_buffer_addr, fb->depth_buffer_mem_type);
+				mempool_free(fb->stencil_buffer_addr, fb->stencil_buffer_mem_type);
+				fb->depth_buffer_addr = NULL;
+				fb->stencil_buffer_addr = NULL;
+			}
 		}
 	}
 }
@@ -187,7 +189,7 @@ void vglTexImageDepthBuffer(GLenum target) {
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture *tex = &textures[texture2d_idx];
-	
+
 	switch (target) {
 	case GL_TEXTURE_2D:
 		{
