@@ -738,7 +738,13 @@ static bool gl1_gfx_frame(void *data, const void *frame,
             video_width, video_height, false, true);
    }
 
-
+   if (  !frame || frame == RETRO_HW_FRAME_BUFFER_VALID || (
+         frame_width  == 4 &&
+         frame_height == 4 &&
+         (frame_width < width && frame_height < height))
+      )
+      draw = false;
+   
 
    if (  gl1->video_width  != frame_width  ||
          gl1->video_height != frame_height ||
@@ -752,11 +758,14 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
          pot_width = get_pot(frame_width);
          pot_height = get_pot(frame_height);
+         
+         if (draw)
+         {
+            if (gl1->video_buf)
+               free(gl1->video_buf);
 
-         if (gl1->video_buf)
-            free(gl1->video_buf);
-
-         gl1->video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
+            gl1->video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
+         }
       }
    }
 
@@ -766,13 +775,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    pot_width = get_pot(width);
    pot_height = get_pot(height);
-
-   if (  !frame || frame == RETRO_HW_FRAME_BUFFER_VALID || (
-         frame_width  == 4 &&
-         frame_height == 4 &&
-         (frame_width < width && frame_height < height))
-      )
-      draw = false;
 
    if (draw && gl1->video_buf)
    {
