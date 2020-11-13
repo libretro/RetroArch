@@ -52,9 +52,9 @@
 
 #include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
-#include "../../gfx/drivers_font_renderer/bitmapkor.h"
-#include "../../gfx/drivers_font_renderer/bitmapjpn.h"
-#include "../../gfx/drivers_font_renderer/bitmapchn.h"
+#include "../../gfx/drivers_font_renderer/bitmapkor10x10.h"
+#include "../../gfx/drivers_font_renderer/bitmapjpn10x10.h"
+#include "../../gfx/drivers_font_renderer/bitmapchn10x10.h"
 
 /* Thumbnail additions */
 #include "../../gfx/gfx_thumbnail_path.h"
