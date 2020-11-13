@@ -28,9 +28,13 @@ Direct OpenGL Usage:<br>
 [vitaVoyager](https://vitadb.rinnegatamante.it/#/info/367) - Port of lilium-voyager (Star Trek Voyager: Elite Force)<br>
 [Daedalus X64](https://github.com/Rinnegatamante/daedalusx64-vitagl) - Port of Daedalus X64 (N64 Emulator)<br>
 [RetroArch](https://github.com/libretro/RetroArch) - Vita's GL1 video driver of RetroArch<br>
-[vitaET](https://github.com/Rinnegatamante/vitaET) - Port of ET:Legacy (Wolfenstein: Enemy Territory)<br>
+[vitaET](https://github.com/Rinnegatamante/vitaET) - Port of ET: Legacy (Wolfenstein: Enemy Territory)<br>
 [flycast](https://github.com/Rinnegatamante/flycast) - Port of flycast (Dreamcast Emulator)<br>
 [AvP Gold](https://github.com/Rinnegatamante/AvP-Gold-Vita) - Port of Aliens versus Predator: Gold Edition<br>
+[re3-vita](https://vitadb.rinnegatamante.it/#/info/589) - Port of Grand Theft Auto III<br>
+[prboom-plus](https://vitadb.rinnegatamante.it/#/info/591) - Port of PrBoom Plus (Doom engine sourceport)<br>
+[VITAlbum](https://vitadb.rinnegatamante.it/#/info/566) - Filebrowser and image viewer app<br>
+[sm64-vita](https://github.com/bythos14/sm64-vita) - Port of Super Mario 64<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>
@@ -42,5 +46,5 @@ sdl12_gl Apps:<br>
 [ZeldaROTH](https://vitadb.rinnegatamante.it/#/info/109) - Port of Zelda: Return of the Hylian<br>
 [Zelda3T](https://vitadb.rinnegatamante.it/#/info/334) - Port of Zelda: Time to Triumph<br>
 [ZeldaNSQ](https://vitadb.rinnegatamante.it/#/info/350) - Port of Zelda: Navi's Quest<br>
-[vitaWolfen](https://vitadb.rinnegatamante.it/#/info/31) - Port of Wolf4SDL<br>
+[vitaWolfen](https://vitadb.rinnegatamante.it/#/info/31) - Port of Wolf4SDL (Wolfenstein 3D)<br>
 [meritous](https://vitadb.rinnegatamante.it/#/info/411) - Port of meritous<br>

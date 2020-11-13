@@ -40,6 +40,12 @@ typedef struct texture {
 	uint8_t valid;
 	uint32_t type;
 	void (*write_cb)(void *, uint32_t);
+	SceGxmTextureFilter min_filter;
+	SceGxmTextureFilter mag_filter;
+	SceGxmTextureAddrMode u_mode;
+	SceGxmTextureAddrMode v_mode;
+	SceGxmTextureMipFilter mip_filter;
+	uint32_t lod_bias;
 } texture;
 
 // Palette object struct
