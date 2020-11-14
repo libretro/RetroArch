@@ -44,9 +44,9 @@
 
 size_t utf8cpy4ML(char *d, size_t d_len, const char *s, size_t maxchars)
 {
-   const uint8_t *sb     = (const uint8_t*)s;
-   const uint8_t *sb_org = sb;
-   uint16_t chars=0;
+   const char *sb     = (const char*)s;
+   const char *sb_org = sb;
+   size_t chars=0;
 
    if (!s)
       return 0;
@@ -54,9 +54,9 @@ size_t utf8cpy4ML(char *d, size_t d_len, const char *s, size_t maxchars)
    while (*sb && chars < maxchars)
    {
       uint32_t symbol = utf8_walk(&sb);
-      if ((symbol >= 0xac00 && symbol <= 0xd7a3) ||// for kor
-          (symbol >= 0x3040 && symbol <= 0x30ff) ||// for jpn
-          (symbol >= 0x4e00 && symbol <= 0x9fff)) // for cjk
+      if ((symbol >= 0xac00 && symbol <= 0xd7a3) || /* for kor */
+          (symbol >= 0x3040 && symbol <= 0x30ff) || /* for jpn */
+          (symbol >= 0x4e00 && symbol <= 0x9fff))   /* for cjk */
       {
          if ((maxchars - chars) > 1)
             chars+=2;
@@ -84,9 +84,9 @@ uint16_t getstrlen(const char *s, uint16_t maxwidth)
    while (*s && strwidth < maxwidth)
    {
       uint32_t symbol = utf8_walk(&s);
-      if ((symbol >= 0xac00 && symbol <= 0xd7a3) ||// for kor
-          (symbol >= 0x3040 && symbol <= 0x30ff) ||// for jpn
-          (symbol >= 0x4e00 && symbol <= 0x9fff)) // for cjk
+      if ((symbol >= 0xac00 && symbol <= 0xd7a3) || /* for kor */
+          (symbol >= 0x3040 && symbol <= 0x30ff) || /* for jpn */
+          (symbol >= 0x4e00 && symbol <= 0x9fff))   /* for cjk */
       {
          chars+=2;
          strwidth+=11;
@@ -111,9 +111,9 @@ uint16_t getstrwidth(const char *s)
    while (*s)
    {
       uint32_t symbol = utf8_walk(&s);
-      if ((symbol >= 0xac00 && symbol <= 0xd7a3) ||// for kor
-          (symbol >= 0x3040 && symbol <= 0x30ff) ||// for jpn
-          (symbol >= 0x4e00 && symbol <= 0x9fff)) // for cjk
+      if ((symbol >= 0xac00 && symbol <= 0xd7a3) || /* for kor */
+          (symbol >= 0x3040 && symbol <= 0x30ff) || /* for jpn */
+          (symbol >= 0x4e00 && symbol <= 0x9fff))   /* for cjk */
       {
          strwidth+=11;
       }

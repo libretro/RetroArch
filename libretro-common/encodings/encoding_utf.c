@@ -220,16 +220,14 @@ size_t utf8len(const char *string)
 #else
       uint32_t symbol = utf8_walk(&string);
 
-      /*if (symbol < 0x80)
+      if (symbol >= 0xac00 && symbol <= 0xd7a3) /* kor */
+         ret+=2;
+      else if (symbol >= 0x3040 && symbol <= 0x30ff) /* jpn */
+         ret+=2;
+      else if (symbol >= 0x4e00 && symbol <= 0x9fff) /* chn */
+         ret+=2;
+      else
          ret++;
-      else */if (symbol >= 0xac00 && symbol <= 0xd7a3) // kor
-         ret+=2;
-      else if (symbol >= 0x3040 && symbol <= 0x30ff) // jpn
-         ret+=2;
-      else if (symbol >= 0x4e00 && symbol <= 0x9fff) // chn
-         ret+=2;
-	  else
-		  ret++;
 #endif
    }
    return ret;

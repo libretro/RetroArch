@@ -4,8 +4,8 @@
  * 갈무리는 SIL 오픈 폰트 라이선스 1.1에 따라 이용할 수 있으며 그 자체로 판매되지 않는 한 자유롭게 사용, 연구, 수정, 재배포할 수 있습니다.
  */
 
-#ifndef __RARCH_FONT_BITMAPKOR_H
-#define __RARCH_FONT_BITMAPKOR_H
+#ifndef __RARCH_FONT_BITMAPKOR10X10_H
+#define __RARCH_FONT_BITMAPKOR10X10_H
 
 #define FONT_KOR_WIDTH 10
 #define FONT_KOR_HEIGHT 10
