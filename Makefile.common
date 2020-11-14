@@ -1389,7 +1389,7 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
-   DEFINES += -DHAVE_OPENGL1
+   DEFINES += -DHAVE_OPENGL1 -DHAVE_VITAGL
    OBJ += gfx/drivers/gl1.o \
           gfx/drivers_font/gl1_raster_font.o \
           gfx/drivers_context/vita_ctx.o \
@@ -2317,19 +2317,6 @@ ifeq ($(HAVE_MATH_NEON), 1)
    DEFINES += -DHAVE_MATH_NEON
    INCLUDE_DIRS += -I$(DEPS_DIR)/math-neon/source
    SOURCES := $(DEPS_DIR)/math-neon/source
-   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
-endif
-
-ifeq ($(HAVE_VITAGL), 1)
-   INCLUDE_DIRS += -I$(DEPS_DIR)/vitaShaRK/source
-   SOURCES := $(DEPS_DIR)/vitaShaRK/source
-   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
-endif
-
-ifeq ($(HAVE_VITAGL), 1)
-   DEFINES += -DHAVE_VITAGL -DSTB_DXT_IMPLEMENTATION -DSKIP_ERROR_HANDLING -DHAVE_SHARK
-   INCLUDE_DIRS += -I$(DEPS_DIR)/vitaGL/source -I$(DEPS_DIR)/vitaShaRK/include
-   SOURCES := $(DEPS_DIR)/vitaGL/source $(DEPS_DIR)/vitaGL/source/utils
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 
