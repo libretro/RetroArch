@@ -603,7 +603,7 @@ static void d3d11_gfx_free(void* data)
       Release(d3d11->samplers[RARCH_FILTER_NEAREST][i]);
    }
 
-   Release(d3d11->state);
+   Release(d3d11->rasterizerState);
    Release(d3d11->renderTargetView);
    Release(d3d11->swapChain);
 
@@ -1059,9 +1059,9 @@ static void *d3d11_gfx_init(const video_info_t* video,
       desc.CullMode = D3D11_CULL_NONE;
       desc.ScissorEnable = TRUE;
 
-      D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->state);
+      D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->rasterizerState);
    }
-   D3D11SetState(d3d11->context, d3d11->state);
+   D3D11SetRasterizerState(d3d11->context, d3d11->rasterizerState);
 
    font_driver_init_osd(d3d11,
          video,
@@ -1358,7 +1358,7 @@ static bool d3d11_gfx_frame(
    if (d3d11->hw.enable)
    {
       D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
-      D3D11SetState(context, d3d11->state);
+      D3D11SetRasterizerState(context, d3d11->rasterizerState);
    }
 
    if (frame && width && height)

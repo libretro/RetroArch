@@ -497,7 +497,7 @@ static INLINE void D3D11DispatchIndirect(
          device_context, buffer_for_args, aligned_byte_offset_for_args);
 }
 static INLINE void
-D3D11SetState(D3D11DeviceContext device_context, D3D11RasterizerState rasterizer_state)
+D3D11SetRasterizerState(D3D11DeviceContext device_context, D3D11RasterizerState rasterizer_state)
 {
    device_context->lpVtbl->RSSetState(device_context, rasterizer_state);
 }
@@ -2503,7 +2503,7 @@ typedef struct
    D3D11Device           device;
    D3D_FEATURE_LEVEL     supportedFeatureLevel;
    D3D11DeviceContext    context;
-   D3D11RasterizerState  state;
+   D3D11RasterizerState  rasterizerState;
    D3D11RenderTargetView renderTargetView;
    D3D11Buffer           ubo;
    d3d11_uniform_t       ubo_values;
