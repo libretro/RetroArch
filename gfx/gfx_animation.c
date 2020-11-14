@@ -1587,7 +1587,7 @@ static bool gfx_animation_ticker_smooth_fw(
       num_chars = getstrlen(ticker->src_str, ticker->field_width) - 3;
 
       /* Copy string segment + add suffix */
-      utf8cpy4ML(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars); // 이 함수를 바꿔야 함
+      utf8cpy4ML(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars); 
       strlcat(ticker->dst_str, "...", ticker->dst_str_len);
 
       if (ticker->dst_str_width)
