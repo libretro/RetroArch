@@ -2577,7 +2577,7 @@ static void blit_line_regular(
          }
          x += FONT_WIDTH_STRIDE;
       }
-      else if (symbol >= 0xac00 && symbol <= 0xd7a3) // hangul
+      else if (symbol >= 0xac00 && symbol <= 0xd7a3) /* hangul */
       {
          for (j = 0; j < FONT_KOR_HEIGHT; j++)
          {
@@ -2594,7 +2594,7 @@ static void blit_line_regular(
          }
          x += FONT_KOR_WIDTH_STRIDE;
       }
-      else if (symbol >= 0x3040 && symbol <= 0x30ff) // japanese
+      else if (symbol >= 0x3040 && symbol <= 0x30ff) /* japanese */
       {
          for (j = 0; j < FONT_JPN_HEIGHT; j++)
          {
@@ -2611,7 +2611,7 @@ static void blit_line_regular(
          }
          x += FONT_JPN_WIDTH_STRIDE;
       }
-      else if (symbol >= 0x4e00 && symbol <= 0x9fff) // chinese
+      else if (symbol >= 0x4e00 && symbol <= 0x9fff) /* chinese */
       {
          for (j = 0; j < FONT_CHN_HEIGHT; j++)
          {
@@ -2699,7 +2699,7 @@ static void blit_line_regular_shadow(
          }
          x += FONT_WIDTH_STRIDE;
       }
-      else if (symbol >= 0xac00 && symbol <= 0xd7a3) // hangul
+      else if (symbol >= 0xac00 && symbol <= 0xd7a3) /* hangul */
       {
          for (j = 0; j < FONT_KOR_HEIGHT; j++)
          {
@@ -2725,7 +2725,7 @@ static void blit_line_regular_shadow(
          }
          x += FONT_KOR_WIDTH_STRIDE;
       }
-      else if (symbol >= 0x3040 && symbol <= 0x30ff) // japanese
+      else if (symbol >= 0x3040 && symbol <= 0x30ff) /* japanese */
       {
          for (j = 0; j < FONT_JPN_HEIGHT; j++)
          {
@@ -2751,7 +2751,7 @@ static void blit_line_regular_shadow(
          }
          x += FONT_JPN_WIDTH_STRIDE;
       }
-      else if (symbol >= 0x4e00 && symbol <= 0x9fff) // chinese
+      else if (symbol >= 0x4e00 && symbol <= 0x9fff) /* chinese */
       {
          for (j = 0; j < FONT_CHN_HEIGHT; j++)
          {
