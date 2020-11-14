@@ -1,7 +1,0 @@
-﻿float4 main(unsigned int idx : INDEX, uniform float4 position) : POSITION
-{
-	float x = (idx == 1 || idx == 2) ? position[1] : position[0];
-	float y = (idx == 2 || idx == 3) ? position[3] : position[2];
-	
-	return float4(x, y, 1.f, 1.f);
-}
