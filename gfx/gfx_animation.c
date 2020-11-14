@@ -1583,7 +1583,7 @@ static bool gfx_animation_ticker_smooth_fw(
          goto end;
 
       /* Determine number of characters to copy */
-      //num_chars = (ticker->field_width - suffix_width) / glyph_width;
+      /* num_chars = (ticker->field_width - suffix_width) / glyph_width; */
       num_chars = getstrlen(ticker->src_str, ticker->field_width) - 3;
 
       /* Copy string segment + add suffix */
