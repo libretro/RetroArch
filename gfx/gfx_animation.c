@@ -1554,7 +1554,7 @@ static bool gfx_animation_ticker_smooth_fw(
    if (src_str_len < 1)
       goto end;
 
-   //src_str_width = src_str_len * glyph_width;
+   /* src_str_width = src_str_len * glyph_width; */
    src_str_width = getstrwidth(ticker->src_str);
 
    /* If src string width is <= text field width, we

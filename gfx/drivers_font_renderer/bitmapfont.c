@@ -21,7 +21,7 @@
 #include <boolean.h>
 
 #include "bitmap.h"
-#include "bitmapkor.h"
+#include "bitmapkor10x10.h"
 
 #include "../font_driver.h"
 
@@ -29,8 +29,9 @@
 #define BMP_ATLAS_ROWS 8
 #define BMP_ATLAS_SIZE (BMP_ATLAS_COLS * BMP_ATLAS_ROWS)
 
-#define BMP_ATLAS_KOR_COLS 20
-#define BMP_ATLAS_KOR_ROWS ((sizeof(bitmap_kor_bin)+19) / FONT_KOR_HEIGHT / BMP_ATLAS_KOR_COLS)
+#define BMP_ATLAS_KOR_COLS 16
+#define BMP_ATLAS_KOR_ROWS ((sizeof(bitmap_kor_bin)+15) *8 / FONT_KOR_WIDTH / FONT_KOR_HEIGHT / BMP_ATLAS_KOR_COLS)
+
 typedef struct bm_renderer
 {
    unsigned scale_factor;
@@ -53,7 +54,8 @@ static const struct font_glyph *font_renderer_bmp_get_glyph(
    bm_renderer_t *handle = (bm_renderer_t*)data;
    if (!handle)
       return NULL;
-   //return code < BMP_ATLAS_SIZE ? &handle->glyphs[code] : NULL;
+  
+   /* return code < BMP_ATLAS_SIZE ? &handle->glyphs[code] : NULL; */
    return (code < 255 || (code >= 0xac00 && code <= 0xd7a3)) ? &handle->glyphs[code] : NULL;
 
 }
@@ -132,7 +134,7 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
       handle->scale_factor = 1;
 
    handle->atlas.width  = FONT_WIDTH * handle->scale_factor * BMP_ATLAS_COLS;
-   //handle->atlas.height = FONT_HEIGHT * handle->scale_factor * BMP_ATLAS_ROWS;
+   /* handle->atlas.height = FONT_HEIGHT * handle->scale_factor * BMP_ATLAS_ROWS; */
    handle->atlas.height = FONT_HEIGHT * handle->scale_factor * BMP_ATLAS_ROWS + FONT_KOR_HEIGHT * handle->scale_factor * ((0xd7a3 - 0xac00 + 19) / BMP_ATLAS_KOR_COLS)/*1000*/ /*1118*/;
    handle->atlas.buffer = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
 
