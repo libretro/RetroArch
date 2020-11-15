@@ -141,6 +141,11 @@ static INLINE void D3D11GetShaderResourceViewTexture2D(
 {
     shader_resource_view->lpVtbl->GetResource(shader_resource_view, (D3D11Resource*)texture2d);
 }
+static INLINE void D3D11GetShaderResourceViewDesc(
+    D3D11ShaderResourceView shader_resource_view, D3D11_SHADER_RESOURCE_VIEW_DESC* desc)
+{
+    shader_resource_view->lpVtbl->GetDesc(shader_resource_view, desc);
+}
 static INLINE void
 D3D11GetRenderTargetViewResource(D3D11RenderTargetView render_target_view, D3D11Resource* resource)
 {

@@ -1338,11 +1338,11 @@ static bool d3d11_gfx_frame(
       D3D11Texture2D hw_texture = NULL;
       if (frame == RETRO_HW_FRAME_BUFFER_VALID)
       {
-          D3D11_TEXTURE2D_DESC hw_desc;
+          D3D11_SHADER_RESOURCE_VIEW_DESC hw_desc;
           D3D11ShaderResourceView hw_view = NULL;
           D3D11GetPShaderResources(context, 0, 1, &hw_view);
+          D3D11GetShaderResourceViewDesc(hw_view, &hw_desc);
           D3D11GetShaderResourceViewTexture2D(hw_view, &hw_texture);
-          D3D11GetTexture2DDesc(hw_texture, &hw_desc);
 
           if (d3d11->frame.texture[0].desc.Format != hw_desc.Format)
           {
