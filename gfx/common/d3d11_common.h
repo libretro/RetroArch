@@ -123,6 +123,10 @@ static INLINE UINT D3D11GetTexture3DEvictionPriority(D3D11Texture3D texture3d)
 {
    return texture3d->lpVtbl->GetEvictionPriority(texture3d);
 }
+static INLINE void D3D11GetTexture2DDesc(D3D11Texture2D texture2d, D3D11_TEXTURE2D_DESC* desc)
+{
+    texture2d->lpVtbl->GetDesc(texture2d, desc);
+}
 static INLINE void D3D11GetViewResource(D3D11View view, D3D11Resource* resource)
 {
    view->lpVtbl->GetResource(view, resource);
@@ -131,6 +135,11 @@ static INLINE void D3D11GetShaderResourceViewResource(
       D3D11ShaderResourceView shader_resource_view, D3D11Resource* resource)
 {
    shader_resource_view->lpVtbl->GetResource(shader_resource_view, resource);
+}
+static INLINE void D3D11GetShaderResourceViewTexture2D(
+    D3D11ShaderResourceView shader_resource_view, D3D11Texture2D* texture2d)
+{
+    shader_resource_view->lpVtbl->GetResource(shader_resource_view, (D3D11Resource*)texture2d);
 }
 static INLINE void
 D3D11GetRenderTargetViewResource(D3D11RenderTargetView render_target_view, D3D11Resource* resource)
@@ -2503,7 +2512,8 @@ typedef struct
    D3D11Device           device;
    D3D_FEATURE_LEVEL     supportedFeatureLevel;
    D3D11DeviceContext    context;
-   D3D11RasterizerState  rasterizerState;
+   D3D11RasterizerState  scissor_enabled;
+   D3D11RasterizerState  scissor_disabled;
    D3D11RenderTargetView renderTargetView;
    D3D11Buffer           ubo;
    d3d11_uniform_t       ubo_values;
@@ -2515,6 +2525,7 @@ typedef struct
    math_matrix_4x4       mvp, mvp_no_rot;
    struct video_viewport vp;
    D3D11_VIEWPORT        viewport;
+   D3D11_RECT            scissor;
    DXGI_FORMAT           format;
    float                 clearcolor[4];
    bool                  vsync;
@@ -2568,13 +2579,12 @@ typedef struct
 
    struct
    {
-      d3d11_texture_t            texture[GFX_MAX_FRAME_HISTORY + 1];
-      D3D11ShaderResourceView    last_texture_view;
-      D3D11Buffer                vbo;
-      D3D11Buffer                ubo;
-      D3D11_VIEWPORT             viewport;
-      float4_t                   output_size;
-      int                        rotation;
+      d3d11_texture_t texture[GFX_MAX_FRAME_HISTORY + 1];
+      D3D11Buffer     vbo;
+      D3D11Buffer     ubo;
+      D3D11_VIEWPORT  viewport;
+      float4_t        output_size;
+      int             rotation;
    } frame;
 
    struct
