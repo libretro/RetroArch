@@ -30,7 +30,6 @@
 #include <psp2/apputil.h>
 
 #include "../../bootstrap/vita/sbrk.c"
-#include "../../bootstrap/vita/threading.c"
 
 #else
 #include <pspkernel.h>
