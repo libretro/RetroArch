@@ -33402,37 +33402,49 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
 #endif
             case RETRO_HW_CONTEXT_OPENGL:
 #if defined(HAVE_OPENGL)
-               RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
-
-               /* If we have configured one of the HW render 
-                * capable GL drivers, go with that. */
-               if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
-                     !string_is_equal(settings->arrays.video_driver, "glcore"))
                {
-                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
-                        settings->arrays.video_driver);
-                  strlcpy(p_rarch->cached_video_driver,
-                        settings->arrays.video_driver,
-                        sizeof(p_rarch->cached_video_driver));
-#if defined(HAVE_OPENGL_CORE)
-                  RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
-                  configuration_set_string(settings,
-                        settings->arrays.video_driver, "glcore");
-                  p_rarch->current_video = &video_gl_core;
-#else
-                  RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
-                  configuration_set_string(settings,
-                        settings->arrays.video_driver, "gl");
-                  p_rarch->current_video = &video_gl2;
-#endif
-                  return true;
-               }
+                  bool set_driver = false;
+                  RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
 
-               RARCH_LOG("[Video]: Using configured \"%s\""
-                     " driver for GL HW render.\n",
-                     settings->arrays.video_driver);
+                  /* If we have configured one of the HW render 
+                   * capable GL drivers, go with that. */
+#if defined(HAVE_OPENGL_CORE)
+                  if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
+                        !string_is_equal(settings->arrays.video_driver, "glcore"))
+                  {
+                     rdr_context_name = "glcore";
+                     rdr_driver       = &video_gl_core;
+                     set_driver       = true;
+                  }
+#else
+                  if (  !string_is_equal(settings->arrays.video_driver, "gl"))
+                  {
+                     rdr_context_name = "gl";
+                     rdr_driver       = &video_gl2;
+                     set_driver       = true;
+                  }
 #endif
+
+                  if (set_driver)
+                  {
+                     RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                           settings->arrays.video_driver);
+                     strlcpy(p_rarch->cached_video_driver,
+                           settings->arrays.video_driver,
+                           sizeof(p_rarch->cached_video_driver));
+                     RARCH_LOG("[Video]: Forcing \"%s\" driver.\n", rdr_context_name);
+                     configuration_set_string(settings,
+                           settings->arrays.video_driver, rdr_context_name);
+                     p_rarch->current_video = rdr_driver;
+                     return true;
+                  }
+
+                  RARCH_LOG("[Video]: Using configured \"%s\""
+                        " driver for GL HW render.\n",
+                        settings->arrays.video_driver);
+               }
                break;
+#endif
             default:
             case RETRO_HW_CONTEXT_NONE:
                break;
@@ -33454,7 +33466,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
 
    driver_ctl_find_index(&drv);
 
-   i = (int)drv.len;
+   i         = (int)drv.len;
 
    if (i >= 0)
       p_rarch->current_video = (video_driver_t*)video_drivers[i];
