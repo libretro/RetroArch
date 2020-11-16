@@ -2940,6 +2940,9 @@ static void menu_input_post_iterate(
 static void menu_input_reset(struct rarch_state *p_rarch);
 #endif
 
+static void video_driver_restore_cached(struct rarch_state *p_rarch,
+      settings_t *settings);
+
 #ifdef HAVE_NETWORKING
 struct netplay_room* netplay_get_host_room(void)
 {
@@ -16233,15 +16236,7 @@ bool command_event(enum event_command cmd, void *data)
             retroarch_unset_runtime_shader_preset(p_rarch);
 #endif
 
-            if (p_rarch->cached_video_driver[0])
-            {
-               configuration_set_string(settings,
-               settings->arrays.video_driver, p_rarch->cached_video_driver);
-
-               p_rarch->cached_video_driver[0] = 0;
-               RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
-                     settings->arrays.video_driver);
-            }
+            video_driver_restore_cached(p_rarch, settings);
 
 #ifdef HAVE_CONFIGFILE
             if (     p_rarch->runloop_remaps_core_active
@@ -17670,15 +17665,7 @@ void main_exit(void *args)
    settings_t     *settings     = p_rarch->configuration_settings;
    bool     config_save_on_exit = settings->bools.config_save_on_exit;
 
-   if (p_rarch->cached_video_driver[0])
-   {
-      configuration_set_string(settings,
-            settings->arrays.video_driver, p_rarch->cached_video_driver);
-
-      p_rarch->cached_video_driver[0] = 0;
-      RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
-            settings->arrays.video_driver);
-   }
+   video_driver_restore_cached(p_rarch, settings);
 
    if (config_save_on_exit)
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
@@ -33365,6 +33352,20 @@ static void video_driver_save_as_cached(struct rarch_state *p_rarch,
    configuration_set_string(settings,
          settings->arrays.video_driver,
          rdr_context_name);
+}
+
+static void video_driver_restore_cached(struct rarch_state *p_rarch,
+      settings_t *settings)
+{
+   if (p_rarch->cached_video_driver[0])
+   {
+      configuration_set_string(settings,
+            settings->arrays.video_driver, p_rarch->cached_video_driver);
+
+      p_rarch->cached_video_driver[0] = 0;
+      RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
+            settings->arrays.video_driver);
+   }
 }
 
 static bool video_driver_find_driver(struct rarch_state *p_rarch)
