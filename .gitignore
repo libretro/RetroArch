@@ -80,9 +80,27 @@ info
 content_history.lpl
 content_image_history.lpl
 content_music_history.lpl
+content_video_history.lpl
 saves
 screenshots
+autoconfig
+config
+database
+overlays
+playlists
+states
+system
+shaders/shaders_cg
+shaders/shaders_glsl
+shaders/shaders_slang
 
+# Qt Creator
+*.cflags
+*.cxxflags
+*.creator*
+*.config
+*.files
+*.includes
 
 # Wii U
 *.depend
