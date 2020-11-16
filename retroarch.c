@@ -19862,12 +19862,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER, video driver name: %s.\n", video_driver_name);
 
-         if (!driver_switch_enable)
-         {
-            RARCH_LOG("[Environ]: Driver switching disabled, GET_PREFERRED_HW_RENDER will be ignored.\n");
-            return false;
-         }
-
          if (string_is_equal(video_driver_name, "glcore"))
          {
              *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
@@ -19893,6 +19887,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
              *cb = RETRO_HW_CONTEXT_NONE;
              RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_NONE.\n");
          }
+
+         if (!driver_switch_enable)
+         {
+            RARCH_LOG("[Environ]: Driver switching disabled, GET_PREFERRED_HW_RENDER will be ignored.\n");
+            return false;
+         }
+
          break;
       }
 
