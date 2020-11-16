@@ -15085,7 +15085,12 @@ static bool event_init_content(
 
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_deinit(p_rarch);
-   bsv_movie_init(p_rarch);
+   if (bsv_movie_init(p_rarch))
+   {
+      /* Set granularity upon success */
+      configuration_set_uint(settings,
+            settings->uints.rewind_granularity, 1);
+   }
 #endif
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 
@@ -15093,13 +15098,11 @@ static bool event_init_content(
 }
 
 static void update_runtime_log(
-      settings_t *settings,
       struct rarch_state *p_rarch,
+      const char *dir_runtime_log,
+      const char *dir_playlist,
       bool log_per_core)
 {
-   const char  *dir_runtime_log = settings->paths.directory_runtime_log;
-   const char  *dir_playlist    = settings->paths.directory_playlist;
-
    /* Initialise runtime log file */
    runtime_log_t *runtime_log   = runtime_log_init(
          p_rarch->runtime_content_path,
@@ -15151,14 +15154,16 @@ static void command_event_runtime_log_deinit(struct rarch_state *p_rarch)
       settings_t *settings               = p_rarch->configuration_settings;
       bool content_runtime_log           = settings->bools.content_runtime_log;
       bool content_runtime_log_aggregate = settings->bools.content_runtime_log_aggregate;
+      const char  *dir_runtime_log       = settings->paths.directory_runtime_log;
+      const char  *dir_playlist          = settings->paths.directory_playlist;
 
       /* Per core logging */
       if (content_runtime_log)
-         update_runtime_log(settings, p_rarch, true);
+         update_runtime_log(p_rarch, dir_runtime_log, dir_playlist, true);
 
       /* Aggregate logging */
       if (content_runtime_log_aggregate)
-         update_runtime_log(settings, p_rarch, false);
+         update_runtime_log(p_rarch, dir_runtime_log, dir_playlist, false);
    }
 
    /* Reset runtime + content/core paths, to prevent any
@@ -22982,8 +22987,6 @@ static bool bsv_movie_init_handle(
 
 static bool bsv_movie_init(struct rarch_state *p_rarch)
 {
-   bool set_granularity = false;
-
    if (p_rarch->bsv_movie_state.movie_start_playback)
    {
       if (!bsv_movie_init_handle(p_rarch,
@@ -23001,11 +23004,11 @@ static bool bsv_movie_init(struct rarch_state *p_rarch)
             2, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
-
-      set_granularity = true;
    }
    else if (p_rarch->bsv_movie_state.movie_start_recording)
    {
+      char msg[8192];
+
       if (!bsv_movie_init_handle(
                p_rarch,
                p_rarch->bsv_movie_state.movie_start_path,
@@ -23020,27 +23023,15 @@ static bool bsv_movie_init(struct rarch_state *p_rarch)
          return false;
       }
 
-      {
-         char msg[8192];
-         snprintf(msg, sizeof(msg),
-               "%s \"%s\".",
-               msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-               p_rarch->bsv_movie_state.movie_start_path);
+      snprintf(msg, sizeof(msg),
+            "%s \"%s\".",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            p_rarch->bsv_movie_state.movie_start_path);
 
-         runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_LOG("%s \"%s\".\n",
-               msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-               p_rarch->bsv_movie_state.movie_start_path);
-      }
-
-      set_granularity = true;
-   }
-
-   if (set_granularity)
-   {
-      settings_t *settings    = p_rarch->configuration_settings;
-      configuration_set_uint(settings,
-            settings->uints.rewind_granularity, 1);
+      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            p_rarch->bsv_movie_state.movie_start_path);
    }
 
    return true;
