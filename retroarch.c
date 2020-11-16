@@ -33354,6 +33354,19 @@ void video_driver_hide_mouse(void)
       p_rarch->video_driver_poke->show_mouse(p_rarch->video_driver_data, false);
 }
 
+static void video_driver_save_as_cached(struct rarch_state *p_rarch,
+      settings_t *settings, const char *rdr_context_name)
+{
+   RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+         settings->arrays.video_driver);
+   strlcpy(p_rarch->cached_video_driver,
+         settings->arrays.video_driver,
+         sizeof(p_rarch->cached_video_driver));
+   configuration_set_string(settings,
+         settings->arrays.video_driver,
+         rdr_context_name);
+}
+
 static bool video_driver_find_driver(struct rarch_state *p_rarch)
 {
    int i;
@@ -33385,16 +33398,8 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
 
                if (!string_is_equal(settings->arrays.video_driver,
                         rdr_context_name))
-               {
-                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
-                        settings->arrays.video_driver);
-                  strlcpy(p_rarch->cached_video_driver,
-                        settings->arrays.video_driver,
-                        sizeof(p_rarch->cached_video_driver));
-                  configuration_set_string(settings,
-                        settings->arrays.video_driver,
-                        rdr_context_name);
-               }
+                  video_driver_save_as_cached(p_rarch, settings, rdr_context_name);
+
                p_rarch->current_video = rdr_driver;
                return true;
 #else
@@ -33402,47 +33407,30 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
 #endif
             case RETRO_HW_CONTEXT_OPENGL:
 #if defined(HAVE_OPENGL)
-               {
-                  bool set_driver = false;
-                  RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
+               RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
 
-                  /* If we have configured one of the HW render 
-                   * capable GL drivers, go with that. */
+               /* If we have configured one of the HW render 
+                * capable GL drivers, go with that. */
 #if defined(HAVE_OPENGL_CORE)
-                  if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
-                        !string_is_equal(settings->arrays.video_driver, "glcore"))
-                  {
-                     rdr_context_name = "glcore";
-                     rdr_driver       = &video_gl_core;
-                     set_driver       = true;
-                  }
+               if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
+                     !string_is_equal(settings->arrays.video_driver, "glcore"))
+               {
+                  video_driver_save_as_cached(p_rarch, settings, "glcore");
+                  p_rarch->current_video = &video_gl_core;
+                  return true;
+               }
 #else
-                  if (  !string_is_equal(settings->arrays.video_driver, "gl"))
-                  {
-                     rdr_context_name = "gl";
-                     rdr_driver       = &video_gl2;
-                     set_driver       = true;
-                  }
+               if (  !string_is_equal(settings->arrays.video_driver, "gl"))
+               {
+                  video_driver_save_as_cached(p_rarch, settings, "gl");
+                  p_rarch->current_video = &video_gl2;
+                  return true;
+               }
 #endif
 
-                  if (set_driver)
-                  {
-                     RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
-                           settings->arrays.video_driver);
-                     strlcpy(p_rarch->cached_video_driver,
-                           settings->arrays.video_driver,
-                           sizeof(p_rarch->cached_video_driver));
-                     RARCH_LOG("[Video]: Forcing \"%s\" driver.\n", rdr_context_name);
-                     configuration_set_string(settings,
-                           settings->arrays.video_driver, rdr_context_name);
-                     p_rarch->current_video = rdr_driver;
-                     return true;
-                  }
-
-                  RARCH_LOG("[Video]: Using configured \"%s\""
-                        " driver for GL HW render.\n",
-                        settings->arrays.video_driver);
-               }
+               RARCH_LOG("[Video]: Using configured \"%s\""
+                     " driver for GL HW render.\n",
+                     settings->arrays.video_driver);
                break;
 #endif
             default:
