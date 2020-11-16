@@ -19276,6 +19276,71 @@ static bool hw_render_context_is_glcore(enum retro_hw_context_type type)
 }
 #endif
 
+static video_driver_t *hw_render_context_driver(enum retro_hw_context_type type, int major, int minor)
+{
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+#ifdef HAVE_OPENGL_CORE
+         return &video_gl_core;
+#else
+         break;
+#endif
+      case RETRO_HW_CONTEXT_OPENGL:
+#ifdef HAVE_OPENGL
+         return &video_gl2;
+#else
+         break;
+#endif
+      case RETRO_HW_CONTEXT_DIRECT3D:
+#if defined(HAVE_D3D9)
+         if (major == 9)
+            return &video_d3d9;
+#endif
+#if defined(HAVE_D3D11)
+         if (major == 11)
+            return &video_d3d11;
+#endif
+         break;
+      case RETRO_HW_CONTEXT_VULKAN:
+#if defined(HAVE_VULKAN)
+         return &video_vulkan;
+#else
+         break;
+#endif
+      default:
+      case RETRO_HW_CONTEXT_NONE:
+         break;
+   }
+
+   return NULL;
+}
+
+static enum retro_hw_context_type hw_render_context_type(const char *s)
+{
+#ifdef HAVE_OPENGL_CORE
+   if (string_is_equal(s, "glcore"))
+      return RETRO_HW_CONTEXT_OPENGL_CORE;
+#endif
+#ifdef HAVE_OPENGL
+   if (string_is_equal(s, "gl"))
+      return RETRO_HW_CONTEXT_OPENGL;
+#endif
+#ifdef HAVE_VULKAN
+   if (string_is_equal(s, "vulkan"))
+      return RETRO_HW_CONTEXT_VULKAN;
+#endif
+#ifdef HAVE_D3D11
+   if (string_is_equal(s, "d3d11"))
+      return RETRO_HW_CONTEXT_DIRECT3D;
+#endif
+#ifdef HAVE_D3D11
+   if (string_is_equal(s, "d3d9"))
+      return RETRO_HW_CONTEXT_DIRECT3D;
+#endif
+   return RETRO_HW_CONTEXT_NONE;
+}
+
 static const char *hw_render_context_name(enum retro_hw_context_type type, int major, int minor)
 {
 #ifdef HAVE_OPENGL_CORE
@@ -33308,127 +33373,88 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
    {
       struct retro_hw_render_callback *hwr =
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+      int rdr_major                        = hwr->version_major;
+      int rdr_minor                        = hwr->version_minor;
+      const char *rdr_context_name         = hw_render_context_name(hwr->context_type, rdr_major, rdr_minor);
+      enum retro_hw_context_type rdr_type  = hw_render_context_type(rdr_context_name);
+      video_driver_t *rdr_driver           = hw_render_context_driver(rdr_type, rdr_major, rdr_minor);
+
       p_rarch->current_video               = NULL;
 
-      (void)hwr;
-
-#if defined(HAVE_VULKAN)
-      if (hwr && hw_render_context_is_vulkan(hwr->context_type))
+      if (hwr)
       {
-         RARCH_LOG("[Video]: Using HW render, Vulkan driver forced.\n");
-         if (!string_is_equal(settings->arrays.video_driver, "vulkan"))
+         switch (rdr_type)
          {
-            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strlcpy(p_rarch->cached_video_driver,
-                  settings->arrays.video_driver,
-                  sizeof(p_rarch->cached_video_driver));
-            configuration_set_string(settings,
-                  settings->arrays.video_driver,
-                  "vulkan");
-         }
-         p_rarch->current_video = &video_vulkan;
-      }
-#endif
+            case RETRO_HW_CONTEXT_OPENGL_CORE:
+            case RETRO_HW_CONTEXT_VULKAN:
+            case RETRO_HW_CONTEXT_DIRECT3D:
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D9) || defined(HAVE_OPENGL_CORE)
+               RARCH_LOG("[Video]: Using HW render, %s driver forced.\n",
+                     rdr_context_name);
 
-#if defined(HAVE_D3D9)
-      if (hwr && hw_render_context_is_d3d9(hwr->context_type,
-               hwr->version_major, hwr->version_minor))
-      {
-         RARCH_LOG("[Video]: Using HW render, D3D9 driver forced.\n");
-         if (!string_is_equal(settings->arrays.video_driver, "d3d9"))
-         {
-            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strlcpy(p_rarch->cached_video_driver,
-               settings->arrays.video_driver,
-               sizeof(p_rarch->cached_video_driver));
-            configuration_set_string(settings,
-               settings->arrays.video_driver,
-               "d3d9");
-         }
-         p_rarch->current_video = &video_d3d9;
-      }
-#endif
-
-#if defined(HAVE_D3D11)
-      if (hwr && hw_render_context_is_d3d11(hwr->context_type, hwr->version_major, hwr->version_minor))
-      {
-         RARCH_LOG("[Video]: Using HW render, D3D11 driver forced.\n");
-         if (!string_is_equal(settings->arrays.video_driver, "d3d11"))
-         {
-            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strlcpy(p_rarch->cached_video_driver,
-               settings->arrays.video_driver,
-               sizeof(p_rarch->cached_video_driver));
-            configuration_set_string(settings,
-               settings->arrays.video_driver,
-               "d3d11");
-         }
-         p_rarch->current_video = &video_d3d11;
-      }
-#endif
-
-#if defined(HAVE_OPENGL)
-      if (hwr && hw_render_context_is_gl(hwr->context_type))
-      {
-         RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
-
-         /* If we have configured one of the HW render capable GL drivers, go with that. */
-         if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
-               !string_is_equal(settings->arrays.video_driver, "glcore"))
-         {
-            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strlcpy(p_rarch->cached_video_driver,
-                  settings->arrays.video_driver,
-                  sizeof(p_rarch->cached_video_driver));
-#if defined(HAVE_OPENGL_CORE)
-            RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
-            configuration_set_string(settings,
-                  settings->arrays.video_driver, "glcore");
-            p_rarch->current_video = &video_gl_core;
+               if (!string_is_equal(settings->arrays.video_driver,
+                        rdr_context_name))
+               {
+                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                        settings->arrays.video_driver);
+                  strlcpy(p_rarch->cached_video_driver,
+                        settings->arrays.video_driver,
+                        sizeof(p_rarch->cached_video_driver));
+                  configuration_set_string(settings,
+                        settings->arrays.video_driver,
+                        rdr_context_name);
+               }
+               p_rarch->current_video = rdr_driver;
+               return true;
 #else
-            RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
-            configuration_set_string(settings,
-                  settings->arrays.video_driver, "gl");
-            p_rarch->current_video = &video_gl2;
+               break;
 #endif
-         }
-         else
-         {
-            RARCH_LOG("[Video]: Using configured \"%s\" driver for GL HW render.\n",
-                  settings->arrays.video_driver);
-         }
-      }
-#endif
+            case RETRO_HW_CONTEXT_OPENGL:
+#if defined(HAVE_OPENGL)
+               RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
 
+               /* If we have configured one of the HW render 
+                * capable GL drivers, go with that. */
+               if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
+                     !string_is_equal(settings->arrays.video_driver, "glcore"))
+               {
+                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                        settings->arrays.video_driver);
+                  strlcpy(p_rarch->cached_video_driver,
+                        settings->arrays.video_driver,
+                        sizeof(p_rarch->cached_video_driver));
 #if defined(HAVE_OPENGL_CORE)
-      if (hwr && hw_render_context_is_glcore(hwr->context_type))
-      {
-         RARCH_LOG("[Video]: Using HW render, OpenGL Core driver forced.\n");
-         if (!string_is_equal(settings->arrays.video_driver, "glcore"))
-         {
-            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strlcpy(p_rarch->cached_video_driver,
-               settings->arrays.video_driver,
-               sizeof(p_rarch->cached_video_driver));
-            configuration_set_string(settings,
-               settings->arrays.video_driver,
-               "glcore");
-         }
-         p_rarch->current_video = &video_gl_core;
-      }
+                  RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
+                  configuration_set_string(settings,
+                        settings->arrays.video_driver, "glcore");
+                  p_rarch->current_video = &video_gl_core;
+#else
+                  RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
+                  configuration_set_string(settings,
+                        settings->arrays.video_driver, "gl");
+                  p_rarch->current_video = &video_gl2;
 #endif
+                  return true;
+               }
 
-      if (p_rarch->current_video)
-         return true;
+               RARCH_LOG("[Video]: Using configured \"%s\""
+                     " driver for GL HW render.\n",
+                     settings->arrays.video_driver);
+#endif
+               break;
+            default:
+            case RETRO_HW_CONTEXT_NONE:
+               break;
+         }
+      }
    }
 
    if (frontend_driver_has_get_video_driver_func())
    {
-      p_rarch->current_video = (video_driver_t*)
-         frontend_driver_get_video_driver();
-
-      if (p_rarch->current_video)
+      if ((p_rarch->current_video = (video_driver_t*)
+               frontend_driver_get_video_driver()))
          return true;
+
       RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
    }
 
@@ -33454,9 +33480,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
          RARCH_WARN("Going to default to first video driver...\n");
       }
 
-      p_rarch->current_video = (video_driver_t*)video_drivers[0];
-
-      if (!p_rarch->current_video)
+      if (!(p_rarch->current_video = (video_driver_t*)video_drivers[0]))
          retroarch_fail(1, "find_video_driver()");
    }
    return true;
