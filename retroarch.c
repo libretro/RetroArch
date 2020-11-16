@@ -19227,6 +19227,80 @@ static void runloop_core_msg_queue_push(
          category);
 }
 
+#ifdef HAVE_VULKAN
+static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
+{
+   return type == RETRO_HW_CONTEXT_VULKAN;
+}
+#endif
+
+#ifdef HAVE_D3D9
+static bool hw_render_context_is_d3d9(enum retro_hw_context_type type, int major, int minor)
+{
+   return type == RETRO_HW_CONTEXT_DIRECT3D && major == 9;
+}
+#endif
+
+#ifdef HAVE_D3D11
+static bool hw_render_context_is_d3d11(enum retro_hw_context_type type, int major, int minor)
+{
+   return type == RETRO_HW_CONTEXT_DIRECT3D && major == 11;
+}
+#endif
+
+#ifdef HAVE_OPENGL
+static bool hw_render_context_is_gl(enum retro_hw_context_type type)
+{
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+      case RETRO_HW_CONTEXT_OPENGL:
+#ifndef HAVE_OPENGL_CORE
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+#endif
+         return true;
+      default:
+         break;
+   }
+
+   return false;
+}
+#endif
+
+#ifdef HAVE_OPENGL_CORE
+static bool hw_render_context_is_glcore(enum retro_hw_context_type type)
+{
+   return type == RETRO_HW_CONTEXT_OPENGL_CORE;
+}
+#endif
+
+static const char *hw_render_context_name(enum retro_hw_context_type type, int major, int minor)
+{
+#ifdef HAVE_OPENGL_CORE
+   if (hw_render_context_is_glcore(type))
+      return "glcore";
+#endif
+#ifdef HAVE_OPENGL
+   if (hw_render_context_is_gl(type))
+      return "gl";
+#endif
+#ifdef HAVE_VULKAN
+   if (hw_render_context_is_vulkan(type))
+      return "vulkan";
+#endif
+#ifdef HAVE_D3D11
+   if (hw_render_context_is_d3d11(type, major, minor))
+      return "d3d11";
+#endif
+#ifdef HAVE_D3D11
+   if (hw_render_context_is_d3d9(type, major, minor))
+      return "d3d9";
+#endif
+   return "N/A";
+}
+
 /**
  * rarch_environment_cb:
  * @cmd                          : Identifier of command.
@@ -19786,21 +19860,39 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const char *video_driver_name = settings->arrays.video_driver;
          bool driver_switch_enable     = settings->bools.driver_switch_enable;
 
-         RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER.\n");
+         RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER, video driver name: %s.\n", video_driver_name);
 
          if (!driver_switch_enable)
-             return false;
+         {
+            RARCH_LOG("[Environ]: Driver switching disabled, GET_PREFERRED_HW_RENDER will be ignored.\n");
+            return false;
+         }
 
          if (string_is_equal(video_driver_name, "glcore"))
+         {
              *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
+             RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_OPENGL_CORE.\n");
+         }
          else if (string_is_equal(video_driver_name, "gl"))
+         {
              *cb = RETRO_HW_CONTEXT_OPENGL;
+             RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_OPENGL.\n");
+         }
          else if (string_is_equal(video_driver_name, "vulkan"))
+         {
              *cb = RETRO_HW_CONTEXT_VULKAN;
+             RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_VULKAN.\n");
+         }
          else if (!strncmp(video_driver_name, "d3d", 3))
+         {
              *cb = RETRO_HW_CONTEXT_DIRECT3D;
+             RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_DIRECT3D.\n");
+         }
          else
+         {
              *cb = RETRO_HW_CONTEXT_NONE;
+             RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_NONE.\n");
+         }
          break;
       }
 
@@ -19812,15 +19904,27 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_hw_render_callback *hwr =
             VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
 
-         RARCH_LOG("[Environ]: SET_HW_RENDER.\n");
+         if (!cb)
+         {
+            RARCH_ERR("[Environ]: SET_HW_RENDER - No valid callback passed, returning...\n");
+            return false;
+         }
+
+         RARCH_LOG("[Environ]: SET_HW_RENDER, context type: %s.\n", hw_render_context_name(cb->context_type, cb->version_major, cb->version_minor));
 
          if (!dynamic_request_hw_context(
                   cb->context_type, cb->version_minor, cb->version_major))
+         {
+            RARCH_ERR("[Environ]: SET_HW_RENDER - Dynamic request HW context failed.\n");
             return false;
+         }
 
          if (!dynamic_verify_hw_context(p_rarch,
                   cb->context_type, cb->version_minor, cb->version_major))
+         {
+            RARCH_ERR("[Environ]: SET_HW_RENDER: Dynamic verify HW context failed.\n");
             return false;
+         }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
          if (!gl_set_core_context(cb->context_type)) { }
@@ -19839,6 +19943,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          }
          else
             memcpy(hwr, cb, sizeof(*cb));
+         RARCH_LOG("Reached end of SET_HW_RENDER.\n");
          break;
       }
 
@@ -31771,55 +31876,6 @@ bool video_driver_is_threaded(void)
    return VIDEO_DRIVER_IS_THREADED_INTERNAL();
 }
 
-#ifdef HAVE_VULKAN
-static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
-{
-   return type == RETRO_HW_CONTEXT_VULKAN;
-}
-#endif
-
-#ifdef HAVE_D3D9
-static bool hw_render_context_is_d3d9(const struct retro_hw_render_callback* hwr)
-{
-   return hwr->context_type == RETRO_HW_CONTEXT_DIRECT3D && hwr->version_major == 9;
-}
-#endif
-
-#ifdef HAVE_D3D11
-static bool hw_render_context_is_d3d11(const struct retro_hw_render_callback* hwr)
-{
-   return hwr->context_type == RETRO_HW_CONTEXT_DIRECT3D && hwr->version_major == 11;
-}
-#endif
-
-#ifdef HAVE_OPENGL
-static bool hw_render_context_is_gl(enum retro_hw_context_type type)
-{
-   switch (type)
-   {
-      case RETRO_HW_CONTEXT_OPENGLES2:
-      case RETRO_HW_CONTEXT_OPENGLES3:
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-      case RETRO_HW_CONTEXT_OPENGL:
-#ifndef HAVE_OPENGL_CORE
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
-#endif
-         return true;
-      default:
-         break;
-   }
-
-   return false;
-}
-#endif
-
-#ifdef HAVE_OPENGL_CORE
-static bool hw_render_context_is_glcore(enum retro_hw_context_type type)
-{
-   return type == RETRO_HW_CONTEXT_OPENGL_CORE;
-}
-#endif
-
 bool *video_driver_get_threaded(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -33274,7 +33330,8 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
 #endif
 
 #if defined(HAVE_D3D9)
-      if (hwr && hw_render_context_is_d3d9(hwr))
+      if (hwr && hw_render_context_is_d3d9(hwr->context_type,
+               hwr->version_major, hwr->version_minor))
       {
          RARCH_LOG("[Video]: Using HW render, D3D9 driver forced.\n");
          if (!string_is_equal(settings->arrays.video_driver, "d3d9"))
@@ -33292,7 +33349,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
 #endif
 
 #if defined(HAVE_D3D11)
-      if (hwr && hw_render_context_is_d3d11(hwr))
+      if (hwr && hw_render_context_is_d3d11(hwr->context_type, hwr->version_major, hwr->version_minor))
       {
          RARCH_LOG("[Video]: Using HW render, D3D11 driver forced.\n");
          if (!string_is_equal(settings->arrays.video_driver, "d3d11"))
