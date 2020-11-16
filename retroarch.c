@@ -19294,7 +19294,7 @@ static const char *hw_render_context_name(enum retro_hw_context_type type, int m
    if (hw_render_context_is_d3d11(type, major, minor))
       return "d3d11";
 #endif
-#ifdef HAVE_D3D11
+#ifdef HAVE_D3D9
    if (hw_render_context_is_d3d9(type, major, minor))
       return "d3d9";
 #endif
