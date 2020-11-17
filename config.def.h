@@ -1291,6 +1291,12 @@ static const bool sustained_performance_mode = false;
 static const bool vibrate_on_keypress        = false;
 static const bool enable_device_vibration    = false;
 
+/* Defines the strength of rumble effects
+ * on OpenDingux devices */
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#define DEFAULT_DINGUX_RUMBLE_GAIN 50
+#endif
+
 #ifdef HAVE_VULKAN
 #define DEFAULT_VULKAN_GPU_INDEX 0
 #endif
