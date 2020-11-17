@@ -12303,6 +12303,11 @@ static bool command_event_init_core(
          config_load_override(&p_rarch->runloop_system);
 #endif
 
+#ifdef HAVE_CHEEVOS
+   /* assume the core supports achievements unless it tells us otherwise */
+   rcheevos_set_support_cheevos(true);
+#endif
+
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    p_rarch->shader_presets_need_reload     = true;

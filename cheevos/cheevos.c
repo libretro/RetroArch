@@ -748,9 +748,13 @@ static int rcheevos_parse(
       else
       {
          CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core.\n");
+         rcheevos_locals.core_supports = false;
 
          if (settings->bools.cheevos_verbose_enable)
-            runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         {
+            runloop_msg_queue_push(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
+               0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         }
 
          goto error;
       }
@@ -1207,7 +1211,15 @@ void rcheevos_populate_menu(void* data)
 
    if (i == 0)
    {
-      if (!settings->arrays.cheevos_token[0])
+      if (!rcheevos_locals.core_supports)
+      {
+         menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
+            MENU_ENUM_LABEL_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+            FILE_TYPE_NONE, 0, 0);
+      }
+      else if (!settings->arrays.cheevos_token[0])
       {
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN),
@@ -1743,11 +1755,15 @@ void rcheevos_test(void)
       if (!rcheevos_memory_init(&rcheevos_locals.memory, rcheevos_locals.patchdata.console_id))
       {
          CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
+         rcheevos_locals.core_supports = false;
 
          if (settings && settings->bools.cheevos_verbose_enable)
-            runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         {
+            runloop_msg_queue_push(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
+               0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         }
 
-         rcheevos_locals.loaded = false;
+         rcheevos_unload();
          rcheevos_pause_hardcore();
          return;
       }
