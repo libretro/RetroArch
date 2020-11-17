@@ -2253,88 +2253,6 @@ int generic_menu_entry_action(
    return ret;
 }
 
-static void *null_menu_init(void **userdata, bool video_is_threaded)
-{
-   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
-
-   if (!menu)
-      return NULL;
-
-   return menu;
-}
-
-static int null_menu_iterate(void *data, void *userdata,
-      enum menu_action action) { return 1; }
-
-static menu_ctx_driver_t menu_ctx_null = {
-  NULL,  /* set_texture */
-  NULL,  /* render_messagebox */
-  null_menu_iterate,
-  NULL,  /* render */
-  NULL,  /* frame */
-  null_menu_init,
-  NULL,  /* free */
-  NULL,  /* context_reset */
-  NULL,  /* context_destroy */
-  NULL,  /* populate_entries */
-  NULL,  /* toggle */
-  NULL,  /* navigation_clear */
-  NULL,  /* navigation_decrement */
-  NULL,  /* navigation_increment */
-  NULL,  /* navigation_set */
-  NULL,  /* navigation_set_last */
-  NULL,  /* navigation_descend_alphabet */
-  NULL,  /* navigation_ascend_alphabet */
-  NULL,  /* lists_init */
-  NULL,  /* list_insert */
-  NULL,  /* list_prepend */
-  NULL,  /* list_delete */
-  NULL,  /* list_clear */
-  NULL,  /* list_cache */
-  NULL,  /* list_push */
-  NULL,  /* list_get_selection */
-  NULL,  /* list_get_size */
-  NULL,  /* list_get_entry */
-  NULL,  /* list_set_selection */
-  NULL,  /* bind_init */
-  NULL,  /* load_image */
-  "null",
-  NULL,  /* environ */
-  NULL,  /* update_thumbnail_path */
-  NULL,  /* update_thumbnail_image */
-  NULL,  /* refresh_thumbnail_image */
-  NULL,  /* set_thumbnail_system */
-  NULL,  /* get_thumbnail_system */
-  NULL,  /* set_thumbnail_content */
-  NULL,  /* osk_ptr_at_pos */
-  NULL,  /* update_savestate_thumbnail_path */
-  NULL,  /* update_savestate_thumbnail_image */
-  NULL,  /* pointer_down */
-  NULL,  /* pointer_up   */
-  NULL   /* entry_action */
-};
-
-/* Menu drivers */
-static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#if defined(HAVE_MATERIALUI)
-   &menu_ctx_mui,
-#endif
-#if defined(HAVE_OZONE)
-   &menu_ctx_ozone,
-#endif
-#if defined(HAVE_RGUI)
-   &menu_ctx_rgui,
-#endif
-#if defined(HAVE_STRIPES)
-   &menu_ctx_stripes,
-#endif
-#if defined(HAVE_XMB)
-   &menu_ctx_xmb,
-#endif
-   &menu_ctx_null,
-   NULL
-};
-
 menu_handle_t *menu_driver_get_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -2354,7 +2272,6 @@ void menu_navigation_set_selection(size_t val)
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    menu_st->selection_ptr      = val;
 }
-
 
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
