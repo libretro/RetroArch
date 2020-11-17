@@ -47,10 +47,6 @@ unsigned retro_get_perf_count_rarch(void);
 
 unsigned retro_get_perf_count_libretro(void);
 
-void performance_counter_register(struct retro_perf_counter *perf);
-
-void performance_counters_clear(void);
-
 void rarch_perf_register(struct retro_perf_counter *perf);
 
 #define performance_counter_init(perf, name) \
