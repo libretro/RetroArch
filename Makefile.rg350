@@ -73,6 +73,7 @@ HAVE_CONFIGFILE = 1
 HAVE_PATCH = 1
 HAVE_CHEATS = 1
 HAVE_CHEEVOS = 0
+HAVE_LIBSHAKE = 1
 
 OS = Linux
 TARGET = retroarch
@@ -150,27 +151,27 @@ SYMBOL_MAP := -Wl,-Map=output.map
 
 $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.m
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo OBJC $<),)
-	$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
+	$(Q)$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.S $(HEADERS)
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo AS $<),)
-	$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR_BASE)

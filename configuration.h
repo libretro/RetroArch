@@ -155,6 +155,8 @@ typedef struct settings
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
+      unsigned input_dingux_rumble_gain;
+
       unsigned netplay_port;
       unsigned netplay_input_latency_frames_min;
       unsigned netplay_input_latency_frames_range;

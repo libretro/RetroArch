@@ -5202,14 +5202,31 @@ unsigned menu_displaylist_build_list(
             count++;
          break;
       case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
+         {
+            settings_t *settings         = config_get_ptr();
+            const char *input_driver_id  = settings->arrays.input_driver;
+            const char *joypad_driver_id = settings->arrays.input_joypad_driver;
+
+            if (string_is_equal(input_driver_id, "android"))
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+            }
+
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+            if (string_is_equal(joypad_driver_id, "sdl_dingux"))
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+#endif
+         }
          break;
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          {

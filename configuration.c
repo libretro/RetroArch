@@ -1865,6 +1865,9 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef GEKKO
    SETTING_UINT("input_mouse_scale",            &settings->uints.input_mouse_scale, true, DEFAULT_MOUSE_SCALE, false);
 #endif
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+   SETTING_UINT("input_dingux_rumble_gain",     &settings->uints.input_dingux_rumble_gain, true, DEFAULT_DINGUX_RUMBLE_GAIN, false);
+#endif
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, audio_resampler_quality_level, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);

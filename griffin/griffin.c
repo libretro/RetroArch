@@ -778,6 +778,20 @@ INPUT
 #include "../input/drivers_joypad/udev_joypad.c"
 #endif
 
+#if defined(HAVE_LIBSHAKE)
+#if TARGET_OS_OSX
+#include "../deps/libShake/src/common/error.c"
+#include "../deps/libShake/src/common/helpers.c"
+#include "../deps/libShake/src/common/presets.c"
+#include "../deps/libShake/src/osx/shake.c"
+#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#include "../deps/libShake/src/common/error.c"
+#include "../deps/libShake/src/common/helpers.c"
+#include "../deps/libShake/src/common/presets.c"
+#include "../deps/libShake/src/linux/shake.c"
+#endif
+#endif
+
 /*============================================================
 INPUT (HID)
 ============================================================ */

@@ -1323,6 +1323,24 @@ ifeq ($(HAVE_WINRAWINPUT), 1)
 endif
 endif
 
+ifeq ($(HAVE_LIBSHAKE), 1)
+ifeq ($(OSX), 1)
+   DEFINES      += -DHAVE_LIBSHAKE
+   INCLUDE_DIRS += -I$(DEPS_DIR)/libShake/include
+   OBJ          += $(DEPS_DIR)/libShake/src/common/error.o \
+                   $(DEPS_DIR)/libShake/src/common/helpers.o \
+                   $(DEPS_DIR)/libShake/src/common/presets.o \
+                   $(DEPS_DIR)/libShake/src/osx/shake.o
+else ifeq ($(HAVE_UNIX), 1)
+   DEFINES      += -DHAVE_LIBSHAKE
+   INCLUDE_DIRS += -I$(DEPS_DIR)/libShake/include
+   OBJ          += $(DEPS_DIR)/libShake/src/common/error.o \
+                   $(DEPS_DIR)/libShake/src/common/helpers.o \
+                   $(DEPS_DIR)/libShake/src/common/presets.o \
+                   $(DEPS_DIR)/libShake/src/linux/shake.o
+endif
+endif
+
 # Companion UI
 
 ifneq ($(findstring Win32,$(OS)),)

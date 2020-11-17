@@ -11794,6 +11794,22 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_dingux_rumble_gain,
+                  MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
+                  MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+                  DEFAULT_DINGUX_RUMBLE_GAIN,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 100, 5, true, true);
+#endif
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.input_poll_type_behavior,
