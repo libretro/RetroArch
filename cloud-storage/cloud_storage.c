@@ -189,7 +189,6 @@ void cloud_storage_init(void)
    _providers[0] = cloud_storage_google_create();
    _providers[1] = cloud_storage_onedrive_create();
    _providers[2] = NULL;
-   //providers[2] = cloud_storage_aws_create();
 
    settings = config_get_ptr();
    cloud_storage_set_active_provider(settings->uints.cloud_storage_provider);
