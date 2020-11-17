@@ -6842,6 +6842,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Not logged in"
 )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Cannot activate achievements using this core"
+)
 
 /* Quick Menu > Information */
 
