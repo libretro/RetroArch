@@ -11807,7 +11807,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
             menu_settings_list_current_add_range(list, list_info, 0, 100, 5, true, true);
 #endif
             CONFIG_UINT(
