@@ -8298,10 +8298,9 @@ const char *char_list_new_special(enum string_list_type type, void *data)
 
 static void path_set_redirect(struct rarch_state *p_rarch)
 {
-   size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
-   char *content_dir_name                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *new_savefile_dir                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *new_savestate_dir                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char content_dir_name[PATH_MAX_LENGTH];
+   char new_savefile_dir[PATH_MAX_LENGTH];
+   char new_savestate_dir[PATH_MAX_LENGTH];
    global_t   *global                          = &p_rarch->g_extern;
    const char *old_savefile_dir                = p_rarch->dir_savefile;
    const char *old_savestate_dir               = p_rarch->dir_savestate;
@@ -8320,8 +8319,8 @@ static void path_set_redirect(struct rarch_state *p_rarch)
 
    /* Initialize current save directories
     * with the values from the config. */
-   strlcpy(new_savefile_dir,  old_savefile_dir,  path_size);
-   strlcpy(new_savestate_dir, old_savestate_dir, path_size);
+   strlcpy(new_savefile_dir,  old_savefile_dir,  sizeof(new_savefile_dir));
+   strlcpy(new_savestate_dir, old_savestate_dir, sizeof(new_savestate_dir));
 
    /* Get content directory name, if per-content-directory
     * saves/states are enabled */
@@ -8329,7 +8328,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
          sort_savestates_by_content_enable) &&
        !string_is_empty(p_rarch->path_main_basename))
       fill_pathname_parent_dir_name(content_dir_name,
-            p_rarch->path_main_basename, path_size);
+            p_rarch->path_main_basename, sizeof(content_dir_name));
 
    if (system && !string_is_empty(system->library_name))
    {
@@ -8348,7 +8347,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                      new_savefile_dir,
                      old_savefile_dir,
                      content_dir_name,
-                     path_size);
+                     sizeof(new_savefile_dir));
 
             /* Append library_name to the save location */
             if (sort_savefiles_enable)
@@ -8356,7 +8355,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                      new_savefile_dir,
                      new_savefile_dir,
                      system->library_name,
-                     path_size);
+                     sizeof(new_savefile_dir));
 
             /* If path doesn't exist, try to create it,
              * if everything fails revert to the original path. */
@@ -8367,7 +8366,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                         msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
                         old_savefile_dir);
 
-                  strlcpy(new_savefile_dir, old_savefile_dir, path_size);
+                  strlcpy(new_savefile_dir, old_savefile_dir, sizeof(new_savefile_dir));
                }
          }
 
@@ -8381,7 +8380,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                      new_savestate_dir,
                      old_savestate_dir,
                      content_dir_name,
-                     path_size);
+                     sizeof(new_savestate_dir));
 
             /* Append library_name to the savestate location */
             if (sort_savestates_enable)
@@ -8390,7 +8389,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                      new_savestate_dir,
                      new_savestate_dir,
                      system->library_name,
-                     path_size);
+                     sizeof(new_savestate_dir));
             }
             
             /* If path doesn't exist, try to create it.
@@ -8403,7 +8402,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                         old_savestate_dir);
                   strlcpy(new_savestate_dir,
                         old_savestate_dir,
-                        path_size);
+                        sizeof(new_savestate_dir));
                }
          }
       }
@@ -8413,7 +8412,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
    if (string_is_empty(new_savefile_dir) || savefiles_in_content_dir)
    {
       strlcpy(new_savefile_dir, p_rarch->path_main_basename,
-            path_size);
+            sizeof(new_savefile_dir));
       path_basedir(new_savefile_dir);
 
       if (string_is_empty(new_savefile_dir))
@@ -8428,7 +8427,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
    if (string_is_empty(new_savestate_dir) || savestates_in_content_dir)
    {
       strlcpy(new_savestate_dir, p_rarch->path_main_basename,
-            path_size);
+            sizeof(new_savestate_dir));
       path_basedir(new_savestate_dir);
 
       if (string_is_empty(new_savestate_dir))
@@ -8498,9 +8497,6 @@ static void path_set_redirect(struct rarch_state *p_rarch)
 
    dir_set(RARCH_DIR_CURRENT_SAVEFILE,  new_savefile_dir);
    dir_set(RARCH_DIR_CURRENT_SAVESTATE, new_savestate_dir);
-   free(content_dir_name);
-   free(new_savefile_dir);
-   free(new_savestate_dir);
 }
 
 static void path_set_basename(
@@ -8631,12 +8627,8 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
          {
             char ext[32];
             union string_list_elem_attr attr;
-            size_t path_size                              =
-               PATH_MAX_LENGTH * sizeof(char);
-            char *savename                                =	
-               (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-            char *path                                    =	
-               (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            char savename[PATH_MAX_LENGTH];
+            char path[PATH_MAX_LENGTH];
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
                &info->roms[i].memory[j];
@@ -8647,7 +8639,7 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
             strlcat(ext, mem->extension, sizeof(ext));
             strlcpy(savename,
                   p_rarch->subsystem_fullpaths->elems[i].data,
-                  path_size);
+                  sizeof(savename));
             path_remove_extension(savename);
 
             if (path_is_directory(savefile_dir))
@@ -8655,10 +8647,10 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
                /* Use SRAM dir */
                /* Redirect content fullpath to save directory. */
                strlcpy(path, savefile_dir, sizeof(path));
-               fill_pathname_dir(path, savename, ext, path_size);
+               fill_pathname_dir(path, savename, ext, sizeof(path));
             }
             else
-               fill_pathname(path, savename, ext, path_size);
+               fill_pathname(path, savename, ext, sizeof(path));
 
             RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -8667,8 +8659,6 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
             attr.i = mem->type;
             string_list_append((struct string_list*)savefile_ptr_get(),
                   path, attr);
-            free(savename);
-            free(path);
          }
       }
    }
@@ -9453,26 +9443,18 @@ void dir_check_defaults(void)
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
-      char       *new_path = NULL;
+      char       new_path[PATH_MAX_LENGTH];
       const char *dir_path = g_defaults.dirs[i];
 
       if (string_is_empty(dir_path))
          continue;
 
-      new_path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-      if (!new_path)
-         continue;
-
       new_path[0] = '\0';
       fill_pathname_expand_special(new_path,
-            dir_path,
-            PATH_MAX_LENGTH * sizeof(char));
+            dir_path, sizeof(new_path));
 
       if (!path_is_directory(new_path))
          path_mkdir(new_path);
-
-      free(new_path);
    }
 }
 
@@ -12459,35 +12441,32 @@ static bool command_event_save_core_config(
       const char *dir_menu_config)
 {
    char msg[128];
-   size_t path_size                = PATH_MAX_LENGTH * sizeof(char);
+   char config_name[PATH_MAX_LENGTH];
+   char config_path[PATH_MAX_LENGTH];
+   char config_dir[PATH_MAX_LENGTH];
    bool found_path                 = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
-   char *config_name               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *config_path               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   char *config_dir                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
    msg[0]                          = '\0';
-   config_name[0]                  = '\0';
-   config_path[0]                  = '\0';
    config_dir[0]                   = '\0';
 
    if (!string_is_empty(dir_menu_config))
-      strlcpy(config_dir, dir_menu_config, path_size);
+      strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
-            path_size);
+            sizeof(config_dir));
 
    if (string_is_empty(config_dir))
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_ERR("[config] %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
-      free(config_dir);
-      free(config_name);
-      free(config_path);
       return false;
    }
 
    core_path                       = path_get(RARCH_PATH_CORE);
+   config_name[0]                  = '\0';
+   config_path[0]                  = '\0';
 
    /* Infer file name based on libretro core. */
    if (path_is_valid(core_path))
@@ -12503,16 +12482,16 @@ static bool command_event_save_core_config(
          fill_pathname_base_noext(
                config_name,
                core_path,
-               path_size);
+               sizeof(config_name));
 
          fill_pathname_join(config_path, config_dir, config_name,
-               path_size);
+               sizeof(config_path));
 
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u", i);
 
          strlcat(tmp, ".cfg", sizeof(tmp));
-         strlcat(config_path, tmp, path_size);
+         strlcat(config_path, tmp, sizeof(config_path));
 
          if (!path_is_valid(config_path))
          {
@@ -12527,9 +12506,9 @@ static bool command_event_save_core_config(
       /* Fallback to system time... */
       RARCH_WARN("[config] %s\n",
             msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
-      fill_dated_filename(config_name, ".cfg", path_size);
+      fill_dated_filename(config_name, ".cfg", sizeof(config_name));
       fill_pathname_join(config_path, config_dir, config_name,
-            path_size);
+            sizeof(config_path));
    }
 
    if (p_rarch->runloop_overrides_active)
@@ -12549,10 +12528,6 @@ static bool command_event_save_core_config(
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    p_rarch->runloop_overrides_active = overrides_active;
-
-   free(config_dir);
-   free(config_name);
-   free(config_path);
 
    return true;
 }
@@ -12657,8 +12632,7 @@ static bool command_event_main_state(
 {
    retro_ctx_size_info_t info;
    char msg[128];
-   size_t state_path_size      = 16384 * sizeof(char);
-   char *state_path            = (char*)malloc(state_path_size);
+   char state_path[16384];
    const global_t *global      = &p_rarch->g_extern;
    settings_t *settings        = p_rarch->configuration_settings;
    bool ret                    = false;
@@ -12672,13 +12646,13 @@ static bool command_event_main_state(
       const char *name_savestate = global->name.savestate;
 
       if (state_slot > 0)
-         snprintf(state_path, state_path_size, "%s%d",
+         snprintf(state_path, sizeof(state_path), "%s%d",
                name_savestate, state_slot);
       else if (state_slot < 0)
          fill_pathname_join_delim(state_path,
-               name_savestate, "auto", '.', state_path_size);
+               name_savestate, "auto", '.', sizeof(state_path));
       else
-         strlcpy(state_path, name_savestate, state_path_size);
+         strlcpy(state_path, name_savestate, sizeof(state_path));
    }
 
    core_serialize_size(&info);
@@ -12741,7 +12715,6 @@ static bool command_event_main_state(
    if (!string_is_empty(msg))
       RARCH_LOG("%s\n", msg);
 
-   free(state_path);
    return ret;
 }
 
@@ -16742,17 +16715,14 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                const char *fullpath = path_get(RARCH_PATH_CONTENT);
                if (!string_is_empty(fullpath))
                {
-                  size_t path_size = PATH_MAX_LENGTH * sizeof(char);
-                  char *temp_path  = (char*)malloc(PATH_MAX_LENGTH	
-                        * sizeof(char));
+                  char temp_path[PATH_MAX_LENGTH];
                   temp_path[0]     = '\0';
 
                   if (string_is_empty(dir_system))
                      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                            fullpath);
-                  fill_pathname_basedir(temp_path, fullpath, path_size);
+                  fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
                   dir_set(RARCH_DIR_SYSTEM, temp_path);
-                  free(temp_path);
                }
 
                *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
@@ -27906,26 +27876,17 @@ bool audio_driver_dsp_filter_init(const char *device)
    struct rarch_state *p_rarch          = &rarch_st;
    struct string_list *plugs            = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   char *basedir                        = (char*)
-      calloc(PATH_MAX_LENGTH, sizeof(*basedir));
-   char *ext_name                       = (char*)
-      calloc(PATH_MAX_LENGTH, sizeof(*ext_name));
-   size_t str_size                      = PATH_MAX_LENGTH * sizeof(char);
+   char basedir[PATH_MAX_LENGTH];
+   char ext_name[PATH_MAX_LENGTH];
 
    basedir[0] = ext_name[0]             = '\0';
 
-   fill_pathname_basedir(basedir, device, str_size);
+   fill_pathname_basedir(basedir, device, sizeof(basedir));
 
-   if (!frontend_driver_get_core_extension(ext_name, str_size))
-   {
-      free(ext_name);
-      free(basedir);
+   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return false;
-   }
 
    plugs = dir_list_new(basedir, ext_name, false, true, false, false);
-   free(ext_name);
-   free(basedir);
    if (!plugs)
       return false;
 #endif
@@ -28353,7 +28314,9 @@ static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
 
 void audio_driver_load_system_sounds(void)
 {
-   size_t path_size                      = PATH_MAX_LENGTH * sizeof(char);
+   char sounds_path[PATH_MAX_LENGTH];
+   char sounds_fallback_path[PATH_MAX_LENGTH];
+   char basename_noext[PATH_MAX_LENGTH];
    struct rarch_state *p_rarch           = &rarch_st;
    settings_t *settings                  = p_rarch->configuration_settings;
    const char *dir_assets                = settings->paths.directory_assets;
@@ -28371,28 +28334,23 @@ void audio_driver_load_system_sounds(void)
    struct string_list *list              = NULL;
    struct string_list *list_fallback     = NULL;
    unsigned i                            = 0;
-   char *sounds_path                     = NULL;
-   char *sounds_fallback_path            = NULL;
-   char *basename_noext                  = NULL;
 
    if (!audio_enable_menu && !audio_enable_cheevo_unlock)
       goto end;
 
-   sounds_path          = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   sounds_fallback_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   sounds_path[0]       = 
-      sounds_fallback_path[0] = '\0';
+   sounds_path[0] = sounds_fallback_path[0] = 
+                          basename_noext[0] ='\0';
 
    fill_pathname_join(
          sounds_fallback_path,
          dir_assets,
          "sounds",
-         path_size);
+         sizeof(sounds_fallback_path));
 
    fill_pathname_application_special(
          sounds_path,
          sizeof(sounds_path),
-         path_size);
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_SOUNDS);
 
    list          = dir_list_new(sounds_path, MENU_SOUND_FORMATS, false, false, false, false);
    list_fallback = dir_list_new(sounds_fallback_path, MENU_SOUND_FORMATS, false, false, false, false);
@@ -28418,7 +28376,6 @@ void audio_driver_load_system_sounds(void)
       }
    }
 
-   basename_noext = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    for (i = 0; i < list->size; i++)
    {
       const char *path = list->elems[i].data;
@@ -28427,7 +28384,7 @@ void audio_driver_load_system_sounds(void)
       if (audio_driver_mixer_extension_supported(ext))
       {
          basename_noext[0] = '\0';
-         fill_pathname_base_noext(basename_noext, path, path_size);
+         fill_pathname_base_noext(basename_noext, path, sizeof(basename_noext));
 
          if (string_is_equal_noncase(basename_noext, "ok"))
             path_ok = path;
@@ -28458,12 +28415,6 @@ end:
       string_list_free(list);
    if (list_fallback)
       string_list_free(list_fallback);
-   if (sounds_path)
-      free(sounds_path);
-   if (sounds_fallback_path)
-      free(sounds_fallback_path);
-   if (basename_noext)
-      free(basename_noext);
 }
 
 void audio_driver_mixer_play_stream(unsigned i)
@@ -34371,13 +34322,11 @@ static bool retroarch_validate_per_core_options(char *s,
       size_t len, bool mkdir,
       const char *core_name, const char *game_name)
 {
-   char *config_directory                 = NULL;
-   size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
-   config_directory                       = (char*)malloc(str_size);
+   char config_directory[PATH_MAX_LENGTH];
    config_directory[0]                    = '\0';
 
    fill_pathname_application_special(config_directory,
-         str_size, APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+         sizeof(config_directory), APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    fill_pathname_join_special_ext(s,
          config_directory, core_name, game_name,
@@ -34386,16 +34335,14 @@ static bool retroarch_validate_per_core_options(char *s,
    /* No need to make a directory if file already exists... */
    if (mkdir && !path_is_valid(s))
    {
-      char *new_path          = (char*)malloc(str_size);
+      char new_path[PATH_MAX_LENGTH];
       new_path[0]             = '\0';
 
       fill_pathname_join(new_path,
-            config_directory, core_name, str_size);
+            config_directory, core_name, sizeof(new_path));
 
       if (!path_is_directory(new_path))
          path_mkdir(new_path);
-
-      free(new_path);
    }
 
    return true;
@@ -35553,23 +35500,13 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
 
    const char *game_name              = path_basename(rarch_path_basename);
-   char *config_file_directory        = NULL;
-   char *old_presets_directory        = NULL;
    const char *dirs[3]                = {0};
    size_t i                           = 0;
 
    bool ret                           = false;
-   char *content_dir_name             = (char*)malloc(PATH_MAX_LENGTH);
-   if (!content_dir_name)
-      return false;
-
-   config_file_directory              = (char*)malloc(PATH_MAX_LENGTH);
-   if (!config_file_directory)
-      goto end;
-
-   old_presets_directory              = (char*)malloc(PATH_MAX_LENGTH);
-   if (!old_presets_directory)
-      goto end;
+   char content_dir_name[PATH_MAX_LENGTH];
+   char config_file_directory[PATH_MAX_LENGTH];
+   char old_presets_directory[PATH_MAX_LENGTH];
 
    content_dir_name[0]                = '\0';
    config_file_directory[0]           = '\0';
@@ -35577,19 +35514,19 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
 
    if (!string_is_empty(rarch_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
-            rarch_path_basename, PATH_MAX_LENGTH);
+            rarch_path_basename, sizeof(content_dir_name));
 
    config_file_directory[0]           = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
       fill_pathname_basedir(config_file_directory,
-            path_get(RARCH_PATH_CONFIG), PATH_MAX_LENGTH);
+            path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
 
    old_presets_directory[0]           = '\0';
 
    if (!string_is_empty(video_shader_directory))
       fill_pathname_join(old_presets_directory,
-         video_shader_directory, "presets", PATH_MAX_LENGTH);
+         video_shader_directory, "presets", sizeof(old_presets_directory));
 
    dirs[0]                            = menu_config_directory;
    dirs[1]                            = config_file_directory;
@@ -35652,14 +35589,6 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
          break;
       }
    }
-
-end:
-   if (content_dir_name)
-      free(content_dir_name);
-   if (config_file_directory)
-      free(config_file_directory);
-   if (old_presets_directory)
-      free(old_presets_directory);
 
    return ret;
 }

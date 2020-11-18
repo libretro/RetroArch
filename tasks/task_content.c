@@ -958,9 +958,8 @@ static bool content_file_load(
             char* buf;
             int64_t len;
             union string_list_elem_attr attr;
-            size_t path_size        = PATH_MAX_LENGTH * sizeof(char);
-            char *new_basedir       = (char*)malloc(path_size);
-            char *new_path          = (char*)malloc(path_size);
+            char new_basedir[PATH_MAX_LENGTH];
+            char new_path[PATH_MAX_LENGTH];
 
             new_path[0]             = '\0';
             new_basedir[0]          = '\0';
@@ -969,8 +968,7 @@ static bool content_file_load(
             RARCH_LOG("[CONTENT LOAD]: Core does not support VFS - copying to cache directory\n");
 
             if (!string_is_empty(content_ctx->directory_cache))
-               strlcpy(new_basedir, content_ctx->directory_cache,
-                     path_size);
+               strlcpy(new_basedir, content_ctx->directory_cache, sizeof(new_basedir));
             if (   string_is_empty(new_basedir)   || 
                   !path_is_directory(new_basedir) || 
                   !is_path_accessible_using_standard_io(new_basedir))
@@ -980,12 +978,11 @@ static bool content_file_load(
                      "cache directory was not set or found. "
                      "Setting cache directory to root of "
                      "writable app directory...\n");
-               strlcpy(new_basedir, uwp_dir_data, path_size);
+               strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
             }
 
             fill_pathname_join(new_path, new_basedir,
-                  path_basename(path), path_size);
-            free(new_basedir);
+                  path_basename(path), sizeof(new_path));
 
             /* TODO: This may fail on very large files...
              * but copying large files is not a good idea anyway */
@@ -1000,7 +997,6 @@ static bool content_file_load(
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      path);
                *error_string = strdup(msg);
-               free(new_path);
                return false;
             }
 
@@ -1016,7 +1012,6 @@ static bool content_file_load(
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      path);
                *error_string = strdup(msg);
-               free(new_path);
                return false;
             }
 
@@ -1029,7 +1024,6 @@ static bool content_file_load(
             string_list_append(content_ctx->temporary_content,
                   new_path, attr);
 
-            free(new_path);
             used_vfs_fallback_copy = true;
          }
 #endif
