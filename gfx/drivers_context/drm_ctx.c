@@ -139,15 +139,31 @@ static bool gfx_ctx_drm_timings_to_mode(const char *timings_str, drmModeModeInfo
       modeInfo->hsync_start = modeInfo->hdisplay + timings.h_front_porch;
       modeInfo->hsync_end = modeInfo->hsync_start + timings.h_sync_pulse;
       modeInfo->htotal = modeInfo->hsync_end + timings.h_back_porch;
-      modeInfo->hskew = 0; // TODO: ??
+      modeInfo->hskew = 0;
       modeInfo->vdisplay = timings.v_active_lines;
       modeInfo->vsync_start = modeInfo->vdisplay + (timings.v_front_porch * (timings.interlaced ? 2 : 1));
       modeInfo->vsync_end = modeInfo->vsync_start + (timings.v_sync_pulse * (timings.interlaced ? 2 : 1));
       modeInfo->vtotal = modeInfo->vsync_end + (timings.v_back_porch * (timings.interlaced ? 2 : 1));
       modeInfo->vscan = 0; // TODO: ??
       modeInfo->vrefresh = timings.frame_rate;
-      modeInfo->flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC
-         | (timings.interlaced ? DRM_MODE_FLAG_INTERLACE : 0);
+      modeInfo->flags = timings.interlaced ? DRM_MODE_FLAG_INTERLACE : 0;
+      modeInfo->flags |= timings.v_sync_polarity ? DRM_MODE_FLAG_NVSYNC : DRM_MODE_FLAG_PVSYNC;
+      modeInfo->flags |= timings.h_sync_polarity ? DRM_MODE_FLAG_NHSYNC : DRM_MODE_FLAG_PHSYNC;
+      switch(timings.aspect_ratio)
+      {
+         case 1:
+            modeInfo->flags |= DRM_MODE_FLAG_PIC_AR_4_3;
+            break;
+         case 3:
+            modeInfo->flags |= DRM_MODE_FLAG_PIC_AR_16_9;
+            break;
+         case 8:
+            modeInfo->flags |= DRM_MODE_FLAG_PIC_AR_64_27;
+            break;
+         default:
+            modeInfo->flags |= DRM_MODE_FLAG_PIC_AR_NONE;
+            break;
+      }
       modeInfo->type = 0;
       snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "CRT_%ux%u_%u",
                modeInfo->hdisplay, modeInfo->vdisplay, modeInfo->vrefresh);
