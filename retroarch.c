@@ -34398,6 +34398,7 @@ static bool retroarch_validate_per_core_options(char *s,
       free(new_path);
    }
 
+   free(config_directory);
    return true;
 }
 
