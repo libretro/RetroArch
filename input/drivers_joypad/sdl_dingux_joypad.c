@@ -70,9 +70,9 @@ typedef struct
 #if defined(HAVE_LIBSHAKE)
    dingux_joypad_rumble_t rumble;
 #endif
+   unsigned num_axes;
    uint16_t pad_state;
    int16_t analog_state[2][2];
-   unsigned num_axes;
    bool connected;
    bool menu_toggle;
 } dingux_joypad_t;
@@ -171,8 +171,6 @@ static bool sdl_dingux_rumble_update(Shake_Device *device,
       dingux_joypad_rumble_effect_t *effect,
       uint16_t strength, uint16_t max_strength)
 {
-   int id;
-
    /* If strength is zero, halt rumble effect */
    if (strength == 0)
    {
@@ -180,8 +178,7 @@ static bool sdl_dingux_rumble_update(Shake_Device *device,
       {
          if (Shake_Stop(device, effect->id) == SHAKE_OK)
          {
-            effect->active   = false;
-            effect->strength = 0;
+            effect->active = false;
             return true;
          }
          else
@@ -191,20 +188,23 @@ static bool sdl_dingux_rumble_update(Shake_Device *device,
       return true;
    }
 
-   /* If strength is unchanged, do nothing */
-   if (strength == effect->strength)
-      return true;
+   /* If strength has changed, update effect */
+   if (strength != effect->strength)
+   {
+      int id;
 
-   /* Strength has changed - update effect */
-   effect->effect.id                   = effect->id;
-   effect->effect.u.periodic.magnitude = (max_strength * strength) / 0xFFFF;
-   id                                  = Shake_UploadEffect(device, &effect->effect);
+      effect->effect.id                   = effect->id;
+      effect->effect.u.periodic.magnitude = (max_strength * strength) / 0xFFFF;
+      id                                  = Shake_UploadEffect(device, &effect->effect);
 
-   if (id == SHAKE_ERROR)
-      return false;
+      if (id == SHAKE_ERROR)
+         return false;
 
-   effect->id                          = id;
+      effect->id                          = id;
+      effect->strength                    = strength;
+   }
 
+   /* If effect is currently idle, activate it */
    if (!effect->active)
    {
       if (Shake_Play(device, effect->id) == SHAKE_OK)
