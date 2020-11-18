@@ -81,21 +81,6 @@ static uint32_t d3d11_get_flags(void *data)
    return flags;
 }
 
-static void d3d11_clear_scissor(
-      d3d11_video_t *d3d11,
-      unsigned video_width, unsigned video_height)
-{
-   D3D11_RECT scissor_rect;
-
-   scissor_rect.left   = 0;
-   scissor_rect.top    = 0;
-   scissor_rect.right  = video_width;
-   scissor_rect.bottom = video_height;
-
-   D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
-}
-
-
 #ifdef HAVE_OVERLAY
 static void d3d11_free_overlays(d3d11_video_t* d3d11)
 {
@@ -374,10 +359,9 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
-   config_file_t* conf                      = NULL;
-   d3d11_texture_t* source                  = NULL;
-   D3D11ShaderResourceView* source_view_ptr = NULL;
-   d3d11_video_t*   d3d11                   = (d3d11_video_t*)data;
+   config_file_t* conf     = NULL;
+   d3d11_texture_t* source = NULL;
+   d3d11_video_t*   d3d11  = (d3d11_video_t*)data;
 
    if (!d3d11)
       return false;
@@ -403,8 +387,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       goto error;
 
    source = &d3d11->frame.texture[0];
-   source_view_ptr = &d3d11->frame.last_texture_view;
-   for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt, source_view_ptr = &source->view)
+   for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
    {
       unsigned j;
       /* clang-format off */
@@ -415,7 +398,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d11->frame.texture[0].size_data, 0},
 
             /* Source */
-            { source_view_ptr, 0,
+            { &source->view, 0,
                &source->size_data, 0},
 
             /* OriginalHistory */
@@ -575,7 +558,6 @@ static void d3d11_gfx_free(void* data)
    d3d11_free_shader_preset(d3d11);
 
    d3d11_release_texture(&d3d11->frame.texture[0]);
-   Release(d3d11->frame.last_texture_view);
    Release(d3d11->frame.ubo);
    Release(d3d11->frame.vbo);
 
@@ -603,7 +585,8 @@ static void d3d11_gfx_free(void* data)
       Release(d3d11->samplers[RARCH_FILTER_NEAREST][i]);
    }
 
-   Release(d3d11->state);
+   Release(d3d11->scissor_enabled);
+   Release(d3d11->scissor_disabled);
    Release(d3d11->renderTargetView);
    Release(d3d11->swapChain);
 
@@ -797,11 +780,11 @@ static void *d3d11_gfx_init(const video_info_t* video,
       Release(backBuffer);
    }
 
-   D3D11SetRenderTargets(d3d11->context, 1, &d3d11->renderTargetView, NULL);
-
    video_driver_set_size(d3d11->vp.full_width, d3d11->vp.full_height);
    d3d11->viewport.Width  = d3d11->vp.full_width;
    d3d11->viewport.Height = d3d11->vp.full_height;
+   d3d11->scissor.right   = d3d11->vp.full_width;
+   d3d11->scissor.bottom  = d3d11->vp.full_height;
    d3d11->resize_viewport = true;
    d3d11->keep_aspect     = video->force_aspect;
    d3d11->vsync           = video->vsync;
@@ -1057,11 +1040,13 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
       desc.FillMode = D3D11_FILL_SOLID;
       desc.CullMode = D3D11_CULL_NONE;
-      desc.ScissorEnable = TRUE;
 
-      D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->state);
+      desc.ScissorEnable = TRUE;
+      D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->scissor_enabled);
+
+      desc.ScissorEnable = FALSE;
+      D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->scissor_disabled);
    }
-   D3D11SetState(d3d11->context, d3d11->state);
 
    font_driver_init_osd(d3d11,
          video,
@@ -1304,17 +1289,17 @@ static bool d3d11_gfx_frame(
       video_frame_info_t* video_info)
 {
    unsigned           i;
-   D3D11ShaderResourceView texture = NULL;
-   d3d11_video_t*     d3d11        = (d3d11_video_t*)data;
-   D3D11DeviceContext context      = d3d11->context;
-   const char *stat_text           = video_info->stat_text;
-   unsigned video_width            = video_info->width;
-   unsigned video_height           = video_info->height;
-   bool statistics_show            = video_info->statistics_show;
-   struct font_params* osd_params  = (struct font_params*)&video_info->osd_stat_params;
-   bool menu_is_alive              = video_info->menu_is_alive;
+   d3d11_texture_t* texture       = NULL;
+   d3d11_video_t* d3d11           = (d3d11_video_t*)data;
+   D3D11DeviceContext context     = d3d11->context;
+   const char *stat_text          = video_info->stat_text;
+   unsigned video_width           = video_info->width;
+   unsigned video_height          = video_info->height;
+   bool statistics_show           = video_info->statistics_show;
+   struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
+   bool menu_is_alive             = video_info->menu_is_alive;
 #ifdef HAVE_GFX_WIDGETS
-   bool widgets_active             = video_info->widgets_active;
+   bool widgets_active            = video_info->widgets_active;
 #endif
 
    if (d3d11->resize_chain)
@@ -1329,10 +1314,10 @@ static bool d3d11_gfx_frame(
             d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
       Release(backBuffer);
 
-      D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
-
       d3d11->viewport.Width  = video_width;
       d3d11->viewport.Height = video_height;
+      d3d11->scissor.right   = video_width;
+      d3d11->scissor.bottom  = video_height;
 
       d3d11->ubo_values.OutputSize.width  = d3d11->viewport.Width;
       d3d11->ubo_values.OutputSize.height = d3d11->viewport.Height;
@@ -1342,27 +1327,36 @@ static bool d3d11_gfx_frame(
       video_driver_set_size(video_width, video_height);
    }
 
-#ifdef __WINRT__
-   /* UWP requires double-buffering, so make sure we bind to the appropariate backbuffer */
-   D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
-#endif
-
    /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
 #if 0 
    if (d3d11->resize_viewport)
 #endif
       d3d11_update_viewport(d3d11, false);
 
-   D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-   if (d3d11->hw.enable)
-   {
-      D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
-      D3D11SetState(context, d3d11->state);
-   }
-
    if (frame && width && height)
    {
+      D3D11Texture2D hw_texture = NULL;
+      if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+      {
+          D3D11_SHADER_RESOURCE_VIEW_DESC hw_desc;
+          D3D11ShaderResourceView hw_view = NULL;
+          D3D11GetPShaderResources(context, 0, 1, &hw_view);
+          D3D11GetShaderResourceViewDesc(hw_view, &hw_desc);
+          D3D11GetShaderResourceViewTexture2D(hw_view, &hw_texture);
+
+          if (d3d11->frame.texture[0].desc.Format != hw_desc.Format)
+          {
+              d3d11->frame.texture[0].desc.Width  = width;
+              d3d11->frame.texture[0].desc.Height = height;
+              d3d11->frame.texture[0].desc.Format = hw_desc.Format;
+              d3d11_init_texture(d3d11->device, &d3d11->frame.texture[0]);
+
+              d3d11->init_history = true;
+          }
+
+          Release(hw_view);
+      }
+
       if (d3d11->shader_preset)
       {
          if (d3d11->frame.texture[0].desc.Width != width ||
@@ -1388,8 +1382,6 @@ static bool d3d11_gfx_frame(
             else
             {
                int k;
-               /* todo: what about frame-duping ?
-                * maybe clone d3d11_texture_t with AddRef */
                d3d11_texture_t tmp = d3d11->frame.texture[d3d11->shader_preset->history_size];
                for (k = d3d11->shader_preset->history_size; k > 0; k--)
                   d3d11->frame.texture[k] = d3d11->frame.texture[k - 1];
@@ -1410,30 +1402,27 @@ static bool d3d11_gfx_frame(
       if (d3d11->resize_render_targets)
          d3d11_init_render_targets(d3d11, width, height);
 
-      if (frame != RETRO_HW_FRAME_BUFFER_VALID)
+      if (hw_texture)
       {
+          D3D11_BOX frame_box = { 0, 0, 0, width, height, 1 };
+          D3D11CopyTexture2DSubresourceRegion(
+              context, d3d11->frame.texture[0].handle, 0, 0, 0, 0, hw_texture, 0, &frame_box);
+          Release(hw_texture);
+          hw_texture = NULL;
+      }
+      else
          d3d11_update_texture(
                context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
-         Release(d3d11->frame.last_texture_view);
-         d3d11->frame.last_texture_view = d3d11->frame.texture[0].view;
-         AddRef(d3d11->frame.last_texture_view);
-      }
-      else if (d3d11->hw.enable)
-      {
-         // Retrieve the currently-bound texture from the context and cache it, in case the next frame is duped.
-         Release(d3d11->frame.last_texture_view);
-
-         // GetPSShaderResources() increments the reference count for the returned view.
-         D3D11GetPShaderResources(d3d11->context, 0, 1, &d3d11->frame.last_texture_view);
-      }
    }
 
-   D3D11SetVertexBuffer(context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
+   D3D11SetRasterizerState(context, d3d11->scissor_disabled);
    D3D11SetBlendState(context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   D3D11SetVertexBuffer(context, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
 
-   texture = d3d11->frame.last_texture_view;
+   texture = d3d11->frame.texture;
 
-   if (texture && d3d11->shader_preset)
+   if (d3d11->shader_preset)
    {
       for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
@@ -1522,30 +1511,30 @@ static bool d3d11_gfx_frame(
 #if 0
          D3D11ClearRenderTargetView(context, d3d11->pass[i].rt.rt_view, d3d11->clearcolor);
 #endif
-         d3d11_clear_scissor(d3d11, d3d11->pass[i].rt.desc.Width, d3d11->pass[i].rt.desc.Height);
          D3D11SetViewports(context, 1, &d3d11->pass[i].viewport);
 
          D3D11Draw(context, 4, 0);
-         texture = d3d11->pass[i].rt.view;
+         texture = &d3d11->pass[i].rt;
       }
-      D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
    }
 
+   D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
    D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
    D3D11SetViewports(context, 1, &d3d11->frame.viewport);
-
-   d3d11_clear_scissor(d3d11, video_width, video_height);
 
    if (texture)
    {
       d3d11_set_shader(context, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
-      D3D11SetPShaderResources(context, 0, 1, &texture);
+      D3D11SetPShaderResources(context, 0, 1, &texture->view);
       D3D11SetPShaderSamplers(
             context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
-      D3D11Draw(context, 4, 0);
    }
 
+   D3D11Draw(context, 4, 0);
+
+   D3D11SetRasterizerState(context, d3d11->scissor_enabled);
+   D3D11SetScissorRects(d3d11->context, 1, &d3d11->scissor);
    D3D11SetBlendState(context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
 #ifdef HAVE_MENU
@@ -1562,23 +1551,13 @@ static bool d3d11_gfx_frame(
    }
 #endif
 
+   D3D11SetViewports(context, 1, &d3d11->viewport);
    d3d11_set_shader(context, &d3d11->sprites.shader);
    D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
    D3D11SetVShaderConstantBuffer(context, 0, d3d11->ubo);
    D3D11SetPShaderConstantBuffer(context, 0, d3d11->ubo);
-
+   D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
    d3d11->sprites.enabled = true;
-
-#ifdef HAVE_MENU
-#ifndef HAVE_GFX_WIDGETS
-   if (d3d11->menu.enabled)
-#endif
-   {
-      D3D11SetViewports(context, 1, &d3d11->viewport);
-      D3D11SetVertexBuffer(context, 0,
-            d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-   }
-#endif
 
 #ifdef HAVE_MENU
    if (d3d11->menu.enabled)
@@ -1621,7 +1600,10 @@ static bool d3d11_gfx_frame(
 
 #ifdef HAVE_GFX_WIDGETS
    if (widgets_active)
+   {
+      D3D11SetViewports(context, 1, &d3d11->viewport);
       gfx_widgets_frame(video_info);
+   }
 #endif
 
    if (msg && *msg)

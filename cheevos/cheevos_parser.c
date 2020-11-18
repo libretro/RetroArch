@@ -606,6 +606,8 @@ void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata)
    patchdata->core             = NULL;
    patchdata->unofficial       = NULL;
    patchdata->lboards          = NULL;
+   patchdata->title            = NULL;
+   patchdata->richpresence_script = NULL;
    patchdata->core_count       = 0;
    patchdata->unofficial_count = 0;
    patchdata->lboard_count     = 0;

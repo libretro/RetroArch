@@ -100,8 +100,6 @@ dylib_t dylib_load(const char *path)
    path_wide = utf8_to_utf16_string_alloc(relative_path);
    lib       = LoadPackagedLibrary(path_wide, 0);
    free(path_wide);
-
-   free(relative_path_abbrev);
 #elif defined(LEGACY_WIN32)
    dylib_t lib        = LoadLibrary(path);
 #else

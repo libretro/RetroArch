@@ -1118,6 +1118,7 @@ void ShaderParamsDialog::buildLayout()
 
 #if defined(HAVE_MENU)
    topSettingsGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE);
+   topSettingsGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE);
    topSettingsGroup->add(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES);
    topSettingsGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR);
 #endif
