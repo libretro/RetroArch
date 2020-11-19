@@ -22038,7 +22038,9 @@ static int16_t input_state_device(
             /*
              * Apply turbo button if activated.
              */
-            if (settings->uints.input_turbo_mode == 1)
+            unsigned turbo_mode = settings->uints.input_turbo_mode;
+
+            if (turbo_mode > INPUT_TURBO_MODE_CLASSIC)
             {
                /* Pressing turbo button toggles turbo mode on or off.
                 * Holding the button will
@@ -22080,7 +22082,8 @@ static int16_t input_state_device(
                   /* Avoid detecting buttons being held as multiple toggles */
                   if (!res)
                      p_rarch->input_driver_turbo_btns.turbo_pressed[port] &= ~(1 << id);
-                  else if (!(p_rarch->input_driver_turbo_btns.turbo_pressed[port] & (1 << id)))
+                  else if (!(p_rarch->input_driver_turbo_btns.turbo_pressed[port] & (1 << id)) &&
+                     turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON)
                   {
                      uint16_t enable_new;
                      p_rarch->input_driver_turbo_btns.turbo_pressed[port] |= 1 << id;
@@ -22090,6 +22093,13 @@ static int16_t input_state_device(
                      if (enable_new)
                         p_rarch->input_driver_turbo_btns.enable[port] = enable_new;
                   }
+               }
+               else if (turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD &&
+                     p_rarch->input_driver_turbo_btns.enable[port] &&
+                     p_rarch->input_driver_turbo_btns.mode1_enable[port])
+               {
+                  /* Hold mode stops turbo on release */
+                  p_rarch->input_driver_turbo_btns.mode1_enable[port] = 0;
                }
 
                if (!res && p_rarch->input_driver_turbo_btns.mode1_enable[port] &&

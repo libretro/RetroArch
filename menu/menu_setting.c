@@ -6155,7 +6155,10 @@ static void setting_get_string_representation_turbo_mode(
          strlcpy(s, "Classic", len);
          break;
       case INPUT_TURBO_MODE_SINGLEBUTTON:
-         strlcpy(s, "Single Button", len);
+         strlcpy(s, "Single Button (Toggle)", len);
+         break;
+      case INPUT_TURBO_MODE_SINGLEBUTTON_HOLD:
+         strlcpy(s, "Single Button (Hold)", len);
          break;
    }
 }
