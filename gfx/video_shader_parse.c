@@ -416,46 +416,40 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
- * Reads the current value for all parameters from config file.
- * Checks for parameters in the parameter list which don't have a value set
+ * For each parameter in the shader, if a value is set in the config file
+ * load this value to the parameter's current value.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_shader_resolve_current_parameters(config_file_t *conf,
       struct video_shader *shader)
 {
-   char parameters[4096];
-   const char *id        = NULL;
-   char *save            = NULL;
+   unsigned i;
+   const struct config_entry_list *entry = NULL;
 
    if (!conf)
       return false;
 
-   parameters[0]         = '\0';
-
-   /* Read in parameters which override the defaults. */
-   if (!config_get_array(conf, "parameters",
-            parameters, sizeof(parameters)))
-      return true;
-
-   for ( id = strtok_r(parameters, ";", &save); id;
-         id = strtok_r(NULL, ";", &save))
+   /* For all parameters in the shader see if there is any config value set */
+   for (i = 0; i < shader->num_parameters; i++)
    {
-      /* Get the parameter in the shader matching this name */
-      struct video_shader_parameter *parameter =
-         (struct video_shader_parameter*)
-         video_shader_parse_find_parameter(
-               shader->parameters, shader->num_parameters, id);
-
-      if (!parameter)
+      entry = config_get_entry(conf, shader->parameters[i].id);
+      
+      /* Only try to load the parameter value if an entry exists in the config */
+      if (entry)
       {
-         RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset,"
-               " but no shader uses this parameter, ignoring.\n", id);
-         continue;
-      }
+         struct video_shader_parameter *parameter =
+            (struct video_shader_parameter*)
+            video_shader_parse_find_parameter(
+                  shader->parameters, shader->num_parameters, shader->parameters[i].id);
 
-      if (!config_get_float(conf, id, &parameter->current))
-         RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
+         if (config_get_float(conf, shader->parameters[i].id, &parameter->current))
+            RARCH_LOG("[Shaders-Load]: Preset Parameter Loaded: %s = %f.\n", 
+                  shader->parameters[i].id, parameter->current);
+         else
+            RARCH_WARN("[Shaders-Load]: Preset Parameter Name %s is set in preset "
+                       "but couldn't load its value.\n", shader->parameters[i].id);
+      }
    }
 
    return true;
@@ -468,8 +462,9 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
  *
  * Resolves all shader parameters belonging to shaders.
  * Fills the parameter definition list of the shader
- * Does not read any of the config parameter values
- *
+ * then calls video_shader_resolve_current_parameters to
+ * read in the config parameter values
+ * 
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_shader_resolve_parameters(config_file_t *conf,
@@ -815,51 +810,33 @@ bool video_shader_write_referenced_preset(const char *path,
             /* If the shader has parameters */
             if (shader->num_parameters)
             {
-               size_t param_size         = 4096 * sizeof(char);
-               char *override_parameters = (char*)malloc(param_size);
-               float parameter_value_reference;
+               unsigned i;
+               float parameter_value_reference = 0.0f;
 
-               param_size = 4096 * sizeof(char);
-               override_parameters[0] = '\0';
-               parameter_value_reference = 0.0f;
 
-               if (override_parameters)
+               for (i = 0; i < shader->num_parameters; i++)
                {
-                  unsigned i;
+                  bool add_param_to_override = false;
+                  
+                  entry = config_get_entry(root_conf, shader->parameters[i].id);
 
-                  for (i = 0; i < shader->num_parameters; i++)
+                  /* If the parameter is in the reference config */
+                  if (entry)
                   {
-                     bool add_param_to_override = false;
-                     
-                     entry = config_get_entry(root_conf, shader->parameters[i].id);
-
-                     /* If the parameter is in the reference config */
-                     if (entry)
-                     {
-                        /* If the current param value is different than the referenced preset's value */
-                        config_get_float(root_conf, shader->parameters[i].id, &parameter_value_reference);
-                        if (shader->parameters[i].current != parameter_value_reference)
-                           add_param_to_override = true;
-                     }
-                     /* If it's not in the reference config, but it's different than the 
-                        initial value of the shader */
-                     else if (shader->parameters[i].current != shader->parameters[i].initial)
+                     /* If the current param value is different than the referenced preset's value */
+                     config_get_float(root_conf, shader->parameters[i].id, &parameter_value_reference);
+                     if (shader->parameters[i].current != parameter_value_reference)
                         add_param_to_override = true;
-
-                     /* Add the parameter name to the parameters list */ 
-                     if (add_param_to_override)
-                     {
-                        config_set_float(conf, shader->parameters[i].id, shader->parameters[i].current);
-                        strlcat(override_parameters, ";", param_size);
-                        strlcat(override_parameters, shader->parameters[i].id, param_size);
-                     }
                   }
+                  /* If it's not in the reference config, but it's different than the 
+                     initial value of the shader */
+                  else if (shader->parameters[i].current != shader->parameters[i].initial)
+                     add_param_to_override = true;
 
-                  /* Write the list of override parameter names if there are any*/
-                  if (!string_is_empty(override_parameters))
-                     config_set_string(conf, "parameters",  override_parameters);
+                  /* Add the parameter value to the config */ 
+                  if (add_param_to_override)
+                     config_set_float(conf, shader->parameters[i].id, shader->parameters[i].current);
                }
-               free(override_parameters);
             }
 
             /* If the shader has textures */
@@ -1019,9 +996,7 @@ bool override_config_values(config_file_t *conf, config_file_t *override_conf)
    char *tmp_rel                 = tmp + tmp_size;
    char *tmp_base                = tmp + 2*tmp_size;
    struct config_entry_list *override_entry    = NULL;
-   char *override_parameters     = (char*)malloc(param_size);
-
-   override_parameters[0]        = '\0';
+   
    textures_in_conf[0]           = '\0';
    strlcpy(tmp_base, conf->path, tmp_size);
 
@@ -1063,61 +1038,22 @@ bool override_config_values(config_file_t *conf, config_file_t *override_conf)
    }
 
    /* ---------------------------------------------------------------------------------
-    * -------------Update Parameter List to include Override Parameters----------------
-    * --------------------------------------------------------------------------------- */
-
-   /* If there is a 'parameters' entry in the override config we want to add these parameters
-    * to the referenced config if they are not already there */
-   if (config_get_array(override_conf, "parameters", override_parameters, param_size))
-   {
-      /* Get the string for the parameters from the root config */
-      char *parameters           = NULL;
-      
-      parameters            = (char*)malloc(param_size);
-      parameters[0]         = '\0';
-   
-      /* If there are is no parameters entry in the root config, add one */
-      if (!config_get_array(conf, "parameters", parameters, param_size))
-      {
-         config_set_string(conf, "parameters", "");
-         config_get_array(conf, "parameters", parameters, param_size);
-      }
-
-      /* Step through each parameter in override config */
-      for ( id = strtok_r(override_parameters, ";", &save);
-            id; 
-            id = strtok_r(NULL, ";", &save))
-      {
-         /* Add the parameter to the parameter list */
-         strlcat(parameters, ";", param_size);
-         strlcat(parameters, id, param_size);
-         return_val = 1;
-      }
-      config_set_string(conf, "parameters", parameters);
-
-      free(parameters);
-   }
-
-   /* ---------------------------------------------------------------------------------
     * ------------- Update entries to match the override entries ----------------------
     * --------------------------------------------------------------------------------- */
 
    for (override_entry = override_conf->entries; override_entry; override_entry = override_entry->next)
-   {
-      /* Only override an entry if the it's key is not "parameters", and not in list of textures */
-      if (!string_is_empty(override_entry->key) && !string_is_equal(override_entry->key, "parameters") && !string_is_equal(override_entry->key, "textures"))
+      /* Only override an entry if the its key is not "textures" */
+      if (!string_is_empty(override_entry->key) && !string_is_equal(override_entry->key, "textures"))
       {
-         RARCH_LOG("[Shaders-Load Reference]:  Entry overridden %s = %s.\n",
+         RARCH_LOG("[Shaders-Load Simple Preset]:  Parameter/Entry overridden %s = %s.\n",
                      override_entry->key, override_entry->value);
          config_set_string(conf, override_entry->key, override_entry->value);
          return_val = 1;
       }
-   }
 
    free(tmp);
    free(resolved_path);
    free(override_texture_path);
-   free(override_parameters);
    free(textures_in_conf);
 
    return return_val;
@@ -1426,28 +1362,13 @@ void video_shader_write_conf_preset(config_file_t *conf,
       shader_write_fbo(conf, &pass->fbo, i);
    }
 
-
+   /* Write shader parameters which are different than the default 
+    * shader values */
    if (shader->num_parameters)
-   {
-      char parameters[4096];
-
-      parameters[0] = '\0';
-
-      strlcpy(parameters, shader->parameters[0].id, sizeof(parameters));
-
-      for (i = 1; i < shader->num_parameters; i++)
-      {
-         /* O(n^2), but number of parameters is very limited. */
-         strlcat(parameters, ";", sizeof(parameters));
-         strlcat(parameters, shader->parameters[i].id, sizeof(parameters));
-      }
-
-      config_set_string(conf, "parameters", parameters);
-
       for (i = 0; i < shader->num_parameters; i++)
-         config_set_float(conf, shader->parameters[i].id,
-               shader->parameters[i].current);
-   }
+         if (shader->parameters[i].current != shader->parameters[i].initial)
+            config_set_float(conf, shader->parameters[i].id,
+                  shader->parameters[i].current);
 
    if (shader->luts)
    {
