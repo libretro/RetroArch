@@ -4,6 +4,7 @@
 - CHEEVOS: Generic memory mapping using rcheevos
 - CHEEVOS: Ensure badge textures are released before video driver is deinitialized. Should fix crashes with slang shaders.
 - CORE DOWNLOADER: Enhanced core downloader search functionality
+- INPUT: Add hold mode for turbo fire 'Single Button'
 - INPUT MAPPING: Refresh bind list on device type change
 - INPUT MAPPING/REMAPPING: Minor bugfix - Remap file browsing starts navigation at input_remapping_directory even if the core-subdir (where saved files go) exists
 Having remaps for many different cores makes finding the active core files cumbersome, especially because remaps are not compatible between different cores (but maybe for cores emulating the same hardware)
