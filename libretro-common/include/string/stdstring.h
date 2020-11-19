@@ -44,20 +44,20 @@ RETRO_BEGIN_DECLS
 #define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
 #define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
 
-#define TOLOWER(c)   (c |  (lr_char_props[c] & 0x20))
-#define TOUPPER(c)   (c & ~(lr_char_props[c] & 0x20))
+#define TOLOWER(c)   ((c) |  (lr_char_props[(unsigned char)(c)] & 0x20))
+#define TOUPPER(c)   ((c) & ~(lr_char_props[(unsigned char)(c)] & 0x20))
 
 /* C standard says \f \v are space, but this one disagrees */
-#define ISSPACE(c)   (lr_char_props[c]  & 0x80) 
+#define ISSPACE(c)   (lr_char_props[(unsigned char)(c)] & 0x80) 
 
-#define ISDIGIT(c)   (lr_char_props[c]  & 0x40)
-#define ISALPHA(c)   (lr_char_props[c]  & 0x20)
-#define ISLOWER(c)   (lr_char_props[c]  & 0x04)
-#define ISUPPER(c)   (lr_char_props[c]  & 0x02)
-#define ISALNUM(c)   (lr_char_props[c]  & 0x60)
-#define ISUALPHA(c)  (lr_char_props[c]  & 0x28)
-#define ISUALNUM(c)  (lr_char_props[c]  & 0x68)
-#define IS_XDIGIT(c) (lr_char_props[c]  & 0x01)
+#define ISDIGIT(c)   (lr_char_props[(unsigned char)(c)] & 0x40)
+#define ISALPHA(c)   (lr_char_props[(unsigned char)(c)] & 0x20)
+#define ISLOWER(c)   (lr_char_props[(unsigned char)(c)] & 0x04)
+#define ISUPPER(c)   (lr_char_props[(unsigned char)(c)] & 0x02)
+#define ISALNUM(c)   (lr_char_props[(unsigned char)(c)] & 0x60)
+#define ISUALPHA(c)  (lr_char_props[(unsigned char)(c)] & 0x28)
+#define ISUALNUM(c)  (lr_char_props[(unsigned char)(c)] & 0x68)
+#define IS_XDIGIT(c) (lr_char_props[(unsigned char)(c)] & 0x01)
 
 /* Deprecated alias, all callers should use string_is_equal_case_insensitive instead */
 #define string_is_equal_noncase string_is_equal_case_insensitive
