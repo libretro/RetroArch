@@ -17,6 +17,7 @@ Having remaps for many different cores makes finding the active core files cumbe
 - RBUF/M3U: Replace static entries array with dynamic array via RBUF library
 - SHADERS: Add option to remember last selected shader preset/shader pass directories
 - SHADERS: Use last selected shader preset directory when changing shaders via previous/next hotkeys
+- SHADERS: Remove Parameters line
 - SWITCH: Fix input bind icons being off by one line
 - WIIU: Fix touchscreen mouse emulation
 
