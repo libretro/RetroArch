@@ -367,6 +367,8 @@ typedef struct settings
       char twitch_stream_key[PATH_MAX_LENGTH];
       char discord_app_id[PATH_MAX_LENGTH];
       char ai_service_url[PATH_MAX_LENGTH];
+
+      char crt_switch_timings[255];
    } arrays;
 
    struct
