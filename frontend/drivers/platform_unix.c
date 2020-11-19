@@ -1327,6 +1327,41 @@ static void frontend_unix_get_lakka_version(char *s,
 }
 #endif
 
+#ifndef IS_SALAMANDER
+static void unix_dir_check_defaults(void)
+{
+   unsigned i;
+   char path[PATH_MAX_LENGTH];
+
+   /* early return for people with a custom folder setup
+      so it doesn't create unnecessary directories
+    */
+#if defined(ANDROID)
+   strcpy_literal(path, "host0:app/custom.ini");
+#else
+   strcpy_literal(path, "custom.ini");
+#endif
+   if (path_is_valid(path))
+      return;
+
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      char       new_path[PATH_MAX_LENGTH];
+      const char *dir_path = g_defaults.dirs[i];
+
+      if (string_is_empty(dir_path))
+         continue;
+
+      new_path[0] = '\0';
+      fill_pathname_expand_special(new_path,
+            dir_path, sizeof(new_path));
+
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
+   }
+}
+#endif
+
 static void frontend_unix_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
@@ -1853,12 +1888,9 @@ static void frontend_unix_get_env(int *argc,
          "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 #endif
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+#ifndef IS_SALAMANDER
+   unix_dir_check_defaults();
+#endif
 }
 
 #ifdef ANDROID

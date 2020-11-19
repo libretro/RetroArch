@@ -51,6 +51,37 @@ static int frontend_qnx_get_rating(void)
    return -1;
 }
 
+#ifndef IS_SALAMANDER
+static void qnx_dir_check_defaults(void)
+{
+   unsigned i;
+   char path[PATH_MAX_LENGTH];
+
+   /* early return for people with a custom folder setup
+      so it doesn't create unnecessary directories
+    */
+   strcpy_literal(path, "custom.ini");
+   if (path_is_valid(path))
+      return;
+
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      char       new_path[PATH_MAX_LENGTH];
+      const char *dir_path = g_defaults.dirs[i];
+
+      if (string_is_empty(dir_path))
+         continue;
+
+      new_path[0] = '\0';
+      fill_pathname_expand_special(new_path,
+            dir_path, sizeof(new_path));
+
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
+   }
+}
+#endif
+
 static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
@@ -162,15 +193,11 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG( "Asset copy successful.\n");
    }
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
-
-   /* set glui as default menu */
+   /* set GLUI as default menu */
    snprintf(g_defaults.settings_menu, sizeof(g_defaults.settings_menu), "glui");
+#ifndef IS_SALAMANDER
+   qnx_dir_check_defaults();
+#endif
 }
 
 enum frontend_architecture frontend_qnx_get_architecture(void)

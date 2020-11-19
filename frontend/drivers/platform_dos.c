@@ -45,6 +45,37 @@ enum frontend_architecture frontend_dos_get_architecture(void)
 	return FRONTEND_ARCH_X86;
 }
 
+#ifndef IS_SALAMANDER
+static void dos_dir_check_defaults(void)
+{
+   unsigned i;
+   char path[PATH_MAX_LENGTH];
+
+   /* early return for people with a custom folder setup
+      so it doesn't create unnecessary directories
+    */
+   strcpy_literal(path, "custom.ini");
+   if (path_is_valid(path))
+      return;
+
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      char       new_path[PATH_MAX_LENGTH];
+      const char *dir_path = g_defaults.dirs[i];
+
+      if (string_is_empty(dir_path))
+         continue;
+
+      new_path[0] = '\0';
+      fill_pathname_expand_special(new_path,
+            dir_path, sizeof(new_path));
+
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
+   }
+}
+#endif
+
 static void frontend_dos_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
@@ -105,12 +136,9 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], base_path,
 			   "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
-	for (i = 0; i < DEFAULT_DIR_LAST; i++)
-	{
-		const char *dir_path = g_defaults.dirs[i];
-		if (!string_is_empty(dir_path))
-			path_mkdir(dir_path);
-	}
+#ifndef IS_SALAMANDER
+   dos_dir_check_defaults();
+#endif
 }
 
 static void frontend_dos_exec(const char *path, bool should_load_game)

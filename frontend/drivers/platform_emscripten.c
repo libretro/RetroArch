@@ -69,6 +69,35 @@ void cmd_take_screenshot(void)
    command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
 }
 
+static void emscripten_dir_check_defaults(void)
+{
+   unsigned i;
+   char path[PATH_MAX_LENGTH];
+
+   /* early return for people with a custom folder setup
+      so it doesn't create unnecessary directories
+    */
+   strcpy_literal(path, "custom.ini");
+   if (path_is_valid(path))
+      return;
+
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      char       new_path[PATH_MAX_LENGTH];
+      const char *dir_path = g_defaults.dirs[i];
+
+      if (string_is_empty(dir_path))
+         continue;
+
+      new_path[0] = '\0';
+      fill_pathname_expand_special(new_path,
+            dir_path, sizeof(new_path));
+
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
+   }
+}
+
 static void frontend_emscripten_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -150,13 +179,9 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path_config, user_path,
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
-
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+#ifndef IS_SALAMANDER
+   emscripten_dir_check_defaults();
+#endif
 }
 
 int main(int argc, char *argv[])

@@ -65,8 +65,6 @@ char *dir_get_ptr(enum rarch_dir_type type);
 
 void dir_set(enum rarch_dir_type type, const char *path);
 
-void dir_check_defaults(void);
-
 void path_deinit_savefile(void);
 
 bool path_set(enum rarch_path_type type, const char *path);
