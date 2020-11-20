@@ -276,6 +276,10 @@ static void frontend_switch_get_environment_settings(
          g_defaults.dirs[DEFAULT_DIR_PORT],
          FILE_PATH_MAIN_CONFIG,
          sizeof(g_defaults.path_config));
+
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_switch_deinit(void *data)

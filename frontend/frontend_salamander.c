@@ -123,8 +123,10 @@ static void salamander_init(char *s, size_t len)
    const char *rarch_config_path = g_defaults.path_config;
    bool config_valid             = false;
    char config_path[PATH_MAX_LENGTH];
+   char config_dir[PATH_MAX_LENGTH];
 
    config_path[0] = '\0';
+   config_dir[0]  = '\0';
 
    /* Get salamander config file path */
    if (!string_is_empty(rarch_config_path))
@@ -134,6 +136,12 @@ static void salamander_init(char *s, size_t len)
             sizeof(config_path));
    else
       strcpy_literal(config_path, FILE_PATH_SALAMANDER_CONFIG);
+
+   /* Ensure that config directory exists */
+   fill_pathname_parent_dir(config_dir, config_path, sizeof(config_dir));
+   if (!string_is_empty(config_dir) &&
+       !path_is_directory(config_dir))
+      path_mkdir(config_dir);
 
    /* Attempt to open config file */
    config = config_file_new_from_path_to_string(config_path);

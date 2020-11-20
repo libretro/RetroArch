@@ -227,6 +227,8 @@ exit:
    else
       verbosity_disable();
 #endif
+
+   dir_check_defaults("custom.ini");
 #endif
 }
 

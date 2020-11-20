@@ -33,6 +33,7 @@
 #include "../../defaults.h"
 #include "../../file_path_special.h"
 #include "../../verbosity.h"
+#include "../../paths.h"
 #include <elf-loader.h>
 
 
@@ -140,12 +141,10 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
       }
    }
 #endif
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_ps2_init(void *data)

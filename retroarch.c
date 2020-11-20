@@ -9424,28 +9424,20 @@ void dir_set(enum rarch_dir_type type, const char *path)
    }
 }
 
-void dir_check_defaults(void)
+void dir_check_defaults(const char *custom_ini_path)
 {
-   unsigned i;
-   char path[PATH_MAX_LENGTH];
+   size_t i;
 
-   /* early return for people with a custom folder setup
-      so it doesn't create unnecessary directories
-    */
-#if defined(ORBIS) || defined(ANDROID)
-   strcpy_literal(path, "host0:app/custom.ini");
-#elif defined(__WINRT__)
-   fill_pathname_expand_special(path, "~\\custom.ini", MAX_PATH);
-#else
-   strcpy_literal(path, "custom.ini");
-#endif
-   if (path_is_valid(path))
+   /* Early return for people with a custom folder setup
+    * so it doesn't create unnecessary directories */
+   if (!string_is_empty(custom_ini_path) &&
+       path_is_valid(custom_ini_path))
       return;
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
-      char       new_path[PATH_MAX_LENGTH];
       const char *dir_path = g_defaults.dirs[i];
+      char new_path[PATH_MAX_LENGTH];
 
       if (string_is_empty(dir_path))
          continue;

@@ -1853,12 +1853,13 @@ static void frontend_unix_get_env(int *argc,
          "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 #endif
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+#ifndef IS_SALAMANDER
+#if defined(ANDROID)
+   dir_check_defaults("host0:app/custom.ini");
+#else
+   dir_check_defaults("custom.ini");
+#endif
+#endif
 }
 
 #ifdef ANDROID

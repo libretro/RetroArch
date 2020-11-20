@@ -94,8 +94,6 @@ static void get_first_valid_core(char* path_return, size_t len)
 static void frontend_ctr_get_environment_settings(int* argc, char* argv[],
       void* args, void* params_data)
 {
-   (void)args;
-
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
@@ -129,6 +127,10 @@ static void frontend_ctr_get_environment_settings(int* argc, char* argv[],
                       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
+
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_ctr_deinit(void* data)

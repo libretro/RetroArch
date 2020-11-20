@@ -45,6 +45,7 @@
 #include "../../command.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
+#include "../../paths.h"
 
 void dummyErrnoCodes(void);
 void emscripten_mainloop(void);
@@ -151,12 +152,9 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path_config, user_path,
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 int main(int argc, char *argv[])

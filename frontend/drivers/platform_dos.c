@@ -22,6 +22,7 @@
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
+#include "../../paths.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
@@ -105,12 +106,9 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], base_path,
 			   "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
-	for (i = 0; i < DEFAULT_DIR_LAST; i++)
-	{
-		const char *dir_path = g_defaults.dirs[i];
-		if (!string_is_empty(dir_path))
-			path_mkdir(dir_path);
-	}
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_dos_exec(const char *path, bool should_load_game)

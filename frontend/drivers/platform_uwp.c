@@ -42,6 +42,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
+#include "../../paths.h"
 
 #include "../../uwp/uwp_func.h"
 
@@ -389,6 +390,15 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
    if (string_is_equal(uwp_device_family, "Windows.Mobile"))
       strcpy_literal(g_defaults.settings_menu, "glui");
 #endif
+#endif
+
+#ifndef IS_SALAMANDER
+   {
+      char custom_ini_path[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(custom_ini_path,
+            "~\\custom.ini", sizeof(custom_ini_path));
+      dir_check_defaults(custom_ini_path);
+   }
 #endif
 }
 

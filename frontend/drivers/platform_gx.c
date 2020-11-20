@@ -283,6 +283,7 @@ static void frontend_gx_get_environment_settings(
       }
    }
 #endif
+   dir_check_defaults("custom.ini");
 #endif
 }
 

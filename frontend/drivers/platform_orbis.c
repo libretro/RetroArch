@@ -210,14 +210,9 @@ static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG("Auto-start game %s.\n", argv[2]);
       }
    }
-#endif
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+   dir_check_defaults("host0:app/custom.ini");
+#endif
 }
 
 static void frontend_orbis_deinit(void *data)

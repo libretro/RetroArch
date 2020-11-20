@@ -136,12 +136,9 @@ static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_wiiu_deinit(void *data)

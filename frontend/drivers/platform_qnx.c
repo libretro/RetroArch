@@ -30,6 +30,7 @@
 #include "../../defaults.h"
 #include "../../dynamic.h"
 #include "../../verbosity.h"
+#include "../../paths.h"
 
 static void frontend_qnx_init(void *data)
 {
@@ -162,15 +163,12 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG( "Asset copy successful.\n");
    }
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
-
-   /* set glui as default menu */
+   /* set GLUI as default menu */
    snprintf(g_defaults.settings_menu, sizeof(g_defaults.settings_menu), "glui");
+
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 enum frontend_architecture frontend_qnx_get_architecture(void)

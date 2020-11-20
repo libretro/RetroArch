@@ -67,6 +67,7 @@
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 #include "../../ui/ui_companion_driver.h"
+#include "../../paths.h"
 
 #if 1
 #define RELEASE_BUILD
@@ -500,6 +501,10 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
    CFRelease(bundle_path);
    CFRelease(bundle_url);
+
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_darwin_load_content(void)
