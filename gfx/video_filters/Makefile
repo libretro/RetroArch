@@ -73,7 +73,8 @@ objects += blargg_ntsc_snes.$(DYLIB) phosphor2x.$(DYLIB) epx.$(DYLIB) lq2x.$(DYL
 	   normal2x_width.$(DYLIB) normal2x_height.$(DYLIB) normal4x.$(DYLIB) \
 	   scanline2x.$(DYLIB) grid2x.$(DYLIB) grid3x.$(DYLIB) \
 	   gameboy3x.$(DYLIB) gameboy4x.$(DYLIB) \
-	   dot_matrix_3x.$(DYLIB) dot_matrix_4x.$(DYLIB)
+	   dot_matrix_3x.$(DYLIB) dot_matrix_4x.$(DYLIB) \
+	   upscale_1_5x.$(DYLIB)
 
 all: build;
 

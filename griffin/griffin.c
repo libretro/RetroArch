@@ -1025,6 +1025,7 @@ FILTERS
 #include "../gfx/video_filters/gameboy4x.c"
 #include "../gfx/video_filters/dot_matrix_3x.c"
 #include "../gfx/video_filters/dot_matrix_4x.c"
+#include "../gfx/video_filters/upscale_1_5x.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER
