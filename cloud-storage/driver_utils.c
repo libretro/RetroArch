@@ -249,7 +249,7 @@ char *get_temp_directory_alloc(void)
    return path;
 }
 
-bool cloud_storage_save_access_token(char *driver_name, char *new_access_token, time_t expiration_time)
+bool cloud_storage_save_access_token(const char *driver_name, char *new_access_token, time_t expiration_time)
 {
    settings_t *settings;
    char *tmp_dir = NULL;
@@ -349,7 +349,7 @@ bool cloud_storage_save_file(char *file_name, uint8_t *data, size_t data_len)
    return true;
 }
 
-void cloud_storage_load_access_token(char *driver_name, char **access_token, int64_t *expiration_time)
+void cloud_storage_load_access_token(const char *driver_name, char **access_token, int64_t *expiration_time)
 {
    settings_t *settings;
    char *tmp_dir = NULL;
@@ -493,7 +493,7 @@ void cloud_storage_add_request_body_data(
       filestream_seek(file, offset, SEEK_SET);
    }
 
-   body = malloc(segment_length);
+   body = (uint8_t *)malloc(segment_length);
    filestream_read(file, body, segment_length);
    filestream_close(file);
 

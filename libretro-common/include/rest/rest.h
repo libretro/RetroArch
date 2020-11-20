@@ -45,7 +45,7 @@ rest_retry_policy_t *rest_retry_policy_new(
 
 rest_request_t *rest_request_new(struct http_request_t *http_request);
 
-void rest_request_set_header(rest_request_t *request, char *name, char *value, bool replace);
+void rest_request_set_header(rest_request_t *request, const char *name, const char *value, bool replace);
 
 void rest_request_free(rest_request_t *request);
 

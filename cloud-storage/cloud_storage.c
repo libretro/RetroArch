@@ -38,15 +38,17 @@
 #include "google/google.h"
 #include "onedrive/onedrive.h"
 
+enum _operation_queue_item_type_t
+{
+   SYNC_FILES,
+   UPLOAD_FILE,
+   DOWNLOAD_FILE
+};
+
 struct _operation_queue_item;
 struct _operation_queue_item
 {
-   enum
-   {
-      SYNC_FILES,
-      UPLOAD_FILE,
-      DOWNLOAD_FILE
-   } operation;
+   enum _operation_queue_item_type_t operation;
 
    union
    {
@@ -185,6 +187,11 @@ void cloud_storage_init(void)
 {
    settings_t *settings;
    struct _operation_queue_item *sync_item;
+
+   if (!_shutdown)
+   {
+      return;
+   }
 
    _providers[0] = cloud_storage_google_create();
    _providers[1] = cloud_storage_onedrive_create();
@@ -762,7 +769,7 @@ static void _sync_files_download(folder_type_t folder_type)
 
 static bool _prepare_folder(folder_type_t folder_type)
 {
-   char *folder_name;
+   const char *folder_name;
    cloud_storage_item_t **folder;
 
    switch (folder_type)

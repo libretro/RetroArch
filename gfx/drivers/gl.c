@@ -3306,9 +3306,10 @@ static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const vi
    if (gl->core_context_in_use)
    {
 #ifdef GL_NUM_EXTENSIONS
+      GLint i;
       GLint exts = 0;
       glGetIntegerv(GL_NUM_EXTENSIONS, &exts);
-      for (GLint i = 0; i < exts; i++)
+      for (i = 0; i < exts; i++)
       {
          const char *ext = (const char*)glGetStringi(GL_EXTENSIONS, i);
          if (ext)

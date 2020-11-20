@@ -471,7 +471,7 @@ static void _listen_for_response(void *data)
 process_request:
    if (have_client && clientfd > 0)
    {
-      char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n";
+      const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n";
       send(clientfd, response, strlen(response), 0);
       socket_close(clientfd);
       clientfd = 0;

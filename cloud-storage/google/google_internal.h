@@ -53,7 +53,7 @@ bool cloud_storage_google_upload_file(
    char *local_file);
 
 cloud_storage_item_t *cloud_storage_google_get_folder_metadata(
-   char *folder_name);
+   const char *folder_name);
 
 cloud_storage_item_t *cloud_storage_google_get_file_metadata(cloud_storage_item_t *file);
 
@@ -63,7 +63,7 @@ cloud_storage_item_t *cloud_storage_google_get_file_metadata_by_name(
 
 bool cloud_storage_google_delete_file(cloud_storage_item_t *file);
 
-cloud_storage_item_t *cloud_storage_google_create_folder(char *folder_name);
+cloud_storage_item_t *cloud_storage_google_create_folder(const char *folder_name);
 
 RETRO_END_DECLS
 

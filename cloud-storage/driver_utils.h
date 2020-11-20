@@ -42,9 +42,9 @@ void cloud_storage_item_free(cloud_storage_item_t *item);
 
 char *get_temp_directory_alloc(void);
 
-bool cloud_storage_save_access_token(char *driver_name, char *new_access_token, time_t expiration_time);
+bool cloud_storage_save_access_token(const char *driver_name, char *new_access_token, time_t expiration_time);
 
-void cloud_storage_load_access_token(char *driver_name, char **access_token, int64_t *expiration_time);
+void cloud_storage_load_access_token(const char *driver_name, char **access_token, int64_t *expiration_time);
 
 bool cloud_storage_save_file(char *file_name, uint8_t *data, size_t data_len);
 

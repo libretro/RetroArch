@@ -92,23 +92,23 @@ struct json_map_pair_t
 
 struct json_node_t *string_to_json(char *s);
 
-bool json_map_have_key(struct json_map_t map, char *key);
+bool json_map_have_key(struct json_map_t map, const char *key);
 
-struct json_node_t *json_map_get_value(struct json_map_t map, char *key);
+struct json_node_t *json_map_get_value(struct json_map_t map, const char *key);
 
-bool json_map_have_value_null(struct json_map_t map, char *key);
+bool json_map_have_value_null(struct json_map_t map, const char *key);
 
-bool json_map_get_value_boolean(struct json_map_t map, char *key, bool *value);
+bool json_map_get_value_boolean(struct json_map_t map, const char *key, bool *value);
 
-bool json_map_get_value_string(struct json_map_t map, char *key, char **value, size_t *length);
+bool json_map_get_value_string(struct json_map_t map, const char *key, char **value, size_t *length);
 
-bool json_map_get_value_int(struct json_map_t map, char *key, int64_t *value);
+bool json_map_get_value_int(struct json_map_t map, const char *key, int64_t *value);
 
-bool json_map_get_value_double(struct json_map_t map, char *key, double *value);
+bool json_map_get_value_double(struct json_map_t map, const char *key, double *value);
 
-bool json_map_get_value_array(struct json_map_t map, char *key, struct json_array_t **value);
+bool json_map_get_value_array(struct json_map_t map, const char *key, struct json_array_t **value);
 
-bool json_map_get_value_map(struct json_map_t map, char *key, struct json_map_t **value);
+bool json_map_get_value_map(struct json_map_t map, const char *key, struct json_map_t **value);
 
 void json_node_free(struct json_node_t *node);
 

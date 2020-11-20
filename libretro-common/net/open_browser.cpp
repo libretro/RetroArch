@@ -40,7 +40,7 @@
    #endif
 #endif
 
-extern "C" bool open_browser(char *url)
+bool open_browser(char *url)
 {
 #if defined(_WIN32) || defined (_WIN64)
    ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);

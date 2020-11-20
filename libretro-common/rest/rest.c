@@ -96,7 +96,7 @@ rest_request_t *rest_request_new(struct http_request_t *http_request)
    return request;
 }
 
-void rest_request_set_header(rest_request_t *request, char *name, char *value, bool replace)
+void rest_request_set_header(rest_request_t *request, const char *name, const char *value, bool replace)
 {
    net_http_request_set_header(request->http_request, name, value, replace);
 }

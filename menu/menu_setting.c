@@ -117,6 +117,10 @@
 #include "../play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
+#include "../cloud-storage/cloud_storage.h"
+#endif
+
 #define _3_SECONDS  3000000
 #define _6_SECONDS  6000000
 #define _9_SECONDS  9000000
@@ -7532,6 +7536,15 @@ static void general_write_handler(rarch_setting_t *setting)
             task_push_wifi_disable(NULL);
 #endif
          break;
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
+      case MENU_ENUM_LABEL_CLOUD_STORAGE_ENABLE:
+         if (*setting->value.target.boolean)
+            cloud_storage_init();
+         else
+            cloud_storage_shutdown();
+
+         break;
+#endif
       default:
          break;
    }
@@ -18048,7 +18061,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_CLOUD_STORAGE_PROVIDER:
          {
-            char *loading_str = "Loading...";
+            const char *loading_str = "Loading...";
 
             strcpy(cloud_storage_authorize_status_str, loading_str);
 

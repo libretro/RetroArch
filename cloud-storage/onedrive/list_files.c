@@ -83,7 +83,7 @@ static cloud_storage_item_t *_parse_list_files_response(
 
    if (!json || json->node_type != OBJECT_VALUE)
    {
-      return false;
+      return NULL;
    }
 
    if (json_map_get_value_string(json->value.map_value, "@odata.nextLink", &temp_string, &temp_string_length))
@@ -99,7 +99,7 @@ static cloud_storage_item_t *_parse_list_files_response(
          free(*next_page_url);
          *next_page_url = NULL;
       }
-      return false;
+      return NULL;
    }
 
    file_json = files->element;

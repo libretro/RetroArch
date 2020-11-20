@@ -58,16 +58,18 @@ struct cloud_storage_folder_t
 };
 typedef struct cloud_storage_folder_t cloud_storage_folder_t;
 
+enum cloud_storage_item_type_t
+{
+   CLOUD_STORAGE_FILE,
+   CLOUD_STORAGE_FOLDER
+};
+typedef enum cloud_storage_item_type_t cloud_storage_item_type_t;
 struct cloud_storage_item_t
 {
    char *id;
    char *name;
    time_t last_sync_time;
-   enum
-   {
-      CLOUD_STORAGE_FILE,
-      CLOUD_STORAGE_FOLDER
-   } item_type;
+   cloud_storage_item_type_t item_type;
    union
    {
       cloud_storage_file_t file;
@@ -115,7 +117,7 @@ struct cloud_storage_provider_t
    );
 
    cloud_storage_item_t *(*get_folder_metadata)(
-      char *folder_name
+      const char *folder_name
    );
 
    cloud_storage_item_t *(*get_file_metadata)(
@@ -132,7 +134,7 @@ struct cloud_storage_provider_t
    );
 
    cloud_storage_item_t *(*create_folder)(
-      char *folder_name
+      const char *folder_name
    );
 };
 typedef struct cloud_storage_provider_t cloud_storage_provider_t;

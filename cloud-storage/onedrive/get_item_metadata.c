@@ -33,7 +33,7 @@
 #define LIST_FILES_URL "https://graph.microsoft.com/v1.0/me/drive/special/approot"
 #define BY_ID_URL "https://graph.microsoft.com/v1.0/me/drive/items/"
 
-static struct http_request_t *_create_folder_http_request(char *folder_name)
+static struct http_request_t *_create_folder_http_request(const char *folder_name)
 {
    struct http_request_t *request;
    char *parent_folder_id;
@@ -178,7 +178,7 @@ complete:
    return metadata;
 }
 
-cloud_storage_item_t *cloud_storage_onedrive_get_folder_metadata(char *folder_name)
+cloud_storage_item_t *cloud_storage_onedrive_get_folder_metadata(const char *folder_name)
 {
    struct http_request_t *http_request;
 

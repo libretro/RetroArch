@@ -528,7 +528,7 @@ static void net_http_url_parameter_set_value(
       } else
       {
          if (param->len % 4 == 0) {
-            param->values = realloc(param->values, sizeof(char *) * (param->len + 4));
+            param->values = (char **)realloc(param->values, sizeof(char *) * (param->len + 4));
          }
 
          param->values[param->len] = (char *)calloc(strlen(value) + 1, sizeof(char));
@@ -539,16 +539,16 @@ static void net_http_url_parameter_set_value(
    {
       if (params->len == 0)
       {
-         params->params = malloc(sizeof(struct http_url_parameter_t) * 4);
+         params->params = (struct http_url_parameter_t *)malloc(sizeof(struct http_url_parameter_t) * 4);
       } else if (params->len % 4 == 0)
       {
-         params->params = realloc(params->params, sizeof(struct http_url_parameter_t) * (params->len + 4));
+         params->params = (struct http_url_parameter_t *)realloc(params->params, sizeof(struct http_url_parameter_t) * (params->len + 4));
       }
 
       params->params[params->len].name = (char *)calloc(strlen(name) + 1, sizeof(char));
       strcpy(params->params[params->len].name, name);
 
-      params->params[params->len].values = malloc(sizeof(char *) * 4);
+      params->params[params->len].values = (char **)malloc(sizeof(char *) * 4);
       params->params[params->len].values[0] = (char *)calloc(strlen(value) + 1, sizeof(char));
       strcpy(params->params[params->len].values[0], value);
       params->params[params->len].len = 1;
@@ -568,7 +568,7 @@ static void net_http_headers_add_value(struct http_headers_t *headers, const cha
 
    if (headers->len == 0)
    {
-      headers->headers = malloc(sizeof(struct http_header_t) * 4);
+      headers->headers = (struct http_header_t *)malloc(sizeof(struct http_header_t) * 4);
 
       headers->headers[headers->len].name = (char *)calloc(strlen(name) + 1, sizeof(char));
       strcpy(headers->headers[headers->len].name, name);
@@ -578,7 +578,7 @@ static void net_http_headers_add_value(struct http_headers_t *headers, const cha
       return;
    } else if (headers->len % 4 == 0)
    {
-      headers->headers = realloc(headers->headers, sizeof(struct http_header_t) * (headers->len + 4));
+      headers->headers = (struct http_header_t *)realloc(headers->headers, sizeof(struct http_header_t) * (headers->len + 4));
    }
 
    if (replace)
@@ -649,7 +649,7 @@ static void net_http_headers_add_value(struct http_headers_t *headers, const cha
    {
       if (headers->len % 4 == 0)
       {
-         headers->headers = realloc(headers->headers, sizeof(struct http_header_t) * (headers->len + 4));
+         headers->headers = (struct http_header_t *)realloc(headers->headers, sizeof(struct http_header_t) * (headers->len + 4));
       }
 
       headers->headers[headers->len].name = (char *)calloc(strlen(name) + 1, sizeof(char));

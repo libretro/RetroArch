@@ -73,7 +73,7 @@ static uint8_t *_refresh_token_request_body(size_t *request_body_len)
 {
    size_t name_lengths[4];
    size_t value_lengths[4];
-   char *names[4];
+   const char *names[4];
    char *values[4];
    char *request_body;
    size_t cur_pos = 0;
@@ -89,7 +89,8 @@ static uint8_t *_refresh_token_request_body(size_t *request_body_len)
    names[2] = REFRESH_TOKEN_PARAM_NAME;
    net_http_urlencode(&(values[2]), settings->arrays.cloud_storage_google_refresh_token);
    names[3] = GRANT_TYPE_PARAM_NAME;
-   values[3] = GRANT_TYPE_PARAM_VALUE;
+   values[3] = (char *)malloc(strlen(GRANT_TYPE_PARAM_VALUE));
+   strcpy(values[3], GRANT_TYPE_PARAM_VALUE);
 
    *request_body_len = 0;
    for (i = 0;i < 4;i++)

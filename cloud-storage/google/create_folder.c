@@ -33,7 +33,7 @@
 #define CREATE_FILE_URL "https://www.googleapis.com/drive/v3/files"
 
 static cloud_storage_item_t *_parse_create_folder_response(
-   char *folder_name,
+   const char *folder_name,
    uint8_t *response,
    size_t response_len)
 {
@@ -57,7 +57,8 @@ static cloud_storage_item_t *_parse_create_folder_response(
    }
 
    metadata = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
-   metadata->name = folder_name;
+   metadata->name = (char *)malloc(strlen(folder_name) + 1);
+   strcpy(metadata->name, folder_name);
    metadata->item_type = CLOUD_STORAGE_FOLDER;
 
    item = json->value.map_value;
@@ -83,7 +84,7 @@ cleanup:
    return metadata;
 }
 
-cloud_storage_item_t *cloud_storage_google_create_folder(char *folder_name)
+cloud_storage_item_t *cloud_storage_google_create_folder(const char *folder_name)
 {
    char *body;
    size_t body_len;
