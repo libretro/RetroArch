@@ -11982,7 +11982,7 @@ static void command_event_load_auto_state(
 
 static void command_event_set_savestate_auto_index(
       settings_t *settings,
-      global_t *global,
+      const global_t *global,
       struct rarch_state *p_rarch)
 {
    size_t i;
@@ -12045,6 +12045,96 @@ static void command_event_set_savestate_auto_index(
    RARCH_LOG("%s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
+}
+
+static void command_event_set_savestate_garbage_collect(
+      settings_t *settings,
+      const global_t *global,
+      struct rarch_state *p_rarch)
+{
+   size_t i, cnt = 0;
+   char state_dir[PATH_MAX_LENGTH];
+   char state_base[PATH_MAX_LENGTH];
+
+   struct string_list *dir_list      = NULL;
+   unsigned min_idx                  = UINT_MAX;
+   const char *oldest_save           = NULL;
+   unsigned max_to_keep              = settings->uints.savestate_max_keep;
+   bool show_hidden_files            = settings->bools.show_hidden_files;
+
+   if (!global || (max_to_keep == 0))
+      return;
+
+   state_dir[0]                      = '\0';
+   state_base[0]                     = '\0';
+
+   /* Similar to command_event_set_savestate_auto_index(),
+    * this will find the lowest numbered save-state */
+   fill_pathname_basedir(state_dir, global->name.savestate,
+         sizeof(state_dir));
+
+   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
+         show_hidden_files);
+
+   if (!dir_list)
+      return;
+
+   fill_pathname_base(state_base, global->name.savestate,
+         sizeof(state_base));
+
+   for (i = 0; i < dir_list->size; i++)
+   {
+      unsigned idx;
+      char elem_base[128];
+      const char *end                 = NULL;
+      const char *dir_elem            = dir_list->elems[i].data;
+      const char *ext                 = NULL;
+
+      elem_base[0]                    = '\0';
+
+      if (string_is_empty(dir_elem))
+         continue;
+
+      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+
+      /* Only consider files with a '.state' extension
+       * > i.e. Ignore '.state.auto', '.state.bak', etc. */
+      ext = path_get_extension(elem_base);
+      if (string_is_empty(ext) ||
+          !string_starts_with_size(ext, "state", STRLEN_CONST("state")))
+         continue;
+
+      /* Check whether this file is associated with
+       * the current content */
+      if (!string_starts_with(elem_base, state_base))
+         continue;
+
+      /* This looks like a valid save */
+      cnt++;
+
+      /* > Get index */
+      end = dir_elem + strlen(dir_elem);
+      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
+         end--;
+
+      idx = string_to_unsigned(end);
+
+      /* > Check if this is the lowest index so far */
+      if (idx < min_idx)
+      {
+         min_idx     = idx;
+         oldest_save = dir_elem;
+      }
+   }
+
+   /* Only delete one save state per save action
+    * > Conservative behaviour, designed to minimise
+    *   the risk of deleting multiple incorrect files
+    *   in case of accident */
+   if (!string_is_empty(oldest_save) && (cnt > max_to_keep))
+      filestream_delete(oldest_save);
+
+   dir_list_free(dir_list);
 }
 
 static bool event_init_content(
@@ -12655,15 +12745,26 @@ static bool command_event_main_state(
       switch (cmd)
       {
          case CMD_EVENT_SAVE_STATE:
-            content_save_state(state_path, true, false);
             {
+               bool savestate_auto_index                      =
+                     settings->bools.savestate_auto_index;
+               unsigned savestate_max_keep                    =
+                     settings->uints.savestate_max_keep;
                bool frame_time_counter_reset_after_save_state =
-                  settings->bools.frame_time_counter_reset_after_save_state;
+                     settings->bools.frame_time_counter_reset_after_save_state;
+
+               content_save_state(state_path, true, false);
+
+               /* Clean up excess savestates if necessary */
+               if (savestate_auto_index && (savestate_max_keep > 0))
+                  command_event_set_savestate_garbage_collect(settings, global, p_rarch);
+
                if (frame_time_counter_reset_after_save_state)
                   p_rarch->video_driver_frame_time_count = 0;
+
+               ret      = true;
+               push_msg = false;
             }
-            ret      = true;
-            push_msg = false;
             break;
          case CMD_EVENT_LOAD_STATE:
             if (content_load_state(state_path, false, false))

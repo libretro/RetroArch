@@ -170,6 +170,7 @@ typedef struct settings
       unsigned rewind_granularity;
       unsigned rewind_buffer_size_step;
       unsigned autosave_interval;
+      unsigned savestate_max_keep;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;

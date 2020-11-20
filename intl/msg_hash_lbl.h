@@ -2587,6 +2587,10 @@ MSG_HASH(
    "savestate_auto_save"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP,
+   "savestate_max_keep"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
    "savestate_directory"
    )
