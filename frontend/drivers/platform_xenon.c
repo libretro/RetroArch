@@ -33,6 +33,7 @@
 #include <boolean.h>
 
 #include "../../dynamic.h"
+#include "../../paths.h"
 
 static void frontend_xenon_init(void *data)
 {

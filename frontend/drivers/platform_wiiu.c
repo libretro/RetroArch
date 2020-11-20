@@ -96,37 +96,6 @@ static void fix_asset_directory(void)
    rename(src_path_buf, dst_path_buf);
 }
 
-#ifndef IS_SALAMANDER
-static void wiiu_dir_check_defaults(void)
-{
-   unsigned i;
-   char path[PATH_MAX_LENGTH];
-
-   /* early return for people with a custom folder setup
-      so it doesn't create unnecessary directories
-    */
-   strcpy_literal(path, "custom.ini");
-   if (path_is_valid(path))
-      return;
-
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      char       new_path[PATH_MAX_LENGTH];
-      const char *dir_path = g_defaults.dirs[i];
-
-      if (string_is_empty(dir_path))
-         continue;
-
-      new_path[0] = '\0';
-      fill_pathname_expand_special(new_path,
-            dir_path, sizeof(new_path));
-
-      if (!path_is_directory(new_path))
-         path_mkdir(new_path);
-   }
-}
-#endif
-
 static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -168,7 +137,7 @@ static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
 #ifndef IS_SALAMANDER
-   wiiu_dir_check_defaults();
+   dir_check_defaults("custom.ini");
 #endif
 }
 

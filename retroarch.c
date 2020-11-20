@@ -9424,6 +9424,33 @@ void dir_set(enum rarch_dir_type type, const char *path)
    }
 }
 
+void dir_check_defaults(const char *custom_ini_path)
+{
+   size_t i;
+
+   /* Early return for people with a custom folder setup
+    * so it doesn't create unnecessary directories */
+   if (!string_is_empty(custom_ini_path) &&
+       path_is_valid(custom_ini_path))
+      return;
+
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      const char *dir_path = g_defaults.dirs[i];
+      char new_path[PATH_MAX_LENGTH];
+
+      if (string_is_empty(dir_path))
+         continue;
+
+      new_path[0] = '\0';
+      fill_pathname_expand_special(new_path,
+            dir_path, sizeof(new_path));
+
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
+   }
+}
+
 #ifdef HAVE_ACCESSIBILITY
 static bool is_accessibility_enabled(struct rarch_state *p_rarch)
 {
