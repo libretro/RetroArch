@@ -30,7 +30,7 @@ RETRO_BEGIN_DECLS
 #endif
 
 #ifndef GFX_MAX_TEXTURES
-#define GFX_MAX_TEXTURES 16
+#define GFX_MAX_TEXTURES 64
 #endif
 
 #ifndef GFX_MAX_VARIABLES
