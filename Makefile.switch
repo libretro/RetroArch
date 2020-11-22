@@ -40,6 +40,7 @@ else
 	HAVE_DYNAMIC = 1
 	HAVE_PATCH   = 1
 	HAVE_CHEATS  = 1
+	HAVE_IBXM = 1
 
 	include Makefile.common
 	CFLAGS += $(DEF_FLAGS)
