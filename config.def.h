@@ -1020,6 +1020,15 @@ static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFE
  * to the highest existing value. */
 static const bool savestate_auto_index = false;
 
+/* Specifies the maximum number of savestates to keep
+ * when savestate auto index is enabled
+ * > When limit is exceeded, savestate with the lowest
+ *   index will be deleted automatically when creating
+ *   a new savestate
+ * > Setting value to zero disables the limit (no
+ *   savestates will be deleted in this case) */
+#define DEFAULT_SAVESTATE_MAX_KEEP 0
+
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.
  * RetroArch will automatically load any savestate with this path on

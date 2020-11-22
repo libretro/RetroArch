@@ -2963,6 +2963,14 @@ MSG_HASH(
    "Before making a save state, the save state index is automatically increased. When loading content, the index will be set to the highest existing index."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Maximum Auto-Increment Save States to Keep"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Limits the number of save states that will be created when 'Increment Save State Index Automatically' is enabled. If limit is exceeded when saving a new state, the existing state with the lowest index will be deleted. A value of '0' means unlimited states will be recorded."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Auto Save State"
    )

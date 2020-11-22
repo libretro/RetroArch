@@ -8052,31 +8052,48 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,  PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,  PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,  PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,  PARSE_ONLY_UINT},
-               {MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,  PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,        PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,  PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,   PARSE_ONLY_BOOL},
+            settings_t *settings      = config_get_ptr();
+            bool savestate_auto_index = settings->bools.savestate_auto_index;
+
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,              PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,             PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,   PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,  PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,               PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,                  PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,               PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP,                 PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE,                PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,                PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,         PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,         PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE, PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,    PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,  PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,  PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,      PARSE_ONLY_BOOL, true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP:
+                     build_list[i].checked = savestate_auto_index;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (build_list[i].checked &&
+                     MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
                   count++;
