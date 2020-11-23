@@ -418,7 +418,7 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
       (ctx->xres * ctx->bits_per_pixel / 8);
    ctx->gfx_layer_size     = ctx->xres * ctx->yres * fb_var.bits_per_pixel / 8;
    ctx->refresh_rate       = 1000000.0f / fb_var.pixclock * 1000000.0f /
-      (fb_var.yres + fb_var.upper_margin + fb_var.lower_margin + fb_var.vsync_len)
+      (fb_var.yres + fb_var.upper_margin + fb_var.lower_margin + fb_var.vsync_len) /
       (fb_var.xres + fb_var.left_margin  + fb_var.right_margin + fb_var.hsync_len);
 
    if (ctx->framebuffer_size < ctx->gfx_layer_size)
