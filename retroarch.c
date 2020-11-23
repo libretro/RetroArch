@@ -5375,9 +5375,9 @@ static bool menu_shader_manager_save_preset_internal(
             shader, save_reference);
 
       if (ret)
-         RARCH_LOG("Saved shader preset to %s.\n", preset_path);
+         RARCH_LOG("[ Shaders - Save Preset ]:  Saved shader preset to %s.\n", preset_path);
       else
-         RARCH_ERR("Failed writing shader preset to %s.\n", preset_path);
+         RARCH_ERR("[ Shaders - Save Preset ]:  Failed writing shader preset to %s.\n", preset_path);
    }
    else
    {
@@ -5400,7 +5400,7 @@ static bool menu_shader_manager_save_preset_internal(
 
             if (!ret)
             {
-               RARCH_WARN("Failed to create preset directory %s.\n", basedir);
+               RARCH_WARN("[ Shaders - Save Preset ]:  Failed to create preset directory %s.\n", basedir);
                continue;
             }
          }
@@ -5413,15 +5413,15 @@ static bool menu_shader_manager_save_preset_internal(
 
          if (ret)
          {
-            RARCH_LOG("Saved shader preset to %s.\n", preset_path);
+            RARCH_LOG("[ Shaders - Save Preset ]:  Saved shader preset to %s.\n", preset_path);
             break;
          }
          else
-            RARCH_WARN("Failed writing shader preset to %s.\n", preset_path);
+            RARCH_WARN("[ Shaders - Save Preset ]:  Failed writing shader preset to %s.\n", preset_path);
       }
 
       if (!ret)
-         RARCH_ERR("Failed to write shader preset. Make sure shader directory"
+         RARCH_ERR("[ Shaders - Save Preset ]:  Failed to write shader preset. Make sure shader directory"
                " and/or config directory are writable.\n");
    }
 
