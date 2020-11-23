@@ -427,12 +427,6 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
    unsigned i;
    const struct config_entry_list *entry = NULL;
 
-   if (!conf)
-   {
-      printf("video_shader_resolve_current_parameters failed because !conf");
-      return false;
-   }
-
    /* For all parameters in the shader see if there is any config value set */
    for (i = 0; i < shader->num_parameters; i++)
    {
