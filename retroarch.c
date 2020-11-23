@@ -38644,6 +38644,21 @@ void frontend_driver_attach_console(void)
       frontend->attach_console();
 }
 
+void frontend_driver_set_screen_brightness(int value)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   if (frontend && frontend->set_screen_brightness)
+      frontend->set_screen_brightness(value);
+}
+
+bool frontend_driver_can_set_screen_brightness()
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+   return (frontend && frontend->set_screen_brightness);
+}
+
 void frontend_driver_detach_console(void)
 {
    struct rarch_state     *p_rarch = &rarch_st;

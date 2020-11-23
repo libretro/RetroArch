@@ -2862,10 +2862,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS:
          return xmb->textures.list[XMB_TEXTURE_PAUSE];
-#ifdef HAVE_LAKKA_SWITCH
-      case MENU_SET_SWITCH_BRIGHTNESS:
+      case MENU_SET_SCREEN_BRIGHTNESS:
          return xmb->textures.list[XMB_TEXTURE_BRIGHTNESS];
-#endif
       case MENU_SETTING_GROUP:
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_INFO_MESSAGE:
@@ -6844,9 +6842,6 @@ static int xmb_list_push(void *data, void *userdata,
 
 #ifdef HAVE_LAKKA_SWITCH
             entry.enum_idx      = MENU_ENUM_LABEL_SWITCH_GPU_PROFILE;
-            menu_displaylist_setting(&entry);
-
-            entry.enum_idx      = MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL;
             menu_displaylist_setting(&entry);
 #endif
 

@@ -48,18 +48,6 @@ static char *SWITCH_GPU_SPEEDS[] = {
     "153 Mhz",
     "76 Mhz"
 };
-
-static int SWITCH_BRIGHTNESS[] = {
-    10,
-    20,
-    30,
-    40,
-    50,
-    60,
-    70,
-    80,
-    90,
-    100};
 #endif
 
 static char *SWITCH_CPU_PROFILES[] = {

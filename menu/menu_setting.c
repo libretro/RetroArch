@@ -2947,6 +2947,15 @@ static void setting_get_string_representation_state_slot(rarch_setting_t *settin
       strlcat(s, " (Auto)", len);
 }
 
+static void setting_get_string_representation_percentage(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   snprintf(s, len, "%d%%", *setting->value.target.integer);
+}
+
 static void setting_get_string_representation_float_video_msg_color(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -7477,6 +7486,12 @@ static void general_write_handler(rarch_setting_t *setting)
             }
          }
          break;
+      case MENU_ENUM_LABEL_BRIGHTNESS_CONTROL:
+         {
+            frontend_driver_set_screen_brightness(
+               *setting->value.target.unsigned_integer);
+         }
+         break;
       default:
          break;
    }
@@ -8399,14 +8414,6 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
                MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-
-        CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
-               MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -10910,6 +10917,26 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
+
+            if (frontend_driver_can_set_screen_brightness())
+            {
+               CONFIG_UINT(
+                      list, list_info,
+                      &settings->uints.screen_brightness,
+                      MENU_ENUM_LABEL_BRIGHTNESS_CONTROL,
+                      MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+                      DEFAULT_SCREEN_BRIGHTNESS,
+                      &group_info,
+                      &subgroup_info,
+                      parent_group,
+                      general_write_handler,
+                      general_read_handler);
+                (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_UINT_COMBOBOX;
+                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+                (*list)[list_info->index - 1].get_string_representation =
+                   &setting_get_string_representation_percentage;
+                menu_settings_list_current_add_range(list, list_info, 5, 100, 5, true, true);
+            }
 
 #if defined(HAVE_THREADS)
             CONFIG_BOOL(

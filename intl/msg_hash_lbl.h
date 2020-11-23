@@ -3,10 +3,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
    "switch_gpu_profile"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
-   "switch_backlight_control"
-   )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
@@ -2975,6 +2971,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
    "use_this_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BRIGHTNESS_CONTROL,
+   "screen_brightness"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,

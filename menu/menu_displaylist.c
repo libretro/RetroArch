@@ -5703,6 +5703,10 @@ unsigned menu_displaylist_build_list(
                count++;
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_BRIGHTNESS_CONTROL,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_THREADED,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
@@ -9715,29 +9719,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          break;
       }
-      case DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL:
-      {
-         unsigned i;
-         const size_t brightness_count = sizeof(SWITCH_BRIGHTNESS)/sizeof(SWITCH_BRIGHTNESS[1]);
-
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         for (i = 0; i < brightness_count; i++)
-         {
-            char title[PATH_MAX_LENGTH] = {0};
-
-            snprintf(title, sizeof(title), "Set to %d%%", SWITCH_BRIGHTNESS[i]);
-
-            if (menu_entries_append_enum(info->list, title, "", 0, MENU_SET_SWITCH_BRIGHTNESS, 0, i))
-               count++;
-         }
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
-
-         break;
-      }
 #endif /* HAVE_LAKKA_SWITCH */
 #endif /* HAVE_LAKKA_SWITCH || HAVE_LIBNX */
       case DISPLAYLIST_MUSIC_LIST:
@@ -11683,11 +11664,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
-               PARSE_ACTION, false) == 0)
-               count++;
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-               MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
                PARSE_ACTION, false) == 0)
                count++;
 

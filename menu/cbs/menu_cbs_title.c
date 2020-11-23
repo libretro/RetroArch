@@ -674,7 +674,6 @@ DEFAULT_TITLE_MACRO(action_get_title_switch_cpu_profile,          MENU_ENUM_LABE
 
 #ifdef HAVE_LAKKA_SWITCH
 DEFAULT_TITLE_MACRO(action_get_title_switch_gpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE)
-DEFAULT_TITLE_MACRO(action_get_title_switch_backlight_control,    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_history_list,   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY)
@@ -1121,8 +1120,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_LAKKA_SWITCH
       {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
          action_get_title_switch_gpu_profile},
-      {MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
-         action_get_title_switch_backlight_control},
 #endif
       {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST,
          action_get_title_manual_content_scan_list},
@@ -1508,9 +1505,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_gpu_profile);
-            break;
-         case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_backlight_control);
             break;
 #endif
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:

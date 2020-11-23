@@ -854,8 +854,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_cpu_profile,             MENU
 
 #ifdef HAVE_LAKKA_SWITCH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_gpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_backlight_control,       MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL)
 #endif
+
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_brightness_control,             MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL)
 
 #if defined(_3DS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_lcd_bottom,           MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM)
@@ -3874,10 +3875,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_gpu_profile);
             break;
-         case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_backlight_control);
-            break;
 #endif
+         case MENU_ENUM_LABEL_BRIGHTNESS_CONTROL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_brightness_control);
+            break;
 #if defined(_3DS)
          case MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_lcd_bottom);
