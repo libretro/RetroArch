@@ -2053,6 +2053,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "تمكين اهتزاز الجهاز (للنواة المدعومة)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -5922,6 +5924,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "حفظ تجهيزات شيدر الظلال تحت"
@@ -6030,10 +6034,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "لا يوجد منجزات للعرض"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "إيقاف الوضع الصعب للإنجازات"

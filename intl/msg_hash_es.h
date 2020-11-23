@@ -2129,6 +2129,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Activar vibración de dispositivo (en núcleos compatibles)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2285,7 +2287,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Indica si se guardarán las grabaciones de entrada de las partidas en formato .bsv."
+   "Activa o desactiva el uso del formato .bsv para guardar las grabaciones de entrada de las partidas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -2510,6 +2512,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Inicia o detiene la transmisión por streaming de la sesión actual a una plataforma de vídeo online."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "Anticipación predictiva (alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "Activa o desactiva la anticipación predictiva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -6543,6 +6553,16 @@ MSG_HASH(
 /* Quick Menu > Shaders > Save */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Preajustes sencillos"
+   )
+   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Guarda un preajuste de shaders con un enlace al preajuste original ya cargado e incluye únicamente los cambios que hayas hecho en sus parámetros."
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "Guardar preajuste de shaders como"
    )
@@ -6660,7 +6680,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "No hay logros visibles"
+   "No hay logros disponibles"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
@@ -6678,6 +6698,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
    "Reanuda los logros en esta sesión (se desactivarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "No se ha iniciado sesión"
+)
 
 /* Quick Menu > Information */
 
@@ -10573,6 +10597,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Se ha cargado el archivo de reasignaciones del núcleo."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Anticipación predictiva activada. Fotogramas de latencia eliminados: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Anticipación predictiva activada usando una segunda instancia. Fotogramas de latencia eliminados: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Anticipación predictiva desactivada."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,

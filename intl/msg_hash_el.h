@@ -1861,6 +1861,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Ενεργοποίηση Δόνησης Συσκευής (Για Υποστηριζόμενους Πυρήνες)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2864,6 +2866,10 @@ MSG_HASH(
    "Περιορισμός καταχωρήσεων στην λίστα πρόσφατων για παιχνίδια, εικόνες, μουσική και βίντεο."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   "Περιορισμός καταχωρίσεων στην λίστα αγαπημένων. Μόλις φτάσει το όριο θα αποτρέπονται νέες προσθήκες μέχρι οι παλαιότερες να αφαιρεθούν. Ορίζοντας το -1 ως προσθήκη, επιτρέπει 'απεριόριστες' καταχωρήσεις. ΠΡΟΣΟΧΗ: Μειώνοντας την τιμή θα διαγραφούν οι υπάρχουσες καταχωρήσε[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
    "Επίτρεψη μετονομασίας καταχωρήσεων"
    )
@@ -3602,6 +3608,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 
 /* Quick Menu > Shaders > Remove */
 
@@ -3618,10 +3626,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Δεν υπάρχουν επιτεύγματα προς προβολή."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Παύση Σκληροπυρηνικής Λειτουργίας Επιτευγμάτων"
@@ -5427,14 +5431,26 @@ MSG_HASH(
    "Υπερχρονισμός Κάρτας Γραφικών"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+   "Υπερχρονισμός ή υποχρονισμός της Κάρτας Γραφικών του Switch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
    "Φωτεινότητα οθόνης"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
+   "Αύξηση ή μείωση της φωτεινότητας της οθόνης του Switch."
    )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "Υπερχρονισμός Επεξεργαστή"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Υπερχρονισμός του επεξεργαστή του Switch."
    )
 #endif
 #ifdef HAVE_LAKKA

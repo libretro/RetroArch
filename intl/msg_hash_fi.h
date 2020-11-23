@@ -292,6 +292,14 @@ MSG_HASH(
    "Päivitä kaikki asennetut ytimet viimeisimpään saatavilla olevaan versioon."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Vaihda ydintä Play Storen versioihin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Korvaa kaikki perinteiset ja manuaalisesti asennetut ytimet uusimmilla Play Storen versioilla, jos ne ovat saatavilla."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Pienoiskuvien päivittäjä"
    )
@@ -1305,6 +1313,22 @@ MSG_HASH(
    "Lisää kuvaan hiukan sumeutta pikseleiden reunojen pehmentämiseen. Tällä asetuksella on erittäin pieni vaikutus suorituskykyyn."
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Kuvan Interpolointi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Määrittää kuvan interpolointimenetelmän, kun sisältö skaalautuu sisäisen IPU: n kautta. 'Bicubic' tai 'Bilineaarisen' suositellaan käytettäessä prosessori käyttöisiä videosuodattimia. Tällä vaihtoehdolla ei ole suorituskykyvaikutusta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Bilineaarinen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Lähin Naapuri"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1322,6 +1346,18 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "Käytä CPU-käyttöistä videosuodatinta.\nHUOM: Saattaa olla suuri vaikutus suorituskykyyn. Jotkut videosuodattimet saattavat toimia vain ytimissä, jotka käyttävät 32- tai 16-bittisiä värejä."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Poista Videosuodatin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Poista käytöstä kaikki aktiiviset prosessori käyttöiset videosuodattimet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Ota koko näyttö käyttöön Android-laitteissa"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1348,6 +1384,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Vaihdä tätä asetusta, jos kuva ei ole keskitetty oikein näytöllä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Säädä Porch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Selaa näitä asetuksia, säätääksesi porch asetuksia, muuttaaksesi kuvan kokoa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -1428,6 +1472,10 @@ MSG_HASH(
    "Käynnistä koko näytön tilassa"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Käynnistä kokoruututilassa. Voidaan muuttaa suorituksen aikana. Komentoriviargumentti voi ohittaa tämän."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Ikkunoitu koko näytön tila"
    )
@@ -1475,6 +1523,10 @@ MSG_HASH(
    "Muista ikkunan sijainti ja koko"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Muista ikkunan sijainti ja koko, tällä on etusija Ikkunan Skaalauksen yli."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Ikkunan leveys"
    )
@@ -1514,6 +1566,14 @@ MSG_HASH(
    "Liukulukuarvo videon kuvasuhteeseen (leveys / korkeus), käytetään jos Kuvasuhde on 'Mukautettu kuvasuhde'."
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Säilytä Kuvasuhde"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Säilytä 1:1 pikselin kuvasuhdetta skaalatessa sisältöä sisäisen IPU:n kautta. Jos tämä ei ole käytössä, kuvat venytetään koko näytön täyttämiseksi."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
@@ -1588,7 +1648,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Vähentää latenssia isomman videon pätkimisriskin kustannuksella. Lisää viiveen pystytahdistuksen jälkeen (millisekunteina)."
+   "Vähentää viivettä isomman videon pätkimisriskin kustannuksella. Lisää viiveen pystytahdistuksen jälkeen (millisekunteina)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   "Kova GPU-synkronointi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   "Kova-synkronoi CPU ja GPU. Vähentää viivettä suorituskyvyn kustannuksella."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   "Kova GPU Synkronoidut Kehykset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   "Asettaa kuinka monta kehystä suoritin voi ajaa GPU: n edellä, kun käytetään 'Kovaa GPU-synkronointia'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "Synkronoi Sisällön Tarkasti Kuvantaajuuteen (G-Sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   "Ei poikkeamista ytimen ajoituksesta. Käytä muuttuvan virkistystaajuuden näytöille (G-Sync, FreeSync, HDMI 2.1 VRR)."
    )
 
 /* Settings > Audio */
@@ -1682,12 +1766,36 @@ MSG_HASH(
    "Äänen DSP-liitännäinen, joka prosessoi äänen ennen kuin se lähetetään ajuriin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "Poista DSP Liitännäinen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "Poista käytöstä aktiiviset audion DSP-liitännäiset."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    "WASAPI-eksklusiivinen tila"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    "Sallii WASAPI-ajurin ottaa eksklusiivisen hallinnan äänilaitteesta. Jos pois päältä, se sen sijaan käyttää jaettua tilaa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   "WASAPI Liuku Formaatti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   "Käytä WASAPI-ajurille sopivaa liuku formaattia, jos äänentoisto tukee sitä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI Jaetun Puskurin Pituus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "Välipuskurin pituus (kehyksissä), kun käytetään WASAPI-ajuria jaetussa tilassa."
    )
 
 /* Settings > Audio > Output */
@@ -1714,7 +1822,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Haluttu äänilatenssi millisekunneissa. Ei saateta kunnioittaa, jos ääniajuri ei kykene tuomaan annettua latenssia."
+   "Haluttu ääniviive millisekunneissa. Ei saateta kunnioittaa, jos ääniajuri ei kykene tuomaan annettua viivettä."
    )
 
 /* Settings > Audio > Resampler */
@@ -1745,6 +1853,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    "Synkronoi ääni. Suositellaan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+   "Suurin Ajoituksen Vääristymä"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   "Suurin muutos äänen syöttötaajuudella. Lisäämällä tätä mahdollistaa erittäin suuret muutokset ajoituksessa, epätarkan äänenkorkeuden kustannuksella (esim., käyttäessä PAL ytimiä NTSC näytöillä)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "Dynaaminen Äänen Nopeuden Säätö"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   "Auttaa tasoittamaan ajoituksen puutteet äänen ja videon synkronoinnissa. Huomaa, että jos pois päältä, oikea synkronointi on lähes mahdotonta saada."
    )
 
 /* Settings > Audio > MIDI */
@@ -1814,7 +1938,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-   "Tämä pysäyttää äänen toiston ja poistaa sen muistista kokonaan."
+   "Tämä pysäyttää äänivirran toiston ja poistaa sen muistista kokonaan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
@@ -1875,12 +1999,24 @@ MSG_HASH(
    "Uudelleenmääritä tämän ytimen ohjaimet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   "Ohittaa syötteen sidontaa uudelleenkartoitetulla sidonnalla, joka on asetettu nykyiselle ytimelle."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Automaattinen kokoonpano"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "Automaattisesti määrittää ohjaimet, joilla on profiili, Plug-and-Play-tyyliin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Apuanturin Syöte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "Mahdollistaa syötteen kiihtyvyysmittarilla, gyroskoopilla ja valaistusantureilla, jos nykyinen laitteisto tukee tätä. Saattaa vaikuttaa suorituskykyyn ja/tai lisätä virrankulutusta joillakin alustoilla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -1919,12 +2055,24 @@ MSG_HASH(
    "Turbon jakso"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Jakso (kehyksissä) kun turbo-käytössä olevat painikkeet otetaan käyttöön."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
    "Käyttösykli"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+   "Kuvaa turbo-käyttöisen painikkeen ajanjakson pituutta. Numerot on kuvattu kehyksissä."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
    "Turbo-tila"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "Valitsee turbotilan yleisen käytöksen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -1973,6 +2121,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Ota laitteen värinä käyttöön (Tuetuille ytimille)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2070,6 +2220,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Vaihtaa koko näytön tilan ja ikkunoidun tilan välillä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   "Sulje Sisältö"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
@@ -2204,8 +2358,16 @@ MSG_HASH(
    "Äänenvoimakkuus suuremmalle"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   "Lisää äänenvoimakkuuden tasoa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
    "Äänenvoimakkuus pienemmälle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
+   "Pienentää äänenvoimakkuuden tasoa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -2411,7 +2573,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Edelläpyöritys latenssin vähentämiseen"
+   "Edelläpyöritys viiveen vähentämiseen"
    )
 
 /* Settings > Core */
@@ -2434,6 +2596,10 @@ MSG_HASH(
    "Lataa ydin aina uudelleen kun sisältö suoritetaan"
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
+   "Salli Kierto"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
    "Hallitse ytimiä"
@@ -2538,6 +2704,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
    "Aikaleimaa lokitiedostot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+   "Suorituskyvyn Laskurit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
+   "Suorituskyky laskurit RetroArchille ja ytimille. Laskuri tiedot voivat auttaa määrittämään järjestelmän pullonkaulat ja kohdistamaan suorituskykyä."
    )
 
 /* Settings > File Browser */
@@ -2657,6 +2831,14 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > Video Layout */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
+   "Valittu Näkymä"
+   )
+MSG_HASH( /* FIXME Unused */
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
+   "Valitse näkymä ladattuun asetteluun."
+   )
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
@@ -2665,8 +2847,20 @@ MSG_HASH(
    "Näyttöilmoitukset"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+   "Näytä ruudulla olevat viestit."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
    "Graafiset widgetit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
+   "Käytä koristettuja animaatioita, ilmoituksia, osoittimia ja ohjaimia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+   "Skaalaa Grafiikka Widgetit Automaattisesti"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -2877,6 +3071,14 @@ MSG_HASH(
 
 /* Settings > User Interface > Views > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "Näytä Jatka Sisältöä"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "Näytä tai piilota 'Jatka sisältöä' valinta."
+   )
 
 /* Settings > User Interface > Views > Settings */
 
@@ -3583,31 +3785,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   "Pelitilanteen lohko"
+   "Tilan lohko"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "Vaihtaa valittuna olevaa pelitilanteen lohkoa."
+   "Vaihtaa valittuna olevaa tilatallennuksen lohkoa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Tallenna pelitilanne"
+   "Tallenna tila"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Tallentaa pelitilanteen valittuun lohkoon."
+   "Tallentaa tilan valittuun lohkoon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   "Lataa Tila"
+   "Lataa tila"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "Lataa tallennetun pelitilanteen valitusta lohkosta."
+   "Lataa tallennetun tilan valitusta lohkosta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-   "Kumoa Tilan Lataus"
+   "Kumoa tilan lataus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -3615,7 +3817,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-   "Kumoa pelitilanteen tallennus"
+   "Kumoa tilan tallennus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -3687,7 +3889,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
-   "Levyn Hallinta"
+   "Levyn hallinta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_OPTIONS,
@@ -3718,42 +3920,42 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-   "Luo Pelin Asetustiedosto"
+   "Luo pelin asetustiedosto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-   "Tallenna Pelin Asetustiedosto"
+   "Tallenna pelin asetustiedosto"
    )
 
 /* Quick Menu > Controls */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
-   "Lataa Uudelleenmääritystiedosto"
+   "Lataa uudelleenmääritystiedosto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
-   "Tallenna Ytimen Uudelleenmääritystiedosto"
+   "Tallenna ytimen uudelleenmääritystiedosto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "Poista Ytimen Uudelleenmääritystiedosto"
+   "Poista ytimen uudelleenmääritystiedosto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
-   "Tallenna Sisällön Kansion Uudelleenmääritystiedosto"
+   "Tallenna sisällön kansion uudelleenmääritystiedosto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "Poista Pelin Kansion Uudelleenmääritystiedosto"
+   "Poista pelin kansion uudelleenmääritystiedosto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
-   "Tallenna Pelin Uudelleenmääritystiedosto"
+   "Tallenna pelin uudelleenmääritystiedosto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "Poista Pelin Uudelleenmääritystiedosto"
+   "Poista pelin uudelleenmääritystiedosto"
    )
 
 /* Quick Menu > Controls > Load Remap File */
@@ -3874,6 +4076,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 
 /* Quick Menu > Shaders > Remove */
 
@@ -3886,10 +4090,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Ei saavutuksia näytettäväksi"
-   )
 
 /* Quick Menu > Information */
 
@@ -4225,6 +4425,10 @@ MSG_HASH(
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+   "Lähin Naapuri (Nopea)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
    "16:9 (keskitetty)"
@@ -4612,6 +4816,10 @@ MSG_HASH(
 /* Qt (Desktop Menu) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFO,
+   "Tiedot"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
    "&Tiedosto"
    )
@@ -4642,6 +4850,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
    "Suljetut telakat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
+   "Varjostimen Parametrit"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
@@ -4722,6 +4934,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
    "Tiedostoselain"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+   "Yläreuna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+   "Ylös"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
@@ -5920,6 +6140,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "Suorittimen ylikellotus"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Ylikellota Switchin prosessori."
+   )
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -5967,6 +6191,10 @@ MSG_HASH(
    "RGA-skaalaus"
    )
 #else
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+   "Laitteiston kontekstin skaalaus (jos saatavilla)."
+   )
 #endif
 #if defined(_3DS)
 MSG_HASH(

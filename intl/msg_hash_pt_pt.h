@@ -1829,6 +1829,8 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -3494,6 +3496,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "Guardar pré-definições de shaders como"
@@ -3546,10 +3550,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Não existem conquistas para serem exibidas."
-   )
 
 /* Quick Menu > Information */
 

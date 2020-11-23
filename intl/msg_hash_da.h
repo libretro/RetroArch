@@ -8,6 +8,34 @@
 
 /* Top-Level Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   "Hovedmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   "Indstillinger"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   "Favoritter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   "Historik"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   "Billeder"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   "Musik"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   "Videoer"
+   )
 
 /* Main Menu */
 
@@ -105,6 +133,8 @@
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -285,6 +315,8 @@
 
 
 /* Quick Menu > Shaders > Save */
+
+   
 
 
 /* Quick Menu > Shaders > Remove */

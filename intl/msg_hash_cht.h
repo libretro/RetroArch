@@ -1957,6 +1957,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "啟用設備振動(對於支援的內核)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -3562,6 +3564,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "儲存Shader預設為"
@@ -3598,10 +3602,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "沒有可顯示的成就。"
-   )
 
 /* Quick Menu > Information */
 

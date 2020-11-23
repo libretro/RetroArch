@@ -2125,6 +2125,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Cihaz Titreşimini Etkinleştir (Desteklenen Çekirdekler İçin)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2508,8 +2510,16 @@ MSG_HASH(
    "Mevcut oturumun çevrimiçi bir video platformuna akışını başlatır/durdurur."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "Önden-Git (Değiştir)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "Önden-Git aç/kapat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   "AI Servisi"
+   "Çeviri Servisi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
@@ -2707,19 +2717,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Ön Koşucu için İkinci Örneği Kullan"
+   "Önden-Git için İkinci Örneği Kullan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "İlerlemek için RetroArch çekirdeğinin ikinci bir örneğini kullanın. Yükleme durumu nedeniyle ses sorunlarını önler."
+   "Önden-Git için RetroArch çekirdeğinin ikincil örneğini kullanın. Yükleme durumu nedeniyle ses sorunlarını önler."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-   "Ön Koşucu Uyarılarını Gizle"
+   "Önden-Git Uyarılarını Gizle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Ön-Koşucu kullanırken görüntülenen uyarı mesajını gizleyin ve çekirdek durum kaydı desteklemez."
+   "Önden-Git kullanırken görüntülenen uyarı mesajını gizleyin ve çekirdek durum kaydı desteklemez."
    )
 
 /* Settings > Core */
@@ -4616,7 +4626,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
-   "Çeviri Servisi Etkinleştirildi"
+   "Çeviri Servisini Etkinleştir"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
@@ -6555,6 +6565,16 @@ MSG_HASH(
 /* Quick Menu > Shaders > Save */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Basit Hazır Ayarlar"
+   )
+   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Yüklenen orijinal ön ayara bir bağlantı içeren ve yalnızca yaptığınız parametre değişikliklerini içeren bir Gölgelendirici Ön Ayarını kaydeder."
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "Gölgelendirici Hazır Ayarını Farklı Kaydet"
    )
@@ -6672,7 +6692,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Gösterilecek Başarı Yok"
+   "Görüntülenecek başarı yok"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
@@ -6690,6 +6710,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
    "Mevcut oturum için başarıları devam ettirin. (Bu işlem, durum kaydını, hileleri, geri sarma, duraklatma ve ağır çekimi devre dışı bırakır ve mevcut oyunu sıfırlar)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "Giriş yapmadınız"
+)
 
 /* Quick Menu > Information */
 
@@ -10687,20 +10711,32 @@ MSG_HASH(
    "Çekirdek yeniden yapılandırma dosyası yüklendi."
    )
 MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Önden-Git etkinleştirildi. Kare gecikmeleri kaldırıldı: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Önden-Git ikincil örnek etkinleştirildi. Kare gecikmeleri kaldırıldı: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Önden-Git devre dışı."
+   )
+MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Ön-Koşucu devre dışı bırakıldı, bu çekirdek durum kayıtlarını desteklemiyor."
+   "Önden-Git devre dışı bırakıldı, bu çekirdek durum kayıtlarını desteklemiyor."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Durum kaydedilemedi. Ön-Koşucu devre dışı bırakıldı."
+   "Durum kaydedilemedi. Önden-Git devre dışı bırakıldı."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Durum yüklenemedi. Ön-Koşucu devre dışı bırakıldı."
+   "Durum yüklenemedi. Önden-Git devre dışı bırakıldı."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "İkinci örnek oluşturulamadı. Ön-Koşucu artık yalnızca bir örnek kullanacak."
+   "İkinci örnek oluşturulamadı. Önden-Git artık yalnızca bir örnek kullanacak."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

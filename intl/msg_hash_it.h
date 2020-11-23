@@ -2125,6 +2125,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Abilita Vibrazione Dispositivo (Per Cores Supportati)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2506,6 +2508,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Avvia/ferma lo streaming della sessione corrente su una piattaforma video online."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "Anticipazione predittiva (Abilita)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "Attiva/disattiva Anticipazione predittiva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -6507,6 +6517,16 @@ MSG_HASH(
 /* Quick Menu > Shaders > Save */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Preimpostazioni Semplici"
+   )
+   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Salva una preimpostazione Shader che ha un collegamento alla preimpostazione originale caricata e include solo le modifiche ai parametri che hai fatto."
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "Salvare Preset Shader come"
    )
@@ -6624,7 +6644,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Nessun achievements da visualizzare."
+   "Nessun achievements da visualizzare"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
@@ -6642,6 +6662,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
    "Riprendi gli obiettivi per la sessione corrente. (Questa azione disabiliterà gli stati di salvataggio, i trucchi, la riavvolgimento, la pausa e il rallentamento e ripristina la partita corrente)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "Accesso non effettuato"
+)
 
 /* Quick Menu > Information */
 
@@ -10465,6 +10489,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "File di remap del Core caricato."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Anticipazione predittiva abilitata. Fotogrammi di latenza eliminati: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Anticipazione predittiva abilitata con una Instanza Secondaria. Fotogrammi di latenza elimitati: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Anticipazione predittiva disattivata."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,

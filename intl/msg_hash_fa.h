@@ -357,6 +357,8 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -657,6 +659,8 @@ MSG_HASH(
 
 
 /* Quick Menu > Shaders > Save */
+
+   
 
 
 /* Quick Menu > Shaders > Remove */

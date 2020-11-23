@@ -125,7 +125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "Atualizador on-line"
+   "Atualizações e downloads"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
@@ -196,7 +196,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Baixe e instale um núcleo a partir do atualizador online."
+   "Baixe e instale um núcleo a partir da opção de atualizações e downloads."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
@@ -1520,7 +1520,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Lembre-se do tamanho e da posição da janela, permitindo que haja precedência sobre a escala no modo janela."
+   "Lembra do tamanho e da posição da janela, permitindo que haja precedência sobre a escala no modo janela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -2105,6 +2105,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Ativar vibração do dispositivo (para núcleos suportados)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2413,7 +2415,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
-   "Muda para o próximo esquema disponível da sobreposição atualmente ativa na tela."
+   "Muda para a próxima disposição disponível da sobreposição atualmente ativa na tela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
@@ -2486,6 +2488,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Inicia ou interrompe o transmissão da sessão atual para uma plataforma de vídeo online."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "Execução antecipada (alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "Alterna a execução antecipada entre ligada e desligada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -3098,7 +3108,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "A quantidade de memória (em MB) que será reservada na memória intermediária do rebobinamento. Aumentando este valor aumentará a quantidade do histórico de rebobinamento."
+   "A quantidade de memória (em MB) que será reservada ao buffer de rebobinamento. Aumentando este valor aumentará a quantidade do histórico de rebobinamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
@@ -3106,7 +3116,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
-   "Sempre ao aumentar ou diminuir o valor do tamanho da memória intermediária do rebobinamento através desta interface, ela será alterada através deste valor."
+   "Sempre que aumentar ou diminuir o valor do tamanho do buffer de rebobinamento através desta interface, ele será alterado através deste valor."
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -3198,12 +3208,24 @@ MSG_HASH(
    "Sobreposição na tela"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+   "Ajusta as molduras e os controles na tela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "Esquema de vídeo"
+   "Disposição de vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "Ajusta a disposição de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "Notificações na tela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "Ajusta as notificações na tela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -3219,6 +3241,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "Exibir sobreposição"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+   "As sobreposições são usadas para aplicar as molduras exibir os controles na tela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -3272,7 +3298,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "Se suportado pela sobreposição atual, girar automaticamente o esquema para ajustar com a orientação e proporção da tela."
+   "Se suportado pela sobreposição atual, girar automaticamente a disposição para ajustar com a orientação e proporção da tela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
@@ -3407,19 +3433,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
-   "Ativar o esquema de vídeo"
+   "Ativar a disposição de vídeo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "Os esquemas de vídeo são usados para molduras e outros trabalhos artísticos."
+   "As disposições de vídeo são usadas para molduras e outros trabalhos artísticos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-   "Caminho do esquema de vídeo"
+   "Caminho da disposição de vídeo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Seleciona um esquema de vídeo no gerenciador de arquivos."
+   "Seleciona uma disposição de vídeo no gerenciador de arquivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -3535,6 +3561,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Notificações do código de trapaça"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "Exibe uma mensagem na tela ao aplicar códigos da trapaça."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -3884,11 +3914,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   "Mostrar 'Atualizador on-line'"
+   "Mostrar 'Atualizações e downloads'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   "Mostra ou oculta a opção 'Atualizador on-line'."
+   "Mostra ou oculta a opção 'Atualizações e downloads'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
@@ -4234,8 +4264,20 @@ MSG_HASH(
    "Mostrar configurações de rebobinamento"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "Mostra ou oculta as opções de 'Rebobinamento'."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   "Mostra ou oculta as opções de 'Latência'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
    "Mostrar configurações de latência"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   "Mostra ou oculta as opções de 'Sobreposição'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
@@ -4243,7 +4285,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
-   "Mostrar configurações de esquema de vídeo"
+   "Mostrar configurações da disposição de vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
+   "Mostra ou oculta opções da 'Disposição do vídeo'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -4547,6 +4593,10 @@ MSG_HASH(
    "Formato de saída do serviço de IA"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "Exibe a tradução como um texto sobreposto (Modo imagem) ou a reproduz como uma conversão do texto em fala (Modo de fala)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "URL do serviço de IA"
    )
@@ -4613,6 +4663,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Habilitar conquistas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+   "Ganhe conquistas em jogos clássicos. Para mais informações, visite 'https://retroachievements.org'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -5167,6 +5221,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "Ganhe conquistas em jogos clássicos. Para mais informações, visite 'https://retroachievements.org'."
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -5341,11 +5399,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   "Esquema de vídeo"
+   "Disposição do vídeo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
-   "Define um diretório onde os esquemas de vídeo são mantidos para facilitar o acesso."
+   "Define um diretório onde as disposições de vídeo são mantidos para facilitar o acesso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
@@ -6089,8 +6147,16 @@ MSG_HASH(
    "Iniciar ou reiniciar a pesquisa de trapaças"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+   "Esquerda ou direita para alterar o tamanho do bit."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "Pesquisar valores de memória"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+   "Pressione esquerda ou direita para alterar o valor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
@@ -6149,12 +6215,20 @@ MSG_HASH(
    "Pesquisar valores de memória"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+   "Esquerda ou direita para alterar o valor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
    "Igual a depois+%u (%X)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
    "Pesquisar valores de memória"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+   "Esquerda ou direita para alterar o valor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
@@ -6447,6 +6521,16 @@ MSG_HASH(
 /* Quick Menu > Shaders > Save */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Predefinições simples"
+   )
+   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Salva uma predefinição do Shader com um link para a predefinição original que já está carregada e inclui apenas as alterações que você fez no parâmetro."
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "Salvar predefinição de shader como"
    )
@@ -6571,9 +6655,21 @@ MSG_HASH(
    "Pausar conquistas no modo Hardcore"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Pausa as conquistas para a sessão atual. (Esta ação ativará jogos salvos, trapaças, rebobinamento, pausa e câmera lenta)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Continuar conquistas no modo Hardcore"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Continua as conquistas para a sessão atual. (Isso reiniciará o jogo atual e irá desativar jogos salvos, trapaças, rebobinamento, pausa e câmera lenta)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "Você não está logado"
+)
 
 /* Quick Menu > Information */
 
@@ -6584,6 +6680,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
    "Entrada da base de dados"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+   "Mostra a informações da base de dados do conteúdo atual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
@@ -7200,11 +7300,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Usar esquema de largura total"
+   "Usar disposição de largura total"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Redimensiona e posiciona as entradas do menu para aproveitar melhor o espaço disponível na tela. Desabilite isso para usar o esquema clássico de duas colunas de largura fixa."
+   "Redimensiona e posiciona as entradas do menu para aproveitar melhor o espaço disponível na tela. Desabilite isso para usar a disposição clássica de duas colunas de largura fixa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -7622,11 +7722,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Esquema do menu"
+   "Disposição do menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-   "Seleciona um esquema diferente para a interface XMB."
+   "Seleciona uma disposição diferente para a interface XMB."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_THEME,
@@ -7899,11 +7999,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Otimizar o esquema no modo paisagem"
+   "Otimizar a disposição no modo paisagem"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Ajusta automaticamente o esquema do menu para se adequar a tela com orientação de paisagem."
+   "Ajusta automaticamente a disposição do menu para se adequar a tela com orientação de paisagem."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
@@ -9012,6 +9112,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
    "Iniciar pesquisa por um novo código de trapaça"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
+   "Inicia a procura por uma nova trapaça. O número de bits pode ser alterado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
@@ -10176,11 +10280,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_INIT,
-   "Inicializando o buffer de Rebobinamento com tamanho"
+   "Inicializando o buffer de rebobinamento com tamanho"
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED,
-   "Falha em inicializar o buffer de Rebobinamento. O rebobinamento será desativado."
+   "Falha em inicializar o buffer de rebobinamento. O rebobinamento será desativado."
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
@@ -10451,6 +10555,18 @@ MSG_HASH(
    "Arquivo de remapeamento principal carregado."
    )
 MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Execução antecipada ativada. Latência dos quadros que foram removidos: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Execução antecipada ativada com instância secundária. Latência dos quadros que foram removidos: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Execução antecipada desativada."
+   )
+MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "A 'Execução antecipada' foi desativada porque esse núcleo não suporta jogos salvos."
    )
@@ -10580,7 +10696,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Atenção: Recursos ausentes, use o atualizador on-line se disponível"
+   "Atenção: Recursos ausentes, use a opção de atualizações e downloads se disponível"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -10923,8 +11039,16 @@ MSG_HASH(
    "Overclock da GPU"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+   "Faz um overclock ou underclock na CPU do Switch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
    "Brilho da tela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
+   "Aumenta ou diminui o brilho da tela do Switch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
@@ -10935,6 +11059,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "Overclock da CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Faz um overclock na CPU do Switch."
    )
 #endif
 #ifdef HAVE_LAKKA
@@ -11065,6 +11193,6 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Verificação terminada.<br><br>\nPara que o conteúdo seja analisado corretamente, é necessário:\n<ul><li>ter um núcleo compatível já baixado</li>\n<li>ter os \"Arquivos de informação de núcleo\" atualizados via Atualizador on-line</li>\n<li>ter a \"Base de dados\" atualizada via Atualizador on-line</li>\n<li>reiniciar o RetroArch caso alguma das situações acima tenha sido feita</li></ul>\nE finalmente, o conteúdo deve corresponder as bases de dados existentes <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">aqui</a>. Se ainda não estiver funcionando, considere <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar um relatório de erro</a>."
+   "Verificação terminada.<br><br>\nPara que o conteúdo seja analisado corretamente, é necessário:\n<ul><li>ter um núcleo compatível já baixado</li>\n<li>ter os \"Arquivos de informação de núcleo\" atualizados via Atualizações e downloads</li>\n<li>ter a \"Base de dados\" atualizada via Atualizações e downloads</li>\n<li>reiniciar o RetroArch caso alguma das situações acima tenha sido feita</li></ul>\nE finalmente, o conteúdo deve corresponder as bases de dados existentes <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">aqui</a>. Se ainda não estiver funcionando, considere <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar um relatório de erro</a>."
    )
 #endif
