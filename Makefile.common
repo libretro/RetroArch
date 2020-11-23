@@ -2394,4 +2394,8 @@ ifeq ($(HAVE_ODROIDGO2), 1)
          $(DEPS_DIR)/libgo2/src/queue.o \
          gfx/drivers/oga_gfx.o
 endif
+
+ifeq ($(HAVE_CKJ_BITMAP_FONTS), 1)
+   DEFINES      += -DHAVE_CKJ_BITMAP_FONTS
+endif
 ##################################
