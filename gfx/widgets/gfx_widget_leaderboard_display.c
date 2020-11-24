@@ -28,7 +28,6 @@
 
 #define CHEEVO_LBOARD_ARRAY_SIZE 4
 
-#define CHEEVO_LBOARD_DISPLAY_SPACING 6
 #define CHEEVO_LBOARD_DISPLAY_PADDING 3
 
 struct leaderboard_display_info
@@ -96,7 +95,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       const video_frame_info_t* video_info = (const video_frame_info_t*)data;
       const unsigned video_width = video_info->width;
       const unsigned video_height = video_info->height;
-      const unsigned widget_height = p_dispwidget->gfx_widget_fonts.regular.line_height + CHEEVO_LBOARD_DISPLAY_PADDING * 2;
+      const unsigned spacing = MIN(video_width, video_height) / 64;
+      const unsigned widget_height = p_dispwidget->gfx_widget_fonts.regular.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
       unsigned y = video_height;
       unsigned x;
       int i;
@@ -107,8 +107,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       for (i = 0; i < state->count; ++i)
       {
          const unsigned widget_width = state->info[i].width;
-         x = video_width - widget_width - CHEEVO_LBOARD_DISPLAY_SPACING;
-         y -= (widget_height + CHEEVO_LBOARD_DISPLAY_SPACING);
+         x = video_width - widget_width - spacing;
+         y -= (widget_height + spacing);
 
          /* Backdrop */
          gfx_display_draw_quad(video_info->userdata,
@@ -121,7 +121,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
             state->info[i].display,
             (float)(x + CHEEVO_LBOARD_DISPLAY_PADDING),
-            (float)(y + p_dispwidget->gfx_widget_fonts.regular.line_height),
+            (float)(y + widget_height - (CHEEVO_LBOARD_DISPLAY_PADDING - 1) - p_dispwidget->gfx_widget_fonts.regular.line_descender),
             video_width, video_height,
             TEXT_COLOR_INFO,
             TEXT_ALIGN_LEFT,
