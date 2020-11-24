@@ -20117,6 +20117,8 @@ static bool bsv_movie_init(struct rarch_state *p_rarch)
             2, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
+
+      return true;
    }
    else if (p_rarch->bsv_movie_state.movie_start_recording)
    {
@@ -20145,9 +20147,11 @@ static bool bsv_movie_init(struct rarch_state *p_rarch)
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             p_rarch->bsv_movie_state.movie_start_path);
+
+      return true;
    }
 
-   return true;
+   return false;
 }
 
 static void bsv_movie_deinit(struct rarch_state *p_rarch)
