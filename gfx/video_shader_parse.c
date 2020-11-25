@@ -92,7 +92,7 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
    else if (string_is_equal(wrap_mode, "mirrored_repeat"))
       return RARCH_WRAP_MIRRORED_REPEAT;
 
-   RARCH_WARN("[Shaders]: Invalid wrapping type %s. Valid ones are: clamp_to_border"
+   RARCH_WARN("[ Shaders ]:  Invalid wrapping type %s. Valid ones are: clamp_to_border"
          " (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
          wrap_mode);
    return RARCH_WRAP_DEFAULT;
@@ -142,7 +142,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
    if (!config_get_path(conf, shader_name, tmp_path, sizeof(tmp_path)))
    {
-      RARCH_ERR("[Shaders]: Couldn't parse shader source (%s).\n", shader_name);
+      RARCH_ERR("[ Shaders ]:  Couldn't parse shader source (%s).\n", shader_name);
       return false;
    }
 
@@ -229,7 +229,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->type_x = RARCH_SCALE_ABSOLUTE;
       else
       {
-         RARCH_ERR("[Shaders]: Invalid attribute.\n");
+         RARCH_ERR("[ Shaders ]:  Invalid attribute.\n");
          return false;
       }
    }
@@ -244,7 +244,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->type_y = RARCH_SCALE_ABSOLUTE;
       else
       {
-         RARCH_ERR("[Shaders]: Invalid attribute.\n");
+         RARCH_ERR("[ Shaders ]:  Invalid attribute.\n");
          return false;
       }
    }
@@ -347,7 +347,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
       if (!(entry = config_get_entry(conf, id)) ||
             string_is_empty(entry->value))
       {
-         RARCH_ERR("[Shaders]: Cannot find path to texture \"%s\" ...\n", id);
+         RARCH_ERR("[ Shaders ]:  Cannot find path to texture \"%s\" ...\n", id);
          free(textures);
          return false;
       }
@@ -427,9 +427,6 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
    unsigned i;
    const struct config_entry_list *entry = NULL;
 
-   if (!conf)
-      return false;
-
    /* For all parameters in the shader see if there is any config value set */
    for (i = 0; i < shader->num_parameters; i++)
    {
@@ -444,10 +441,10 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
                   shader->parameters, shader->num_parameters, shader->parameters[i].id);
 
          if (config_get_float(conf, shader->parameters[i].id, &parameter->current))
-            RARCH_LOG("[Shaders-Load]: Preset Parameter Loaded: %s = %f.\n", 
+            RARCH_LOG("[ Shaders - Load Parameter Values]:  %s = %f.\n", 
                   shader->parameters[i].id, parameter->current);
          else
-            RARCH_WARN("[Shaders-Load]: Preset Parameter Name %s is set in preset "
+            RARCH_WARN("[ Shaders - Load Parameter Values]:  Name %s is set in preset "
                        "but couldn't load its value.\n", shader->parameters[i].id);
       }
    }
@@ -555,7 +552,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
          param->pass     = i;
 
-         RARCH_LOG("[Shaders]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
+         RARCH_LOG("[ Shaders ]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
                param->desc,    param->id,      param->initial,
                param->minimum, param->maximum, param->step, param->pass);
          param->current  = param->initial;
@@ -598,58 +595,84 @@ bool video_shader_write_referenced_preset(const char *path,
                                           const struct video_shader *shader)
 {
    unsigned i;
-   config_file_t *conf               = NULL;
-   bool ret                          = false;
-   bool continue_saving_reference    = true;
-   char *preset_dir                  = (char*)malloc(PATH_MAX_LENGTH);
-   char *absolute_root_preset_path   = (char*)malloc(PATH_MAX_LENGTH);
-   char *relative_root_preset_path   = (char*)malloc(PATH_MAX_LENGTH);
-   char *absolute_new_preset_basedir = NULL;
+   config_file_t *conf                    = NULL;
+   config_file_t *loaded_preset_conf      = NULL;
+   bool ret                               = false;
+   bool continue_saving_reference         = true;
+   char *absolute_reference_preset_path   = (char*)malloc(PATH_MAX_LENGTH);
+   char *relative_reference_preset_path   = (char*)malloc(PATH_MAX_LENGTH);
+   char *absolute_new_preset_basedir      = NULL;
    
-   preset_dir[0]                = '\0';
-   absolute_root_preset_path[0] = '\0';
-   relative_root_preset_path[0] = '\0';
-   absolute_new_preset_basedir  = strdup(path);
+   absolute_reference_preset_path[0]   = '\0';
+   relative_reference_preset_path[0]   = '\0';
+   absolute_new_preset_basedir         = strdup(path);
 
    path_basedir(absolute_new_preset_basedir);
 
-   /* Get the absolute path to the root preset, this is the one which is used in the #reference directive */
-   strlcpy(absolute_root_preset_path, shader->path, PATH_MAX_LENGTH);
-   if (string_is_empty(shader->path))
+   /* If we are trying to save a preset overtop of the same file initially loaded, 
+    * or we are trying to save inside the autoshaders (core config) folder */
+   if (string_is_equal(shader->loaded_preset_path, path) || 
+      !strncmp(absolute_new_preset_basedir, shader->loaded_preset_path, strlen(absolute_new_preset_basedir)))
    {
-      RARCH_WARN("[Shaders-Save Reference]: Saving Full Preset because the loaded Shader "
-                  "does not have a path to a previously loaded preset file on disk.\n");
+      loaded_preset_conf = config_file_new_from_path_to_string(shader->loaded_preset_path);
+
+      /* If the initial preset loaded had a reference in it we will use this same reference 
+       * for the new preset */
+      if (loaded_preset_conf->reference)
+      {
+         /* Get the absolute reference path */
+         if (!path_is_absolute(loaded_preset_conf->reference))
+            fill_pathname_resolve_relative(absolute_reference_preset_path, 
+                                             loaded_preset_conf->path, 
+                                             loaded_preset_conf->reference, 
+                                             PATH_MAX_LENGTH);
+      }
+      else
+      {
+         /* We can't save a reference to ourselves */
+         strlcpy(absolute_reference_preset_path, shader->loaded_preset_path, PATH_MAX_LENGTH);
+         RARCH_WARN("[ Shaders - Save Simple Preset ]: Saving Full Preset because we "
+                     "can't save a preset which would reference itself.\n");
+         continue_saving_reference = false;
+         goto end;
+      }
+   }
+   else
+   {
+      /* Otherwise we will save a preset which references the original preset file loaded 
+       * Get the absolute path to originally loaded preset */
+      strlcpy(absolute_reference_preset_path, shader->loaded_preset_path, PATH_MAX_LENGTH);
+   }
+
+   /* If threre is no path to an initially loaded preset */
+   if (string_is_empty(absolute_reference_preset_path))
+   {
+      RARCH_WARN("[ Shaders - Save Simple Preset ]: Saving Full Preset because the "
+                 "loaded Shader does not have a path to a previously loaded preset "
+                 "file on disk.\n");
       continue_saving_reference = false;
    }
 
-   /* We can't save a reference to ourselves */
-   if (string_is_equal(shader->path, path))
-   {
-      RARCH_WARN("[Shaders-Save Reference]: Saving Full Preset because we can't save a preset "
-                 "which would reference itself.\n");
-      continue_saving_reference = false;
-   }
-
-   /* Don't ever create a reference to the ever-changing retroarch preset
+   /* If the initial preset loaded is the ever-changing retroarch preset don't save a reference
    * TODO remove once we don't write this preset anymore */
-   if (continue_saving_reference && !strncmp(path_basename(absolute_root_preset_path), "retroarch", STRLEN_CONST("retroarch")))
+   if (continue_saving_reference && !strncmp(path_basename(absolute_reference_preset_path), "retroarch", STRLEN_CONST("retroarch")))
    {
       continue_saving_reference = false;
-      RARCH_WARN("[Shaders-Save Reference]: Saving Full Preset because we can't save a reference "
-                 "to the ever-changing retroarch preset.\n");
+      RARCH_WARN("[ Shaders - Save Simple Preset ]: Saving Full Preset because we can't "
+                 "save a reference to the ever-changing retroarch preset.\n");
    }
 
    if (continue_saving_reference)
    {
-      config_file_t *root_conf;
+      config_file_t *referenced_conf;
 
-      path_relative_to(relative_root_preset_path, 
-                         absolute_root_preset_path, 
+      path_relative_to(relative_reference_preset_path, 
+                         absolute_reference_preset_path, 
                          absolute_new_preset_basedir,
                          PATH_MAX_LENGTH);
 #ifdef _WIN32
-       if (!path_is_absolute(relative_root_preset_path))
-          make_relative_path_portable(relative_root_preset_path);
+       if (!path_is_absolute(relative_reference_preset_path))
+          make_relative_path_portable(relative_reference_preset_path);
 #endif
 
       /* Create a new EMPTY config */
@@ -659,36 +682,42 @@ bool video_shader_write_referenced_preset(const char *path,
       conf->path = strdup(path);
 
       /* Add the reference path to the config */
-      config_file_set_reference_path(conf, relative_root_preset_path);
+      config_file_set_reference_path(conf, relative_reference_preset_path);
 
       /* Set modified to true so when you run config_file_write it will save a file */
       conf->modified = true;
 
-      /* Get a config from root preset which was defined by the #reference directive 
-      * to compare the current shader against */
-      root_conf = config_file_new_from_path_to_string(absolute_root_preset_path);
+      /* Get a config from the #reference line in the preset 
+       * We will compare the current shader against this config */
+      referenced_conf = video_shader_read_preset(absolute_reference_preset_path);
 
-      /* root_conf could be NULL if the file was not found */
-      if (root_conf == NULL)
-         RARCH_WARN("[Shaders-Save Reference]: Saving Full Preset because we could not "
-                    "load the Root Preset: %s.\n", 
-                     absolute_root_preset_path);
+      /* referenced_conf could be NULL if the file was not found or if the 
+       * chain of references was too deep */
+      if (referenced_conf == NULL)
+      {
+         RARCH_WARN("[ Shaders - Save Simple Preset ]:  Saving Full Preset because we "
+                     "could not load the preset from the #reference line: %s.\n", 
+                     absolute_reference_preset_path);
+         continue_saving_reference = false;
+      }
       else
       {
          /* 
-            Compare the shader to a shader created from the root config to see if  
+            Compare the shader to a shader created from the referenced config to see if  
             we can save a referenced preset and what parameters and textures of the 
             root_config are overridden
          */
 
          struct video_shader *root_shader = NULL;
          root_shader          = (struct video_shader*) calloc(1, sizeof(*root_shader));
-         video_shader_read_conf_preset(root_conf, root_shader);
+         video_shader_read_conf_preset(referenced_conf, root_shader);
 
          /* Check number of passes match */
          if (shader->passes != root_shader->passes)
          {
-            RARCH_WARN("[Shaders-Save Reference]: passes (Number of Passes)");
+            RARCH_WARN("[ Shaders - Save Simple Preset ]: passes (Number of Passes) "
+                        "Current Value doesn't match Referenced Value - Full Preset "
+                        "will be Saved instead of Simple Preset\n");
             continue_saving_reference = false;
          }
 
@@ -709,91 +738,91 @@ bool video_shader_write_referenced_preset(const char *path,
 
                if (!string_is_equal(pass->source.path, root_pass->source.path))
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u path", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u path", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && pass->filter != root_pass->filter)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u filter", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u filter", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && pass->wrap != root_pass->wrap)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u wrap", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u wrap", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && pass->frame_count_mod != root_pass->frame_count_mod)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u frame_count", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u frame_count", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && pass->mipmap != root_pass->mipmap)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u mipmap", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u mipmap", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && !string_is_equal(pass->alias, root_pass->alias))
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u alias", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u alias", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->type_x != root_fbo->type_x)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u type_x", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u type_x", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->type_y != root_fbo->type_y)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u type_y", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u type_y", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->scale_x != root_fbo->scale_x)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u scale_x", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u scale_x", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->scale_y != root_fbo->scale_y)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u scale_y", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u scale_y", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->fp_fbo != root_fbo->fp_fbo)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u fp_fbo", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u fp_fbo", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->srgb_fbo != root_fbo->srgb_fbo)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u srgb_fbo", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u srgb_fbo", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->valid != root_fbo->valid)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u valid", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u valid", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->abs_x != root_fbo->abs_x)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u abs_x", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u abs_x", i);
                   continue_saving_reference = false;
                }
 
                if (continue_saving_reference && fbo->abs_y != root_fbo->abs_y)
                {
-                  RARCH_WARN("[Shaders-Save Reference]: Pass %u abs_y", i);
+                  RARCH_WARN("[ Shaders - Save Simple Preset ]: Pass %u abs_y", i);
                   continue_saving_reference = false;
                }
 
@@ -818,13 +847,13 @@ bool video_shader_write_referenced_preset(const char *path,
                {
                   bool add_param_to_override = false;
                   
-                  entry = config_get_entry(root_conf, shader->parameters[i].id);
+                  entry = config_get_entry(referenced_conf, shader->parameters[i].id);
 
                   /* If the parameter is in the reference config */
                   if (entry)
                   {
                      /* If the current param value is different than the referenced preset's value */
-                     config_get_float(root_conf, shader->parameters[i].id, &parameter_value_reference);
+                     config_get_float(referenced_conf, shader->parameters[i].id, &parameter_value_reference);
                      if (shader->parameters[i].current != parameter_value_reference)
                         add_param_to_override = true;
                   }
@@ -858,7 +887,7 @@ bool video_shader_write_referenced_preset(const char *path,
                for (i = 0; i < shader->luts; i++)
                {
                   /* If the texture is defined in the reference config */
-                  entry = config_get_entry(root_conf, shader->lut[i].id);
+                  entry = config_get_entry(referenced_conf, shader->lut[i].id);
                   if (entry)
                   {
                      /* Texture path from shader is already absolute */
@@ -868,7 +897,7 @@ bool video_shader_write_referenced_preset(const char *path,
                      /* Resolve the texture's path relative to the override config */
                      if (!path_is_absolute(referenced_tex_path))
                         fill_pathname_resolve_relative(referenced_tex_absolute_path, 
-                                                         root_conf->path, 
+                                                         referenced_conf->path, 
                                                          entry->value, 
                                                          PATH_MAX_LENGTH);
                      else
@@ -881,7 +910,7 @@ bool video_shader_write_referenced_preset(const char *path,
                         /* Get the texture path relative to the new preset */
                         path_relative_to(shader_tex_relative_path, shader_tex_path, path_basename(path), PATH_MAX_LENGTH);
 
-                        RARCH_LOG("[Shaders-Save Reference]:  Texture override %s = %s.\n", 
+                        RARCH_LOG("[ Shaders - Save Simple Preset ]:  Texture override %s = %s.\n", 
                                  shader->lut[i].id, 
                                  shader->lut[i].path);
                         config_set_path(conf, shader->lut[i].id, shader->lut[i].path);
@@ -899,20 +928,20 @@ bool video_shader_write_referenced_preset(const char *path,
             ret = config_file_write(conf, path, false);
 
             if (!ret)
-               RARCH_WARN("[Shaders-Save Reference]: Failed writing Referenced Preset to %s - "
-                          "Full Preset Will be Saved instead of Simple Preset\n", path);
+               RARCH_WARN("[ Shaders - Save Simple Preset ]:  Failed writing Simple "
+                           "Preset to %s - Full Preset Will be Saved instead.\n", path);
          }
-         config_file_free(root_conf);
          free(root_shader);
       }
+      config_file_free(referenced_conf);
       config_file_free(conf);
    }
 
 end:
 
-   free(preset_dir);
-   free(absolute_root_preset_path);
-   free(relative_root_preset_path);
+   config_file_free(loaded_preset_conf);
+   free(absolute_reference_preset_path);
+   free(relative_reference_preset_path);
    free(absolute_new_preset_basedir);
 
    return ret;
@@ -932,7 +961,7 @@ bool video_shader_write_preset(const char *path,
       const struct video_shader *shader, bool reference)
 {
    /* We need to clean up paths to be able to properly process them
-    * path and shader->path can use '/' on Windows due to Qt being Qt */
+    * path and shader->loaded_preset_path can use '/' on Windows due to Qt being Qt */
    char preset_dir[PATH_MAX_LENGTH];
    config_file_t *conf;
    bool ret;
@@ -1045,7 +1074,7 @@ bool override_config_values(config_file_t *conf, config_file_t *override_conf)
       /* Only override an entry if the its key is not "textures" */
       if (!string_is_empty(override_entry->key) && !string_is_equal(override_entry->key, "textures"))
       {
-         RARCH_LOG("[Shaders-Load Simple Preset]:  Parameter/Entry overridden %s = %s.\n",
+         RARCH_LOG("[ Shaders - Read Simple Preset ]:    Parameter/Entry overridden %s = %s.\n",
                      override_entry->key, override_entry->value);
          config_set_string(conf, override_entry->key, override_entry->value);
          return_val = 1;
@@ -1078,26 +1107,49 @@ config_file_t *video_shader_read_preset(const char *path)
 
    if (conf != NULL)
    {
-      /* If the original config had a reference then it was really
-       * the override config. We now load a new config from the reference
-       * then override it's values with the override config */
+      int reference_depth = 1;
+
       if (conf->reference)
+         RARCH_LOG("[ Shaders - Read Preset ]:  Start reading SIMPLE Preset: %s\n", path);
+      else
+         RARCH_LOG("[ Shaders - Read Preset ]:  Start reading FULL Preset: %s\n", path);
+      
+      /* If the config has a reference then it is really an override config. 
+       * We now load a new config from the reference then override it's values 
+       * with the override config */
+      while (conf->reference)
       {
-         char* root_preset_path = (char*)malloc(PATH_MAX_LENGTH);
+         char* reference_preset_path = (char*)malloc(PATH_MAX_LENGTH);
          /* Set override_conf to refer to the original config */
          config_file_t *override_conf = conf;
 
+         /* Stop attempting to read the next reference when we have visited many links 
+          * in the reference chain because we are likely in a self referential loop. 
+          * 16 references deep seems like more than enough depth for expected usage */
+         if (reference_depth > 16)
+         {
+            RARCH_ERR("[ Shaders - Read Simple Preset ]:  Exceeded maximum reference "
+                        "depth(16) without finding a full preset\n");
+            free(reference_preset_path);
+            config_file_free(conf);
+            conf = NULL;
+            return NULL;
+         }
+
          /* Resolve the reference path relative to the config */
          if (path_is_absolute(conf->reference))
-            strlcpy(root_preset_path, conf->reference, PATH_MAX_LENGTH);
+            strlcpy(reference_preset_path, conf->reference, PATH_MAX_LENGTH);
          else
-            fill_pathname_resolve_relative(root_preset_path,
-               conf->path,
-               conf->reference,
-               PATH_MAX_LENGTH);
+            fill_pathname_resolve_relative(reference_preset_path,
+                                             conf->path,
+                                             conf->reference,
+                                             PATH_MAX_LENGTH);
+
+         RARCH_LOG("[ Shaders - Read Simple Preset ]:  #reference preset read "
+                  "(Depth %u): %s\n", reference_depth, reference_preset_path);
 
          /* Create a new config from the root preset */
-         conf = config_file_new_from_path_to_string(root_preset_path);
+         conf = config_file_new_from_path_to_string(reference_preset_path);
          
          /* Only try to override values if the config is not NULL
           * If it is NULL there is no shader*/
@@ -1106,9 +1158,17 @@ config_file_t *video_shader_read_preset(const char *path)
              * has the #reference directive*/
             override_config_values(conf, override_conf);
          else
-            RARCH_WARN("[ SHADER LOAD ] Could not read root shader preset in '#reference' line: %s\n", root_preset_path);
+         {
+            RARCH_WARN("[ Shaders - Read Simple Preset ]:  Could not read shader preset "
+                        "in #reference line: %s\n", reference_preset_path);
+            free(reference_preset_path);
+            config_file_free(override_conf);
+            break;
+         }
 
-         free(root_preset_path);
+         reference_depth += 1;
+
+         free(reference_preset_path);
          config_file_free(override_conf);
       }
 
@@ -1116,7 +1176,7 @@ config_file_t *video_shader_read_preset(const char *path)
       config_set_path(conf, "loaded_preset_path", path);
    }
    else
-      RARCH_WARN("[ SHADER LOAD ] Could not read preset: %s", path);
+      RARCH_WARN("[ Shaders - Read Preset ]:  Could not read preset: %s \n", path);
 
    return conf;
 }
@@ -1144,13 +1204,15 @@ bool video_shader_read_conf_preset(config_file_t *conf,
 
    if (!config_get_uint(conf, "shaders", &shaders))
    {
-      RARCH_ERR("[Shaders]: Cannot find \"shaders\" param.\n");
+      RARCH_ERR("[ Shaders - Read Preset ]:  Cannot find \"shaders\" param. "
+                  "Preset is invalid.\n");
       return false;
    }
 
    if (!shaders)
    {
-      RARCH_ERR("[Shaders]: Need to define at least 1 shader pass.\n");
+      RARCH_ERR("[ Shaders - Read Preset ]:  Need to define at least 1 shader pass. "
+                  "Preset is invalid.\n");
       return false;
    }
 
