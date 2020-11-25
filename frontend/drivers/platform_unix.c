@@ -2063,8 +2063,10 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 #else
    char base_path[PATH_MAX] = {0};
+   char udisks_media_path[PATH_MAX] = {0};
    const char *xdg          = getenv("XDG_CONFIG_HOME");
    const char *home         = getenv("HOME");
+   const char *user         = getenv("USER");
 
    if (xdg)
    {
@@ -2081,6 +2083,13 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 #endif
    }
 
+   strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
+   if (user)
+   {
+      strlcat(udisks_media_path, "/", sizeof(udisks_media_path));
+      strlcat(udisks_media_path, user, sizeof(udisks_media_path));
+   }
+
    if(!string_is_empty(base_path))
    {
       menu_entries_append_enum(list, base_path,
@@ -2091,6 +2100,13 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    if (!string_is_empty(home))
    {
       menu_entries_append_enum(list, home,
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+   }
+   if (path_is_directory(udisks_media_path))
+   {
+      menu_entries_append_enum(list, udisks_media_path,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
@@ -2653,13 +2669,13 @@ static bool accessibility_speak_unix(int speed,
       /* parent process */
       speak_pid = pid;
 
-      /* Tell the system that we'll ignore the exit status of the child 
+      /* Tell the system that we'll ignore the exit status of the child
        * process.  This prevents zombie processes. */
       signal(SIGCHLD,SIG_IGN);
    }
    else
-   { 
-      /* child process: replace process with the espeak command */ 
+   {
+      /* child process: replace process with the espeak command */
       char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
       cmd[1] = voice_out;
       cmd[2] = speed_out;
