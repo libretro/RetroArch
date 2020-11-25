@@ -157,7 +157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Файлы конфигураций"
+   "Конфигурации"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
@@ -1880,7 +1880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   "Помогает сглаживать отклонения тайминга при синхронизации звука и изображения. Если выкл., достижение точной синхронизации практически невозможно."
+   "Помогает сглаживать отклонения от тайминга при синхронизации звука и изображения. Если выключено, достижение точной синхронизации практически невозможно."
    )
 
 /* Settings > Audio > MIDI */
@@ -2137,6 +2137,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Вибрация устройства (если поддерживается ядром)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2154,7 +2156,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "Меняет местами кнопки OK/Отмена. Отключите для японской раскладки, включите для западной."
+   "Меняет местами кнопки OK/Отмена. Отключение соответствует японской раскладке, включение - западной."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2520,6 +2522,14 @@ MSG_HASH(
    "Включает/останавливает трансляцию текущего сеанса на онлайн-платформе."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "Обгон (переключение)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "Включает или отключает обгон."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "AI-сервис"
    )
@@ -2536,7 +2546,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "Аналогово-цифровой тип"
+   "Аналого-цифровой тип"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -2847,7 +2857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
-   "Сохранять все опции ядер в единый файл настроек (retroarch-core-options.cfg). Если выключено, опции каждого ядра будут сохраняться в соответствующие отдельные файлы/папки внутри каталога 'config' RetroArch."
+   "Сохранять все опции ядер в общий файл настроек (retroarch-core-options.cfg). Если выключено, опции каждого ядра будут сохраняться в отдельные файлы/папки внутри каталога 'Конфигурации' RetroArch."
    )
 
 /* Settings > Saving */
@@ -3344,11 +3354,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-   "Непрозрачность оверлея"
+   "Видимость оверлея"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   "Непрозрачность всех элементов интерфейса оверлея."
+   "Настройка прозрачности элементов оверлея."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -3801,19 +3811,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Возобновить контент после сохранения"
+   "Продолжить контент после сохранения"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Автоматически закрывать меню и возобновлять контент после сохранения или загрузки. Отключение опции повышает скорость сохранения на слабых устройствах."
+   "Автоматически закрывать меню и продолжать контент после сохранения или загрузки состояния. Отключение опции повышает скорость сохранения состояний для слабых устройств."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Возобновить контент при смене диска"
+   "Продолжить контент при смене диска"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "Автоматически закрывать меню и возобновлять контент, если был вставлен или загружен новый диск."
+   "Автоматически закрывать меню и продолжать контент, если был вставлен или загружен новый диск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
@@ -4175,7 +4185,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
-   "Показывать или скрывать элемент 'Возобновить контент'."
+   "Показывать или скрывать элемент 'Продолжить'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
@@ -4557,7 +4567,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "Изменяет прозрачность фонового изображения."
+   "Настройка прозрачности фонового изображения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -4565,7 +4575,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Изменение прозрачности кадрового буфера."
+   "Настройка прозрачности кадрового буфера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -5903,7 +5913,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Закрыть быстрое меню и возобновить текущий контент."
+   "Закрыть быстрое меню и продолжить текущий контент."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -5911,7 +5921,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Перезапустить игру."
+   "Перезапустить контент сначала."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -5935,7 +5945,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "Изменяет текущий слот сохранения."
+   "Изменяет текущий слот сохранения состояния."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
@@ -6571,6 +6581,16 @@ MSG_HASH(
 /* Quick Menu > Shaders > Save */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Простые пресеты"
+   )
+   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Сохраняет пресет шейдера со ссылкой на оригинальный загруженный пресет и содержащий только параметры, изменённые пользователем."
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "Сохранить пресет шейдера как"
    )
@@ -6704,8 +6724,12 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Возобновить достижения для текущего сеанса (отключает быстрые сохранения, чит-коды, перемотку, паузу, замедление и перезагружает игру)"
+   "Продолжить получение достижений для текущего сеанса (отключает быстрые сохранения, чит-коды, перемотку, паузу, замедление и перезагружает игру)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "Вход не выполнен"
+)
 
 /* Quick Menu > Information */
 
@@ -7225,7 +7249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Правый аналог"
+   "Правый аналоговый стик"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -9103,7 +9127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME,
-   "Закрыть быстрое меню и возобновить текущий контент."
+   "Закрыть быстрое меню и продолжить текущий контент."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -9119,11 +9143,11 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Непрозрачность нижнего колонтитула"
+   "Непрозрачность нижней полосы"
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Изменение прозрачности графика нижнего колонтитула."
+   "Настройка прозрачности нижней полосы."
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
@@ -9131,7 +9155,7 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Изменение прозрачность графического заголовка."
+   "Настройка прозрачности полосы заголовка."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
@@ -9159,7 +9183,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
-   "Смена оверлея виртуального контроллера"
+   "Изменение оверлея экранного геймпада"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
@@ -10669,6 +10693,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
    "Загружены привязки ввода для ядра."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Обгон включен. Кадров задержки удалено: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Включен обгон со вторым инстансом. Кадров задержки удалено: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Обгон выключен."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
