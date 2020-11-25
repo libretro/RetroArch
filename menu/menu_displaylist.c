@@ -1094,7 +1094,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
 
-#ifdef HAVE_LAKKA
       if (frontend->get_lakka_version)
       {
          frontend->get_lakka_version(tmp2, sizeof(tmp2));
@@ -1109,7 +1108,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
       }
-#endif
 
       if (frontend->get_name)
       {

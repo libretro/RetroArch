@@ -2716,6 +2716,8 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    NULL,                         /* detach_console */
 #ifdef HAVE_LAKKA
    frontend_unix_get_lakka_version,    /* get_lakka_version */
+#else
+   NULL,                         /* get_lakka_version */
 #endif
    frontend_unix_watch_path_for_changes,
    frontend_unix_check_for_path_changes,
