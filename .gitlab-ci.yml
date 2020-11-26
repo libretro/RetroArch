@@ -33,6 +33,19 @@ build-retroarch-linux-x64:
     - "./configure"
     - "make -j$NUMPROC"
 
+build-retroarch-dingux-i386:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
+  stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - retroarch_rg350.opk
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "make -j$NUMPROC -f Makefile.rg350"
+
 build-static-retroarch-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
   stage: prepare-for-static-cores
