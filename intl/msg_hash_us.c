@@ -1786,17 +1786,29 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Cloud storage provider.");
             break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_DEFAULT_CREDS:
+            snprintf(s, len,
+                     "Use default credentials.");
+            break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_ID:
+            snprintf(s, len,
+                     "Google client ID.");
+            break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_SECRET:
+            snprintf(s, len,
+                     "Google client secret.");
+            break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_DEFAULT_CREDS:
+            snprintf(s, len,
+                     "Use default credentials.");
+            break;
+        case MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_CLIENT_ID:
+            snprintf(s, len,
+                     "MS OneDrive client ID.");
+            break;
         case MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS:
             snprintf(s, len,
                      "Authorization status.");
-            break;
-        case MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY:
-            snprintf(s, len,
-                     "Client ID for the AWS S3 account.");
-            break;
-        case MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY:
-            snprintf(s, len,
-                     "Client secret for the AWS S3 account.");
             break;
         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
             snprintf(s, len,

@@ -33,6 +33,10 @@
 
 RETRO_BEGIN_DECLS
 
+bool cloud_storage_onedrive_have_default_credentials(void);
+
+char *cloud_storage_onedrive_get_client_id(void);
+
 cloud_storage_item_t *cloud_storage_onedrive_parse_file_from_json(struct json_map_t file_json);
 
 struct http_response_t *onedrive_rest_execute_request(rest_request_t *rest_request);

@@ -79,13 +79,18 @@ static uint8_t *_refresh_token_request_body(size_t *request_body_len)
    size_t cur_pos = 0;
    int i;
    settings_t *settings;
+   char *client_id;
+   char *client_secret;
 
    settings = config_get_ptr();
 
+   client_id = cloud_storage_google_get_client_id();
+   client_secret = cloud_storage_google_get_client_secret();
+
    names[0] = CLIENT_ID_PARAM_NAME;
-   net_http_urlencode(&(values[0]), settings->arrays.cloud_storage_google_client_id);
+   net_http_urlencode(&(values[0]), client_id);
    names[1] = CLIENT_SECRET_PARAM_NAME;
-   net_http_urlencode(&(values[1]), settings->arrays.cloud_storage_google_client_secret);
+   net_http_urlencode(&(values[1]), client_secret);
    names[2] = REFRESH_TOKEN_PARAM_NAME;
    net_http_urlencode(&(values[2]), settings->arrays.cloud_storage_google_refresh_token);
    names[3] = GRANT_TYPE_PARAM_NAME;
@@ -157,7 +162,7 @@ static bool _process_response(struct http_response_t *response)
    return false;
 }
 
-static struct http_request_t *_create_http_request()
+static struct http_request_t *_create_http_request(void)
 {
    struct http_request_t *http_request;
    uint8_t *body;

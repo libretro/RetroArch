@@ -376,11 +376,8 @@ typedef struct settings
       char cloud_storage_google_client_id[255];
       char cloud_storage_google_client_secret[255];
       char cloud_storage_google_refresh_token[255];
-      char cloud_storage_google_refresh_token_expiration[32];
       char cloud_storage_onedrive_client_id[255];
       char cloud_storage_onedrive_refresh_token[510];
-      char cloud_storage_s3_access_key[255];
-      char cloud_storage_s3_secret_access_key[255];
 
       char crt_switch_timings[255];
    } arrays;
@@ -690,6 +687,10 @@ typedef struct settings
       bool network_buildbot_show_experimental_cores;
       bool network_on_demand_thumbnails;
       bool core_updater_auto_backup;
+
+      /* Cloud Storage */
+      bool cloud_storage_google_default_creds;
+      bool cloud_storage_onedrive_default_creds;
 
       /* UI */
       bool ui_menubar_enable;

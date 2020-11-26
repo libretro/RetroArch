@@ -97,9 +97,11 @@ struct cloud_storage_provider_t
 {
    bool need_authorization;
 
-   bool (*ready_for_request)();
+   bool (*have_default_credentials)(void);
 
-   bool (*authenticate)();
+   bool (*ready_for_request)(void);
+
+   bool (*authenticate)(void);
 
    authorization_status_t (*authorize)(void (*callback)(bool success));
 
@@ -144,6 +146,8 @@ void cloud_storage_init(void);
 void cloud_storage_shutdown(void);
 
 bool cloud_storage_need_authorization(void);
+
+bool cloud_storage_have_default_credentials(void);
 
 void cloud_storage_authorize(void (*callback)(bool success));
 

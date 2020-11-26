@@ -6910,6 +6910,49 @@ unsigned menu_displaylist_build_list(
                count++;
             }
 
+            switch (settings->uints.cloud_storage_provider)
+            {
+            case 0:
+               if (cloud_storage_have_default_credentials())
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_DEFAULT_CREDS, PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+               } else
+               {
+                  settings->bools.cloud_storage_google_default_creds = false;
+               }
+
+               if (!settings->bools.cloud_storage_google_default_creds)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_ID, PARSE_ONLY_STRING, false) == 0)
+                     count++;
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_SECRET, PARSE_ONLY_STRING, false) == 0)
+                     count++;
+               }
+               break;
+            case 1:
+               if (cloud_storage_have_default_credentials())
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_DEFAULT_CREDS, PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+               } else
+               {
+                  settings->bools.cloud_storage_onedrive_default_creds = false;
+               }
+
+               if (!settings->bools.cloud_storage_onedrive_default_creds)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_CLIENT_ID, PARSE_ONLY_STRING, false) == 0)
+                     count++;
+               }
+               break;
+            }
+
             if (settings->bools.cloud_storage_enable && cloud_storage_need_authorization() &&
                      MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE,
                      PARSE_ACTION, false) == 0)
@@ -6929,22 +6972,6 @@ unsigned menu_displaylist_build_list(
                {
                   menu_displaylist_build_info_t build_list[] = {
                      {MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,                     PARSE_ONLY_STRING},
-                  };
-
-                  for (i = 0; i < ARRAY_SIZE(build_list); i++)
-                  {
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                              build_list[i].enum_idx,  build_list[i].parse_type,
-                              false) == 0)
-                        count++;
-                  }
-               }
-               break;
-            case 2:
-               {
-                  menu_displaylist_build_info_t build_list[] = {
-                     {MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY,                        PARSE_ONLY_STRING},
-                     {MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,                 PARSE_ONLY_STRING},
                   };
 
                   for (i = 0; i < ARRAY_SIZE(build_list); i++)

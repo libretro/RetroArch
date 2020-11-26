@@ -29,7 +29,7 @@
 
 RETRO_BEGIN_DECLS
 
-cloud_storage_provider_t *cloud_storage_onedrive_create();
+cloud_storage_provider_t *cloud_storage_onedrive_create(void);
 
 RETRO_END_DECLS
 

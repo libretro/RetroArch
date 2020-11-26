@@ -175,7 +175,7 @@ static void _operation_thread_loop(void *user_data)
    }
 }
 
-static cloud_storage_provider_t *_get_active_provider()
+static cloud_storage_provider_t *_get_active_provider(void)
 {
    settings_t *settings;
 
@@ -1005,6 +1005,11 @@ void cloud_storage_set_active_provider(unsigned provider_id)
 bool cloud_storage_need_authorization(void)
 {
    return _get_active_provider()->need_authorization;
+}
+
+bool cloud_storage_have_default_credentials(void)
+{
+   return _get_active_provider()->have_default_credentials();
 }
 
 void cloud_storage_authorize(void (*callback)(bool success))

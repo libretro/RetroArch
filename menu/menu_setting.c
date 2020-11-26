@@ -3051,11 +3051,6 @@ static void setting_get_string_representation_uint_cloud_storage_provider(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_MICROSOFT), len);
          break;
-      case 2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_AWS), len);
-         break;
    }
 }
 #endif
@@ -18056,6 +18051,78 @@ static bool setting_append_list(
             &setting_get_string_representation_uint_cloud_storage_provider;
          menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_storage_google_default_creds,
+               MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_DEFAULT_CREDS,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_GOOGLE_DEFAULT_CREDS,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.cloud_storage_google_client_id,
+               sizeof(settings->arrays.cloud_storage_google_client_id),
+               MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_ID,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_GOOGLE_CLIENT_ID,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.cloud_storage_google_client_secret,
+               sizeof(settings->arrays.cloud_storage_google_client_secret),
+               MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_SECRET,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_GOOGLE_CLIENT_SECRET,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_storage_onedrive_default_creds,
+               MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_DEFAULT_CREDS,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_ONEDRIVE_DEFAULT_CREDS,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.cloud_storage_onedrive_client_id,
+               sizeof(settings->arrays.cloud_storage_onedrive_client_id),
+               MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_CLIENT_ID,
+               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_ONEDRIVE_CLIENT_ID,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -18088,35 +18155,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_NONE);
-            (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_PASSWORD_LINE_EDIT;
-
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->arrays.cloud_storage_s3_access_key,
-                  sizeof(settings->arrays.cloud_storage_s3_access_key),
-                  MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY,
-                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_S3_ACCESS_KEY,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_PASSWORD_LINE_EDIT;
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->arrays.cloud_storage_s3_secret_access_key,
-                  sizeof(settings->arrays.cloud_storage_s3_secret_access_key),
-                  MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,
-                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_PASSWORD_LINE_EDIT;
          }
 

@@ -1931,20 +1931,32 @@ MSG_HASH(
    "cloud_storage_provider"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_DEFAULT_CREDS,
+   "cloud_storage_google_default_creds"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_ID,
+   "cloud_storage_google_client_id"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_SECRET,
+   "cloud_storage_google_client_secret"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_DEFAULT_CREDS,
+   "cloud_storage_onedrive_default_creds"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_CLIENT_ID,
+   "cloud_storage_onedrive_client_id"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE,
    "cloud_storage_authorize"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,
    "cloud_storage_authorize_status"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY,
-   "cloud_storage_s3_access_key"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY,
-   "cloud_storage_s3_secret_access_key"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,

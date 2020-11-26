@@ -34,18 +34,38 @@
 #include "onedrive.h"
 #include "onedrive_internal.h"
 
-#define ACCESS_TOKEN_FILE "onedrive_access_token.json"
+#define CLOUD_STORAGE_ONEDRIVE_DEFAULT_CLIENT_ID ""
 
 char *_onedrive_access_token = NULL;
 time_t _onedrive_access_token_expiration_time = 0;
 
-static bool _ready_for_request()
+static bool _ready_for_request(void)
 {
    settings_t *settings;
 
    settings = config_get_ptr();
 
    return strlen(settings->arrays.cloud_storage_onedrive_refresh_token) > 0;
+}
+
+bool cloud_storage_onedrive_have_default_credentials(void)
+{
+   return strlen(CLOUD_STORAGE_ONEDRIVE_DEFAULT_CLIENT_ID) > 0;
+}
+
+char *cloud_storage_onedrive_get_client_id(void)
+{
+   settings_t *settings;
+
+   settings = config_get_ptr();
+
+   if (settings->bools.cloud_storage_onedrive_default_creds)
+   {
+      return CLOUD_STORAGE_ONEDRIVE_DEFAULT_CLIENT_ID;
+   } else
+   {
+      return settings->arrays.cloud_storage_onedrive_client_id;
+   }
 }
 
 cloud_storage_item_t *cloud_storage_onedrive_parse_file_from_json(struct json_map_t file_json)
@@ -121,13 +141,14 @@ cleanup:
    return NULL;
 }
 
-cloud_storage_provider_t *cloud_storage_onedrive_create()
+cloud_storage_provider_t *cloud_storage_onedrive_create(void)
 {
    cloud_storage_provider_t *provider;
 
    provider = (cloud_storage_provider_t *)malloc(sizeof(cloud_storage_provider_t));
 
    provider->need_authorization = true;
+   provider->have_default_credentials = cloud_storage_onedrive_have_default_credentials;
    provider->ready_for_request = _ready_for_request;
    provider->authenticate = cloud_storage_onedrive_authenticate;
    provider->authorize = cloud_storage_onedrive_authorize;

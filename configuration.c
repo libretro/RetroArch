@@ -1238,11 +1238,8 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("cloud_storage_google_client_id", settings->arrays.cloud_storage_google_client_id, true, NULL, true);
    SETTING_ARRAY("cloud_storage_google_client_secret", settings->arrays.cloud_storage_google_client_secret, true, NULL, true);
    SETTING_ARRAY("cloud_storage_google_refresh_token", settings->arrays.cloud_storage_google_refresh_token, true, NULL, true);
-   SETTING_ARRAY("cloud_storage_google_refresh_token_expiration", settings->arrays.cloud_storage_google_refresh_token_expiration, true, NULL, true);
    SETTING_ARRAY("cloud_storage_onedrive_client_id", settings->arrays.cloud_storage_onedrive_client_id, true, NULL, true);
    SETTING_ARRAY("cloud_storage_onedrive_refresh_token", settings->arrays.cloud_storage_onedrive_refresh_token, true, NULL, true);
-   SETTING_ARRAY("cloud_storage_s3_access_key", settings->arrays.cloud_storage_s3_access_key, true, NULL, true);
-   SETTING_ARRAY("cloud_storage_s3_secret_access_key", settings->arrays.cloud_storage_s3_secret_access_key, true, NULL, true);
    SETTING_ARRAY("ai_service_url",           settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
    SETTING_ARRAY("crt_switch_timings",       settings->arrays.crt_switch_timings, false, NULL, true);
 
@@ -1781,6 +1778,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
    SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, DEFAULT_LOG_TO_FILE_TIMESTAMP, false);
    SETTING_BOOL("cloud_storage_enable",  &settings->bools.cloud_storage_enable, true, DEFAULT_CLOUD_STORAGE_ENABLE, false);
+   SETTING_BOOL("cloud_storage_google_default_creds", &settings->bools.cloud_storage_google_default_creds, true, DEFAULT_CLOUD_STORAGE_GOOGLE_DEFAULT_CREDS, false);
+   SETTING_BOOL("cloud_storage_onedrive_default_creds", &settings->bools.cloud_storage_onedrive_default_creds, true, DEFAULT_CLOUD_STORAGE_ONEDRIVE_DEFAULT_CREDS, false);
    SETTING_BOOL("ai_service_enable",     &settings->bools.ai_service_enable, true, DEFAULT_AI_SERVICE_ENABLE, false);
    SETTING_BOOL("ai_service_pause",      &settings->bools.ai_service_pause, true, DEFAULT_AI_SERVICE_PAUSE, false);
    SETTING_BOOL("wifi_enabled",          &settings->bools.wifi_enabled, true, DEFAULT_WIFI_ENABLE, false);
@@ -2641,11 +2640,8 @@ void config_set_defaults(void *data)
    *settings->arrays.cloud_storage_google_client_id = '\0';
    *settings->arrays.cloud_storage_google_client_secret = '\0';
    *settings->arrays.cloud_storage_google_refresh_token = '\0';
-   *settings->arrays.cloud_storage_google_refresh_token_expiration = '\0';
    *settings->arrays.cloud_storage_onedrive_client_id = '\0';
    *settings->arrays.cloud_storage_onedrive_refresh_token = '\0';
-   *settings->arrays.cloud_storage_s3_access_key = '\0';
-   *settings->arrays.cloud_storage_s3_secret_access_key = '\0';
 
 #ifdef HAVE_CONFIGFILE
    /* Avoid reloading config on every content load */

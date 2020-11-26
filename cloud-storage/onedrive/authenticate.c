@@ -81,10 +81,13 @@ static uint8_t *_refresh_token_request_body(size_t *request_body_len)
    size_t cur_pos = 0;
    int i;
    settings_t *settings;
+   char *client_id;
 
    settings = config_get_ptr();
 
-   net_http_urlencode(&encoded_client_id, settings->arrays.cloud_storage_onedrive_client_id);
+   client_id = cloud_storage_onedrive_get_client_id();
+
+   net_http_urlencode(&encoded_client_id, client_id);
    net_http_urlencode(&encoded_redirect_uri, "https://login.microsoftonline.com/common/oauth2/nativeclient");
    net_http_urlencode(&encoded_refresh_token, settings->arrays.cloud_storage_onedrive_refresh_token);
 
@@ -149,7 +152,7 @@ static bool _process_response(struct http_response_t *response)
    return false;
 }
 
-static struct http_request_t *_create_http_request()
+static struct http_request_t *_create_http_request(void)
 {
    struct http_request_t *http_request;
    uint8_t *body;

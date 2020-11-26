@@ -578,9 +578,12 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_nat_traversal,         MENU_
 #if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_enable,          MENU_ENUM_SUBLABEL_CLOUD_STORAGE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_provider,        MENU_ENUM_SUBLABEL_CLOUD_STORAGE_PROVIDER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_google_default_creds, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_GOOGLE_DEFAULT_CREDS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_google_client_id, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_GOOGLE_CLIENT_ID)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_google_client_secret, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_GOOGLE_CLIENT_SECRET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_onedrive_default_creds, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_ONEDRIVE_DEFAULT_CREDS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_onedrive_client_id, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_ONEDRIVE_CLIENT_ID)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_authorize_status, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_AUTHORIZE_STATUS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_s3_access_key, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_S3_ACCESS_KEY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_storage_s3_secret_access_key, MENU_ENUM_SUBLABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_stdin_cmd_enable,              MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mouse_enable,                  MENU_ENUM_SUBLABEL_MOUSE_ENABLE)
@@ -2767,14 +2770,23 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CLOUD_STORAGE_PROVIDER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_provider);
             break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_DEFAULT_CREDS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_google_default_creds);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_ID:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_google_client_id);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_GOOGLE_CLIENT_SECRET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_google_client_secret);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_DEFAULT_CREDS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_onedrive_default_creds);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_STORAGE_ONEDRIVE_CLIENT_ID:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_onedrive_client_id);
+            break;
          case MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_authorize_status);
-            break;
-         case MENU_ENUM_LABEL_CLOUD_STORAGE_S3_ACCESS_KEY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_s3_access_key);
-            break;
-         case MENU_ENUM_LABEL_CLOUD_STORAGE_S3_SECRET_ACCESS_KEY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_storage_s3_secret_access_key);
             break;
 #endif
          case MENU_ENUM_LABEL_OVERLAY_PRESET:
