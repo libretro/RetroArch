@@ -53,7 +53,7 @@ bool cloud_storage_onedrive_have_default_credentials(void)
    return strlen(CLOUD_STORAGE_ONEDRIVE_DEFAULT_CLIENT_ID) > 0;
 }
 
-char *cloud_storage_onedrive_get_client_id(void)
+const char *cloud_storage_onedrive_get_client_id(void)
 {
    settings_t *settings;
 

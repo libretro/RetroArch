@@ -91,8 +91,8 @@ static rest_retry_policy_t *_get_retry_policy(void)
 authorization_status_t cloud_storage_google_authorize(void (*callback)(bool success))
 {
    settings_t *settings;
-   char *client_id;
-   char *client_secret;
+   const char *client_id;
+   const char *client_secret;
    int port;
    char url[URL_MAX_LENGTH];
    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
@@ -362,8 +362,8 @@ static void _get_tokens(char *code, struct authorize_state_t *authorize_state)
    rest_request_t *rest_request;
    struct http_request_t *http_request;
    struct http_response_t *http_response;
-   char *client_id;
-   char *client_secret;
+   const char *client_id;
+   const char *client_secret;
    settings_t *settings;
    char *body;
    size_t body_len;

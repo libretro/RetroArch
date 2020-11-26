@@ -54,7 +54,7 @@ bool cloud_storage_google_have_default_credentials(void)
    return strlen(CLOUD_STORAGE_GOOGLE_DEFAULT_CLIENT_ID) > 0 && strlen(CLOUD_STORAGE_GOOGLE_DEFAULT_CLIENT_SECRET) > 0;
 }
 
-char *cloud_storage_google_get_client_id(void)
+const char *cloud_storage_google_get_client_id(void)
 {
    settings_t *settings;
 
@@ -69,7 +69,7 @@ char *cloud_storage_google_get_client_id(void)
    }
 }
 
-char *cloud_storage_google_get_client_secret(void)
+const char *cloud_storage_google_get_client_secret(void)
 {
    settings_t *settings;
 

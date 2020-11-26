@@ -35,9 +35,9 @@ RETRO_BEGIN_DECLS
 
 bool cloud_storage_google_have_default_credentials(void);
 
-char *cloud_storage_google_get_client_id(void);
+const char *cloud_storage_google_get_client_id(void);
 
-char *cloud_storage_google_get_client_secret(void);
+const char *cloud_storage_google_get_client_secret(void);
 
 cloud_storage_item_t *cloud_storage_google_parse_file_from_json(struct json_map_t file_json);
 

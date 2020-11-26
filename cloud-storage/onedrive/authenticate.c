@@ -81,7 +81,7 @@ static uint8_t *_refresh_token_request_body(size_t *request_body_len)
    size_t cur_pos = 0;
    int i;
    settings_t *settings;
-   char *client_id;
+   const char *client_id;
 
    settings = config_get_ptr();
 
