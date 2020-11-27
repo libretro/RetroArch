@@ -468,8 +468,6 @@ static void _listen_for_response(void *data)
       {
          goto cleanup;
       }
-
-      sleep(2);
    }
 
    FD_ZERO(&read_set);
@@ -477,40 +475,48 @@ static void _listen_for_response(void *data)
    FD_ZERO(&write_set);
    FD_SET(clientfd, &write_set);
 
-   while (time(NULL) < abort_time)
+   timeout.tv_sec = abort_time - time(NULL);
+   timeout.tv_usec = 0;
+   rc = socket_select(clientfd + 1, (fd_set *)NULL, &write_set, (fd_set *)NULL, &timeout);
+   if (rc <= 0)
    {
-      timeout.tv_sec = abort_time - time(NULL);
-      timeout.tv_usec = 0;
-      rc = socket_select(clientfd + 1, &read_set, &write_set, (fd_set *)NULL, &timeout);
-      if (rc <= 0)
-      {
-         continue;
-      }
-
-      if (FD_ISSET(clientfd, &read_set))
-      {
-         bool error = false;
-         size_t bytes_read;
-
-         bytes_read = socket_receive_all_nonblocking(clientfd, &error, request, sizeof(request) - 1);
-         if (error)
-         {
-            if (errno != EWOULDBLOCK)
-            {
-               goto cleanup;
-            }
-         } else if (bytes_read == 0)
-         {
-            goto cleanup;
-         } else
-         {
-            request_length += bytes_read;
-            goto process_request;
-         }
-      }
+      goto cleanup;
    }
 
-   goto cleanup;
+   timeout.tv_sec = abort_time - time(NULL);
+   timeout.tv_usec = 0;
+   rc = socket_select(clientfd + 1, &read_set, (fd_set *)NULL, (fd_set *)NULL, &timeout);
+   if (rc <= 0)
+   {
+      goto cleanup;
+   }
+
+retry_read:
+   if (FD_ISSET(clientfd, &read_set))
+   {
+      bool error = false;
+      size_t bytes_read;
+
+      bytes_read = socket_receive_all_nonblocking(clientfd, &error, request, sizeof(request) - 1);
+      if (error)
+      {
+         if (errno != EWOULDBLOCK)
+         {
+            goto cleanup;
+         }
+
+         FD_ZERO(&read_set);
+         FD_SET(clientfd, &read_set);
+         goto retry_read;
+      } else if (bytes_read == 0)
+      {
+         goto cleanup;
+      } else
+      {
+         request_length += bytes_read;
+         goto process_request;
+      }
+   }
 
 process_request:
    if (clientfd > 0)
