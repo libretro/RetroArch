@@ -82,6 +82,7 @@ OPK_NAME = retroarch_rg350.opk
 OBJ :=
 LINK := $(CXX)
 DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -ffast-math -fomit-frame-pointer
+DEF_FLAGS += -mplt -mno-shared
 DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DDINGUX=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
