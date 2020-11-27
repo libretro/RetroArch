@@ -3430,27 +3430,6 @@ static int action_ok_set_switch_gpu_profile(const char *path,
    return menu_cbs_exit();
 }
 
-static int action_ok_set_switch_backlight(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char command[PATH_MAX_LENGTH] = {0};
-   int brightness = SWITCH_BRIGHTNESS[entry_idx];
-
-   snprintf(command, sizeof(command),
-         "echo %d > /sys/class/backlight/backlight/brightness",
-         brightness);
-
-   system(command);
-
-   snprintf(command, sizeof(command),
-         "Brightness set to %d%%", brightness);
-
-   runloop_msg_queue_push(command, 1, 90, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   return 0;
-}
-
 #endif
 
 static int action_ok_load_core_deferred(const char *path,
@@ -7265,7 +7244,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
 #ifdef HAVE_LAKKA_SWITCH
          {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,                  action_ok_push_default},
-         {MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,            action_ok_push_default},
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,                  action_ok_push_default},
@@ -7714,9 +7692,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_SET_SWITCH_GPU_PROFILE:
             BIND_ACTION_OK(cbs, action_ok_set_switch_gpu_profile);
-            break;
-         case MENU_SET_SWITCH_BRIGHTNESS:
-            BIND_ACTION_OK(cbs, action_ok_set_switch_backlight);
             break;
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

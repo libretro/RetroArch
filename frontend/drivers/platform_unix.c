@@ -1325,6 +1325,23 @@ static void frontend_unix_get_lakka_version(char *s,
 
    pclose(command_file);
 }
+
+static void frontend_unix_set_screen_brightness(int value)
+{
+   char svalue[16] = {0};
+   #if defined(HAVE_LAKKA_SWITCH)
+   /* Values from 0 to 100 */
+   int brightness = value;
+   #elif defined(HAVE_ODROIDGO2)
+   /* GOA screen PWM value does not linearly relate to perceived brightness */
+   int brightness = (pow(1.0369f, value) - 1) * 7;
+   #endif
+
+   snprintf(svalue, sizeof(svalue), "%d\n", brightness);
+   filestream_write_file("/sys/class/backlight/backlight/brightness",
+                         svalue, strlen(svalue));
+}
+
 #endif
 
 static void frontend_unix_get_env(int *argc,
@@ -1905,6 +1922,7 @@ static void android_app_destroy(struct android_app *android_app)
 
 static void frontend_unix_deinit(void *data)
 {
+   settings_t *settings = config_get_ptr();
 #ifdef ANDROID
    struct android_app *android_app = (struct android_app*)data;
 
@@ -1912,6 +1930,12 @@ static void frontend_unix_deinit(void *data)
       return;
 
    android_app_destroy(android_app);
+#endif
+
+#ifdef HAVE_LAKKA
+   /* Reset brightness to maximum */
+   if (settings->uints.screen_brightness != DEFAULT_SCREEN_BRIGHTNESS)
+      frontend_unix_set_screen_brightness(DEFAULT_SCREEN_BRIGHTNESS);
 #endif
 }
 
@@ -2734,6 +2758,11 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_lakka_version,    /* get_lakka_version */
 #else
    NULL,                         /* get_lakka_version */
+#endif
+#if defined(HAVE_LAKKA_SWITCH) || (defined(HAVE_LAKKA) && defined(HAVE_ODROIDGO2))
+   frontend_unix_set_screen_brightness,    /* set_screen_brightness */
+#else 
+   NULL,                         /* set_screen_brightness */
 #endif
    frontend_unix_watch_path_for_changes,
    frontend_unix_check_for_path_changes,
