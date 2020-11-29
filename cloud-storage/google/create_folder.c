@@ -107,10 +107,7 @@ cloud_storage_item_t *cloud_storage_google_create_folder(const char *folder_name
       "\", \"mimeType\": \"application/vnd.google-apps.folder\", \"parents\": [\"appDataFolder\"]}",
       NULL
    );
-   net_http_request_set_body(http_request, (uint8_t *)body, body_len);
-
-   net_http_request_set_log_request_body(http_request, true);
-   net_http_request_set_log_response_body(http_request, true);
+   net_http_request_set_body_raw(http_request, (uint8_t *)body, body_len);
 
    rest_request = rest_request_new(http_request);
    http_response = google_rest_execute_request(rest_request);

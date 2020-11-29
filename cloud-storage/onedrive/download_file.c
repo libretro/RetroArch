@@ -41,9 +41,6 @@ static struct http_request_t *_create_http_request(char *download_url)
    net_http_request_set_url(http_request, download_url);
    net_http_request_set_method(http_request, "GET");
 
-   net_http_request_set_log_request_body(http_request, true);
-   net_http_request_set_log_response_body(http_request, false);
-
    return http_request;
 }
 
@@ -58,6 +55,7 @@ bool cloud_storage_onedrive_download_file(
    bool downloaded = false;
 
    http_request = _create_http_request(file_to_download->type_data.file.download_url);
+   net_http_request_set_response_file(http_request, local_file);
    rest_request = rest_request_new(http_request);
 
    http_response = onedrive_rest_execute_request(rest_request);
@@ -70,12 +68,6 @@ bool cloud_storage_onedrive_download_file(
    {
       case 200:
          {
-            uint8_t *data;
-            size_t data_len;
-
-            data = net_http_response_get_data(http_response, &data_len, false);
-            cloud_storage_save_file(local_file, data, data_len);
-
             downloaded = true;
             break;
          }

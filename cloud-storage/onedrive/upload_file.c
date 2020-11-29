@@ -155,9 +155,6 @@ static struct http_request_t *_create_multipart_upload_part_request(
    _add_http_headers_data(file_size, offset, upload_segment_length, http_request);
    cloud_storage_add_request_body_data(local_file, offset, upload_segment_length, http_request);
 
-   net_http_request_set_log_request_body(http_request, false);
-   net_http_request_set_log_response_body(http_request, true);
-
    return http_request;
 }
 
@@ -260,10 +257,7 @@ static struct http_request_t *_create_start_upload_multipart_request(
       NULL
    );
    net_http_request_set_header(http_request, "Content-Type", "application/json", true);
-   net_http_request_set_body(http_request, (uint8_t *)body, body_len);
-
-   net_http_request_set_log_request_body(http_request, true);
-   net_http_request_set_log_response_body(http_request, true);
+   net_http_request_set_body_raw(http_request, (uint8_t *)body, body_len);
 
    return http_request;
 }

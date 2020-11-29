@@ -31,6 +31,7 @@
 #include <net/net_socket_ssl.h>
 #endif
 #include <compat/strl.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <string.h>
 #include <retro_common_api.h>
@@ -76,6 +77,7 @@ struct http_response_t
 struct http_t
 {
    uint8_t *data;
+   RFILE *response_file;
    struct http_socket_state_t sock_state; /* ptr alignment */
    size_t pos;
    size_t len;
@@ -86,7 +88,6 @@ struct http_t
    bool error;
    struct http_headers_t *headers;
    struct http_response_t *response;
-   bool log_response_body;
 };
 
 struct http_url_parameter_t
@@ -114,16 +115,43 @@ struct http_headers_t
    size_t len;
 };
 
+enum http_request_body_type_t
+{
+   HTTP_REQUEST_BODY_EMPTY,
+   HTTP_REQUEST_BODY_FROM_RAW,
+   HTTP_REQUEST_BODY_FROM_FILE
+};
+
+struct http_request_body_raw_t
+{
+   uint8_t *data;
+   size_t length;
+};
+
+struct http_request_body_file_t
+{
+   RFILE *file;
+   int64_t max_bytes;
+};
+
+struct http_request_body_t
+{
+   enum http_request_body_type_t body_type;
+   union
+   {
+      struct http_request_body_raw_t raw;
+      struct http_request_body_file_t file;
+   } value;
+};
+
 struct http_request_t
 {
    char *url;
    char *method;
    struct http_url_parameters_t url_params;
    struct http_headers_t *headers;
-   uint8_t *data;
-   size_t data_len;
-   bool log_request;
-   bool log_response;
+   struct http_request_body_t body;
+   char *response_filename;
 };
 
 struct http_connection_t
@@ -472,6 +500,7 @@ struct http_request_t *net_http_request_new()
 
    request = (struct http_request_t *)calloc(1, sizeof(struct http_request_t));
    request->headers = (struct http_headers_t *)calloc(1, sizeof(struct http_headers_t));
+   request->body.body_type = HTTP_REQUEST_BODY_EMPTY;
 
    return request;
 }
@@ -666,20 +695,25 @@ void net_http_request_set_header(struct http_request_t *request, const char *nam
    net_http_headers_add_value(request->headers, name, value, replace);
 }
 
-void net_http_request_set_body(struct http_request_t *request, uint8_t *data, const size_t len)
+void net_http_request_set_body_raw(struct http_request_t *request, uint8_t *data, const size_t len)
 {
-   request->data = data;
-   request->data_len = len;
+   request->body.body_type = HTTP_REQUEST_BODY_FROM_RAW;
+   request->body.value.raw.data = (uint8_t *)malloc(len);
+   memcpy(request->body.value.raw.data, data, len);
+   request->body.value.raw.length = len;
 }
 
-void net_http_request_set_log_request_body(struct http_request_t *request, bool enable)
+void net_http_request_set_body_file(struct http_request_t *request, RFILE *file, int64_t max_bytes)
 {
-   request->log_request = enable;
+   request->body.body_type = HTTP_REQUEST_BODY_FROM_FILE;
+   request->body.value.file.file = file;
+   request->body.value.file.max_bytes = max_bytes;
 }
 
-void net_http_request_set_log_response_body(struct http_request_t *request, bool enable)
+void net_http_request_set_response_file(struct http_request_t *request, const char *filename)
 {
-   request->log_response = enable;
+   request->response_filename = (char *)calloc(strlen(filename) + 1, sizeof(char));
+   strcpy(request->response_filename, filename);
 }
 
 static void net_http_url_parameters_free(struct http_url_parameters_t params)
@@ -732,9 +766,16 @@ void net_http_request_free(struct http_request_t *request)
    net_http_url_parameters_free(request->url_params);
    net_http_headers_free(request->headers);
 
-   if (request->data)
+   switch (request->body.body_type)
    {
-      free(request->data);
+      case HTTP_REQUEST_BODY_FROM_RAW:
+         free(request->body.value.raw.data);
+         break;
+      case HTTP_REQUEST_BODY_FROM_FILE:
+         filestream_close(request->body.value.file.file);
+         break;
+      default:
+         break;
    }
 
    free(request);
@@ -1307,7 +1348,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       size_t post_len, len;
       char *len_str        = NULL;
 
-      if (!conn->request->data)
+      if (conn->request->body.body_type == HTTP_REQUEST_BODY_EMPTY)
          goto error;
 
       if (!contenttype)
@@ -1321,14 +1362,22 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
       net_http_send_str(&conn->sock_state, &error, "Content-Length: ");
 
+      if (conn->request->body.body_type == HTTP_REQUEST_BODY_FROM_RAW)
+      {
+         post_len = conn->request->body.value.raw.length;
+      } else if (conn->request->body.body_type == HTTP_REQUEST_BODY_FROM_FILE)
+      {
+         post_len = filestream_get_size(conn->request->body.value.file.file) - filestream_tell(conn->request->body.value.file.file);
+      }
+
 #if defined(_WIN32) || defined(_WIN64)
-      len     = snprintf(NULL, 0, "%" PRIuPTR, conn->request->data_len);
+      len     = snprintf(NULL, 0, "%" PRIuPTR, post_len);
       len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%" PRIuPTR, conn->request->data_len);
+      snprintf(len_str, len + 1, "%" PRIuPTR, post_len);
 #else
-      len     = snprintf(NULL, 0, "%llu", (long long unsigned)conn->request->data_len);
+      len     = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
       len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%llu", (long long unsigned)conn->request->data_len);
+      snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
 #endif
 
       len_str[len] = '\0';
@@ -1386,12 +1435,46 @@ struct http_t *net_http_new(struct http_connection_t *conn)
           string_is_equal(conn->request->method, "PUT") || string_is_equal(conn->request->method, "PATCH")))
    {
 #ifdef HAVE_DEBUG
-      if (conn->request->log_request)
+      if (conn->request->body.body_type == HTTP_REQUEST_BODY_FROM_RAW)
       {
-         log_body(true, (char *)conn->request->data, conn->request->data_len);
+         log_body(true, (char *)conn->request->body.value.raw.data, conn->request->body.value.raw.length);
+      } else
+      {
+         RARCH_LOG("[HTTP] >> ## omitted ##\n");
       }
 #endif
-      net_http_send_bytes(&conn->sock_state, &error, conn->request->data, conn->request->data_len);
+
+      switch (conn->request->body.body_type)
+      {
+         case HTTP_REQUEST_BODY_FROM_RAW:
+            net_http_send_bytes(&conn->sock_state, &error, conn->request->body.value.raw.data, conn->request->body.value.raw.length);
+            break;
+         case HTTP_REQUEST_BODY_FROM_FILE:
+         {
+            uint8_t buffer[4096];
+            int64_t bytes_read;
+            int64_t bytes_to_read;
+
+            bytes_to_read = conn->request->body.value.file.max_bytes > 4096 ? 4096 : conn->request->body.value.file.max_bytes;
+
+            bytes_read = filestream_read(conn->request->body.value.file.file, (void *)buffer, bytes_to_read);
+            while (bytes_read > 0)
+            {
+               conn->request->body.value.file.max_bytes -= bytes_to_read;
+               net_http_send_bytes(&conn->sock_state, &error, buffer, bytes_read);
+
+               bytes_to_read = conn->request->body.value.file.max_bytes > 4096 ? 4096 : conn->request->body.value.file.max_bytes;
+               bytes_read = filestream_read(conn->request->body.value.file.file, (void *)buffer, 4096);
+            }
+
+            filestream_close(conn->request->body.value.file.file);
+            conn->request->body.body_type = HTTP_REQUEST_BODY_EMPTY;
+
+            break;
+         }
+         default:
+            break;
+      }
    }
 
    if (error)
@@ -1410,7 +1493,18 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->buflen     = 512;
    state->headers    = (struct http_headers_t *)calloc(1, sizeof(struct http_headers_t));
    state->data       = (uint8_t*)malloc(state->buflen);
-   state->log_response_body = conn->request->log_response;
+
+   if (conn->request->response_filename)
+   {
+      state->response_file = filestream_open(conn->request->response_filename, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (!state->response_file)
+      {
+         goto error;
+      }
+   } else
+   {
+      state->response_file = NULL;
+   }
 
    if (!state->data)
       goto error;
@@ -1437,6 +1531,12 @@ error:
             free(state->data);
          free(state->response);
       }
+
+      if (state->response_file)
+      {
+         filestream_close(state->response_file);
+      }
+
       free(state);
    }
    return NULL;
@@ -1546,7 +1646,6 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
             if (state->bodytype != T_NONE && string_is_equal((char*)state->data, "Transfer-Encoding: chunked"))
                state->bodytype = T_CHUNK;
 
-            /* TODO: save headers somewhere */
             if (state->data[0]=='\0')
             {
 #ifdef HAVE_DEBUG
@@ -1602,9 +1701,12 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
             else
                goto fail;
             newlen=0;
+         } else if (state->response_file && newlen > 0)
+         {
+            filestream_write(state->response_file, state->data, newlen);
          }
 
-         if (state->pos + newlen >= state->buflen - 64)
+         if (!state->response_file && state->pos + newlen >= state->buflen - 64)
          {
             state->buflen *= 2;
             state->data = (uint8_t*)realloc(state->data, state->buflen);
@@ -1685,6 +1787,11 @@ parse_again:
          {
             state->part = P_DONE;
             state->data = (uint8_t*)realloc(state->data, state->len);
+
+            if (state->response_file)
+            {
+               filestream_write(state->response_file, state->data, state->len);
+            }
          }
          if (state->len > 0 && state->pos > state->len)
             goto fail;
@@ -1699,12 +1806,16 @@ parse_again:
          state->error = false;
       }
 #ifdef HAVE_DEBUG
-      if (state->bodytype != T_NONE && state->log_response_body)
+
+      if (state->response_file)
       {
-         log_body(false, (char *)state->data, state->len);
-      } else if (state->bodytype != T_NONE)
+         filestream_close(state->response_file);
+      } else
       {
-         RARCH_LOG("[HTTP] << ## omitted ##\n");
+         if (state->bodytype != T_NONE)
+         {
+            log_body(false, (char *)state->data, state->len);
+         }
       }
 #endif
    }

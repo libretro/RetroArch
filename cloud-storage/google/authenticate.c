@@ -174,10 +174,7 @@ static struct http_request_t *_create_http_request(void)
    net_http_request_set_header(http_request, "Content-Type", "application/x-www-form-urlencoded", true);
 
    body = _refresh_token_request_body(&body_len);
-   net_http_request_set_body(http_request, body, body_len);
-
-   net_http_request_set_log_request_body(http_request, true);
-   net_http_request_set_log_response_body(http_request, true);
+   net_http_request_set_body_raw(http_request, body, body_len);
 
    return http_request;
 }

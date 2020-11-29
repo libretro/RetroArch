@@ -53,9 +53,6 @@ static struct http_request_t *_create_folder_http_request(const char *folder_nam
    net_http_request_set_url(request, url);
    net_http_request_set_method(request, "GET");
 
-   net_http_request_set_log_request_body(request, true);
-   net_http_request_set_log_response_body(request, true);
-
    return request;
 }
 
@@ -77,9 +74,6 @@ static struct http_request_t *_create_file_by_id_http_request(cloud_storage_item
    net_http_request_set_url(request, url);
    free(url);
    net_http_request_set_method(request, "GET");
-
-   net_http_request_set_log_request_body(request, true);
-   net_http_request_set_log_response_body(request, true);
 
    return request;
 }
@@ -105,9 +99,6 @@ static struct http_request_t *_create_file_by_name_http_request(
    );
    net_http_request_set_url(request, url);
    free(url);
-
-   net_http_request_set_log_request_body(request, true);
-   net_http_request_set_log_response_body(request, true);
 
    return request;
 }

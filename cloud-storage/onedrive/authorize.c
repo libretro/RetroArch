@@ -364,9 +364,7 @@ static void _get_tokens(char *code, struct authorize_state_t *authorize_state)
       authorize_state->port
    );
 
-   net_http_request_set_body(http_request, (uint8_t *)body, body_len);
-   net_http_request_set_log_request_body(http_request, true);
-   net_http_request_set_log_response_body(http_request, true);
+   net_http_request_set_body_raw(http_request, (uint8_t *)body, body_len);
 
    rest_request = rest_request_new(http_request);
    rest_request_set_retry_policy(rest_request, _get_retry_policy());

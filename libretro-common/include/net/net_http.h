@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include <retro_common_api.h>
+#include <streams/file_stream.h>
 
 RETRO_BEGIN_DECLS
 
@@ -49,11 +50,11 @@ void net_http_request_set_url_param(struct http_request_t *request, const char *
 
 void net_http_request_set_header(struct http_request_t *request, const char *name, const char *value, bool replace);
 
-void net_http_request_set_body(struct http_request_t *request, uint8_t *data, const size_t len);
+void net_http_request_set_body_raw(struct http_request_t *request, uint8_t *data, const size_t len);
 
-void net_http_request_set_log_request_body(struct http_request_t *request, bool enable);
+void net_http_request_set_body_file(struct http_request_t *request, RFILE *file, int64_t max_bytes);
 
-void net_http_request_set_log_response_body(struct http_request_t *request, bool enable);
+void net_http_request_set_response_file(struct http_request_t *request, const char *filename);
 
 void net_http_request_free(struct http_request_t *request);
 

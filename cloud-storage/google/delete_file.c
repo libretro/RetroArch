@@ -44,9 +44,6 @@ static struct http_request_t *_get_http_request(char *file_id)
 
    net_http_request_set_method(request, "DELETE");
 
-   net_http_request_set_log_request_body(request, true);
-   net_http_request_set_log_response_body(request, true);
-
    return request;
 }
 

@@ -418,7 +418,7 @@ void* task_push_http_post_transfer(const char *url,
    request = net_http_request_new();
    net_http_request_set_url(request, url);
    net_http_request_set_method(request, "POST");
-   net_http_request_set_body(request, (uint8_t*)post_data, strlen(post_data));
+   net_http_request_set_body_raw(request, (uint8_t*)post_data, strlen(post_data));
 
    return task_push_http_transfer_generic(
          net_http_connection_new(request),
@@ -439,7 +439,7 @@ void* task_push_http_post_transfer_with_user_agent(const char *url,
    request = net_http_request_new();
    net_http_request_set_url(request, url);
    net_http_request_set_method(request, "POST");
-   net_http_request_set_body(request, (uint8_t *)post_data, strlen(post_data));
+   net_http_request_set_body_raw(request, (uint8_t *)post_data, strlen(post_data));
 
    if (user_agent != NULL)
       net_http_request_set_header(request, "User-Agent", user_agent, true);

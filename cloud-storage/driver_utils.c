@@ -493,9 +493,5 @@ void cloud_storage_add_request_body_data(
       filestream_seek(file, offset, SEEK_SET);
    }
 
-   body = (uint8_t *)malloc(segment_length);
-   filestream_read(file, body, segment_length);
-   filestream_close(file);
-
-   net_http_request_set_body(request, body, segment_length);
+   net_http_request_set_body_file(request, file, segment_length);
 }

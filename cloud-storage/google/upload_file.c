@@ -119,9 +119,6 @@ static rest_request_t *_create_upload_file_part_request(
    _add_http_headers_data(file_size, offset, upload_segment_length, http_request);
    cloud_storage_add_request_body_data(local_file, offset, upload_segment_length, http_request);
 
-   net_http_request_set_log_request_body(http_request, false);
-   net_http_request_set_log_response_body(http_request, true);
-
    return rest_request_new(http_request);
 }
 
@@ -208,10 +205,8 @@ static rest_request_t *_create_start_file_upload_request(
          NULL);
    }
 
-   net_http_request_set_body(http_request, (uint8_t *)body, body_len);
-
-   net_http_request_set_log_request_body(http_request, true);
-   net_http_request_set_log_response_body(http_request, true);
+   net_http_request_set_body_raw(http_request, (uint8_t *)body, body_len);
+   free(body);
 
    return rest_request_new(http_request);
 }

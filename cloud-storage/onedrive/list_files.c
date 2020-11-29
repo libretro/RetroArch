@@ -61,9 +61,6 @@ static struct http_request_t *_create_http_request(cloud_storage_item_t *folder,
 
    net_http_request_set_method(request, "GET");
 
-   net_http_request_set_log_request_body(request, true);
-   net_http_request_set_log_response_body(request, true);
-
    return request;
 }
 
