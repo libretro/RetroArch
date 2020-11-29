@@ -42,91 +42,7 @@
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
-#ifdef HAVE_CKJ_BITMAP_FONTS
-size_t utf8cpy4ML(char *d, size_t d_len, const char *s, size_t maxchars)
-{
-   const char *sb     = (const char*)s;
-   const char *sb_org = sb;
-   size_t chars=0;
 
-   if (!s)
-      return 0;
-
-   while (*sb && chars < maxchars)
-   {
-      uint32_t symbol = utf8_walk(&sb);
-      if ((symbol >= 0xac00 && symbol <= 0xd7a3) || /* for kor */
-          (symbol >= 0x3040 && symbol <= 0x30ff) || /* for jpn */
-          (symbol >= 0x4e00 && symbol <= 0x9fff))   /* for cjk */
-      {
-         if ((maxchars - chars) > 1)
-            chars+=2;
-         else
-            break;
-      }
-      else
-         chars++;
-   }
-
-   memcpy(d, sb_org, sb-sb_org);
-   d[sb-sb_org] = '\0';
-
-   return sb-sb_org;
-}
-
-uint16_t getstrlen(const char *s, uint16_t maxwidth)
-{
-   uint16_t chars=0;
-   uint16_t strwidth=0;
-
-   if (!s)
-      return 0;
-
-   while (*s && strwidth < maxwidth)
-   {
-      uint32_t symbol = utf8_walk(&s);
-      if ((symbol >= 0xac00 && symbol <= 0xd7a3) || /* for kor */
-          (symbol >= 0x3040 && symbol <= 0x30ff) || /* for jpn */
-          (symbol >= 0x4e00 && symbol <= 0x9fff))   /* for cjk */
-      {
-         chars+=2;
-         strwidth+=11;
-      }
-      else
-      {
-         chars++;
-         strwidth+=6;
-      }
-   }
-
-   return chars;
-}
-
-uint16_t getstrwidth(const char *s)
-{
-   uint16_t strwidth=0;
-
-   if (!s)
-      return 0;
-
-   while (*s)
-   {
-      uint32_t symbol = utf8_walk(&s);
-      if ((symbol >= 0xac00 && symbol <= 0xd7a3) || /* for kor */
-          (symbol >= 0x3040 && symbol <= 0x30ff) || /* for jpn */
-          (symbol >= 0x4e00 && symbol <= 0x9fff))   /* for cjk */
-      {
-         strwidth+=11;
-      }
-      else
-      {
-         strwidth+=6;
-      }
-   }
-
-   return strwidth;
-}
-#endif
 
 static float easing_linear(float t, float b, float c, float d)
 {
@@ -1411,33 +1327,6 @@ static void build_ticker_loop_string(
    tmp[0]      = '\0';
    dest_str[0] = '\0';
 
-#ifdef HAVE_CKJ_BITMAP_FONTS
-   /* Copy 'trailing' chunk of source string, if required */
-   if (num_chars1 > 0)
-      utf8cpy4ML(
-            dest_str, dest_str_len,
-            utf8skip(src_str, char_offset1), num_chars1);
-
-   /* Copy chunk of spacer string, if required */
-   if (num_chars2 > 0)
-   {
-      utf8cpy4ML(
-            tmp, sizeof(tmp),
-            utf8skip(spacer, char_offset2), num_chars2);
-
-      strlcat(dest_str, tmp, dest_str_len);
-   }
-
-   /* Copy 'leading' chunk of source string, if required */
-   if (num_chars3 > 0)
-   {
-      utf8cpy4ML(
-            tmp, sizeof(tmp),
-            utf8skip(src_str, char_offset3), num_chars3);
-
-      strlcat(dest_str, tmp, dest_str_len);
-   }
-#else
    /* Copy 'trailing' chunk of source string, if required */
    if (num_chars1 > 0)
       utf8cpy(
@@ -1463,7 +1352,6 @@ static void build_ticker_loop_string(
 
       strlcat(dest_str, tmp, dest_str_len);
    }
-#endif
 }
 
 static void build_line_ticker_string(
@@ -1497,24 +1385,7 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 
    if (!ticker->spacer)
       ticker->spacer       = TICKER_SPACER_DEFAULT;
-#ifdef HAVE_CKJ_BITMAP_FONTS
-   if ((size_t)str_len <= ticker->len)
-   {
-      utf8cpy4ML(ticker->s,
-            PATH_MAX_LENGTH,
-            ticker->str,
-            ticker->len);
-      return false;
-   }
 
-   if (!ticker->selected)
-   {
-      utf8cpy4ML(ticker->s,
-            PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      strlcat(ticker->s, "...", ticker->len);
-      return false;
-   }
-#else
    if ((size_t)str_len <= ticker->len)
    {
       utf8cpy(ticker->s,
@@ -1531,7 +1402,7 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
       strlcat(ticker->s, "...", ticker->len);
       return false;
    }
-#endif
+
    /* Note: If we reach this point then str_len > ticker->len
     * (previously had an unecessary 'if (str_len > ticker->len)'
     * check here...) */
@@ -1565,19 +1436,13 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
                   ticker->idx,
                   ticker->len,
                   &str_len);
-#ifdef HAVE_CKJ_BITMAP_FONTS
-            utf8cpy4ML(
-                  ticker->s,
-                  PATH_MAX_LENGTH,
-                  utf8skip(ticker->str, offset),
-                  str_len);
-#else
+
             utf8cpy(
                   ticker->s,
                   PATH_MAX_LENGTH,
                   utf8skip(ticker->str, offset),
                   str_len);
-#endif
+
          }
          break;
    }
@@ -1608,24 +1473,14 @@ static bool gfx_animation_ticker_smooth_fw(
    if (src_str_len < 1)
       goto end;
 
-#ifdef HAVE_CKJ_BITMAP_FONTS   
-   src_str_width = getstrwidth(ticker->src_str);
-   /* field_width = 240 */
-#else
-   src_str_width = src_str_len * glyph_width;
-#endif   
+   src_str_width = src_str_len * glyph_width; 
 
    /* If src string width is <= text field width, we
     * can just copy the entire string */
    if (src_str_width <= ticker->field_width)
    {
-#ifdef HAVE_CKJ_BITMAP_FONTS 
-      utf8cpy4ML(ticker->dst_str, ticker->dst_str_len,
-            ticker->src_str, src_str_len);
-#else
       utf8cpy(ticker->dst_str, ticker->dst_str_len,
             ticker->src_str, src_str_len);
-#endif
       if (ticker->dst_str_width)
          *ticker->dst_str_width = src_str_width;
       *ticker->x_offset = 0;
@@ -1646,17 +1501,10 @@ static bool gfx_animation_ticker_smooth_fw(
          goto end;
 
       /* Determine number of characters to copy */
-#ifdef HAVE_CKJ_BITMAP_FONTS
-      num_chars = getstrlen(ticker->src_str, ticker->field_width) - 3;
-
-      /* Copy string segment + add suffix */
-      utf8cpy4ML(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars); 
-#else
       num_chars = (ticker->field_width - suffix_width) / glyph_width;
 
       /* Copy string segment + add suffix */
       utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-#endif
 
       strlcat(ticker->dst_str, "...", ticker->dst_str_len);
 
@@ -1729,15 +1577,10 @@ static bool gfx_animation_ticker_smooth_fw(
 
          /* Copy required substring */
          if (num_chars > 0)
-#ifdef HAVE_CKJ_BITMAP_FONTS         
-            utf8cpy4ML(
-                  ticker->dst_str, ticker->dst_str_len,
-                  utf8skip(ticker->src_str, char_offset), num_chars);
-#else
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);
-#endif
+
          if (ticker->dst_str_width)
             *ticker->dst_str_width = num_chars * glyph_width;
 
@@ -1823,13 +1666,9 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
     * can just copy the entire string */
    if (src_str_width <= ticker->field_width)
    {
-#ifdef HAVE_CKJ_BITMAP_FONTS
-      utf8cpy4ML(ticker->dst_str, ticker->dst_str_len,
-            ticker->src_str, src_str_len);
-#else
       utf8cpy(ticker->dst_str, ticker->dst_str_len,
             ticker->src_str, src_str_len);
-#endif
+
       if (ticker->dst_str_width)
          *ticker->dst_str_width = src_str_width;
       *ticker->x_offset = 0;
@@ -1874,13 +1713,9 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
       }
 
       /* Copy string segment + add suffix */
-#ifdef HAVE_CKJ_BITMAP_FONTS
-      utf8cpy4ML(ticker->dst_str, ticker->dst_str_len,
-            ticker->src_str, num_chars);
-#else
       utf8cpy(ticker->dst_str, ticker->dst_str_len,
             ticker->src_str, num_chars);
-#endif
+
       strlcat(ticker->dst_str, "...", ticker->dst_str_len);
 
       if (ticker->dst_str_width)
@@ -1970,16 +1805,10 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
 
          /* Copy required substring */
          if (num_chars > 0)
-#ifdef HAVE_CKJ_BITMAP_FONTS         
-            utf8cpy4ML(
-                  ticker->dst_str, ticker->dst_str_len,
-                  utf8skip(ticker->src_str, char_offset), num_chars);
-#else
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);
 
-#endif
          break;
       }
    }

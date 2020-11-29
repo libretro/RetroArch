@@ -56,6 +56,7 @@
 #include "../../gfx/drivers_font_renderer/bitmapkor10x10.h"
 #include "../../gfx/drivers_font_renderer/bitmapjpn10x10.h"
 #include "../../gfx/drivers_font_renderer/bitmapchn10x10.h"
+#include "../../gfx/drivers_font_renderer/bitmapeng10x10.h"
 #endif
 /* Thumbnail additions */
 #include "../../gfx/gfx_thumbnail_path.h"
@@ -2645,23 +2646,127 @@ static void blit_line_extended(
    while (!string_is_empty(message))
    {
 #ifdef HAVE_CKJ_BITMAP_FONTS
-      unsigned i, j;
-      uint32_t symbol = utf8_walk(&message);
-	  
-      /* Stupid cretinous hack: 'oe' ligatures are not
-       * really standard extended ASCII, so we have to
-       * waste CPU cycles performing a conversion from
-       * the unicode values...
-       * (Note: This is only really required for msg_hash_fr.h) */
-      if (symbol == 339) /* Latin small ligature oe */
-         symbol = 156;
-      if (symbol == 338) /* Latin capital ligature oe */
-         symbol = 140;	 
-		 
-      if (symbol < RGUI_NUM_FONT_GLYPHS_REGULAR)
+      unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+      if (user_lang == RETRO_LANGUAGE_KOREAN ||
+          user_lang == RETRO_LANGUAGE_JAPANESE ||
+          user_lang == RETRO_LANGUAGE_CHINESE_TRADITIONAL)	
       {
-         if (symbol != ' ')
+         unsigned i, j;
+         uint32_t symbol = utf8_walk(&message);
+	  
+         /* Stupid cretinous hack: 'oe' ligatures are not
+          * really standard extended ASCII, so we have to
+          * waste CPU cycles performing a conversion from
+          * the unicode values...
+          * (Note: This is only really required for msg_hash_fr.h) */
+         if (symbol == 339) /* Latin small ligature oe */
+            symbol = 156;
+         if (symbol == 338) /* Latin capital ligature oe */
+            symbol = 140;	 
+		 
+         if (rgui_bitmap_eng_bin != NULL && symbol < RGUI_NUM_FONT_GLYPHS_REGULAR)
          {
+            if (symbol != ' ')
+            {
+               for (j = 0; j < FONT_ENG_HEIGHT; j++)
+               {
+                  unsigned buff_offset = ((y + j) * fb_width) + x;
+
+                  for (i = 0; i < FONT_ENG_WIDTH; i++)
+                  {
+                     uint8_t rem = 1 << ((i + j * FONT_ENG_WIDTH) & 7);
+                     unsigned offset  = (i + j * FONT_ENG_WIDTH) >> 3;
+				  
+                     if ((rgui_bitmap_eng_bin[FONT_ENG_OFFSET(symbol) + offset] & rem) > 0)
+                     {
+                        *(frame_buf_data + buff_offset + i) = color;
+                     }
+                  }
+               }
+            }
+            x += FONT_ENG_WIDTH_STRIDE;
+         }
+         else if (rgui_bitmap_kor_bin != NULL && symbol >= 0xac00 && symbol <= 0xd7a3) /* hangul */
+         {
+            for (j = 0; j < FONT_KOR_HEIGHT; j++)
+            {
+               unsigned buff_offset = ((y + j) * fb_width) + x;
+
+               for (i = 0; i < FONT_KOR_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_KOR_WIDTH) & 7);
+                  unsigned offset  = (i + j * FONT_KOR_WIDTH) >> 3;
+
+                  if ((rgui_bitmap_kor_bin[FONT_KOR_OFFSET(symbol-0xac00) + offset] & rem) > 0)
+                  {
+                     *(frame_buf_data + buff_offset + i) = color;
+                  }
+               }
+            }
+            x += FONT_KOR_WIDTH_STRIDE;
+         }
+         else if (rgui_bitmap_jpn_bin != NULL && symbol >= 0x3040 && symbol <= 0x30ff) /* japanese */
+         {
+            for (j = 0; j < FONT_JPN_HEIGHT; j++)
+            {
+               unsigned buff_offset = ((y + j) * fb_width) + x;
+
+               for (i = 0; i < FONT_JPN_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_JPN_WIDTH) & 7);
+                  unsigned offset  = (i + j * FONT_JPN_WIDTH) >> 3;
+
+                  if ((rgui_bitmap_jpn_bin[FONT_JPN_OFFSET(symbol-0x3040) + offset] & rem) > 0)
+                  {
+                     *(frame_buf_data + buff_offset + i) = color;
+                  }
+               }
+            }
+            x += FONT_JPN_WIDTH_STRIDE;
+         }
+         else if (rgui_bitmap_chn_bin != NULL && symbol >= 0x4e00 && symbol <= 0x9fff) /* chinese */
+         {
+            for (j = 0; j < FONT_CHN_HEIGHT; j++)
+            {
+               unsigned buff_offset = ((y + j) * fb_width) + x;
+
+               for (i = 0; i < FONT_CHN_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_CHN_WIDTH) & 7);
+                  unsigned offset  = (i + j * FONT_CHN_WIDTH) >> 3;
+
+                  if ((rgui_bitmap_chn_bin[FONT_CHN_OFFSET(symbol-0x4e00) + offset] & rem) > 0)
+                  {
+                     *(frame_buf_data + buff_offset + i) = color;
+                  }
+               }
+            }
+            x += FONT_CHN_WIDTH_STRIDE;
+         }
+      }
+      else
+      {
+         /* Deal with spaces first, for efficiency */
+         if (*message == ' ')
+            message++;
+         else
+         {
+            unsigned i, j;
+            uint32_t symbol = utf8_walk(&message);
+
+            /* Stupid cretinous hack: 'oe' ligatures are not
+             * really standard extended ASCII, so we have to
+             * waste CPU cycles performing a conversion from
+             * the unicode values...
+             * (Note: This is only really required for msg_hash_fr.h) */
+            if (symbol == 339) /* Latin small ligature oe */
+               symbol = 156;
+            if (symbol == 338) /* Latin capital ligature oe */
+               symbol = 140;
+
+            if (symbol >= RGUI_NUM_FONT_GLYPHS_EXTENDED)
+               continue;
+
             for (j = 0; j < FONT_HEIGHT; j++)
             {
                unsigned buff_offset = ((y + j) * fb_width) + x;
@@ -2669,72 +2774,13 @@ static void blit_line_extended(
                for (i = 0; i < FONT_WIDTH; i++)
                {
                   if (rgui->font_lut[symbol][i + (j * FONT_WIDTH)])
-                  {
                      *(frame_buf_data + buff_offset + i) = color;
-                  }
                }
             }
          }
-         x += FONT_WIDTH_STRIDE;
-      }
-      else if (rgui_bitmap_kor_bin != NULL && symbol >= 0xac00 && symbol <= 0xd7a3) /* hangul */
-      {
-         for (j = 0; j < FONT_KOR_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
 
-            for (i = 0; i < FONT_KOR_WIDTH; i++)
-            {
-               uint8_t rem = 1 << ((i + j * FONT_KOR_WIDTH) & 7);
-               unsigned offset  = (i + j * FONT_KOR_WIDTH) >> 3;
-
-               if ((rgui_bitmap_kor_bin[FONT_KOR_OFFSET(symbol-0xac00) + offset] & rem) > 0)
-               {
-                  *(frame_buf_data + buff_offset + i) = color;
-               }
-            }
-         }
-         x += FONT_KOR_WIDTH_STRIDE;
-      }
-      else if (rgui_bitmap_jpn_bin != NULL && symbol >= 0x3040 && symbol <= 0x30ff) /* japanese */
-      {
-         for (j = 0; j < FONT_JPN_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_JPN_WIDTH; i++)
-            {
-               uint8_t rem = 1 << ((i + j * FONT_JPN_WIDTH) & 7);
-               unsigned offset  = (i + j * FONT_JPN_WIDTH) >> 3;
-
-               if ((rgui_bitmap_jpn_bin[FONT_JPN_OFFSET(symbol-0x3040) + offset] & rem) > 0)
-               {
-                  *(frame_buf_data + buff_offset + i) = color;
-               }
-            }
-         }
-         x += FONT_JPN_WIDTH_STRIDE;
-      }
-      else if (rgui_bitmap_chn_bin != NULL && symbol >= 0x4e00 && symbol <= 0x9fff) /* chinese */
-      {
-         for (j = 0; j < FONT_CHN_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_CHN_WIDTH; i++)
-            {
-               uint8_t rem = 1 << ((i + j * FONT_CHN_WIDTH) & 7);
-               unsigned offset  = (i + j * FONT_CHN_WIDTH) >> 3;
-
-               if ((rgui_bitmap_chn_bin[FONT_CHN_OFFSET(symbol-0x4e00) + offset] & rem) > 0)
-               {
-                  *(frame_buf_data + buff_offset + i) = color;
-               }
-            }
-         }
-         x += FONT_CHN_WIDTH_STRIDE;
-      }
- 
+         x += FONT_WIDTH_STRIDE;	   
+      }	   
 #else
       /* Deal with spaces first, for efficiency */
       if (*message == ' ')
@@ -2793,23 +2839,155 @@ static void blit_line_extended_shadow(
    while (!string_is_empty(message))
    {
 #ifdef HAVE_CKJ_BITMAP_FONTS
-      unsigned i, j;
-      uint32_t symbol = utf8_walk(&message);
-	  
-      /* Stupid cretinous hack: 'oe' ligatures are not
-       * really standard extended ASCII, so we have to
-       * waste CPU cycles performing a conversion from
-       * the unicode values...
-       * (Note: This is only really required for msg_hash_fr.h) */
-      if (symbol == 339) /* Latin small ligature oe */
-         symbol = 156;
-      if (symbol == 338) /* Latin capital ligature oe */
-         symbol = 140;	  
-	  
-      if (symbol < RGUI_NUM_FONT_GLYPHS_REGULAR)
+      unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+      if (user_lang == RETRO_LANGUAGE_KOREAN ||
+          user_lang == RETRO_LANGUAGE_JAPANESE ||
+          user_lang == RETRO_LANGUAGE_CHINESE_TRADITIONAL)	
       {
-         if (symbol != ' ')
+         unsigned i, j;
+         uint32_t symbol = utf8_walk(&message);
+	  
+         /* Stupid cretinous hack: 'oe' ligatures are not
+          * really standard extended ASCII, so we have to
+          * waste CPU cycles performing a conversion from
+          * the unicode values...
+          * (Note: This is only really required for msg_hash_fr.h) */
+         if (symbol == 339) /* Latin small ligature oe */
+            symbol = 156;
+         if (symbol == 338) /* Latin capital ligature oe */
+            symbol = 140;	  
+	  
+         if (rgui_bitmap_eng_bin != NULL && symbol < RGUI_NUM_FONT_GLYPHS_REGULAR)
          {
+            if (symbol != ' ')
+            {
+               for (j = 0; j < FONT_ENG_HEIGHT; j++)
+               {
+                  unsigned buff_offset = ((y + j) * fb_width) + x;
+
+                  for (i = 0; i < FONT_ENG_WIDTH; i++)
+                  {
+                     uint8_t rem = 1 << ((i + j * FONT_ENG_WIDTH) & 7);
+                     unsigned offset  = (i + j * FONT_ENG_WIDTH) >> 3;		
+				  
+                     if ((rgui_bitmap_eng_bin[FONT_ENG_OFFSET(symbol) + offset] & rem) > 0)
+                     {
+                        uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                        /* Text pixel + right shadow */
+                        memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                        /* Bottom shadow */
+                        frame_buf_ptr += fb_width;
+                        memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+                     }
+                  }
+               }
+            }
+            x += FONT_ENG_WIDTH_STRIDE;
+         }
+         else if (rgui_bitmap_kor_bin != NULL && symbol >= 0xac00 && symbol <= 0xd7a3) /* hangul */
+         {
+            for (j = 0; j < FONT_KOR_HEIGHT; j++)
+            {
+               unsigned buff_offset = ((y + j) * fb_width) + x;
+
+               for (i = 0; i < FONT_KOR_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_KOR_WIDTH) & 7);
+                  unsigned offset  = (i + j * FONT_KOR_WIDTH) >> 3;
+
+                  if ((rgui_bitmap_kor_bin[FONT_KOR_OFFSET(symbol-0xac00) + offset] & rem) > 0)
+                  {
+                     uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                     /* Text pixel + right shadow */
+                     memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                     /* Bottom shadow */
+                     frame_buf_ptr += fb_width;
+                     memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+                  }
+               }
+            }
+            x += FONT_KOR_WIDTH_STRIDE;
+         }
+         else if (rgui_bitmap_jpn_bin != NULL && symbol >= 0x3040 && symbol <= 0x30ff) /* japanese */
+         {
+            for (j = 0; j < FONT_JPN_HEIGHT; j++)
+            {
+               unsigned buff_offset = ((y + j) * fb_width) + x;
+
+               for (i = 0; i < FONT_JPN_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_JPN_WIDTH) & 7);
+                  unsigned offset  = (i + j * FONT_JPN_WIDTH) >> 3;
+
+                  if ((rgui_bitmap_jpn_bin[FONT_JPN_OFFSET(symbol-0x3040) + offset] & rem) > 0)
+                  {
+                     uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                     /* Text pixel + right shadow */
+                     memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                     /* Bottom shadow */
+                     frame_buf_ptr += fb_width;
+                     memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+                  }
+               }
+            }
+            x += FONT_JPN_WIDTH_STRIDE;
+         }
+         else if (rgui_bitmap_chn_bin != NULL && symbol >= 0x4e00 && symbol <= 0x9fff) /* chinese */
+         {
+            for (j = 0; j < FONT_CHN_HEIGHT; j++)
+            {
+               unsigned buff_offset = ((y + j) * fb_width) + x;
+
+               for (i = 0; i < FONT_CHN_WIDTH; i++)
+               {
+                  uint8_t rem = 1 << ((i + j * FONT_CHN_WIDTH) & 7);
+                  unsigned offset  = (i + j * FONT_CHN_WIDTH) >> 3;
+
+                  if ((rgui_bitmap_chn_bin[FONT_CHN_OFFSET(symbol-0x4e00) + offset] & rem) > 0)
+                  {
+                     uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                     /* Text pixel + right shadow */
+                     memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                     /* Bottom shadow */
+                     frame_buf_ptr += fb_width;
+                     memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+                  }
+               }
+            }
+            x += FONT_CHN_WIDTH_STRIDE;
+         }
+      }
+      else
+      {
+         /* Deal with spaces first, for efficiency */
+         if (*message == ' ')
+            message++;
+         else
+         {
+            unsigned i, j;
+            uint32_t symbol = utf8_walk(&message);
+
+            /* Stupid cretinous hack: 'oe' ligatures are not
+             * really standard extended ASCII, so we have to
+             * waste CPU cycles performing a conversion from
+             * the unicode values...
+             * (Note: This is only really required for msg_hash_fr.h) */
+            if (symbol == 339) /* Latin small ligature oe */
+               symbol = 156;
+            if (symbol == 338) /* Latin capital ligature oe */
+               symbol = 140;
+
+            if (symbol >= RGUI_NUM_FONT_GLYPHS_EXTENDED)
+               continue;
+
             for (j = 0; j < FONT_HEIGHT; j++)
             {
                unsigned buff_offset = ((y + j) * fb_width) + x;
@@ -2830,87 +3008,10 @@ static void blit_line_extended_shadow(
                }
             }
          }
+
          x += FONT_WIDTH_STRIDE;
       }
-      else if (rgui_bitmap_kor_bin != NULL && symbol >= 0xac00 && symbol <= 0xd7a3) /* hangul */
-      {
-         for (j = 0; j < FONT_KOR_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_KOR_WIDTH; i++)
-            {
-               uint8_t rem = 1 << ((i + j * FONT_KOR_WIDTH) & 7);
-               unsigned offset  = (i + j * FONT_KOR_WIDTH) >> 3;
-
-               if ((rgui_bitmap_kor_bin[FONT_KOR_OFFSET(symbol-0xac00) + offset] & rem) > 0)
-               {
-                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
-
-                  /* Text pixel + right shadow */
-                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
-
-                  /* Bottom shadow */
-                  frame_buf_ptr += fb_width;
-                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
-               }
-            }
-         }
-         x += FONT_KOR_WIDTH_STRIDE;
-      }
-      else if (rgui_bitmap_jpn_bin != NULL && symbol >= 0x3040 && symbol <= 0x30ff) /* japanese */
-      {
-         for (j = 0; j < FONT_JPN_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_JPN_WIDTH; i++)
-            {
-               uint8_t rem = 1 << ((i + j * FONT_JPN_WIDTH) & 7);
-               unsigned offset  = (i + j * FONT_JPN_WIDTH) >> 3;
-
-               if ((rgui_bitmap_jpn_bin[FONT_JPN_OFFSET(symbol-0x3040) + offset] & rem) > 0)
-               {
-                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
-
-                  /* Text pixel + right shadow */
-                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
-
-                  /* Bottom shadow */
-                  frame_buf_ptr += fb_width;
-                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
-               }
-            }
-         }
-         x += FONT_JPN_WIDTH_STRIDE;
-      }
-      else if (rgui_bitmap_chn_bin != NULL && symbol >= 0x4e00 && symbol <= 0x9fff) /* chinese */
-      {
-         for (j = 0; j < FONT_CHN_HEIGHT; j++)
-         {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
-
-            for (i = 0; i < FONT_CHN_WIDTH; i++)
-            {
-               uint8_t rem = 1 << ((i + j * FONT_CHN_WIDTH) & 7);
-               unsigned offset  = (i + j * FONT_CHN_WIDTH) >> 3;
-
-               if ((rgui_bitmap_chn_bin[FONT_CHN_OFFSET(symbol-0x4e00) + offset] & rem) > 0)
-               {
-                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
-
-                  /* Text pixel + right shadow */
-                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
-
-                  /* Bottom shadow */
-                  frame_buf_ptr += fb_width;
-                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
-               }
-            }
-         }
-         x += FONT_CHN_WIDTH_STRIDE;
-      }
-  
+	
 #else
       /* Deal with spaces first, for efficiency */
       if (*message == ' ')
@@ -3835,7 +3936,17 @@ static void rgui_render(void *data,
    {
       ticker_smooth.idx           = p_anim->ticker_pixel_idx;
       ticker_smooth.font          = NULL;
+#ifdef HAVE_CKJ_BITMAP_FONTS	  
+      unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+      if (user_lang == RETRO_LANGUAGE_KOREAN ||
+          user_lang == RETRO_LANGUAGE_JAPANESE ||
+          user_lang == RETRO_LANGUAGE_CHINESE_TRADITIONAL)		  
+         ticker_smooth.glyph_width   = FONT_KOR_WIDTH_STRIDE; 
+      else 
+         ticker_smooth.glyph_width   = FONT_WIDTH_STRIDE;
+#else
       ticker_smooth.glyph_width   = FONT_WIDTH_STRIDE;
+#endif	
       ticker_smooth.type_enum     = menu_ticker_type;
       ticker_smooth.spacer        = ticker_spacer;
       ticker_smooth.dst_str_width = NULL;
@@ -5087,6 +5198,13 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
       rgui_bitmap_chn_bin = readbinfile(asset_rgui_font_path); 
    }  
+   
+   if (rgui_bitmap_eng_bin == NULL && (user_lang == RETRO_LANGUAGE_KOREAN || user_lang == RETRO_LANGUAGE_JAPANESE || user_lang == RETRO_LANGUAGE_CHINESE_TRADITIONAL))
+   {
+      fill_pathname_join(asset_rgui_font_path, settings->paths.directory_assets, "rgui/font/rgui_font_eng10x10.bin", sizeof(asset_rgui_font_path));
+	   
+      rgui_bitmap_eng_bin = readbinfile(asset_rgui_font_path); 
+   }   
 #endif   
  
    rgui->thumbnail_path_data = gfx_thumbnail_path_init();
@@ -5171,6 +5289,12 @@ static void rgui_free(void *data)
        free(rgui_bitmap_chn_bin);	   
        rgui_bitmap_chn_bin = NULL;   	   
    }   
+   
+   if (rgui_bitmap_eng_bin)
+   {
+       free(rgui_bitmap_eng_bin);	   
+       rgui_bitmap_eng_bin = NULL;   	   
+   }      
 #endif   
 }
 

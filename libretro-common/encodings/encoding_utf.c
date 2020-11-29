@@ -212,23 +212,10 @@ size_t utf8len(const char *string)
       return 0;
 
    while (*string)
-   {
-#ifdef HAVE_CKJ_BITMAP_FONTS
-      uint32_t symbol = utf8_walk(&string);
-
-      if (symbol >= 0xac00 && symbol <= 0xd7a3) /* kor */
-         ret+=2;
-      else if (symbol >= 0x3040 && symbol <= 0x30ff) /* jpn */
-         ret+=2;
-      else if (symbol >= 0x4e00 && symbol <= 0x9fff) /* chn */
-         ret+=2;
-      else
-         ret++;
-#else         
+   {        
       if ((*string & 0xC0) != 0x80)
          ret++;
       string++;         
-#endif
    }
    return ret;
 }
