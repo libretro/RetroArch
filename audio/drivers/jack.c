@@ -273,16 +273,16 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
          }
          written += write_frames;
       }
-#ifdef HAVE_THREADS
-      else
+      else if (!jd->nonblock)
       {
+#ifdef HAVE_THREADS
          slock_lock(jd->cond_lock);
          scond_wait(jd->cond, jd->cond_lock);
          slock_unlock(jd->cond_lock);
-      }
 #endif
-
-      if (jd->nonblock)
+         continue;
+      }
+      else
          break;
    }
 
