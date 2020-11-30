@@ -22,14 +22,29 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <winsock2.h>
+#include <windows.h>
+#endif
 
 #include <encodings/utf.h>
 #include <file/file_path.h>
+#include <net/net_socket.h>
+#include <net/net_compat.h>
 #include <streams/file_stream.h>
+#include <rthreads/rthreads.h>
 
 #include "driver_utils.h"
 #include "cloud_storage.h"
 #include "json.h"
+
+struct oauth_receive_args_t
+{
+   struct authorize_state_t *authorize_state;
+   bool (*process_request)(char *code_verifier, int port, uint8_t *request, size_t request_len);
+};
 
 char *cloud_storage_join_strings(size_t *length, ...)
 {
@@ -494,4 +509,347 @@ void cloud_storage_add_request_body_data(
    }
 
    net_http_request_set_body_file(request, file, segment_length);
+}
+
+static int64_t _get_http_request_content_length(uint8_t *data, size_t data_len)
+{
+   char *new_line;
+   char *last_new_line = (char *)data;
+   char content_length_line[51];
+
+   new_line = (char *)memchr(last_new_line, '\n', data_len);
+   while (new_line)
+   {
+      if (new_line == last_new_line || (new_line == last_new_line + 1 && *last_new_line == '\r'))
+      {
+         last_new_line = new_line + 1;
+
+         if (last_new_line - (char *)data >= data_len) {
+            break;
+         } else
+         {
+            new_line = (char *)memchr(last_new_line, '\n', data_len - (size_t)(last_new_line - (char *)data));
+            continue;
+         }
+      }
+
+      memset(content_length_line, 0, 51);
+      memcpy(content_length_line, last_new_line, new_line - last_new_line - (*(new_line - 1) == '\r' ? 1 : 0));
+      if (strstr(content_length_line, "Content-Length: ") == content_length_line)
+      {
+         int64_t content_len;
+
+         return atol(last_new_line + 16);
+      } else
+      {
+         last_new_line = new_line + 1;
+
+         if (last_new_line - (char *)data >= data_len)
+         {
+            break;
+         } else
+         {
+            new_line = (char *)memchr(last_new_line, '\n', data_len - (size_t)(last_new_line - (char *)data));
+         }
+      }
+   }
+
+   return -1;
+}
+
+static bool _have_complete_request(uint8_t *data, size_t data_len, size_t content_len)
+{
+   char *new_line;
+   char *last_new_line = (char *)data;
+
+   new_line = (char *)memchr(last_new_line, '\n', data_len);
+   while (new_line)
+   {
+      if (new_line == last_new_line || (new_line == last_new_line + 1 && *last_new_line == '\r'))
+      {
+         return (data_len == (new_line + 1 - (char *)data) + content_len);
+      } else
+      {
+         last_new_line = new_line + 1;
+         new_line = (char *)memchr(last_new_line, '\n', data_len - (size_t)(last_new_line - (char *)data));
+      }
+   }
+
+   return false;
+}
+
+static void _oauth_receive_browser_request_thread(void *data)
+{
+   int on;
+   struct addrinfo hints;
+   struct addrinfo *server_addr = NULL;
+   int client_addr_size;
+   char port_string[6];
+   SOCKET clientfd = -1;
+   char *request = NULL;
+   size_t request_offset = 0;
+   size_t request_length = 0;
+   int64_t content_length;
+   char *code = NULL;
+   struct oauth_receive_args_t *thread_args;
+   struct timeval timeout;
+   time_t abort_time;
+   fd_set read_set;
+   fd_set write_set;
+   int rc;
+   bool success = false;
+
+   thread_args = (struct oauth_receive_args_t *)data;
+
+   FD_ZERO(&read_set);
+   FD_SET(thread_args->authorize_state->sockfd, &read_set);
+   FD_ZERO(&write_set);
+   FD_SET(thread_args->authorize_state->sockfd, &write_set);
+
+   abort_time = time(NULL) + (5 * 60);
+
+   slock_lock(thread_args->authorize_state->mutex);
+   scond_signal(thread_args->authorize_state->condition);
+   slock_unlock(thread_args->authorize_state->mutex);
+
+   timeout.tv_sec = 5 * 60;
+   timeout.tv_usec = 0;
+   rc = socket_select(thread_args->authorize_state->sockfd + 1, &read_set, &write_set, (fd_set *)NULL, &timeout);
+   if (rc <= 0)
+   {
+      goto cleanup;
+   }
+
+   if (FD_ISSET(thread_args->authorize_state->sockfd, &read_set))
+   {
+      clientfd = accept(thread_args->authorize_state->sockfd, NULL, NULL);
+      if (clientfd < 0)
+      {
+         goto cleanup;
+      }
+   }
+
+   FD_ZERO(&read_set);
+   FD_SET(clientfd, &read_set);
+   timeout.tv_sec = abort_time - time(NULL);
+   timeout.tv_usec = 0;
+   rc = socket_select(clientfd + 1, &read_set, (fd_set *)NULL, (fd_set *)NULL, &timeout);
+   if (rc <= 0)
+   {
+      goto cleanup;
+   }
+
+   request = (char *)malloc(4096);
+   request_length = 4096;
+retry_read:
+   if (FD_ISSET(clientfd, &read_set))
+   {
+      bool error = false;
+      size_t bytes_read;
+
+      bytes_read = socket_receive_all_nonblocking(clientfd, &error, request + request_offset, request_length);
+      if (error)
+      {
+         if (errno != EWOULDBLOCK)
+         {
+            goto cleanup;
+         }
+
+         FD_ZERO(&read_set);
+         FD_SET(clientfd, &read_set);
+         goto retry_read;
+      } else if (bytes_read == 0)
+      {
+         goto cleanup;
+      } else
+      {
+         request_offset += bytes_read;
+
+         if (content_length < 0)
+         {
+            content_length = _get_http_request_content_length((uint8_t *)request, bytes_read);
+         }
+
+         if (content_length >= 0)
+         {
+            if (_have_complete_request((uint8_t *)request, bytes_read, content_length))
+            {
+               goto process_request;
+            } else
+            {
+               goto retry_read;
+            }
+         } else
+         {
+            goto retry_read;
+         }
+      }
+   }
+
+process_request:
+   if (clientfd > 0)
+   {
+      FD_ZERO(&write_set);
+      FD_SET(clientfd, &write_set);
+      timeout.tv_sec = abort_time - time(NULL);
+      timeout.tv_usec = 0;
+      rc = socket_select(clientfd + 1, (fd_set *)NULL, &write_set, (fd_set *)NULL, &timeout);
+      if (rc > 0)
+      {
+         const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n";
+         send(clientfd, response, strlen(response), 0);
+      }
+
+#if defined(_WIN32) || defined(_WIN64)
+      shutdown(clientfd, SD_BOTH);
+#else
+      shutdown(clientfd, SHUT_WR);
+#endif
+      socket_close(clientfd);
+      clientfd = 0;
+   }
+
+   socket_close(thread_args->authorize_state->sockfd);
+   thread_args->authorize_state->sockfd = 0;
+
+   success = thread_args->process_request(
+      thread_args->authorize_state->code_verifier,
+      thread_args->authorize_state->port,
+      (uint8_t *)request,
+      request_offset);
+
+cleanup:
+   if (code)
+   {
+      free(code);
+   }
+
+   if (request)
+   {
+      free(request);
+   }
+
+   if (clientfd > 0)
+   {
+#if defined(_WIN32) || defined(_WIN64)
+      shutdown(clientfd, SD_BOTH);
+#else
+      shutdown(clientfd, SHUT_WR);
+#endif
+      socket_close(clientfd);
+      clientfd = 0;
+   }
+
+   if (thread_args->authorize_state->sockfd != 0)
+   {
+      socket_close(thread_args->authorize_state->sockfd);
+   }
+
+   if (server_addr)
+   {
+      freeaddrinfo_retro(server_addr);
+   }
+
+   if (thread_args->authorize_state)
+   {
+      if (thread_args->authorize_state->code_verifier)
+      {
+         free(thread_args->authorize_state->code_verifier);
+      }
+
+      slock_free(thread_args->authorize_state->mutex);
+      scond_free(thread_args->authorize_state->condition);
+
+      thread_args->authorize_state->callback(success);
+      free(thread_args->authorize_state);
+   }
+
+   free(thread_args);
+}
+
+bool cloud_storage_oauth_receive_browser_request(
+   struct authorize_state_t *authorize_state,
+   bool (*process_request)(char *code_verifier, int port, uint8_t *request, size_t request_len))
+{
+   u_long on = 1;
+   struct addrinfo hints;
+   struct addrinfo *server_addr = NULL;
+   char port_string[6];
+
+   authorize_state->port = 9000;
+
+   if (!network_init())
+   {
+      return false;
+   }
+
+   memset(&hints, 0, sizeof(struct addrinfo));
+   hints.ai_family = AF_INET;
+   hints.ai_socktype = SOCK_STREAM;
+   hints.ai_flags = AI_PASSIVE;
+   hints.ai_protocol = IPPROTO_TCP;
+
+   for (;authorize_state->port < 9100;authorize_state->port++)
+   {
+      snprintf(port_string, 6, "%d", authorize_state->port);
+
+      if (getaddrinfo_retro("127.0.0.1", port_string, &hints, &server_addr) != 0)
+      {
+         if (server_addr)
+         {
+            freeaddrinfo_retro(server_addr);
+         }
+
+         return false;
+      }
+
+      authorize_state->sockfd = socket_create("Cloud Storage Authorization", SOCKET_DOMAIN_INET, SOCKET_TYPE_STREAM, SOCKET_PROTOCOL_TCP);
+      if (authorize_state->sockfd == -1)
+      {
+         continue;
+      }
+
+      if (!socket_nonblock(authorize_state->sockfd))
+      {
+         socket_close(authorize_state->sockfd);
+         continue;
+      }
+
+      if (!socket_bind(authorize_state->sockfd, server_addr))
+      {
+         socket_close(authorize_state->sockfd);
+         authorize_state->port = 9100;
+         break;
+      }
+
+      if (listen(authorize_state->sockfd, 2) < 0)
+      {
+         socket_close(authorize_state->sockfd);
+         continue;
+      }
+
+      break;
+   }
+
+   if (authorize_state->port == 9100)
+   {
+      socket_close(authorize_state->sockfd);
+
+      if (server_addr)
+      {
+         freeaddrinfo_retro(server_addr);
+      }
+
+      return false;
+   } else
+   {
+      struct oauth_receive_args_t *thread_args;
+
+      thread_args = (struct oauth_receive_args_t *)malloc(sizeof(struct oauth_receive_args_t));
+      thread_args->authorize_state = authorize_state;
+      thread_args->process_request = process_request;
+
+      sthread_create(_oauth_receive_browser_request_thread, thread_args);
+      return true;
+   }
 }

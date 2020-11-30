@@ -26,16 +26,8 @@
 #include <sys/types.h>
 #include <time.h>
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <winsock2.h>
-#include <windows.h>
-#endif
-
-#include <net/net_socket.h>
-#include <net/net_compat.h>
 #include <net/open_browser.h>
 #include <rest/rest.h>
-#include <rthreads/rthreads.h>
 
 #include <configuration.h>
 
@@ -48,108 +40,9 @@
 
 #define URL_MAX_LENGTH 2048
 
-#if !defined(_WIN32) && !defined(_WIN64)
-typedef int SOCKET;
-#endif
-
-struct authorize_state_t
-{
-   char *code_verifier;
-   int port;
-   SOCKET sockfd;
-   slock_t *mutex;
-   scond_t *condition;
-   void (*callback)(bool success);
-};
-
 static rest_retry_policy_t *retry_policy = NULL;
 extern char *_onedrive_access_token;
 extern time_t _onedrive_access_token_expiration_time;
-
-static bool _listen_for_response_thread(struct authorize_state_t *authorize_state);
-
-static rest_retry_policy_t *_get_retry_policy(void)
-{
-   if (!retry_policy)
-   {
-      int *status_codes;
-      time_t *delays;
-
-      status_codes = (int *)calloc(1, sizeof(int));
-      status_codes[0] = 500;
-      delays = (time_t *)calloc(3, sizeof(time_t));
-      delays[0] = 1;
-      delays[1] = 2;
-      delays[2] = 5;
-
-      retry_policy = rest_retry_policy_new(status_codes, 1, delays, 3);
-   }
-
-   return retry_policy;
-}
-
-authorization_status_t cloud_storage_onedrive_authorize(void (*callback)(bool success))
-{
-   settings_t *settings;
-   const char *client_id;
-   int port;
-   char url[URL_MAX_LENGTH];
-   int i;
-   struct authorize_state_t *authorize_state;
-   authorization_status_t result;
-
-   settings = config_get_ptr();
-
-   if (strlen(settings->arrays.cloud_storage_onedrive_refresh_token) > 0)
-   {
-      return AUTH_COMPLETE;
-   }
-
-   client_id = cloud_storage_onedrive_get_client_id();
-   if (strlen(client_id) == 0) {
-      return AUTH_FAILED;
-   }
-
-   authorize_state = (struct authorize_state_t *)calloc(1, sizeof(struct authorize_state_t));
-   authorize_state->port = -1;
-   authorize_state->mutex = slock_new();
-   authorize_state->condition = scond_new();
-   authorize_state->callback = callback;
-
-   slock_lock(authorize_state->mutex);
-   if (!_listen_for_response_thread(authorize_state))
-   {
-      goto failed;
-   }
-
-   if (!scond_wait_timeout(authorize_state->condition, authorize_state->mutex, 30000000))
-   {
-      slock_unlock(authorize_state->mutex);
-      goto failed;
-   }
-   slock_unlock(authorize_state->mutex);
-
-   snprintf(
-      url,
-      URL_MAX_LENGTH,
-      "https://login.live.com/oauth20_authorize.srf?scope=offline_access%%20Files.ReadWrite.AppFolder&response_type=code&redirect_uri=http%%3A//localhost%%3A%d/auth_code&client_id=%s",
-      authorize_state->port,
-      client_id
-   );
-
-   if (!open_browser(url))
-   {
-      goto failed;
-   }
-
-   return AUTH_PENDING_ASYNC;
-
-failed:
-   slock_free(authorize_state->mutex);
-   scond_free(authorize_state->condition);
-   free(authorize_state);
-   return AUTH_FAILED;
-}
 
 static bool _parse_request(char *request, size_t len, char **code)
 {
@@ -338,7 +231,27 @@ cleanup:
    }
 }
 
-static void _get_tokens(char *code, struct authorize_state_t *authorize_state)
+static rest_retry_policy_t *_get_retry_policy(void)
+{
+   if (!retry_policy)
+   {
+      int *status_codes;
+      time_t *delays;
+
+      status_codes = (int *)calloc(1, sizeof(int));
+      status_codes[0] = 500;
+      delays = (time_t *)calloc(3, sizeof(time_t));
+      delays[0] = 1;
+      delays[1] = 2;
+      delays[2] = 5;
+
+      retry_policy = rest_retry_policy_new(status_codes, 1, delays, 3);
+   }
+
+   return retry_policy;
+}
+
+static void _get_tokens(char *code, char *code_verifier, int port)
 {
    rest_request_t *rest_request;
    struct http_request_t *http_request;
@@ -361,7 +274,7 @@ static void _get_tokens(char *code, struct authorize_state_t *authorize_state)
       "code=%s&client_id=%s&grant_type=authorization_code&redirect_uri=http%%3A//localhost%%3A%d/auth_code",
       code,
       client_id,
-      authorize_state->port
+      port
    );
 
    net_http_request_set_body_raw(http_request, (uint8_t *)body, body_len);
@@ -392,267 +305,84 @@ complete:
    rest_request_free(rest_request);
 }
 
-static void _listen_for_response(void *data)
+static bool _process_request(char *code_verifier, int port, uint8_t *request, size_t request_len)
 {
-   int on;
-   struct addrinfo hints;
-   struct addrinfo *server_addr = NULL;
-   int client_addr_size;
-   char port_string[6];
-   SOCKET clientfd = -1;
-   char request[4096];
-   size_t request_length = 0;
-   char *code = NULL;
-   struct authorize_state_t *authorize_state;
-   struct timeval timeout;
-   time_t abort_time;
-   fd_set read_set;
-   fd_set write_set;
-   int rc;
+   char *code;
 
-   authorize_state = (struct authorize_state_t *)data;
-
-   memset(request, 0, sizeof(request));
-
-   FD_ZERO(&read_set);
-   FD_SET(authorize_state->sockfd, &read_set);
-   FD_ZERO(&write_set);
-   FD_SET(authorize_state->sockfd, &write_set);
-
-   abort_time = time(NULL) + (5 * 60);
-
-   slock_lock(authorize_state->mutex);
-   scond_signal(authorize_state->condition);
-   slock_unlock(authorize_state->mutex);
-
-   timeout.tv_sec = 5 * 60;
-   timeout.tv_usec = 0;
-   rc = socket_select(authorize_state->sockfd + 1, &read_set, &write_set, (fd_set *)NULL, &timeout);
-   if (rc <= 0)
+   if (_parse_request((char *)request, request_len, &code))
    {
-      goto cleanup;
-   }
-
-   if (FD_ISSET(authorize_state->sockfd, &read_set))
-   {
-      clientfd = accept(authorize_state->sockfd, NULL, NULL);
-      if (clientfd < 0)
-      {
-         goto cleanup;
-      }
-   }
-
-   FD_ZERO(&read_set);
-   FD_SET(clientfd, &read_set);
-   FD_ZERO(&write_set);
-   FD_SET(clientfd, &write_set);
-
-   timeout.tv_sec = abort_time - time(NULL);
-   timeout.tv_usec = 0;
-   rc = socket_select(clientfd + 1, (fd_set *)NULL, &write_set, (fd_set *)NULL, &timeout);
-   if (rc <= 0)
-   {
-      goto cleanup;
-   }
-
-   timeout.tv_sec = abort_time - time(NULL);
-   timeout.tv_usec = 0;
-   rc = socket_select(clientfd + 1, &read_set, (fd_set *)NULL, (fd_set *)NULL, &timeout);
-   if (rc <= 0)
-   {
-      goto cleanup;
-   }
-
-retry_read:
-   if (FD_ISSET(clientfd, &read_set))
-   {
-      bool error = false;
-      size_t bytes_read;
-
-      bytes_read = socket_receive_all_nonblocking(clientfd, &error, request, sizeof(request) - 1);
-      if (error)
-      {
-         if (errno != EWOULDBLOCK)
-         {
-            goto cleanup;
-         }
-
-         FD_ZERO(&read_set);
-         FD_SET(clientfd, &read_set);
-         goto retry_read;
-      } else if (bytes_read == 0)
-      {
-         goto cleanup;
-      } else
-      {
-         request_length += bytes_read;
-         goto process_request;
-      }
-   }
-
-   goto cleanup;
-
-process_request:
-   if (clientfd > 0)
-   {
-      const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n";
-      send(clientfd, response, strlen(response), 0);
-      socket_close(clientfd);
-      clientfd = 0;
-   }
-
-   socket_close(authorize_state->sockfd);
-   authorize_state->sockfd = 0;
-
-   if (_parse_request(request, request_length, &code))
-   {
-      _get_tokens(code, authorize_state);
+      _get_tokens(code, code_verifier, port);
 
       if (code)
       {
          free(code);
-         code = NULL;
       }
 
-      if (clientfd > 0)
-      {
-#if defined(_WIN32) || defined(_WIN64)
-         shutdown(clientfd, SD_BOTH);
-#else
-         shutdown(clientfd, SHUT_WR);
-#endif
-         socket_close(clientfd);
-         clientfd = 0;
-      }
-
-      if (server_addr)
-      {
-         freeaddrinfo(server_addr);
-      }
-
-      slock_free(authorize_state->mutex);
-      scond_free(authorize_state->condition);
-
-      authorize_state->callback(true);
-      free(authorize_state);
-
-      return;
-   }
-
-cleanup:
-   if (code)
-   {
-      free(code);
-   }
-
-   if (clientfd > 0)
-   {
-#if defined(_WIN32) || defined(_WIN64)
-      shutdown(clientfd, SD_BOTH);
-#else
-      shutdown(clientfd, SHUT_WR);
-#endif
-      socket_close(clientfd);
-      clientfd = 0;
-   }
-
-   if (authorize_state->sockfd != 0)
-   {
-      socket_close(authorize_state->sockfd);
-   }
-
-   if (server_addr)
-   {
-      freeaddrinfo_retro(server_addr);
-   }
-
-   if (authorize_state)
-   {
-      if (authorize_state->code_verifier)
-      {
-         free(authorize_state->code_verifier);
-      }
-
-      authorize_state->callback(false);
-      free(authorize_state);
-   }
-}
-
-static bool _listen_for_response_thread(struct authorize_state_t *authorize_state)
-{
-   u_long on = 1;
-   struct addrinfo hints;
-   struct addrinfo *server_addr = NULL;
-   char port_string[6];
-
-   authorize_state->port = 9000;
-
-   if (!network_init())
-   {
-      return false;
-   }
-
-   memset(&hints, 0, sizeof(struct addrinfo));
-   hints.ai_family = AF_INET;
-   hints.ai_socktype = SOCK_STREAM;
-   hints.ai_flags = AI_PASSIVE;
-   hints.ai_protocol = IPPROTO_TCP;
-
-   for (;authorize_state->port < 9100;authorize_state->port++)
-   {
-      snprintf(port_string, 6, "%d", authorize_state->port);
-
-      if (getaddrinfo_retro("127.0.0.1", port_string, &hints, &server_addr) != 0)
-      {
-         if (server_addr)
-         {
-            freeaddrinfo_retro(server_addr);
-         }
-
-         return false;
-      }
-
-      authorize_state->sockfd = socket_create("MS OneDrive Authorization", SOCKET_DOMAIN_INET, SOCKET_TYPE_STREAM, SOCKET_PROTOCOL_TCP);
-      if (authorize_state->sockfd == -1)
-      {
-         continue;
-      }
-
-      if (!socket_nonblock(authorize_state->sockfd))
-      {
-         socket_close(authorize_state->sockfd);
-         continue;
-      }
-
-      if (!socket_bind(authorize_state->sockfd, server_addr))
-      {
-         socket_close(authorize_state->sockfd);
-         authorize_state->port = 9100;
-         break;
-      }
-
-      if (listen(authorize_state->sockfd, 2) < 0)
-      {
-         socket_close(authorize_state->sockfd);
-         continue;
-      }
-
-      break;
-   }
-
-   if (authorize_state->port == 9100)
-   {
-      socket_close(authorize_state->sockfd);
-
-      if (server_addr)
-      {
-         freeaddrinfo_retro(server_addr);
-      }
-
-      return false;
-   } else
-   {
-      sthread_create(_listen_for_response, authorize_state);
       return true;
    }
+
+   return false;
+}
+
+authorization_status_t cloud_storage_onedrive_authorize(void (*callback)(bool success))
+{
+   settings_t *settings;
+   const char *client_id;
+   int port;
+   char url[URL_MAX_LENGTH];
+   int i;
+   struct authorize_state_t *authorize_state;
+   authorization_status_t result;
+
+   settings = config_get_ptr();
+
+   if (strlen(settings->arrays.cloud_storage_onedrive_refresh_token) > 0)
+   {
+      return AUTH_COMPLETE;
+   }
+
+   client_id = cloud_storage_onedrive_get_client_id();
+   if (strlen(client_id) == 0) {
+      return AUTH_FAILED;
+   }
+
+   authorize_state = (struct authorize_state_t *)calloc(1, sizeof(struct authorize_state_t));
+   authorize_state->port = -1;
+   authorize_state->mutex = slock_new();
+   authorize_state->condition = scond_new();
+   authorize_state->callback = callback;
+
+   slock_lock(authorize_state->mutex);
+   if (!cloud_storage_oauth_receive_browser_request(authorize_state, _process_request))
+   {
+      goto failed;
+   }
+
+   if (!scond_wait_timeout(authorize_state->condition, authorize_state->mutex, 30000000))
+   {
+      slock_unlock(authorize_state->mutex);
+      goto failed;
+   }
+   slock_unlock(authorize_state->mutex);
+
+   snprintf(
+      url,
+      URL_MAX_LENGTH,
+      "https://login.live.com/oauth20_authorize.srf?scope=offline_access%%20Files.ReadWrite.AppFolder&response_type=code&redirect_uri=http%%3A//localhost%%3A%d/auth_code&client_id=%s",
+      authorize_state->port,
+      client_id
+   );
+
+   if (!open_browser(url))
+   {
+      goto failed;
+   }
+
+   return AUTH_PENDING_ASYNC;
+
+failed:
+   slock_free(authorize_state->mutex);
+   scond_free(authorize_state->condition);
+   free(authorize_state);
+   return AUTH_FAILED;
 }

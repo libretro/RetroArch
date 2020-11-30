@@ -28,11 +28,33 @@
 #include <boolean.h>
 #include <time.h>
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <winsock2.h>
+#include <windows.h>
+#endif
+
+#include <net/net_socket.h>
+#include <net/net_compat.h>
 #include <net/net_http.h>
+#include <rthreads/rthreads.h>
 
 #include "cloud_storage.h"
 
 RETRO_BEGIN_DECLS
+
+#if !defined(_WIN32) && !defined(_WIN64)
+typedef int SOCKET;
+#endif
+
+struct authorize_state_t
+{
+   char *code_verifier;
+   int port;
+   SOCKET sockfd;
+   slock_t *mutex;
+   scond_t *condition;
+   void (*callback)(bool success);
+};
 
 char *cloud_storage_join_strings(size_t *length, ...);
 
@@ -55,6 +77,11 @@ void cloud_storage_add_request_body_data(
    size_t offset,
    size_t segment_length,
    struct http_request_t *request
+);
+
+bool cloud_storage_oauth_receive_browser_request(
+   struct authorize_state_t *authorize_state,
+   bool (*process_request)(char *code_verifier, int port, uint8_t *request, size_t request_len)
 );
 
 RETRO_END_DECLS
