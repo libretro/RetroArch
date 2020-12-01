@@ -137,7 +137,7 @@ static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
    rumble->strong.effect.u.periodic.magnitude = 0;
    rumble->strong.id                          = Shake_UploadEffect(rumble->device, &rumble->strong.effect);
 
-   if (rumble->weak.id == SHAKE_ERROR)
+   if (rumble->strong.id == SHAKE_ERROR)
       goto error;
    strong_uploaded = true;
 
