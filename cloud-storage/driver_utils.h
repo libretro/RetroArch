@@ -81,6 +81,7 @@ void cloud_storage_add_request_body_data(
 
 bool cloud_storage_oauth_receive_browser_request(
    struct authorize_state_t *authorize_state,
+   const char *browser_response,
    bool (*process_request)(char *code_verifier, int port, uint8_t *request, size_t request_len)
 );
 

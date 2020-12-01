@@ -375,7 +375,10 @@ authorization_status_t cloud_storage_google_authorize(void (*callback)(bool succ
    authorize_state->callback = callback;
 
    slock_lock(authorize_state->mutex);
-   if (!cloud_storage_oauth_receive_browser_request(authorize_state, _process_request))
+   if (!cloud_storage_oauth_receive_browser_request(
+      authorize_state,
+      NULL,
+      _process_request))
    {
       goto failed;
    }

@@ -43,8 +43,26 @@
 struct oauth_receive_args_t
 {
    struct authorize_state_t *authorize_state;
+   const char *browser_response;
    bool (*process_request)(char *code_verifier, int port, uint8_t *request, size_t request_len);
 };
+
+static const char *_DEFAULT_OAUTH_BROWSER_RESPONSE =
+   "<html>\n"
+   "  <head>\n"
+   "    <title>Authorized</title>\n"
+   "  </head>\n"
+   "  <body style=\"background-color: white\" onload=\"setTimeout('self.close()', 5000)\">\n"
+   "    <div style=\"text-align: center\">\n"
+   "      <a href=\"https://www.retroarch.com\">\n"
+   "        <img style=\"width: 500px\" src=\"https://www.retroarch.com/images/logo.png\">\n"
+   "      </a>\n"
+   "    </div>\n"
+   "    <div style=\"text-align: center; font-size: 20px; font-family: 'Hind', sans-serif\">\n"
+   "      You have now authorized RetroArch. This window will close soon.\n"
+   "    </div>\n"
+   "  </body>\n"
+   "</html>";
 
 char *cloud_storage_join_strings(size_t *length, ...)
 {
@@ -696,8 +714,27 @@ process_request:
       rc = socket_select(clientfd + 1, (fd_set *)NULL, &write_set, (fd_set *)NULL, &timeout);
       if (rc > 0)
       {
-         const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n";
-         send(clientfd, response, strlen(response), 0);
+         const char *response_headers = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: ";
+         char length_str[16];
+         char *response;
+         size_t response_length;
+
+         send(clientfd, response_headers, strlen(response_headers), 0);
+
+         if (thread_args->browser_response)
+         {
+            response = thread_args->browser_response;
+         } else
+         {
+            response = _DEFAULT_OAUTH_BROWSER_RESPONSE;
+         }
+         
+         response_length = strlen(thread_args->browser_response);
+         sprintf(length_str, "%ld", response_length);
+         send(clientfd, length_str, strlen(length_str), 0);
+
+         send(clientfd, "\r\n\r\n", 4, 0);
+         send(clientfd, thread_args->browser_response, response_length, 0);
       }
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -769,6 +806,7 @@ cleanup:
 
 bool cloud_storage_oauth_receive_browser_request(
    struct authorize_state_t *authorize_state,
+   const char *browser_response,
    bool (*process_request)(char *code_verifier, int port, uint8_t *request, size_t request_len))
 {
    u_long on = 1;
@@ -847,6 +885,7 @@ bool cloud_storage_oauth_receive_browser_request(
 
       thread_args = (struct oauth_receive_args_t *)malloc(sizeof(struct oauth_receive_args_t));
       thread_args->authorize_state = authorize_state;
+      thread_args->browser_response = browser_response;
       thread_args->process_request = process_request;
 
       sthread_create(_oauth_receive_browser_request_thread, thread_args);
