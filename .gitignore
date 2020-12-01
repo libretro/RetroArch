@@ -207,5 +207,8 @@ gfx/common/wayland/xdg-decoration-unstable-v1.c
 gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
 
+# libretro-common samples
+libretro-common/samples/streams/rzip/rzip
+
 # DINGUX
 *.opk
