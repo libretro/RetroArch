@@ -716,7 +716,7 @@ process_request:
       {
          const char *response_headers = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: ";
          char length_str[16];
-         char *response;
+         const char *response;
          size_t response_length;
 
          send(clientfd, response_headers, strlen(response_headers), 0);
@@ -729,12 +729,12 @@ process_request:
             response = _DEFAULT_OAUTH_BROWSER_RESPONSE;
          }
          
-         response_length = strlen(thread_args->browser_response);
+         response_length = strlen(response);
          sprintf(length_str, "%ld", response_length);
          send(clientfd, length_str, strlen(length_str), 0);
 
          send(clientfd, "\r\n\r\n", 4, 0);
-         send(clientfd, thread_args->browser_response, response_length, 0);
+         send(clientfd, response, response_length, 0);
       }
 
 #if defined(_WIN32) || defined(_WIN64)
