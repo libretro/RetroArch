@@ -132,6 +132,44 @@ build-static-retroarch-psp:
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
+build-static-retroarch-ctr:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 1 day
+  dependencies: []
+  needs:
+    # Salamander build requires no core
+    - build-static-retroarch-salamander-ctr
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.ctr -j$NUMPROC USE_CTRULIB_2=1 ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
+build-static-retroarch-salamander-ctr:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch_3ds.cia
+    -  RetroArch.3dsx
+    -  RetroArch.smdh
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "make -f Makefile.ctr.salamander -j$NUMPROC USE_CTRULIB_2=1"
+    - "mv -f retroarch_3ds_salamander.cia retroarch_3ds.cia"
+    - "mv -f retroarch_3ds_salamander.3dsx RetroArch.3dsx"
+    - "mv -f retroarch_3ds_salamander.smdh RetroArch.smdh"
+
 trigger_static-cores:
   stage: trigger-static-cores
   needs:
@@ -139,6 +177,7 @@ trigger_static-cores:
   - build-static-retroarch-vita
   - build-static-retroarch-ps2
   - build-static-retroarch-psp
+  - build-static-retroarch-ctr
   dependencies: []
   script:
     # Dummy for now

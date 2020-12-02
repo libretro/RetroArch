@@ -5,7 +5,7 @@ DEBUG                   = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
-USE_CTRULIB_2           = 0
+USE_CTRULIB_2          ?= 0
 
 APP_TITLE            = RetroArch 3DS
 APP_DESCRIPTION      = RetroArch 3DS
