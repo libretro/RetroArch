@@ -1,5 +1,34 @@
-CC = /opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-gcc
-CXX = /opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-g++
+#########################
+## Toolchain variables ##
+#########################
+
+# Default toolchain directory
+TOOLCHAIN_DIR=/opt/gcw0-toolchain
+
+# All toolchain-related variables may be
+# overridden via the command line
+ifdef GCW0_CC
+CC                    = $(GCW0_CC)
+else
+CC                    = $(TOOLCHAIN_DIR)/usr/bin/mipsel-gcw0-linux-uclibc-gcc
+endif
+
+ifdef GCW0_CXX
+CXX                   = $(GCW0_CXX)
+else
+CXX                   = $(TOOLCHAIN_DIR)/usr/bin/mipsel-gcw0-linux-uclibc-g++
+endif
+
+GCW0_SDL_CONFIG      ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config
+GCW0_FREETYPE_CONFIG ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config
+GCW0_MK_SQUASH_FS    ?= $(TOOLCHAIN_DIR)/usr/bin/mksquashfs
+
+GCW0_INC_DIR         ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/include
+GCW0_LIB_DIR         ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/lib
+
+#########################
+#########################
+
 PACKAGE_NAME = retroarch
 
 DEBUG ?= 0
@@ -88,8 +117,8 @@ CFLAGS :=
 CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS :=
 LDFLAGS := -flto -Wl,--gc-sections
-INCLUDE_DIRS = -I/opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/include
-LIBRARY_DIRS = -L/opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/lib
+INCLUDE_DIRS = -I$(GCW0_INC_DIR)
+LIBRARY_DIRS = -L$(GCW0_LIB_DIR)
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
 DEFINES += -DHAVE_C99=1 -DHAVE_CXX=1 -DHAVE_OPENDINGUX_FBDEV=1
 DEFINES += -DHAVE_GETOPT_LONG=1 -DHAVE_STRCASESTR=1 -DHAVE_DYNAMIC=1
@@ -98,10 +127,10 @@ DEFINES += -DHAVE_ONLINE_UPDATER=1
 DEFINES += -DHAVE_UPDATE_ASSETS=1
 DEFINES += -DHAVE_UDEV=1
 
-SDL_DINGUX_CFLAGS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config --cflags)
-SDL_DINGUX_LIBS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config --libs)
-FREETYPE_CFLAGS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config --cflags)
-FREETYPE_LIBS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config --libs)
+SDL_DINGUX_CFLAGS := $(shell $(GCW0_SDL_CONFIG) --cflags)
+SDL_DINGUX_LIBS := $(shell $(GCW0_SDL_CONFIG) --libs)
+FREETYPE_CFLAGS := $(shell $(GCW0_FREETYPE_CONFIG) --cflags)
+FREETYPE_LIBS := $(shell $(GCW0_FREETYPE_CONFIG) --libs)
 AL_LIBS := -lopenal
 OPENGLES_CFLAGS := -DMESA_EGL_NO_X11_HEADERS
 OPENGLES_LIBS := -lGLESv2 -lEGL
@@ -183,7 +212,7 @@ opk: $(TARGET)
 	echo "$$DESKTOP_ENTRY" > default.gcw0.desktop
 	rm -f $(OPK_NAME)
 	cp media/ico_src/icon32.png retroarch.png
-	mksquashfs retroarch default.gcw0.desktop retroarch.png $(OPK_NAME) -all-root -no-xattrs -noappend -no-exports
+	$(GCW0_MK_SQUASH_FS) retroarch default.gcw0.desktop retroarch.png $(OPK_NAME) -all-root -no-xattrs -noappend -no-exports
 	rm -f default.gcw0.desktop retroarch.png
 
 .PHONY: all clean opk
