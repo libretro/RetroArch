@@ -351,6 +351,7 @@ else ifeq ($(LIBRETRO), nxengine)
 	APP_UNIQUE_ID        = 0xBAC05
 	APP_ICON             = pkg/ctr/assets/nxengine.png
 	APP_BANNER           = pkg/ctr/assets/nxengine_banner.png
+	WHOLE_ARCHIVE_LINK   = 1
 
 else ifeq ($(LIBRETRO), o2em)
 	APP_TITLE            = O2EM Libretro
