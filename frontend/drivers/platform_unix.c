@@ -1328,13 +1328,14 @@ static void frontend_unix_get_lakka_version(char *s,
 
 static void frontend_unix_set_screen_brightness(int value)
 {
+   int brightness = 0;
    char svalue[16] = {0};
    #if defined(HAVE_LAKKA_SWITCH)
    /* Values from 0 to 100 */
-   int brightness = value;
+   brightness = value;
    #elif defined(HAVE_ODROIDGO2)
    /* GOA screen PWM value does not linearly relate to perceived brightness */
-   int brightness = (pow(1.0369f, value) - 1) * 7;
+   brightness = (pow(1.0369f, value) - 1) * 7;
    #endif
 
    snprintf(svalue, sizeof(svalue), "%d\n", brightness);

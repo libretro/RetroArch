@@ -29,7 +29,7 @@
 
 typedef struct
 {
-   bool connman_cache[256];
+   bool connman_cache[64];
    unsigned connman_counter;
    struct string_list* lines;
    char command[256];
@@ -232,7 +232,7 @@ static bool connmanctl_ssid_is_online(void *data, unsigned i)
    const char *line   = connman->lines->elems[i].data;
    FILE *command_file = NULL;
 
-   if (connman->connman_counter == 60)
+   if (connman->connman_counter >= 64)
    {
       static struct string_list* list = NULL;
       connman->connman_counter = 0;
@@ -254,22 +254,15 @@ static bool connmanctl_ssid_is_online(void *data, unsigned i)
             service);
 
       command_file = popen(connman->command, "r");
-
-      while (fgets(ln, 512, command_file))
-      {
-         connman->connman_cache[i] = true;
-         return true;
-      }
+      connman->connman_cache[i] = (fgets(ln, 512, command_file));
       pclose(command_file);
-      connman->connman_cache[i] = false;
    }
    else
    {
       connman->connman_counter++;
-      return connman->connman_cache[i];
    }
 
-   return false;
+   return connman->connman_cache[i];
 }
 
 static bool connmanctl_connect_ssid(
