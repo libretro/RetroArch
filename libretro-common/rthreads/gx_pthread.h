@@ -84,10 +84,13 @@
 
 typedef OSThread pthread_t;
 typedef mutex_t pthread_mutex_t;
+typedef OSCond pthread_cond_t;
+
+#if defined(GX_PTHREAD_LEGACY)
 typedef void* pthread_mutexattr_t;
 typedef int pthread_attr_t;
-typedef OSCond pthread_cond_t;
 typedef OSCond pthread_condattr_t;
+#endif
 
 static INLINE int pthread_create(pthread_t *thread,
       const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
