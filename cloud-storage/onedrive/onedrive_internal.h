@@ -22,10 +22,10 @@
 
 #include <retro_common_api.h>
 
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 
-#include "../json.h"
 #include "../cloud_storage.h"
 
 #ifndef _CLOUD_STORAGE_ONEDRIVE_INTERNAL_H
@@ -37,7 +37,7 @@ bool cloud_storage_onedrive_have_default_credentials(void);
 
 const char *cloud_storage_onedrive_get_client_id(void);
 
-cloud_storage_item_t *cloud_storage_onedrive_parse_file_from_json(struct json_map_t file_json);
+cloud_storage_item_t *cloud_storage_onedrive_parse_file_from_json(rjson_t *json);
 
 struct http_response_t *onedrive_rest_execute_request(rest_request_t *rest_request);
 

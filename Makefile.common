@@ -2081,8 +2081,6 @@ ifeq ($(HAVE_NETWORKING), 1)
 
 	ifeq ($(HAVE_CLOUD_STORAGE), 1)
 		OBJ += cloud-storage/hex.o \
-				 $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
-				 cloud-storage/json.o \
 				 cloud-storage/driver_utils.o \
 				 cloud-storage/cloud_storage.o \
 				 cloud-storage/google/google.o \

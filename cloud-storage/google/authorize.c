@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include <formats/rjson.h>
 #include <net/open_browser.h>
 #include <rest/rest.h>
 
@@ -34,7 +35,6 @@
 #include "../../command.h"
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "google_internal.h"
 
@@ -149,79 +149,107 @@ static bool _parse_request(char *request, size_t len, char **code)
 
 static void _process_get_tokens_response(struct http_response_t *response)
 {
-   char *json_text;
+   rjson_t *json;
    uint8_t *bytes;
    size_t bytes_len;
-   struct json_node_t *json;
    char *access_token = NULL;
    char *refresh_token = NULL;
    time_t access_token_expiration_time = 0;
+   bool in_object;
+   const char *key_name;
+   size_t key_name_len;
+   settings_t *settings;
 
    bytes = net_http_response_get_data(response, &bytes_len, false);
-
-   json_text = (char *)malloc(bytes_len + 1);
-   memcpy(json_text, bytes, bytes_len);
-   json_text[bytes_len] = '\0';
-
-   json = string_to_json(json_text);
-   if (json)
+   json = rjson_open_buffer(bytes, bytes_len);
+   for (;;)
    {
-      char *value;
-      size_t value_len;
-      int64_t int_value;
-      char expiration_time[16];
-      settings_t *settings;
-
-      if (json->node_type != OBJECT_VALUE)
+      switch (rjson_next(json))
       {
-         goto cleanup;
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            if (in_object)
+            {
+               goto cleanup;
+            } else
+            {
+               in_object = true;
+            }
+            break;
+         case RJSON_STRING:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp("access_token", key_name) == 0)
+            {
+               const char *value;
+               size_t value_len;
+
+               value = rjson_get_string(json, &value_len);
+               access_token = (char *)malloc(value_len + 1);
+               access_token[value_len] = '\0';
+               strncpy(access_token, value, value_len);
+            } else if (strcmp("refresh_token", key_name) == 0)
+            {
+               const char *value;
+               size_t value_len;
+
+               value = rjson_get_string(json, &value_len);
+               refresh_token = (char *)malloc(value_len + 1);
+               refresh_token[value_len] = '\0';
+               strncpy(refresh_token, value, value_len);
+            }
+
+            break;
+         case RJSON_NUMBER:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 0 && strcmp("expires_in", key_name) == 0)
+            {
+               access_token_expiration_time = time(NULL) + rjson_get_int(json);
+            }
+
+            break;
+         case RJSON_OBJECT_END:
+            if (access_token && refresh_token && access_token_expiration_time > 0)
+            {
+               goto save_access_token;
+            } else
+            {
+               goto cleanup;
+            }
+         default:
+            goto cleanup;
       }
-
-      if (!json_map_get_value_string(json->value.map_value, "access_token", &value, &value_len))
-      {
-         goto cleanup;
-      }
-      access_token = (char *)malloc(value_len + 1);
-      access_token[value_len] = '\0';
-      strncpy(access_token, value, value_len);
-
-      if (!json_map_get_value_int(json->value.map_value, "expires_in", &int_value))
-      {
-         goto cleanup;
-      }
-      access_token_expiration_time = time(NULL) + (int)int_value;
-
-      if (!json_map_get_value_string(json->value.map_value, "refresh_token", &value, &value_len))
-      {
-         goto cleanup;
-      }
-      refresh_token = (char *)malloc(value_len + 1);
-      refresh_token[value_len] = '\0';
-      strncpy(refresh_token, value, value_len);
-
-      command_event(CMD_EVENT_MENU_SAVE_CONFIG, NULL);
-
-      settings = config_get_ptr();
-      strcpy(settings->arrays.cloud_storage_google_refresh_token, refresh_token);
-      free(refresh_token);
-      refresh_token = NULL;
-
-      _google_access_token = access_token;
-      _google_access_token_expiration_time = access_token_expiration_time;
-
-      cloud_storage_save_access_token("google", access_token, access_token_expiration_time);
-      access_token = NULL;
    }
+
+save_access_token:
+   command_event(CMD_EVENT_MENU_SAVE_CONFIG, NULL);
+
+   settings = config_get_ptr();
+   strcpy(settings->arrays.cloud_storage_google_refresh_token, refresh_token);
+   free(refresh_token);
+   refresh_token = NULL;
+
+   _google_access_token = access_token;
+   _google_access_token_expiration_time = access_token_expiration_time;
+
+   cloud_storage_save_access_token("google", access_token, access_token_expiration_time);
+   access_token = NULL;
 
 cleanup:
    if (json)
    {
-      json_node_free(json);
-   }
-
-   if (json_text)
-   {
-      free(json_text);
+      rjson_free(json);
    }
 
    if (access_token)

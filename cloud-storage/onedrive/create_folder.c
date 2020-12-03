@@ -22,11 +22,11 @@
 
 #include <stdlib.h>
 
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "onedrive_internal.h"
 
@@ -37,50 +37,61 @@ static cloud_storage_item_t *_parse_create_folder_response(
    uint8_t *response,
    size_t response_len)
 {
-   char *json_text;
-   struct json_node_t *json;
-   struct json_map_t item;
-   char *id;
-   size_t id_length;
+   rjson_t *json;
    cloud_storage_item_t *metadata = NULL;
+   bool in_object = false;
+   const char *key_name;
+   size_t key_name_len;
 
-   json_text = (char *)malloc(response_len + 1);
-   strncpy(json_text, (char *)response, response_len);
-   json_text[response_len] = '\0';
+   json = rjson_open_buffer(response, response_len);
 
-   json = string_to_json(json_text);
-   json_text = NULL;
-
-   if (!json || json->node_type != OBJECT_VALUE)
+   for (;;)
    {
-      goto cleanup;
-   }
+      switch (rjson_next(json))
+      {
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            if (in_object)
+            {
+               goto cleanup;
+            } else
+            {
+               in_object = true;
+            }
+            break;
+         case RJSON_STRING:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
 
-   metadata = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
-   metadata->name = (char *)malloc(strlen(folder_name) + 1);
-   strcpy(metadata->name, folder_name);
-   metadata->item_type = CLOUD_STORAGE_FOLDER;
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp("id", key_name) == 0)
+            {
+               const char *id;
+               size_t id_length;
 
-   item = json->value.map_value;
+               metadata = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
+               metadata->name = (char *)malloc(strlen(folder_name) + 1);
+               strcpy(metadata->name, folder_name);
+               metadata->item_type = CLOUD_STORAGE_FOLDER;
 
-   if (json_map_get_value_string(item, "id", &id, &id_length))
-   {
-      metadata->id = (char *)calloc(id_length + 1, sizeof(char));
-      strncpy(metadata->id, id, id_length);
+               id = rjson_get_string(json, &id_length);
+               metadata->id = (char *)malloc(id_length + 1);
+               strcpy(metadata->id, id);
+            }
+
+            break;
+         default:
+            break;
+      }
    }
 
 cleanup:
-   free(json_text);
-   if (json)
-   {
-      json_node_free(json);
-   }
-
-   if (metadata && !metadata->id)
-   {
-      free(metadata);
-   }
-
+   rjson_free(json);
    return metadata;
 }
 

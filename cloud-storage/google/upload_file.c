@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <formats/rjson.h>
 #include <rest/rest.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
@@ -28,7 +29,6 @@
 #include <rest/rest.h>
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "google_internal.h"
 
@@ -39,8 +39,7 @@ static void _process_upload_file_part_response(
    struct http_response_t *response,
    cloud_storage_item_t *remote_file)
 {
-   struct json_node_t *json;
-   char *json_str;
+   rjson_t *json;
 
    char *file_id;
    size_t file_id_length;
@@ -48,38 +47,65 @@ static void _process_upload_file_part_response(
    size_t md5_length;
    uint8_t *data;
    size_t data_len;
+   bool in_object = false;
+   const char *key_name;
+   size_t key_name_len;
 
    data = net_http_response_get_data(response, &data_len, false);
+   json = rjson_open_buffer(data, data_len);
 
-   json_str = (char *)malloc(data_len + 1);
-   json_str[data_len] = '\0';
-   memcpy(json_str, data, data_len);
-
-   json = string_to_json(json_str);
-   if (json)
+   for (;;)
    {
-      if (!remote_file->id && json_map_get_value_string(json->value.map_value, "id", &file_id, &file_id_length))
+      switch (rjson_next(json))
       {
-         remote_file->id = (char *)calloc(file_id_length + 1, sizeof(char));
-         strncpy(remote_file->id, file_id, file_id_length);
-      }
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            if (in_object)
+            {
+               goto cleanup;
+            } else
+            {
+               in_object = true;
+               if (remote_file->type_data.file.hash_value)
+               {
+                  free(remote_file->type_data.file.hash_value);
+               }
+            }
+            break;
+         case RJSON_STRING:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
 
-      if (remote_file->type_data.file.hash_value)
-      {
-         free(remote_file->type_data.file.hash_value);
-      }
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp("id", key_name) == 0)
+            {
+               const char *value;
+               size_t value_len;
 
-      remote_file->type_data.file.hash_type = MD5;
-      if (json_map_get_value_string(json->value.map_value, "md5Checksum", &md5, &md5_length))
-      {
-         remote_file->type_data.file.hash_value = (char *)calloc(md5_length + 1, sizeof(char));
-         strncpy(remote_file->type_data.file.hash_value, md5, md5_length);
-      }
+               value = rjson_get_string(json, &value_len);
+               remote_file->id = (char *)malloc(value_len + 1);
+               strcpy(remote_file->id, value);
+            } else if (strcmp("md5Checksum", key_name) == 0)
+            {
+               const char *value;
+               size_t value_len;
 
-      json_node_free(json);
+               value = rjson_get_string(json, &value_len);
+               remote_file->type_data.file.hash_value = (char *)malloc(value_len + 1);
+               strcpy(remote_file->type_data.file.hash_value, value);
+            }
+         default:
+            break;
+      }
    }
 
-   free(json_str);
+cleanup:
+   rjson_free(json);
 }
 
 static void _add_http_headers_data(

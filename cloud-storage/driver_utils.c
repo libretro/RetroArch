@@ -31,6 +31,7 @@
 
 #include <encodings/utf.h>
 #include <file/file_path.h>
+#include <formats/rjson.h>
 #include <net/net_socket.h>
 #include <net/net_compat.h>
 #include <streams/file_stream.h>
@@ -38,7 +39,6 @@
 
 #include "driver_utils.h"
 #include "cloud_storage.h"
-#include "json.h"
 
 struct oauth_receive_args_t
 {
@@ -395,10 +395,13 @@ void cloud_storage_load_access_token(const char *driver_name, char **access_toke
    char *file_contents = NULL;
    int64_t offset;
    int64_t bytes_read;
-   struct json_node_t *json = NULL;
-   char *parsed_access_token = NULL;
+   rjson_t *json = NULL;
+   const char *parsed_access_token = NULL;
    size_t token_length;
-   int64_t parsed_expiration_time;
+   int64_t parsed_expiration_time = -1;
+   bool in_object = false;
+   const char *key_name;
+   size_t key_name_len;
 
    settings = config_get_ptr();
 
@@ -439,39 +442,67 @@ void cloud_storage_load_access_token(const char *driver_name, char **access_toke
    bytes_read = filestream_read(file, file_contents, file_size);
    while (bytes_read + offset < file_size)
    {
-      bytes_read = filestream_read(file, file_contents + offset, file_size + offset);
+      bytes_read = filestream_read(file, file_contents + offset, file_size - offset);
+      offset += bytes_read;
    }
    filestream_close(file);
 
-   json = string_to_json(file_contents);
-
-   if (!json)
+   json = rjson_open_string(file_contents);
+   for (;;)
    {
-      goto cleanup;
-   }
+      switch (rjson_next(json))
+      {
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            if (in_object)
+            {
+               goto cleanup;
+            } else
+            {
+               in_object = true;
+            }
+            break;
+         case RJSON_STRING:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
 
-   if (json->node_type != OBJECT_VALUE)
-   {
-      goto cleanup;
-   }
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp("access_token", key_name) == 0)
+            {
+               parsed_access_token = rjson_get_string(json, &token_length);
+            }
 
-   if (!json_map_get_value_string(json->value.map_value, "access_token", &parsed_access_token, &token_length))
-   {
-      goto cleanup;
-   }
+            break;
+         case RJSON_NUMBER:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
 
-   if (!json_map_get_value_int(json->value.map_value, "expiration_time", &parsed_expiration_time))
-   {
-      goto cleanup;
-   }
-   if (time(NULL) > parsed_expiration_time)
-   {
-      goto cleanup;
-   }
+            if (strcmp("expiration_time", key_name) == 0)
+            {
+               parsed_expiration_time = rjson_get_int(json);
+            }
 
-   *access_token = (char *)calloc(token_length + 1, sizeof(char));
-   strncpy(*access_token, parsed_access_token, token_length);
-   *expiration_time = parsed_expiration_time;
+            break;
+         case RJSON_OBJECT_END:
+            if (in_object && parsed_access_token && parsed_expiration_time > -1 && time(NULL) < parsed_expiration_time - 30)
+            {
+               *access_token = (char *)calloc(token_length + 1, sizeof(char));
+               strncpy(*access_token, parsed_access_token, token_length);
+               *expiration_time = parsed_expiration_time;
+            }
+
+            goto cleanup;
+         default:
+            goto cleanup;
+      }
+   }
 
 cleanup:
    if (file_contents)
@@ -489,7 +520,7 @@ cleanup:
    }
    if (json)
    {
-      json_node_free(json);
+      rjson_free(json);
    }
 }
 

@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 #include <string/stdstring.h>
@@ -41,31 +42,74 @@
 extern char *_onedrive_access_token;
 extern time_t _onedrive_access_token_expiration_time;
 
-static void _parse_access_token_reponse(struct json_node_t *json, char **new_access_token, time_t *expiration_time)
+static void _parse_access_token_response(uint8_t *json_text, size_t json_length, char **new_access_token, time_t *expiration_time)
 {
-   char *parsed_access_token;
+   const char *parsed_access_token = NULL;
    size_t token_length;
-   int64_t expires_in;
+   int64_t expires_in = -1;
+   rjson_t *json;
+   bool in_object = false;
+   const char *key_name;
+   size_t key_name_len;
 
-   if (json->node_type != OBJECT_VALUE)
+   json = rjson_open_buffer(json_text, json_length);
+   for (;;)
    {
-      return;
+      switch (rjson_next(json))
+      {
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            if (in_object)
+            {
+               goto cleanup;
+            } else
+            {
+               in_object = true;
+            }
+            break;
+         case RJSON_STRING:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp("access_token", key_name) == 0)
+            {
+               parsed_access_token = rjson_get_string(json, &token_length);
+            }
+
+            break;
+         case RJSON_NUMBER:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 0 && strcmp("expires_in", key_name) == 0)
+            {
+               expires_in = rjson_get_int(json);
+            }
+
+            break;
+         case RJSON_OBJECT_END:
+            if (in_object && parsed_access_token && expires_in > -1)
+            {
+               *new_access_token = (char *)calloc(token_length + 1, sizeof(char));
+               strncpy(*new_access_token, parsed_access_token, token_length);
+               *expiration_time = time(NULL) + expires_in;
+            }
+            goto cleanup;
+         default:
+            goto cleanup;
+      }
    }
 
-   if (!json_map_get_value_string(json->value.map_value, "access_token", &parsed_access_token, &token_length))
-   {
-      return;
-   }
-
-   if (!json_map_get_value_int(json->value.map_value, "expires_in", &expires_in))
-   {
-      return;
-   }
-
-
-   *new_access_token = (char *)calloc(token_length + 1, sizeof(char));
-   strncpy(*new_access_token, parsed_access_token, token_length);
-   *expiration_time = time(NULL) + expires_in;
+cleanup:
+   rjson_free(json);
 }
 
 static uint8_t *_refresh_token_request_body(size_t *request_body_len)
@@ -128,25 +172,14 @@ static bool _process_response(struct http_response_t *response)
    time_t expiration_time;
 
    data = net_http_response_get_data(response, &data_len, false);
-   json_text = (char *)malloc(data_len + 1);
-   memcpy(json_text, data, data_len);
-   json_text[data_len] = '\0';
+   _parse_access_token_response(data, data_len, &new_access_token, &expiration_time);
 
-   json = string_to_json(json_text);
-   if (json)
+   if (new_access_token)
    {
-      _parse_access_token_reponse(json, &new_access_token, &expiration_time);
-      free(json_text);
-      json_node_free(json);
-      if (new_access_token)
-      {
-         struct http_request_t *original_http_request;
-
-         _onedrive_access_token = new_access_token;
-         _onedrive_access_token_expiration_time = expiration_time;
-         cloud_storage_save_access_token("onedrive", new_access_token, expiration_time);
-         return true;
-      }
+      _onedrive_access_token = new_access_token;
+      _onedrive_access_token_expiration_time = expiration_time;
+      cloud_storage_save_access_token("onedrive", new_access_token, expiration_time);
+      return true;
    }
 
    return false;

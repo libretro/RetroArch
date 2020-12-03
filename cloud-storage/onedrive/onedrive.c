@@ -24,12 +24,12 @@
 #include <time.h>
 
 #include <configuration.h>
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 #include <string/stdstring.h>
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "onedrive.h"
 #include "onedrive_internal.h"
@@ -68,65 +68,171 @@ const char *cloud_storage_onedrive_get_client_id(void)
    }
 }
 
-cloud_storage_item_t *cloud_storage_onedrive_parse_file_from_json(struct json_map_t file_json)
+static void _parse_hashes_data(cloud_storage_item_t *file, rjson_t *json)
+{
+   const char *key_name;
+   size_t key_name_len;
+   int depth = 0;
+
+   for (;;)
+   {
+      switch (rjson_next(json))
+      {
+         case RJSON_STRING:
+            if (depth > 0)
+            {
+               break;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp("sha256Hash", key_name) == 0)
+            {
+               const char *value;
+               size_t value_len;
+
+               value = rjson_get_string(json, &value_len);
+               file->type_data.file.hash_value = (char *)malloc(value_len + 1);
+               strcpy(file->type_data.file.hash_value, value);
+               file->type_data.file.hash_type = SHA256;
+            }
+
+            break;
+         case RJSON_OBJECT:
+         case RJSON_ARRAY:
+            depth++;
+            break;
+         case RJSON_OBJECT_END:
+            if (depth == 0)
+            {
+               return;
+            }
+         case RJSON_ARRAY_END:
+            depth--;
+            break;
+         default:
+            break;
+      }
+   }
+}
+
+static void _parse_file_data(cloud_storage_item_t *file, rjson_t *json)
+{
+   const char *key_name;
+   size_t key_name_len;
+   int depth = 0;
+
+   file->item_type = CLOUD_STORAGE_FILE;
+   for (;;)
+   {
+      switch (rjson_next(json))
+      {
+         case RJSON_STRING:
+            if (depth > 0)
+            {
+               break;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp("@microsoft.graph.downloadUrl", key_name) == 0)
+            {
+               const char *value;
+               size_t value_len;
+
+               value = rjson_get_string(json, &value_len);
+               file->type_data.file.download_url = (char *)malloc(value_len + 1);
+               strcpy(file->type_data.file.download_url, value);
+            }
+         case RJSON_OBJECT:
+            if (strcmp("hashes", key_name) == 0)
+            {
+               _parse_hashes_data(file, json);
+               break;
+            }
+         case RJSON_ARRAY:
+            depth++;
+            break;
+         case RJSON_OBJECT_END:
+            if (depth == 0)
+            {
+               return;
+            }
+         case RJSON_ARRAY_END:
+            depth--;
+            break;
+         default:
+            break;
+      }
+   }
+}
+
+cloud_storage_item_t *cloud_storage_onedrive_parse_file_from_json(rjson_t *json)
 {
    cloud_storage_item_t *file;
-   char *temp_string;
+   int depth = 0;
+   const char *temp_string;
    size_t temp_string_length;
-   struct json_map_t *file_resource;
+   const char *key_name;
+   size_t key_name_len;
 
-   file = (cloud_storage_item_t *)malloc(sizeof(cloud_storage_item_t));
-   file->next = NULL;
+   file = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
 
-   if (!json_map_get_value_string(file_json, "id", &temp_string, &temp_string_length))
+   for (;;)
    {
-      goto cleanup;
-   }
-   file->id = (char *)calloc(temp_string_length + 1, sizeof(char));
-   strncpy(file->id, temp_string, temp_string_length);
-
-   if (!json_map_get_value_string(file_json, "name", &temp_string, &temp_string_length))
-   {
-      goto cleanup;
-   }
-   file->name = (char *)calloc(temp_string_length + 1, sizeof(char));
-   strncpy(file->name, temp_string, temp_string_length);
-
-   if (json_map_get_value_map(file_json, "file", &file_resource))
-   {
-      struct json_map_t *hashes;
-
-      file->item_type = CLOUD_STORAGE_FILE;
-      file->type_data.file.hash_type = SHA256;
-
-      if (!json_map_get_value_string(file_json, "@microsoft.graph.downloadUrl", &temp_string, &temp_string_length))
+      switch (rjson_next(json))
       {
-         goto cleanup;
-      }
-      file->type_data.file.download_url = (char *)calloc(temp_string_length + 1, sizeof(char));
-      strncpy(file->type_data.file.download_url, temp_string, temp_string_length);
+         case RJSON_STRING:
+            if (depth == 0)
+            {
+               if ((rjson_get_context_count(json) & 1) == 1)
+               {
+                  key_name = rjson_get_string(json, &key_name_len);
+               } else if (strcmp("id", key_name) == 0)
+               {
+                  temp_string = rjson_get_string(json, &temp_string_length);
+                  file->id = (char *)malloc(temp_string_length + 1);
+                  strcpy(file->id, temp_string);
+               } else if (strcmp("name", key_name) == 0)
+               {
+                  temp_string = rjson_get_string(json, &temp_string_length);
+                  file->name = (char *)malloc(temp_string_length + 1);
+                  strcpy(file->name, temp_string);
+               }
+            }
 
-      if (json_map_get_value_map(*file_resource, "hashes", &hashes))
-      {
-         if (json_map_get_value_string(*hashes, "sha256Hash", &temp_string, &temp_string_length))
-         {
-            file->type_data.file.hash_value = (char *)calloc(temp_string_length + 1, sizeof(char));
-            strncpy(file->type_data.file.hash_value, temp_string, temp_string_length);
-         }
+            break;
+         case RJSON_OBJECT:
+            if (depth == 0)
+            {
+               if (strcmp("file", key_name) == 0)
+               {
+                  file->item_type = CLOUD_STORAGE_FILE;
+                  _parse_file_data(file, json);
+                  break;
+               } else if (strcmp("folder", key_name) == 0)
+               {
+                  file->item_type = CLOUD_STORAGE_FOLDER;
+               }
+            }
+         case RJSON_ARRAY:
+            depth++;
+            break;
+         case RJSON_OBJECT_END:
+         case RJSON_ARRAY_END:
+            depth--;
+            break;
+         default:
+            break;
       }
-   } else if (json_map_get_value_map(file_json, "folder", &file_resource))
-   {
-      file->item_type = CLOUD_STORAGE_FOLDER;
-      file->type_data.folder.children = NULL;
    }
 
-   file->last_sync_time = time(NULL);
-   file->next = NULL;
+   rjson_free(json);
 
-   return file;
-
-cleanup:
-   if (file)
+   if (!file->name || !file->id || (file->item_type == CLOUD_STORAGE_FILE &&
+      (!file->type_data.file.download_url || !file->type_data.file.hash_value)))
    {
       if (file->name)
       {
@@ -136,9 +242,26 @@ cleanup:
       {
          free(file->id);
       }
+      if (file->item_type == CLOUD_STORAGE_FILE)
+      {
+         if (file->type_data.file.download_url)
+         {
+            free(file->type_data.file.download_url);
+         }
+         if (file->type_data.file.hash_value)
+         {
+            free(file->type_data.file.hash_value);
+         }
+      }
+
+      free(file);
+      return NULL;
    }
 
-   return NULL;
+   file->last_sync_time = time(NULL);
+   file->next = NULL;
+
+   return file;
 }
 
 cloud_storage_provider_t *cloud_storage_onedrive_create(void)
@@ -174,9 +297,13 @@ bool cloud_storage_onedrive_add_authorization_header(
       free(_onedrive_access_token);
    }
 
-   if (!_onedrive_access_token && !cloud_storage_onedrive_authenticate())
+   if (!_onedrive_access_token)
    {
-      return false;
+      cloud_storage_load_access_token("onedrive", &_onedrive_access_token, &_onedrive_access_token_expiration_time);
+      if (!_onedrive_access_token && !cloud_storage_onedrive_authenticate())
+      {
+         return false;
+      }
    }
 
    value = (char *)calloc(8 + strlen(_onedrive_access_token), sizeof(char));

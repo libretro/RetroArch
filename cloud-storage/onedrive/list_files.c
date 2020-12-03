@@ -22,11 +22,11 @@
 
 #include <stdlib.h>
 
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "onedrive_internal.h"
 
@@ -64,96 +64,108 @@ static struct http_request_t *_create_http_request(cloud_storage_item_t *folder,
    return request;
 }
 
-static cloud_storage_item_t *_parse_list_files_response(
-   struct json_node_t *json,
-   char **next_page_url)
-{
-   char *temp_string = NULL;
-   size_t temp_string_length;
-   struct json_array_t *files;
-   cloud_storage_item_t *first_file = NULL;
-   cloud_storage_item_t *current_file = NULL;
-   cloud_storage_item_t *new_file;
-   struct json_array_item_t *file_json;
-
-   *next_page_url = NULL;
-
-   if (!json || json->node_type != OBJECT_VALUE)
-   {
-      return NULL;
-   }
-
-   if (json_map_get_value_string(json->value.map_value, "@odata.nextLink", &temp_string, &temp_string_length))
-   {
-      *next_page_url = (char *)calloc(temp_string_length + 1, sizeof(char));
-      strncpy(*next_page_url, temp_string, temp_string_length);
-   }
-
-   if (!json_map_get_value_array(json->value.map_value, "value", &files))
-   {
-      if (*next_page_url)
-      {
-         free(*next_page_url);
-         *next_page_url = NULL;
-      }
-      return NULL;
-   }
-
-   file_json = files->element;
-   while (file_json)
-   {
-      if (file_json->value->node_type == OBJECT_VALUE)
-      {
-         new_file = cloud_storage_onedrive_parse_file_from_json(file_json->value->value.map_value);
-         if (new_file)
-         {
-            if (!current_file)
-            {
-               first_file = new_file;
-               current_file = new_file;
-            } else
-            {
-               current_file->next = new_file;
-               current_file = new_file;
-            }
-         }
-      }
-
-      file_json = file_json->next;
-   }
-
-   return first_file;
-}
-
 static cloud_storage_item_t *_process_response(
    struct http_response_t *http_response,
    char **next_page_url)
 {
-   char *json_text;
-   struct json_node_t *json;
+   rjson_t *json;
    cloud_storage_item_t *files_to_add = NULL;
    cloud_storage_item_t *last_file;
-   char *next_page_token = NULL;
    uint8_t *data;
    size_t data_len;
+   bool in_object = false;
+   const char *key_name;
+   size_t key_name_len;
+   const char *received_next_page_url = NULL;
+   size_t received_next_page_url_len;
+   cloud_storage_item_t *first_file = NULL;
+   cloud_storage_item_t *current_file = NULL;
+   cloud_storage_item_t *new_file;
 
    data = net_http_response_get_data(http_response, &data_len, false);
+   json = rjson_open_buffer(data, data_len);
 
-   json_text = (char *)malloc(data_len + 1);
-   strncpy(json_text, (char *)data, data_len);
-   json_text[data_len] = '\0';
-
-   json = string_to_json(json_text);
-
-   if (json)
+   for (;;)
    {
-      files_to_add = _parse_list_files_response(json, next_page_url);
-      json_node_free(json);
+      switch (rjson_next(json))
+      {
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            if (in_object)
+            {
+               goto cleanup;
+            } else
+            {
+               in_object = true;
+            }
+            break;
+         case RJSON_OBJECT_END:
+            goto success;
+         case RJSON_STRING:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp("@odata.nextLink", key_name) == 0)
+            {
+               received_next_page_url = rjson_get_string(json, &received_next_page_url_len);
+            }
+
+            break;
+         case RJSON_ARRAY:
+            if (in_object && strcmp("value", key_name) == 0)
+            {
+               bool done = false;
+               while (!done)
+               {
+                  switch (rjson_next(json))
+                  {
+                     case RJSON_OBJECT:
+                        new_file = cloud_storage_onedrive_parse_file_from_json(json);
+                        if (new_file)
+                        {
+                           if (!current_file)
+                           {
+                              first_file = new_file;
+                              current_file = new_file;
+                           } else
+                           {
+                              current_file->next = new_file;
+                              current_file = new_file;
+                           }
+                        }
+
+                        break;
+                     case RJSON_ARRAY_END:
+                        done = true;
+                        break;
+                     default:
+                        break;
+                  }
+               }
+            }
+
+            break;
+         default:
+            break;
+      }
    }
 
-   free(json_text);
+success:
+   if (received_next_page_url)
+   {
+      *next_page_url = (char *)malloc(received_next_page_url_len + 1);
+      strcpy(*next_page_url, received_next_page_url);
+   }
 
-   return files_to_add;
+cleanup:
+   rjson_free(json);
+   return first_file;
 }
 
 static cloud_storage_item_t *_get_list_files_next_page(

@@ -22,11 +22,11 @@
 
 #include <stdlib.h>
 
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "google_internal.h"
 
@@ -115,49 +115,80 @@ static cloud_storage_item_t *_process_metadata_response(
    struct http_response_t *response,
    bool single)
 {
-   char *json_text;
-   struct json_node_t *json;
+   rjson_t *json;
    cloud_storage_item_t *metadata = NULL;
    uint8_t *data;
    size_t data_len;
+   bool in_object = false;
+   const char *key_name;
+   size_t key_name_len;
 
    data = net_http_response_get_data(response, &data_len, false);
+   json = rjson_open_buffer(data, data_len);
 
-   json_text = (char *)malloc(data_len + 1);
-   strncpy(json_text, (char *)data, data_len);
-   json_text[data_len] = '\0';
-
-   json = string_to_json(json_text);
-
-   if (json)
+   for (;;)
    {
-      if (single)
+      switch (rjson_next(json))
       {
-         struct json_map_t *file;
-
-         if (json->node_type == OBJECT_VALUE)
-         {
-            metadata = cloud_storage_google_parse_file_from_json(json->value.map_value);
-         }
-      } else
-      {
-         struct json_array_t *files_list;
-         struct json_map_t *file;
-
-         if (json->node_type == OBJECT_VALUE && json_map_get_value_array(json->value.map_value, "files", &files_list))
-         {
-            if (files_list->element && files_list->element->value->node_type == OBJECT_VALUE)
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            if (single)
             {
-               metadata = cloud_storage_google_parse_file_from_json(files_list->element->value->value.map_value);
+               metadata = cloud_storage_google_parse_file_from_json(json);
+               goto cleanup;
+            } else if (!in_object)
+            {
+               in_object = true;
+               break;
+            } else
+            {
+               goto cleanup;
             }
-         }
-      }
+         case RJSON_ARRAY:
+            if ((rjson_get_context_count(json) & 1) == 0 && strcmp("files", key_name) == 0)
+            {
+               bool processed_entry = false;
+               bool done = false;
 
-      json_node_free(json);
+               while(!done)
+               {
+                  switch (rjson_next(json))
+                  {
+                     case RJSON_OBJECT:
+                        if (!processed_entry)
+                        {
+                           metadata = cloud_storage_google_parse_file_from_json(json);
+                           processed_entry = true;
+                        }
+                     case RJSON_ARRAY_END:
+                        done = true;
+                     default:
+                        break;
+                  }
+               }
+
+               break;
+            }
+         case RJSON_STRING:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            }
+
+            break;
+         default:
+            goto cleanup;
+      }
    }
 
-   free(json_text);
-
+cleanup:
+   rjson_free(json);
    return metadata;
 }
 

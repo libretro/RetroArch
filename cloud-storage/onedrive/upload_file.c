@@ -23,11 +23,11 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "onedrive_internal.h"
 
@@ -43,69 +43,54 @@ static void _process_metadata_response(
 {
    uint8_t *data;
    size_t data_len;
-   char *json_str;
-   struct json_node_t *json;
+   rjson_t *json;
+   cloud_storage_item_t *uploaded_item;
 
    data = net_http_response_get_data(response, &data_len, false);
+   json = rjson_open_buffer(data, data_len);
 
-   json_str = (char *)malloc(data_len + 1);
-   json_str[data_len] = '\0';
-   memcpy(json_str, data, data_len);
+   uploaded_item = cloud_storage_onedrive_parse_file_from_json(json);
+   rjson_free(json);
 
-   json = string_to_json(json_str);
-   if (json && json->node_type == OBJECT_VALUE)
+   if (uploaded_item)
    {
-      cloud_storage_item_t *uploaded_item;
-      char *temp_str;
-      size_t temp_str_len;
-
-      uploaded_item = cloud_storage_onedrive_parse_file_from_json(json->value.map_value);
-      if (uploaded_item)
+      if (!remote_file->id && uploaded_item->id)
       {
-         if (!remote_file->id && uploaded_item->id)
-         {
-            remote_file->id = (char *)calloc(strlen(uploaded_item->id) + 1, sizeof(char));
-            strcpy(remote_file->id, uploaded_item->id);
-         }
-
-         if (remote_file->type_data.file.download_url)
-         {
-            free(remote_file->type_data.file.download_url);
-
-            if (uploaded_item->type_data.file.download_url)
-            {
-               remote_file->type_data.file.download_url = (char *)calloc(
-                  strlen(uploaded_item->type_data.file.download_url) + 1,
-                  sizeof(char)
-               );
-               strcpy(remote_file->type_data.file.download_url, uploaded_item->type_data.file.download_url);
-            }
-         }
-
-         remote_file->type_data.file.hash_type = SHA1;
-         if (remote_file->type_data.file.hash_value)
-         {
-            free(remote_file->type_data.file.hash_value);
-
-            if (uploaded_item->type_data.file.hash_value)
-            {
-               remote_file->type_data.file.hash_value = (char *)calloc(
-                  strlen(uploaded_item->type_data.file.hash_value) + 1,
-                  sizeof(char)
-               );
-               strcpy(remote_file->type_data.file.hash_value, uploaded_item->type_data.file.hash_value);
-            }
-         }
-
-         cloud_storage_item_free(uploaded_item);
+         remote_file->id = (char *)calloc(strlen(uploaded_item->id) + 1, sizeof(char));
+         strcpy(remote_file->id, uploaded_item->id);
       }
-   }
 
-   if (json)
-   {
-      json_node_free(json);
+      if (remote_file->type_data.file.download_url)
+      {
+         free(remote_file->type_data.file.download_url);
+
+         if (uploaded_item->type_data.file.download_url)
+         {
+            remote_file->type_data.file.download_url = (char *)calloc(
+               strlen(uploaded_item->type_data.file.download_url) + 1,
+               sizeof(char)
+            );
+            strcpy(remote_file->type_data.file.download_url, uploaded_item->type_data.file.download_url);
+         }
+      }
+
+      remote_file->type_data.file.hash_type = SHA256;
+      if (remote_file->type_data.file.hash_value)
+      {
+         free(remote_file->type_data.file.hash_value);
+
+         if (uploaded_item->type_data.file.hash_value)
+         {
+            remote_file->type_data.file.hash_value = (char *)calloc(
+               strlen(uploaded_item->type_data.file.hash_value) + 1,
+               sizeof(char)
+            );
+            strcpy(remote_file->type_data.file.hash_value, uploaded_item->type_data.file.hash_value);
+         }
+      }
+
+      cloud_storage_item_free(uploaded_item);
    }
-   free(json_str);
 }
 
 static void _add_http_headers_data(int64_t file_size, int64_t offset, int64_t upload_segment_length, struct http_request_t *request)
@@ -267,31 +252,58 @@ static char *_process_start_multipart_response(
 {
    uint8_t *data;
    size_t data_len;
-   struct json_node_t *json;
-   char *json_str;
-   char *tmp_str;
-   size_t tmp_str_len;
-   char *upload_url;
+   rjson_t *json;
+   const char *key_name;
+   size_t key_name_len;
+   char *upload_url = NULL;
+   bool in_object = false;
 
    data = net_http_response_get_data(response, &data_len, false);
+   json = rjson_open_buffer(data, data_len);
 
-   json_str = (char *)malloc(data_len + 1);
-   json_str[data_len] = '\0';
-   memcpy(json_str, data, data_len);
-
-   json = string_to_json(json_str);
-   if (json && json->node_type == OBJECT_VALUE && json_map_get_value_string(json->value.map_value, UPLOAD_URL_KEY, &tmp_str, &tmp_str_len))
+   for (;;)
    {
-      upload_url = (char *)calloc(tmp_str_len + 1, sizeof(char));
-      strncpy(upload_url, tmp_str, tmp_str_len);
+      switch (rjson_next(json))
+      {
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            if (in_object)
+            {
+               goto cleanup;
+            } else
+            {
+               in_object = true;
+            }
+            break;
+         case RJSON_STRING:
+            if (!in_object)
+            {
+               goto cleanup;
+            }
+
+            if ((rjson_get_context_count(json) & 1) == 1)
+            {
+               key_name = rjson_get_string(json, &key_name_len);
+            } else if (strcmp(UPLOAD_URL_KEY, key_name) == 0)
+            {
+               const char *value;
+               size_t value_len;
+
+               value = rjson_get_string(json, &value_len);
+               upload_url = (char *)malloc(value_len + 1);
+               strcpy(upload_url, value);
+               goto cleanup;
+            }
+
+            break;
+         default:
+            break;
+      }
    }
 
-   if (json)
-   {
-      json_node_free(json);
-   }
-   free(json_str);
-
+cleanup:
+   rjson_free(json);
    return upload_url;
 }
 

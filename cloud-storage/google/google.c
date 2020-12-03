@@ -24,12 +24,12 @@
 #include <time.h>
 
 #include <configuration.h>
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 #include <string/stdstring.h>
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "google.h"
 #include "google_internal.h"
@@ -84,59 +84,95 @@ const char *cloud_storage_google_get_client_secret(void)
    }
 }
 
-cloud_storage_item_t *cloud_storage_google_parse_file_from_json(struct json_map_t file_json)
+cloud_storage_item_t *cloud_storage_google_parse_file_from_json(rjson_t *json)
 {
    cloud_storage_item_t *metadata;
-   char *temp_string;
+   const char *temp_string;
    size_t temp_string_length;
+   int depth = 0;
+   const char *key_name;
+   size_t key_name_len;
 
    metadata = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
 
-   if (!json_map_get_value_string(file_json, "id", &temp_string, &temp_string_length))
+   for (;;)
    {
-      goto cleanup;
-   }
-   metadata->id = (char *)calloc(temp_string_length + 1, sizeof(char));
-   strncpy(metadata->id, temp_string, temp_string_length);
-
-   if (!json_map_get_value_string(file_json, "name", &temp_string, &temp_string_length))
-   {
-      goto cleanup;
-   }
-   metadata->name = (char *)calloc(temp_string_length + 1, sizeof(char));
-   strncpy(metadata->name, temp_string, temp_string_length);
-
-   if (!json_map_get_value_string(file_json, "mimeType", &temp_string, &temp_string_length))
-   {
-      goto cleanup;
-   }
-
-   if (temp_string_length == strlen("application/vnd.google-apps.folder") &&
-      !strncmp(temp_string, "application/vnd.google-apps.folder", temp_string_length))
-   {
-      metadata->item_type = CLOUD_STORAGE_FOLDER;
-      metadata->type_data.folder.children = NULL;
-   } else
-   {
-      metadata->item_type = CLOUD_STORAGE_FILE;
-      metadata->type_data.file.hash_type = MD5;
-      metadata->type_data.file.download_url = NULL;
-
-      if (json_map_get_value_string(file_json, "md5Checksum", &temp_string, &temp_string_length))
+      switch (rjson_next(json))
       {
-         metadata->type_data.file.hash_value = (char *)calloc(temp_string_length + 1, sizeof(char));
-         strncpy(metadata->type_data.file.hash_value, temp_string, temp_string_length);
-      } else
-      {
-         metadata->type_data.file.hash_value = NULL;
+         case RJSON_STRING:
+            if (depth == 0)
+            {
+               if ((rjson_get_context_count(json) & 1) == 1)
+               {
+                  key_name = rjson_get_string(json, &key_name_len);
+               } else if (strcmp("id", key_name) == 0)
+               {
+                  temp_string = rjson_get_string(json, &temp_string_length);
+                  metadata->id = (char *)malloc(temp_string_length + 1);
+                  strcpy(metadata->id, temp_string);
+               } else if (strcmp("name", key_name) == 0)
+               {
+                  temp_string = rjson_get_string(json, &temp_string_length);
+                  metadata->name = (char *)malloc(temp_string_length + 1);
+                  strcpy(metadata->name, temp_string);
+               } else if (strcmp("mimeType", key_name) == 0)
+               {
+                  temp_string = rjson_get_string(json, &temp_string_length);
+                  if (strcmp("application/vnd.google-apps.folder", temp_string) == 0)
+                  {
+                     metadata->item_type = CLOUD_STORAGE_FOLDER;
+                     metadata->type_data.folder.children = NULL;
+                  } else
+                  {
+                     metadata->item_type = CLOUD_STORAGE_FILE;
+                     metadata->type_data.file.hash_type = MD5;
+                     metadata->type_data.file.download_url = NULL;
+                  }
+               } else if (strcmp("md5Checksum", key_name) == 0 && metadata->item_type == CLOUD_STORAGE_FILE)
+               {
+                  temp_string = rjson_get_string(json, &temp_string_length);
+                  metadata->type_data.file.hash_value = (char *)malloc(temp_string_length + 1);
+                  strcpy(metadata->type_data.file.hash_value, temp_string);
+               }
+            }
+
+            break;
+         case RJSON_OBJECT:
+         case RJSON_ARRAY:
+            depth++;
+            break;
+         case RJSON_ARRAY_END:
+            if (depth > 0)
+            {
+               depth--;
+            }
+            break;
+         case RJSON_OBJECT_END:
+            if (depth > 0)
+            {
+               depth--;
+            } else
+            {
+               goto verify_fields;
+            }
+            break;
+         default:
+            break;
       }
    }
 
-   metadata->last_sync_time = time(NULL);
+verify_fields:
+   if (metadata->id && metadata->name)
+   {
+      if (metadata->item_type == CLOUD_STORAGE_FOLDER)
+      {
+         return metadata;
+      } else if (metadata->item_type == CLOUD_STORAGE_FILE && metadata->type_data.file.hash_value)
+      {
+         return metadata;
+      }
+   }
 
-   return metadata;
-
-cleanup:
    if (metadata)
    {
       if (metadata->id)
@@ -187,9 +223,13 @@ bool cloud_storage_google_add_authorization_header(
       free(_google_access_token);
    }
 
-   if (!_google_access_token && !cloud_storage_google_authenticate())
+   if (!_google_access_token)
    {
-      return false;
+      cloud_storage_load_access_token("google", &_google_access_token, &_google_access_token_expiration_time);
+      if (!_google_access_token && !cloud_storage_google_authenticate())
+      {
+         return false;
+      }
    }
 
    value = (char *)calloc(8 + strlen(_google_access_token), sizeof(char));

@@ -22,11 +22,11 @@
 
 #include <stdlib.h>
 
+#include <formats/rjson.h>
 #include <net/net_http.h>
 #include <rest/rest.h>
 
 #include "../cloud_storage.h"
-#include "../json.h"
 #include "../driver_utils.h"
 #include "onedrive_internal.h"
 
@@ -105,35 +105,30 @@ static struct http_request_t *_create_file_by_name_http_request(
 
 static cloud_storage_item_t *_process_metadata_response(struct http_response_t *response)
 {
-   char *json_text;
-   struct json_node_t *json;
+   rjson_t *json;
    cloud_storage_item_t *metadata = NULL;
    uint8_t *data;
    size_t data_len;
 
    data = net_http_response_get_data(response, &data_len, false);
+   json = rjson_open_buffer(data, data_len);
 
-   json_text = (char *)malloc(data_len + 1);
-   strncpy(json_text, (char *)data, data_len);
-   json_text[data_len] = '\0';
-
-   json = string_to_json(json_text);
-
-   if (json)
+   for (;;)
    {
-      struct json_array_t *files_list;
-      struct json_map_t *file;
-
-      if (json->node_type == OBJECT_VALUE)
+      switch (rjson_next(json))
       {
-         metadata = cloud_storage_onedrive_parse_file_from_json(json->value.map_value);
+         case RJSON_ERROR:
+            goto cleanup;
+         case RJSON_OBJECT:
+            metadata = cloud_storage_onedrive_parse_file_from_json(json);
+            goto cleanup;
+         default:
+            goto cleanup;
       }
-
-      json_node_free(json);
    }
 
-   free(json_text);
-
+cleanup:
+   rjson_free(json);
    return metadata;
 }
 
