@@ -33,7 +33,7 @@ build-retroarch-linux-x64:
     - "./configure"
     - "make -j$NUMPROC"
 
-build-retroarch-dingux-i386:
+build-retroarch-dingux-mips32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
   stage: build
   before_script:
