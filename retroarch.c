@@ -18937,10 +18937,10 @@ void driver_wifi_scan(void)
    p_rarch->wifi_driver->scan(p_rarch->wifi_data);
 }
 
-void driver_wifi_get_ssids(struct string_list* ssids)
+wifi_network_scan_t* driver_wifi_get_ssids()
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   p_rarch->wifi_driver->get_ssids(p_rarch->wifi_data, ssids);
+   return p_rarch->wifi_driver->get_ssids(p_rarch->wifi_data);
 }
 
 bool driver_wifi_ssid_is_online(unsigned i)

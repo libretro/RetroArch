@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <compat/strcasestr.h>
 
+#include <array/rbuf.h>
 #include <lists/file_list.h>
 #include <lists/dir_list.h>
 #include <file/file_path.h>
@@ -4527,7 +4528,7 @@ static void wifi_scan_callback(retro_task_t *task,
 {
    unsigned i;
    file_list_t *file_list        = NULL;
-   struct string_list *ssid_list = NULL;
+   wifi_network_scan_t *scan = NULL;
 
    const char *path              = NULL;
    const char *label             = NULL;
@@ -4543,21 +4544,19 @@ static void wifi_scan_callback(retro_task_t *task,
    file_list = menu_entries_get_selection_buf_ptr(0);
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
-   ssid_list = string_list_new();
+   scan = driver_wifi_get_ssids();
+   if (!scan)
+      return;
 
-   driver_wifi_get_ssids(ssid_list);
-
-   for (i = 0; i < ssid_list->size; i++)
+   for (i = 0; i < RBUF_LEN(scan->net_list); i++)
    {
-      const char *ssid = ssid_list->elems[i].data;
+      const char *ssid = scan->net_list[i].ssid;
       menu_entries_append_enum(file_list,
             ssid,
             msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
             MENU_ENUM_LABEL_CONNECT_WIFI,
             MENU_WIFI, 0, 0);
    }
-
-   string_list_free(ssid_list);
 }
 #endif
 
@@ -5459,17 +5458,17 @@ unsigned menu_displaylist_build_list(
             settings_t      *settings     = config_get_ptr();
             if (!string_is_equal(settings->arrays.wifi_driver, "null"))
             {
-               struct string_list *ssid_list = string_list_new();
-               driver_wifi_get_ssids(ssid_list);
+               wifi_network_scan_t *scan = driver_wifi_get_ssids();
 
-               if (ssid_list->size == 0)
+               /* Temporary hack: scan periodically, until we have a submenu */
+               if (!scan || RBUF_LEN(scan->net_list) == 0 || time(NULL) > scan->scan_time + 120)
                   task_push_wifi_scan(wifi_scan_callback);
                else
                {
                   unsigned i;
-                  for (i = 0; i < ssid_list->size; i++)
+                  for (i = 0; i < RBUF_LEN(scan->net_list); i++)
                   {
-                     const char *ssid = ssid_list->elems[i].data;
+                     const char *ssid = scan->net_list[i].ssid;
                      if (menu_entries_append_enum(list,
                               ssid,
                               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
