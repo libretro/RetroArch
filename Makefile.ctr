@@ -264,7 +264,7 @@ endif
 
 %.vsh:
 
-$(TARGET).smdh: $(APP_ICON)
+$(TARGET).smdh: $(TARGET).elf $(APP_ICON)
 	$(DEVKITTOOLS)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
@@ -279,10 +279,10 @@ $(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
-$(TARGET).bnr: $(APP_BANNER) $(APP_AUDIO)
+$(TARGET).bnr: $(TARGET).elf $(APP_BANNER) $(APP_AUDIO)
 	$(BANNERTOOL) makebanner -i "$(APP_BANNER)" -a "$(APP_AUDIO)" -o $@
 
-$(TARGET).icn: $(APP_ICON)
+$(TARGET).icn: $(TARGET).elf $(APP_ICON)
 	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o $@
 
 $(TARGET).3ds: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
