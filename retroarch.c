@@ -6282,6 +6282,7 @@ void discord_update(enum discord_presence presence)
 #endif
 
    Discord_UpdatePresence(&discord_st->presence);
+   Discord_UpdateConnection();
    discord_st->status = presence;
 }
 
@@ -6303,6 +6304,7 @@ static void discord_init(
    handlers.joinRequest        = handle_discord_join_request;
 
    Discord_Initialize(discord_app_id, &handlers, 0, NULL);
+   Discord_UpdateConnection();
 
 #ifdef _WIN32
    fill_pathname_application_path(full_path, sizeof(full_path));
@@ -6320,6 +6322,7 @@ static void discord_init(
 #endif
    RARCH_LOG("[DISCORD]: Registering startup command: %s\n", command);
    Discord_Register(discord_app_id, command);
+   Discord_UpdateConnection();
    discord_st->ready = true;
 }
 #endif
@@ -35940,6 +35943,7 @@ bool retroarch_main_quit(void)
    if (discord_st->ready)
    {
       Discord_ClearPresence();
+      Discord_UpdateConnection();
       Discord_Shutdown();
       discord_st->ready       = false;
    }
@@ -37359,7 +37363,10 @@ int runloop_iterate(void)
    discord_state_t *discord_st                  = &p_rarch->discord_st;
 
    if (discord_is_inited)
+   {
       Discord_RunCallbacks();
+      Discord_UpdateConnection();
+   }
 #endif
 
    if (p_rarch->runloop_frame_time.callback)
