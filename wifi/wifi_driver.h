@@ -22,7 +22,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <lists/string_list.h>
 
 RETRO_BEGIN_DECLS
 
@@ -41,6 +40,21 @@ enum rarch_wifi_ctl_state
    RARCH_WIFI_CTL_INIT
 };
 
+typedef struct wifi_network_info
+{
+   char ssid[33];
+   bool connected;
+   bool saved_password;
+   char netid[160];   /* Do not use, internal */
+   /* TODO Add signal strength & other info */
+} wifi_network_info_t;
+
+typedef struct wifi_network_scan
+{
+   time_t scan_time;
+   wifi_network_info_t *net_list;   /* This is an rbuf array */
+} wifi_network_scan_t;
+
 typedef struct wifi_driver
 {
    void *(*init)(void);
@@ -51,7 +65,7 @@ typedef struct wifi_driver
    void (*stop)(void *data);
 
    void (*scan)(void *data);
-   void (*get_ssids)(void *data, struct string_list *list);
+   wifi_network_scan_t* (*get_ssids)(void *data);
    bool (*ssid_is_online)(void *data, unsigned i);
    bool (*connect_ssid)(void *data, unsigned i, const char* passphrase);
    void (*tether_start_stop)(void *data, bool start, char* configfile);
@@ -78,7 +92,7 @@ bool driver_wifi_start(void);
 
 void driver_wifi_scan(void);
 
-void driver_wifi_get_ssids(struct string_list *list);
+wifi_network_scan_t* driver_wifi_get_ssids();
 
 bool driver_wifi_ssid_is_online(unsigned i);
 

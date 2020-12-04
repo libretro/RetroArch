@@ -15,6 +15,8 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <array/rbuf.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <configuration.h>
@@ -29,9 +31,7 @@
 
 typedef struct
 {
-   bool connman_cache[64];
-   unsigned connman_counter;
-   struct string_list* lines;
+   wifi_network_scan_t scan;
    char command[256];
    bool connmanctl_widgets_supported;
 } connman_t;
@@ -47,6 +47,9 @@ static void *connmanctl_init(void)
 
 static void connmanctl_free(void *data)
 {
+   connman_t *connman = (connman_t*)data;
+   if (connman->scan.net_list)
+      RBUF_FREE(connman->scan.net_list);
    if (data)
       free(data);
 }
@@ -164,15 +167,12 @@ static void connmanctl_tether_toggle(
 static void connmanctl_scan(void *data)
 {
    char line[512];
-   union string_list_elem_attr attr;
    FILE *serv_file                  = NULL;
    settings_t *settings             = config_get_ptr();
    connman_t *connman               = (connman_t*)data;
 
-   attr.i = RARCH_FILETYPE_UNSET;
-   if (connman->lines)
-      free(connman->lines);
-   connman->lines = string_list_new();
+   if (connman->scan.net_list)
+      RBUF_FREE(connman->scan.net_list);
 
    if (connmanctl_tether_status(connman))
    {
@@ -195,74 +195,61 @@ static void connmanctl_scan(void *data)
    serv_file = popen("connmanctl services", "r");
    while (fgets(line, 512, serv_file))
    {
+      int i;
+      struct string_list* list = NULL;
+      wifi_network_info_t entry;
       size_t len = strlen(line);
       if (len > 0 && line[len-1] == '\n')
          line[--len] = '\0';
 
-      string_list_append(connman->lines, line, attr);
+      /* Parse lines directly and store net info directly */
+      memset(&entry, 0, sizeof(entry));
+      entry.connected = (line[2] == 'R' || line[2] == 'O');
+      entry.saved_password = (line[0] == '*');
+
+      /* connmanctl services outputs a 4 character prefixed lines,
+       * either whitespace or an identifier. i.e.:
+       * $ connmanctl services
+       *     '*A0 SSID some_unique_id'
+       *     '    SSID some_another_unique_id'
+       */
+      list = string_split(&line[4], " ");
+      if (!list)
+         break;
+
+      if (list->size == 0)
+         continue;
+
+      for (i = 0; i < list->size-1; i++)
+      {
+         strlcat(entry.ssid, list->elems[i].data, sizeof(entry.ssid)-1);
+         strlcat(entry.ssid, " ", sizeof(entry.ssid)-1);
+      }
+      /* Store the connman network id here, for later */
+      strlcpy(entry.netid, list->elems[list->size-1].data, sizeof(entry.netid)-1);
+      string_list_free(list);
+
+      /* Filter only wifi nets */
+      if (!strncmp(entry.netid, "wifi_", 5))
+         RBUF_PUSH(connman->scan.net_list, entry);
    }
+
+   connman->scan.scan_time = time(NULL);
    pclose(serv_file);
 }
 
-static void connmanctl_get_ssids(void *data, struct string_list* ssids)
+static wifi_network_scan_t* connmanctl_get_ssids(void *data)
 {
    unsigned i;
-   union string_list_elem_attr attr;
-   attr.i = RARCH_FILETYPE_UNSET;
    connman_t *connman = (connman_t*)data;
 
-   if (!connman->lines)
-      return;
-
-   for (i = 0; i < connman->lines->size; i++)
-   {
-      char ssid[32];
-      const char *line = connman->lines->elems[i].data;
-
-      strlcpy(ssid, line+4, sizeof(ssid));
-      string_list_append(ssids, ssid, attr);
-   }
+   return &connman->scan;
 }
 
 static bool connmanctl_ssid_is_online(void *data, unsigned i)
 {
-   char ln[512]       = {0};
-   char service[128]  = {0};
    connman_t *connman = (connman_t*)data;
-   const char *line   = connman->lines->elems[i].data;
-   FILE *command_file = NULL;
-
-   if (connman->connman_counter >= 64)
-   {
-      static struct string_list* list = NULL;
-      connman->connman_counter = 0;
-      list            = string_split(line, " ");
-      if (!list)
-         return false;
-
-      if (list->size == 0)
-      {
-         string_list_free(list);
-         return false;
-      }
-
-      strlcpy(service, list->elems[list->size-1].data, sizeof(service));
-      string_list_free(list);
-
-      snprintf(connman->command, sizeof(connman->command), "\
-            connmanctl services %s | grep 'State = \\(online\\|ready\\)'",
-            service);
-
-      command_file = popen(connman->command, "r");
-      connman->connman_cache[i] = (fgets(ln, 512, command_file));
-      pclose(command_file);
-   }
-   else
-   {
-      connman->connman_counter++;
-   }
-
-   return connman->connman_cache[i];
+   return connman->scan.net_list[i].connected;
 }
 
 static bool connmanctl_connect_ssid(
@@ -270,46 +257,19 @@ static bool connmanctl_connect_ssid(
 {
    unsigned i;
    char ln[512]                        = {0};
-   char name[64]                       = {0};
-   char service[128]                   = {0};
    char settings_dir[PATH_MAX_LENGTH]  = {0};
    char settings_path[PATH_MAX_LENGTH] = {0};
    FILE *command_file                  = NULL;
    FILE *settings_file                 = NULL;
    connman_t *connman                  = (connman_t*)data;
-   const char *line                    = connman->lines->elems[idx].data;
+   wifi_network_info_t *netinfo        = &connman->scan.net_list[idx];
    settings_t *settings                = config_get_ptr();
    static struct string_list* list     = NULL;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = connman->connmanctl_widgets_supported;
 #endif
-   /* connmanctl services outputs a 4 character prefixed lines,
-    * either whitespace or an identifier. i.e.:
-    * $ connmanctl services
-    *     '*A0 SSID some_unique_id'
-    *     '    SSID some_another_unique_id'
-    */
-   list = string_split(line+4, " ");
-   if (!list)
-      return false;
-
-   if (list->size == 0)
-   {
-      string_list_free(list);
-      return false;
-   }
-
-   for (i = 0; i < list->size-1; i++)
-   {
-      strlcat(name, list->elems[i].data, sizeof(name));
-      strlcat(name, " ", sizeof(name));
-   }
-   strlcpy(service, list->elems[list->size-1].data, sizeof(service));
-
-   string_list_free(list);
-
    strlcat(settings_dir, LAKKA_CONNMAN_DIR, sizeof(settings_dir));
-   strlcat(settings_dir, service, sizeof(settings_dir));
+   strlcat(settings_dir, netinfo->netid, sizeof(settings_dir));
 
    path_mkdir(settings_dir);
 
@@ -317,12 +277,12 @@ static bool connmanctl_connect_ssid(
    strlcat(settings_path, "/settings", sizeof(settings_path));
 
    settings_file = fopen(settings_path, "w");
-   fprintf(settings_file, "[%s]\n", service);
-   fprintf(settings_file, "Name=%s\n", name);
+   fprintf(settings_file, "[%s]\n", netinfo->netid);
+   fprintf(settings_file, "Name=%s\n", netinfo->ssid);
    fprintf(settings_file, "SSID=");
 
-   for (i = 0; i < strlen(name); i++)
-      fprintf(settings_file, "%02x", (unsigned int) name[i]);
+   for (i = 0; i < strlen(netinfo->ssid); i++)
+      fprintf(settings_file, "%02x", (unsigned int) netinfo->ssid[i]);
    fprintf(settings_file, "\n");
 
    fprintf(settings_file, "Favorite=%s\n", "true");
@@ -345,7 +305,7 @@ static bool connmanctl_connect_ssid(
 
    snprintf(connman->command, sizeof(connman->command), "\
          connmanctl connect %s 2>&1",
-         service);
+         netinfo->netid);
 
    command_file = popen(connman->command, "r");
 
