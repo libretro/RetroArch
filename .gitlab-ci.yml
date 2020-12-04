@@ -204,6 +204,23 @@ build-static-retroarch-dummy-wii:
     - "make -f Makefile.wii.salamander -j$NUMPROC EXTERNAL_LIBOGC=1 GX_PTHREAD_LEGACY=0"
     - "mv -f retroarch-salamander_wii.dol boot.dol"
 
+build-static-retroarch-ngc:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 1 day
+  dependencies: []
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.ngc -j$NUMPROC EXTERNAL_LIBOGC=1 GX_PTHREAD_LEGACY=0 ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
 trigger_static-cores:
   stage: trigger-static-cores
   needs:
@@ -212,6 +229,8 @@ trigger_static-cores:
   - build-static-retroarch-ps2
   - build-static-retroarch-psp
   - build-static-retroarch-ctr
+  - build-static-retroarch-wii
+  - build-static-retroarch-ngc
   dependencies: []
   script:
     # Dummy for now
