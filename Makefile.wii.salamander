@@ -3,10 +3,11 @@
 # Makefile for RetroArch Wii.
 ##
 
-DEBUG			= 0
-HAVE_LOGGER		= 0
-HAVE_FILE_LOGGER	= 0
-EXTERNAL_LIBOGC = 0
+DEBUG              = 0
+HAVE_LOGGER        = 0
+HAVE_FILE_LOGGER   = 0
+EXTERNAL_LIBOGC   ?= 0
+GX_PTHREAD_LEGACY ?= 1
 
 # system platform
 system_platform = unix
@@ -27,6 +28,12 @@ CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
 ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 
+# Check whether ELF2DOL executable exists
+# (path has changed in more recent toolchains)
+ifeq ("$(wildcard $(ELF2DOL))","")
+   ELF2DOL = $(DEVKITPRO)/tools/bin/elf2dol$(EXE_EXT)
+endif
+
 DOL_TARGET := retroarch-salamander_wii.dol
 ELF_TARGET := retroarch-salamander_wii.elf
 
@@ -37,6 +44,11 @@ LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 else
 INCLUDE += -Iwii/libogc/include
 LIBDIRS := -Lwii/libogc/libs/wii -L.
+endif
+
+ifeq ($(GX_PTHREAD_LEGACY), 1)
+   CFLAGS   += -DGX_PTHREAD_LEGACY
+   CXXFLAGS += -DGX_PTHREAD_LEGACY
 endif
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
@@ -127,6 +139,7 @@ $(ELF_TARGET): $(OBJ)
 	$(LD) -r -b binary -o $@ $<
 
 $(APP_BOOTER_DIR)/app_booter.bin:
+	export EXTERNAL_LIBOGC
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 pkg: all

@@ -116,7 +116,8 @@ else ifeq ($(platform), ps3-cobra)
 
 # NGC/Wii - libogc
 else ifeq ($(libogc_platform), 1)
-   EXTERNAL_LIBOGC=0
+   EXTERNAL_LIBOGC   ?= 0
+   GX_PTHREAD_LEGACY ?= 1
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
    LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -146,6 +147,11 @@ else ifeq ($(libogc_platform), 1)
          LIBDIRS += -Lwii/libogc/libs/wii
       endif
 
+   endif
+
+   ifeq ($(GX_PTHREAD_LEGACY), 1)
+      CFLAGS   += -DGX_PTHREAD_LEGACY
+      CXXFLAGS += -DGX_PTHREAD_LEGACY
    endif
 
    ifeq ($(platform), ngc)

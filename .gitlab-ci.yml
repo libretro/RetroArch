@@ -170,6 +170,40 @@ build-static-retroarch-dummy-ctr:
     - "mv -f retroarch_3ds_salamander.3dsx RetroArch.3dsx"
     - "mv -f retroarch_3ds_salamander.smdh RetroArch.smdh"
 
+build-static-retroarch-wii:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 1 day
+  dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-wii
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.wii -j$NUMPROC EXTERNAL_LIBOGC=1 GX_PTHREAD_LEGACY=0 ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
+build-static-retroarch-dummy-wii:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  boot.dol
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "make -f Makefile.wii.salamander -j$NUMPROC EXTERNAL_LIBOGC=1 GX_PTHREAD_LEGACY=0"
+    - "mv -f retroarch-salamander_wii.dol boot.dol"
+
 trigger_static-cores:
   stage: trigger-static-cores
   needs:
