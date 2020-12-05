@@ -100,6 +100,8 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_ASTURIAN:
          ret = msg_hash_get_help_ast_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_FINNISH:
+         ret = msg_hash_get_help_fi_enum(msg, s, len);
       default:
          break;
    }
