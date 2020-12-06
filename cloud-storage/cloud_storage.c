@@ -78,9 +78,15 @@ static cloud_storage_provider_t *_providers[3];
 
 static char _game_saves_config_value[8192] = "";
 static char _game_states_config_value[8192] = "";
+static char _runtime_logs_dir[8192] = "";
+static char _screenshots_config_value[8192] = "";
+
+static bool _need_sync_runtime_logs = false;
 
 cloud_storage_item_t *_game_saves = NULL;
 cloud_storage_item_t *_game_states = NULL;
+cloud_storage_item_t *_runtime_logs = NULL;
+cloud_storage_item_t *_screenshots = NULL;
 
 static struct _operation_queue_item *_operation_queue = NULL;
 static slock_t *_operation_queue_mutex;
@@ -371,12 +377,22 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
    cloud_storage_item_t *folder;
    cloud_storage_item_t *file;
 
-   if (folder_type == CLOUD_STORAGE_GAME_SAVES)
+   switch (folder_type)
    {
-      folder = _game_saves;
-   } else
-   {
-      folder = _game_states;
+      case CLOUD_STORAGE_GAME_SAVES:
+         folder = _game_saves;
+         break;
+      case CLOUD_STORAGE_GAME_STATES:
+         folder = _game_states;
+         break;
+      case CLOUD_STORAGE_RUNTIME_LOGS:
+         folder = _runtime_logs;
+         break;
+      case CLOUD_STORAGE_SCREENSHOTS:
+         folder = _screenshots;
+         break;
+      default:
+         return NULL;
    }
 
    if (!folder)
@@ -440,12 +456,22 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
    char *absolute_filename;
    cloud_storage_item_t *remote_folder;
 
-   if (folder_type == CLOUD_STORAGE_GAME_SAVES)
+   switch (folder_type)
    {
-      remote_folder = _game_saves;
-   } else
-   {
-      remote_folder = _game_states;
+      case CLOUD_STORAGE_GAME_SAVES:
+         remote_folder = _game_saves;
+         break;
+      case CLOUD_STORAGE_GAME_STATES:
+         remote_folder = _game_states;
+         break;
+      case CLOUD_STORAGE_RUNTIME_LOGS:
+         remote_folder = _runtime_logs;
+         break;
+      case CLOUD_STORAGE_SCREENSHOTS:
+         remote_folder = _screenshots;
+         break;
+      default:
+         return;
    }
 
    absolute_filename = _get_absolute_filename(folder_type, local_file);
@@ -521,6 +547,7 @@ static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_st
 static void _sync_files_upload(folder_type_t folder_type)
 {
    global_t *global;
+   settings_t *settings;
    cloud_storage_item_t *remote_folder;
    char *raw_dir;
    char *dir_name;
@@ -529,6 +556,11 @@ static void _sync_files_upload(folder_type_t folder_type)
 
    global = global_get_ptr();
    if (!global)
+   {
+      return;
+   }
+   settings = config_get_ptr();
+   if (!settings)
    {
       return;
    }
@@ -542,6 +574,14 @@ static void _sync_files_upload(folder_type_t folder_type)
       case CLOUD_STORAGE_GAME_STATES:
          remote_folder = _game_states;
          raw_dir = global->name.savestate;
+         break;
+      case CLOUD_STORAGE_RUNTIME_LOGS:
+         remote_folder = _runtime_logs;
+         raw_dir = _runtime_logs_dir;
+         break;
+      case CLOUD_STORAGE_SCREENSHOTS:
+         remote_folder = _screenshots;
+         raw_dir = settings->paths.directory_screenshot;
          break;
       default:
          return;
@@ -619,12 +659,19 @@ static bool _have_local_file_for_remote_file(
    folder_type_t folder_type,
    cloud_storage_item_t *remote_file)
 {
-   global_t *global = global_get_ptr();
+   global_t *global;
+   settings_t *settings;
    char *dir_name = NULL;
    struct RDIR *dir;
    bool found = false;
 
+   global = global_get_ptr();
    if (!global)
+   {
+      return false;
+   }
+   settings = config_get_ptr();
+   if (!settings)
    {
       return false;
    }
@@ -643,6 +690,20 @@ static bool _have_local_file_for_remote_file(
          {
             dir_name = (char *)calloc(strlen(global->name.savestate) + 1, sizeof(char));
             strcpy(dir_name, global->name.savestate);
+         }
+         break;
+      case CLOUD_STORAGE_RUNTIME_LOGS:
+         if (strlen(_runtime_logs_dir) > 0)
+         {
+            dir_name = (char *)calloc(strlen(_runtime_logs_dir) + 1, sizeof(char));
+            strcpy(dir_name, _runtime_logs_dir);
+         }
+         break;
+      case CLOUD_STORAGE_SCREENSHOTS:
+         if (strlen(settings->paths.directory_screenshot) > 0)
+         {
+            dir_name = (char *)calloc(strlen(settings->paths.directory_screenshot) + 1, sizeof(char));
+            strcpy(dir_name, settings->paths.directory_screenshot);
          }
          break;
       default:
@@ -718,15 +779,22 @@ static void _sync_files_download(folder_type_t folder_type)
    cloud_storage_item_t *remote_folder;
    cloud_storage_item_t *remote_file;
 
-   if (folder_type == CLOUD_STORAGE_GAME_SAVES)
+   switch (folder_type)
    {
-      remote_folder = _game_saves;
-   } else if (folder_type == CLOUD_STORAGE_GAME_STATES)
-   {
-      remote_folder = _game_states;
-   } else
-   {
-      return;
+      case CLOUD_STORAGE_GAME_SAVES:
+         remote_folder = _game_saves;
+         break;
+      case CLOUD_STORAGE_GAME_STATES:
+         remote_folder = _game_states;
+         break;
+      case CLOUD_STORAGE_RUNTIME_LOGS:
+         remote_folder = _runtime_logs;
+         break;
+      case CLOUD_STORAGE_SCREENSHOTS:
+         remote_folder = _screenshots;
+         break;
+      default:
+         return;
    }
 
    if (!remote_folder)
@@ -782,6 +850,14 @@ static bool _prepare_folder(folder_type_t folder_type)
          folder_name = GAME_STATES_FOLDER_NAME;
          folder = &_game_states;
          break;
+      case CLOUD_STORAGE_RUNTIME_LOGS:
+         folder_name = RUNTIME_LOGS_FOLDER_NAME;
+         folder = &_runtime_logs;
+         break;
+      case CLOUD_STORAGE_SCREENSHOTS:
+         folder_name = SCREENSHOTS_FOLDER_NAME;
+         folder = &_screenshots;
+         break;
       default:
          return false;
    }
@@ -833,14 +909,18 @@ void cloud_storage_sync_files(void)
 {
    bool sync_saves;
    bool sync_states;
+   bool sync_runtime_logs;
+   bool sync_screenshots;
    global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
    struct _operation_queue_item *queue_item = NULL;
    struct _operation_queue_item *previous_queue_item = NULL;
 
    sync_saves = strcmp(_game_saves_config_value, global->name.savefile) != 0;
    sync_states = strcmp(_game_states_config_value, global->name.savestate) != 0;
+   sync_screenshots = strcmp(_screenshots_config_value, settings->paths.directory_screenshot) != 0;
 
-   if (!sync_saves && !sync_states)
+   if (!sync_saves && !sync_states && !_need_sync_runtime_logs)
    {
       return;
    }
@@ -852,6 +932,10 @@ void cloud_storage_sync_files(void)
    if (sync_states)
    {
       strcpy(_game_states_config_value, global->name.savestate);
+   }
+   if (sync_screenshots)
+   {
+      strcpy(_screenshots_config_value, settings->paths.directory_screenshot);
    }
 
    slock_lock(_operation_queue_mutex);
@@ -908,6 +992,21 @@ void cloud_storage_sync_files(void)
       if (previous_queue_item)
       {
          previous_queue_item->next = queue_item;
+      } else
+      {
+         _operation_queue = queue_item;
+      }
+      previous_queue_item = queue_item;
+   }
+
+   if (_need_sync_runtime_logs)
+   {
+      queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
+      queue_item->operation = SYNC_FILES;
+      queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_RUNTIME_LOGS;
+      if (previous_queue_item)
+      {
+         previous_queue_item = queue_item;
       } else
       {
          _operation_queue = queue_item;
@@ -1015,4 +1114,20 @@ bool cloud_storage_have_default_credentials(void)
 void cloud_storage_authorize(void (*callback)(bool success))
 {
    _get_active_provider()->authorize(callback);
+}
+
+void cloud_storage_set_logfile_dir(const char *logfile_dir)
+{
+   if (logfile_dir)
+   {
+      if (strcmp(_runtime_logs_dir, logfile_dir) != 0)
+      {
+         _need_sync_runtime_logs = true;
+      }
+
+      strcpy(_runtime_logs_dir, logfile_dir);
+   } else
+   {
+      _runtime_logs_dir[0] = '\0';
+   }
 }

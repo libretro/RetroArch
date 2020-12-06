@@ -34,6 +34,7 @@
 #include <encodings/utf.h>
 #include <time/rtime.h>
 
+#include "cloud-storage/cloud_storage.h"
 #include "file_path_special.h"
 #include "paths.h"
 #include "core_info.h"
@@ -352,6 +353,10 @@ runtime_log_t *runtime_log_init(
 
    if (string_is_empty(content_name))
       return NULL;
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
+   cloud_storage_set_logfile_dir(log_file_dir);
+#endif
 
    /* Build final log file path */
    fill_pathname_join(log_file_path, log_file_dir,

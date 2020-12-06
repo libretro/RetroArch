@@ -33,6 +33,8 @@ RETRO_BEGIN_DECLS
 
 #define GAME_SAVES_FOLDER_NAME "save_games"
 #define GAME_STATES_FOLDER_NAME "save_states"
+#define RUNTIME_LOGS_FOLDER_NAME "runtime_logs"
+#define SCREENSHOTS_FOLDER_NAME "screenshots"
 
 enum cloud_storage_hash_type_t
 {
@@ -81,7 +83,9 @@ struct cloud_storage_item_t
 enum folder_type_t
 {
    CLOUD_STORAGE_GAME_STATES,
-   CLOUD_STORAGE_GAME_SAVES
+   CLOUD_STORAGE_GAME_SAVES,
+   CLOUD_STORAGE_RUNTIME_LOGS,
+   CLOUD_STORAGE_SCREENSHOTS
 };
 typedef enum folder_type_t folder_type_t;
 
@@ -156,6 +160,8 @@ void cloud_storage_sync_files(void);
 void cloud_storage_upload_file(folder_type_t folder_type, char *file_name);
 
 void cloud_storage_set_active_provider(unsigned provider_id);
+
+void cloud_storage_set_logfile_dir(const char *logfile_dir);
 
 RETRO_END_DECLS
 

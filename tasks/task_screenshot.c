@@ -47,6 +47,10 @@
 #include "../gfx/gfx_widgets.h"
 #endif
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
+#include "../cloud-storage/cloud_storage.h"
+#endif
+
 #include "../defaults.h"
 #include "../command.h"
 #include "../configuration.h"
@@ -432,7 +436,16 @@ static bool screenshot_dump(
       return false;
    }
 
-   return screenshot_dump_direct(state);
+   if (screenshot_dump_direct(state))
+   {
+#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
+      cloud_storage_upload_file(CLOUD_STORAGE_SCREENSHOTS, state->shotname);
+      return true;
+#endif
+   } else
+   {
+      return false;
+   }
 }
 
 static bool take_screenshot_viewport(

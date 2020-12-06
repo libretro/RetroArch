@@ -122,6 +122,7 @@ static cloud_storage_item_t *_process_response(
                         new_file = cloud_storage_google_parse_file_from_json(json);
                         if (new_file)
                         {
+                           new_file->last_sync_time = time(NULL);
                            if (!current_file)
                            {
                               first_file = new_file;
