@@ -145,6 +145,8 @@ static cloud_storage_item_t *_process_response(
             }
 
             break;
+         case RJSON_DONE:
+            goto cleanup;
          default:
             break;
       }

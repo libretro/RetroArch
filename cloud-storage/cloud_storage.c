@@ -484,11 +484,28 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
       return;
    }
 
-   _get_active_provider()->upload_file(
+   if (_get_active_provider()->upload_file(
       remote_folder,
       remote_file,
-      absolute_filename
-   );
+      absolute_filename))
+   {
+      if (!remote_file->type_data.file.hash_value) {
+         switch (remote_file->type_data.file.hash_type)
+         {
+            case MD5:
+               remote_file->type_data.file.hash_value = _get_md5_hash(absolute_filename);
+               break;
+            case SHA1:
+               remote_file->type_data.file.hash_value = _get_sha1_hash(absolute_filename);
+               break;
+            case SHA256:
+               remote_file->type_data.file.hash_value = _get_sha256_hash(absolute_filename);
+               break;
+         }
+      }
+
+      remote_file->last_sync_time = time(NULL);
+   }
 
    free(absolute_filename);
 }

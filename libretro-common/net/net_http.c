@@ -1368,6 +1368,10 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       } else if (conn->request->body.body_type == HTTP_REQUEST_BODY_FROM_FILE)
       {
          post_len = filestream_get_size(conn->request->body.value.file.file) - filestream_tell(conn->request->body.value.file.file);
+         if (post_len > conn->request->body.value.file.max_bytes)
+         {
+            post_len = conn->request->body.value.file.max_bytes;
+         }
       }
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -1464,7 +1468,11 @@ struct http_t *net_http_new(struct http_connection_t *conn)
                net_http_send_bytes(&conn->sock_state, &error, buffer, bytes_read);
 
                bytes_to_read = conn->request->body.value.file.max_bytes > 4096 ? 4096 : conn->request->body.value.file.max_bytes;
-               bytes_read = filestream_read(conn->request->body.value.file.file, (void *)buffer, 4096);
+               if (bytes_to_read == 0)
+               {
+                  break;
+               }
+               bytes_read = filestream_read(conn->request->body.value.file.file, (void *)buffer, bytes_to_read);
             }
 
             filestream_close(conn->request->body.value.file.file);

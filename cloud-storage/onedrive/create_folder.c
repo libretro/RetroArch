@@ -85,6 +85,8 @@ static cloud_storage_item_t *_parse_create_folder_response(
             }
 
             break;
+         case RJSON_DONE:
+            goto cleanup;
          default:
             break;
       }

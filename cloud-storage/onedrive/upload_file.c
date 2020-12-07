@@ -297,6 +297,8 @@ static char *_process_start_multipart_response(
             }
 
             break;
+         case RJSON_DONE:
+            goto cleanup;
          default:
             break;
       }

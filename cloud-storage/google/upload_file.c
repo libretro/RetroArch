@@ -48,7 +48,7 @@ static void _process_upload_file_part_response(
    uint8_t *data;
    size_t data_len;
    bool in_object = false;
-   const char *key_name;
+   const char *key_name = NULL;
    size_t key_name_len;
 
    data = net_http_response_get_data(response, &data_len, false);
@@ -90,15 +90,10 @@ static void _process_upload_file_part_response(
                value = rjson_get_string(json, &value_len);
                remote_file->id = (char *)malloc(value_len + 1);
                strcpy(remote_file->id, value);
-            } else if (strcmp("md5Checksum", key_name) == 0)
-            {
-               const char *value;
-               size_t value_len;
-
-               value = rjson_get_string(json, &value_len);
-               remote_file->type_data.file.hash_value = (char *)malloc(value_len + 1);
-               strcpy(remote_file->type_data.file.hash_value, value);
             }
+            break;
+         case RJSON_DONE:
+            goto cleanup;
          default:
             break;
       }

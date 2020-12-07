@@ -88,8 +88,13 @@ static cloud_storage_item_t *_parse_create_folder_response(
    }
 
 id_found:
+   metadata = (cloud_storage_item_t *)calloc(sizeof(cloud_storage_item_t), 1);
+   metadata->name = (char *)calloc(strlen(folder_name) + 1, sizeof(char));
+   strcpy(metadata->name, folder_name);
+   metadata->item_type = CLOUD_STORAGE_FOLDER;
    metadata->id = (char *)calloc(id_length + 1, sizeof(char));
    strncpy(metadata->id, id, id_length);
+   metadata->last_sync_time = time(NULL);
 
 cleanup:
    if (json)
