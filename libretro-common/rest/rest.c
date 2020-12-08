@@ -146,7 +146,7 @@ struct http_response_t *rest_request_execute(rest_request_t *request)
    size_t progress;
    size_t total;
 
-   timeout = time(NULL) + 30;
+   timeout = time(NULL) + request->timeout_seconds;
 
    do {
       if (!request->http_conn)
