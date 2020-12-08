@@ -134,7 +134,6 @@ static void _start_request(rest_request_t *request)
    if (!request->http)
    {
       net_http_connection_free(request->http_conn, true);
-      net_http_delete(request->http);
       request->http_conn = NULL;
       request->http = NULL;
    }
