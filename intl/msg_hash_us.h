@@ -2058,6 +2058,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "Automatically configures controllers that have a profile, Plug-and-Play style."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Disable Windows Hotkeys"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Keeps Win-key combinations inside the application. (Restart Required)"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Auxiliary Sensor Input"

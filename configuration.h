@@ -524,6 +524,9 @@ typedef struct settings
       bool input_backtouch_toggle;
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+      bool input_nowinkey_enable;
+#endif
 
       /* Frame time counter */
       bool frame_time_counter_reset_after_fastforwarding;

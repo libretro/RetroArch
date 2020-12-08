@@ -12063,6 +12063,24 @@ static bool setting_append_list(
                   SD_FLAG_ADVANCED
                   );
 
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_nowinkey_enable,
+                  MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+#endif
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.input_sensors_enable,

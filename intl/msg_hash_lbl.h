@@ -1302,6 +1302,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
    "input_autodetect_enable"
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE,
+   "input_nowinkey_enable"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
    "input_sensors_enable"

@@ -1724,6 +1724,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("config_save_on_exit",          &settings->bools.config_save_on_exit, true, DEFAULT_CONFIG_SAVE_ON_EXIT, false);
    SETTING_BOOL("show_hidden_files",            &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
    SETTING_BOOL("input_autodetect_enable",      &settings->bools.input_autodetect_enable, true, input_autodetect_enable, false);
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   SETTING_BOOL("input_nowinkey_enable",        &settings->bools.input_nowinkey_enable, true, false, false);
+#endif
    SETTING_BOOL("input_sensors_enable",         &settings->bools.input_sensors_enable, true, DEFAULT_INPUT_SENSORS_ENABLE, false);
    SETTING_BOOL("audio_rate_control",           &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
 #ifdef HAVE_WASAPI

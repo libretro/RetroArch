@@ -495,6 +495,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_max_keep,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_autodetect_enable,       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE)
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_nowinkey_enable,         MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_sensors_enable,          MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_libretro,                MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO)
@@ -2869,6 +2872,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_autodetect_enable);
             break;
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+         case MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_nowinkey_enable);
+            break;
+#endif
          case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_sensors_enable);
             break;
