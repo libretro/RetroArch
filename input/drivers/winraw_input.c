@@ -100,12 +100,16 @@ static void winraw_destroy_window(HWND wnd)
 static BOOL winraw_set_keyboard_input(HWND window)
 {
    RAWINPUTDEVICE rid;
+   settings_t *settings;
+
+   settings        = config_get_ptr();
 
    rid.dwFlags     = window ? 0 : RIDEV_REMOVE;
    rid.hwndTarget  = window;
    rid.usUsagePage = 0x01; /* generic desktop */
    rid.usUsage     = 0x06; /* keyboard */
-   rid.dwFlags    |= RIDEV_NOHOTKEYS; /* disable win keys while focused */
+   if (settings->bools.input_nowinkey_enable)
+      rid.dwFlags |= RIDEV_NOHOTKEYS; /* disable win keys while focused */
 
    return RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
 }

@@ -6037,6 +6037,12 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_INPUT_BIND_MODE,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+#endif
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)
