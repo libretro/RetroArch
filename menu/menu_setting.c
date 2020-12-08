@@ -18034,22 +18034,12 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.cloud_storage_provider,
-               MENU_ENUM_LABEL_CLOUD_STORAGE_PROVIDER,
-               MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER,
-               0,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_with_refresh;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_cloud_storage_provider;
-         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+         CONFIG_UINT_CBS(settings->uints.cloud_storage_provider, CLOUD_STORAGE_PROVIDER,
+                  setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh,
+                  MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_PROVIDER_GOOGLE,
+                  &setting_get_string_representation_uint_cloud_storage_provider,
+                  0,1,1);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
          CONFIG_BOOL(
                list, list_info,
@@ -18148,7 +18138,7 @@ static bool setting_append_list(
                   CLOUD_STORAGE_AUTHORIZE_STATUS_LEN,
                   MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,
                   MENU_ENUM_LABEL_VALUE_CLOUD_STORAGE_AUTHORIZE_STATUS,
-                  "Loading...",
+                  loading_str,
                   &group_info,
                   &subgroup_info,
                   parent_group,

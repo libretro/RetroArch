@@ -222,7 +222,7 @@ void cloud_storage_onedrive_list_files(cloud_storage_item_t *folder)
       return;
    }
 
-   for (last_child = folder->type_data.folder.children;last_child != NULL && last_child->next != NULL;last_child = last_child->next);
+   for (last_child = folder->type_data.folder.children; last_child != NULL && last_child->next != NULL; last_child = last_child->next);
 
    do
    {
@@ -244,7 +244,7 @@ void cloud_storage_onedrive_list_files(cloud_storage_item_t *folder)
             last_child->next = new_items;
          }
 
-         for (last_child = new_items;last_child != NULL && last_child->next != NULL;last_child = last_child->next);
+         for (last_child = new_items; last_child != NULL && last_child->next != NULL; last_child = last_child->next);
       }
    } while (next_value);
 }

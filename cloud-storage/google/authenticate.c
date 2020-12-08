@@ -142,7 +142,7 @@ static uint8_t *_refresh_token_request_body(size_t *request_body_len)
    strcpy(values[3], GRANT_TYPE_PARAM_VALUE);
 
    *request_body_len = 0;
-   for (i = 0;i < 4;i++)
+   for (i = 0; i < 4; i++)
    {
       name_lengths[i] = strlen(names[i]);
       *request_body_len += name_lengths[i] + 1;
@@ -152,7 +152,7 @@ static uint8_t *_refresh_token_request_body(size_t *request_body_len)
 
    request_body = (char *)calloc(*request_body_len, sizeof(char));
 
-   for (i = 0;i < 4;i++)
+   for (i = 0; i < 4; i++)
    {
       strcpy(request_body + cur_pos, names[i]);
       cur_pos += name_lengths[i];

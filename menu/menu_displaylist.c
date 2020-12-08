@@ -6971,7 +6971,7 @@ unsigned menu_displaylist_build_list(
             case 1:
                {
                   menu_displaylist_build_info_t build_list[] = {
-                     {MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,                     PARSE_ONLY_STRING},
+                     {MENU_ENUM_LABEL_CLOUD_STORAGE_AUTHORIZE_STATUS,                  PARSE_ONLY_STRING},
                   };
 
                   for (i = 0; i < ARRAY_SIZE(build_list); i++)

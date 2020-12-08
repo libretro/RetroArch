@@ -36,6 +36,7 @@ struct rest_request_t
    rest_retry_policy_t *retry_policy;
    int retry_count;
    time_t delay_end;
+   uint16_t timeout_seconds;
 };
 
 struct rest_retry_policy_t
@@ -45,6 +46,8 @@ struct rest_retry_policy_t
    time_t *delays;
    size_t delays_len;
 };
+
+#define REST_DEFAULT_TIMEOUT 30
 
 rest_retry_policy_t *rest_retry_policy_new(
    int *status_codes,
@@ -92,8 +95,14 @@ rest_request_t *rest_request_new(struct http_request_t *http_request)
 
    request = (rest_request_t *)calloc(1, sizeof(rest_request_t));
    request->http_request = http_request;
+   request->timeout_seconds = REST_DEFAULT_TIMEOUT;
 
    return request;
+}
+
+void rest_request_set_timeout(rest_request_t *request, uint16_t timeout_seconds)
+{
+   request->timeout_seconds = timeout_seconds;
 }
 
 void rest_request_set_header(rest_request_t *request, const char *name, const char *value, bool replace)
@@ -143,6 +152,10 @@ struct http_response_t *rest_request_execute(rest_request_t *request)
       if (!request->http_conn)
       {
          _start_request(request);
+         if (!request->http)
+         {
+            break;
+         }
       }
 
       if (net_http_update(request->http, &progress, &total))
@@ -160,7 +173,7 @@ struct http_response_t *rest_request_execute(rest_request_t *request)
 
             status_code = net_http_response_get_status(response);
 
-            for (i = 0;i < request->retry_policy->status_codes_len;i++)
+            for (i = 0; i < request->retry_policy->status_codes_len; i++)
             {
                if (status_code == request->retry_policy->status_codes[i])
                {

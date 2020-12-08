@@ -63,7 +63,7 @@ static bool _parse_request(char *request, size_t len, char **code)
    }
 
    path = request + 4;
-   for (current_pos = request + 4;current_pos < request + len;current_pos++)
+   for (current_pos = request + 4; current_pos < request + len; current_pos++)
    {
       if (*current_pos == ' ')
       {
@@ -91,7 +91,7 @@ static bool _parse_request(char *request, size_t len, char **code)
       return false;
    }
 
-   for (current_pos = path;current_pos < space_pos;current_pos++)
+   for (current_pos = path; current_pos < space_pos; current_pos++)
    {
       if (*current_pos == '?')
       {
@@ -109,7 +109,7 @@ static bool _parse_request(char *request, size_t len, char **code)
       char *equals_pos = NULL;
 
       path = current_pos;
-      for (;current_pos < space_pos;current_pos++)
+      for (; current_pos < space_pos; current_pos++)
       {
          if (*current_pos == '&')
          {
@@ -118,7 +118,7 @@ static bool _parse_request(char *request, size_t len, char **code)
       }
       param_end = current_pos;
 
-      for (current_pos = path;current_pos < param_end;current_pos++)
+      for (current_pos = path; current_pos < param_end; current_pos++)
       {
          if (*current_pos == '=')
          {
@@ -389,7 +389,7 @@ authorization_status_t cloud_storage_google_authorize(void (*callback)(bool succ
 
    code_verifier = (char *)malloc(65 * sizeof(char));
    code_verifier[64] = '\0';
-   for (i = 0;i < 64;i++)
+   for (i = 0; i < 64; i++)
    {
       int key = rand() % (int)(sizeof(charset) - 1);
       code_verifier[i] = charset[key];

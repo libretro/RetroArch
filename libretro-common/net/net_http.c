@@ -168,6 +168,7 @@ struct http_connection_t
 };
 
 #define MAX_LOG_LINE_LENGTH 60
+#define MAX_BYTES_TO_READ_FROM_FILE 8192
 
 /* URL Encode a string
    caller is responsible for deleting the destination buffer */
@@ -531,7 +532,7 @@ static void net_http_url_parameter_set_value(
       return;
 
    name_len = strlen(name);
-   for (i = 0;i < params->len;i++)
+   for (i = 0; i < params->len; i++)
    {
       if (!strncmp(name, params->params[i].name, name_len))
       {
@@ -544,7 +545,7 @@ static void net_http_url_parameter_set_value(
    {
       if (replace)
       {
-         for (i = 0;i < param->len;i++)
+         for (i = 0; i < param->len; i++)
          {
             free(param->values[i]);
          }
@@ -615,7 +616,7 @@ static void net_http_headers_add_value(struct http_headers_t *headers, const cha
       size_t new_len = headers->len + 1;
       size_t i;
 
-      for (i = 0;i < headers->len;i++)
+      for (i = 0; i < headers->len; i++)
       {
          if (!strcmp(headers->headers[i].name, name))
          {
@@ -641,7 +642,7 @@ static void net_http_headers_add_value(struct http_headers_t *headers, const cha
          headers->len++;
       } else if (new_len == headers->len)
       {
-         for (i = 0;i < headers->len;i++)
+         for (i = 0; i < headers->len; i++)
          {
             if (headers->headers[i].name == NULL)
             {
@@ -655,7 +656,7 @@ static void net_http_headers_add_value(struct http_headers_t *headers, const cha
          size_t j = 0;
 
          new_headers_list = (struct http_header_t *)malloc(((new_len % 4) + 1) * sizeof(struct http_header_t));
-         for (i = 0;i < headers->len;i++)
+         for (i = 0; i < headers->len; i++)
          {
             if (headers->headers[i].name)
             {
@@ -723,10 +724,10 @@ static void net_http_url_parameters_free(struct http_url_parameters_t params)
    if (!params.len)
      return;
 
-   for (i = 0;i < params.len;i++)
+   for (i = 0; i < params.len; i++)
    {
       free(params.params[i].name);
-      for (j = 0;j < params.params[i].len;j++)
+      for (j = 0; j < params.params[i].len; j++)
       {
          free(params.params[i].values[j]);
       }
@@ -743,7 +744,7 @@ static void net_http_headers_free(struct http_headers_t *headers)
    if (!headers->len)
      return;
 
-   for (i = 0;i < headers->len;i++)
+   for (i = 0; i < headers->len; i++)
    {
       free(headers->headers[i].name);
       free(headers->headers[i].value);
@@ -900,16 +901,16 @@ static char *net_http_generate_url(const char *url, struct http_url_parameters_t
       return full_url;
    }
 
-   for (i = 0;i < params.len;i++)
+   for (i = 0; i < params.len; i++)
    {
       param_pairs_count += params.params[i].len;
    }
 
    param_pairs = param_pairs_count > 0 ? (char **)malloc(sizeof(char *) * param_pairs_count) : NULL;
    param_pairs_index = 0;
-   for (i = 0;i < params.len;i++)
+   for (i = 0; i < params.len; i++)
    {
-      for (j = 0;j < params.params[i].len;j++)
+      for (j = 0; j < params.params[i].len; j++)
       {
          net_http_urlencode(&encoded_name, params.params[i].name);
          net_http_urlencode(&encoded_value, params.params[i].values[j]);
@@ -939,7 +940,7 @@ static char *net_http_generate_url(const char *url, struct http_url_parameters_t
       }
 
       total_length += param_pairs_count - 1;
-      for (i = 0;i < param_pairs_count;i++)
+      for (i = 0; i < param_pairs_count; i++)
       {
          total_length += strlen(param_pairs[i]);
       }
@@ -958,7 +959,7 @@ static char *net_http_generate_url(const char *url, struct http_url_parameters_t
          full_url[strlen(full_url)] = '&';
       }
 
-      for (i = 0;i < param_pairs_count;i++)
+      for (i = 0; i < param_pairs_count; i++)
       {
          strcpy(full_url + strlen(full_url), param_pairs[i]);
          if (i < param_pairs_count - 1)
@@ -1137,7 +1138,7 @@ char *net_http_headers_get_first_value(struct http_headers_t *headers, const cha
    if (!headers)
       return NULL;
 
-   for (i = 0;i < headers->len;i++)
+   for (i = 0; i < headers->len; i++)
    {
       if (!strcmp(name, headers->headers[i].name))
          return headers->headers[i].value;
@@ -1156,7 +1157,7 @@ char **net_http_headers_get_values(struct http_headers_t *headers, const char *n
    if (!headers)
       return NULL;
 
-   for (i = 0;i < headers->len;i++)
+   for (i = 0; i < headers->len; i++)
    {
       if (!strcmp(name, headers->headers[i].name))
          *values_len = *values_len + 1;
@@ -1167,7 +1168,7 @@ char **net_http_headers_get_values(struct http_headers_t *headers, const char *n
 
    j = 0;
    values = (char **)calloc(*values_len, sizeof(char *));
-   for (i = 0;i < headers->len;i++)
+   for (i = 0; i < headers->len; i++)
    {
       if (!strcmp(name, headers->headers[i].name))
          values[j++] = headers->headers[i].value;
@@ -1322,7 +1323,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
    if (conn->request->headers->len)
    {
-      for (i = 0;i < conn->request->headers->len;i++)
+      for (i = 0; i < conn->request->headers->len; i++)
       {
          if (string_is_equal(conn->request->headers->headers[i].name, "Content-Type"))
             contenttype = conn->request->headers->headers[i].value;
@@ -1397,7 +1398,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
    if (conn->request->headers->len)
    {
-      for (i = 0;i < conn->request->headers->len;i++)
+      for (i = 0; i < conn->request->headers->len; i++)
       {
          if (!string_is_equal(conn->request->headers->headers[i].name, "Content-Type") &&
               !string_is_equal(conn->request->headers->headers[i].name, "User-Agent"))
@@ -1455,11 +1456,11 @@ struct http_t *net_http_new(struct http_connection_t *conn)
             break;
          case HTTP_REQUEST_BODY_FROM_FILE:
          {
-            uint8_t buffer[4096];
+            uint8_t buffer[MAX_BYTES_TO_READ_FROM_FILE];
             int64_t bytes_read;
             int64_t bytes_to_read;
 
-            bytes_to_read = conn->request->body.value.file.max_bytes > 4096 ? 4096 : conn->request->body.value.file.max_bytes;
+            bytes_to_read = conn->request->body.value.file.max_bytes > MAX_BYTES_TO_READ_FROM_FILE ? MAX_BYTES_TO_READ_FROM_FILE : conn->request->body.value.file.max_bytes;
 
             bytes_read = filestream_read(conn->request->body.value.file.file, (void *)buffer, bytes_to_read);
             while (bytes_read > 0)
@@ -1467,7 +1468,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
                conn->request->body.value.file.max_bytes -= bytes_to_read;
                net_http_send_bytes(&conn->sock_state, &error, buffer, bytes_read);
 
-               bytes_to_read = conn->request->body.value.file.max_bytes > 4096 ? 4096 : conn->request->body.value.file.max_bytes;
+               bytes_to_read = conn->request->body.value.file.max_bytes > MAX_BYTES_TO_READ_FROM_FILE ? MAX_BYTES_TO_READ_FROM_FILE : conn->request->body.value.file.max_bytes;
                if (bytes_to_read == 0)
                {
                   break;

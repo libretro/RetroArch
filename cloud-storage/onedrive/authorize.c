@@ -63,7 +63,7 @@ static bool _parse_request(char *request, size_t len, char **code)
    }
 
    path = request + 4;
-   for (current_pos = request + 4;current_pos < request + len;current_pos++)
+   for (current_pos = request + 4; current_pos < request + len; current_pos++)
    {
       if (*current_pos == ' ')
       {
@@ -91,7 +91,7 @@ static bool _parse_request(char *request, size_t len, char **code)
       return false;
    }
 
-   for (current_pos = path;current_pos < space_pos;current_pos++)
+   for (current_pos = path; current_pos < space_pos; current_pos++)
    {
       if (*current_pos == '?')
       {
@@ -109,7 +109,7 @@ static bool _parse_request(char *request, size_t len, char **code)
       char *equals_pos = NULL;
 
       path = current_pos;
-      for (;current_pos < space_pos;current_pos++)
+      for (;current_pos < space_pos; current_pos++)
       {
          if (*current_pos == '&')
          {
@@ -118,7 +118,7 @@ static bool _parse_request(char *request, size_t len, char **code)
       }
       param_end = current_pos;
 
-      for (current_pos = path;current_pos < param_end;current_pos++)
+      for (current_pos = path; current_pos < param_end; current_pos++)
       {
          if (*current_pos == '=')
          {

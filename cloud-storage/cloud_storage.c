@@ -177,7 +177,7 @@ static void _operation_thread_loop(void *user_data)
 
    if (_operation_queue)
    {
-      _free_operation_queue(_operation_queue);;
+      _free_operation_queue(_operation_queue);
    }
 }
 
@@ -334,7 +334,7 @@ static char *_clean_directory_path(char *dir_name)
    size_t i;
 
    dir_name = path_remove_extension(dir_name);
-   for (i = strlen(dir_name) - 1;i >= 0 && dir_name[i] == '/';i--)
+   for (i = strlen(dir_name) - 1; i >= 0 && dir_name[i] == '/'; i--)
    {
       dir_name[i] = '\0';
    }
@@ -400,7 +400,7 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
       return NULL;
    }
 
-   for (file = folder->type_data.folder.children;file != NULL;file = file->next)
+   for (file = folder->type_data.folder.children; file != NULL; file = file->next)
    {
       if (file->item_type == CLOUD_STORAGE_FILE && !strcmp(local_file, file->name))
       {
@@ -659,7 +659,7 @@ static void _sync_files_upload(folder_type_t folder_type)
                {
                   cloud_storage_item_t *last_item;
 
-                  for (last_item = remote_folder->type_data.folder.children;last_item->next != NULL;last_item = last_item->next);
+                  for (last_item = remote_folder->type_data.folder.children; last_item->next != NULL; last_item = last_item->next);
 
                   last_item->next = remote_file;
                }
@@ -819,7 +819,7 @@ static void _sync_files_download(folder_type_t folder_type)
       return;
    }
 
-   for (remote_file = remote_folder->type_data.folder.children;remote_file != NULL;remote_file = remote_file->next)
+   for (remote_file = remote_folder->type_data.folder.children; remote_file != NULL; remote_file = remote_file->next)
    {
       char *local_file;
       bool need_download = false;
@@ -963,7 +963,7 @@ void cloud_storage_sync_files(void)
       return;
    }
 
-   for (queue_item = _operation_queue;queue_item != NULL;queue_item = queue_item->next)
+   for (queue_item = _operation_queue; queue_item != NULL; queue_item = queue_item->next)
    {
       if (queue_item->operation == UPLOAD_FILE || queue_item->operation == DOWNLOAD_FILE)
       {
@@ -1065,7 +1065,7 @@ void cloud_storage_upload_file(folder_type_t folder_type, char *file_name)
       return;
    }
 
-   for (queue_item = _operation_queue;queue_item != NULL;queue_item = queue_item->next)
+   for (queue_item = _operation_queue; queue_item != NULL; queue_item = queue_item->next)
    {
       switch (queue_item->operation)
       {
