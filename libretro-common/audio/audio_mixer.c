@@ -991,7 +991,6 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
 {
    int i;
    float samplef                    = 0.0f;
-   int samplei                      = 0;
    unsigned temp_samples            = 0;
    unsigned buf_free                = (unsigned)(num_frames * 2);
    int* pcm                         = NULL;

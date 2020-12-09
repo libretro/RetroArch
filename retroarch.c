@@ -30537,7 +30537,6 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
       int rdr_minor                        = hwr->version_minor;
       const char *rdr_context_name         = hw_render_context_name(hwr->context_type, rdr_major, rdr_minor);
       enum retro_hw_context_type rdr_type  = hw_render_context_type(rdr_context_name);
-      video_driver_t *rdr_driver           = hw_render_context_driver(rdr_type, rdr_major, rdr_minor);
 
       p_rarch->current_video               = NULL;
 
@@ -30556,7 +30555,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
                         rdr_context_name))
                   video_driver_save_as_cached(p_rarch, settings, rdr_context_name);
 
-               p_rarch->current_video = rdr_driver;
+               p_rarch->current_video = hw_render_context_driver(rdr_type, rdr_major, rdr_minor);
                return true;
 #else
                break;
