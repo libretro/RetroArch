@@ -605,7 +605,9 @@ extern audio_driver_t audio_psp;
 extern audio_driver_t audio_ps2;
 extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;
+#ifdef HAVE_THREADS
 extern audio_driver_t audio_ctr_dsp_thread;
+#endif
 extern audio_driver_t audio_switch;
 extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;

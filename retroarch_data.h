@@ -113,7 +113,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef _3DS
    &audio_ctr_csnd,
    &audio_ctr_dsp,
+#ifdef HAVE_THREADS
    &audio_ctr_dsp_thread,
+#endif
 #endif
 #ifdef SWITCH
    &audio_switch,

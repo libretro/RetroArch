@@ -792,8 +792,10 @@ endif
 
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += audio/drivers/ctr_csnd_audio.o \
-          audio/drivers/ctr_dsp_audio.o \
-          audio/drivers/ctr_dsp_thread_audio.o
+          audio/drivers/ctr_dsp_audio.o
+ifeq ($(HAVE_THREADS), 1)
+   OBJ += audio/drivers/ctr_dsp_thread_audio.o
+endif
 endif
 
 ifeq ($(HAVE_ALSA), 1)
