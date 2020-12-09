@@ -7494,10 +7494,12 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_WIFI_ENABLED:
+#ifdef HAVE_NETWORKING
          if (*setting->value.target.boolean)
             task_push_wifi_enable(NULL);
          else
             task_push_wifi_disable(NULL);
+#endif
          break;
       default:
          break;

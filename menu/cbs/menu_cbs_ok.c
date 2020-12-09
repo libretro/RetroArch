@@ -74,7 +74,6 @@
 #include "../../verbosity.h"
 #include "../../lakka.h"
 #include "../../bluetooth/bluetooth_driver.h"
-#include "../../wifi/wifi_driver.h"
 #include "../../gfx/video_display_server.h"
 #include "../../manual_content_scan.h"
 
@@ -83,6 +82,7 @@
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #include "../../network/netplay/netplay_discovery.h"
+#include "../../wifi/wifi_driver.h"
 #endif
 
 #ifdef __WINRT__
@@ -2662,6 +2662,7 @@ static int action_ok_bluetooth(const char *path, const char *label,
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
    unsigned idx = menu_input_dialog_get_kb_idx();
@@ -2677,6 +2678,7 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 
    menu_input_dialog_end();
 }
+#endif
 
 static void menu_input_st_string_cb_rename_entry(void *userdata,
       const char *str)
@@ -2765,6 +2767,19 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static int action_ok_shader_pass(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_handle_t *menu       = menu_driver_get_ptr();
+
+   if (!menu)
+      return menu_cbs_exit();
+
+   menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+         entry_idx, ACTION_OK_DL_SHADER_PASS);
+}
+
 static void menu_input_st_string_cb_save_preset(void *userdata,
       const char *str)
 {
@@ -2982,6 +2997,7 @@ static int action_ok_shader_preset_remove_game(const char *path,
 }
 #endif
 
+#ifdef HAVE_NETWORKING
 static int action_ok_wifi(const char *path, const char *label_setting,
       unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3009,7 +3025,7 @@ static int action_ok_wifi(const char *path, const char *label_setting,
       return 0;
    }
 }
-
+#endif
 
 static int action_ok_video_filter_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5263,8 +5279,10 @@ DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOST
 DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_bluetooth_list, ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST)
+#ifdef HAVE_NETWORKING
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_networks_list, ACTION_OK_DL_WIFI_NETWORKS_LIST)
+#endif
 DEFAULT_ACTION_OK_FUNC(action_ok_cursor_manager_list, ACTION_OK_DL_CURSOR_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push_detect_core, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE)
@@ -5400,21 +5418,7 @@ static int action_ok_open_picker(const char *path,
    return ret;
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int action_ok_shader_pass(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_handle_t *menu       = menu_driver_get_ptr();
-
-   if (!menu)
-      return menu_cbs_exit();
-
-   menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_SHADER_PASS);
-}
-#endif
-
+#ifdef HAVE_NETWORKING
 static void wifi_menu_refresh_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -5430,6 +5434,7 @@ static int action_ok_wifi_disconnect(const char *path,
    task_push_wifi_disconnect(wifi_menu_refresh_callback);
    return true;
 }
+#endif
 
 static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -7497,9 +7502,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},
+#ifdef HAVE_NETWORKING
          {MENU_ENUM_LABEL_WIFI_SETTINGS,                       action_ok_wifi_list},
          {MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,                   action_ok_wifi_networks_list},
          {MENU_ENUM_LABEL_WIFI_DISCONNECT,                     action_ok_wifi_disconnect},
+#endif
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
@@ -7941,7 +7948,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_bluetooth);
             break;
          case MENU_WIFI:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_wifi);
+#endif
             break;
          case MENU_NETPLAY_LAN_SCAN:
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
