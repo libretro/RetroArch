@@ -706,6 +706,7 @@ typedef struct settings
 
       /* WiFi */
       bool wifi_allow;
+      bool wifi_enabled;
 
       /* Location */
       bool location_allow;

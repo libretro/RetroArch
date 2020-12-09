@@ -413,6 +413,22 @@ MSG_HASH(
    "connect_wifi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_WIFI_DISCONNECT,
+   "disconnect_wifi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_WIFI_NETWORKS,
+   "wifi_list_networks"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_WIFI_ENABLED,
+   "wifi_enabled"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,
+   "wifi_network_scan"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
    "connect_room"
    )
@@ -1027,6 +1043,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,
    "deferred_wifi_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST,
+   "deferred_wifi_networks_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_INFORMATION,

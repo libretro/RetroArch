@@ -284,6 +284,7 @@ enum settings_list_type
    SETTINGS_LIST_ACCESSIBILITY,
    SETTINGS_LIST_USER_INTERFACE,
    SETTINGS_LIST_POWER_MANAGEMENT,
+   SETTINGS_LIST_WIFI_MANAGEMENT,
    SETTINGS_LIST_MENU_SOUNDS,
    SETTINGS_LIST_PLAYLIST,
    SETTINGS_LIST_CHEEVOS,
@@ -7491,6 +7492,12 @@ static void general_write_handler(rarch_setting_t *setting)
             frontend_driver_set_screen_brightness(
                *setting->value.target.unsigned_integer);
          }
+         break;
+      case MENU_ENUM_LABEL_WIFI_ENABLED:
+         if (*setting->value.target.boolean)
+            task_push_wifi_enable(NULL);
+         else
+            task_push_wifi_disable(NULL);
          break;
       default:
          break;
@@ -15784,6 +15791,51 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_WIFI_MANAGEMENT:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS),
+               parent_group);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_WIFI_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.wifi_enabled,
+               MENU_ENUM_LABEL_WIFI_ENABLED,
+               MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+               DEFAULT_WIFI_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,
+               MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_WIFI_DISCONNECT,
+               MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_ACCESSIBILITY:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS),
@@ -19001,6 +19053,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_ACCESSIBILITY,
       SETTINGS_LIST_USER_INTERFACE,
       SETTINGS_LIST_POWER_MANAGEMENT,
+      SETTINGS_LIST_WIFI_MANAGEMENT,
       SETTINGS_LIST_MENU_SOUNDS,
       SETTINGS_LIST_PLAYLIST,
       SETTINGS_LIST_CHEEVOS,

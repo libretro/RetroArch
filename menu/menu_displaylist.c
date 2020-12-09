@@ -4526,37 +4526,9 @@ static void wifi_scan_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-   unsigned i;
-   file_list_t *file_list        = NULL;
-   wifi_network_scan_t *scan = NULL;
-
-   const char *path              = NULL;
-   const char *label             = NULL;
-   unsigned menu_type            = 0;
-
-   menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
-
-   /* Don't push the results if we left the wifi menu */
-   if (!string_is_equal(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
-      return;
-
-   file_list = menu_entries_get_selection_buf_ptr(0);
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-
-   scan = driver_wifi_get_ssids();
-   if (!scan)
-      return;
-
-   for (i = 0; i < RBUF_LEN(scan->net_list); i++)
-   {
-      const char *ssid = scan->net_list[i].ssid;
-      menu_entries_append_enum(file_list,
-            ssid,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-            MENU_ENUM_LABEL_CONNECT_WIFI,
-            MENU_WIFI, 0, 0);
-   }
+   bool refresh = false;
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 }
 #endif
 
@@ -5453,6 +5425,43 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
+         {
+            settings_t *settings      = config_get_ptr();
+            bool wifi_enabled = settings->bools.wifi_enabled;
+            bool connected = driver_wifi_connection_info(NULL);
+
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_WIFI_ENABLED,              PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,         PARSE_ACTION,    false},
+               {MENU_ENUM_LABEL_WIFI_DISCONNECT,           PARSE_ACTION,    false},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_WIFI_NETWORK_SCAN:
+                     build_list[i].checked = wifi_enabled;
+                     break;
+                  case MENU_ENUM_LABEL_WIFI_DISCONNECT:
+                     build_list[i].checked = wifi_enabled && connected;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (build_list[i].checked &&
+                     MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+      case DISPLAYLIST_WIFI_NETWORKS_LIST:
 #ifdef HAVE_NETWORKING
          {
             settings_t      *settings     = config_get_ptr();
@@ -5461,7 +5470,7 @@ unsigned menu_displaylist_build_list(
                wifi_network_scan_t *scan = driver_wifi_get_ssids();
 
                /* Temporary hack: scan periodically, until we have a submenu */
-               if (!scan || RBUF_LEN(scan->net_list) == 0 || time(NULL) > scan->scan_time + 120)
+               if (!scan || time(NULL) > scan->scan_time + 30)
                   task_push_wifi_scan(wifi_scan_callback);
                else
                {
@@ -5470,7 +5479,7 @@ unsigned menu_displaylist_build_list(
                   {
                      const char *ssid = scan->net_list[i].ssid;
                      if (menu_entries_append_enum(list,
-                              ssid,
+                              strlen(ssid) ? ssid : msg_hash_to_str(MSG_WIFI_EMPTY_SSID),
                               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
                               MENU_ENUM_LABEL_CONNECT_WIFI,
                               MENU_WIFI, 0, 0))
@@ -11099,6 +11108,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_SYSTEM_INFO:
       case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
+      case DISPLAYLIST_WIFI_NETWORKS_LIST:
       case DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST:
       case DISPLAYLIST_BROWSE_URL_START:
       case DISPLAYLIST_CONTENT_SETTINGS:
@@ -11159,7 +11169,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_ENUM_LABEL_NO_BT_DEVICES_FOUND,
                         0, 0, 0);
                   break;
-               case DISPLAYLIST_WIFI_SETTINGS_LIST:
+               case DISPLAYLIST_WIFI_NETWORKS_LIST:
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),

@@ -688,10 +688,13 @@ static wifi_driver_t wifi_null = {
    NULL, /* free */
    NULL, /* start */
    NULL, /* stop */
+   NULL, /* enable */
+   NULL, /* connection_info */
    NULL, /* scan */
    NULL, /* get_ssids */
    NULL, /* ssid_is_online */
    NULL, /* connect_ssid */
+   NULL, /* disconnect_ssid */
    NULL, /* tether_start_stop */
    "null",
 };

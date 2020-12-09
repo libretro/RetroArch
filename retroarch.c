@@ -18937,6 +18937,18 @@ void driver_wifi_scan(void)
    p_rarch->wifi_driver->scan(p_rarch->wifi_data);
 }
 
+bool driver_wifi_enable(bool enabled)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   return p_rarch->wifi_driver->enable(p_rarch->wifi_data, enabled);
+}
+
+bool driver_wifi_connection_info(wifi_network_info_t *netinfo)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   return p_rarch->wifi_driver->connection_info(p_rarch->wifi_data, netinfo);
+}
+
 wifi_network_scan_t* driver_wifi_get_ssids()
 {
    struct rarch_state       *p_rarch = &rarch_st;
@@ -18949,10 +18961,16 @@ bool driver_wifi_ssid_is_online(unsigned i)
    return p_rarch->wifi_driver->ssid_is_online(p_rarch->wifi_data, i);
 }
 
-bool driver_wifi_connect_ssid(unsigned i, const char* passphrase)
+bool driver_wifi_connect_ssid(const wifi_network_info_t* net)
 {
    struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->wifi_driver->connect_ssid(p_rarch->wifi_data, i, passphrase);
+   return p_rarch->wifi_driver->connect_ssid(p_rarch->wifi_data, net);
+}
+
+bool driver_wifi_disconnect_ssid(const wifi_network_info_t* net)
+{
+   struct rarch_state       *p_rarch = &rarch_st;
+   return p_rarch->wifi_driver->disconnect_ssid(p_rarch->wifi_data, net);
 }
 
 void driver_wifi_tether_start_stop(bool start, char* configfile)
@@ -19041,13 +19059,6 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
               return p_rarch->wifi_driver->start(p_rarch->wifi_data);
         }
         return false;
-      case RARCH_WIFI_CTL_SET_CB:
-        {
-           /*struct retro_wifi_callback *cb =
-              (struct retro_wifi_callback*)data;
-           wifi_cb          = *cb;*/
-        }
-        break;
       case RARCH_WIFI_CTL_INIT:
         /* Resource leaks will follow if wifi is initialized twice. */
         if (p_rarch->wifi_data)
@@ -19059,17 +19070,18 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
         {
            p_rarch->wifi_data = p_rarch->wifi_driver->init();
 
-           if (!p_rarch->wifi_data)
+           if (p_rarch->wifi_data)
+           {
+              p_rarch->wifi_driver->enable(p_rarch->wifi_data, 
+                 settings->bools.wifi_enabled);
+           }
+           else
            {
               RARCH_ERR("Failed to initialize wifi driver. Will continue without wifi.\n");
               wifi_driver_ctl(RARCH_WIFI_CTL_UNSET_ACTIVE, NULL);
            }
         }
 
-#if 0
-        if (wifi_cb.initialized)
-           wifi_cb.initialized();
-#endif
         break;
       default:
          break;

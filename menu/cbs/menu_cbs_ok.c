@@ -16,6 +16,7 @@
  */
 
 #include <compat/strl.h>
+#include <array/rbuf.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
@@ -383,6 +384,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST;
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST;
+      case ACTION_OK_DL_WIFI_NETWORKS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST;
       case ACTION_OK_DL_NETPLAY:
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY;
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
@@ -1283,6 +1286,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
       case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
+      case ACTION_OK_DL_WIFI_NETWORKS_LIST:
       case ACTION_OK_DL_NETPLAY:
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
@@ -2661,8 +2665,15 @@ static int action_ok_bluetooth(const char *path, const char *label,
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
    unsigned idx = menu_input_dialog_get_kb_idx();
+   wifi_network_scan_t *scan = driver_wifi_get_ssids();
+   wifi_network_info_t *netinfo = &scan->net_list[idx];
 
-   driver_wifi_connect_ssid(idx, passphrase);
+   if (idx < RBUF_LEN(scan->net_list) && passphrase)
+   {
+      /* Need to fill in the passphrase that we got from the user! */
+      strlcpy(netinfo->passphrase, passphrase, sizeof(netinfo->passphrase));
+      task_push_wifi_connect(NULL, netinfo);
+   }
 
    menu_input_dialog_end();
 }
@@ -2817,6 +2828,34 @@ enum
    ACTION_OK_SHADER_PRESET_REMOVE_PARENT,
    ACTION_OK_SHADER_PRESET_REMOVE_GAME
 };
+
+static int action_ok_wifi(const char *path, const char *label_setting,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   wifi_network_scan_t* scan = driver_wifi_get_ssids();
+   if (idx >= RBUF_LEN(scan->net_list))
+      return -1;
+
+   if (scan->net_list[idx].saved_password)
+   {
+      /* No need to ask for a password, should be stored */
+      task_push_wifi_connect(NULL, &scan->net_list[idx]);
+      return 0;
+   }
+   else
+   {
+      /* Show password input dialog */
+      menu_input_ctx_line_t line;
+      line.label         = "Passphrase";
+      line.label_setting = label_setting;
+      line.type          = type;
+      line.idx           = (unsigned)idx;
+      line.cb            = menu_input_wifi_cb;
+      if (!menu_input_dialog_start(&line))
+         return -1;
+      return 0;
+   }
+}
 
 static int generic_action_ok_shader_preset_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -3051,10 +3090,6 @@ DEFAULT_ACTION_DIALOG_START(action_ok_enable_settings,
    msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
    (unsigned)entry_idx,
    menu_input_st_string_cb_enable_settings)
-DEFAULT_ACTION_DIALOG_START(action_ok_wifi,
-   "Passphrase",
-   (unsigned)idx,
-   menu_input_wifi_cb)
 #ifdef HAVE_CHEATS
 DEFAULT_ACTION_DIALOG_START(action_ok_cheat_file_save_as,
    msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME),
@@ -5228,6 +5263,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_bluetooth_list, ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_wifi_networks_list, ACTION_OK_DL_WIFI_NETWORKS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_cursor_manager_list, ACTION_OK_DL_CURSOR_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push_detect_core, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE)
@@ -5377,6 +5413,22 @@ static int action_ok_shader_pass(const char *path,
          entry_idx, ACTION_OK_DL_SHADER_PASS);
 }
 #endif
+
+static void wifi_menu_refresh_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   bool refresh = false;
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+}
+
+static int action_ok_wifi_disconnect(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   task_push_wifi_disconnect(wifi_menu_refresh_callback);
+   return true;
+}
 
 static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -7445,6 +7497,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},
          {MENU_ENUM_LABEL_WIFI_SETTINGS,                       action_ok_wifi_list},
+         {MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,                   action_ok_wifi_networks_list},
+         {MENU_ENUM_LABEL_WIFI_DISCONNECT,                     action_ok_wifi_disconnect},
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
