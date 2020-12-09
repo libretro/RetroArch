@@ -278,6 +278,7 @@ endif
 
 OBJ += \
        gfx/drivers_font_renderer/bitmapfont.o \
+       gfx/drivers_font_renderer/bitmapfont_10x10.o \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
@@ -2394,4 +2395,5 @@ ifeq ($(HAVE_ODROIDGO2), 1)
          $(DEPS_DIR)/libgo2/src/queue.o \
          gfx/drivers/oga_gfx.o
 endif
+
 ##################################

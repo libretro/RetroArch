@@ -230,7 +230,7 @@ enum menu_settings_type
 typedef struct menu_ctx_driver
 {
    /* Set a framebuffer texture. This is used for instance by RGUI. */
-   void  (*set_texture)(void);
+   void  (*set_texture)(void *data);
    /* Render a messagebox to the screen. */
    void  (*render_messagebox)(void *data, const char *msg);
    int   (*iterate)(void *data, void *userdata, enum menu_action action);
