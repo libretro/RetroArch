@@ -43,8 +43,6 @@ static void deinit_netplay(struct rarch_state *p_rarch);
 
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch);
 
-static bool command_set_shader(const char *arg);
-
 static bool midi_driver_read(uint8_t *byte);
 static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
 static bool midi_driver_output_enabled(void);

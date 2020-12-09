@@ -9145,6 +9145,7 @@ static void dir_free_shader(struct rarch_state *p_rarch)
    dir_list->remember_last_preset_dir = shader_remember_last_dir;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool dir_init_shader_internal(
       struct rarch_state *p_rarch,
       const char *path_dir_shader,
@@ -9183,7 +9184,6 @@ static bool dir_init_shader_internal(
    return true;
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void dir_init_shader(struct rarch_state *p_rarch)
 {
    settings_t *settings                           = p_rarch->configuration_settings;
@@ -9236,8 +9236,6 @@ static void dir_init_shader(struct rarch_state *p_rarch)
       free(rarch_config_directory);
    }
 }
-
-/* check functions */
 
 /**
  * dir_check_shader:
