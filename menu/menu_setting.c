@@ -3865,6 +3865,7 @@ static void setting_get_string_representation_uint_rgui_internal_upscale_level(
    }
 }
 
+#if !defined(DINGUX)
 static void setting_get_string_representation_uint_rgui_aspect_ratio(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -3954,6 +3955,7 @@ static void setting_get_string_representation_uint_rgui_aspect_ratio_lock(
          break;
    }
 }
+#endif
 
 static void setting_get_string_representation_uint_rgui_particle_effect(
       rarch_setting_t *setting,
