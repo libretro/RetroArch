@@ -2829,34 +2829,6 @@ enum
    ACTION_OK_SHADER_PRESET_REMOVE_GAME
 };
 
-static int action_ok_wifi(const char *path, const char *label_setting,
-      unsigned type, size_t idx, size_t entry_idx)
-{
-   wifi_network_scan_t* scan = driver_wifi_get_ssids();
-   if (idx >= RBUF_LEN(scan->net_list))
-      return -1;
-
-   if (scan->net_list[idx].saved_password)
-   {
-      /* No need to ask for a password, should be stored */
-      task_push_wifi_connect(NULL, &scan->net_list[idx]);
-      return 0;
-   }
-   else
-   {
-      /* Show password input dialog */
-      menu_input_ctx_line_t line;
-      line.label         = "Passphrase";
-      line.label_setting = label_setting;
-      line.type          = type;
-      line.idx           = (unsigned)idx;
-      line.cb            = menu_input_wifi_cb;
-      if (!menu_input_dialog_start(&line))
-         return -1;
-      return 0;
-   }
-}
-
 static int generic_action_ok_shader_preset_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
@@ -3009,6 +2981,35 @@ static int action_ok_shader_preset_remove_game(const char *path,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_REMOVE_GAME);
 }
 #endif
+
+static int action_ok_wifi(const char *path, const char *label_setting,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   wifi_network_scan_t* scan = driver_wifi_get_ssids();
+   if (idx >= RBUF_LEN(scan->net_list))
+      return -1;
+
+   if (scan->net_list[idx].saved_password)
+   {
+      /* No need to ask for a password, should be stored */
+      task_push_wifi_connect(NULL, &scan->net_list[idx]);
+      return 0;
+   }
+   else
+   {
+      /* Show password input dialog */
+      menu_input_ctx_line_t line;
+      line.label         = "Passphrase";
+      line.label_setting = label_setting;
+      line.type          = type;
+      line.idx           = (unsigned)idx;
+      line.cb            = menu_input_wifi_cb;
+      if (!menu_input_dialog_start(&line))
+         return -1;
+      return 0;
+   }
+}
+
 
 static int action_ok_video_filter_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
