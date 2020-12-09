@@ -269,11 +269,15 @@
 
 /* These forward declarations need to be declared before
  * the global state is declared */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool command_set_shader(const char *arg);
+#endif
+#ifdef HAVE_COMMAND
 static bool command_version(const char* arg);
 static bool command_get_status(const char* arg);
 static bool command_get_config_param(const char* arg);
 static bool command_show_osd_msg(const char* arg);
+#endif
 #ifdef HAVE_CHEEVOS
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
@@ -9179,9 +9183,9 @@ static bool dir_init_shader_internal(
    return true;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void dir_init_shader(struct rarch_state *p_rarch)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    settings_t *settings                           = p_rarch->configuration_settings;
    bool show_hidden_files                         = settings->bools.show_hidden_files;
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
@@ -9231,11 +9235,6 @@ static void dir_init_shader(struct rarch_state *p_rarch)
 
       free(rarch_config_directory);
    }
-#else
-   /* If shaders are unsupported, just ensure that
-    * shader list is empty */
-   dir_free_shader(p_rarch);
-#endif
 }
 
 /* check functions */
@@ -9254,7 +9253,6 @@ static void dir_init_shader(struct rarch_state *p_rarch)
 static void dir_check_shader(struct rarch_state *p_rarch,
       bool pressed_next, bool pressed_prev)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    struct rarch_dir_shader_list *dir_list         = (struct rarch_dir_shader_list*)
          &p_rarch->dir_shader_list;
    settings_t *settings                           = p_rarch->configuration_settings;
@@ -9308,8 +9306,8 @@ static void dir_check_shader(struct rarch_state *p_rarch,
 
    command_set_shader(dir_list->shader_list->elems[dir_list->selection].data);
    dir_list->shader_loaded = true;
-#endif
 }
+#endif
 
 /* get size functions */
 
@@ -9919,6 +9917,7 @@ static void command_reply(
    }
 }
 #endif
+
 static bool command_version(const char* arg)
 {
    char reply[256]             = {0};
@@ -9970,7 +9969,6 @@ static bool command_get_status(const char* arg)
 
    return true;
 }
-
 
 static bool command_show_osd_msg(const char* arg)
 {
@@ -10501,9 +10499,9 @@ bool retroarch_apply_shader(
 #endif
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool command_set_shader(const char *arg)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    struct rarch_state  *p_rarch = &rarch_st;
    settings_t  *settings        = p_rarch->configuration_settings;
@@ -10526,10 +10524,9 @@ static bool command_set_shader(const char *arg)
 
    if (retroarch_apply_shader(type, arg, true))
       return true;
-#endif
    return false;
 }
-
+#endif
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
@@ -13058,10 +13055,14 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_SHADER_NEXT:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          dir_check_shader(p_rarch, true, false);
+#endif
          break;
       case CMD_EVENT_SHADER_PREV:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          dir_check_shader(p_rarch, false, true);
+#endif
          break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
 #ifdef HAVE_BSV_MOVIE
