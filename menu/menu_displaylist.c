@@ -5479,7 +5479,7 @@ unsigned menu_displaylist_build_list(
                   {
                      const char *ssid = scan->net_list[i].ssid;
                      if (menu_entries_append_enum(list,
-                              strlen(ssid) ? ssid : msg_hash_to_str(MSG_WIFI_EMPTY_SSID),
+                              string_is_empty(ssid) ? msg_hash_to_str(MSG_WIFI_EMPTY_SSID) : ssid,
                               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
                               MENU_ENUM_LABEL_CONNECT_WIFI,
                               MENU_WIFI, 0, 0))

@@ -44,6 +44,9 @@
 
 static void task_wifi_scan_handler(retro_task_t *task)
 {
+   if (!task)
+      return;
+
    driver_wifi_scan();
 
    task_set_progress(task, 100);
@@ -54,6 +57,9 @@ static void task_wifi_scan_handler(retro_task_t *task)
 
 static void task_wifi_enable_handler(retro_task_t *task)
 {
+   if (!task)
+      return;
+
    driver_wifi_enable(true);
 
    task_set_progress(task, 100);
@@ -62,6 +68,9 @@ static void task_wifi_enable_handler(retro_task_t *task)
 
 static void task_wifi_disable_handler(retro_task_t *task)
 {
+   if (!task)
+      return;
+
    driver_wifi_enable(false);
 
    task_set_progress(task, 100);
@@ -70,6 +79,9 @@ static void task_wifi_disable_handler(retro_task_t *task)
 
 static void task_wifi_disconnect_handler(retro_task_t *task)
 {
+   if (!task)
+      return;
+
    wifi_network_info_t netinfo;
 
    if (driver_wifi_connection_info(&netinfo))
@@ -81,7 +93,11 @@ static void task_wifi_disconnect_handler(retro_task_t *task)
 
 static void task_wifi_connect_handler(retro_task_t *task)
 {
+   if (!task)
+      return;
+
    driver_wifi_connect_ssid(task->user_data);
+   free(task->user_data);
 
    task_set_progress(task, 100);
    task_set_finished(task, true);
