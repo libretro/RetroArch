@@ -11481,6 +11481,14 @@ MSG_HASH(
    "Warning: Missing assets, use the Online Updater if available"
    )
 MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Warning: Missing fonts for selected language, use the Online Updater if available"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Warning: Unsupported language - using English"
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Dumping disc..."
    )

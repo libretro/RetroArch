@@ -23003,9 +23003,33 @@ static void menu_input_get_touchscreen_hw_state(
    last_cancel_pressed = hw_state->cancel_pressed;
 }
 
+static INLINE bool input_event_osk_show_symbol_pages(
+      struct rarch_state *p_rarch)
+{
+#if defined(HAVE_LANGEXTRA)
+#if defined(HAVE_RGUI)
+   menu_handle_t *menu   = p_rarch->menu_driver_data;
+   bool menu_has_fb      = (menu &&
+         menu->driver_ctx &&
+         menu->driver_ctx->set_texture);
+   unsigned language     = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+   return !menu_has_fb ||
+         ((language == RETRO_LANGUAGE_JAPANESE) ||
+          (language == RETRO_LANGUAGE_KOREAN) ||
+          (language == RETRO_LANGUAGE_CHINESE_SIMPLIFIED) ||
+          (language == RETRO_LANGUAGE_CHINESE_TRADITIONAL));
+#else  /* HAVE_RGUI */
+   return true;
+#endif /* HAVE_RGUI */
+#else  /* HAVE_LANGEXTRA */
+   return false;
+#endif /* HAVE_LANGEXTRA */
+}
+
 static void input_event_osk_append(
       struct rarch_state *p_rarch,
-      enum osk_type *osk_idx, int ptr, bool is_rgui,
+      enum osk_type *osk_idx, int ptr,
+      bool show_symbol_pages,
       const char *word)
 {
 #ifdef HAVE_LANGEXTRA
@@ -23031,7 +23055,7 @@ static void input_event_osk_append(
       *osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(word, "Next"))
 #endif
-      if (*osk_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
+      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
          *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
@@ -23134,15 +23158,6 @@ static unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
-#ifdef HAVE_RGUI
-   menu_handle_t             *menu                 = p_rarch->menu_driver_data;
-   bool menu_has_fb                                =
-         (menu &&
-          menu->driver_ctx &&
-          menu->driver_ctx->set_texture);
-#else
-   bool menu_has_fb                                = false;
-#endif
 
    ok_old                                          = ok_current;
 
@@ -23200,6 +23215,8 @@ static unsigned menu_event(
 
    if (display_kb)
    {
+      bool show_osk_symbols = input_event_osk_show_symbol_pages(p_rarch);
+
       input_event_osk_iterate(p_rarch, p_rarch->osk_idx);
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
@@ -23232,16 +23249,16 @@ static unsigned menu_event(
             p_rarch->osk_idx = ((enum osk_type)
                   (p_rarch->osk_idx - 1));
          else
-            p_rarch->osk_idx = ((enum osk_type)(menu_has_fb
-                     ? OSK_SYMBOLS_PAGE1
-                     : OSK_TYPE_LAST - 1));
+            p_rarch->osk_idx = ((enum osk_type)(show_osk_symbols
+                     ? OSK_TYPE_LAST - 1
+                     : OSK_SYMBOLS_PAGE1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
-         if (p_rarch->osk_idx < (menu_has_fb
-                  ? OSK_SYMBOLS_PAGE1
-                  : OSK_TYPE_LAST - 1))
+         if (p_rarch->osk_idx < (show_osk_symbols
+                  ? OSK_TYPE_LAST - 1
+                  : OSK_SYMBOLS_PAGE1))
             p_rarch->osk_idx = ((enum osk_type)(
                      p_rarch->osk_idx + 1));
          else
@@ -23255,7 +23272,7 @@ static unsigned menu_event(
                   p_rarch,
                   &p_rarch->osk_idx,
                   p_rarch->osk_ptr,
-                  menu_has_fb,
+                  show_osk_symbols,
                   p_rarch->osk_grid[p_rarch->osk_ptr]);
       }
 
@@ -23911,17 +23928,14 @@ static int menu_input_pointer_post_iterate(
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
                {
-                  bool menu_has_fb              =
-                     (menu &&
-                      menu->driver_ctx &&
-                      menu->driver_ctx->set_texture);
+                  bool show_osk_symbols = input_event_osk_show_symbol_pages(p_rarch);
 
                   p_rarch->osk_ptr = point.retcode;
                   input_event_osk_append(
                         p_rarch,
                         &p_rarch->osk_idx,
                         point.retcode,
-                        menu_has_fb,
+                        show_osk_symbols,
                         p_rarch->osk_grid[p_rarch->osk_ptr]);
                }
             }
@@ -36841,7 +36855,7 @@ static enum runloop_state runloop_check_state(
                   video_driver_cached_frame();
 
             if (menu->driver_ctx->set_texture)
-               menu->driver_ctx->set_texture();
+               menu->driver_ctx->set_texture(menu->userdata);
 
             menu->state               = 0;
          }

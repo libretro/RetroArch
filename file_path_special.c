@@ -320,6 +320,23 @@ void fill_pathname_application_special(char *s,
 #endif
          break;
 
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_RGUI_FONT:
+#ifdef HAVE_RGUI
+         {
+            char rgui_dir[PATH_MAX_LENGTH];
+            settings_t *settings     = config_get_ptr();
+            const char *dir_assets   = settings->paths.directory_assets;
+
+            rgui_dir[0] = '\0';
+
+            fill_pathname_join(rgui_dir, dir_assets, "rgui",
+                  sizeof(rgui_dir));
+            fill_pathname_join(s,
+                  rgui_dir, "font", len);
+         }
+#endif
+         break;
+
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB:
 #ifdef HAVE_XMB
          {
