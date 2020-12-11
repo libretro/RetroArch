@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include <errno.h>
 #include <time.h>
 
@@ -216,9 +217,9 @@ int main(int argc, char *argv[])
       printf("%s: %s\n",
             in_file_compressed ? "File is in RZIP format" : "File is NOT in RZIP format",
             in_file_path);
-      printf("   Size on disk:      %li bytes\n", in_file_size);
+      printf("   Size on disk:      %" PRIi64 " bytes\n", in_file_size);
       if (in_file_compressed)
-         printf("   Uncompressed size: %li bytes\n", in_file_raw_size);
+         printf("   Uncompressed size: %" PRIi64 " bytes\n", in_file_raw_size);
       goto end;
    }
 
@@ -311,7 +312,7 @@ int main(int argc, char *argv[])
       }
 
       /* Update progress */
-      printf("\rProgress: %li %%", total_data_read * 100 / in_file_raw_size);
+      printf("\rProgress: %" PRIi64 " %%", total_data_read * 100 / in_file_raw_size);
       fflush(stdout);
    }
    printf("\rProgress: 100 %%\n");
@@ -324,7 +325,7 @@ int main(int argc, char *argv[])
          (in_file_size - out_file_size) :
                (out_file_size - in_file_size);
 
-   printf("   %li -> %li bytes [%li %% %s]\n",
+   printf("   %" PRIi64 " -> %" PRIi64 " bytes [%" PRIi64 " %% %s]\n",
          in_file_size, out_file_size,
                file_size_diff * 100 / in_file_size,
                (out_file_size >= in_file_size) ?

@@ -1,8 +1,25 @@
 TARGET := rzip
 
 LIBRETRO_COMM_DIR := ../../..
+LIBRETRO_DEPS_DIR := ../../../../deps
 
-LDFLAGS += -lz
+# Attempt to detect target platform
+ifeq '$(findstring ;,$(PATH))' ';'
+	UNAME := Windows
+else
+	UNAME := $(shell uname 2>/dev/null || echo Unknown)
+	UNAME := $(patsubst CYGWIN%,Cygwin,$(UNAME))
+	UNAME := $(patsubst MSYS%,MSYS,$(UNAME))
+	UNAME := $(patsubst MINGW%,MSYS,$(UNAME))
+endif
+
+# Add '.exe' extension on Windows platforms
+ifeq ($(UNAME), Windows)
+	TARGET := rzip.exe
+endif
+ifeq ($(UNAME), MSYS)
+	TARGET := rzip.exe
+endif
 
 SOURCES := \
 	rzip.c \
@@ -27,14 +44,48 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
-OBJS := $(SOURCES:.c=.o)
+ifneq ($(wildcard $(LIBRETRO_DEPS_DIR)/*),)
+	# If we are building from inside the RetroArch
+	# directory (i.e. if an 'external' deps directory
+	# is avaiable), bake in zlib support
+	SOURCES += \
+		$(LIBRETRO_DEPS_DIR)/libz/adler32.c \
+		$(LIBRETRO_DEPS_DIR)/libz/libz-crc32.c \
+		$(LIBRETRO_DEPS_DIR)/libz/deflate.c \
+		$(LIBRETRO_DEPS_DIR)/libz/gzclose.c \
+		$(LIBRETRO_DEPS_DIR)/libz/gzlib.c \
+		$(LIBRETRO_DEPS_DIR)/libz/gzread.c \
+		$(LIBRETRO_DEPS_DIR)/libz/gzwrite.c \
+		$(LIBRETRO_DEPS_DIR)/libz/inffast.c \
+		$(LIBRETRO_DEPS_DIR)/libz/inflate.c \
+		$(LIBRETRO_DEPS_DIR)/libz/inftrees.c \
+		$(LIBRETRO_DEPS_DIR)/libz/trees.c \
+		$(LIBRETRO_DEPS_DIR)/libz/zutil.c
+	INCLUDE_DIRS := -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
+else
+	# If this is a stand-alone libretro-common directory,
+	# rely on system zlib library (note: only likely to
+	# work on Unix-based platforms...)
+	LDFLAGS += -lz
+endif
 
-CFLAGS += -DHAVE_ZLIB -Wall -pedantic -std=gnu99 -I$(LIBRETRO_COMM_DIR)/include
+OBJS := $(SOURCES:.c=.o)
+INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -DHAVE_ZLIB -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
+
+# Silence "ISO C does not support the 'I64' ms_printf length modifier"
+# warnings when using MinGW
+ifeq ($(UNAME), Windows)
+	CFLAGS += -Wno-format
+endif
+ifeq ($(UNAME), MSYS)
+	CFLAGS += -Wno-format
+endif
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -g -DDEBUG -D_DEBUG
+	CFLAGS += -O0 -g -DDEBUG -D_DEBUG
 else
-   CFLAGS += -O2 -DNDEBUG
+	CFLAGS += -O2 -DNDEBUG
 endif
 
 all: $(TARGET)
