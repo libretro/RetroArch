@@ -57,6 +57,7 @@ typedef struct sdl_dingux_video
 {
    retro_time_t last_frame_time;
    SDL_Surface *screen;
+   bitmapfont_lut_t *osd_font;
    unsigned frame_width;
    unsigned frame_height;
    unsigned frame_padding;
@@ -64,7 +65,6 @@ typedef struct sdl_dingux_video
    uint32_t font_colour32;
    uint16_t font_colour16;
    uint16_t menu_texture[SDL_DINGUX_MENU_WIDTH * SDL_DINGUX_MENU_HEIGHT];
-   bool font_lut[SDL_DINGUX_NUM_FONT_GLYPHS][FONT_WIDTH * FONT_HEIGHT];
    bool rgb32;
    bool vsync;
    bool keep_aspect;
@@ -100,32 +100,6 @@ static void sdl_dingux_init_font_color(sdl_dingux_video_t *vid)
    vid->font_colour16 = (red << 11) | (green << 6) | blue;
 }
 
-static void sdl_dingux_init_font_lut(sdl_dingux_video_t *vid)
-{
-   size_t symbol_index;
-   size_t i, j;
-
-   /* Loop over all possible characters */
-   for (symbol_index = 0;
-        symbol_index < SDL_DINGUX_NUM_FONT_GLYPHS;
-        symbol_index++)
-   {
-      for (j = 0; j < FONT_HEIGHT; j++)
-      {
-         for (i = 0; i < FONT_WIDTH; i++)
-         {
-            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-            unsigned offset  = (i + j * FONT_WIDTH) >> 3;
-
-            /* LUT value is 'true' if specified glyph
-             * position contains a pixel */
-            vid->font_lut[symbol_index][i + (j * FONT_WIDTH)] =
-                  (bitmap_bin[FONT_OFFSET(symbol_index) + offset] & rem) > 0;
-         }
-      }
-   }
-}
-
 static void sdl_dingux_blit_text16(
       sdl_dingux_video_t *vid,
       unsigned x, unsigned y,
@@ -135,6 +109,7 @@ static void sdl_dingux_blit_text16(
     * (padding region is never cleared, so
     * any text pixels would remain as garbage) */
    uint16_t *screen_buf         = (uint16_t*)vid->screen->pixels;
+   bool **font_lut              = vid->osd_font->lut;
    /* 16 bit - divide pitch by 2 */
    uint16_t screen_stride       = (uint16_t)(vid->screen->pitch >> 1);
    uint16_t screen_width        = vid->screen->w;
@@ -163,6 +138,7 @@ static void sdl_dingux_blit_text16(
       else
       {
          uint16_t i, j;
+         bool *symbol_lut;
          uint32_t symbol = utf8_walk(&str);
 
          /* Stupid hack: 'oe' ligatures are not really
@@ -177,13 +153,15 @@ static void sdl_dingux_blit_text16(
          if (symbol >= SDL_DINGUX_NUM_FONT_GLYPHS)
             continue;
 
+         symbol_lut = font_lut[symbol];
+
          for (j = 0; j < FONT_HEIGHT; j++)
          {
             uint32_t buff_offset = ((y + j) * screen_stride) + x_pos;
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
-               if (vid->font_lut[symbol][i + (j * FONT_WIDTH)])
+               if (*(symbol_lut + i + (j * FONT_WIDTH)))
                {
                   uint16_t *screen_buf_ptr = screen_buf + buff_offset + i;
 
@@ -211,6 +189,7 @@ static void sdl_dingux_blit_text32(
     * (padding region is never cleared, so
     * any text pixels would remain as garbage) */
    uint32_t *screen_buf         = (uint32_t*)vid->screen->pixels;
+   bool **font_lut              = vid->osd_font->lut;
    /* 32 bit - divide pitch by 4 */
    uint32_t screen_stride       = (uint32_t)(vid->screen->pitch >> 2);
    uint32_t screen_width        = vid->screen->w;
@@ -239,6 +218,7 @@ static void sdl_dingux_blit_text32(
       else
       {
          uint32_t i, j;
+         bool *symbol_lut;
          uint32_t symbol = utf8_walk(&str);
 
          /* Stupid hack: 'oe' ligatures are not really
@@ -253,13 +233,15 @@ static void sdl_dingux_blit_text32(
          if (symbol >= SDL_DINGUX_NUM_FONT_GLYPHS)
             continue;
 
+         symbol_lut = font_lut[symbol];
+
          for (j = 0; j < FONT_HEIGHT; j++)
          {
             uint32_t buff_offset = ((y + j) * screen_stride) + x_pos;
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
-               if (vid->font_lut[symbol][i + (j * FONT_WIDTH)])
+               if (*(symbol_lut + i + (j * FONT_WIDTH)))
                {
                   uint32_t *screen_buf_ptr = screen_buf + buff_offset + i;
 
@@ -338,6 +320,9 @@ static void sdl_dingux_gfx_free(void *data)
 
    if (vid->filter_type != DINGUX_IPU_FILTER_BICUBIC)
       dingux_ipu_set_filter_type(DINGUX_IPU_FILTER_BICUBIC);
+
+   if (vid->osd_font)
+      bitmapfont_free_lut(vid->osd_font);
 
    free(vid);
 }
@@ -472,8 +457,18 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    sdl_dingux_input_driver_init(input_driver_name,
          joypad_driver_name, input, input_data);
 
+   /* Initialise OSD font */
    sdl_dingux_init_font_color(vid);
-   sdl_dingux_init_font_lut(vid);
+
+   vid->osd_font = bitmapfont_get_lut();
+
+   if (!vid->osd_font ||
+       vid->osd_font->glyph_max <
+            (SDL_DINGUX_NUM_FONT_GLYPHS - 1))
+   {
+      RARCH_ERR("[SDL1]: Failed to init OSD font\n");
+      goto error;
+   }
 
    return vid;
 
