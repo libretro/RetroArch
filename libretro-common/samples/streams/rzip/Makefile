@@ -3,6 +3,24 @@ TARGET := rzip
 LIBRETRO_COMM_DIR := ../../..
 LIBRETRO_DEPS_DIR := ../../../../deps
 
+# Attempt to detect target platform
+ifeq '$(findstring ;,$(PATH))' ';'
+	UNAME := Windows
+else
+	UNAME := $(shell uname 2>/dev/null || echo Unknown)
+	UNAME := $(patsubst CYGWIN%,Cygwin,$(UNAME))
+	UNAME := $(patsubst MSYS%,MSYS,$(UNAME))
+	UNAME := $(patsubst MINGW%,MSYS,$(UNAME))
+endif
+
+# Add '.exe' extension on Windows platforms
+ifeq ($(UNAME), Windows)
+	TARGET := rzip.exe
+endif
+ifeq ($(UNAME), MSYS)
+	TARGET := rzip.exe
+endif
+
 SOURCES := \
 	rzip.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
@@ -54,6 +72,15 @@ endif
 OBJS := $(SOURCES:.c=.o)
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
 CFLAGS += -DHAVE_ZLIB -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
+
+# Silence "ISO C does not support the 'I64' ms_printf length modifier"
+# warnings when using MinGW
+ifeq ($(UNAME), Windows)
+	CFLAGS += -Wno-format
+endif
+ifeq ($(UNAME), MSYS)
+	CFLAGS += -Wno-format
+endif
 
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g -DDEBUG -D_DEBUG
