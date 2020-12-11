@@ -857,11 +857,16 @@ static void gl2_create_fbo_texture(gl_t *gl,
       else
 #endif
       {
-#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#if defined(HAVE_OPENGLES2)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_RGBA,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#elif defined(HAVE_PSGL)
+         glTexImage2D(GL_TEXTURE_2D,
+               0, GL_ARGB_SCE,
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+               GL_ARGB_SCE, GL_UNSIGNED_BYTE, NULL);
 #else
          /* Avoid potential performance
           * reductions on particular platforms. */
