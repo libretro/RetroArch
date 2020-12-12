@@ -100,6 +100,8 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_ASTURIAN:
          ret = msg_hash_get_help_ast_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_FINNISH:
+         ret = msg_hash_get_help_fi_enum(msg, s, len);
       default:
          break;
    }
@@ -163,6 +165,8 @@ const char *get_user_language_iso639_1(bool limit)
          return "he";
       case RETRO_LANGUAGE_ASTURIAN:
          return "ast";
+      case RETRO_LANGUAGE_FINNISH:
+         return "fi";
    }
    return "en";
 }
@@ -239,6 +243,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_ASTURIAN:
          ret = msg_hash_to_str_ast(msg);
+         break;
+      case RETRO_LANGUAGE_FINNISH:
+         ret = msg_hash_to_str_fi(msg);
          break;
       default:
          break;

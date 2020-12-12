@@ -1233,6 +1233,7 @@ RETROARCH
 #include "../intl/msg_hash_fa.c"
 #include "../intl/msg_hash_he.c"
 #include "../intl/msg_hash_ast.c"
+#include "../intl/msg_hash_fi.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
