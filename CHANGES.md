@@ -10,6 +10,7 @@
 Having remaps for many different cores makes finding the active core files cumbersome, especially because remaps are not compatible between different cores (but maybe for cores emulating the same hardware)
 - INPUT MAPPING/REMAPPING: Major bugfix - Remap file having a different device type requires manual intervention after loading for the core to register the type properly
 - LIBRETRO: Add API extension for cores to query the number of active inputs provided by the frontend
+- LOCALIZATION: Add Finnish language
 - MENU/RGUI: Add 3:2 and 3:2 (centered) aspects
 - OVERLAYS: Hide Overlay When Gamepad is Connected. Overlays will be hidden automatically when a gamepad is connected in port 1, and shown again when the gamepad is disconnected.
 - PLAYLISTS/PORTABLE: Fixed first load initialization
