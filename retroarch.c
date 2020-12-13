@@ -343,32 +343,6 @@ gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
    return &p_rarch->gfx_thumb_state;
 }
 
-static void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time)
-{
-   if (!timer)
-      return;
-   timer->current    = current_time;
-   timer->timeout_us = (timer->timeout_end - timer->current);
-}
-
-static void rarch_timer_end(rarch_timer_t *timer)
-{
-   if (!timer)
-      return;
-   timer->timer_end   = true;
-   timer->timer_begin = false;
-   timer->timeout_end = 0;
-}
-
-static void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
-{
-   if (!timer)
-      return;
-   timer->timeout_us  = usec;
-   timer->current     = cpu_features_get_time_usec();
-   timer->timeout_end = timer->current + timer->timeout_us;
-}
-
 static int16_t input_state_wrap(
       struct rarch_state *p_rarch,
       void *data,
@@ -562,13 +536,14 @@ static int menu_dialog_iterate(
 
             if (!timer.timer_begin)
             {
-               rarch_timer_begin_new_time_us(&timer,
+               RARCH_TIMER_BEGIN_NEW_TIME_USEC(timer,
+                     cpu_features_get_time_usec(),
                      3 * 1000000);
                timer.timer_begin = true;
                timer.timer_end   = false;
             }
 
-            rarch_timer_tick(&timer, current_time);
+            RARCH_TIMER_TICK(timer, current_time);
 
             msg_hash_get_help_enum(
                   MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
@@ -576,7 +551,7 @@ static int menu_dialog_iterate(
 
             if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
             {
-               rarch_timer_end(&timer);
+               RARCH_TIMER_END(timer);
                p_dialog->current_type = MENU_DIALOG_NONE;
                return 1;
             }
@@ -825,6 +800,7 @@ static void menu_dialog_reset(menu_dialog_t *p_dialog)
 static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
 {
+   uint64_t current_usec;
    struct rarch_state *p_rarch    = &rarch_st;
    settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
@@ -841,10 +817,16 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    binds->begin++;
    binds->output++;
    binds->buffer    =* (binds->output);
-   rarch_timer_begin_new_time_us(
-         &binds->timer_hold, input_bind_hold_us);
-   rarch_timer_begin_new_time_us(
-         &binds->timer_timeout, input_bind_timeout_us);
+
+   current_usec     = cpu_features_get_time_usec();
+
+   RARCH_TIMER_BEGIN_NEW_TIME_USEC(
+         binds->timer_hold,
+         current_usec,
+         input_bind_hold_us);
+   RARCH_TIMER_BEGIN_NEW_TIME_USEC(
+         binds->timer_timeout,
+         current_usec, input_bind_timeout_us);
 
    return (binds->begin <= binds->last);
 }
@@ -1289,6 +1271,7 @@ static bool menu_input_key_bind_poll_find_hold(
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data)
 {
+   uint64_t current_usec;
    unsigned index_offset;
    rarch_setting_t  *setting      = (rarch_setting_t*)data;
    struct rarch_state *p_rarch    = &rarch_st;
@@ -1316,10 +1299,16 @@ bool menu_input_key_bind_set_mode(
    menu_input_key_bind_poll_bind_state(p_rarch,
          binds, false);
 
-   rarch_timer_begin_new_time_us(
-         &binds->timer_hold, input_bind_hold_us);
-   rarch_timer_begin_new_time_us(
-         &binds->timer_timeout, input_bind_timeout_us);
+   current_usec             = cpu_features_get_time_usec();
+
+   RARCH_TIMER_BEGIN_NEW_TIME_USEC(
+         binds->timer_hold, 
+         current_usec,
+         input_bind_hold_us);
+   RARCH_TIMER_BEGIN_NEW_TIME_USEC(
+         binds->timer_timeout,
+         current_usec,
+         input_bind_timeout_us);
 
    p_rarch->keyboard_press_cb         = 
       menu_input_key_bind_custom_bind_keyboard_cb;
@@ -1374,19 +1363,23 @@ static bool menu_input_key_bind_iterate(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 
    /* Tick main timers */
-   rarch_timer_tick(&_binds->timer_timeout, current_time);
-   rarch_timer_tick(&_binds->timer_hold, current_time);
+   RARCH_TIMER_TICK(_binds->timer_timeout, current_time);
+   RARCH_TIMER_TICK(_binds->timer_hold, current_time);
 
    if (RARCH_TIMER_HAS_EXPIRED(_binds->timer_timeout))
    {
+      uint64_t current_usec = cpu_features_get_time_usec();
+
       p_rarch->keyboard_mapping_blocked = false;
 
       /*skip to next bind*/
       _binds->begin++;
       _binds->output++;
-      rarch_timer_begin_new_time_us(&_binds->timer_hold,
+      RARCH_TIMER_BEGIN_NEW_TIME_USEC(_binds->timer_hold,
+            current_usec,
             input_bind_hold_us);
-      rarch_timer_begin_new_time_us(&_binds->timer_timeout,
+      RARCH_TIMER_BEGIN_NEW_TIME_USEC(_binds->timer_timeout,
+            current_usec,
             input_bind_timeout_us);
       timed_out = true;
    }
@@ -1427,12 +1420,15 @@ static bool menu_input_key_bind_iterate(
 
       if (menu_input_key_bind_poll_find_hold(p_rarch, &new_binds, &new_binds.buffer))
       {
+         uint64_t current_usec = cpu_features_get_time_usec();
          /* Inhibit timeout*/
-         rarch_timer_begin_new_time_us(&new_binds.timer_timeout,
+         RARCH_TIMER_BEGIN_NEW_TIME_USEC(
+               new_binds.timer_timeout,
+               current_usec,
                input_bind_timeout_us);
 
          /* Run hold timer*/
-         rarch_timer_tick(&new_binds.timer_hold, current_time);
+         RARCH_TIMER_TICK(new_binds.timer_hold, current_time);
 
          snprintf(bind->s, bind->len,
                "[%s]\npress keyboard, mouse or joypad\nand hold ...",
@@ -1445,8 +1441,12 @@ static bool menu_input_key_bind_iterate(
       }
       else
       {
+         uint64_t current_usec = cpu_features_get_time_usec();
+
          /* Reset hold countdown*/
-         rarch_timer_begin_new_time_us(&new_binds.timer_hold, input_bind_hold_us);
+         RARCH_TIMER_BEGIN_NEW_TIME_USEC(new_binds.timer_hold,
+               current_usec,
+               input_bind_hold_us);
       }
 #else
       if ((new_binds.skip && !_binds->skip) ||
@@ -1457,6 +1457,7 @@ static bool menu_input_key_bind_iterate(
 
       if (complete)
       {
+         uint64_t current_usec        = cpu_features_get_time_usec();
          /* Update bind */
          *(new_binds.output)          = new_binds.buffer;
 
@@ -1481,8 +1482,10 @@ static bool menu_input_key_bind_iterate(
          /*next bind*/
          new_binds.output++;
          new_binds.buffer = *(new_binds.output);
-         rarch_timer_begin_new_time_us(&new_binds.timer_hold, input_bind_hold_us);
-         rarch_timer_begin_new_time_us(&new_binds.timer_timeout, input_bind_timeout_us);
+         RARCH_TIMER_BEGIN_NEW_TIME_USEC(new_binds.timer_hold,
+               current_usec, input_bind_hold_us);
+         RARCH_TIMER_BEGIN_NEW_TIME_USEC(new_binds.timer_timeout,
+               current_usec, input_bind_timeout_us);
       }
 
       *(_binds) = new_binds;
@@ -36123,26 +36126,28 @@ static bool input_driver_toggle_button_combo(
          if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
          {
             /* timer only runs while start is held down */
-            rarch_timer_end(&timer);
+            RARCH_TIMER_END(timer);
             return false;
          }
 
          /* User started holding down the start button, start the timer */
          if (!timer.timer_begin)
          {
-            rarch_timer_begin_new_time_us(&timer,
+            uint64_t current_usec = cpu_features_get_time_usec();
+            RARCH_TIMER_BEGIN_NEW_TIME_USEC(timer,
+                  current_usec,
                   HOLD_BTN_DELAY_SEC * 1000000);
-            timer.timer_begin = true;
-            timer.timer_end   = false;
+            timer.timer_begin     = true;
+            timer.timer_end       = false;
          }
 
-         rarch_timer_tick(&timer, current_time);
+         RARCH_TIMER_TICK(timer, current_time);
 
          if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
          {
             /* start has been held down long enough, 
              * stop timer and enter menu */
-            rarch_timer_end(&timer);
+            RARCH_TIMER_END(timer);
             return true;
          }
 
@@ -36155,26 +36160,28 @@ static bool input_driver_toggle_button_combo(
          if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
          {
             /* timer only runs while select is held down */
-            rarch_timer_end(&timer);
+            RARCH_TIMER_END(timer);
             return false;
          }
 
          /* user started holding down the select button, start the timer */
          if (!timer.timer_begin)
          {
-            rarch_timer_begin_new_time_us(&timer,
+            uint64_t current_usec = cpu_features_get_time_usec();
+            RARCH_TIMER_BEGIN_NEW_TIME_USEC(timer,
+                  current_usec,
                   HOLD_BTN_DELAY_SEC * 1000000);
-            timer.timer_begin = true;
-            timer.timer_end   = false;
+            timer.timer_begin     = true;
+            timer.timer_end       = false;
          }
 
-         rarch_timer_tick(&timer, current_time);
+         RARCH_TIMER_TICK(timer, current_time);
 
          if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
          {
             /* select has been held down long enough,
              * stop timer and enter menu */
-            rarch_timer_end(&timer);
+            RARCH_TIMER_END(timer);
             return true;
          }
 
@@ -37285,7 +37292,9 @@ static enum runloop_state runloop_check_state(
 
          if (!timer.timer_begin)
          {
-            rarch_timer_begin_new_time_us(&timer,
+            uint64_t current_usec = cpu_features_get_time_usec();
+            RARCH_TIMER_BEGIN_NEW_TIME_USEC(timer,
+                  current_usec,
                   SHADER_FILE_WATCH_DELAY_MSEC * 1000);
             timer.timer_begin = true;
             timer.timer_end   = false;
@@ -37302,11 +37311,11 @@ static enum runloop_state runloop_check_state(
        */
       if (need_to_apply)
       {
-         rarch_timer_tick(&timer, current_time);
+         RARCH_TIMER_TICK(timer, current_time);
 
          if (!timer.timer_end && RARCH_TIMER_HAS_EXPIRED(timer))
          {
-            rarch_timer_end(&timer);
+            RARCH_TIMER_END(timer);
             need_to_apply = false;
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -37318,18 +37327,21 @@ static enum runloop_state runloop_check_state(
    {
       if (!p_rarch->shader_delay_timer.timer_begin)
       {
-         rarch_timer_begin_new_time_us(&p_rarch->shader_delay_timer,
+         uint64_t current_usec = cpu_features_get_time_usec();
+         RARCH_TIMER_BEGIN_NEW_TIME_USEC(
+               p_rarch->shader_delay_timer,
+               current_usec,
                settings->uints.video_shader_delay * 1000);
          p_rarch->shader_delay_timer.timer_begin = true;
          p_rarch->shader_delay_timer.timer_end   = false;
       }
       else
       {
-         rarch_timer_tick(&p_rarch->shader_delay_timer, current_time);
+         RARCH_TIMER_TICK(p_rarch->shader_delay_timer, current_time);
 
          if (RARCH_TIMER_HAS_EXPIRED(p_rarch->shader_delay_timer))
          {
-            rarch_timer_end(&p_rarch->shader_delay_timer);
+            RARCH_TIMER_END(p_rarch->shader_delay_timer);
 
             {
                const char *preset = retroarch_get_shader_preset();

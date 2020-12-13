@@ -1,6 +1,20 @@
-#define RARCH_TIMER_GET_TIMEOUT(timer) ((int)(timer.timeout_us / 1000000))
+#define RARCH_TIMER_TICK(_timer, current_time) \
+   _timer.current    = current_time; \
+   _timer.timeout_us = (_timer.timeout_end - _timer.current) \
 
-#define RARCH_TIMER_HAS_EXPIRED(timer) ((timer.timeout_us <= 0) ? true : false)
+#define RARCH_TIMER_END(_timer) \
+   _timer.timer_end   = true; \
+   _timer.timer_begin = false; \
+   _timer.timeout_end = 0
+
+#define RARCH_TIMER_BEGIN_NEW_TIME_USEC(_timer, current_usec, timeout_usec) \
+   _timer.timeout_us  = timeout_usec; \
+   _timer.current     = current_usec; \
+   _timer.timeout_end = _timer.current + _timer.timeout_us
+
+#define RARCH_TIMER_GET_TIMEOUT(_timer) ((int)(_timer.timeout_us / 1000000))
+
+#define RARCH_TIMER_HAS_EXPIRED(_timer) ((_timer.timeout_us <= 0) ? true : false)
 
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO_MASK \
