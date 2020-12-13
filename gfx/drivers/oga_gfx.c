@@ -30,6 +30,7 @@
 #include "frontend/frontend_driver.h"
 
 #include "../font_driver.h"
+#include "libretro.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -589,20 +590,23 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
    {
       uint8_t* src = (uint8_t*)frame;
       uint8_t* dst = (uint8_t*)vid->frame_surface->map;
-      int dst_pitch = vid->frame_surface->pitch;
       unsigned int blend = video_info->runloop_is_paused ? 0x800105 : 0;
+      oga_rect_t r;
 
-      int yy = height;
-      while (yy > 0) {
-          memcpy(dst, src, pitch);
-          src += pitch;
-          dst += dst_pitch;
-          --yy;
+      if (src != dst)
+      {
+         int dst_pitch = vid->frame_surface->pitch;
+         int yy = height;
+
+         while (yy > 0) {
+             memcpy(dst, src, pitch);
+             src += pitch;
+             dst += dst_pitch;
+             --yy;
+         }
       }
 
-      oga_rect_t r;
       oga_calc_bounds(&r, width, height, aspect_ratio);
-
       oga_blit(vid->frame_surface, 0, 0, width, height,
             page_surface, r.y, r.x, r.h, r.w, vid->rotation, vid->scale_mode, blend);
    }
@@ -718,7 +722,7 @@ static bool oga_gfx_set_shader(void *data, enum rarch_shader_type type, const ch
    return false;
 }
 
-void oga_set_rotation(void *data, unsigned rotation)
+static void oga_set_rotation(void *data, unsigned rotation)
 {
    oga_video_t *vid = (oga_video_t*)data;
    if (!vid)
@@ -744,7 +748,21 @@ void oga_set_rotation(void *data, unsigned rotation)
    }
 }
 
-static const video_poke_interface_t oga_poke_interface = {
+static bool oga_get_current_software_framebuffer(void *data, struct retro_framebuffer *framebuffer)
+{
+   oga_video_t *vid = (oga_video_t*)data;
+   if (!vid)
+      return false;
+
+   framebuffer->format = vid->frame_surface->rk_format == RK_FORMAT_BGRA_8888 ?
+      RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   framebuffer->data = (uint8_t*)vid->frame_surface->map;
+   framebuffer->pitch = vid->frame_surface->pitch;
+
+   return true;
+}
+
+video_poke_interface_t oga_poke_interface = {
    NULL,
    NULL,
    NULL,
@@ -764,7 +782,7 @@ static const video_poke_interface_t oga_poke_interface = {
    NULL,
    NULL,
    NULL,
-   NULL,
+   oga_get_current_software_framebuffer,
    NULL
 };
 
