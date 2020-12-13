@@ -45,8 +45,8 @@
 #define FONT_10X10_GLYPH_MAX_CHN 0x9FFF
 
 #define FONT_10X10_FILE_JPN      "bitmap10x10_jpn.bin"
-#define FONT_10X10_SIZE_JPN      2496
-#define FONT_10X10_GLYPH_MIN_JPN 0x3040
+#define FONT_10X10_SIZE_JPN      3328
+#define FONT_10X10_GLYPH_MIN_JPN 0x3000
 #define FONT_10X10_GLYPH_MAX_JPN 0x30FF
 
 #define FONT_10X10_FILE_KOR      "bitmap10x10_kor.bin"
@@ -132,7 +132,7 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
 
    /* Ensure that we have the correct number
     * of bytes */
-   if (len < font_size)
+   if (len != font_size)
    {
       RARCH_WARN("[bitmap 10x10] Font file has invalid size: %s\n", font_path);
       goto error;
