@@ -1,3 +1,397 @@
+#define RARCH_TIMER_GET_TIMEOUT(timer) ((int)(timer.timeout_us / 1000000))
+
+#define RARCH_TIMER_HAS_EXPIRED(timer) ((timer.timeout_us <= 0) ? true : false)
+
+#define DRIVERS_CMD_ALL \
+      ( DRIVER_AUDIO_MASK \
+      | DRIVER_VIDEO_MASK \
+      | DRIVER_INPUT_MASK \
+      | DRIVER_CAMERA_MASK \
+      | DRIVER_LOCATION_MASK \
+      | DRIVER_MENU_MASK \
+      | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_BLUETOOTH_MASK \
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
+
+#define DRIVERS_CMD_ALL_BUT_MENU \
+      ( DRIVER_AUDIO_MASK \
+      | DRIVER_VIDEO_MASK \
+      | DRIVER_INPUT_MASK \
+      | DRIVER_CAMERA_MASK \
+      | DRIVER_LOCATION_MASK \
+      | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_BLUETOOTH_MASK \
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
+
+
+#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
+
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   retroarch_fail(1, "validate_cpu_features()"); \
+} while (0)
+
+#ifdef HAVE_ZLIB
+#define DEFAULT_EXT "zip"
+#else
+#define DEFAULT_EXT ""
+#endif
+
+#define SHADER_FILE_WATCH_DELAY_MSEC 500
+#define HOLD_BTN_DELAY_SEC 2
+
+#define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
+
+#define DEBUG_INFO_FILENAME "debug_info.txt"
+
+#define MAGIC_INDEX        0
+#define SERIALIZER_INDEX   1
+#define CRC_INDEX          2
+#define STATE_SIZE_INDEX   3
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MAGIC          0x42535631
+
+#define BSV_MOVIE_IS_PLAYBACK_ON() (p_rarch->bsv_movie_state_handle && p_rarch->bsv_movie_state.movie_playback)
+#define BSV_MOVIE_IS_PLAYBACK_OFF() (p_rarch->bsv_movie_state_handle && !p_rarch->bsv_movie_state.movie_playback)
+#endif
+
+#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
+
+#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
+
+#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+
+#define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac|wav"
+
+#define MIDI_DRIVER_BUF_SIZE 4096
+
+/**
+ * db_to_gain:
+ * @db          : Decibels.
+ *
+ * Converts decibels to voltage gain.
+ *
+ * Returns: voltage gain value.
+ **/
+#define DB_TO_GAIN(db) (powf(10.0f, (db) / 20.0f))
+
+#define DEFAULT_NETWORK_GAMEPAD_PORT 55400
+#define UDP_FRAME_PACKETS 16
+
+#ifdef HAVE_OVERLAY
+#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+
+#define MAX_VISIBILITY 32
+#endif
+
+#define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
+#define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
+
+#define DEFAULT_NETWORK_CMD_PORT 55355
+#define STDIN_BUF_SIZE           4096
+
+#ifdef HAVE_THREADS
+#define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
+#else
+#define VIDEO_DRIVER_IS_THREADED_INTERNAL() (false)
+#endif
+
+#ifdef HAVE_THREADS
+#define VIDEO_DRIVER_LOCK() \
+   if (p_rarch->display_lock) \
+      slock_lock(p_rarch->display_lock)
+
+#define VIDEO_DRIVER_UNLOCK() \
+   if (p_rarch->display_lock) \
+      slock_unlock(p_rarch->display_lock)
+
+#define VIDEO_DRIVER_CONTEXT_LOCK() \
+   if (p_rarch->context_lock) \
+      slock_lock(p_rarch->context_lock)
+
+#define VIDEO_DRIVER_CONTEXT_UNLOCK() \
+   if (p_rarch->context_lock) \
+      slock_unlock(p_rarch->context_lock)
+
+#define VIDEO_DRIVER_LOCK_FREE() \
+   slock_free(p_rarch->display_lock); \
+   slock_free(p_rarch->context_lock); \
+   p_rarch->display_lock = NULL; \
+   p_rarch->context_lock = NULL
+
+#define VIDEO_DRIVER_THREADED_LOCK(is_threaded) \
+   if (is_threaded) \
+      VIDEO_DRIVER_LOCK()
+
+#define VIDEO_DRIVER_THREADED_UNLOCK(is_threaded) \
+   if (is_threaded) \
+      VIDEO_DRIVER_UNLOCK()
+#else
+#define VIDEO_DRIVER_LOCK()            ((void)0)
+#define VIDEO_DRIVER_UNLOCK()          ((void)0)
+#define VIDEO_DRIVER_LOCK_FREE()       ((void)0)
+#define VIDEO_DRIVER_THREADED_LOCK(is_threaded)   ((void)0)
+#define VIDEO_DRIVER_THREADED_UNLOCK(is_threaded) ((void)0)
+#define VIDEO_DRIVER_CONTEXT_LOCK()    ((void)0)
+#define VIDEO_DRIVER_CONTEXT_UNLOCK()  ((void)0)
+#endif
+
+#ifdef HAVE_THREADS
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) ((VIDEO_DRIVER_IS_THREADED_INTERNAL() && !force) ? video_thread_get_ptr(p_rarch) : p_rarch->video_driver_data)
+#else
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) (p_rarch->video_driver_data)
+#endif
+
+#define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL() (&p_rarch->hw_render)
+
+#ifdef HAVE_THREADS
+#define RUNLOOP_MSG_QUEUE_LOCK() slock_lock(p_rarch->runloop_msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK() slock_unlock(p_rarch->runloop_msg_queue_lock)
+#else
+#define RUNLOOP_MSG_QUEUE_LOCK()
+#define RUNLOOP_MSG_QUEUE_UNLOCK()
+#endif
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_EOF() || (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
+#else
+#define BSV_MOVIE_IS_EOF()
+#endif
+
+/* Time to exit out of the main loop?
+ * Reasons for exiting:
+ * a) Shutdown environment callback was invoked.
+ * b) Quit key was pressed.
+ * c) Frame count exceeds or equals maximum amount of frames to run.
+ * d) Video driver no longer alive.
+ * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
+ */
+#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((p_rarch->runloop_max_frames != 0) && (frame_count >= p_rarch->runloop_max_frames)) || runloop_exec)
+
+/* Depends on ASCII character values */
+#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
+
+#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
+
+#define VIDEO_HAS_FOCUS() (p_rarch->current_video->focus ? (p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
+
+#if HAVE_DYNAMIC
+#define RUNAHEAD_RUN_SECONDARY() \
+   if (!secondary_core_run_use_last_input(p_rarch)) \
+      p_rarch->runahead_secondary_core_available = false
+#endif
+
+#define RUNAHEAD_RESUME_VIDEO() \
+   if (p_rarch->runahead_video_driver_is_active) \
+      p_rarch->video_driver_active = true; \
+   else \
+      p_rarch->video_driver_active = false
+
+#define _PSUPP_BUF(buf, var, name, desc) \
+   strlcat(buf, "  ", sizeof(buf)); \
+   strlcat(buf, name, sizeof(buf)); \
+   strlcat(buf, ":\n\t\t", sizeof(buf)); \
+   strlcat(buf, desc, sizeof(buf)); \
+   strlcat(buf, ": ", sizeof(buf)); \
+   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
+
+#define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
+   { \
+      static bool old_pressed                   = false; \
+      bool pressed                              = BIT256_GET(current_bits, cmd1); \
+      if (pressed && !old_pressed) \
+         if (cond) \
+            command_event(cmd2, cond2); \
+      old_pressed                               = pressed; \
+   }
+
+#define HOTKEY_CHECK3(cmd1, cmd2, cmd3, cmd4, cmd5, cmd6) \
+   { \
+      static bool old_pressed                   = false; \
+      static bool old_pressed2                  = false; \
+      static bool old_pressed3                  = false; \
+      bool pressed                              = BIT256_GET(current_bits, cmd1); \
+      bool pressed2                             = BIT256_GET(current_bits, cmd3); \
+      bool pressed3                             = BIT256_GET(current_bits, cmd5); \
+      if (pressed && !old_pressed) \
+         command_event(cmd2, (void*)(intptr_t)0); \
+      else if (pressed2 && !old_pressed2) \
+         command_event(cmd4, (void*)(intptr_t)0); \
+      else if (pressed3 && !old_pressed3) \
+         command_event(cmd6, (void*)(intptr_t)0); \
+      old_pressed                               = pressed; \
+      old_pressed2                              = pressed2; \
+      old_pressed3                              = pressed3; \
+   }
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#define INPUT_REMOTE_KEY_PRESSED(key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
+#endif
+
+/**
+ * check_input_driver_block_hotkey:
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ *
+ * If we haven't bound anything to this,
+ * always allow hotkeys.
+
+ * If we hold ENABLE_HOTKEY button, block all libretro input to allow
+ * hotkeys to be bound to same keys as RetroPad.
+ **/
+#define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind, autoconf_bind) \
+( \
+         (((normal_bind)->key      != RETROK_UNKNOWN) \
+      || ((normal_bind)->mbutton   != NO_BTN) \
+      || ((normal_bind)->joykey    != NO_BTN) \
+      || ((normal_bind)->joyaxis   != AXIS_NONE) \
+      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
+      || ((autoconf_bind)->joykey  != NO_BTN) \
+      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
+)
+
+#define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
+
+#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+
+
+#ifdef HAVE_MENU
+#define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
+
+#define MENU_LIST_GET_SELECTION(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
+
+#define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
+
+#define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
+#endif
+
+#define CDN_URL "https://cdn.discordapp.com/avatars"
+
+#ifdef HAVE_DYNAMIC
+#define SYMBOL(x) do { \
+   function_t func = dylib_proc(lib_handle_local, #x); \
+   memcpy(&current_core->x, &func, sizeof(func)); \
+   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_symbols()"); } \
+} while (0)
+#else
+#define SYMBOL(x) current_core->x = x
+#endif
+
+#define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
+
+#ifdef HAVE_FFMPEG
+#define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
+#endif
+
+#ifdef HAVE_MPV
+#define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
+#endif
+
+#ifdef HAVE_IMAGEVIEWER
+#define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
+#endif
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
+#endif
+
+#if defined(HAVE_VIDEOPROCESSOR)
+#define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
+#endif
+
+#ifdef HAVE_GONG
+#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
+#endif
+
+#define CORE_SYMBOLS(x) \
+            x(retro_init); \
+            x(retro_deinit); \
+            x(retro_api_version); \
+            x(retro_get_system_info); \
+            x(retro_get_system_av_info); \
+            x(retro_set_environment); \
+            x(retro_set_video_refresh); \
+            x(retro_set_audio_sample); \
+            x(retro_set_audio_sample_batch); \
+            x(retro_set_input_poll); \
+            x(retro_set_input_state); \
+            x(retro_set_controller_port_device); \
+            x(retro_reset); \
+            x(retro_run); \
+            x(retro_serialize_size); \
+            x(retro_serialize); \
+            x(retro_unserialize); \
+            x(retro_cheat_reset); \
+            x(retro_cheat_set); \
+            x(retro_load_game); \
+            x(retro_load_game_special); \
+            x(retro_unload_game); \
+            x(retro_get_region); \
+            x(retro_get_memory_data); \
+            x(retro_get_memory_size);
+
+#define FFMPEG_RECORD_ARG "r:"
+
+#ifdef HAVE_DYNAMIC
+#define DYNAMIC_ARG "L:"
+#else
+#define DYNAMIC_ARG
+#endif
+
+#ifdef HAVE_NETWORKING
+#define NETPLAY_ARG "HC:F:"
+#else
+#define NETPLAY_ARG
+#endif
+
+#ifdef HAVE_CONFIGFILE
+#define CONFIG_FILE_ARG "c:"
+#else
+#define CONFIG_FILE_ARG
+#endif
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_ARG "P:R:M:"
+#else
+#define BSV_MOVIE_ARG
+#endif
+
+#ifdef HAVE_LIBNX
+#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+#endif
+
+/* Griffin hack */
+#ifdef HAVE_QT
+#ifndef HAVE_MAIN
+#define HAVE_MAIN
+#endif
+#endif
+
+#ifdef _WIN32
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
+#else
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
+#endif
+
+#ifdef HAVE_MENU
+#define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
+
+#define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
+#define DATETIME_CHECK_INTERVAL    1000000
+
+#define MENU_MAX_BUTTONS           219
+#define MENU_MAX_AXES              32
+#define MENU_MAX_HATS              4
+#define MENU_MAX_MBUTTONS          32 /* Enough to cover largest libretro constant*/
+#endif
+
 #ifndef HAVE_LANGEXTRA
 /* If HAVE_LANGEXTRA is not defined, define some ASCII-friendly pages. */
 static const char *symbols_page1_grid[] = {
@@ -745,7 +1139,6 @@ static ui_companion_driver_t ui_companion_null = {
    "null", /* ident */
 };
 
-
 static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &ui_companion_win32,
@@ -843,396 +1236,6 @@ static const camera_driver_t *camera_drivers[] = {
 };
 
 /* MAIN GLOBAL VARIABLES */
-
-#define DRIVERS_CMD_ALL \
-      ( DRIVER_AUDIO_MASK \
-      | DRIVER_VIDEO_MASK \
-      | DRIVER_INPUT_MASK \
-      | DRIVER_CAMERA_MASK \
-      | DRIVER_LOCATION_MASK \
-      | DRIVER_MENU_MASK \
-      | DRIVERS_VIDEO_INPUT_MASK \
-      | DRIVER_BLUETOOTH_MASK \
-      | DRIVER_WIFI_MASK \
-      | DRIVER_LED_MASK \
-      | DRIVER_MIDI_MASK )
-
-#define DRIVERS_CMD_ALL_BUT_MENU \
-      ( DRIVER_AUDIO_MASK \
-      | DRIVER_VIDEO_MASK \
-      | DRIVER_INPUT_MASK \
-      | DRIVER_CAMERA_MASK \
-      | DRIVER_LOCATION_MASK \
-      | DRIVERS_VIDEO_INPUT_MASK \
-      | DRIVER_BLUETOOTH_MASK \
-      | DRIVER_WIFI_MASK \
-      | DRIVER_LED_MASK \
-      | DRIVER_MIDI_MASK )
-
-
-#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
-
-#define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retroarch_fail(1, "validate_cpu_features()"); \
-} while (0)
-
-#ifdef HAVE_ZLIB
-#define DEFAULT_EXT "zip"
-#else
-#define DEFAULT_EXT ""
-#endif
-
-#define SHADER_FILE_WATCH_DELAY_MSEC 500
-#define HOLD_BTN_DELAY_SEC 2
-
-#define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
-
-#define DEBUG_INFO_FILENAME "debug_info.txt"
-
-#define MAGIC_INDEX        0
-#define SERIALIZER_INDEX   1
-#define CRC_INDEX          2
-#define STATE_SIZE_INDEX   3
-
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MAGIC          0x42535631
-
-#define BSV_MOVIE_IS_PLAYBACK_ON() (p_rarch->bsv_movie_state_handle && p_rarch->bsv_movie_state.movie_playback)
-#define BSV_MOVIE_IS_PLAYBACK_OFF() (p_rarch->bsv_movie_state_handle && !p_rarch->bsv_movie_state.movie_playback)
-#endif
-
-#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-
-#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
-
-#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
-
-#define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac|wav"
-
-#define MIDI_DRIVER_BUF_SIZE 4096
-
-/**
- * db_to_gain:
- * @db          : Decibels.
- *
- * Converts decibels to voltage gain.
- *
- * Returns: voltage gain value.
- **/
-#define DB_TO_GAIN(db) (powf(10.0f, (db) / 20.0f))
-
-#define DEFAULT_NETWORK_GAMEPAD_PORT 55400
-#define UDP_FRAME_PACKETS 16
-
-#ifdef HAVE_OVERLAY
-#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-
-#define MAX_VISIBILITY 32
-#endif
-
-#define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
-#define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
-
-#define DEFAULT_NETWORK_CMD_PORT 55355
-#define STDIN_BUF_SIZE           4096
-
-#ifdef HAVE_THREADS
-#define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
-#else
-#define VIDEO_DRIVER_IS_THREADED_INTERNAL() (false)
-#endif
-
-#ifdef HAVE_THREADS
-#define VIDEO_DRIVER_LOCK() \
-   if (p_rarch->display_lock) \
-      slock_lock(p_rarch->display_lock)
-
-#define VIDEO_DRIVER_UNLOCK() \
-   if (p_rarch->display_lock) \
-      slock_unlock(p_rarch->display_lock)
-
-#define VIDEO_DRIVER_CONTEXT_LOCK() \
-   if (p_rarch->context_lock) \
-      slock_lock(p_rarch->context_lock)
-
-#define VIDEO_DRIVER_CONTEXT_UNLOCK() \
-   if (p_rarch->context_lock) \
-      slock_unlock(p_rarch->context_lock)
-
-#define VIDEO_DRIVER_LOCK_FREE() \
-   slock_free(p_rarch->display_lock); \
-   slock_free(p_rarch->context_lock); \
-   p_rarch->display_lock = NULL; \
-   p_rarch->context_lock = NULL
-
-#define VIDEO_DRIVER_THREADED_LOCK(is_threaded) \
-   if (is_threaded) \
-      VIDEO_DRIVER_LOCK()
-
-#define VIDEO_DRIVER_THREADED_UNLOCK(is_threaded) \
-   if (is_threaded) \
-      VIDEO_DRIVER_UNLOCK()
-#else
-#define VIDEO_DRIVER_LOCK()            ((void)0)
-#define VIDEO_DRIVER_UNLOCK()          ((void)0)
-#define VIDEO_DRIVER_LOCK_FREE()       ((void)0)
-#define VIDEO_DRIVER_THREADED_LOCK(is_threaded)   ((void)0)
-#define VIDEO_DRIVER_THREADED_UNLOCK(is_threaded) ((void)0)
-#define VIDEO_DRIVER_CONTEXT_LOCK()    ((void)0)
-#define VIDEO_DRIVER_CONTEXT_UNLOCK()  ((void)0)
-#endif
-
-#ifdef HAVE_THREADS
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) ((VIDEO_DRIVER_IS_THREADED_INTERNAL() && !force) ? video_thread_get_ptr(p_rarch) : p_rarch->video_driver_data)
-#else
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) (p_rarch->video_driver_data)
-#endif
-
-#define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL() (&p_rarch->hw_render)
-
-#ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK() slock_lock(p_rarch->runloop_msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK() slock_unlock(p_rarch->runloop_msg_queue_lock)
-#else
-#define RUNLOOP_MSG_QUEUE_LOCK()
-#define RUNLOOP_MSG_QUEUE_UNLOCK()
-#endif
-
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF() || (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
-#else
-#define BSV_MOVIE_IS_EOF()
-#endif
-
-/* Time to exit out of the main loop?
- * Reasons for exiting:
- * a) Shutdown environment callback was invoked.
- * b) Quit key was pressed.
- * c) Frame count exceeds or equals maximum amount of frames to run.
- * d) Video driver no longer alive.
- * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
- */
-#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((p_rarch->runloop_max_frames != 0) && (frame_count >= p_rarch->runloop_max_frames)) || runloop_exec)
-
-/* Depends on ASCII character values */
-#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
-
-#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
-
-#define VIDEO_HAS_FOCUS() (p_rarch->current_video->focus ? (p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
-
-#if HAVE_DYNAMIC
-#define RUNAHEAD_RUN_SECONDARY() \
-   if (!secondary_core_run_use_last_input(p_rarch)) \
-      p_rarch->runahead_secondary_core_available = false
-#endif
-
-#define RUNAHEAD_RESUME_VIDEO() \
-   if (p_rarch->runahead_video_driver_is_active) \
-      p_rarch->video_driver_active = true; \
-   else \
-      p_rarch->video_driver_active = false
-
-#define _PSUPP_BUF(buf, var, name, desc) \
-   strlcat(buf, "  ", sizeof(buf)); \
-   strlcat(buf, name, sizeof(buf)); \
-   strlcat(buf, ":\n\t\t", sizeof(buf)); \
-   strlcat(buf, desc, sizeof(buf)); \
-   strlcat(buf, ": ", sizeof(buf)); \
-   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
-
-#define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
-   { \
-      static bool old_pressed                   = false; \
-      bool pressed                              = BIT256_GET(current_bits, cmd1); \
-      if (pressed && !old_pressed) \
-         if (cond) \
-            command_event(cmd2, cond2); \
-      old_pressed                               = pressed; \
-   }
-
-#define HOTKEY_CHECK3(cmd1, cmd2, cmd3, cmd4, cmd5, cmd6) \
-   { \
-      static bool old_pressed                   = false; \
-      static bool old_pressed2                  = false; \
-      static bool old_pressed3                  = false; \
-      bool pressed                              = BIT256_GET(current_bits, cmd1); \
-      bool pressed2                             = BIT256_GET(current_bits, cmd3); \
-      bool pressed3                             = BIT256_GET(current_bits, cmd5); \
-      if (pressed && !old_pressed) \
-         command_event(cmd2, (void*)(intptr_t)0); \
-      else if (pressed2 && !old_pressed2) \
-         command_event(cmd4, (void*)(intptr_t)0); \
-      else if (pressed3 && !old_pressed3) \
-         command_event(cmd6, (void*)(intptr_t)0); \
-      old_pressed                               = pressed; \
-      old_pressed2                              = pressed2; \
-      old_pressed3                              = pressed3; \
-   }
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#define INPUT_REMOTE_KEY_PRESSED(key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
-#endif
-
-/**
- * check_input_driver_block_hotkey:
- *
- * Checks if 'hotkey enable' key is pressed.
- *
- * If we haven't bound anything to this,
- * always allow hotkeys.
-
- * If we hold ENABLE_HOTKEY button, block all libretro input to allow
- * hotkeys to be bound to same keys as RetroPad.
- **/
-#define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind, autoconf_bind) \
-( \
-         (((normal_bind)->key      != RETROK_UNKNOWN) \
-      || ((normal_bind)->mbutton   != NO_BTN) \
-      || ((normal_bind)->joykey    != NO_BTN) \
-      || ((normal_bind)->joyaxis   != AXIS_NONE) \
-      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
-      || ((autoconf_bind)->joykey  != NO_BTN) \
-      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
-)
-
-#define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
-#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-
-
-#ifdef HAVE_MENU
-#define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
-
-#define MENU_LIST_GET_SELECTION(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
-
-#define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
-
-#define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
-#endif
-
-#define CDN_URL "https://cdn.discordapp.com/avatars"
-
-#ifdef HAVE_DYNAMIC
-#define SYMBOL(x) do { \
-   function_t func = dylib_proc(lib_handle_local, #x); \
-   memcpy(&current_core->x, &func, sizeof(func)); \
-   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_symbols()"); } \
-} while (0)
-#else
-#define SYMBOL(x) current_core->x = x
-#endif
-
-#define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
-
-#ifdef HAVE_FFMPEG
-#define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
-#endif
-
-#ifdef HAVE_MPV
-#define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
-#endif
-
-#ifdef HAVE_IMAGEVIEWER
-#define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
-#endif
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
-#endif
-
-#if defined(HAVE_VIDEOPROCESSOR)
-#define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
-#endif
-
-#ifdef HAVE_GONG
-#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
-#endif
-
-#define CORE_SYMBOLS(x) \
-            x(retro_init); \
-            x(retro_deinit); \
-            x(retro_api_version); \
-            x(retro_get_system_info); \
-            x(retro_get_system_av_info); \
-            x(retro_set_environment); \
-            x(retro_set_video_refresh); \
-            x(retro_set_audio_sample); \
-            x(retro_set_audio_sample_batch); \
-            x(retro_set_input_poll); \
-            x(retro_set_input_state); \
-            x(retro_set_controller_port_device); \
-            x(retro_reset); \
-            x(retro_run); \
-            x(retro_serialize_size); \
-            x(retro_serialize); \
-            x(retro_unserialize); \
-            x(retro_cheat_reset); \
-            x(retro_cheat_set); \
-            x(retro_load_game); \
-            x(retro_load_game_special); \
-            x(retro_unload_game); \
-            x(retro_get_region); \
-            x(retro_get_memory_data); \
-            x(retro_get_memory_size);
-
-#define FFMPEG_RECORD_ARG "r:"
-
-#ifdef HAVE_DYNAMIC
-#define DYNAMIC_ARG "L:"
-#else
-#define DYNAMIC_ARG
-#endif
-
-#ifdef HAVE_NETWORKING
-#define NETPLAY_ARG "HC:F:"
-#else
-#define NETPLAY_ARG
-#endif
-
-#ifdef HAVE_CONFIGFILE
-#define CONFIG_FILE_ARG "c:"
-#else
-#define CONFIG_FILE_ARG
-#endif
-
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_ARG "P:R:M:"
-#else
-#define BSV_MOVIE_ARG
-#endif
-
-#ifdef HAVE_LIBNX
-#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
-#endif
-
-/* Griffin hack */
-#ifdef HAVE_QT
-#ifndef HAVE_MAIN
-#define HAVE_MAIN
-#endif
-#endif
-
-#ifdef _WIN32
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
-#else
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
-
-#ifdef HAVE_MENU
-#define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
-
-#define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
-#define DATETIME_CHECK_INTERVAL    1000000
-
-#define MENU_MAX_BUTTONS           219
-#define MENU_MAX_AXES              32
-#define MENU_MAX_HATS              4
-#define MENU_MAX_MBUTTONS          32 /* Enough to cover largest libretro constant*/
-#endif
 
 /* Descriptive names for options without short variant.
  *
@@ -2639,6 +2642,21 @@ static enum rarch_shader_type shader_types[] =
 #endif
 
 #if defined(HAVE_COMMAND)
+
+/* These forward declarations need to be declared before
+ * the global state is declared */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static bool command_set_shader(const char *arg);
+#endif
+static bool command_version(const char* arg);
+static bool command_get_status(const char* arg);
+static bool command_get_config_param(const char* arg);
+static bool command_show_osd_msg(const char* arg);
+#ifdef HAVE_CHEEVOS
+static bool command_read_ram(const char *arg);
+static bool command_write_ram(const char *arg);
+#endif
+
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",       command_set_shader,       "<shader path>" },
    { "VERSION",          command_version,          "No argument"},

@@ -263,24 +263,9 @@
 #endif
 
 #ifdef HAVE_LANGEXTRA
-/* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA is only enabled for compilers that can support this. */
+/* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA 
+ * is only enabled for compilers that can support this. */
 #include "input/input_osk_utf8_pages.h"
-#endif
-
-/* These forward declarations need to be declared before
- * the global state is declared */
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool command_set_shader(const char *arg);
-#endif
-#ifdef HAVE_COMMAND
-static bool command_version(const char* arg);
-static bool command_get_status(const char* arg);
-static bool command_get_config_param(const char* arg);
-static bool command_show_osd_msg(const char* arg);
-#endif
-#ifdef HAVE_CHEEVOS
-static bool command_read_ram(const char *arg);
-static bool command_write_ram(const char *arg);
 #endif
 
 /* RetroArch global state / macros */
@@ -365,10 +350,6 @@ static void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time)
    timer->current    = current_time;
    timer->timeout_us = (timer->timeout_end - timer->current);
 }
-
-#define RARCH_TIMER_GET_TIMEOUT(timer) ((int)(timer.timeout_us / 1000000))
-
-#define RARCH_TIMER_HAS_EXPIRED(timer) ((timer.timeout_us <= 0) ? true : false)
 
 static void rarch_timer_end(rarch_timer_t *timer)
 {
