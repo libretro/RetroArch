@@ -2655,13 +2655,12 @@ static enum rarch_shader_type shader_types[] =
 };
 #endif
 
-#if defined(HAVE_COMMAND)
-
 /* These forward declarations need to be declared before
  * the global state is declared */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool command_set_shader(const char *arg);
 #endif
+#if defined(HAVE_COMMAND)
 static bool command_version(const char* arg);
 static bool command_get_status(const char* arg);
 static bool command_get_config_param(const char* arg);
