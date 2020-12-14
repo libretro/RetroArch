@@ -853,6 +853,28 @@ size_t fill_pathname_join(char *out_path,
    return strlcat(out_path, path, size);
 }
 
+/**
+ * pathname_join:
+ * @dir           : directory
+ * @path          : path
+ *
+ * Joins a directory (@dir) and (@path) together. Similar
+ * to fill_pathname_join, but the output is allocated
+ * here and returned.
+ **/
+char *pathname_join(const char *dir, const char *path)
+{
+   char *out_path;
+   size_t size;
+
+   size = strlen(dir) + strlen(path) + 4;
+   out_path = (char *)calloc(size, sizeof(char));
+
+   fill_pathname_join(out_path, dir, path, size);
+
+   return out_path;
+}
+
 size_t fill_pathname_join_special_ext(char *out_path,
       const char *dir,  const char *path,
       const char *last, const char *ext,

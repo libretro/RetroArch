@@ -59,6 +59,7 @@ HAVE_MPV=no                # MPV support
 HAVE_SSA=auto              # SSA/ASS for FFmpeg subtitle support
 HAVE_DYLIB=auto            # Dynamic loading support
 HAVE_NETWORKING=auto       # Networking features (recommended)
+HAVE_CLOUD_STORAGE_DEBUG=no # Cloud storage debug
 HAVE_NETWORKGAMEPAD=auto   # Networked game pad (plus baked-in core)
 C89_NETWORKGAMEPAD=no
 HAVE_NETPLAYDISCOVERY=yes  # Add netplay discovery (room creation, etc.)

@@ -380,6 +380,17 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
 size_t fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
 
+/**
+ * pathname_join:
+ * @dir           : directory
+ * @path          : path
+ *
+ * Joins a directory (@dir) and (@path) together. Similar
+ * to fill_pathname_join, but the output is allocated
+ * here and returned.
+ **/
+char *pathname_join(const char *dir, const char *path);
+
 size_t fill_pathname_join_special_ext(char *out_path,
       const char *dir,  const char *path,
       const char *last, const char *ext,

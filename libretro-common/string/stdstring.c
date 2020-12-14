@@ -534,3 +534,24 @@ unsigned string_hex_to_unsigned(const char *str)
 
    return (unsigned)strtoul(hex_str, NULL, 16);
 }
+
+static char hex_table[] = {
+   '0', '1', '2', '3', '4', '5', '6', '7',
+   '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+};
+
+/* Hex encodes a binary string. */
+char *bytes_to_hex_str(unsigned char *bytes, uint64_t len)
+{
+   char *result;
+   int64_t i;
+
+   result = (char *)calloc(len * 2 + 1, sizeof(char));
+   for (i = 0;i < len;i++)
+   {
+      result[i * 2] = hex_table[(bytes[i] & 0xf0) >> 4];
+      result[i * 2 + 1] = hex_table[bytes[i] & 0x0f];
+   }
+
+   return result;
+}
