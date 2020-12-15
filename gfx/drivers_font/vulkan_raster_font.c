@@ -308,6 +308,8 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
       begin_info.pInheritanceInfo = NULL;
       vkBeginCommandBuffer(staging, &begin_info);
 
+      VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(font->vk, font->texture);
+
       vulkan_copy_staging_to_dynamic(font->vk, staging,
             &font->texture_optimal, &font->texture);
 

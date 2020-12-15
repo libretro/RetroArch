@@ -318,18 +318,14 @@ uint32_t vulkan_find_memory_type_fallback(
          device_reqs, host_reqs_second, 0);
 }
 
+/* Dynamic texture type should be set to : VULKAN_TEXTURE_DYNAMIC
+ * Staging texture type should be set to : VULKAN_TEXTURE_STAGING
+ */
 void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       struct vk_texture *dynamic,
       struct vk_texture *staging)
 {
    VkBufferImageCopy region;
-
-   retro_assert(dynamic->type == VULKAN_TEXTURE_DYNAMIC);
-   retro_assert(staging->type == VULKAN_TEXTURE_STAGING);
-
-   if (  staging->need_manual_cache_management && 
-         staging->memory != VK_NULL_HANDLE)
-      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, staging->memory);
 
    /* We don't have to sync against previous TRANSFER,
     * since we observed the completion by fences.
@@ -340,9 +336,13 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
     * We would also need to optionally maintain extra textures due to
     * changes in resolution, so this seems like the sanest and
     * simplest solution. */
-   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, dynamic->image,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(
+         cmd,
+         dynamic->image,
+         VK_IMAGE_LAYOUT_UNDEFINED,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0,
+         VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
 
@@ -360,12 +360,16 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    region.imageExtent.height              = dynamic->height;
    region.imageExtent.depth               = 1;
 
-   vkCmdCopyBufferToImage(cmd,
+   vkCmdCopyBufferToImage(
+         cmd,
          staging->buffer,
-         dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         1, &region);
+         dynamic->image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         1,
+         &region);
 
-   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(
+         cmd,
          dynamic->image,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

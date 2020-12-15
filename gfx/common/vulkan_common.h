@@ -609,6 +609,22 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       struct vk_texture *dynamic,
       struct vk_texture *staging);
 
+#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, tex) \
+   if ((tex)->need_manual_cache_management && (tex)->memory != VK_NULL_HANDLE) \
+      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex)->memory) \
+
+#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, tex) \
+   if ((tex).need_manual_cache_management && (tex).memory != VK_NULL_HANDLE) \
+      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex).memory) \
+
+#define VULKAN_COPY_STAGING_TO_DYNAMIC_PTR(vk, cmd, dynamic, staging) \
+   VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, staging); \
+   vulkan_copy_staging_to_dynamic(vk, cmd, dynamic, staging)
+
+#define VULKAN_COPY_STAGING_TO_DYNAMIC_OBJ(vk, cmd, dynamic, staging) \
+   VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, staging); \
+   vulkan_copy_staging_to_dynamic(vk, cmd, &dynamic, &staging);
+
 /* VBO will be written to here. */
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad);
 
