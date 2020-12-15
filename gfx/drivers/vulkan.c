@@ -2080,52 +2080,58 @@ static bool vulkan_frame(void *data, const void *frame,
     */
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
-   if (
-         backbuffer->image != VK_NULL_HANDLE &&
-         vk->context->has_acquired_swapchain &&
-         (vk->readback.pending || vk->readback.streamed))
+   if ( 
+         backbuffer->image != VK_NULL_HANDLE
+         && vk->context->has_acquired_swapchain
+      )
    {
-      /* We cannot safely read back from an image which
-       * has already been presented as we need to
-       * maintain the PRESENT_SRC_KHR layout.
-       *
-       * If we're reading back, perform the readback before presenting.
-       */
-      VULKAN_IMAGE_LAYOUT_TRANSITION(
-            vk->cmd, backbuffer->image,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_ACCESS_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT);
+      if (vk->readback.pending || vk->readback.streamed)
+      {
+         /* We cannot safely read back from an image which
+          * has already been presented as we need to
+          * maintain the PRESENT_SRC_KHR layout.
+          *
+          * If we're reading back, 
+          * perform the readback before presenting.
+          */
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_ACCESS_TRANSFER_READ_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-      vulkan_readback(vk);
+         vulkan_readback(vk);
 
-      /* Prepare for presentation after transfers are complete. */
-      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd,
-            backbuffer->image,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            0,
-            VK_ACCESS_MEMORY_READ_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+         /* Prepare for presentation after transfers are complete. */
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+               0,
+               VK_ACCESS_MEMORY_READ_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
-      vk->readback.pending = false;
-   }
-   else if (backbuffer->image != VK_NULL_HANDLE &&
-         vk->context->has_acquired_swapchain)
-   {
-      /* Prepare backbuffer for presentation. */
-      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd,
-            backbuffer->image,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            0,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+         vk->readback.pending = false;
+      }
+      else
+      {
+         /* Prepare backbuffer for presentation. */
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               0,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+      }
    }
 
    if (waits_for_semaphores &&
