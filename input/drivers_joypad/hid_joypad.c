@@ -130,6 +130,7 @@ input_device_driver_t hid_joypad = {
    hid_joypad_axis,
    hid_joypad_poll,
    hid_joypad_rumble,
+   NULL,
    hid_joypad_name,
    "hid"
 };

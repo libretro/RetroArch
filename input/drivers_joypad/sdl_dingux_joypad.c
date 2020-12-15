@@ -86,14 +86,10 @@ static dingux_joypad_t dingux_joypad;
 static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
 {
    settings_t *settings = config_get_ptr();
-   unsigned rumble_gain = settings ? settings->uints.input_dingux_rumble_gain : 0;
+   unsigned rumble_gain = settings ? settings->uints.input_rumble_gain
+                                   : DEFAULT_RUMBLE_GAIN;
    bool weak_uploaded   = false;
    bool strong_uploaded = false;
-
-   /* If gain is zero, rumble is disabled
-    * > No need to initialise device */
-   if (rumble_gain == 0)
-      goto error;
 
    if (Shake_NumOfDevices() < 1)
       goto error;
@@ -140,7 +136,7 @@ static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
    if (rumble->strong.id == SHAKE_ERROR)
       goto error;
    strong_uploaded = true;
-
+   
    /* Set gain, if supported */
    if (Shake_QueryGainSupport(rumble->device))
       if (Shake_SetGain(rumble->device, (int)rumble_gain) != SHAKE_OK)
@@ -149,8 +145,7 @@ static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
    return true;
 
 error:
-   if (rumble_gain != 0)
-      RARCH_WARN("[libShake]: Input device does not support rumble effects.\n");
+   RARCH_WARN("[libShake]: Input device does not support rumble effects.\n");
 
    if (rumble->device)
    {
@@ -688,7 +683,9 @@ input_device_driver_t sdl_dingux_joypad = {
    sdl_dingux_joypad_poll,
 #if defined(HAVE_LIBSHAKE)
    sdl_dingux_joypad_set_rumble,
+   sdl_dingux_joypad_set_rumble_gain,
 #else
+   NULL,
    NULL,
 #endif
    sdl_dingux_joypad_name,

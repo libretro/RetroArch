@@ -21633,15 +21633,21 @@ bool input_driver_set_rumble_state(unsigned port,
 #endif
    bool rumble_state                       = false;
    unsigned  joy_idx                       = settings->uints.input_joypad_map[port];
+   unsigned rumble_gain                    = settings->uints.input_rumble_gain;
+   uint16_t scaled_strength                = strength;
+
+   /* If gain setting is not suported, do software gain control */ 
+   if (!p_rarch->joypad->set_rumble_gain)
+      scaled_strength = (rumble_gain * strength) / 100;
 
    if (joy_idx >= MAX_USERS)
       return false;
    if (p_rarch->joypad && p_rarch->joypad->set_rumble)
       rumble_state = p_rarch->joypad->set_rumble(
-            joy_idx, effect, strength);
+            joy_idx, effect, scaled_strength);
    if (sec_joypad      && sec_joypad->set_rumble)
       rumble_state = sec_joypad->set_rumble(
-            joy_idx, effect, strength);
+            joy_idx, effect, scaled_strength);
    return rumble_state;
 }
 
@@ -38797,6 +38803,17 @@ void frontend_driver_attach_console(void)
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
    if (frontend && frontend->attach_console)
       frontend->attach_console();
+}
+
+void frontend_driver_set_rumble_gain(int value)
+{
+   struct rarch_state     *p_rarch = &rarch_st;
+   int i;
+   if (p_rarch->joypad && p_rarch->joypad->set_rumble_gain)
+   {
+      for (i = 0; i < p_rarch->input_driver_max_users; i++)
+         p_rarch->joypad->set_rumble_gain(i, value);
+   }
 }
 
 void frontend_driver_set_screen_brightness(int value)

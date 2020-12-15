@@ -163,6 +163,7 @@ input_device_driver_t qnx_joypad = {
    qnx_joypad_axis,
    qnx_joypad_poll,
    NULL,
+   NULL,
    qnx_joypad_name,
    "qnx",
 };

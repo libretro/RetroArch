@@ -7510,10 +7510,12 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_BRIGHTNESS_CONTROL:
-         {
-            frontend_driver_set_screen_brightness(
-               *setting->value.target.unsigned_integer);
-         }
+         frontend_driver_set_screen_brightness(
+            *setting->value.target.unsigned_integer);
+         break;
+      case MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN:
+         frontend_driver_set_rumble_gain(
+            *setting->value.target.unsigned_integer);
          break;
       case MENU_ENUM_LABEL_WIFI_ENABLED:
 #ifdef HAVE_NETWORKING
@@ -11880,13 +11882,12 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.input_dingux_rumble_gain,
-                  MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
-                  MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-                  DEFAULT_DINGUX_RUMBLE_GAIN,
+                  &settings->uints.input_rumble_gain,
+                  MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,
+                  MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+                  DEFAULT_RUMBLE_GAIN,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -11894,8 +11895,10 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_percentage;
             menu_settings_list_current_add_range(list, list_info, 0, 100, 5, true, true);
-#endif
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.input_poll_type_behavior,

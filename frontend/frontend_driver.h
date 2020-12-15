@@ -212,6 +212,8 @@ void frontend_driver_attach_console(void);
 
 void frontend_driver_detach_console(void);
 
+void frontend_driver_set_rumble_gain(int value);
+
 void frontend_driver_set_screen_brightness(int value);
 
 bool frontend_driver_can_set_screen_brightness();

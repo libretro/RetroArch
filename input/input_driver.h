@@ -196,6 +196,7 @@ struct rarch_joypad_driver
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
+   bool (*set_rumble_gain)(unsigned, float);
    const char *(*name)(unsigned);
 
    const char *ident;

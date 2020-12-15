@@ -395,6 +395,7 @@ input_device_driver_t xinput_joypad = {
    xinput_joypad_axis,
    xinput_joypad_poll,
    xinput_joypad_rumble,
+   NULL,
    xinput_joypad_name,
    "xinput",
 };
