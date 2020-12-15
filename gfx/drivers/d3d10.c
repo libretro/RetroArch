@@ -601,6 +601,39 @@ static void d3d10_gfx_free(void* data)
    free(d3d10);
 }
 
+static bool d3d10_init_swapchain(d3d10_video_t *d3d10,
+      int width, int height, void *corewindow)
+{
+   UINT                 flags              = 0;
+   DXGI_SWAP_CHAIN_DESC desc               = {{0}};
+
+   desc.BufferCount                        = 1;
+   desc.BufferDesc.Width                   = width;
+   desc.BufferDesc.Height                  = height;
+   desc.BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM;
+   desc.BufferDesc.RefreshRate.Numerator   = 60;
+   desc.BufferDesc.RefreshRate.Denominator = 1;
+   desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+#ifdef HAVE_WINDOW
+   desc.OutputWindow                       = corewindow;
+#endif
+   desc.SampleDesc.Count                   = 1;
+   desc.SampleDesc.Quality                 = 0;
+   desc.Windowed                           = TRUE;
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
+
+#ifdef DEBUG
+   flags                                  |= D3D10_CREATE_DEVICE_DEBUG;
+#endif
+
+   if (FAILED(D3D10CreateDeviceAndSwapChain(
+               (IDXGIAdapter*)d3d10->adapter, D3D10_DRIVER_TYPE_HARDWARE,
+               NULL, flags, D3D10_SDK_VERSION, &desc,
+               (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device)))
+      return false;
+   return true;
+}
+
 static void *d3d10_gfx_init(const video_info_t* video,
       input_driver_t** input, void** input_data)
 {
@@ -654,40 +687,16 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
-   {
-      UINT                 flags = 0;
-      DXGI_SWAP_CHAIN_DESC desc  = {{0}};
-
-      desc.BufferCount           = 1;
-      desc.BufferDesc.Width      = d3d10->vp.full_width;
-      desc.BufferDesc.Height     = d3d10->vp.full_height;
-      desc.BufferDesc.Format     = DXGI_FORMAT_R8G8B8A8_UNORM;
-      desc.BufferDesc.RefreshRate.Numerator   = 60;
-      desc.BufferDesc.RefreshRate.Denominator = 1;
-      desc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+   if (!d3d10_init_swapchain(d3d10,
+            d3d10->vp.full_width,
+            d3d10->vp.full_height,
 #ifdef HAVE_WINDOW
-      desc.OutputWindow          = main_window.hwnd;
+            main_window.hwnd
+#else
+            NULL
 #endif
-      desc.SampleDesc.Count      = 1;
-      desc.SampleDesc.Quality    = 0;
-      desc.Windowed              = TRUE;
-      desc.SwapEffect            = DXGI_SWAP_EFFECT_SEQUENTIAL;
-#if 0
-      desc.SwapEffect            = DXGI_SWAP_EFFECT_DISCARD;
-      desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-      desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-#endif
-
-#ifdef DEBUG
-      flags |= D3D10_CREATE_DEVICE_DEBUG;
-#endif
-
-      if (FAILED(D3D10CreateDeviceAndSwapChain(
-                  (IDXGIAdapter*)d3d10->adapter, D3D10_DRIVER_TYPE_HARDWARE,
-                  NULL, flags, D3D10_SDK_VERSION, &desc,
-                  (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device)))
-         goto error;
-   }
+            ))
+      goto error;
 
    {
       D3D10Texture2D backBuffer;
