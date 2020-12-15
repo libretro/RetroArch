@@ -2,6 +2,7 @@ CELL_BUILD_TOOLS	= GCC
 CELL_SDK		?= /usr/local/cell
 HAVE_LOGGER		= 0
 CELL_MK_DIR ?= $(CELL_SDK)/samples/mk
+HAVE_STANDARD_FOLDERS	= 0
 
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
@@ -37,6 +38,10 @@ endif
 
 ifeq ($(ODE_BUILD), 1)
 DEFINES += -DODE_BUILD
+endif
+
+ifeq ($(HAVE_STANDARD_FOLDERS), 1)
+DEFINES += -DHAVE_STANDARD_FOLDERS
 endif
 
 PPU_CFLAGS	:= $(PPU_OPTIMIZE_LV) $(INCFLAGS) $(DEFINES)

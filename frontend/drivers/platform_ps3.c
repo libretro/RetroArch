@@ -118,54 +118,114 @@ static void fill_derived_paths(void)
 		       g_defaults.dirs[DEFAULT_DIR_PORT],
 		       "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "info",
 		       sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "shaders_cg", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
     fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
 		       FILE_PATH_MAIN_CONFIG,  sizeof(g_defaults.path_config));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
 #ifdef HAVE_VIDEO_LAYOUT
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
 #endif
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-		       g_defaults.dirs[DEFAULT_DIR_CORE], "cheats",
-		       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
+		       "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+#ifndef  HAVE_STANDARD_FOLDERS 
+		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
+#ifndef  HAVE_STANDARD_FOLDERS 
 		       g_defaults.dirs[DEFAULT_DIR_CORE],
+#else
+		       g_defaults.dirs[DEFAULT_DIR_PORT],
+#endif	
 		       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 }
 
