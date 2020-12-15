@@ -1967,7 +1967,7 @@ static bool vulkan_frame(void *data, const void *frame,
                {
                   struct vk_texture *dynamic = optimal;
                   struct vk_texture *staging = texture;
-                  VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, texture);
+                  VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, staging);
                   VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd,
                         dynamic, staging);
                   vk->menu.dirty[vk->menu.last_index] = false;
@@ -2449,9 +2449,10 @@ static void vulkan_set_texture_frame(void *data,
             NULL, rgb32 ? NULL : &br_swizzle,
             VULKAN_TEXTURE_DYNAMIC);
    }
-   else if (texture->need_manual_cache_management
-         && texture->memory != VK_NULL_HANDLE)
-       VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, texture->memory);
+   else
+   {
+      VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, texture);
+   }
 
    vkUnmapMemory(vk->context->device, texture->memory);
    vk->menu.dirty[index] = true;
