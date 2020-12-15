@@ -622,6 +622,109 @@ static void d3d11_gfx_free(void* data)
    free(d3d11);
 }
 
+static bool d3d11_gfx_init_swapchain(d3d11_video_t* d3d11)
+{
+   IDXGIDevice* dxgiDevice                 = NULL;
+   IDXGIAdapter* adapter                   = NULL;
+   UINT                 flags              = 0;
+   D3D_FEATURE_LEVEL
+      requested_feature_levels[]           =
+      {
+         D3D_FEATURE_LEVEL_11_0,
+         D3D_FEATURE_LEVEL_10_1,
+         D3D_FEATURE_LEVEL_10_0
+      };
+#ifdef __WINRT__
+   /* UWP requires the use of newer version of the factory which requires newer version of this struct */
+   DXGI_SWAP_CHAIN_DESC1 desc              = {{0}};
+#else
+   DXGI_SWAP_CHAIN_DESC desc               = {{0}};
+#endif
+   UINT number_feature_levels              = ARRAY_SIZE(requested_feature_levels);
+
+#ifdef __WINRT__
+   /* UWP forces us to do double-buffering */
+   desc.BufferCount = 2;
+   desc.Width                              = d3d11->vp.full_width;
+   desc.Height                             = d3d11->vp.full_height;
+   desc.Format                             = DXGI_FORMAT_R8G8B8A8_UNORM;
+#else
+   desc.BufferCount = 1;
+   desc.BufferDesc.Width                   = d3d11->vp.full_width;
+   desc.BufferDesc.Height                  = d3d11->vp.full_height;
+   desc.BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM;
+   desc.BufferDesc.RefreshRate.Numerator   = 60;
+   desc.BufferDesc.RefreshRate.Denominator = 1;
+#endif
+   desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+#ifdef HAVE_WINDOW
+   desc.OutputWindow                       = main_window.hwnd;
+#endif
+   desc.SampleDesc.Count                   = 1;
+   desc.SampleDesc.Quality                 = 0;
+#if 0
+   desc.Scaling                            = DXGI_SCALING_STRETCH;
+#endif
+#ifdef HAVE_WINDOW
+   desc.Windowed                           = TRUE;
+#endif
+#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   /* On phone, no swap effects are supported. */
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
+#elif defined(__WINRT__)
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+#else
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
+#endif
+
+#ifdef DEBUG
+   flags                                  |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+   if(cached_device_d3d11 && cached_context)
+   {
+      d3d11->device                = cached_device_d3d11;
+      d3d11->context               = cached_context;
+      d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
+   }
+   else
+   {
+      if (FAILED(D3D11CreateDevice(
+                  (IDXGIAdapter*)d3d11->adapter, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
+                  requested_feature_levels, number_feature_levels,
+                  D3D11_SDK_VERSION, &d3d11->device,
+                  &d3d11->supportedFeatureLevel, &d3d11->context)))
+         return false;
+   }
+
+   d3d11->device->lpVtbl->QueryInterface(
+         d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
+   dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
+#ifdef __WINRT__
+   IDXGIFactory2* dxgiFactory = NULL;
+   adapter->lpVtbl->GetParent(
+         adapter, uuidof(IDXGIFactory2), (void**)&dxgiFactory);
+   if (FAILED(dxgiFactory->lpVtbl->CreateSwapChainForCoreWindow(
+               dxgiFactory, (IUnknown*)d3d11->device, uwp_get_corewindow(),
+               &desc, NULL, (IDXGISwapChain1**)&d3d11->swapChain)))
+      return false;
+#else
+   IDXGIFactory* dxgiFactory = NULL;
+   adapter->lpVtbl->GetParent(
+         adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
+   if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
+               dxgiFactory, (IUnknown*)d3d11->device,
+               &desc, (IDXGISwapChain**)&d3d11->swapChain)))
+      return false;
+#endif
+
+   dxgiFactory->lpVtbl->Release(dxgiFactory);
+   adapter->lpVtbl->Release(adapter);
+   dxgiDevice->lpVtbl->Release(dxgiDevice);
+
+   return true;
+}
+
 static void *d3d11_gfx_init(const video_info_t* video,
       input_driver_t** input, void** input_data)
 {
@@ -672,105 +775,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
    d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
-   {
-      UINT                 flags              = 0;
-      D3D_FEATURE_LEVEL
-         requested_feature_levels[]           =
-         {
-            D3D_FEATURE_LEVEL_11_0,
-            D3D_FEATURE_LEVEL_10_1,
-            D3D_FEATURE_LEVEL_10_0
-         };
-#ifdef __WINRT__
-      /* UWP requires the use of newer version of the factory which requires newer version of this struct */
-      DXGI_SWAP_CHAIN_DESC1 desc              = {{0}};
-#else
-      DXGI_SWAP_CHAIN_DESC desc               = {{0}};
-#endif
-      UINT number_feature_levels              = ARRAY_SIZE(requested_feature_levels);
-
-#ifdef __WINRT__
-      /* UWP forces us to do double-buffering */
-      desc.BufferCount = 2;
-      desc.Width                              = d3d11->vp.full_width;
-      desc.Height                             = d3d11->vp.full_height;
-      desc.Format                             = DXGI_FORMAT_R8G8B8A8_UNORM;
-#else
-      desc.BufferCount = 1;
-      desc.BufferDesc.Width                   = d3d11->vp.full_width;
-      desc.BufferDesc.Height                  = d3d11->vp.full_height;
-      desc.BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM;
-      desc.BufferDesc.RefreshRate.Numerator   = 60;
-      desc.BufferDesc.RefreshRate.Denominator = 1;
-#endif
-      desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-#ifdef HAVE_WINDOW
-      desc.OutputWindow                       = main_window.hwnd;
-#endif
-      desc.SampleDesc.Count                   = 1;
-      desc.SampleDesc.Quality                 = 0;
-#if 0
-      desc.Scaling                            = DXGI_SCALING_STRETCH;
-#endif
-#ifdef HAVE_WINDOW
-      desc.Windowed                           = TRUE;
-#endif
-#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
-      /* On phone, no swap effects are supported. */
-      desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
-#elif defined(__WINRT__)
-      desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-#else
-      desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
-#endif
-
-#ifdef DEBUG
-      flags                                  |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-      if(cached_device_d3d11 && cached_context)
-      {
-         d3d11->device                = cached_device_d3d11;
-         d3d11->context               = cached_context;
-         d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
-      }
-      else
-      {
-         if (FAILED(D3D11CreateDevice(
-                     (IDXGIAdapter*)d3d11->adapter, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
-                     requested_feature_levels, number_feature_levels,
-                     D3D11_SDK_VERSION, &d3d11->device,
-                     &d3d11->supportedFeatureLevel, &d3d11->context)))
-            goto error;
-      }
-
-      IDXGIDevice* dxgiDevice      = NULL;
-      IDXGIAdapter* adapter        = NULL;
-
-      d3d11->device->lpVtbl->QueryInterface(
-            d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
-      dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
-#ifndef __WINRT__
-      IDXGIFactory* dxgiFactory = NULL;
-      adapter->lpVtbl->GetParent(
-         adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
-      if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
-             dxgiFactory, (IUnknown*)d3d11->device,
-             &desc, (IDXGISwapChain**)&d3d11->swapChain)))
-         goto error;
-#else
-      IDXGIFactory2* dxgiFactory = NULL;
-      adapter->lpVtbl->GetParent(
-         adapter, uuidof(IDXGIFactory2), (void**)&dxgiFactory);
-      if (FAILED(dxgiFactory->lpVtbl->CreateSwapChainForCoreWindow(
-             dxgiFactory, (IUnknown*)d3d11->device, uwp_get_corewindow(),
-             &desc, NULL, (IDXGISwapChain1**)&d3d11->swapChain)))
-         goto error;
-#endif
-
-      dxgiFactory->lpVtbl->Release(dxgiFactory);
-      adapter->lpVtbl->Release(adapter);
-      dxgiDevice->lpVtbl->Release(dxgiDevice);
-   }
+   if (!d3d11_gfx_init_swapchain(d3d11))
+      goto error;
 
    {
       D3D11Texture2D backBuffer;
