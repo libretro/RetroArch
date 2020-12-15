@@ -1850,8 +1850,9 @@ static bool vulkan_frame(void *data, const void *frame,
       /* If we have an optimal texture, copy to that now. */
       if (chain->texture_optimal.memory != VK_NULL_HANDLE)
       {
-         vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-               &chain->texture_optimal, &chain->texture);
+         struct vk_texture *dynamic = &chain->texture_optimal;
+         struct vk_texture *staging = &chain->texture;
+         VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd, dynamic, staging);
       }
 
       vk->last_valid_index = frame_index;
@@ -1964,10 +1965,11 @@ static bool vulkan_frame(void *data, const void *frame,
            {
                if (vk->menu.dirty[vk->menu.last_index])
                {
+                  struct vk_texture *dynamic = optimal;
+                  struct vk_texture *staging = texture;
                   VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, texture);
-
-                  vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-                        optimal, texture);
+                  VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd,
+                        dynamic, staging);
                   vk->menu.dirty[vk->menu.last_index] = false;
                }
            }

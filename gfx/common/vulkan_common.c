@@ -318,69 +318,6 @@ uint32_t vulkan_find_memory_type_fallback(
          device_reqs, host_reqs_second, 0);
 }
 
-/* Dynamic texture type should be set to : VULKAN_TEXTURE_DYNAMIC
- * Staging texture type should be set to : VULKAN_TEXTURE_STAGING
- */
-void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
-      struct vk_texture *dynamic,
-      struct vk_texture *staging)
-{
-   VkBufferImageCopy region;
-
-   /* We don't have to sync against previous TRANSFER,
-    * since we observed the completion by fences.
-    *
-    * If we have a single texture_optimal, we would need to sync against
-    * previous transfers to avoid races.
-    *
-    * We would also need to optionally maintain extra textures due to
-    * changes in resolution, so this seems like the sanest and
-    * simplest solution. */
-   VULKAN_IMAGE_LAYOUT_TRANSITION(
-         cmd,
-         dynamic->image,
-         VK_IMAGE_LAYOUT_UNDEFINED,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-   region.bufferOffset                    = 0;
-   region.bufferRowLength                 = 0;
-   region.bufferImageHeight               = 0;
-   region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.imageSubresource.mipLevel       = 0;
-   region.imageSubresource.baseArrayLayer = 0;
-   region.imageSubresource.layerCount     = 1;
-   region.imageOffset.x                   = 0;
-   region.imageOffset.y                   = 0;
-   region.imageOffset.z                   = 0;
-   region.imageExtent.width               = dynamic->width;
-   region.imageExtent.height              = dynamic->height;
-   region.imageExtent.depth               = 1;
-
-   vkCmdCopyBufferToImage(
-         cmd,
-         staging->buffer,
-         dynamic->image,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         1,
-         &region);
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION(
-         cmd,
-         dynamic->image,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-
-   dynamic->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-}
-
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
 static VkImage vk_images[4 * 1024];
 static unsigned vk_count;
