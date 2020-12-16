@@ -164,6 +164,7 @@ build-static-retroarch-dummy-psp:
     expire_in: 1 month
   dependencies: []
   script:
+    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
     - "make -f Makefile.psp1.salamander -j$NUMPROC"
     - "make -C bootstrap/psp1/kernel_functions_prx/"
     
