@@ -90,6 +90,9 @@ build-static-retroarch-vita:
     -  retroarch-precompiled/
     expire_in: 1 day
   dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-vita
   script:
     # Allow failure since we don't have a core
     - "make -f Makefile.vita -j$NUMPROC ||:"
@@ -97,6 +100,20 @@ build-static-retroarch-vita:
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
+build-static-retroarch-dummy-vita:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest
+  stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  eboot.bin
+    -  param.sfo
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "make -f Makefile.vita.salamander -j$NUMPROC"
+  
 build-static-retroarch-ps2:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
   stage: prepare-for-static-cores
@@ -123,6 +140,9 @@ build-static-retroarch-psp:
     -  retroarch-precompiled/
     expire_in: 1 day
   dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-psp
   script:
     # We need to boostrap before compile
     - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
@@ -132,6 +152,22 @@ build-static-retroarch-psp:
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
+build-static-retroarch-dummy-psp:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
+  stage: build
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  EBOOT.PBP
+    -  kernel_functions.prx
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
+    - "make -f Makefile.psp1.salamander -j$NUMPROC"
+    - "make -C bootstrap/psp1/kernel_functions_prx/"
+    
 build-static-retroarch-ctr:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: prepare-for-static-cores
