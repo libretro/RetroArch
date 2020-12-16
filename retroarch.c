@@ -21835,7 +21835,7 @@ static void input_driver_poll(void)
                      settings->uints.input_keymapper_ids[i][j];
                   bool remap_valid                 =
                      remap_button != RETROK_UNKNOWN &&
-                     !handle->keys[remap_button / 32];
+                     !MAPPER_GET_KEY(handle, remap_button);
 
                   if (!remap_valid)
                      continue;
