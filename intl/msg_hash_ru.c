@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -12,6 +12,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdint.h>
+#include <string.h>
 
 #include "../msg_hash.h"
 
@@ -23,11 +25,26 @@
 #pragma warning(disable:4566)
 #endif
 
+int msg_hash_get_help_ru_enum(enum msg_hash_enums msg, char *s, size_t len)
+{
+   int ret = 0;
+
+   switch (msg)
+   {
+      case MSG_UNKNOWN:
+      default:
+         ret = -1;
+         break;
+   }
+
+   return ret;
+}
+
 const char *msg_hash_to_str_ru(enum msg_hash_enums msg)
 {
    switch (msg)
    {
-      #include "msg_hash_ru.h"
+#include "msg_hash_ru.h"
       default:
          break;
    }
