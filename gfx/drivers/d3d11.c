@@ -587,7 +587,6 @@ static void d3d11_gfx_free(void* data)
 
    Release(d3d11->scissor_enabled);
    Release(d3d11->scissor_disabled);
-   Release(d3d11->renderTargetView);
    Release(d3d11->swapChain);
 
    font_driver_free_osd();
@@ -659,7 +658,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    desc.Height                             = height;
    desc.Format                             = DXGI_FORMAT_R8G8B8A8_UNORM;
 #else
-   desc.BufferCount                        = 1;
+   desc.BufferCount                        = 2;
 
    desc.BufferDesc.Width                   = width;
    desc.BufferDesc.Height                  = height;
@@ -681,11 +680,11 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #endif
 #if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    /* On phone, no swap effects are supported. */
+   /* TODO/FIXME - need to verify if this is needed and if 
+    * flip model cannot be used here */
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
-#elif defined(__WINRT__)
-   desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
-   desc.SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL;
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
 
 #ifdef DEBUG
@@ -725,7 +724,22 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
                dxgiFactory, (IUnknown*)d3d11->device,
                &desc, (IDXGISwapChain**)&d3d11->swapChain)))
-      return false;
+   {
+      RARCH_WARN("[D3D11]: Failed to create swapchain with flip model, try non-flip model.\n");
+
+      /* Failed to create swapchain, try non-flip model */
+      d3d11->has_flip_model = false;
+      desc.SwapEffect       = DXGI_SWAP_EFFECT_DISCARD;
+
+      if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
+                  dxgiFactory, (IUnknown*)d3d11->device,
+                  &desc, (IDXGISwapChain**)&d3d11->swapChain)))
+         return false;
+   }
+
+   if (     desc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD
+         || desc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL)
+      d3d11->has_flip_model = true;
 #endif
 
    dxgiFactory->lpVtbl->Release(dxgiFactory);
@@ -804,14 +818,6 @@ static void *d3d11_gfx_init(const video_info_t* video,
             ))
       goto error;
 #endif
-
-   {
-      D3D11Texture2D backBuffer;
-      DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
-      D3D11CreateTexture2DRenderTargetView(
-            d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
-      Release(backBuffer);
-   }
 
    video_driver_set_size(d3d11->vp.full_width, d3d11->vp.full_height);
    d3d11->viewport.Width  = d3d11->vp.full_width;
@@ -1323,6 +1329,7 @@ static bool d3d11_gfx_frame(
 {
    unsigned           i;
    d3d11_texture_t* texture       = NULL;
+   D3D11RenderTargetView rtv      = NULL;
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
    const char *stat_text          = video_info->stat_text;
@@ -1337,15 +1344,7 @@ static bool d3d11_gfx_frame(
 
    if (d3d11->resize_chain)
    {
-      D3D11Texture2D backBuffer;
-
-      Release(d3d11->renderTargetView);
       DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
-
-      DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
-      D3D11CreateTexture2DRenderTargetView(
-            d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
-      Release(backBuffer);
 
       d3d11->viewport.Width  = video_width;
       d3d11->viewport.Height = video_height;
@@ -1358,6 +1357,13 @@ static bool d3d11_gfx_frame(
       d3d11->resize_chain    = false;
       d3d11->resize_viewport = true;
       video_driver_set_size(video_width, video_height);
+   }
+
+   {
+       D3D11Texture2D backBuffer;
+       DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
+       D3D11CreateTexture2DRenderTargetView(d3d11->device, backBuffer, NULL, &rtv);
+       Release(backBuffer);
    }
 
    /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
@@ -1551,8 +1557,8 @@ static bool d3d11_gfx_frame(
       }
    }
 
-   D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
-   D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
+   D3D11SetRenderTargets(context, 1, &rtv, NULL);
+   D3D11ClearRenderTargetView(context, rtv, d3d11->clearcolor);
    D3D11SetViewports(context, 1, &d3d11->frame.viewport);
 
    if (texture)
@@ -1665,6 +1671,7 @@ static bool d3d11_gfx_frame(
    d3d11->sprites.enabled = false;
 
    DXGIPresent(d3d11->swapChain, !!d3d11->vsync, 0);
+   Release(rtv);
 
    return true;
 }

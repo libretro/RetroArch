@@ -2519,7 +2519,6 @@ typedef struct
    D3D11DeviceContext    context;
    D3D11RasterizerState  scissor_enabled;
    D3D11RasterizerState  scissor_disabled;
-   D3D11RenderTargetView renderTargetView;
    D3D11Buffer           ubo;
    d3d11_uniform_t       ubo_values;
    D3D11SamplerState     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
@@ -2539,6 +2538,7 @@ typedef struct
    bool                  resize_viewport;
    bool                  resize_render_targets;
    bool                  init_history;
+   bool                  has_flip_model;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 #ifdef __WINRT__
    DXGIFactory2 factory;
