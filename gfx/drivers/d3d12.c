@@ -969,7 +969,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
 
-   d3d12->sprites.capacity                = 4096;
+   d3d12->sprites.capacity                = 16 * 1024;
    d3d12->sprites.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * d3d12->sprites.capacity;
    d3d12->sprites.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
    d3d12->sprites.vbo_view.BufferLocation = d3d12_create_buffer(

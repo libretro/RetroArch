@@ -922,7 +922,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
       D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu.vbo);
 
-      d3d11->sprites.capacity  = 4096;
+      d3d11->sprites.capacity  = 16 * 1024;
       desc.ByteWidth           = sizeof(d3d11_sprite_t) * d3d11->sprites.capacity;
       D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->sprites.vbo);
    }
