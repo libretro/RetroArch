@@ -1,7 +1,7 @@
 //"use strict";
 
 var LibraryRWebAudio = {
-   $RA__deps: ['$Browser', 'usleep'],
+   $RA__deps: ['$Browser'],
    $RA: {
       BUFFER_SIZE: 2048,
 
