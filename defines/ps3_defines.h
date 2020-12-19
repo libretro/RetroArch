@@ -335,8 +335,6 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define SYS_PROCESS_PRIMARY_STACK_SIZE_1M SYS_PROCESS_SPAWN_STACK_SIZE_1M
 
 #define SYS_PPU_THREAD_CREATE_JOINABLE 0 /* FIXME - not sure if this is correct */
-#elif defined(__CELLOS_LV2__)
-#include <sys/ppu_thread.h>
 #endif
 
 /*============================================================

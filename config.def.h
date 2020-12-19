@@ -50,7 +50,7 @@
 #define MAX_GAMMA_SETTING 1
 #endif
 
-#if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
+#if defined(XENON) || defined(_XBOX360)
 #define DEFAULT_ASPECT_RATIO 1.7778f
 #elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
 #define DEFAULT_ASPECT_RATIO 1.3333f
@@ -364,7 +364,7 @@
 /* 1:1 PAR */
 #define DEFAULT_ASPECT_RATIO_AUTO false
 
-#if defined(__CELLOS_LV2) || defined(_XBOX360)
+#if defined(_XBOX360)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_16_9
 #elif defined(PSP) || defined(_3DS) || defined(HAVE_LIBNX) || defined(VITA)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
@@ -680,7 +680,7 @@ static const bool default_savefiles_in_content_dir = false;
 static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
-#if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360) || defined(DINGUX)
+#if defined(_XBOX1) || defined(_XBOX360) || defined(DINGUX)
 static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(PS2) || defined(PSP)
 static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
@@ -1275,7 +1275,7 @@ static const bool ui_companion_toggle = false;
 
 #define DEFAULT_UI_MENUBAR_ENABLE true
 
-#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
+#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;
@@ -1400,12 +1400,6 @@ static const bool enable_device_vibration    = false;
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/"
 #elif defined(HAVE_LIBNX)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/"
-#elif defined(__CELLOS_LV2__) && defined(DEX_BUILD)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/dex-ps3/"
-#elif defined(__CELLOS_LV2__) && defined(CEX_BUILD)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/cex-ps3/"
-#elif defined(__CELLOS_LV2__) && defined(ODE_BUILD)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/ode-ps3/"
 #else
 #define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif

@@ -497,7 +497,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_PULSE
    &audio_pulse,
 #endif
-#ifdef __CELLOS_LV2__
+#ifdef __PSL1GHT__
    &audio_ps3,
 #endif
 #ifdef XENON
@@ -755,9 +755,6 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
 #endif
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   &gfx_ctx_ps3,
-#endif
 #if defined(HAVE_VIDEOCORE)
    &gfx_ctx_videocore,
 #endif
@@ -854,7 +851,7 @@ static input_driver_t *input_drivers[] = {
 #ifdef ORBIS
    &input_ps4,
 #endif
-#ifdef __CELLOS_LV2__
+#ifdef __PSL1GHT__
    &input_ps3,
 #endif
 #if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
@@ -942,9 +939,6 @@ static input_device_driver_t null_joypad = {
 };
 
 static input_device_driver_t *joypad_drivers[] = {
-#ifdef __CELLOS_LV2__
-   &ps3_joypad,
-#endif
 #ifdef HAVE_XINPUT
    &xinput_joypad,
 #endif

@@ -233,7 +233,7 @@ struct rarch_joypad_driver
 #define DEFAULT_MAX_PADS 8
 #elif defined(__QNX__)
 #define DEFAULT_MAX_PADS 8
-#elif defined(__CELLOS_LV2__)
+#elif defined(__PSL1GHT__)
 #define DEFAULT_MAX_PADS 7
 #elif defined(_XBOX)
 #define DEFAULT_MAX_PADS 4

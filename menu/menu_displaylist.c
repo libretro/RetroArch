@@ -7287,7 +7287,7 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_DRIVER,
                      PARSE_ONLY_STRING_OPTIONS, false) == 0)
                count++;
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
+#if defined(GEKKO)
             if (true)
 #else
                if (video_display_server_has_resolution_list())

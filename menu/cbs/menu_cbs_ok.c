@@ -6442,7 +6442,7 @@ static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(__CELLOS_LV2__) || defined(GEKKO)
+#if defined(GEKKO)
    unsigned width   = 0;
    unsigned  height = 0;
 
@@ -6452,7 +6452,7 @@ static int action_ok_video_resolution(const char *path,
 
       msg[0] = '\0';
 
-#if defined(__CELLOS_LV2__) || defined(_WIN32)
+#if defined(_WIN32)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
       video_driver_set_video_mode(width, height, true);

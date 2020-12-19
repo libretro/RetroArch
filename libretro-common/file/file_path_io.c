@@ -82,15 +82,11 @@
 #include <pspkernel.h>
 #endif
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-#include <cell/cell_fs.h>
-#endif
-
 #if defined(VITA)
 #define FIO_S_ISDIR SCE_S_ISDIR
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP) || defined(PS2)
+#if defined(__QNX__) || defined(PSP) || defined(PS2)
 #include <unistd.h> /* stat() is defined here */
 #endif
 

@@ -69,7 +69,7 @@ extern "C" {
 #      endif
 #    endif
 #  else
-#      if defined(__GNUC__) && __GNUC__ >= 4 && !defined(__CELLOS_LV2__)
+#      if defined(__GNUC__) && __GNUC__ >= 4
 #        define RETRO_API RETRO_CALLCONV __attribute__((__visibility__("default")))
 #      else
 #        define RETRO_API RETRO_CALLCONV

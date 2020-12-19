@@ -78,8 +78,6 @@ static frontend_ctx_driver_t frontend_ctx_null = {
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(EMSCRIPTEN)
    &frontend_ctx_emscripten,
-#elif defined(__CELLOS_LV2__)
-   &frontend_ctx_ps3,
 #endif
 #if defined(_XBOX)
    &frontend_ctx_xdk,
@@ -183,7 +181,7 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 
 #else
 
-#if defined(__CELLOS_LV2__)
+#if defined(__PSL1GHT__)
    strcpy_literal(s, "self|bin");
    return true;
 #elif defined(PSP)
@@ -235,7 +233,7 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return false;
 #else
 
-#if defined(__CELLOS_LV2__)
+#if defined(__PSL1GHT__)
    strcpy_literal(s, "EBOOT.BIN");
    return true;
 #elif defined(PSP)

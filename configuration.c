@@ -260,7 +260,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #endif
 #elif defined(HAVE_VITA2D)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
-#elif (defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)) && !defined(__WINRT__) && !defined(__HAIKU__)
+#elif (defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
@@ -314,9 +314,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #endif
 
-#if defined(__CELLOS_LV2__)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS3;
-#elif defined(XENON)
+#if defined(XENON)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XENON360;
 #elif defined(GEKKO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
@@ -412,8 +410,6 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WINRAW;
 #elif defined(ORBIS)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
-#elif defined(__CELLOS_LV2__)
-static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 #elif defined(PSP) || defined(VITA)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
 #elif defined(PS2)
@@ -450,9 +446,7 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DOS;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_NULL;
 #endif
 
-#if defined(__CELLOS_LV2__)
-static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
-#elif defined(HAVE_XINPUT)
+#if defined(HAVE_XINPUT)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XINPUT;
 #elif defined(GEKKO)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;

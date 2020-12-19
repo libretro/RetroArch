@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(__CELLOS_LV2__) || defined(__PSL1GHT__)
+#if defined(__PSL1GHT__)
 #include "../defines/ps3_defines.h"
 #endif
 

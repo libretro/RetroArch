@@ -39,11 +39,7 @@ typedef struct
    volatile bool quit_thread;
 } ps3_audio_t;
 
-#ifdef __PSL1GHT__
 static void event_loop(void *data)
-#else
-static void event_loop(uint64_t data)
-#endif
 {
    float out_tmp[CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS]
       __attribute__((aligned(16)));
@@ -112,21 +108,11 @@ static void *ps3_audio_init(const char *device,
    data->buffer = fifo_new(CELL_AUDIO_BLOCK_SAMPLES *
          AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
 
-#ifdef __PSL1GHT__
    sys_lwmutex_attr_t lock_attr =
    {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
    sys_lwmutex_attr_t cond_lock_attr =
    {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
    sys_lwcond_attribute_t cond_attr = {"\0"};
-#else
-   sys_lwmutex_attribute_t lock_attr;
-   sys_lwmutex_attribute_t cond_lock_attr;
-   sys_lwcond_attribute_t cond_attr;
-
-   sys_lwmutex_attribute_initialize(lock_attr);
-   sys_lwmutex_attribute_initialize(cond_lock_attr);
-   sys_lwcond_attribute_initialize(cond_attr);
-#endif
 
    sys_lwmutex_create(&data->lock, &lock_attr);
    sys_lwmutex_create(&data->cond_lock, &cond_lock_attr);
@@ -135,11 +121,7 @@ static void *ps3_audio_init(const char *device,
    cellAudioPortStart(data->audio_port);
    data->started = true;
    sys_ppu_thread_create(&data->thread, event_loop,
-#ifdef __PSL1GHT__
    data,
-#else
-   (uint64_t)data,
-#endif
    1500, 0x1000, SYS_PPU_THREAD_CREATE_JOINABLE, (char*)"sound");
 
    return data;
