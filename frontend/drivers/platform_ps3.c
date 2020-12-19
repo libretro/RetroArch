@@ -52,9 +52,13 @@
 #include "../../paths.h"
 
 #ifdef __PSL1GHT__
+#ifdef HAVE_STANDARD_FOLDERS
+#define EMULATOR_CONTENT_DIR "RETROARC1"
+#else
 #define EMULATOR_CONTENT_DIR "SSNE10001"
+#endif
 #elif defined(HAVE_STANDARD_FOLDERS)
-#define EMULATOR_CONTENT_DIR "RETROARCH"
+#define EMULATOR_CONTENT_DIR "RETROARC0"
 #else
 #define EMULATOR_CONTENT_DIR "SSNE10000"
 #endif
