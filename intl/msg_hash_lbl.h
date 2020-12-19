@@ -31,6 +31,10 @@ MSG_HASH(
    "youtube"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK,
+   "facebook"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
    "achievement_list"
    )

@@ -19799,6 +19799,7 @@ void recording_driver_update_streaming_url(void)
    settings_t     *settings    = p_rarch->configuration_settings;
    const char     *youtube_url = "rtmp://a.rtmp.youtube.com/live2/";
    const char     *twitch_url  = "rtmp://live.twitch.tv/app/";
+   const char     *facebook_url  = "rtmps://live-api-s.facebook.com:443/rtmp/";
 
    if (!settings)
       return;
@@ -19826,7 +19827,7 @@ void recording_driver_update_streaming_url(void)
                   settings->arrays.youtube_stream_key,
                   sizeof(settings->paths.path_stream_url));
          }
-         break;
+         break;         
       case STREAMING_MODE_LOCAL:
          /* TODO: figure out default interface and bind to that instead */
          snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
@@ -19836,6 +19837,17 @@ void recording_driver_update_streaming_url(void)
       default:
          /* Do nothing, let the user input the URL */
          break;
+      case STREAMING_MODE_FACEBOOK:
+         if (!string_is_empty(settings->arrays.facebook_stream_key))
+         {
+            strlcpy(settings->paths.path_stream_url,
+                  facebook_url,
+                  sizeof(settings->paths.path_stream_url));
+            strlcat(settings->paths.path_stream_url,
+                  settings->arrays.facebook_stream_key,
+                  sizeof(settings->paths.path_stream_url));
+         }
+         break;         
    }
 }
 
