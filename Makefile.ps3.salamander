@@ -6,6 +6,14 @@ HAVE_STANDARD_FOLDERS	= 0
 
 include $(CELL_MK_DIR)/sdk.makedef.mk
 
+ifeq ($(HAVE_STANDARD_FOLDERS), 1)
+CONTENT_ID_FULL		= UP0001-RETROARCH_00-0000000000000001
+CONTENT_ID		= RETROARCH
+else
+CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
+CONTENT_ID		= SSNE10000
+endif
+
 # system platform
 system_platform = unix
 ifeq ($(shell uname -a),)
