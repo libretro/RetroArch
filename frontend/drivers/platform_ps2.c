@@ -164,8 +164,10 @@ static void frontend_ps2_init(void *data)
    SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
 
+#if !defined(DEBUG)
    /* CDFS */
-   // SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
+#endif
 
 #ifndef IS_SALAMANDER
    /* Controllers */
@@ -208,7 +210,9 @@ static void frontend_ps2_init(void *data)
    verbosity_enable();
 #endif
 
+#if !defined(DEBUG)
    waitUntilDeviceIsReady(bootDeviceID);
+#endif
 }
 
 static void frontend_ps2_deinit(void *data)
