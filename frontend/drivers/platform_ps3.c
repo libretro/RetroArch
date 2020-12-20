@@ -78,7 +78,7 @@ static enum frontend_fork ps3_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_ps3_shutdown(bool unused)
 {
-   sys_process_exit(0);
+   sysProcessExit(0);
 }
 #endif
 
@@ -467,7 +467,7 @@ static int frontend_ps3_exec_exitspawn(const char *path,
 #ifndef __PSL1GHT__
    ret = sceNpDrmProcessExitSpawn(license_data, path,
          (const char** const)argv, envp, (sys_addr_t)spawn_data,
-         256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+         256, 1000, SYS_PROCESS_SPAWN_STACK_SIZE_1M);
 #else
    ret = -1;
 #endif
@@ -475,8 +475,8 @@ static int frontend_ps3_exec_exitspawn(const char *path,
    if (ret <  0)
    {
       RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-      sys_game_process_exitspawn(path, (const char** const)argv,
-            envp, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      sysProcessExitSpawn2(path, (const char** const)argv,
+            envp, NULL, 0, 1000, SYS_PROCESS_SPAWN_STACK_SIZE_1M);
    }
 
    return ret;
