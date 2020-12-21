@@ -96,12 +96,12 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #elif defined(WIIU)
 #define retro_sleep(msec) (OSSleepTicks(ms_to_ticks((msec))))
 #else
-static INLINE void retro_sleep(unsigned msec)
-{
-   struct timespec tv = {0};
-   tv.tv_sec          = msec / 1000;
-   tv.tv_nsec         = (msec % 1000) * 1000000;
-   nanosleep(&tv, NULL);
+#define retro_sleep(msec) \
+{ \
+   struct timespec tv = {0}; \
+   tv.tv_sec          = msec / 1000; \
+   tv.tv_nsec         = (msec % 1000) * 1000000; \
+   nanosleep(&tv, NULL); \
 }
 #endif
 
