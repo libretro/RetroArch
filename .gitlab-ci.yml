@@ -76,16 +76,23 @@ build-static-retroarch-libnx-aarch64:
 build-static-retroarch-dummy-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
   stage: build
+  variables:
+    MEDIA_PATH: .media
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
-    -  retroarch_switch.nro
-    -  retroarch_switch.elf
+    - retroarch_switch.nro
+    - retroarch_switch.elf
+    - ${MEDIA_PATH}
     expire_in: 1 month
   dependencies: []
   script:
     - "make -f Makefile.libnx -j$NUMPROC HAVE_STATIC_DUMMY=1"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f pkg/libnx/retroarch.jpg ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
 build-static-retroarch-vita:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest
@@ -162,19 +169,25 @@ build-static-retroarch-psp:
 build-static-retroarch-dummy-psp:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
   stage: build
+  variables:
+    MEDIA_PATH: .media
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
-    -  EBOOT.PBP
-    -  kernel_functions.prx
+    - EBOOT.PBP
+    - kernel_functions.prx
+    - ${MEDIA_PATH}
     expire_in: 1 month
   dependencies: []
   script:
     - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
     - "make -f Makefile.psp1.salamander -j$NUMPROC"
     - "make -C bootstrap/psp1/kernel_functions_prx/"
-    
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f pkg/psp1/ICON0.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f pkg/psp1/PIC1.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+
 build-static-retroarch-ctr:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: prepare-for-static-cores
@@ -198,13 +211,16 @@ build-static-retroarch-ctr:
 build-static-retroarch-dummy-ctr:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: build
+  variables:
+    MEDIA_PATH: .media
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
-    -  retroarch_3ds.cia
-    -  RetroArch.3dsx
-    -  RetroArch.smdh
+    - retroarch_3ds.cia
+    - RetroArch.3dsx
+    - RetroArch.smdh
+    - ${MEDIA_PATH}
     expire_in: 1 month
   dependencies: []
   script:
@@ -212,6 +228,10 @@ build-static-retroarch-dummy-ctr:
     - "mv -f retroarch_3ds_salamander.cia retroarch_3ds.cia"
     - "mv -f retroarch_3ds_salamander.3dsx RetroArch.3dsx"
     - "mv -f retroarch_3ds_salamander.smdh RetroArch.smdh"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
 build-static-retroarch-wii:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
@@ -236,16 +256,26 @@ build-static-retroarch-wii:
 build-static-retroarch-dummy-wii:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: build
+  variables:
+    MEDIA_PATH: .media
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
-    -  boot.dol
+    - boot.dol
+    - ${MEDIA_PATH}
     expire_in: 1 month
   dependencies: []
   script:
     - "make -f Makefile.wii.salamander -j$NUMPROC EXTERNAL_LIBOGC=1 GX_PTHREAD_LEGACY=0"
     - "mv -f retroarch-salamander_wii.dol boot.dol"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f pkg/wii/icon.png ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f pkg/wii/meta.xml ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
 build-static-retroarch-ngc:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
@@ -257,12 +287,33 @@ build-static-retroarch-ngc:
     -  retroarch-precompiled/
     expire_in: 1 day
   dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-ngc
   script:
     # Allow failure since we don't have a core
     - "make -f Makefile.ngc -j$NUMPROC EXTERNAL_LIBOGC=1 GX_PTHREAD_LEGACY=0 ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
+build-static-retroarch-dummy-ngc:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - ${MEDIA_PATH}
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
 trigger_static-cores:
   stage: trigger-static-cores
