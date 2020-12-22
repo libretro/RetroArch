@@ -2665,7 +2665,9 @@ static bool command_write_ram(const char *arg);
 #endif
 
 static const struct cmd_action_map action_map[] = {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { "SET_SHADER",       command_set_shader,       "<shader path>" },
+#endif
    { "VERSION",          command_version,          "No argument"},
    { "GET_STATUS",       command_get_status,       "No argument" },
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
