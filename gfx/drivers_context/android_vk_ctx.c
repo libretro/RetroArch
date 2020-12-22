@@ -262,7 +262,9 @@ static void android_gfx_ctx_vk_swap_buffers(void *data)
    {
       and->vk.context.has_acquired_swapchain = false;
       if (and->vk.swapchain == VK_NULL_HANDLE)
+      {
          retro_sleep(10);
+      }
       else
          vulkan_present(&and->vk, and->vk.context.current_swapchain_index);
    }
