@@ -154,7 +154,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    PIP_ADAPTER_ADDRESSES adapter_addresses = NULL, aa = NULL;
    PIP_ADAPTER_UNICAST_ADDRESS ua = NULL;
 #ifdef _WIN32_WINNT_WINXP
-   DWORD size;
+   DWORD size = 0;
    DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
 
    adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
