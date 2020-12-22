@@ -21,6 +21,7 @@
  */
 
 #include <compat/fopen_utf8.h>
+#include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 #include <stdio.h>
 #include <stdlib.h>
