@@ -49,9 +49,14 @@ void *fopen_utf8(const char * filename, const char * mode)
 #else
    wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);
    wchar_t * mode_w = utf8_to_utf16_string_alloc(mode);
-   FILE* ret = _wfopen(filename_w, mode_w);
-   free(filename_w);
-   free(mode_w);
+   FILE* ret = NULL;
+
+   if (filename_w && mode_w)
+      ret = _wfopen(filename_w, mode_w);
+   if (filename_w)
+      free(filename_w);
+   if (mode_w)
+      free(mode_w);
    return ret;
 #endif
 }
