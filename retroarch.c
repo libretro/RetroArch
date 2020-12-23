@@ -16380,6 +16380,7 @@ static bool hw_render_context_is_glcore(enum retro_hw_context_type type)
 }
 #endif
 
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D9) || defined(HAVE_OPENGL_CORE)
 static video_driver_t *hw_render_context_driver(enum retro_hw_context_type type, int major, int minor)
 {
    switch (type)
@@ -16419,6 +16420,7 @@ static video_driver_t *hw_render_context_driver(enum retro_hw_context_type type,
 
    return NULL;
 }
+#endif
 
 static enum retro_hw_context_type hw_render_context_type(const char *s)
 {
