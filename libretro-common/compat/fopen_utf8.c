@@ -21,6 +21,7 @@
  */
 
 #include <compat/fopen_utf8.h>
+#include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,9 +37,13 @@
 
 void *fopen_utf8(const char * filename, const char * mode)
 {
+   const char * filename_local = NULL;
+   const char* windows_long_prefix = "\\\\?\\";
+   char long_filename[PATH_MAX_LENGTH];
+
 #if defined(LEGACY_WIN32)
    FILE             *ret = NULL;
-   char * filename_local = utf8_to_local_string_alloc(filename);
+   filename_local = utf8_to_local_string_alloc(filename);
 
    if (!filename_local)
       return NULL;
@@ -47,7 +52,17 @@ void *fopen_utf8(const char * filename, const char * mode)
       free(filename_local);
    return ret;
 #else
-   wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);
+#ifdef _WIN32
+   /*
+      prefix to tell Windows to bypass the ~260 characters limit in many I/O APIs
+      https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+   */
+   snprintf(long_filename, PATH_MAX_LENGTH, "%s%s", windows_long_prefix, filename);
+   filename_local = long_filename;
+#else
+   filename_local = filename;
+#endif
+   wchar_t * filename_w = utf8_to_utf16_string_alloc(filename_local);
    wchar_t * mode_w = utf8_to_utf16_string_alloc(mode);
    FILE* ret = _wfopen(filename_w, mode_w);
    free(filename_w);
