@@ -38,6 +38,8 @@
 void *fopen_utf8(const char * filename, const char * mode)
 {
    const char * filename_local = NULL;
+   const char* windows_long_prefix = "\\\\?\\";
+   char long_filename[PATH_MAX_LENGTH];
 
 #if defined(LEGACY_WIN32)
    FILE             *ret = NULL;
@@ -51,10 +53,10 @@ void *fopen_utf8(const char * filename, const char * mode)
    return ret;
 #else
 #ifdef _WIN32
-   // prefix to tell Windows to bypass the ~260 characters limit in many I/O APIs
-   // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
-   const char * windows_long_prefix = "\\\\?\\";
-   char long_filename[PATH_MAX_LENGTH];
+   /*
+      prefix to tell Windows to bypass the ~260 characters limit in many I/O APIs
+      https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+   */
    snprintf(long_filename, PATH_MAX_LENGTH, "%s%s", windows_long_prefix, filename);
    filename_local = long_filename;
 #else
