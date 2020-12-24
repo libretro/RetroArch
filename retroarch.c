@@ -18460,6 +18460,13 @@ static char *get_temp_directory_alloc(const char *override_dir)
    path = utf16_to_utf8_string_alloc(wide_str);
    free(wide_str);
 #endif
+   /*
+     Windows seems to be adding (back)slash at the end of the path...
+     This can cause issues when concatenating path separators and some I/O apis, so we get rid of it
+   */
+   path_length = strlen(path);
+   if (path[path_length - 1] == '\\')
+      path[path_length - 1] = 0;
 #else
 #if defined ANDROID
    src     = override_dir;
