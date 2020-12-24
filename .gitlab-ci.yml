@@ -270,15 +270,24 @@ build-static-retroarch-wiiu:
 build-static-retroarch-dummy-wiiu:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: build
+  variables:
+    MEDIA_PATH: .media
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
-    -  retroarch_wiiu_salamander.rpx
+    - retroarch.rpx
+    - ${MEDIA_PATH}
     expire_in: 1 month
   dependencies: []
   script:
     - "make -f Makefile.wiiu -j$NUMPROC SALAMANDER_BUILD=1"
+    - "mv -f retroarch_wiiu_salamander.rpx retroarch.rpx"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f pkg/wiiu/icon.png ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f pkg/wiiu/meta.xml ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
 build-static-retroarch-wii:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
@@ -370,6 +379,7 @@ trigger_static-cores:
   - build-static-retroarch-ps2
   - build-static-retroarch-psp
   - build-static-retroarch-ctr
+  - build-static-retroarch-wiiu
   - build-static-retroarch-wii
   - build-static-retroarch-ngc
   dependencies: []
