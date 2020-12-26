@@ -1168,6 +1168,45 @@ static void rcheevos_append_menu_achievement(
 }
 #endif
 
+void rcheevos_populate_hardcore_pause_menu(void* data)
+{
+#ifdef HAVE_MENU
+   menu_displaylist_info_t* info = (menu_displaylist_info_t*)data;
+   settings_t* settings = config_get_ptr();
+   bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
+
+   if (cheevos_hardcore_mode_enable && rcheevos_locals.loaded)
+   {
+      if (rcheevos_locals.hardcore_active)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL),
+               msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL),
+               MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL,
+               MENU_SETTING_ACTION_CLOSE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
+               msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE),
+               MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,
+               MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0);
+      }
+      else
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL),
+               msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL),
+               MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,
+               MENU_SETTING_ACTION_CLOSE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME),
+               msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_RESUME),
+               MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,
+               MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
+      }
+   }
+#endif
+}
+
 void rcheevos_populate_menu(void* data)
 {
 #ifdef HAVE_MENU
@@ -1187,14 +1226,14 @@ void rcheevos_populate_menu(void* data)
       if (rcheevos_locals.hardcore_active)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
-               msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE),
-               MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU),
+               MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
                MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0);
       else
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME),
-               msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_RESUME),
-               MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU),
+               MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
                MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
    }
 

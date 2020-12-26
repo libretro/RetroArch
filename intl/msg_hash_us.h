@@ -6841,12 +6841,32 @@ MSG_HASH(
    "No achievements to display"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "Cancel Pause Achievements Hardcore Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "Leaves achievement hardcore mode enabled for the current session"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "Cancel Resume Achievements Hardcore Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "Leaves achievement hardcore mode disabled for the current session"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Pause Achievements Hardcore Mode"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pause achievements for current session. (This action will enable save states, cheats, rewind, pause, and slow-motion)"
+   "Pauses achievement hardcore mode for the current session. (This action will enable save states, cheats, rewind, pause, and slow-motion)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -6854,7 +6874,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Resume achievements for current session. (This action will disable save states, cheats, rewind, pause, and slow-motion and reset the current game)"
+   "Resumes achievement hardcore mode for the current session. (This action will disable save states, cheats, rewind, pause, and slow-motion and reset the current game)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,

@@ -57,7 +57,9 @@
 
 #include "../../tasks/tasks_internal.h"
 
+#ifdef HAVE_CHEEVOS
 #include "../../cheevos/badges.h"
+#endif
 #include "../../content.h"
 
 #define XMB_RIBBON_ROWS 64

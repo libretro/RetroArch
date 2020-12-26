@@ -10557,6 +10557,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          }
          break;
+      case DISPLAYLIST_ACHIEVEMENT_PAUSE_MENU:
+#ifdef HAVE_CHEEVOS
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         rcheevos_populate_hardcore_pause_menu(info);
+#endif
+         info->need_push = true;
+         info->need_refresh = true;
+         break;
       case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
