@@ -93,6 +93,18 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
    return 1;
 }
 
+#ifdef HAVE_CHEEVOS
+static int menu_action_sublabel_achievement_pause_menu(file_list_t* list,
+      unsigned type, unsigned i, const char* label, const char* path, char* s, size_t len)
+{
+   if (string_is_equal(path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME), len);
+   return 1;
+}
+#endif
+
 #ifdef HAVE_AUDIOMIXER
 DEFAULT_SUBLABEL_MACRO(menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play,
       MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY)
@@ -164,6 +176,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_display_settings_list,MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_settings_list,            MENU_ENUM_SUBLABEL_CORE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_information_list_list,         MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_list,              MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_pause_cancel,      MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_resume_cancel,     MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_enable,                MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_test_unofficial,       MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE)
@@ -3388,8 +3402,23 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_list);
             break;
+#ifdef HAVE_NETWORKING
+         case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_room);
+            break;
+#endif
+#ifdef HAVE_CHEEVOS
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_list);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU:
+            BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_achievement_pause_menu);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_pause_cancel);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_resume_cancel);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE:
@@ -3398,11 +3427,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_UNOFFICIAL_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
             break;
-#ifdef HAVE_NETWORKING
-         case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_room);
-            break;
-#endif
          case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_enable);
             break;
@@ -3422,7 +3446,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_badges_enable);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE:
-#if defined(HAVE_CHEEVOS) && defined(HAVE_AUDIOMIXER)
+#ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_unlock_sound_enable);
 #endif
             break;
@@ -3435,6 +3459,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_start_active);
             break;
+#endif
          case MENU_ENUM_LABEL_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings);
             break;

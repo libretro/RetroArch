@@ -27,6 +27,10 @@
 #include "../../core_option_manager.h"
 #include "../../core_info.h"
 
+#ifdef HAVE_CHEEVOS
+#include "../../cheevos/cheevos.h"
+#endif
+
 #ifndef BIND_ACTION_GET_TITLE
 #define BIND_ACTION_GET_TITLE(cbs, name) (cbs)->action_get_title = (name)
 #endif
@@ -498,6 +502,18 @@ static int action_get_title_dropdown_input_description_kbd(
       path, port, s, len);
 }
 
+#ifdef HAVE_CHEEVOS
+static int action_get_title_achievement_pause_menu(
+      const char* path, const char* label, unsigned menu_type, char* s, size_t len)
+{
+   if (rcheevos_hardcore_active())
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME), len);
+   return 1;
+}
+#endif
+
 DEFAULT_TITLE_MACRO(action_get_quick_menu_override_options,     MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_user_accounts_cheevos_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS)
 DEFAULT_TITLE_MACRO(action_get_user_accounts_youtube_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE)
@@ -662,7 +678,9 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_manual_content_scan_dir, MENU_ENUM_LAB
 
 DEFAULT_TITLE_COPY_MACRO(action_get_title_help,                   MENU_ENUM_LABEL_VALUE_HELP_LIST)
 DEFAULT_TITLE_COPY_MACRO(action_get_title_input_settings,         MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
+#ifdef HAVE_CHEEVOS
 DEFAULT_TITLE_COPY_MACRO(action_get_title_cheevos_list,           MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST)
+#endif
 DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS)
 DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_preset_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS)
 DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_preset_save,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE)
@@ -1075,8 +1093,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_playlist_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST,
          action_get_playlist_manager_list},
+#ifdef HAVE_CHEEVOS
+      {MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+         action_get_title_achievement_pause_menu},
       {MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
          action_get_title_cheevos_list},
+#endif
       {MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
          action_get_title_video_shader_parameters},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
