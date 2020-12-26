@@ -274,6 +274,7 @@
 
 #define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+#define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
 
 #ifdef HAVE_MENU
@@ -1645,8 +1646,10 @@ typedef struct input_mapper
 {
    /* Left X, Left Y, Right X, Right Y */
    int16_t analog_value[MAX_USERS][8];
-   /* the whole keyboard state */
+   /* The whole keyboard state */
    uint32_t keys[RETROK_LAST / 32 + 1];
+   /* RetroPad button state of remapped keyboard keys */
+   unsigned key_button[RETROK_LAST];
    /* This is a bitmask of (1 << key_bind_id). */
    input_bits_t buttons[MAX_USERS];
 } input_mapper_t;
