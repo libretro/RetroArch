@@ -21750,8 +21750,6 @@ static void input_driver_poll(void)
       const input_device_driver_t *joypad_driver 
                                        = p_rarch->joypad;
 
-      memset(handle->keys, 0, sizeof(handle->keys));
-
       for (i = 0; i < max_users; i++)
       {
          input_bits_t current_inputs;
@@ -21833,13 +21831,10 @@ static void input_driver_poll(void)
                for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
                {
                   unsigned current_button_value;
-                  unsigned remap_button            =
+                  unsigned remap_key               =
                      settings->uints.input_keymapper_ids[i][j];
-                  bool remap_valid                 =
-                     remap_button != RETROK_UNKNOWN &&
-                     !MAPPER_GET_KEY(handle, remap_button);
 
-                  if (!remap_valid)
+                  if (remap_key == RETROK_UNKNOWN)
                      continue;
 
                   current_button_value =
@@ -21857,21 +21852,28 @@ static void input_driver_poll(void)
                            BIT256_GET(ol_state->buttons, j);
                   }
 #endif
+                  /* Press */
                   if ((current_button_value == 1)
-                        && (j != remap_button))
+                        && !MAPPER_GET_KEY(handle, remap_key))
                   {
-                     MAPPER_SET_KEY (handle,
-                           remap_button);
+                     handle->key_button[remap_key] = j;
+                     MAPPER_SET_KEY(handle, remap_key);
                      input_keyboard_event(true,
-                           remap_button,
+                           remap_key,
                            0, 0, RETRO_DEVICE_KEYBOARD);
-                     continue;
                   }
+                  /* Release */
+                  else if ((current_button_value == 0)
+                        && MAPPER_GET_KEY(handle, remap_key))
+                  {
+                     if (handle->key_button[remap_key] != j)
+                        continue;
 
-                  /* Release keyboard event*/
-                  input_keyboard_event(false,
-                        remap_button,
-                        0, 0, RETRO_DEVICE_KEYBOARD);
+                     MAPPER_UNSET_KEY(handle, remap_key);
+                     input_keyboard_event(false,
+                           remap_key,
+                           0, 0, RETRO_DEVICE_KEYBOARD);
+                  }
                }
                break;
 
