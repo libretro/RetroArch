@@ -170,7 +170,7 @@ build-static-retroarch-dummy-ps2:
     expire_in: 1 month
   dependencies: []
   script:
-    - "make -f Makefile.ps2.salamander -j$NUMPROC"
+    - "make -f Makefile.ps2.salamander -j$NUMPROC release"
 
 build-static-retroarch-psp:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
