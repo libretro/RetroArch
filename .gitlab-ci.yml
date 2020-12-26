@@ -158,6 +158,20 @@ build-static-retroarch-ps2:
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
+build-static-retroarch-dummy-ps2:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
+  stage: build
+  before_script:
+    # PS2 doesn't allow to use -jX for now
+    - export NUMPROC=1
+  artifacts:
+    paths:
+    -  raboot.elf
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "make -f Makefile.ps2.salamander -j$NUMPROC"
+
 build-static-retroarch-psp:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-psp:latest
   stage: prepare-for-static-cores
