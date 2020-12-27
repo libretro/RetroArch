@@ -216,13 +216,15 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-#ifndef IS_SALAMANDER
-   bool original_verbose = verbosity_is_enabled();
-   verbosity_enable();
-#endif
+   int ret;
+   unsigned int get_type;
+   unsigned int get_attributes;
+   CellGameContentSize size;
+   char dirName[CELL_GAME_DIRNAME_SIZE]  = {0};
 
-   (void)args;
 #ifndef IS_SALAMANDER
+   bool original_verbose                 = verbosity_is_enabled();
+   verbosity_enable();
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
@@ -230,15 +232,9 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 #endif
 #endif
 
-   int ret;
-   unsigned int get_type;
-   unsigned int get_attributes;
-   CellGameContentSize size;
-   char dirName[CELL_GAME_DIRNAME_SIZE]  = {0};
-
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
-   // second param is multiMAN SELF file
+   /* second param is multiMAN SELF file */
    if (     path_is_valid(argv[2]) && *argc > 1
          && (string_is_equal(argv[2], EMULATOR_CONTENT_DIR)))
    {
