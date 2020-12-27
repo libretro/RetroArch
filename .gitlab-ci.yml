@@ -139,6 +139,7 @@ build-static-retroarch-dummy-vita:
     paths:
     -  eboot.bin
     -  param.sfo
+    - ${MEDIA_PATH}
     expire_in: 1 month
   dependencies: []
   script:
