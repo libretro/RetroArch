@@ -131,6 +131,8 @@ build-static-retroarch-vita:
 build-static-retroarch-dummy-vita:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest
   stage: build
+  variables:
+    MEDIA_PATH: .media
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
@@ -141,6 +143,10 @@ build-static-retroarch-dummy-vita:
   dependencies: []
   script:
     - "make -f Makefile.vita.salamander -j$NUMPROC"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -fr pkg/vita/* ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
 build-static-retroarch-ps2:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-ps2:latest
