@@ -150,6 +150,9 @@ build-static-retroarch-ps2:
     -  retroarch-precompiled/
     expire_in: 1 day
   dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-ps2
   script:
     # Allow failure since we don't have a core
     # PS2 makefile for now doesn't allow -jX so this is why is hardcoded to -j1
