@@ -899,7 +899,11 @@ bool video_shader_check_reference_chain_for_save(const char *path_to_save, const
 {
    config_file_t *conf           = config_file_new_from_path_to_string(reference_path);
    char* nested_reference_path   = (char*)malloc(PATH_MAX_LENGTH);
+   char* path_to_save_conformed   = (char*)malloc(PATH_MAX_LENGTH);
    bool return_val               = true;
+
+   strlcpy(path_to_save_conformed, path_to_save, PATH_MAX_LENGTH);
+   pathname_conform_slashes_to_os(path_to_save_conformed);
 
    if (!conf)
    {
@@ -927,7 +931,7 @@ bool video_shader_check_reference_chain_for_save(const char *path_to_save, const
 
          /* If one of the reference paths is the same as the file we want to save then this reference chain would be 
           * self-referential / cyclical and we can't save this as a simple preset*/
-         if (string_is_equal(nested_reference_path, path_to_save))
+         if (string_is_equal(nested_reference_path, path_to_save_conformed))
          {
             RARCH_WARN("[ Shaders ]:  Saving preset:\n"
                        "                                              %s\n"
@@ -937,7 +941,7 @@ bool video_shader_check_reference_chain_for_save(const char *path_to_save, const
                        "                                              %s\n"
                        "                                          Which already references preset:\n"
                        "                                              %s\n\n",
-                       path_to_save, reference_path, conf->path, nested_reference_path);
+                       path_to_save_conformed, reference_path, conf->path, nested_reference_path);
             return_val = false;
             break;
          }
@@ -949,8 +953,7 @@ bool video_shader_check_reference_chain_for_save(const char *path_to_save, const
          /* If we can't read the reference preset */
          if (!conf)
          {
-            RARCH_WARN("[ Shaders ]:  Could not read shader preset in #reference line: %s\n", 
-                        nested_reference_path);
+            RARCH_WARN("[ Shaders ]:  Could not read shader preset in #reference line: %s\n", nested_reference_path);
             return_val = false;
             break;
          }
@@ -959,6 +962,8 @@ bool video_shader_check_reference_chain_for_save(const char *path_to_save, const
       }
    }
 
+
+   free(path_to_save_conformed);
    free(nested_reference_path);
    config_file_free(conf);
 
@@ -1044,6 +1049,8 @@ bool video_shader_write_referenced_preset(const char *path,
    {
       /* Get the absolute path for the reference */
       fill_pathname_expanded_and_absolute(abs_temp_reference_path, reference_conf->path, reference_conf->reference);
+
+      pathname_conform_slashes_to_os(abs_temp_reference_path);
 
       /* If the reference is the same as the path we are trying to save to 
          then this should be used as the reference to save */
@@ -1640,13 +1647,15 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
       char* reference_preset_path = (char*)malloc(PATH_MAX_LENGTH);
       i++;
 
-      RARCH_LOG("[ Shaders ]:    #reference preset read (Depth %u): %s\n", i, conf->path);
+      RARCH_LOG("[ Shaders ]:    Preset (Depth %u):  %s \n", i, conf->path);
 
       /* Add the reference to the list */
-      strcpy(override_conf_paths[i], conf->path);
+      strlcpy(override_conf_paths[i], conf->path, PATH_MAX_LENGTH);
 
       /* Get the absolute path for the reference */
       fill_pathname_expanded_and_absolute(reference_preset_path, conf->path, conf->reference);
+
+      RARCH_LOG("[ Shaders ]:      #reference     = %s \n", reference_preset_path);
 
       /* Create a new config from this reference level */
       conf = config_file_new_from_path_to_string(reference_preset_path);
@@ -1664,7 +1673,7 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
       config_file_t *override_conf = config_file_new_from_path_to_string(override_conf_paths[i]);
       
       RARCH_LOG("[ Shaders ]:    Depth %u Apply Overrides\n", i);
-      RARCH_LOG("[ Shaders ]:      Apply values from:  %s\n", override_conf->path);
+      RARCH_LOG("[ Shaders ]:      Apply values from:   %s\n", override_conf->path);
       override_shader_values(override_conf, shader);
 
       config_file_free(override_conf);
