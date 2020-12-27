@@ -67,10 +67,6 @@
 #include "../network/net_logger.c"
 #endif
 
-#if TARGET_OS_OSX
-#include "../ui/drivers/cocoa/ui_cocoa_application.c"
-#endif
-
 /*============================================================
 COMPATIBILITY
 ============================================================ */
