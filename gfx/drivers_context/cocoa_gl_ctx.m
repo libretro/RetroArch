@@ -107,8 +107,6 @@ void *nsview_get_ptr(void)
 void nsview_set_ptr(CocoaView *p) { g_instance = p; }
 
 #if TARGET_OS_OSX
-static SEL sel_flushBuffer;
-static SEL updateSel;
 static NSOpenGLPixelFormat* g_format;
 void *glcontext_get_ptr(void) { return (BRIDGE void *)g_context; }
 #endif
@@ -258,8 +256,8 @@ void cocoagl_gfx_ctx_update(void)
          CGLUpdateContext(g_hw_ctx.CGLContextObj);
          CGLUpdateContext(g_context.CGLContextObj);
 #else
-         ((void (*)(id, SEL))objc_msgSend)(g_hw_ctx, updateSel);
-         ((void (*)(id, SEL))objc_msgSend)(g_context, updateSel);
+         [g_context update];
+         [g_hw_ctx update];
 #endif
 #endif
 #endif
@@ -608,8 +606,8 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data)
             return;
 
 #if TARGET_OS_OSX
-         ((id (*)(id, SEL))objc_msgSend)(g_context, sel_flushBuffer);
-         ((id (*)(id, SEL))objc_msgSend)(g_hw_ctx,  sel_flushBuffer);
+         [g_context flushBuffer];
+         [g_hw_ctx  flushBuffer];
 #elif defined(HAVE_COCOATOUCH)
          if (g_view)
             [g_view display];
@@ -847,11 +845,6 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
          break;
    }
     
-#if TARGET_OS_OSX
-   sel_flushBuffer = sel_registerName("flushBuffer");
-   updateSel       = sel_registerName("update");
-#endif
-
    return cocoa_ctx;
 }
 
