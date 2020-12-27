@@ -1110,6 +1110,100 @@ void fill_pathname_abbreviate_special(char *out_path,
    retro_assert(strlcpy(out_path, in_path, size) < size);
 }
 
+/* Changes the slashes to the correct kind for the os 
+ * So forward slash on linux and backslash on Windows */
+void pathname_conform_slashes_to_os(char *path)
+{
+   /* Conform slashes to os standard so we get proper matching */
+   char* p;
+   for (p = path; *p; p++)
+      if (*p == '/' || *p == '\\')
+         *p = PATH_DEFAULT_SLASH_C();
+}
+
+/* Change all shashes to forward so they are more portable between windows and linux */
+void pathname_make_slashes_portable(char *path)
+{
+   /* Conform slashes to os standard so we get proper matching */
+   char* p;
+   for (p = path; *p; p++)
+      if (*p == '/' || *p == '\\')
+         *p = '/';
+}
+
+/* Get the number of slashes in a path, returns an integer */
+int get_pathname_num_slashes(const char *in_path)
+{
+   int num_slashes = 0;
+   int i = 0;
+
+   for (i = 0; i < PATH_MAX_LENGTH; i++)
+   {
+      if (PATH_CHAR_IS_SLASH(in_path[i]))
+         num_slashes++;
+      if (in_path[i] == '\0')
+         break;
+   }
+
+   return num_slashes;
+}
+
+/* Fills the supplied path with either the abbreviated path or the relative path, which ever
+ * one is has less depth / number of slashes
+ * If lengths of abbreviated and relative paths are the same the relative path will be used
+ * in_path can be an absolute, relative or abbreviated path */
+void fill_pathname_abbreviated_or_relative(char *out_path, const char *in_refpath, const char *in_path, size_t size)
+{
+   unsigned relative_length = 0;
+   unsigned abbreviated_length = 0;
+
+   char in_path_conformed[PATH_MAX_LENGTH];
+   char in_refpath_conformed[PATH_MAX_LENGTH];
+   char expanded_path[PATH_MAX_LENGTH];
+   char absolute_path[PATH_MAX_LENGTH];
+   char relative_path[PATH_MAX_LENGTH];
+   char abbreviated_path[PATH_MAX_LENGTH];
+   
+   in_path_conformed[0] = '\0';
+   in_refpath_conformed[0] = '\0';
+   absolute_path[0] = '\0';
+   relative_path[0] = '\0';
+   abbreviated_path[0] = '\0';
+
+   strcpy(in_path_conformed, in_path);
+   strcpy(in_refpath_conformed, in_refpath);
+
+   pathname_conform_slashes_to_os(in_path_conformed);
+   pathname_conform_slashes_to_os(in_refpath_conformed);
+
+   /* Expand paths which start with :\ to an absolute path */
+   fill_pathname_expand_special(expanded_path, in_path_conformed, sizeof(expanded_path));
+
+   /* Get the absolute path if it is not already */
+   if (path_is_absolute(expanded_path))
+      strlcpy(absolute_path, expanded_path, PATH_MAX_LENGTH);
+   else
+      fill_pathname_resolve_relative(absolute_path, in_refpath_conformed, in_path_conformed, PATH_MAX_LENGTH);
+
+   pathname_conform_slashes_to_os(absolute_path);
+
+   /* Get the relative path and see how many directories long it is */
+   path_relative_to(relative_path, absolute_path, in_refpath_conformed, sizeof(relative_path));
+
+   /* Get the abbreviated path and see how many directories long it is */
+   fill_pathname_abbreviate_special(abbreviated_path, absolute_path, sizeof(abbreviated_path));
+
+   /* Use the shortest path, preferring the relative path*/
+   if (get_pathname_num_slashes(relative_path) <= get_pathname_num_slashes(abbreviated_path))
+   {
+      retro_assert(strlcpy(out_path, relative_path, size) < size);
+   }
+   else
+   {
+      retro_assert(strlcpy(out_path, abbreviated_path, size) < size);
+   }
+}
+
 /**
  * path_basedir:
  * @path               : path

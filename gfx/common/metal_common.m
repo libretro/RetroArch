@@ -1219,7 +1219,6 @@ typedef struct MTLALIGN(16)
    [self _freeVideoShader:_shader];
    _shader = nil;
 
-   config_file_t         *conf  = video_shader_read_preset(path.UTF8String);
    struct video_shader *shader  = (struct video_shader *)calloc(1, sizeof(*shader));
    settings_t        *settings  = config_get_ptr();
    const char *dir_video_shader = settings->paths.directory_video_shader;
@@ -1229,7 +1228,7 @@ typedef struct MTLALIGN(16)
    {
       unsigned i;
       texture_t *source = NULL;
-      if (!video_shader_read_conf_preset(conf, shader))
+      if (!video_shader_load_preset_into_shader(path.UTF8String, shader))
          return NO;
 
       source = &_engine.frame.texture[0];
@@ -1429,8 +1428,6 @@ typedef struct MTLALIGN(16)
          /* TODO(sgc): generate mip maps */
          image_texture_free(&image);
       }
-
-      video_shader_resolve_current_parameters(conf, shader);
       _shader = shader;
       shader = nil;
    }
@@ -1439,12 +1436,6 @@ typedef struct MTLALIGN(16)
       if (shader)
       {
          [self _freeVideoShader:shader];
-      }
-
-      if (conf)
-      {
-         config_file_free(conf);
-         conf = nil;
       }
    }
 

@@ -5183,22 +5183,12 @@ bool menu_shader_manager_init(void)
 
    if (is_preset)
    {
-      config_file_t *conf = NULL;
-
-      conf = video_shader_read_preset(path_shader);
-
-      if (!conf)
+      if (!video_shader_load_preset_into_shader(path_shader, menu_shader))
       {
          ret = false;
          goto end;
       }
-
-      if (video_shader_read_conf_preset(conf, menu_shader))
-         video_shader_resolve_parameters(conf, menu_shader);
-
       menu_shader->modified = false;
-
-      config_file_free(conf);
    }
    else
    {
@@ -5225,7 +5215,6 @@ end:
 bool menu_shader_manager_set_preset(struct video_shader *shader,
       enum rarch_shader_type type, const char *preset_path, bool apply)
 {
-   config_file_t *conf           = NULL;
    bool refresh                  = false;
    bool ret                      = false;
 
@@ -5249,19 +5238,13 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
     * No point in updating when the Preset was
     * created from the menu itself. */
    if (  !shader ||
-         !(conf = video_shader_read_preset(preset_path)))
+         !(video_shader_load_preset_into_shader(preset_path, shader)))
    {
       ret = false;
       goto end;
    }
 
-   RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
-
-   if (video_shader_read_conf_preset(conf, shader))
-      video_shader_resolve_parameters(conf, shader);
-
-   if (conf)
-      config_file_free(conf);
+   RARCH_LOG("Menu shader set to: %s.\n", preset_path);
 
    ret = true;
 
@@ -5694,7 +5677,7 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 #endif
 
-   video_shader_resolve_parameters(NULL, shader);
+   video_shader_resolve_parameters(shader);
 
    shader->modified = true;
 
@@ -10410,6 +10393,9 @@ bool retroarch_apply_shader(
    if (!string_is_empty(preset_path))
       preset_file = path_basename(preset_path);
 
+   /* TODO This loads the shader into the video driver
+    * But then we load the shader from disk twice more to put it in the menu
+    * We need to reconfigure this at some point to only load it once */
    if (p_rarch->current_video->set_shader)
       ret = p_rarch->current_video->set_shader(
             p_rarch->video_driver_data, type, preset_path);
