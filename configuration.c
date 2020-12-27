@@ -260,7 +260,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #endif
 #elif defined(HAVE_VITA2D)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
-#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
@@ -324,6 +324,8 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
 #elif defined(PS2)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS2;
+#elif defined(__PS3__)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS3;
 #elif defined(_3DS)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
 #elif defined(SWITCH)
@@ -408,12 +410,14 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 #elif defined(_WIN32) && !defined(HAVE_DINPUT) && _WIN32_WINNT >= 0x0501
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WINRAW;
+#elif defined(PS2)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS2;
+#elif defined(__PS3__)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 #elif defined(ORBIS)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
 #elif defined(PSP) || defined(VITA)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
-#elif defined(PS2)
-static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS2;
 #elif defined(_3DS)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
 #elif defined(SWITCH)
@@ -454,12 +458,14 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 #elif defined(_XBOX)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
+#elif defined(PS2)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
+#elif defined(__PS3__) && !defined(__PSL1GHT__)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
 #elif defined(ORBIS)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
 #elif defined(PSP) || defined(VITA)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
-#elif defined(PS2)
-static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
 #elif defined(_3DS)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
 #elif defined(SWITCH)

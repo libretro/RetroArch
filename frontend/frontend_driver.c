@@ -79,6 +79,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(EMSCRIPTEN)
    &frontend_ctx_emscripten,
 #endif
+#if defined(__PS3__)
+   &frontend_ctx_ps3,
+#endif
 #if defined(_XBOX)
    &frontend_ctx_xdk,
 #endif
@@ -181,10 +184,7 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 
 #else
 
-#if defined(__PSL1GHT__)
-   strcpy_literal(s, "self|bin");
-   return true;
-#elif defined(PSP)
+#if defined(PSP)
    strcpy_literal(s, "pbp");
    return true;
 #elif defined(VITA)
@@ -192,6 +192,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
    return true;
 #elif defined(PS2)
    strcpy_literal(s, "elf");
+   return true;
+#elif defined(__PS3__)
+   strcpy_literal(s, "self|bin");
    return true;
 #elif defined(_XBOX1)
    strcpy_literal(s, "xbe");
@@ -233,10 +236,7 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return false;
 #else
 
-#if defined(__PSL1GHT__)
-   strcpy_literal(s, "EBOOT.BIN");
-   return true;
-#elif defined(PSP)
+#if defined(PSP)
    strcpy_literal(s, "EBOOT.PBP");
    return true;
 #elif defined(VITA)
@@ -244,6 +244,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return true;
 #elif defined(PS2)
    strcpy_literal(s, "eboot.elf");
+   return true;
+#elif defined(__PSL1GHT__)
+   strcpy_literal(s, "EBOOT.BIN");
    return true;
 #elif defined(_XBOX1)
    strcpy_literal(s, "default.xbe");

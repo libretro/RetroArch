@@ -274,6 +274,7 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define SYS_THREAD_CREATE_JOINABLE 0
 
 #else
+#include <sys/ppu_thread.h>
 
 #define SYS_PROCESS_SPAWN_STACK_SIZE_1M SYS_PROCESS_PRIMARY_STACK_SIZE_1M 
 #define SYS_THREAD_CREATE_JOINABLE SYS_PPU_THREAD_CREATE_JOINABLE

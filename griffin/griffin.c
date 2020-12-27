@@ -268,6 +268,8 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/qnx_ctx.c"
 #elif defined(EMSCRIPTEN)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
+#elif defined(__PS3__) && !defined(__PSL1GHT__)
+#include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
@@ -677,17 +679,22 @@ INPUT
 
 #include "../input/input_autodetect_builtin.c"
 
-#if defined(__PSL1GHT__)
-#include "../input/drivers/psl1ght_input.c"
-#elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
+#if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
-#elif defined(ORBIS)
-#include "../input/drivers/ps4_input.c"
-#include "../input/drivers_joypad/ps4_joypad.c"
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
 #include "../input/drivers_joypad/ps2_joypad.c"
+#elif defined(__PS3__)
+#if defined(__PSL1GHT__)
+#include "../input/drivers/psl1ght_input.c"
+#else
+#include "../input/drivers/ps3_input.c"
+#include "../input/drivers_joypad/ps3_joypad.c"
+#endif
+#elif defined(ORBIS)
+#include "../input/drivers/ps4_input.c"
+#include "../input/drivers_joypad/ps4_joypad.c"
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 #include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)
@@ -892,7 +899,7 @@ RSOUND
 /*============================================================
 AUDIO
 ============================================================ */
-#if defined(__PSL1GHT__)
+#if defined(__PS3__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
 #include "../audio/drivers/xenon360_audio.c"
@@ -1133,21 +1140,21 @@ FRONTEND
 #include "../frontend/drivers/platform_xdk.c"
 #endif
 
-#if defined(__PSL1GHT__)
-#include "../frontend/drivers/platform_ps3.c"
-#elif defined(GEKKO)
+#if defined(GEKKO)
 #include "../frontend/drivers/platform_gx.c"
 #ifdef HW_RVL
 #include "../frontend/drivers/platform_wii.c"
 #endif
 #elif defined(__wiiu__)
 #include "../frontend/drivers/platform_wiiu.c"
-#elif defined(PSP) || defined(VITA)
-#include "../frontend/drivers/platform_psp.c"
-#elif defined(ORBIS)
-#include "../frontend/drivers/platform_orbis.c"
 #elif defined(PS2)
 #include "../frontend/drivers/platform_ps2.c"
+#elif defined(__PS3__)
+#include "../frontend/drivers/platform_ps3.c"
+#elif defined(ORBIS)
+#include "../frontend/drivers/platform_orbis.c"
+#elif defined(PSP) || defined(VITA)
+#include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
 #elif defined(SWITCH) && defined(HAVE_LIBNX)

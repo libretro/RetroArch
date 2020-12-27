@@ -746,7 +746,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("GameCube Controller", "wiiu", WIIUINPUT_GAMECUBE_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Sony DualShock 3", "wiiu", WIIUINPUT_DS3_DEFAULT_BINDS),
 #endif
-#ifdef __PSL1GHT__
+#ifdef __PS3__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),
 #endif
 #if defined(__SWITCH__) || defined(SWITCH)

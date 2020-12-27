@@ -86,7 +86,9 @@
 #define FIO_S_ISDIR SCE_S_ISDIR
 #endif
 
-#if defined(__QNX__) || defined(PSP) || defined(PS2)
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h> /* stat() is defined here */
 #endif
 

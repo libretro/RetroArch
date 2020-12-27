@@ -43,6 +43,12 @@
 #include <lv2/systime.h>
 #endif
 
+#if defined(__PS3__) || defined(__PSL1GHT__)
+#ifndef _PPU_INTRINSICS_H	
+#include <ppu_intrinsics.h>	
+#endif
+#endif
+
 #if defined(_XBOX360)
 #include <PPCIntrinsics.h>
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID) || defined(__QNX__) || defined(DJGPP)
@@ -56,7 +62,13 @@
 
 #if defined(PSP)
 #include <pspkernel.h>
+#endif
+
+#if defined(PSP) || defined(__PSL1GHT__)
 #include <sys/time.h>
+#endif
+
+#if defined(PSP)
 #include <psprtc.h>
 #endif
 
@@ -69,8 +81,8 @@
 #include <ps2sdkapi.h>
 #endif
 
-#if defined(__PSL1GHT__)
-#include <sys/time.h>
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+#include <sys/sys_time.h>
 #endif
 
 #ifdef GEKKO
@@ -220,6 +232,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return (count.QuadPart / freq.QuadPart * 1000000) + (count.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
 #elif defined(__PSL1GHT__)
    return sysGetSystemTime();
+#elif !defined(__PSL1GHT__) && defined(__PS3__)
+   return sys_time_get_system_time();
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
 #elif defined(WIIU)
@@ -486,6 +500,8 @@ unsigned cpu_features_get_core_amount(void)
    return 1;
 #elif defined(PSP) || defined(PS2)
    return 1;
+#elif defined(__PSL1GHT__) || !defined(__PSL1GHT__) && defined(__PS3__)
+   return 1; /* Only one PPU, SPUs don't really count */
 #elif defined(VITA)
    return 4;
 #elif defined(HAVE_LIBNX) || defined(SWITCH)
