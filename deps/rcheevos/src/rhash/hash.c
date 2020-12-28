@@ -1,8 +1,7 @@
 #ifdef RARCH_INTERNAL
- /* explicit path to avoid conflict with libretro-common/include/rhash.h */
- #include "../../include/rhash.h"
+ #include "../../include/rc_hash.h"
 #else
- #include "rhash.h"
+ #include "rc_hash.h"
 #endif
 
 #include "../rcheevos/compat.h"

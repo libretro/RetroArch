@@ -74,7 +74,7 @@
 
 #include "../deps/rcheevos/include/rcheevos.h"
 #include "../deps/rcheevos/include/rurl.h"
-#include "../deps/rcheevos/include/rhash.h"
+#include "../deps/rcheevos/include/rc_hash.h"
 
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
@@ -2569,7 +2569,7 @@ static void rcheevos_task_handler(retro_task_t *task)
    }
 }
 
-/* hooks for rhash library */
+/* hooks for rc_hash library */
 
 static void* rc_hash_handle_file_open(const char* path)
 {

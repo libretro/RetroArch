@@ -7,7 +7,7 @@
 /* android build has libretro-common/include in path, but not the base directory.
  * other builds prioritize rcheevos/include over libretro-common/include.
  * to ensure we get the correct include file, use a complicated relative path */
-#include <../../../libretro-common/include/rhash.h>
+#include <lrc_hash.h>
 
 #define md5_state_t MD5_CTX
 #define md5_byte_t unsigned char

@@ -22,7 +22,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
-#include <rhash.h>
+#include <lrc_hash.h>
 #include <retro_timers.h>
 
 #include "netplay_private.h"

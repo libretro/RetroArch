@@ -214,7 +214,7 @@
 		92B9EBD324E0518700E6CFB2 /* float_to_s16.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = float_to_s16.h; sourceTree = "<group>"; };
 		92B9EBD424E0518700E6CFB2 /* audio_mix.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = audio_mix.h; sourceTree = "<group>"; };
 		92B9EBD524E0518700E6CFB2 /* memmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = memmap.h; sourceTree = "<group>"; };
-		92B9EBD624E0518700E6CFB2 /* rhash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rhash.h; sourceTree = "<group>"; };
+		92B9EBD624E0518700E6CFB2 /* lrc_hash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lrc_hash.h; sourceTree = "<group>"; };
 		92B9EBD824E0518700E6CFB2 /* tpool.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tpool.h; sourceTree = "<group>"; };
 		92B9EBD924E0518700E6CFB2 /* rthreads.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rthreads.h; sourceTree = "<group>"; };
 		92B9EBDA24E0518700E6CFB2 /* async_job.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = async_job.h; sourceTree = "<group>"; };
@@ -468,7 +468,7 @@
 				92B9EBAA24E0518700E6CFB2 /* retro_math.h */,
 				92B9EBC324E0518700E6CFB2 /* retro_miscellaneous.h */,
 				92B9EB8124E0518700E6CFB2 /* retro_timers.h */,
-				92B9EBD624E0518700E6CFB2 /* rhash.h */,
+				92B9EBD624E0518700E6CFB2 /* lrc_hash.h */,
 				92B9EBD724E0518700E6CFB2 /* rthreads */,
 				92B9EBAB24E0518700E6CFB2 /* streams */,
 				92B9EBE424E0518700E6CFB2 /* string */,

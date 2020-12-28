@@ -23,7 +23,7 @@
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
-#include <rhash.h>
+#include <lrc_hash.h>
 
 #include "tasks_internal.h"
 

@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (rhash.h).
+ * The following license statement only applies to this file (lrc_hash.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,

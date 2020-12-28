@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (rhash.c).
+ * The following license statement only applies to this file (lrc_hash.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -27,7 +27,7 @@
 #else
 #include <unistd.h>
 #endif
-#include <rhash.h>
+#include <lrc_hash.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 #include <streams/file_stream.h>

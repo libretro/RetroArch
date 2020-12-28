@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <rhash.h>
+#include <lrc_hash.h>
 #include <string/stdstring.h>
 #include <libretro.h>
 

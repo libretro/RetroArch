@@ -225,7 +225,7 @@ CHEATS
 #ifdef HAVE_CHEATS
 #include "../cheat_manager.c"
 #endif
-#include "../libretro-common/hash/rhash.c"
+#include "../libretro-common/hash/lrc_hash.c"
 
 /*============================================================
 UI COMMON CONTEXT
