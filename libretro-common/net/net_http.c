@@ -735,6 +735,8 @@ static void net_http_url_parameters_free(struct http_url_parameters_t params)
    }
 
    free(params.params);
+
+   params.len = 0;
 }
 
 static void net_http_headers_free(struct http_headers_t *headers)
@@ -766,6 +768,7 @@ void net_http_request_free(struct http_request_t *request)
    }
    net_http_url_parameters_free(request->url_params);
    net_http_headers_free(request->headers);
+   request->headers = NULL;
 
    switch (request->body.body_type)
    {
@@ -1934,9 +1937,16 @@ void net_http_response_free(struct http_response_t *response)
       return;
 
    if (response->headers)
+   {
       net_http_headers_free(response->headers);
+      response->headers = NULL;
+   }
+
    if (response->data)
+   {
       free(response->data);
+      response->data = NULL;
+   }
 
    free(response);
 }

@@ -688,10 +688,6 @@ typedef struct settings
       bool network_on_demand_thumbnails;
       bool core_updater_auto_backup;
 
-      /* Cloud Storage */
-      bool cloud_storage_google_default_creds;
-      bool cloud_storage_onedrive_default_creds;
-
       /* UI */
       bool ui_menubar_enable;
       bool ui_suspend_screensaver_enable;
@@ -821,7 +817,10 @@ typedef struct settings
       bool ai_service_enable;
       bool ai_service_pause;
 
+      /* Cloud Storage */
       bool cloud_storage_enable;
+      bool cloud_storage_google_default_creds;
+      bool cloud_storage_onedrive_default_creds;
    } bools;
 
 } settings_t;

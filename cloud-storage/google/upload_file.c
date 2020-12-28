@@ -263,7 +263,9 @@ bool cloud_storage_google_upload_file(
          goto complete;
    }
    net_http_response_free(http_response);
+   http_response = NULL;
    rest_request_free(rest_request);
+   rest_request = NULL;
 
    while (offset < file_size)
    {

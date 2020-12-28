@@ -106,9 +106,6 @@
 #ifdef HAVE_NETWORKING
 #include <net/net_http.h>
 #endif
-#if defined(HAVE_NETWORKING) && defined(HAVE_CLOUD_STORAGE)
-#include "cloud-storage/cloud_storage.h"
-#endif
 
 #ifdef WIIU
 #include <wiiu/os/energy.h>

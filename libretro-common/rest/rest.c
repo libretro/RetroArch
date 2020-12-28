@@ -79,7 +79,10 @@ void rest_request_free(rest_request_t *request)
    if (request->http_conn)
       net_http_connection_free(request->http_conn, false);
    else if (request->http_request)
+   {
       net_http_request_free(request->http_request);
+      request->http_request = NULL;
+   }
 
    if (request->http_request)
    {
