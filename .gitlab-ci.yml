@@ -67,6 +67,71 @@ build-retroarch-dingux-mips32:
     - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
+build-retroarch-android-normal:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
+  stage: build
+  artifacts:
+    paths:
+    - ./
+    exclude:
+    - .git/**/*
+    expire_in: 1 month
+  script:
+    - "cd pkg/android/phoenix"
+    - "./gradlew assembleNormalRelease"
+
+build-retroarch-android-aarch64:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
+  stage: build
+  artifacts:
+    paths:
+    - ./
+    exclude:
+    - .git/**/*
+    expire_in: 1 month
+  script:
+    - "cd pkg/android/phoenix"
+    - "./gradlew assembleAarch64Release"
+
+build-retroarch-android-ra32:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
+  stage: build
+  artifacts:
+    paths:
+    - ./
+    exclude:
+    - .git/**/*
+    expire_in: 1 month
+  script:
+    - "cd pkg/android/phoenix"
+    - "./gradlew assembleRa32Release"
+
+build-retroarch-android-playstore-normal:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
+  stage: build
+  artifacts:
+    paths:
+    - ./
+    exclude:
+    - .git/**/*
+    expire_in: 1 month
+  script:
+    - "cd pkg/android/phoenix"
+    - "./gradlew bundlePlayStoreNormalRelease"
+
+build-retroarch-android-playstore-aarch64:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
+  stage: build
+  artifacts:
+    paths:
+    - ./
+    exclude:
+    - .git/**/*
+    expire_in: 1 month
+  script:
+    - "cd pkg/android/phoenix"
+    - "./gradlew bundlePlayStoreAarch64Release"
+
 build-static-retroarch-libnx-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
   stage: prepare-for-static-cores
