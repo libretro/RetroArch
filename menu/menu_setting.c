@@ -18070,6 +18070,10 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
          CONFIG_STRING(
                list, list_info,
                settings->arrays.cloud_storage_google_client_secret,
@@ -18082,6 +18086,9 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          CONFIG_BOOL(
                list, list_info,
@@ -18112,6 +18119,9 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

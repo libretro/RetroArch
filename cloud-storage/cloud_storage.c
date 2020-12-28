@@ -186,6 +186,12 @@ static cloud_storage_provider_t *_get_active_provider(void)
    settings_t *settings;
 
    settings = config_get_ptr();
+
+   if (!_providers[settings->uints.cloud_storage_provider])
+   {
+      cloud_storage_init();
+   }
+
    return _providers[settings->uints.cloud_storage_provider];
 }
 
