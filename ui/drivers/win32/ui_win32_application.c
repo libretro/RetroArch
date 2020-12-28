@@ -37,10 +37,10 @@ static void ui_application_win32_process_events(void)
    MSG msg;
    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
    {
-      bool translatedAcceleator = false;
-      translatedAcceleator = main_window.hwnd == msg.hwnd && TranslateAccelerator(msg.hwnd, window_accelerators, &msg) != 0;
+      bool translatedAccelerator = false;
+      translatedAccelerator = main_window.hwnd == msg.hwnd && TranslateAccelerator(msg.hwnd, window_accelerators, &msg) != 0;
 
-   	  if (!translatedAcceleator)
+      if (!translatedAccelerator)
       {
          TranslateMessage(&msg);
          DispatchMessage(&msg);
