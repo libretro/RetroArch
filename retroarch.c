@@ -19827,7 +19827,7 @@ void recording_driver_update_streaming_url(void)
                   settings->arrays.youtube_stream_key,
                   sizeof(settings->paths.path_stream_url));
          }
-         break;         
+         break;
       case STREAMING_MODE_LOCAL:
          /* TODO: figure out default interface and bind to that instead */
          snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),

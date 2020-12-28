@@ -749,6 +749,10 @@ MSG_HASH(
    "deferred_accounts_youtube_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST,
+   "deferred_accounts_facebook_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST,
    "deferred_accounts_list"
    )
@@ -4369,6 +4373,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_YOUTUBE_STREAM_KEY,
    "youtube_stream_key"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_FACEBOOK_STREAM_KEY,
+   "facebook_stream_key"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_STREAMING_MODE,
