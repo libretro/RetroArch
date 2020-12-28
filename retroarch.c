@@ -24472,9 +24472,9 @@ void input_driver_unset_nonblock_state(void)
    p_rarch->input_driver_nonblock_state = false;
 }
 
+#ifdef HAVE_COMMAND
 static bool input_driver_init_command(struct rarch_state *p_rarch)
 {
-#ifdef HAVE_COMMAND
    settings_t *settings          = p_rarch->configuration_settings;
    bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
    bool input_network_cmd_enable = settings->bools.network_cmd_enable;
@@ -24503,28 +24503,26 @@ static bool input_driver_init_command(struct rarch_state *p_rarch)
          return true;
 
    RARCH_ERR("Failed to initialize command interface.\n");
-#endif
    return false;
 }
 
 static void input_driver_deinit_command(struct rarch_state *p_rarch)
 {
-#ifdef HAVE_COMMAND
    if (p_rarch->input_driver_command)
       command_free(p_rarch->input_driver_command);
    p_rarch->input_driver_command = NULL;
-#endif
 }
+#endif
 
+#ifdef HAVE_NETWORKGAMEPAD
 static void input_driver_deinit_remote(struct rarch_state *p_rarch)
 {
-#ifdef HAVE_NETWORKGAMEPAD
    if (p_rarch->input_driver_remote)
       input_remote_free(p_rarch->input_driver_remote,
             p_rarch->input_driver_max_users);
    p_rarch->input_driver_remote = NULL;
-#endif
 }
+#endif
 
 static void input_driver_deinit_mapper(struct rarch_state *p_rarch)
 {
@@ -34710,14 +34708,14 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event_init_cheats(p_rarch->configuration_settings, p_rarch);
 #endif
    drivers_init(p_rarch, DRIVERS_CMD_ALL);
+#ifdef HAVE_COMMAND
    input_driver_deinit_command(p_rarch);
    input_driver_init_command(p_rarch);
-   input_driver_deinit_remote(p_rarch);
+#endif
 #ifdef HAVE_NETWORKGAMEPAD
-   {
-      if (p_rarch->configuration_settings->bools.network_remote_enable)
-         input_driver_init_remote(p_rarch->configuration_settings, p_rarch);
-   }
+   input_driver_deinit_remote(p_rarch);
+   if (p_rarch->configuration_settings->bools.network_remote_enable)
+      input_driver_init_remote(p_rarch->configuration_settings, p_rarch);
 #endif
    input_driver_deinit_mapper(p_rarch);
    input_driver_init_mapper(p_rarch);
@@ -35259,8 +35257,12 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          if (!p_rarch->rarch_is_inited)
             return false;
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+#ifdef HAVE_COMMAND
          input_driver_deinit_command(p_rarch);
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
          input_driver_deinit_remote(p_rarch);
+#endif
          input_driver_deinit_mapper(p_rarch);
 
 #ifdef HAVE_THREADS
