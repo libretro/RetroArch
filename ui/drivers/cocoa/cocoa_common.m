@@ -45,11 +45,10 @@ void *glkitview_init(void);
 
 @implementation CocoaView
 
-#if !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
+#ifdef HAVE_COCOA_METAL
 - (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window { return YES; }
 #endif
-
-#if TARGET_OS_OSX
 - (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
