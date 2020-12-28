@@ -56,15 +56,11 @@
 
 #include <commdlg.h>
 #include <dbt.h>
-#include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include <shellapi.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#include "../../msg_hash.h"
-#include "../../ui/drivers/ui_win32_resource.h"
-#include "../../input/input_defines.h"
 #endif
 
 #include <encodings/utf.h>
@@ -1698,6 +1694,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
 #ifdef HAVE_MENU
 
+/* Given a Win32 Resource ID, return a RetroArch menu ID (for renaming the menu item) */
 enum msg_hash_enums menu_id_to_label_enum(unsigned int menuId)
 {
    switch (menuId)
@@ -1732,6 +1729,7 @@ enum msg_hash_enums menu_id_to_label_enum(unsigned int menuId)
    }
 }
 
+/* Given a RetroArch menu ID, get its shortcut key (meta key) */
 unsigned int menu_id_to_meta_key(unsigned int menuId)
 {
    switch (menuId)
@@ -1766,6 +1764,8 @@ unsigned int menu_id_to_meta_key(unsigned int menuId)
    }
 }
 
+/* Given a short key (meta key), get its name as a string */
+/* For single character results, may return same pointer with different data inside (modifying the old result) */
 const char* meta_key_to_name(unsigned int metaKey)
 {
    if (metaKey == 0)
@@ -1797,6 +1797,7 @@ const char* meta_key_to_name(unsigned int metaKey)
    }
 }
 
+/* Replaces Menu Item text with localized menu text, and displays the current shortcut key */
 void win32_localize_menu(HMENU menu)
 {
    int index = 0;
@@ -1823,6 +1824,7 @@ void win32_localize_menu(HMENU menu)
 
       if (menuItemInfo.hSubMenu != NULL)
       {
+         /* Recursion - call this on submenu items too */
          win32_localize_menu(menuItemInfo.hSubMenu);
       }
 
@@ -1832,15 +1834,6 @@ void win32_localize_menu(HMENU menu)
          const char* newLabel = msg_hash_to_str(labelEnum);
          unsigned int metaKey = menu_id_to_meta_key(menuItemInfo.wID);
          const char* metaKeyName = meta_key_to_name(metaKey);
-         //specific replacements: Load Content = "Ctrl+O", Fullscreen = "Alt+Enter"  (these are defined in the Acceleator resources)
-         if (labelEnum == MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
-         {
-            metaKeyName = "Ctrl+O";
-         }
-         if (labelEnum == MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
-         {
-            metaKeyName = "Alt+Enter";
-         }
          const char* newLabel2 = newLabel;
          char* newLabelText = NULL;
 #ifndef LEGACY_WIN32
@@ -1850,19 +1843,37 @@ void win32_localize_menu(HMENU menu)
 #endif
          int len;
 
+         /* specific replacements:
+            Load Content = "Ctrl+O"
+            Fullscreen = "Alt+Enter" */
+         if (labelEnum == MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
+         {
+            metaKeyName = "Ctrl+O";
+         }
+         if (labelEnum == MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
+         {
+            metaKeyName = "Alt+Enter";
+         }
+
+         /* Append localized name, tab character, and Shortcut Key */
          if (metaKeyName != NULL && 0 != strcmp(metaKeyName, "nul"))
          {
             int len1 = strlen(newLabel);
             int len2 = strlen(metaKeyName);
             int bufSize = len1 + len2 + 2;
             newLabelText = (char*)malloc(bufSize);
-            newLabel2 = newLabelText;
-            strcpy(newLabelText, newLabel);
-            strcat(newLabelText, "\t");
-            strcat(newLabelText, metaKeyName);
-            newLabelText[len1 + 1] = toupper(newLabelText[len1 + 1]);
+            if (newLabelText != NULL)
+            {
+               newLabel2 = newLabelText;
+               strcpy(newLabelText, newLabel);
+               strcat(newLabelText, "\t");
+               strcat(newLabelText, metaKeyName);
+               /* Make first character of shortcut name uppercase */
+               newLabelText[len1 + 1] = toupper(newLabelText[len1 + 1]);
+            }
          }
 
+         /* convert string from UTF-8, then assign menu text */
 #ifndef LEGACY_WIN32
          newLabel_unicode = utf8_to_utf16_string_alloc(newLabel2);
          len = wcslen(newLabel_unicode);
@@ -1878,7 +1889,7 @@ void win32_localize_menu(HMENU menu)
          SetMenuItemInfoA(menu, index, true, &menuItemInfo);
          free(newLabel_ansi);
 #endif
-         if (newLabelText)
+         if (newLabelText != NULL)
          {
             free(newLabelText);
          }
@@ -1889,6 +1900,7 @@ void win32_localize_menu(HMENU menu)
 
 #else
 
+/* Blank version in case RetroArch was built with Win32 Menu but not the menu system (this should never happen) */
 void win32_localize_menu(HMENU menu)
 {
 
