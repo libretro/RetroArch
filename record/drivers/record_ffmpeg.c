@@ -760,7 +760,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
       else
          params->scale_factor = 1;
       if (  streaming_mode == STREAMING_MODE_YOUTUBE || 
-            streaming_mode == STREAMING_MODE_TWITCH)
+            streaming_mode == STREAMING_MODE_TWITCH ||
+            streaming_mode == STREAMING_MODE_FACEBOOK)
          strlcpy(params->format, "flv", sizeof(params->format));
       else
          strlcpy(params->format, "mpegts", sizeof(params->format));
