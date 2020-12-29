@@ -337,7 +337,7 @@ build-static-retroarch-dummy-ctr:
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
 build-static-retroarch-wiiu:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-wiiu:latest
   stage: prepare-for-static-cores
   before_script:
     - export NUMPROC=$(($(nproc)/3))
