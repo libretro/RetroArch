@@ -26,14 +26,6 @@
 #include <ctype.h>
 #include <errno.h>
 
-#if !defined(_WIN32) && !defined(_XBOX)
-#include <sys/param.h> /* PATH_MAX */
-#elif defined(_WIN32) && !defined(_XBOX)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#elif defined(_XBOX)
-#include <xtl.h>
-#endif
 #ifdef ORBIS
 #include <sys/fcntl.h>
 #include <orbisFile.h>
