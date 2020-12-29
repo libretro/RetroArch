@@ -43,14 +43,12 @@
 #include <lv2/systime.h>
 #endif
 
-#if defined(__PS3__) || defined(__PSL1GHT__)
+#if defined(_XBOX360)
+#include <PPCIntrinsics.h>
+#elif defined(__POWERPC__) || defined(__powerpc__) || defined(__ppc__) || defined(__PPC64__) || defined(__powerpc64__)
 #ifndef _PPU_INTRINSICS_H	
 #include <ppu_intrinsics.h>	
 #endif
-#endif
-
-#if defined(_XBOX360)
-#include <PPCIntrinsics.h>
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(ANDROID) || defined(__QNX__) || defined(DJGPP)
 /* POSIX_MONOTONIC_CLOCK is not being defined in Android headers despite support being present. */
 #include <time.h>
