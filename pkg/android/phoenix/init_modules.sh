@@ -3,12 +3,7 @@
 # This script generates Gradle modules for each Android core,
 # so that they can be served by Google Play as Dynamic Feature Modules.
 # Run "./init_modules.sh" to generate modules, or "./init_modules.sh clean" to remove them
-
-# These paths assume that this script is running inside libretro-super,
-# and that the compiled Android cores are available while this script is run
-RECIPES_PATH="../../../../recipes/android"
-INFO_PATH="../../../../dist/info"
-CORES_PATH="../../../../dist/android"
+# NOTE: Requires RECIPES_PATH, INFO_PATH, and CORES_PATH variables to be set previously
 
 # Get the list of Android cores to generate modules for
 CORES_LIST=$(cat module_list.txt)
