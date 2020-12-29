@@ -31,80 +31,17 @@
 #include <boolean.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
-
-/* TODO: There are probably some unnecessary things on this huge include list now but I'm too afraid to touch it */
-#ifdef __APPLE__
-#include <CoreFoundation/CoreFoundation.h>
-#endif
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-#ifndef __MACH__
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-#endif
-#include <compat/strcasestr.h>
-#include <retro_miscellaneous.h>
-#include <encodings/utf.h>
-
-#if defined(_WIN32)
-#ifdef _MSC_VER
-#define setmode _setmode
-#endif
-#include <sys/stat.h>
-#ifdef _XBOX
-#include <xtl.h>
-#define INVALID_FILE_ATTRIBUTES -1
-#else
-#include <io.h>
-#include <fcntl.h>
-#include <direct.h>
-#include <windows.h>
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
-#endif
-#endif
-#elif defined(VITA)
-#define SCE_ERROR_ERRNO_EEXIST 0x80010011
-#include <psp2/io/fcntl.h>
-#include <psp2/io/dirent.h>
-#include <psp2/io/stat.h>
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
-
-#if defined(PSP)
-#include <pspkernel.h>
-#endif
-
-#if defined(VITA)
-#define FIO_S_ISDIR SCE_S_ISDIR
-#endif
 
 #ifdef _WIN32
 #include <direct.h>
 #else
 #include <unistd.h> /* stat() is defined here */
-#endif
-
-#if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
-#ifdef __WINRT__
-#include <uwp/uwp_func.h>
-#endif
-#endif
-
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
 #endif
 
 /* TODO/FIXME - globals */

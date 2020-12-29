@@ -80,10 +80,6 @@
 #include <pspkernel.h>
 #endif
 
-#if defined(VITA)
-#define FIO_S_ISDIR SCE_S_ISDIR
-#endif
-
 #ifdef _WIN32
 #include <direct.h>
 #else
