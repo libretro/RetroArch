@@ -386,9 +386,16 @@ static bool udev_set_rumble(unsigned i,
    {
       /* Create new or update old playing state. */
       struct ff_effect e = {0};
+      /* This defines the length of the effect and
+         the delay before playing it. This means there
+         is a limit on the maximum vibration time, but
+         it's hopefully sufficient for most cases. Maybe
+         there's a better way? */
+      struct ff_replay replay = {0xffff, 0};
 
       e.type = FF_RUMBLE;
       e.id   = old_effect;
+      e.replay = replay;
 
       switch (effect)
       {
