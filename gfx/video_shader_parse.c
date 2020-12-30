@@ -1515,11 +1515,9 @@ bool override_shader_values(config_file_t *override_conf, struct video_shader *s
    bool return_val                     = false;
    unsigned i;
    struct config_entry_list *entry     = NULL;
-   char *override_tex_path             = (char*)malloc(PATH_MAX_LENGTH);
 
-   override_tex_path[0]                = '\0';
-
-   if (shader == NULL || override_conf == NULL) return 0;
+   if (shader == NULL || override_conf == NULL) 
+      return 0;
 
    /* If the shader has parameters */
    if (shader->num_parameters)
@@ -1558,6 +1556,10 @@ bool override_shader_values(config_file_t *override_conf, struct video_shader *s
    /* If the shader has textures */
    if (shader->luts)
    {
+      char *override_tex_path             = (char*)malloc(PATH_MAX_LENGTH);
+
+      override_tex_path[0]                = '\0';
+
       /* Step through the textures in the shader and see if there is an entry 
        * for each in the override config */
       for (i = 0; i < shader->luts; i++)
@@ -1666,6 +1668,7 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
       RARCH_LOG("[ Shaders ]:      #reference     = %s \n", reference_preset_path);
 
       /* Create a new config from this reference level */
+      config_file_free(conf);
       conf = config_file_new_from_path_to_string(reference_preset_path);
 
       free(reference_preset_path);
