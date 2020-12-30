@@ -544,7 +544,7 @@ static const bool menu_show_quit_retroarch     = true;
 static const bool menu_show_restart_retroarch  = true;
 static const bool menu_show_reboot             = true;
 static const bool menu_show_shutdown           = true;
-#if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
+#if defined(HAVE_LAKKA) || defined(VITA)
 static const bool menu_show_core_updater       = false;
 #else
 static const bool menu_show_core_updater       = true;
@@ -1400,6 +1400,8 @@ static const bool enable_device_vibration    = false;
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/"
 #elif defined(HAVE_LIBNX)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/"
+#elif defined(_3DS)
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/3ds/latest/"
 #else
 #define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
