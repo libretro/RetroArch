@@ -166,7 +166,7 @@ void ShaderParamsDialog::clearLayout()
    if (m_scrollArea)
    {
       foreach (QObject *obj, children())
-         obj->deleteLater();
+         delete obj;
    }
 
    m_layout = new QVBoxLayout();
