@@ -75,7 +75,7 @@ build-retroarch-android-normal:
     - ./
     exclude:
     - .git/**/*
-    expire_in: 1 month
+    expire_in: 1 day
   script:
     - "cd pkg/android/phoenix"
     - "./gradlew assembleNormalRelease"
@@ -88,7 +88,7 @@ build-retroarch-android-aarch64:
     - ./
     exclude:
     - .git/**/*
-    expire_in: 1 month
+    expire_in: 1 day
   script:
     - "cd pkg/android/phoenix"
     - "./gradlew assembleAarch64Release"
@@ -101,7 +101,7 @@ build-retroarch-android-ra32:
     - ./
     exclude:
     - .git/**/*
-    expire_in: 1 month
+    expire_in: 1 day
   script:
     - "cd pkg/android/phoenix"
     - "./gradlew assembleRa32Release"
@@ -114,7 +114,7 @@ build-retroarch-android-playstore-normal:
     - ./
     exclude:
     - .git/**/*
-    expire_in: 1 month
+    expire_in: 1 day
   script:
     - "cd pkg/android/phoenix"
     - "./gradlew bundlePlayStoreNormalRelease"
@@ -127,7 +127,7 @@ build-retroarch-android-playstore-aarch64:
     - ./
     exclude:
     - .git/**/*
-    expire_in: 1 month
+    expire_in: 1 day
   script:
     - "cd pkg/android/phoenix"
     - "./gradlew bundlePlayStoreAarch64Release"
