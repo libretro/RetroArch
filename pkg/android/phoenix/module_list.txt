@@ -6,7 +6,7 @@ cannonball
 cap32
 crocods
 dinothawr
-dosbox_svn
+dosbox_pure
 ecwolf
 fbneo
 fceumm
