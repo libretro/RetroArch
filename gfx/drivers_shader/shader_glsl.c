@@ -856,7 +856,6 @@ static void *gl_glsl_init(void *data, const char *path)
 #ifdef GLSL_DEBUG
    char *error_string         = NULL;
 #endif
-   config_file_t *conf        = NULL;
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
    glsl_shader_data_t   *glsl = (glsl_shader_data_t*)
@@ -910,12 +909,8 @@ static void *gl_glsl_init(void *data, const char *path)
 
          if (is_preset)
          {
-            conf = video_shader_read_preset(path);
-            if (conf)
-            {
-               ret = video_shader_read_conf_preset(conf, glsl->shader);
-               glsl->shader->modern = true;
-            }
+            ret = video_shader_load_preset_into_shader(path, glsl->shader);
+            glsl->shader->modern = true;
          }
          else
          {
@@ -942,14 +937,6 @@ static void *gl_glsl_init(void *data, const char *path)
             strdup(glsl_core ? stock_fragment_core : stock_fragment_modern);
          glsl->shader->modern = true;
       }
-   }
-
-   video_shader_resolve_parameters(conf, glsl->shader);
-
-   if (conf)
-   {
-      config_file_free(conf);
-      conf = NULL;
    }
 
    stock_vertex = (glsl->shader->modern) ?
@@ -1067,8 +1054,6 @@ static void *gl_glsl_init(void *data, const char *path)
 error:
    gl_glsl_destroy_resources(glsl);
 
-   if (conf)
-      config_file_free(conf);
    if (glsl)
       free(glsl);
 

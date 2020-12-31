@@ -1428,7 +1428,6 @@ static bool wiiu_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
    unsigned i;
-   config_file_t *conf = NULL;
    wiiu_video_t *wiiu  = (wiiu_video_t *)data;
 
    if (!wiiu)
@@ -1446,23 +1445,14 @@ static bool wiiu_gfx_set_shader(void *data,
       return false;
    }
 
-   if (!(conf = video_shader_read_preset(path)))
-      return false;
-
    wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
 
-   if (!video_shader_read_conf_preset(conf, wiiu->shader_preset))
+   if (!video_shader_load_preset_into_shader(path, wiiu->shader_preset))
    {
       free(wiiu->shader_preset);
       wiiu->shader_preset = NULL;
       return false;
    }
-
-   for (i = 0; i < wiiu->shader_preset->passes; i++)
-       slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
-
-   video_shader_resolve_current_parameters(conf, wiiu->shader_preset);
-   config_file_free(conf);
 
    for (i = 0; i < wiiu->shader_preset->passes; i++)
    {

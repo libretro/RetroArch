@@ -336,7 +336,6 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
-   config_file_t* conf     = NULL;
    d3d10_texture_t* source = NULL;
    d3d10_video_t*   d3d10  = (d3d10_video_t*)data;
 
@@ -355,12 +354,9 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   if (!(conf = video_shader_read_preset(path)))
-      return false;
-
    d3d10->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->shader_preset));
 
-   if (!video_shader_read_conf_preset(conf, d3d10->shader_preset))
+   if (!video_shader_load_preset_into_shader(path, d3d10->shader_preset))
       goto error;
 
    source = &d3d10->frame.texture[0];
@@ -507,9 +503,6 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
       image_texture_free(&image);
    }
-
-   video_shader_resolve_current_parameters(conf, d3d10->shader_preset);
-   config_file_free(conf);
 
    d3d10->resize_render_targets = true;
    d3d10->init_history          = true;

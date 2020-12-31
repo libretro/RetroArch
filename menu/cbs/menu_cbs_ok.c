@@ -1755,7 +1755,7 @@ static int generic_action_ok(const char *path,
                      shader_pass->source.path,
                      action_path,
                      sizeof(shader_pass->source.path));
-               video_shader_resolve_parameters(NULL, shader);
+               video_shader_resolve_parameters(shader);
 
                shader->modified         = true;
             }
@@ -5999,7 +5999,7 @@ static int action_ok_push_dropdown_item_video_shader_num_pass(const char *path,
 
    shader->passes              = idx;
 
-   video_shader_resolve_parameters(NULL, shader);
+   video_shader_resolve_parameters(shader);
 
    shader->modified            = true;
 

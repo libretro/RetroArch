@@ -2041,7 +2041,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    {
       if (!string_is_empty(shader_path))
          RARCH_WARN("[GL] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
-            shader_path, video_shader_to_str(parse_type), video_shader_to_str(type));
+            shader_path, video_shader_type_to_str(parse_type), video_shader_type_to_str(type));
 
       shader_path = NULL;
    }
@@ -4089,7 +4089,7 @@ static bool gl2_set_shader(void *data,
    if (type != fallback)
    {
       RARCH_ERR("[GL]: %s shader not supported, falling back to stock %s\n",
-            video_shader_to_str(type), video_shader_to_str(fallback));
+            video_shader_type_to_str(type), video_shader_type_to_str(fallback));
       path = NULL;
    }
 

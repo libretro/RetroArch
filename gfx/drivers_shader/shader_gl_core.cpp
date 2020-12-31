@@ -2158,19 +2158,12 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
-   config_file_t *conf            = NULL;
    unique_ptr<video_shader> shader{ new video_shader() };
    if (!shader)
       return nullptr;
 
-   if (!(conf = video_shader_read_preset(path)))
+   if (!video_shader_load_preset_into_shader(path, shader.get()))
       return nullptr;
-
-   if (!video_shader_read_conf_preset(conf, shader.get()))
-   {
-      config_file_free(conf);
-      return nullptr;
-   }
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
 
@@ -2203,7 +2196,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
 
       if (!glslang_compile_shader(pass->source.path, &output))
       {
-         RARCH_ERR("Failed to compile shader: \"%s\".\n",
+         RARCH_ERR("[GLCore]: Failed to compile shader: \"%s\".\n",
                pass->source.path);
          goto error;
       }
@@ -2212,7 +2205,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       {
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
-            RARCH_ERR("[GLCore]: Exceeded maximum number of parameters.\n");
+            RARCH_ERR("[GLCore]: Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
             goto error;
          }
 
@@ -2243,11 +2236,6 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             video_shader_parameter *param = &shader->parameters[shader->num_parameters];
             strlcpy(param->id, meta_param.id.c_str(), sizeof(param->id));
             strlcpy(param->desc, meta_param.desc.c_str(), sizeof(param->desc));
-            param->current = meta_param.initial;
-            param->initial = meta_param.initial;
-            param->minimum = meta_param.minimum;
-            param->maximum = meta_param.maximum;
-            param->step    = meta_param.step;
             chain->add_parameter(i, shader->num_parameters, meta_param.id);
             shader->num_parameters++;
          }
@@ -2415,19 +2403,14 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             sizeof(gl_core_shader::opaque_frag) / sizeof(uint32_t));
    }
 
-   if (!video_shader_resolve_current_parameters(conf, shader.get()))
-      goto error;
-
    chain->set_shader_preset(move(shader));
 
    if (!chain->init())
       goto error;
 
-   config_file_free(conf);
    return chain.release();
 
 error:
-   config_file_free(conf);
    return nullptr;
 }
 

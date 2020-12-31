@@ -664,7 +664,8 @@ static bool gl_cg_load_plain(void *data, const char *path)
          return false;
    }
 
-   video_shader_resolve_parameters(NULL, cg->shader);
+   video_shader_resolve_parameters(cg->shader);
+   video_shader_load_current_parameter_values(NULL, cg->shader);
    return true;
 }
 
@@ -688,36 +689,24 @@ static bool gl_cg_load_shader(void *data, unsigned i)
 static bool gl_cg_load_preset(void *data, const char *path)
 {
    unsigned i;
-   config_file_t  *conf = NULL;
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
 
    if (!gl_cg_load_stock(cg))
       return false;
 
    RARCH_LOG("[CG]: Loading Cg meta-shader: %s\n", path);
-   conf = video_shader_read_preset(path);
-   if (!conf)
-   {
-      RARCH_ERR("Failed to load preset.\n");
-      return false;
-   }
 
    cg->shader = (struct video_shader*)calloc(1, sizeof(*cg->shader));
    if (!cg->shader)
    {
-      config_file_free(conf);
       return false;
    }
 
-   if (!video_shader_read_conf_preset(conf, cg->shader))
+   if (!video_shader_load_preset_into_shader(path, cg->shader))
    {
       RARCH_ERR("Failed to parse CGP file.\n");
-      config_file_free(conf);
       return false;
    }
-
-   video_shader_resolve_parameters(conf, cg->shader);
-   config_file_free(conf);
 
    if (cg->shader->passes > GFX_MAX_SHADERS - 3)
    {

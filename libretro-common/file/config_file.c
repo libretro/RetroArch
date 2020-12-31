@@ -640,8 +640,12 @@ static int config_file_from_string_internal(
 
 void config_file_set_reference_path(config_file_t *conf, char *path)
 {
-   /* If a relative path the input path is desired the caller is
-    * responsible for preparing and supplying the relative path*/
+   /* It is expected that the conf has it's path already set */
+   
+   char short_path[PATH_MAX_LENGTH];
+   
+   short_path[0] = '\0';
+
    if (!conf)
       return;
 
@@ -651,8 +655,9 @@ void config_file_set_reference_path(config_file_t *conf, char *path)
       conf->reference = NULL;
    }
 
-
-   conf->reference = strdup(path);
+   fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
+   
+   conf->reference = strdup(short_path);
 }
 
 bool config_file_deinitialize(config_file_t *conf)
@@ -1287,7 +1292,10 @@ void config_file_dump_orbis(config_file_t *conf, int fd)
    struct config_include_list *includes = conf->includes;
   
    if (conf->reference)
+   {
+      pathname_make_slashes_portable(conf->reference);
       fprintf(file, "#reference \"%s\"\n", conf->reference);
+   }
 
 
    list          = config_file_merge_sort_linked_list(
@@ -1330,7 +1338,10 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    struct config_include_list *includes = conf->includes;
 
    if (conf->reference)
+   {
+      pathname_make_slashes_portable(conf->reference);
       fprintf(file, "#reference \"%s\"\n", conf->reference);
+   }
 
    if (sort)
       list = config_file_merge_sort_linked_list(
