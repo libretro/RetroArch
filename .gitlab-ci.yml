@@ -25,6 +25,7 @@ build-retroarch-windows-x64:
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist"
     - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC platform=win compiler=x86_64-w64-mingw32.static-gcc build=release && make -j$NUMPROC platform=win compiler=x86_64-w64-mingw32.static-gcc build=release strip && cd -"
     - "cp -f libretro-common/audio/dsp_filters/*.dll ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
@@ -33,6 +34,17 @@ build-retroarch-windows-x64:
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f retroarch.cfg ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/retroarch.default.cfg"
     - "echo -e '[Paths]\nPlugins = ./' > ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/qt.conf"
+    - "/bin/bash /usr/lib/mxe/tools/copydlldeps.sh
+        --infile retroarch.exe
+        --destdir ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/
+        --recursivesrcdir /usr/lib/mxe/usr/x86_64-w64-mingw32.shared/
+        --enforcedir /usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/plugins/bearer/
+        --enforcedir /usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/plugins/iconengines/
+        --enforcedir /usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/plugins/imageformats/
+        --enforcedir /usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/plugins/platforms/
+        --enforcedir /usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/plugins/styles/
+        --copy
+        --objdump x86_64-w64-mingw32.shared-objdump"
 
 build-retroarch-linux-x64:
   stage: build
