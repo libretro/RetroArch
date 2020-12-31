@@ -11382,7 +11382,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_UPDATE_CHEATS,
                      MENU_SETTING_ACTION, 0, 0))
                count++;
-
+#endif
 #ifdef HAVE_LIBRETRODB
 #if !defined(VITA)
             if (menu_entries_append_enum(info->list,
@@ -11393,7 +11393,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                count++;
 #endif
 #endif
-
+#if !defined(_3DS)
             if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS),
                      msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_OVERLAYS),
