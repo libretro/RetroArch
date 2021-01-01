@@ -47,6 +47,47 @@ build-retroarch-windows-x64:
         --objdump x86_64-w64-mingw32.shared-objdump"
     - "rm -f ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/opengl32.dll"
 
+build-retroarch-windows-i686:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win32-cross:gcc10
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - retroarch.exe
+    - ${MEDIA_PATH}
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "MOC=/usr/lib/mxe/usr/i686-w64-mingw32.shared/qt5/bin/moc ./configure --host=i686-w64-mingw32.shared"
+    - "make -j$NUMPROC"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist"
+    - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC platform=win compiler=i686-w64-mingw32.static-gcc build=release && make -j$NUMPROC platform=win compiler=i686-w64-mingw32.static-gcc build=release strip && cd -"
+    - "cp -f libretro-common/audio/dsp_filters/*.dll ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cd gfx/video_filters && make -j$NUMPROC platform=win compiler=i686-w64-mingw32.static-gcc build=release && make -j$NUMPROC platform=win compiler=i686-w64-mingw32.static-gcc build=release strip && cd -"
+    - "cp -f gfx/video_filters/*.dll ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f retroarch.cfg ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/retroarch.default.cfg"
+    - "echo -e '[Paths]\nPlugins = ./' > ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/qt.conf"
+    - "/bin/bash /usr/lib/mxe/tools/copydlldeps.sh
+        --infile retroarch.exe
+        --destdir ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/
+        --recursivesrcdir /usr/lib/mxe/usr/i686-mingw32.shared/
+        --enforcedir /usr/lib/mxe/usr/i686-mingw32.shared/qt5/plugins/bearer/
+        --enforcedir /usr/lib/mxe/usr/i686-mingw32.shared/qt5/plugins/iconengines/
+        --enforcedir /usr/lib/mxe/usr/i686-mingw32.shared/qt5/plugins/imageformats/
+        --enforcedir /usr/lib/mxe/usr/i686-w64-mingw32.shared/qt5/plugins/platforms/
+        --enforcedir /usr/lib/mxe/usr/i686-w64-mingw32.shared/qt5/plugins/styles/
+        --copy
+        --objdump i686-w64-mingw32.shared-objdump"
+    - "rm -f ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/opengl32.dll"
+
 build-retroarch-linux-x64:
   stage: build
   before_script:
