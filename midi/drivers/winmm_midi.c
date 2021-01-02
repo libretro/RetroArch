@@ -17,7 +17,7 @@
 
 #include <libretro.h>
 #include <lists/string_list.h>
-#include <verbosity.h>
+#include "../../verbosity.h"
 #include <string/stdstring.h>
 
 #include "../midi_driver.h"
@@ -481,7 +481,6 @@ static void winmm_midi_free(void *p)
 
    if (d->out_dev)
    {
-      midiStreamStop(d->out_dev);
       winmm_midi_free_output_buffers(d->out_dev, d->out_bufs);
       midiStreamClose(d->out_dev);
    }
