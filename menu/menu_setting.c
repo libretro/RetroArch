@@ -17367,7 +17367,11 @@ static bool setting_append_list(
                   sizeof(settings->paths.network_buildbot_url),
                   MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
                   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
+#if defined(_3DS)
+                  envIsHomebrew() ? DEFAULT_BUILDBOT_SERVER_URL"3dsx/" : DEFAULT_BUILDBOT_SERVER_URL"cia/",
+#else
                   DEFAULT_BUILDBOT_SERVER_URL,
+#endif
                   &group_info,
                   &subgroup_info,
                   parent_group,
