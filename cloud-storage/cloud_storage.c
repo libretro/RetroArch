@@ -27,7 +27,7 @@
 #include <file/file_path.h>
 #include <retroarch.h>
 #include <retro_dirent.h>
-#include <rhash.h>
+#include <lrc_hash.h>
 #include <rthreads/rthreads.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
