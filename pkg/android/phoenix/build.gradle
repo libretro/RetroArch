@@ -39,6 +39,8 @@ android {
       }
     }
     targetSdkVersion 29
+    versionCode System.currentTimeSeconds().toInteger()
+    versionName "${getManifestAttribute("versionName")}_GIT"
   }
 
   productFlavors {
@@ -70,6 +72,8 @@ android {
     }
     playStoreNormal {
       minSdkVersion 21
+      versionCode getPlayStoreVersionCode()
+      versionName getPlayStoreVersionName()
 
       resValue "string", "app_name", "RetroArch"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
@@ -78,6 +82,8 @@ android {
     }
     playStorePlus {
       minSdkVersion 26
+      versionCode getPlayStoreVersionCode()
+      versionName getPlayStoreVersionName()
 
       applicationIdSuffix '.aarch64'
       resValue "string", "app_name", "RetroArch Plus"
@@ -139,4 +145,25 @@ dependencies {
 def dynamicFeatures = file("dynamic_features.gradle")
 if(dynamicFeatures.exists()) {
   apply from: "dynamic_features.gradle"
+}
+
+static int getPlayStoreVersionCode() {
+  def baseVersion = getManifestAttribute("versionCode").toInteger()
+  def baseTime = 1609632000
+  def halfWeek = 302400
+  def increment = (System.currentTimeSeconds() - baseTime) / halfWeek
+
+  return baseVersion + increment
+}
+
+static String getPlayStoreVersionName() {
+  def versionName = getManifestAttribute("versionName")
+  return "$versionName (${new Date().format("yyyy-MM-dd")})"
+}
+
+static String getManifestAttribute(String attribute) {
+  def manifest = new XmlParser().parse("AndroidManifest.xml")
+  return manifest.attributes().find {
+    ((String) it.key).contains(attribute)
+  }.value
 }
