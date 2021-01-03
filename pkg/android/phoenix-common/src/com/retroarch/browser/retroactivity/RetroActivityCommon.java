@@ -404,12 +404,14 @@ public class RetroActivityCommon extends NativeActivity
     SplitInstallManager manager = SplitInstallManagerFactory.create(this);
     String[] modules = manager.getInstalledModules().toArray(new String[0]);
     List<String> cores = new ArrayList<>();
+    List<String> availableCores = Arrays.asList(getAvailableCores());
 
     SharedPreferences prefs = UserPreferences.getPreferences(this);
 
     for(int i = 0; i < modules.length; i++) {
       String coreName = unsanitizeCoreName(modules[i]);
-      if(!prefs.getBoolean("core_deleted_" + coreName, false)) {
+      if(!prefs.getBoolean("core_deleted_" + coreName, false)
+              && availableCores.contains(coreName)) {
         cores.add(coreName);
       }
     }
@@ -566,6 +568,8 @@ public class RetroActivityCommon extends NativeActivity
     File[] list = file.listFiles();
     if(list == null) return;
 
+    List<String> availableCores = Arrays.asList(getAvailableCores());
+
     // Check each file in a directory to see if it's a native library.
     for(int i = 0; i < list.length; i++) {
       File child = list[i];
@@ -577,7 +581,8 @@ public class RetroActivityCommon extends NativeActivity
         String filename = child.getAbsolutePath();
 
         SharedPreferences prefs = UserPreferences.getPreferences(this);
-        if(!prefs.getBoolean("core_deleted_" + core, false)) {
+        if(!prefs.getBoolean("core_deleted_" + core, false)
+                && availableCores.contains(core)) {
           // Generate the destination filename and delete any existing symlinks / cores
           String newFilename = getCorePath() + core + "_libretro_android.so";
           new File(newFilename).delete();
