@@ -868,9 +868,15 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       do_swap = true;
 #ifdef VITA
       glUseProgram(0);
-      glDisable(GL_DEPTH_TEST);
+      bool enabled = glIsEnabled(GL_DEPTH_TEST);
+      if(enabled)
+         glDisable(GL_DEPTH_TEST);
 #endif
       menu_driver_frame(menu_is_alive, video_info);
+#ifdef VITA
+      if(enabled)
+         glEnable(GL_DEPTH_TEST);
+#endif
    }
    else
 #endif
