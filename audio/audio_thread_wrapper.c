@@ -57,6 +57,10 @@ static void audio_thread_loop(void *data)
    if (!thr)
       return;
 
+#if defined(_WIN32)
+   CoInitialize(NULL);
+#endif
+
    thr->driver_data   = thr->driver->init(
          thr->device, thr->out_rate, thr->latency,
          thr->block_frames, thr->new_rate);
@@ -166,6 +170,10 @@ static void audio_thread_free(void *data)
    if (thr->cond)
       scond_free(thr->cond);
    free(thr);
+
+#if defined(_WIN32)
+   CoUninitialize(NULL);
+#endif
 }
 
 static bool audio_thread_alive(void *data)
