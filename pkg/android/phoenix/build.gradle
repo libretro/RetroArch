@@ -149,7 +149,7 @@ if(dynamicFeatures.exists()) {
   apply from: "dynamic_features.gradle"
 }
 
-static int getPlayStoreVersionCode() {
+int getPlayStoreVersionCode() {
   def baseVersion = getManifestAttribute("versionCode").toInteger()
   def baseTime = 1609632000
   def halfWeek = 302400
@@ -158,13 +158,13 @@ static int getPlayStoreVersionCode() {
   return baseVersion + increment
 }
 
-static String getPlayStoreVersionName() {
+String getPlayStoreVersionName() {
   def versionName = getManifestAttribute("versionName")
   return "$versionName (${new Date().format("yyyy-MM-dd")})"
 }
 
-static String getManifestAttribute(String attribute) {
-  def manifest = new XmlParser().parse("AndroidManifest.xml")
+String getManifestAttribute(String attribute) {
+  def manifest = new XmlParser().parse("${project.projectDir}/AndroidManifest.xml")
   return manifest.attributes().find {
     ((String) it.key).contains(attribute)
   }.value
