@@ -297,8 +297,19 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
 {
    size_t bufsize;
    xa_t *xa              = (xa_t*)calloc(1, sizeof(*xa));
+
    if (!xa)
+   {
+      RARCH_ERR("[XAudio2] Not enough memory.\n");
       return NULL;
+   }
+
+   if (FAILED(CoInitialize(NULL)))
+   {
+      RARCH_ERR("[XAudio2] COM threading failed.\n");
+      free(xa);
+      return NULL;
+   }
 
    if (latency < 8)
       latency  = 8; /* Do not allow shenanigans. */
@@ -309,7 +320,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
    xa->xa = xaudio2_new(rate, 2, xa->bufsize, device);
    if (!xa->xa)
    {
-      RARCH_ERR("Failed to init XAudio2.\n");
+      RARCH_ERR("[XAudio2] Failed to init driver.\n");
       free(xa);
       return NULL;
    }
@@ -420,6 +431,8 @@ static void xa_free(void *data)
 
    if (!xa)
       return;
+
+   CoUninitialize();
 
    if (xa->xa)
       xaudio2_free(xa->xa);
