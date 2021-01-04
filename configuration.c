@@ -2351,13 +2351,10 @@ void config_set_defaults(void *data)
             retro_assert(j == keyval->id);
       }
    }
-#ifdef _3DS
-   configuration_set_string(settings,
-         settings->paths.network_buildbot_url, envIsHomebrew() ? DEFAULT_BUILDBOT_SERVER_URL"3dsx/" : DEFAULT_BUILDBOT_SERVER_URL"cia/");
-#else
+
    configuration_set_string(settings,
          settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
-#endif
+
    configuration_set_string(settings,
          settings->paths.network_buildbot_assets_url,
          DEFAULT_BUILDBOT_ASSETS_SERVER_URL);
