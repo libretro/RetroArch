@@ -17361,20 +17361,7 @@ static bool setting_append_list(
          if (!play_feature_delivery_enabled())
 #endif
          {
-#if defined(_3DS)
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->paths.network_buildbot_url,
-                  sizeof(settings->paths.network_buildbot_url),
-                  MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
-                  MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-                  envIsHomebrew() ? DEFAULT_BUILDBOT_SERVER_URL"3dsx/" : DEFAULT_BUILDBOT_SERVER_URL"cia/",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-#else
+
             CONFIG_STRING(
                   list, list_info,
                   settings->paths.network_buildbot_url,
@@ -17387,7 +17374,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-#endif
+
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
             (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
