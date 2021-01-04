@@ -321,6 +321,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
    if (!xa->xa)
    {
       RARCH_ERR("[XAudio2] Failed to init driver.\n");
+      CoUninitialize();
       free(xa);
       return NULL;
    }
