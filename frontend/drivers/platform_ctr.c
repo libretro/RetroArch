@@ -244,10 +244,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
 
          if (core_path[0] == '\0')
          {
-            errorInit(&error_dialog, ERROR_TEXT, CFG_LANGUAGE_EN);
-            errorText(&error_dialog, "There are no cores installed, install a core to continue.");
-            errorDisp(&error_dialog);
-            exit(0);
+            error_and_quit("There are no cores installed, install a core to continue.");
          }
       }
 #endif
@@ -268,13 +265,11 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
          exec_cia(path, arg_data);
       }
 
-      errorInit(&error_dialog, ERROR_TEXT, CFG_LANGUAGE_EN);
+      /* couldnt launch new core, but context
+      is corrupt so we have to quit */
       snprintf(error_string, sizeof(error_string),
             "Can't launch core:%s", path);
-      errorText(&error_dialog, error_string);
-      errorDisp(&error_dialog);
-      exit(0); /* couldnt launch new core, but context 
-                  is corrupt so we have to quit */
+      error_and_quit(error_string);
    }
 }
 
