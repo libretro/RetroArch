@@ -306,31 +306,30 @@ done
 
 # Additional build step
 if [ $platform = "psl1ght" ] ; then
-	   ps3pkgdir=pkg/psl1ght/pkg
-      echo Deploy : Assets...
-      if [ -d ../media/assets ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/assets
-         cp -r ../media/assets/* ../${ps3pkgdir}/USRDIR/cores/assets
-      fi
-      echo Deploy : Databases...
-      if [ -d ../media/libretrodb/rdb ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/database/rdb
-         cp -r ../media/libretrodb/rdb/* ../${ps3pkgdir}/USRDIR/cores/database/rdb
-	  fi
-	  if [ -d ../media/libretrodb/cursors ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/database/cursors
-         cp -r ../media/libretrodb/cursors/* ../${ps3pkgdir}/USRDIR/cores/database/cursors
-      fi
-      echo Deploy : Overlays...
-      if [ -d ../media/overlays ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/overlays
-         cp -r ../media/overlays/* ../${ps3pkgdir}/USRDIR/cores/overlays
-      fi
-      echo Deploy : Shaders...
-      if [ -d ../media/shaders_cg ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/shaders_cg
-         cp -r ../media/shaders_cg/* ../${ps3pkgdir}/USRDIR/cores/shaders_cg
-      fi
+   ps3pkgdir=pkg/psl1ght/pkg
+   echo Deploy : Assets...
+   if [ -d ../media/assets ]; then
+      mkdir -p ../${ps3pkgdir}/USRDIR/cores/assets
+      cp -r ../media/assets/* ../${ps3pkgdir}/USRDIR/cores/assets
+   fi
+   echo Deploy : Databases...
+   if [ -d ../media/libretrodb/rdb ]; then
+      mkdir -p ../${ps3pkgdir}/USRDIR/cores/database/rdb
+      cp -r ../media/libretrodb/rdb/* ../${ps3pkgdir}/USRDIR/cores/database/rdb
+   fi
+   if [ -d ../media/libretrodb/cursors ]; then
+      mkdir -p ../${ps3pkgdir}/USRDIR/cores/database/cursors
+      cp -r ../media/libretrodb/cursors/* ../${ps3pkgdir}/USRDIR/cores/database/cursors
+   fi
+   echo Deploy : Overlays...
+   if [ -d ../media/overlays ]; then
+      mkdir -p ../${ps3pkgdir}/USRDIR/cores/overlays
+      cp -r ../media/overlays/* ../${ps3pkgdir}/USRDIR/cores/overlays
+   fi
+   echo Deploy : Shaders...
+   if [ -d ../media/shaders_cg ]; then
+      mkdir -p ../${ps3pkgdir}/USRDIR/cores/shaders_cg
+      cp -r ../media/shaders_cg/* ../${ps3pkgdir}/USRDIR/cores/shaders_cg
    fi
 fi
 
