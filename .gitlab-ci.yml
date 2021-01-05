@@ -102,7 +102,7 @@ build-retroarch-linux-x64:
     expire_in: 1 month
   dependencies: []
   script:
-    - "./configure --prefix=/usr"
+    - "./configure --disable-qt --prefix=/usr"
     - "make -j$NUMPROC"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
