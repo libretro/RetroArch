@@ -1824,6 +1824,53 @@ static void frontend_unix_get_env(int *argc,
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
 
+#if defined(DINGUX)
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], base_path,
+         "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], base_path,
+         "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+#else
+   if (path_is_directory("/usr/local/share/retroarch/filters/audio"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+            "/usr/local/share/retroarch",
+            "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   else if (path_is_directory("/usr/share/retroarch/filters/audio"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+            "/usr/share/retroarch",
+            "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   else if (path_is_directory("/usr/local/share/games/retroarch/filters/audio"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+            "/usr/local/share/games/retroarch",
+            "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   else if (path_is_directory("/usr/share/games/retroarch/filters/audio"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
+            "/usr/share/games/retroarch",
+            "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   else
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], base_path,
+            "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+
+   if (path_is_directory("/usr/local/share/retroarch/filters/video"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+            "/usr/local/share/retroarch",
+            "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else if (path_is_directory("/usr/share/retroarch/filters/video"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+            "/usr/share/retroarch",
+            "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else if (path_is_directory("/usr/local/share/games/retroarch/filters/video"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+            "/usr/local/share/games/retroarch",
+            "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else if (path_is_directory("/usr/share/games/retroarch/filters/video"))
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+            "/usr/share/games/retroarch",
+            "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], base_path,
+            "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+#endif
+
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], base_path,
          "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
@@ -1841,12 +1888,6 @@ static void frontend_unix_get_env(int *argc,
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
          "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-#if defined(DINGUX)
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], base_path,
-         "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], base_path,
-         "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
