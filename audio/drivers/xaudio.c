@@ -180,6 +180,10 @@ static void xaudio2_free(xaudio2_t *handle)
 #else
    free(handle);
 #endif
+
+#if !defined(_XBOX) && !defined(__WINRT__)
+   CoUninitialize();
+#endif
 }
 
 static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
@@ -188,16 +192,28 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    int32_t idx_found        = -1;
    WAVEFORMATEX wfx         = {0};
    struct string_list *list = NULL;
+   xaudio2_t *handle        = NULL;
+
+#if !defined(_XBOX) && !defined(__WINRT__)
+   if (FAILED(CoInitialize(NULL)))
+      goto error;
+#endif
+
 #if defined(__cplusplus) && !defined(CINTERFACE)
-   xaudio2_t *handle        = new xaudio2;
+   handle = new xaudio2;
 #else
-   xaudio2_t *handle        = (xaudio2_t*)calloc(1, sizeof(*handle));
+   handle = (xaudio2_t*)calloc(1, sizeof(*handle));
 #endif
 
    if (!handle)
+   {
+#if !defined(_XBOX) && !defined(__WINRT__)
+      CoUninitialize();
+#endif
       goto error;
+   }
 
-   list                     = (struct string_list*)xa_list_new(NULL);
+   list = (struct string_list*)xa_list_new(NULL);
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
    handle->lpVtbl = &voice_vtable;
@@ -296,7 +312,8 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
 {
    size_t bufsize;
-   xa_t *xa              = (xa_t*)calloc(1, sizeof(*xa));
+   xa_t *xa    = (xa_t*)calloc(1, sizeof(*xa));
+
    if (!xa)
       return NULL;
 
@@ -309,7 +326,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
    xa->xa = xaudio2_new(rate, 2, xa->bufsize, device);
    if (!xa->xa)
    {
-      RARCH_ERR("Failed to init XAudio2.\n");
+      RARCH_ERR("[XAudio2] Failed to init driver.\n");
       free(xa);
       return NULL;
    }
