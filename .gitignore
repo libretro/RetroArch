@@ -213,3 +213,11 @@ libretro-common/samples/streams/rzip/rzip
 
 # DINGUX
 *.opk
+
+#VITA
+param.sfo
+*.S
+*.wo
+*.elf
+*.self
+*.vpk
