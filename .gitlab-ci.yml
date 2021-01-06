@@ -529,6 +529,56 @@ build-static-retroarch-dummy-ngc:
     - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
+build-static-retroarch-emscripten:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-emscripten:latest
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - retroarch-precompiled/
+    expire_in: 1 day
+  dependencies: []
+  needs:
+    # Dummy build requires no core
+    - build-static-retroarch-dummy-emscripten
+  script:
+    # Allow failure since we don't have a core
+    - "emmake make -f Makefile.emscripten -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
+build-static-retroarch-dummy-emscripten:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-amd64-ubuntu:latest
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - ${MEDIA_PATH}
+    expire_in: 1 month
+  dependencies: []
+  script:
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -rf pkg/emscripten/libretro ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
+    - "cp -f media/canvas.png ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/icon_dark.ico ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/icon_light.ico ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/invader_dark.png ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/invader_light.png ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/libretro-logo.png ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/retroarch-16x16.ico ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/retroarch-16x16.png ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/retroarch-96x96.png ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+    - "cp -f media/retroarch.ico ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg/media"
+
 trigger_static-cores:
   stage: trigger-static-cores
   needs:
@@ -540,6 +590,7 @@ trigger_static-cores:
   - build-static-retroarch-wiiu
   - build-static-retroarch-wii
   - build-static-retroarch-ngc
+  - build-static-retroarch-emscripten
   dependencies: []
   script:
     # Dummy for now
