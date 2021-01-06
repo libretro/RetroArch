@@ -1418,6 +1418,10 @@ ifeq ($(HAVE_VITAGL), 1)
           gfx/drivers_display/gfx_display_gl1.o
 endif
 
+ifeq ($(HAVE_VITAGLES), 1)
+   OBJ += gfx/drivers_context/vita_ctx.o
+endif
+
 ifeq ($(HAVE_GL_CONTEXT), 1)
    ifeq ($(HAVE_GL_MODERN), 1)
       DEFINES += -DHAVE_OPENGL
@@ -2340,6 +2344,13 @@ ifeq ($(HAVE_MATH_NEON), 1)
    DEFINES += -DHAVE_MATH_NEON
    INCLUDE_DIRS += -I$(DEPS_DIR)/math-neon/source
    SOURCES := $(DEPS_DIR)/math-neon/source
+   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
+endif
+
+ifeq ($(HAVE_VITAGLES), 1)
+   DEFINES += -DHAVE_VITAGLES
+   INCLUDE_DIRS += -I$(DEPS_DIR)/Pigs-In-A-Blanket/include
+   SOURCES := $(DEPS_DIR)/Pigs-In-A-Blanket/src
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 

@@ -66,6 +66,10 @@
 #endif
 #endif
 
+#if defined(HAVE_VITAGLES)
+#include "../../deps/Pigs-In-A-Blanket/include/pib.h"
+#endif
+
 #ifndef VITA
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
@@ -73,6 +77,10 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 PSP_MAIN_THREAD_STACK_SIZE_KB(4*1024);
 #endif
 PSP_HEAP_SIZE_MAX();
+#endif
+
+#ifdef SCE_LIBC_SIZE
+unsigned int sceLibcHeapSize = SCE_LIBC_SIZE;
 #endif
 
 char eboot_path[512];
@@ -287,6 +295,10 @@ static void frontend_psp_init(void *data)
    memset(&appUtilParam, 0, sizeof(SceAppUtilInitParam));
    memset(&appUtilBootParam, 0, sizeof(SceAppUtilBootParam));
    sceAppUtilInit(&appUtilParam, &appUtilBootParam);
+#if defined(HAVE_VITAGLES)
+   if(pibInit(PIB_SHACCCG|PIB_ENABLE_MSAA|PIB_GET_PROC_ADDR_CORE))
+      return;
+#endif
 #else
    (void)data;
    /* initialize debug screen */
