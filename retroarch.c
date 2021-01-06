@@ -28712,10 +28712,13 @@ static void audio_driver_monitor_set_rate(struct rarch_state *p_rarch)
 bool audio_driver_callback(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
+   bool core_paused            = p_rarch->runloop_paused || (settings->bools.menu_pause_libretro && p_rarch->menu_driver_alive);
+
    if (!p_rarch->audio_callback.callback)
       return false;
 
-   if (p_rarch->audio_callback.callback)
+   if (!core_paused && p_rarch->audio_callback.callback)
       p_rarch->audio_callback.callback();
 
    return true;
@@ -37379,6 +37382,7 @@ int runloop_iterate(void)
    bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
    unsigned max_users                           = p_rarch->input_driver_max_users;
    retro_time_t current_time                    = cpu_features_get_time_usec();
+   bool core_paused                             = p_rarch->runloop_paused || (settings->bools.menu_pause_libretro && p_rarch->menu_driver_alive);
 
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st                  = &p_rarch->discord_st;
@@ -37416,7 +37420,8 @@ int runloop_iterate(void)
             delta /= slowmotion_ratio;
       }
 
-      p_rarch->runloop_frame_time.callback(delta);
+      if (!core_paused)
+         p_rarch->runloop_frame_time.callback(delta);
    }
 
    /* Update audio buffer occupancy if buffer status
@@ -37454,8 +37459,9 @@ int runloop_iterate(void)
          audio_buf_active    = true;
       }
 
-      p_rarch->runloop_audio_buffer_status.callback(
-            audio_buf_active, audio_buf_occupancy, audio_buf_underrun);
+      if (!core_paused)
+         p_rarch->runloop_audio_buffer_status.callback(
+               audio_buf_active, audio_buf_occupancy, audio_buf_underrun);
    }
 
    switch ((enum runloop_state)runloop_check_state(p_rarch,
