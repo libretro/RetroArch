@@ -545,6 +545,8 @@ public class RetroActivityCommon extends NativeActivity
    * are installed to.
    */
   private void updateSymlinks() {
+    if(!isPlayStoreBuild()) return;
+
     traverseFilesystem(getFilesDir());
     traverseFilesystem(new File(getApplicationInfo().nativeLibraryDir));
   }
