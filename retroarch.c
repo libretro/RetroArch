@@ -2782,8 +2782,10 @@ int menu_entries_get_core_title(char *s, size_t len)
    strcpy_literal(s, PACKAGE_VERSION " msvc2013" " - ");
 #elif _MSC_VER == 1900
    strcpy_literal(s, PACKAGE_VERSION " msvc2015" " - ");
-#elif _MSC_VER >= 1910 && _MSC_VER < 2000
+#elif _MSC_VER >= 1910 && _MSC_VER < 1920
    strcpy_literal(s, PACKAGE_VERSION " msvc2017" " - ");
+#elif _MSC_VER >= 1920 && _MSC_VER < 2000
+   strcpy_literal(s, PACKAGE_VERSION " msvc2019" " - ");
 #else
    strcpy_literal(s, PACKAGE_VERSION " - ");
 #endif
