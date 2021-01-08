@@ -101,9 +101,10 @@ static void* ui_application_qt_initialize(void)
    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
-   QApplication::setStyle("fusion");
-
+   /* Create QApplication() before calling QApplication::setStyle()
+    * to ensure that plugin path is determined correctly */
    ui_application.app = new QApplication(app_argc, app_argv);
+   QApplication::setStyle("fusion");
    ui_application.app->setOrganizationName("libretro");
    ui_application.app->setApplicationName("RetroArch");
    ui_application.app->setApplicationVersion(PACKAGE_VERSION);
