@@ -4541,6 +4541,10 @@ MSG_HASH(
    "notification_show_screenshot_flash"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "notification_show_refresh_rate"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE,
    "video_shader_enable"
    )

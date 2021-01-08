@@ -13303,6 +13303,21 @@ static bool setting_append_list(
 #endif
 #endif
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_refresh_rate,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+               DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;

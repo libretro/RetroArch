@@ -7954,6 +7954,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_SCREENSHOTS
             bool notification_show_screenshot = settings->bools.notification_show_screenshot;
 #endif
+            bool notification_show_refresh_rate = settings->bools.notification_show_refresh_rate;
 #endif
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_FPS_SHOW,                                PARSE_ONLY_BOOL,  true },
@@ -7974,6 +7975,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,   PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,      PARSE_ONLY_UINT,  false },
 #endif
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE,          PARSE_ONLY_BOOL,  true },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
