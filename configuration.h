@@ -545,6 +545,7 @@ typedef struct settings
       bool notification_show_set_initial_disk;
       bool notification_show_fast_forward;
       bool notification_show_screenshot;
+      bool notification_show_refresh_rate;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;

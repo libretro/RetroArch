@@ -865,6 +865,9 @@ static const bool audio_enable_menu_bgm    = false;
  * duration when taking a screenshot*/
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH 0
 
+/*Display a notification when setting the refresh rate*/
+#define DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE true
+
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000

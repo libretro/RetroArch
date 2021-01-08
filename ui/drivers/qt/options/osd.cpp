@@ -69,6 +69,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE);
 
    layout->addWidget(notificationsGroup);
 
