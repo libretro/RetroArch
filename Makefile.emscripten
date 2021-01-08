@@ -53,7 +53,7 @@ ifeq ($(LIBRETRO), tyrquake)
    LTO = 0
 endif
 
-MEMORY = 134217728
+MEMORY ?= 134217728
 
 PRECISE_F32 = 1
 
