@@ -829,12 +829,6 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG true
 #endif
 
-#if defined(HAVE_SCREENSHOTS)
-#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN true
-#else
-#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN false
-#endif
-
 /* Display a notification when cheats are being
  * applied */
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
@@ -855,6 +849,7 @@ static const bool audio_enable_menu_bgm    = false;
  * content */
 #define DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD true
 
+#if defined(HAVE_SCREENSHOTS)
 /*Display a notification when taking a screenshot*/
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT true
 
@@ -864,6 +859,7 @@ static const bool audio_enable_menu_bgm    = false;
 /* Display a white flashing effect with the desired 
  * duration when taking a screenshot*/
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH 0
+#endif
 
 /*Display a notification when setting the refresh rate*/
 #define DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE true
