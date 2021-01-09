@@ -207,8 +207,10 @@ typedef struct settings
       unsigned video_overscan_correction_bottom;
 #endif
       unsigned video_shader_delay;
+#ifdef HAVE_SCREENSHOTS
       unsigned notification_show_screenshot_duration;
       unsigned notification_show_screenshot_flash;
+#endif
 
       /* Accessibility */
       unsigned accessibility_narrator_speech_speed;
@@ -544,7 +546,9 @@ typedef struct settings
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
       bool notification_show_fast_forward;
+#ifdef HAVE_SCREENSHOTS
       bool notification_show_screenshot;
+#endif
       bool notification_show_refresh_rate;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
