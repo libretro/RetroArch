@@ -2010,6 +2010,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "Profili Tak ve Çalıştır şeklinde olan kontrolcüleri otomatik olarak yapılandırır."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Yardımcı Sensör Girişi"
@@ -2126,6 +2128,14 @@ MSG_HASH(
    "Cihaz Titreşimini Etkinleştir (Desteklenen Çekirdekler İçin)"
    )
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "Titreşim Gücü (Yeniden Başlatılmalı)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "Dokunsal geri bildirim efektlerinin büyüklüğünü belirtir."
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -2901,6 +2911,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Bir durum kaydı yapmadan önce, durum kaydı dizini otomatik olarak artar. İçerik yüklerken, dizin mevcut en yüksek dizine ayarlanır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Saklanacak Azami Otomatik Artımlı Durum Kayıtları"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "'Durum Kaydı Dizinini Otomatik Olarak Artır' etkinleştirildiğinde oluşturulacak kaydetme durumlarının sayısını sınırlar. Yeni bir durum kaydedilirken sınır aşılırsa, en düşük indekse sahip mevcut durum silinecektir. '0' değeri, sınırsız durumların kaydedileceği anlamına gelir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5283,6 +5301,9 @@ MSG_HASH(
    "Twitch Yayıncı Anahtarı"
    )
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -6695,24 +6716,24 @@ MSG_HASH(
    "Görüntülenecek başarı yok"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Zorlu Kipte Başarıları Duraklat"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Mevcut oturum için başarıları duraklatın. (Bu eylem, durum kayıtları, hileler, geri sarma, duraklatma ve ağır çekimi etkinleştirir)"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "Zorlu Kipte Başarıları Duraklat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Zorlu Kipte Başarılara Devam Et"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Mevcut oturum için başarıları devam ettirin. (Bu işlem, durum kaydını, hileleri, geri sarma, duraklatma ve ağır çekimi devre dışı bırakır ve mevcut oyunu sıfırlar)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Giriş yapmadınız"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Bu çekirdek kullanılarak başarılar etkinleştirilemez"
 )
 
 /* Quick Menu > Information */
@@ -11197,14 +11218,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "GPU hızını arttır yada düşür."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Ekran parlaklığı"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "Ekran parlaklığını arttır veya azalt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

@@ -2014,6 +2014,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "Configura de forma automática aquellos mandos para los que exista un perfil, a lo Plug-and Play."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Entrada de sensores auxiliares"
@@ -2130,6 +2132,14 @@ MSG_HASH(
    "Activar vibración de dispositivo (en núcleos compatibles)"
    )
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "Intensidad de vibración (es necesario reiniciar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "Especifica la fuerza de los efectos de respuesta háptica."
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -2905,6 +2915,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Antes de hacer un guardado rápido, se incrementará el índice de guardados rápidos de forma automática. Al cargar un contenidos, se asignará el mayor número disponible del índice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Máximo de guardados rápidos automáticos a conservar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Limita el número de guardados rápidos que se crearán al activar la opción «Aumentar automáticamente el índice de guardados rápidos». Si se crea un nuevo guardado rápido y se supera el límite, se borrará el archivo existente en el índice más bajo. Un valor de 0 permitirá crear un número ilimitado de guardados rápidos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5283,6 +5301,9 @@ MSG_HASH(
    "Clave de transmisión de Twitch"
    )
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -6683,24 +6704,24 @@ MSG_HASH(
    "No hay logros disponibles"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Pausar el modo Hardcore de logros"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pausa los logros en esta sesión (se activarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "Pausar el modo Hardcore de logros"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Reanudar el modo Hardcore de logros"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Reanuda los logros en esta sesión (se desactivarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "No se ha iniciado sesión"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "No se pueden activar los logros con este núcleo"
 )
 
 /* Quick Menu > Information */
@@ -11089,14 +11110,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "Aumenta o reduce la velocidad de la GPU de Switch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Brillo de pantalla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "Aumenta o reduce el brillo de la pantalla de Switch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

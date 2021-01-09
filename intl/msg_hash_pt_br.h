@@ -1990,6 +1990,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "Configura automaticamente os controles que possuem um perfil, estilo Plug-and-Play."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Entrada do sensor auxiliar"
@@ -2106,6 +2108,14 @@ MSG_HASH(
    "Ativar vibração do dispositivo (para núcleos suportados)"
    )
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "Força da vibração (requer reinício)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "Determina a força dos efeitos da resposta háptica."
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -2881,6 +2891,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Antes de criar um jogo salvo, o índice do do salvamento é aumentado automaticamente. Ao carregar o conteúdo, o índice será definido como o índice mais alto existente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Quantidade máxima do incremento dos estados salvos dos jogos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Limita a quantidade do estados dos jogos salvos que serão criados ao ativar a opção 'Aumentar o índice de jogos salvos automaticamente'. Se ao salvar um novo jogo o limite for excedido, o jogo com o índice mais baixo será excluído caso ele já exista. O valor '0' significa que o estado dos jogos serão salvos de forma ilimitada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5259,6 +5277,9 @@ MSG_HASH(
    "Chave da transmissão do Twitch"
    )
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -6651,24 +6672,24 @@ MSG_HASH(
    "Não há conquistas para mostrar"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Pausar conquistas no modo Hardcore"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pausa as conquistas para a sessão atual. (Esta ação ativará jogos salvos, trapaças, rebobinamento, pausa e câmera lenta)"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "Pausar conquistas no modo Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Continuar conquistas no modo Hardcore"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Continua as conquistas para a sessão atual. (Isso reiniciará o jogo atual e irá desativar jogos salvos, trapaças, rebobinamento, pausa e câmera lenta)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Você não está logado"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Não é possível ativar as conquistas usando este núcleo"
 )
 
 /* Quick Menu > Information */
@@ -11041,14 +11062,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "Faz um overclock ou underclock na CPU do Switch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Brilho da tela"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "Aumenta ou diminui o brilho da tela do Switch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

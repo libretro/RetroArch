@@ -1325,6 +1325,10 @@ MSG_HASH(
    "イメージにわずかなぼかしを加えて, ピクセルの輪郭の硬さを和らげます. このオプションはパフォーマンスにはほとんど影響しません."
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "バイリニア (双線形)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1950,6 +1954,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "プラグアンドプレイ対応のプロファイルを持つコントローラを自動的に設定します."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "入力ボタン軸のしきい値"
@@ -3215,6 +3221,10 @@ MSG_HASH(
    "OSDメッセージのフォント"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+   "画面上の通知のフォントを選択します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
    "OSDメッセージのサイズ"
    )
@@ -3986,6 +3996,10 @@ MSG_HASH(
    "メニューの倍率"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "メニューの背景に画像を使用する"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "壁紙の不透明度"
    )
@@ -4624,6 +4638,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
    "パスワード"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
+   "RetroAchievementsアカウントのパスワードを入力してください。最大長：255文字"
+   )
 
 /* Settings > User > Accounts > YouTube */
 
@@ -4638,6 +4656,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    "Twitch配信キー"
    )
+
+/* Settings > User > Accounts > Facebook Gaming */
+
 
 /* Settings > Directory */
 
@@ -5082,6 +5103,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
    "すべて表示"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "ジャンル別"
    )
 
 /* Playlist > Playlist Item */
@@ -5846,6 +5871,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "実績ハードコアモードを一時停止"
@@ -7328,6 +7357,10 @@ MSG_HASH(
    "(サムネイルを見つかることに使う)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   "アイテム「%1」を削除してよろしいですか？"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    "まずひとつのプレイリストを選択してください。"
    )
@@ -7537,6 +7570,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
    "プレイリストが見つかりません。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "コネクティッド"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
@@ -9425,10 +9462,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
    "GPUオーバークロック"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "画面の明るさ"
    )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

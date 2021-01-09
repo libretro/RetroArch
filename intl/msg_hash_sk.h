@@ -1318,6 +1318,8 @@ MSG_HASH(
 
 /* Settings > Input */
 
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
    "Turbo mód"
@@ -1445,6 +1447,9 @@ MSG_HASH(
 
 
 /* Settings > User > Accounts > Twitch */
+
+
+/* Settings > User > Accounts > Facebook Gaming */
 
 
 /* Settings > Directory */
@@ -1618,6 +1623,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
 
 /* Quick Menu > Information */
 
@@ -2065,10 +2074,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
    "GPU pretaktovanie"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Jas obrazovky"
    )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
