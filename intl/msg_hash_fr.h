@@ -2002,6 +2002,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "Tente de configurer automatiquement les manettes, style Plug-and-Play."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Entrées depuis les capteurs auxiliaires"
@@ -2118,6 +2120,14 @@ MSG_HASH(
    "Activer la vibration du périphérique (pour les cœurs pris en charge)"
    )
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "Force de la vibration (Redémarrer)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "Spécifie l'ampleur des effets de retour haptique."
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -2893,6 +2903,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Avant la création d'une sauvegarde instantanée, le numéro de la sauvegarde instantanée est automatiquement incrémenté. Lors du chargement de contenu, le numéro sera réglé sur le plus haut existant."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Nombre maximum de sauvegardes instantanées auto-incrémentales à conserver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Limite le nombre de sauvegardes instantanées qui seront créées lorsque l'option 'Sauvegardes instantanées incrémentales' est activée. Si la limite est dépassée lors de l'enregistrement d'une nouvelle sauvegarde instantanée, la sauvegarde instantanée existante avec l'index le plus bas sera supprimée. Une valeur de '0' signifie que des sauvegardes instantanées illimitées seront enregistrés."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5283,6 +5301,9 @@ MSG_HASH(
    "Clé de streaming Twitch "
    )
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -6659,24 +6680,24 @@ MSG_HASH(
    "Aucun succès à afficher"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Mettre en pause le mode Hardcore des succès"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Mettre les succès en pause pour la session en cours. (Cette action activera les sauvegardes instantanées, les cheats, le rembobinage, la mise en pause et le ralenti)"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "Mettre en pause le mode Hardcore des succès"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Reprendre le mode Hardcore des succès"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Réactiver les succès pour la session en cours. (Cette action désactivera les sauvegardes instantanées, les cheats, le rembobinage, la mise en pause, le ralenti et réinitialisera le jeu en cours)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Non connecté"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Impossible d'activer les succès avec ce cœur"
 )
 
 /* Quick Menu > Information */
@@ -11093,14 +11114,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "Overclocker ou underclocker le processeur graphique de la Switch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Luminosité de l'écran"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "Augmenter ou réduire la luminosité de l'écran de la Switch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

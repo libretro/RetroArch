@@ -1866,6 +1866,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "Automatisch controllers configureren die een profiel, Plug-and-Play stijl hebben."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Extra Sensoringang"
@@ -3215,6 +3217,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Twitch */
 
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -3546,6 +3551,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
 
 /* Quick Menu > Information */
 

@@ -344,10 +344,6 @@ MSG_HASH(
 
 /* Qt (Desktop Menu) */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
-   "Forigi ludliston"
-   )
 
 /* Unsorted */
 
@@ -382,10 +378,6 @@ MSG_HASH(
 #else
 #endif
 #if defined(_3DS)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
-   "3DS Fundo Ekrano"
-   )
 #endif
 #ifdef HAVE_QT
 #endif

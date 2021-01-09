@@ -2022,6 +2022,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "Автоматическая настройка контроллеров при наличии профилей, по аналогии с Plug-and-Play."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Ввод с дополнительных сенсоров"
@@ -2138,6 +2140,14 @@ MSG_HASH(
    "Вибрация устройства (если поддерживается ядром)"
    )
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "Интенсивность виброотклика (перезапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "Настройка величины эффекта тактильной отдачи."
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -2917,6 +2927,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Автоматически повышать номер слота перед созданием быстрого сохранения. При загрузке контента будет установлен наивысший доступный номер слота."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Максимум автосохранений при повышении слота"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Устанавливает ограничение на количество сохранений состояния с включенной опцией 'Автоматически повышать слот сохранения'. При превышения предела, создание нового сохранение удалит существующее сохранение с наименьшим индексом. Значение '0' снимает данное ограничение."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5303,6 +5321,9 @@ MSG_HASH(
    "Ключ трансляции Twitch"
    )
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -6711,24 +6732,24 @@ MSG_HASH(
    "Нет доступных достижений"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Приостановить режим хардкора"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Приостановить достижения для текущего сеанса (активирует быстрые сохранения, чит-коды, перемотку, паузу и замедление)"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "Приостановить режим хардкора"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Возобновить режим хардкора"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Продолжить получение достижений для текущего сеанса (отключает быстрые сохранения, чит-коды, перемотку, паузу, замедление и перезагружает игру)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Вход не выполнен"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Достижения для данного ядра недоступны"
 )
 
 /* Quick Menu > Information */
@@ -10180,7 +10201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FRAMES,
-   "Рамки"
+   "Кадры"
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
@@ -11197,14 +11218,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "Разгон или замедление графического процессора Switch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Яркость экрана"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "Увеличить или уменьшить яркость экрана Switch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

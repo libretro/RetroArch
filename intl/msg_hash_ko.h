@@ -2042,6 +2042,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "사용 시 프로필이 존재하는 컨트롤러를 자동으로 구성합니다."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "보조 센서 입력"
@@ -2158,6 +2160,14 @@ MSG_HASH(
    "장치 진동 사용 (지원 코어 한정)"
    )
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "진동 세기 (재시작)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "햅틱 피드백으로 사용될 진동의 세기를 설정합니다."
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -2937,6 +2947,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "상태저장을 생성할 때마다 자동으로 인덱스를 증가시킵니다. 불러올 때에는 가장 높은 인덱스의 상태저장을 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "상태저장 인덱스 자동 증가 상한"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "'상태저장 인덱스 자동 증가' 사용 시 활용될 상태저장의 개수 제한을 설정합니다. 상태저장이 개수 제한에 도달할 경우 가장 낮은 인덱스의 상태저장이 삭제됩니다. '0'으로 설정 시 제한을 사용하지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5323,6 +5341,9 @@ MSG_HASH(
    "Twitch 스트림 키"
    )
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -6739,24 +6760,24 @@ MSG_HASH(
    "표시할 도전과제 없음"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "도전과제 하드코어 모드 일시정지"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "현재 세션의 도전과제를 일시정지합니다(상태저장, 치트, 뒤로 감기, 일시정지, 슬로모션 등을 다시 이용할 수 있게 됩니다)"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "도전과제 하드코어 모드 일시정지"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "도전과제 하드코어 모드 계속하기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "현재 세션의 도전과제를 다시 재개합니다(상태저장, 치트, 뒤로 감기, 일시정지, 슬로모션등을 이용할 수 없게 됩니다)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "로그인 되지 않음"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "이 코어로는 도전과제를 사용할 수 없습니다"
 )
 
 /* Quick Menu > Information */
@@ -11213,14 +11234,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "스위치 GPU를 오버클럭 또는 언더클럭합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "화면 밝기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "스위치 밝기를 조절합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

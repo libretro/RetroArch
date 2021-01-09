@@ -269,6 +269,10 @@ MSG_HASH(
    "Βίντεο που έχουν προηγουμένως αναπαραχθεί θα εμφανίζονται εδώ."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "Εξερεύνηση"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Αναζητηστε όλο το περιεχόμενο ταιριάζοντας την βάση δεδομενων μέσω μιας κατηγοριοποιησης της διεπαφής αναζητήσεων."
    )
@@ -1490,6 +1494,10 @@ MSG_HASH(
    "Διαμόρφωση Αναλογίας Οθόνης"
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Διατήρηση Αναλογίας Διαστάσεων"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
@@ -1802,6 +1810,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Ενεργοποίηση Αυτόματης Διαμόρφωσης"
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "Νεκρή Ζώνη του Αναλογικού Μοχλού"
@@ -1862,6 +1872,10 @@ MSG_HASH(
    "Ενεργοποίηση Δόνησης Συσκευής (Για Υποστηριζόμενους Πυρήνες)"
    )
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "Επίπεδο Δόνησης (Επανεκκίνηση)"
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -1934,8 +1948,28 @@ MSG_HASH(
    "Προηγούμενη σκίαση"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
+   "Ενεργοποιεί ή Απενεργοποιεί τη Λειτουργία Κωδικών."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "Λήψη Στιγμιότυπου"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+   "Εμαφανίζει τα Καρέ ανά δευτερόλεπτο (FPS)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+   "Αποστολή Πληροφοριων Εκσφαλματωσης (Debuging)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+   "Αύξηση Έντασης"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   "Μείωση Έντασης"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
@@ -2197,9 +2231,21 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
    "Ενεργοποίηση ή απενεργοποίηση αρχείων καταγραφής στο τερματικό."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+   "Μετρητές Επιδόσεων"
+   )
 
 /* Settings > File Browser */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
+   "Εμφάνιση Κρυφών Αρχείων και Καταλόγων"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+   "Εμφάνιση κρυφών αρχείων και καταλόγων στο πρόγραμμα περιήγησης αρχείων."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Φιλτράρισμα άγνωστων επεκτάσεων"
@@ -2231,8 +2277,16 @@ MSG_HASH(
    "Ενεργοποίηση Επιστροφής"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+   "Επιστροφή κάποιων Καρέ πίσω"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
    "Μέγεθος Ενδιάμεσης Μνήμης Επιστροφής (MB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   "Η ποσότητα μνήμης (σε MB) που θα κρατηθεί για το buffer επαναφοράς. Έαν Αυξηθεί, αυξάνεται και η χρονική διάρκεια οπου μπορείτε να επιστρέψετε σε κάποιο προηγούμενο σημείο της ιστορίας."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
@@ -2244,6 +2298,10 @@ MSG_HASH(
 
 /* Settings > Recording */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+   "Ποιότητα Εγγραφής"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    "Χρήση Εγγραφής Κάρτας Γραφικών"
@@ -2419,6 +2477,18 @@ MSG_HASH(
    "Θέση Ειδοποιήσης Y"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+   "Χρώματα Ειδοποιήσεων (Κόκκινο)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+   "Χρώματα Ειδοποιήσεων (Πράσινο)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+   "Χρώματα Ειδοποιήσεων (Μπλε)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    "Φόντο Ειδοποιήσεων"
    )
@@ -2468,6 +2538,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    "Υποστήριξη Αφής"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   "Εργασίες με Νήματα"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "Εκτέλεση εργασιών σε ξεχωριστό νήμα (Thread)."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
@@ -2983,6 +3061,9 @@ MSG_HASH(
    "Κλειδί Απευθείας Μετάδοσης Twitch"
    )
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -3068,6 +3149,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    "Αρχείο Αποθήκευσης"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   "Αποθήκευση Κατάστασης"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -3292,6 +3377,10 @@ MSG_HASH(
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   "Όνομα"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
    "Διαδρομή Αρχείου"
@@ -3627,6 +3716,14 @@ MSG_HASH(
 /* Quick Menu > Achievements */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   "Δεν υπάρχουν επιτεύγματα προς προβολή"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Παύση Σκληροπυρηνικής Λειτουργίας Επιτευγμάτων"
    )
@@ -3634,6 +3731,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Συνέχιση Σκληροπυρηνικής Λειτουργίας Επιτευγμάτων"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "Δεν έχετε συνδεθεί"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Χρησιμοποιώντας αυτόν τον πυρήνα, τα επιτεύγματα δεν μπορούν να ενεργοποιηθούν"
+)
 
 /* Quick Menu > Information */
 
@@ -5433,14 +5538,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "Υπερχρονισμός ή υποχρονισμός της Κάρτας Γραφικών του Switch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Φωτεινότητα οθόνης"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "Αύξηση ή μείωση της φωτεινότητας της οθόνης του Switch."
    )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

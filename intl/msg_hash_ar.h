@@ -1962,6 +1962,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "إذا تم تمكين محاولات التهيئة التلقائية لوحدات التحكم ، نمط الإضافة واللعب."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "حد محاور زر الإدخال"
@@ -4751,6 +4753,9 @@ MSG_HASH(
    "مفتاح تبث تويتش"
    )
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -6034,6 +6039,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "إيقاف الوضع الصعب للإنجازات"
@@ -10273,10 +10282,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
    "GPU فوق الساعة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "سطوع الشاشة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

@@ -1492,6 +1492,10 @@ MSG_HASH(
    "全屏模式启动"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "以全屏模式启动。运行时可以切换到窗口模式。可以用命令行开关覆盖。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "窗口全屏模式"
    )
@@ -1537,6 +1541,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "记住窗口位置和大小"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "记住窗口尺寸和位置，此选项的优先级高于「窗口缩放」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -2018,6 +2026,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "自动配置已有配置文件的手柄，即插即玩。"
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "辅助传感器输入"
@@ -2134,6 +2144,14 @@ MSG_HASH(
    "启用设备振动 (对支持的核心)"
    )
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "振动强度 (需要重启)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "指定触觉反馈效果的强弱。"
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -2378,6 +2396,10 @@ MSG_HASH(
    "屏幕键盘 (开关)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "打开/关闭屏幕键盘。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "显示 FPS (开关)"
    )
@@ -2512,6 +2534,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "开始/停止在线视频直播。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "超前运行 (开关)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "打开/关闭超前运行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -2903,6 +2933,10 @@ MSG_HASH(
    "保存状态存储前，状态存储编号自动增加。加载游戏时，编号自动设置为最大的编号。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "增量状态存储的最大数量"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "自动保存状态"
    )
@@ -3127,8 +3161,16 @@ MSG_HASH(
    "回溯缓冲区大小 (MB)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   "回溯缓冲区保留的内存量 (单位为 MB)。增加内存量可增加回溯历史的时间。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
    "回溯缓冲区大小步长 (MB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+   "每次增加或减少回溯缓冲区内存量值时，将按此步长改变。"
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -3220,12 +3262,24 @@ MSG_HASH(
    "遮罩"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+   "调整边框和屏幕遮罩按键显示。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    "视频布局"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "调整视频布局。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "通知"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   "调整屏幕通知。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -3241,6 +3295,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "显示遮罩"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+   "遮罩用于显示边框和屏幕按键。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -3559,6 +3617,10 @@ MSG_HASH(
    "金手指通知"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "应用金手指时，在屏幕上显示通知消息。"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "连接/断开手柄时显示屏幕通知消息。"
    )
@@ -3780,6 +3842,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
    "插入或加载新光盘后，自动关闭菜单并恢复游戏。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "「关闭游戏」后退出"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
@@ -4252,8 +4318,20 @@ MSG_HASH(
    "显示「回溯」设置"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "显示或隐藏「回溯」选项。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   "显示或隐藏「延迟」选项。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
    "显示「延迟」设置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   "显示或隐藏「遮罩」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
@@ -4262,6 +4340,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
    "显示视频布局设置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
+   "显示或隐藏「视频布局」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -4565,6 +4647,10 @@ MSG_HASH(
    "AI 服务输出"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "将翻译显示为文本叠加图层(图像模式)，或作为文本到语音播放(语音模式)。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "AI 服务 URL"
    )
@@ -4631,6 +4717,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "成就"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+   "在经典游戏中赢得成就。更多信息，请访问 https://retroachievements.org"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -5189,6 +5279,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "在经典游戏中赢得成就。更多信息，请访问 https://retroachievements.org"
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -5222,6 +5316,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    "Twitch 直播密钥"
    )
+
+/* Settings > User > Accounts > Facebook Gaming */
+
 
 /* Settings > Directory */
 
@@ -6127,6 +6224,10 @@ MSG_HASH(
    "开始或重新金手指搜索"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+   "按左/右键更改位大小。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
    "大字节"
    )
@@ -6137,6 +6238,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "搜索内存值"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+   "按左/右键更改数值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
@@ -6195,12 +6300,20 @@ MSG_HASH(
    "搜索内存值"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+   "按左/右键更改数值。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
    "等于之前 + %u (%X)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
    "搜索内存值"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+   "按左/右键更改数值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
@@ -6492,6 +6605,10 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "简单预设"
+   )
    
 
 MSG_HASH(
@@ -6611,6 +6728,14 @@ MSG_HASH(
 /* Quick Menu > Achievements */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   "没有可显示的成就"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "暂停成就硬核模式"
    )
@@ -6618,6 +6743,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "恢复成就硬核模式"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "未登录"
+)
 
 /* Quick Menu > Information */
 
@@ -6628,6 +6757,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
    "数据库条目"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+   "显示当前游戏的数据库信息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
@@ -9062,6 +9195,10 @@ MSG_HASH(
    "开始搜索新金手指"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
+   "开始搜索新的金手指。比特数可以改变。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
    "继续搜索"
    )
@@ -10515,6 +10652,10 @@ MSG_HASH(
    "核心重映射文件已加载。"
    )
 MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "超前运行已禁用。"
+   )
+MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "超前运行已禁用，因为这个核心不支持状态存储。"
    )
@@ -11003,8 +11144,8 @@ MSG_HASH(
    "GPU 超频"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "屏幕亮度"
+   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
+   "超频或降频 Switch 的 GPU。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
@@ -11015,6 +11156,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "CPU 超频"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "超频 Switch 的 CPU。"
    )
 #endif
 #ifdef HAVE_LAKKA

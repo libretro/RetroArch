@@ -527,8 +527,16 @@ MSG_HASH(
    "Videu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   "Camuda los axustes de la salida del videu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    "Audiu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Camuda los axustes de la salida del audiu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -858,6 +866,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Configuración automática"
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Atayos"
@@ -874,6 +884,10 @@ MSG_HASH(
 /* Settings > Input > Haptic Feedback/Vibration */
 
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "Especifica la magnitú de los efeutos de la rempuesta háptica."
+   )
 #endif
 
 /* Settings > Input > Menu Controls */
@@ -916,6 +930,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
    "Asolombrador anterior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
+   "Captura una imaxe del conteníu actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
@@ -1503,6 +1521,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Twitch */
 
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 MSG_HASH(
@@ -1834,9 +1855,21 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Los llogros nun puen activase col usu d'esti nucleu"
+)
 
 /* Quick Menu > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   "Nun hai entraes p'amosar"
+   )
 
 /* Miscellaneous UI Items */
 
@@ -1886,7 +1919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
-   "Aceptar"
+   "Aceutar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
@@ -2949,6 +2982,10 @@ MSG_HASH(
 #else
 #endif
 #if defined(_3DS)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+   "Pantalla baxera de 3DS"
+   )
 #endif
 #ifdef HAVE_QT
 #endif
