@@ -605,6 +605,10 @@ static bool winmm_midi_flush(void *p)
 #ifdef DEBUG
          RARCH_ERR("[MIDI]: midiStreamOut failed with error %d.\n", mmr);
 #endif
+         // Core sent MIDI message not understood by the MIDI driver
+         // Make this buffer available to be used again
+         buf->header.dwFlags |= MHDR_DONE;
+         buf->header.dwFlags &= ~MHDR_INQUEUE;
          return false;
       }
 
