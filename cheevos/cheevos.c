@@ -50,6 +50,10 @@
 #include "../network/discord.h"
 #endif
 
+#ifdef HAVE_CHEATS
+#include "../cheat_manager.h"
+#endif
+
 #include "badges.h"
 #include "cheevos.h"
 #include "cheevos_memory.h"
@@ -1496,6 +1500,13 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
       rcheevos_validate_config_settings();
       if (!locals->hardcore_active)
          return;
+
+#ifdef HAVE_CHEATS
+      /* if one or more emulator managed cheats is active, abort */
+      cheat_manager_apply_cheats();
+      if (!locals->hardcore_active)
+         return;
+#endif
 
       if (locals->loaded)
       {
