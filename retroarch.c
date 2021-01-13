@@ -12831,6 +12831,7 @@ static void command_event_reinit(struct rarch_state *p_rarch,
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
    unsigned swap_interval      = settings->uints.video_swap_interval;
 #endif
+   enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_REAPPLY;
 
    video_driver_reinit(flags);
    /* Poll input to avoid possibly stale data to corrupt things. */
@@ -12845,7 +12846,7 @@ static void command_event_reinit(struct rarch_state *p_rarch,
    if (  p_rarch->current_input && 
          p_rarch->current_input->poll)
       p_rarch->current_input->poll(p_rarch->current_input_data);
-   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
+   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
 
 #ifdef HAVE_MENU
    p_rarch->dispgfx.framebuf_dirty = true;
@@ -12918,6 +12919,19 @@ static void retroarch_audio_buffer_status_free(struct rarch_state *p_rarch)
    memset(&p_rarch->runloop_audio_buffer_status, 0,
          sizeof(struct retro_audio_buffer_status_callback));
    p_rarch->runloop_audio_latency = 0;
+}
+
+static void retroarch_game_focus_free(struct rarch_state *p_rarch)
+{
+   /* Ensure that game focus mode is disabled */
+   if (p_rarch->game_focus_state.enabled)
+   {
+      enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
+      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+   }
+
+   p_rarch->game_focus_state.enabled        = false;
+   p_rarch->game_focus_state.core_requested = false;
 }
 
 static void retroarch_system_info_free(struct rarch_state *p_rarch)
@@ -14403,49 +14417,88 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
-            static bool game_focus_state  = false;
-            bool video_fullscreen         = settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
-            intptr_t                 mode = (intptr_t)data;
+            bool video_fullscreen                         =
+                  settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
+            enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
+            bool current_enable_state                     = p_rarch->game_focus_state.enabled;
+            bool apply_update                             = false;
+            bool show_message                             = false;
 
-            /* mode = -1: restores current game focus state
-             * mode =  1: force set game focus, instead of toggling
-             * any other: toggle
-             */
-            if (mode == 1)
-               game_focus_state = true;
-            else if (mode != -1)
-               game_focus_state = !game_focus_state;
+            if (data)
+               game_focus_cmd = *((enum input_game_focus_cmd_type*)data);
 
-            RARCH_LOG("%s => %s\n",
-                  "Game focus",
-                  game_focus_state ? "on" : "off");
-
-            if (game_focus_state)
+            switch (game_focus_cmd)
             {
-               input_driver_grab_mouse(p_rarch);
-               video_driver_hide_mouse();
-               p_rarch->input_driver_block_hotkey               = true;
-               p_rarch->keyboard_mapping_blocked                = true;
-               if (mode != -1)
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_ON),
-                        1, 120, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               case GAME_FOCUS_CMD_OFF:
+                  /* Force game focus off */
+                  p_rarch->game_focus_state.enabled = false;
+                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  {
+                     apply_update = true;
+                     show_message = true;
+                  }
+                  break;
+               case GAME_FOCUS_CMD_ON:
+                  /* Force game focus on */
+                  p_rarch->game_focus_state.enabled = true;
+                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  {
+                     apply_update = true;
+                     show_message = true;
+                  }
+                  break;
+               case GAME_FOCUS_CMD_TOGGLE:
+                  /* Invert current game focus state */
+                  p_rarch->game_focus_state.enabled = !p_rarch->game_focus_state.enabled;
+#ifdef HAVE_MENU
+                  /* If menu is currently active, disable
+                   * 'toggle on' functionality */
+                  if (p_rarch->menu_driver_alive)
+                     p_rarch->game_focus_state.enabled = false;
+#endif
+                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  {
+                     apply_update = true;
+                     show_message = true;
+                  }
+                  break;
+               case GAME_FOCUS_CMD_REAPPLY:
+                  /* Reapply current game focus state */
+                  apply_update = true;
+                  show_message = false;
+                  break;
+               default:
+                  break;
             }
-            else
+
+            if (apply_update)
             {
-               if (!video_fullscreen)
+               if (p_rarch->game_focus_state.enabled)
+               {
+                  input_driver_grab_mouse(p_rarch);
+                  video_driver_hide_mouse();
+               }
+               else if (!video_fullscreen)
                {
                   input_driver_ungrab_mouse(p_rarch);
                   video_driver_show_mouse();
                }
-               p_rarch->input_driver_block_hotkey               = false;
-               p_rarch->keyboard_mapping_blocked                = false;
-               if (mode != -1)
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_FOCUS_OFF),
-                        1, 120, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            }
 
+               p_rarch->input_driver_block_hotkey = p_rarch->game_focus_state.enabled;
+               p_rarch->keyboard_mapping_blocked  = p_rarch->game_focus_state.enabled;
+
+               if (show_message)
+                  runloop_msg_queue_push(
+                        p_rarch->game_focus_state.enabled ?
+                              msg_hash_to_str(MSG_GAME_FOCUS_ON) :
+                                    msg_hash_to_str(MSG_GAME_FOCUS_OFF),
+                        1, 60, true,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+               RARCH_LOG("%s => %s\n",
+                     "Game focus",
+                     p_rarch->game_focus_state.enabled ? "ON" : "OFF");
+            }
          }
          break;
       case CMD_EVENT_VOLUME_UP:
@@ -16977,6 +17030,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          if (frontend_key_event && key_event)
             *frontend_key_event         = *key_event;
+
+         /* If a core calls RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK,
+          * then it is assumed that game focus mode is desired */
+         p_rarch->game_focus_state.core_requested = true;
+
          break;
       }
 
@@ -18239,6 +18297,7 @@ static void uninit_libretro_symbols(
    retroarch_system_info_free(p_rarch);
    retroarch_frame_time_free(p_rarch);
    retroarch_audio_buffer_status_free(p_rarch);
+   retroarch_game_focus_free(p_rarch);
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
 
@@ -34930,6 +34989,16 @@ void retroarch_menu_running(void)
    if (audio_enable_menu && audio_enable_menu_bgm)
       audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
+
+   /* Ensure that game focus mode is disabled when
+    * running the menu (note: it is not currently
+    * possible for game focus to be enabled at this
+    * point, but must safeguard against future changes) */
+   if (p_rarch->game_focus_state.enabled)
+   {
+      enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
+      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+   }
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -34963,6 +35032,21 @@ void retroarch_menu_running_finished(bool quit)
          audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 
+   /* Enable game focus mode, if required */
+   if (!quit && (p_rarch->current_core_type != CORE_TYPE_DUMMY))
+   {
+      enum input_auto_game_focus_type auto_game_focus_type = settings ?
+            (enum input_auto_game_focus_type)settings->uints.input_auto_game_focus :
+                  AUTO_GAME_FOCUS_OFF;
+
+      if ((auto_game_focus_type == AUTO_GAME_FOCUS_ON) ||
+          ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT) &&
+               p_rarch->game_focus_state.core_requested))
+      {
+         enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_ON;
+         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+      }
+   }
 #endif
    video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
@@ -35402,6 +35486,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          p_rarch->runloop_autosave         = false;
          retroarch_frame_time_free(p_rarch);
          retroarch_audio_buffer_status_free(p_rarch);
+         retroarch_game_focus_free(p_rarch);
          break;
       case RARCH_CTL_IS_IDLE:
          return p_rarch->runloop_idle;
@@ -36889,7 +36974,10 @@ static enum runloop_state runloop_check_state(
    }
 
    /* Check game focus toggle */
-   HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE, true, NULL);
+   {
+      enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
+      HOTKEY_CHECK(RARCH_GAME_FOCUS_TOGGLE, CMD_EVENT_GAME_FOCUS_TOGGLE, true, &game_focus_cmd);
+   }
    /* Check if we have pressed the UI companion toggle button */
    HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE, true, NULL);
    /* Check close content key */

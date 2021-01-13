@@ -1209,6 +1209,10 @@ static const bool input_autodetect_enable = true;
 #define DEFAULT_INPUT_SENSORS_ENABLE true
 #endif
 
+/* Automatically enable game focus when running or
+ * resuming content */
+#define DEFAULT_INPUT_AUTO_GAME_FOCUS AUTO_GAME_FOCUS_OFF
+
 /* Show the input descriptors set by the core instead
  * of the default ones. */
 static const bool input_descriptor_label_show = true;

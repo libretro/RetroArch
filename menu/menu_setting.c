@@ -5123,6 +5123,36 @@ static void setting_get_string_representation_uint_video_dingux_ipu_filter_type(
 }
 #endif
 
+static void setting_get_string_representation_uint_input_auto_game_focus(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case AUTO_GAME_FOCUS_OFF:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF),
+               len);
+         break;
+      case AUTO_GAME_FOCUS_ON:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON),
+               len);
+         break;
+      case AUTO_GAME_FOCUS_DETECT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT),
+               len);
+         break;
+   }
+}
+
 /* A protected driver is such that the user cannot set to "null" using the UI.
  * Can prevent the user from locking him/herself out of the program. */
 static bool setting_is_protected_driver(rarch_setting_t *setting)
@@ -12098,6 +12128,22 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_auto_game_focus,
+                  MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+                  DEFAULT_INPUT_AUTO_GAME_FOCUS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_input_auto_game_focus;
+            menu_settings_list_current_add_range(list, list_info, 0, AUTO_GAME_FOCUS_LAST-1, 1, true, true);
 #if 0
             CONFIG_BOOL(
                   list, list_info,
