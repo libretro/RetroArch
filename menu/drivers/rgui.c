@@ -602,6 +602,7 @@ typedef struct
       bitmapfont_lut_t *chn_10x10;
       bitmapfont_lut_t *jpn_10x10;
       bitmapfont_lut_t *kor_10x10;
+      bitmapfont_lut_t *rus_10x10;
    } fonts;
 
    frame_buf_t frame_buf;
@@ -1148,6 +1149,12 @@ static void rgui_fonts_free(rgui_t *rgui)
       bitmapfont_free_lut(rgui->fonts.kor_10x10);
       rgui->fonts.kor_10x10 = NULL;
    }
+
+   if (rgui->fonts.rus_10x10)
+   {
+      bitmapfont_free_lut(rgui->fonts.rus_10x10);
+      rgui->fonts.rus_10x10 = NULL;
+   }
 }
 
 static bool rgui_fonts_init(rgui_t *rgui)
@@ -1212,6 +1219,26 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->language           = language;
          break;
       case RETRO_LANGUAGE_RUSSIAN:
+         rgui->fonts.eng_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_ENGLISH);
+         rgui->fonts.rus_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_RUSSIAN);
+
+         if (!rgui->fonts.eng_10x10 ||
+             !rgui->fonts.rus_10x10)
+         {
+            rgui_fonts_free(rgui);
+            *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_RGUI_MISSING_FONTS), 1, 256, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            goto english;
+         }
+
+         rgui->font_width         = FONT_10X10_WIDTH;
+         rgui->font_height        = FONT_10X10_HEIGHT;
+         rgui->font_width_stride  = FONT_10X10_WIDTH_STRIDE;
+         rgui->font_height_stride = FONT_10X10_HEIGHT_STRIDE;
+         rgui->language           = language;
+         break;
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_GREEK:
       case RETRO_LANGUAGE_PERSIAN:
@@ -2975,7 +3002,7 @@ static void blit_line_cjk_shadow(
       unsigned fb_width, int x, int y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
-   uint16_t *frame_buf_data = rgui->frame_buf.data;
+   uint16_t *frame_buf_data   = rgui->frame_buf.data;
    bitmapfont_lut_t *font_eng = rgui->fonts.eng_10x10;
    bitmapfont_lut_t *font_chn = rgui->fonts.chn_10x10;
    bitmapfont_lut_t *font_jpn = rgui->fonts.jpn_10x10;
@@ -3014,6 +3041,121 @@ static void blit_line_cjk_shadow(
             symbol_lut = font_jpn->lut[symbol - font_jpn->glyph_min];
          else if ((symbol >= font_kor->glyph_min) && (symbol <= font_kor->glyph_max))
             symbol_lut = font_kor->lut[symbol - font_kor->glyph_min];
+         else
+            continue;
+
+         for (j = 0; j < FONT_10X10_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_10X10_WIDTH; i++)
+            {
+               if (*(symbol_lut + i + (j * FONT_10X10_WIDTH)))
+               {
+                  uint16_t *frame_buf_ptr = frame_buf_data + buff_offset + i;
+
+                  /* Text pixel + right shadow */
+                  memcpy(frame_buf_ptr, color_buf, sizeof(color_buf));
+
+                  /* Bottom shadow */
+                  frame_buf_ptr += fb_width;
+                  memcpy(frame_buf_ptr, shadow_color_buf, sizeof(shadow_color_buf));
+               }
+            }
+         }
+      }
+
+      x += FONT_10X10_WIDTH_STRIDE;
+   }
+}
+
+static void blit_line_rus(
+      rgui_t *rgui,
+      unsigned fb_width, int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color)
+{
+   uint16_t *frame_buf_data   = rgui->frame_buf.data;
+   bitmapfont_lut_t *font_eng = rgui->fonts.eng_10x10;
+   bitmapfont_lut_t *font_rus = rgui->fonts.rus_10x10;
+
+   while (!string_is_empty(message))
+   {
+      /* Deal with spaces first, for efficiency */
+      if (*message == ' ')
+         message++;
+      else
+      {
+         unsigned i, j;
+         bool *symbol_lut;
+         uint32_t symbol = utf8_walk(&message);
+
+         if (symbol == 339) /* Latin small ligature oe */
+            symbol = 156;
+         if (symbol == 338) /* Latin capital ligature oe */
+            symbol = 140;
+
+         /* Find glyph LUT data */
+         if (symbol <= font_eng->glyph_max)
+            symbol_lut = font_eng->lut[symbol];
+         else if ((symbol >= font_rus->glyph_min) && (symbol <= font_rus->glyph_max))
+            symbol_lut = font_rus->lut[symbol - font_rus->glyph_min];
+         else
+            continue;
+
+         for (j = 0; j < FONT_10X10_HEIGHT; j++)
+         {
+            unsigned buff_offset = ((y + j) * fb_width) + x;
+
+            for (i = 0; i < FONT_10X10_WIDTH; i++)
+            {
+               if (*(symbol_lut + i + (j * FONT_10X10_WIDTH)))
+                  *(frame_buf_data + buff_offset + i) = color;
+            }
+         }
+      }
+
+      x += FONT_10X10_WIDTH_STRIDE;
+   }
+}
+
+static void blit_line_rus_shadow(
+      rgui_t *rgui,
+      unsigned fb_width, int x, int y,
+      const char *message, uint16_t color, uint16_t shadow_color)
+{
+   uint16_t *frame_buf_data   = rgui->frame_buf.data;
+   bitmapfont_lut_t *font_eng = rgui->fonts.eng_10x10;
+   bitmapfont_lut_t *font_rus = rgui->fonts.rus_10x10;
+   uint16_t color_buf[2];
+   uint16_t shadow_color_buf[2];
+
+   color_buf[0] = color;
+   color_buf[1] = shadow_color;
+
+   shadow_color_buf[0] = shadow_color;
+   shadow_color_buf[1] = shadow_color;
+
+   while (!string_is_empty(message))
+   {
+      /* Deal with spaces first, for efficiency */
+      if (*message == ' ')
+         message++;
+      else
+      {
+         unsigned i, j;
+         bool *symbol_lut;
+         uint32_t symbol = utf8_walk(&message);
+
+         if (symbol == 339) /* Latin small ligature oe */
+            symbol = 156;
+         if (symbol == 338) /* Latin capital ligature oe */
+            symbol = 140;
+
+         /* Find glyph LUT data */
+         if (symbol <= font_eng->glyph_max)
+            symbol_lut = font_eng->lut[symbol];
+         else if ((symbol >= font_rus->glyph_min) && (symbol <= font_rus->glyph_max))
+            symbol_lut = font_rus->lut[symbol - font_rus->glyph_min];
          else
             continue;
 
@@ -3175,6 +3317,9 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
             blit_line = blit_line_cjk_shadow;
             break;
+         case RETRO_LANGUAGE_RUSSIAN:
+            blit_line = blit_line_rus_shadow;
+            break;
          default:
             if (extended_ascii)
                blit_line = blit_line_extended_shadow;
@@ -3201,6 +3346,9 @@ static void rgui_set_blit_functions(unsigned language,
          case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
          case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
             blit_line = blit_line_cjk;
+            break;
+         case RETRO_LANGUAGE_RUSSIAN:
+            blit_line = blit_line_rus;
             break;
          default:
             if (extended_ascii)
