@@ -54,6 +54,11 @@
 #define FONT_10X10_GLYPH_MIN_KOR 0xAC00
 #define FONT_10X10_GLYPH_MAX_KOR 0xD7A3
 
+#define FONT_10X10_FILE_RUS      "bitmap10x10_rus.bin"
+#define FONT_10X10_SIZE_RUS      1248
+#define FONT_10X10_GLYPH_MIN_RUS 0x400
+#define FONT_10X10_GLYPH_MAX_RUS 0x45F
+
 #define FONT_10X10_OFFSET(x) ((x) * ((FONT_10X10_HEIGHT * FONT_10X10_WIDTH + 7) / 8))
 
 /* Loads a font of the specified language
@@ -106,6 +111,12 @@ bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language)
          font_size = FONT_10X10_SIZE_KOR;
          glyph_min = FONT_10X10_GLYPH_MIN_KOR;
          glyph_max = FONT_10X10_GLYPH_MAX_KOR;
+         break;
+      case RETRO_LANGUAGE_RUSSIAN:
+         font_file = FONT_10X10_FILE_RUS;
+         font_size = FONT_10X10_SIZE_RUS;
+         glyph_min = FONT_10X10_GLYPH_MIN_RUS;
+         glyph_max = FONT_10X10_GLYPH_MAX_RUS;
          break;
       default:
          break;
