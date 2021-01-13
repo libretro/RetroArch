@@ -1315,6 +1315,14 @@ enum auto_shader_operation
    AUTO_SHADER_OP_EXISTS
 };
 
+enum input_game_focus_cmd_type
+{
+   GAME_FOCUS_CMD_OFF = 0,
+   GAME_FOCUS_CMD_ON,
+   GAME_FOCUS_CMD_TOGGLE,
+   GAME_FOCUS_CMD_REAPPLY
+};
+
 typedef struct runloop_ctx_msg_info
 {
    const char *msg;
@@ -1544,6 +1552,12 @@ struct input_keyboard_line
    size_t size;
    bool enabled;
 };
+
+typedef struct input_game_focus_state
+{
+   bool enabled;
+   bool core_requested;
+} input_game_focus_state_t;
 
 #ifdef HAVE_RUNAHEAD
 typedef bool(*runahead_load_state_function)(const void*, size_t);
@@ -2303,6 +2317,8 @@ struct rarch_state
    bool input_driver_block_libretro_input;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
+
+   input_game_focus_state_t game_focus_state; /* bool alignment */
 
 #ifdef HAVE_MENU
    bool menu_input_dialog_keyboard_display;
