@@ -40,7 +40,7 @@ gw
 handy
 hatari
 lutro
-mame
+mamearcade
 mame2000
 mame2003
 mame2003_midway
