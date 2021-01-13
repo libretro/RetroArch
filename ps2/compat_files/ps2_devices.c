@@ -172,13 +172,6 @@ bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
       ret = stat(rootDevice, &buffer);
       /* Wait untill the device is ready */
       nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
 
       retries--;
    }
