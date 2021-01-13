@@ -16,7 +16,7 @@ gambatte
 genesis_plus_gx
 gw
 hatari
-mame
+mamearcade
 mame2003_plus
 mednafen_lynx
 mednafen_ngp
