@@ -154,7 +154,7 @@ static void frontend_ps2_init(void *data)
    /* I/O Files */
    SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&freesio2_irx, size_freesio2_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&sio2man_irx, size_sio2man_irx, 0, NULL, NULL);
 
    /* Memory Card */
    SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
@@ -164,16 +164,17 @@ static void frontend_ps2_init(void *data)
    SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
 
+#if !defined(DEBUG)
    /* CDFS */
    SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
+#endif
 
 #ifndef IS_SALAMANDER
    /* Controllers */
-   SifExecModuleBuffer(&freemtap_irx, size_freemtap_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&freepad_irx, size_freepad_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&padman_irx, size_padman_irx, 0, NULL, NULL);
 
    /* Audio */
-   SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&libsd_irx, size_libsd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
 
    /* Initializes audsrv library */
@@ -182,19 +183,10 @@ static void frontend_ps2_init(void *data)
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
-   /* Initializes pad libraries
-      Must be init with 0 as parameter*/
-   if (mtapInit() != 1)
-   {
-      RARCH_ERR("mtapInit library not initalizated\n");
-   }
+   /* Initializes pad library */
    if (padInit(0) != 1)
    {
       RARCH_ERR("padInit library not initalizated\n");
-   }
-   if (mtapPortOpen(0) != 1)
-   {
-      RARCH_ERR("mtapPortOpen library not initalizated\n");
    }
 #endif
 
@@ -218,7 +210,9 @@ static void frontend_ps2_init(void *data)
    verbosity_enable();
 #endif
 
+#if !defined(DEBUG)
    waitUntilDeviceIsReady(bootDeviceID);
+#endif
 }
 
 static void frontend_ps2_deinit(void *data)
