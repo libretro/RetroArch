@@ -303,6 +303,7 @@ build-static-retroarch-vita:
   artifacts:
     paths:
     -  retroarch-precompiled/
+    -  retroarch-precompiled-gl/
     expire_in: 1 day
   dependencies: []
   needs:
@@ -313,7 +314,12 @@ build-static-retroarch-vita:
     - "make -f Makefile.vita -j$NUMPROC ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
+    - "make -f Makefile.vita clean"
+    - "HAVE_VITAGLES=1 make -f Makefile.vita -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled-gl"
+    - "cp -r ./* .retroarch-precompiled-gl/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
+    - "mv .retroarch-precompiled-gl/ retroarch-precompiled-gl/"
 
 build-static-retroarch-dummy-vita:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest
