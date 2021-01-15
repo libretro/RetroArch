@@ -146,6 +146,10 @@ static void ps2_font_render_line(
 
    if (!ps2)
       return;
+   
+   /* Enable Alpha for font */
+   ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
+   gsKit_set_test(ps2->gsGlobal, GS_ATEST_ON);
 
    switch (text_align)
    {
@@ -159,7 +163,7 @@ static void ps2_font_render_line(
    }
 
    /* We need to >> 1, because GS_SETREG_RGBAQ expect 0x80 as max color */
-   colorA = (int)(((color & 0xFF000000) >> 24) >> 1);
+   colorA = (int)(((color & 0xFF000000) >> 24) >> 2);
    colorB = (int)(((color & 0x00FF0000) >> 16) >> 1);
    colorG = (int)(((color & 0x0000FF00) >> 8) >> 1);
    colorR = (int)(((color & 0x000000FF) >> 0) >> 1);
