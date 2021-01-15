@@ -47,7 +47,7 @@ static void create_path_names(void)
 
    /* TODO/FIXME - third parameter here needs to be size of
     * rootDevicePath(bootDeviceID) */
-   strlcpy(user_path, rootDevicePath(bootDeviceID), rootDevicePath(bootDeviceID));
+   strlcpy(user_path, rootDevicePath(bootDeviceID), sizeof(user_path));
    strlcat(user_path, "RETROARCH", sizeof(user_path));
    
    /* Content in the same folder */
@@ -192,7 +192,7 @@ static void frontend_ps2_init(void *data)
 
 #if defined(BUILD_FOR_PCSX2)
    bootDeviceID = BOOT_DEVICE_MC0;
-   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(rootDevicePath(bootDeviceID)));
+   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(cwd));
 #else
    getcwd(cwd, sizeof(cwd));
    bootDeviceID = getBootDeviceID(cwd);
