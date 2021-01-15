@@ -31,7 +31,7 @@ RARCH_DEFINES += -DPS2 -DIS_SALAMANDER -DRARCH_CONSOLE
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lelf-loader -lpatches -lpoweroff
+LIBS = -lelf-loader -lpatches
 
 ifeq ($(BUILD_FOR_PCSX2), 1)
 RARCH_DEFINES += -DBUILD_FOR_PCSX2
@@ -67,7 +67,7 @@ EE_OBJS = frontend/frontend_salamander.o \
 # Needed IRX objects
 EE_OBJS += $(IRX_DIR)/sio2man_irx.o $ $(IRX_DIR)/iomanX_irx.o $(IRX_DIR)/fileXio_irx.o 
 EE_OBJS += $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/usbhdfsd_irx.o
-EE_OBJS += $(IRX_DIR)/poweroff_irx.o $(IRX_DIR)/cdfs_irx.o
+EE_OBJS += $(IRX_DIR)/cdfs_irx.o
 
 EE_CFLAGS = $(CFLAGS)
 EE_CXXFLAGS = $(CFLAGS)

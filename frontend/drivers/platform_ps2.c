@@ -21,10 +21,10 @@
 #include <sbv_patches.h>
 #include <sifrpc.h>
 #include <iopcontrol.h>
-#include <libpwroff.h>
 #include <ps2_devices.h>
 #include <ps2_irx_variables.h>
 #include <loadfile.h>
+#include <elf-loader.h>
 
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -34,7 +34,6 @@
 #include "../../file_path_special.h"
 #include "../../verbosity.h"
 #include "../../paths.h"
-#include <elf-loader.h>
 
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
@@ -86,12 +85,6 @@ static void create_path_names(void)
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path_config, user_path,
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
-}
-
-static void poweroffCallback(void *arg)
-{
-	printf("Shutdown!");
-	poweroffShutdown();
 }
 
 static void reset_IOP()
@@ -288,9 +281,6 @@ static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
 
 static void frontend_ps2_shutdown(bool unused)
 {
-   poweroffInit();
-   /* Set callback function */
-	poweroffSetCallback(&poweroffCallback, NULL);
 }
 
 static int frontend_ps2_get_rating(void)

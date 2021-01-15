@@ -30,9 +30,6 @@ extern unsigned int size_freemtap_irx;
 extern unsigned char padman_irx;
 extern unsigned int size_padman_irx;
 
-extern unsigned char poweroff_irx;
-extern unsigned int size_poweroff_irx;
-
 extern unsigned char iomanX_irx;
 extern unsigned int size_iomanX_irx;
 
