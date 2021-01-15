@@ -37,7 +37,7 @@ RARCH_DEFINES += -DHAVE_VIDEO_FILTER
 
 LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
 # Lib cdvd is needed to get proper time
-LIBS += -lretro_ps2 -lpatches -lpoweroff -lgskit -ldmakit -laudsrv -lpadx -lmtap -lz -lcdvd -lelf-loader
+LIBS += -lretro_ps2 -lpatches -lgskit -ldmakit -laudsrv -lpadx -lmtap -lz -lcdvd -lelf-loader
 
 ifeq ($(BUILD_FOR_PCSX2), 1)
 RARCH_DEFINES += -DBUILD_FOR_PCSX2
