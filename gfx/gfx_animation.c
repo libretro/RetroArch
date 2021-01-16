@@ -365,8 +365,10 @@ static unsigned get_ticker_smooth_generic_scroll_offset(
 
 /* 'Fixed width' font version of ticker_smooth_scan_characters() */
 static void ticker_smooth_scan_string_fw(
-      size_t num_chars, unsigned glyph_width, unsigned field_width, unsigned scroll_offset,
-      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset)
+      size_t num_chars, unsigned glyph_width,
+      unsigned field_width, unsigned scroll_offset,
+      unsigned *char_offset, unsigned *num_chars_to_copy,
+      unsigned *x_offset)
 {
    unsigned chars_remaining = 0;
 
@@ -384,13 +386,15 @@ static void ticker_smooth_scan_string_fw(
 
    /* Determine number of characters remaining in
     * string once offset has been subtracted */
-   chars_remaining = (*char_offset >= num_chars) ? 0 : num_chars - *char_offset;
+   if (*char_offset < num_chars)
+      chars_remaining = num_chars - *char_offset;
 
    /* Determine number of characters to copy */
    if ((chars_remaining > 0) && (field_width > *x_offset))
    {
       *num_chars_to_copy = (field_width - *x_offset) / glyph_width;
-      *num_chars_to_copy = (*num_chars_to_copy > chars_remaining) ? chars_remaining : *num_chars_to_copy;
+      if (*num_chars_to_copy > chars_remaining)
+         *num_chars_to_copy = chars_remaining;
    }
 }
 
@@ -482,8 +486,6 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
       /* Check whether we've passed the end of string 1 */
       if (phase > str_width)
          scroll_offset = phase - str_width;
-      else
-         scroll_offset = 0;
 
       ticker_smooth_scan_string_fw(
             num_spacer_chars, glyph_width, remaining_width, scroll_offset,
@@ -513,9 +515,11 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
 }
 
 static void ticker_smooth_scan_characters(
-      const unsigned *char_widths, size_t num_chars, unsigned field_width, unsigned scroll_offset,
-      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset,
-      unsigned *str_width, unsigned *display_width)
+      const unsigned *char_widths, size_t num_chars,
+      unsigned field_width, unsigned scroll_offset,
+      unsigned *char_offset, unsigned *num_chars_to_copy,
+      unsigned *x_offset, unsigned *str_width,
+      unsigned *display_width)
 {
    unsigned i;
    unsigned text_width     = 0;
@@ -588,8 +592,10 @@ static void ticker_smooth_scan_characters(
 }
 
 static void gfx_animation_ticker_smooth_generic(uint64_t idx,
-      const unsigned *char_widths, size_t num_chars, unsigned str_width, unsigned field_width,
-      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset, unsigned *dst_str_width)
+      const unsigned *char_widths, size_t num_chars,
+      unsigned str_width, unsigned field_width,
+      unsigned *char_offset, unsigned *num_chars_to_copy,
+      unsigned *x_offset, unsigned *dst_str_width)
 {
    unsigned scroll_offset = get_ticker_smooth_generic_scroll_offset(
       idx, str_width, field_width);
@@ -678,8 +684,6 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
       /* Check whether we've passed the end of string 1 */
       if (phase > str_width)
          scroll_offset = phase - str_width;
-      else
-         scroll_offset = 0;
 
       ticker_smooth_scan_characters(
             spacer_widths, num_spacer_chars, remaining_width, scroll_offset,
@@ -831,10 +835,13 @@ static void set_line_smooth_fade_parameters_default(
 static void gfx_animation_line_ticker_smooth_generic(uint64_t idx,
       bool fade_enabled, size_t line_len, size_t line_height,
       size_t max_display_lines, size_t num_lines,
-      size_t *num_display_lines, size_t *line_offset, float *y_offset,
+      size_t *num_display_lines, size_t *line_offset,
+      float *y_offset,
       bool *fade_active,
-      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
-      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
+      size_t *top_fade_line_offset, float *top_fade_y_offset,
+      float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset,
+      float *bottom_fade_alpha)
 {
    /* Mean human reading speed for all western languages,
     * characters per minute */
