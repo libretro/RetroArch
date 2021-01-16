@@ -104,7 +104,7 @@ void *nsview_get_ptr(void)
    return (BRIDGE void *)g_instance;
 }
 
-void nsview_set_ptr(void *p) { g_instance = (CocoaView*)p; }
+void nsview_set_ptr(BRIDGE void *p) { g_instance = (BRIDGE CocoaView*)p; }
 
 #if TARGET_OS_OSX
 static NSOpenGLPixelFormat* g_format;
