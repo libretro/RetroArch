@@ -193,12 +193,18 @@ enum
         uint32_t character = 0;
         uint32_t mod       = 0;
 
-        mod |= (event._modifierFlags & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
-        mod |= (event._modifierFlags & NSShiftKeyMask     ) ? RETROKMOD_SHIFT    : 0;
-        mod |= (event._modifierFlags & NSControlKeyMask   ) ? RETROKMOD_CTRL     : 0;
-        mod |= (event._modifierFlags & NSAlternateKeyMask ) ? RETROKMOD_ALT      : 0;
-        mod |= (event._modifierFlags & NSCommandKeyMask   ) ? RETROKMOD_META     : 0;
-        mod |= (event._modifierFlags & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK  : 0;
+        if (event._modifierFlags & NSAlphaShiftKeyMask)
+           mod |= RETROKMOD_CAPSLOCK;
+        if (event._modifierFlags & NSShiftKeyMask)
+           mod |= RETROKMOD_SHIFT;
+        if (event._modifierFlags & NSControlKeyMask)
+           mod |= RETROKMOD_CTRL;
+        if (event._modifierFlags & NSAlternateKeyMask)
+           mod |= RETROKMOD_ALT;
+        if (event._modifierFlags & NSCommandKeyMask)
+           mod |= RETROKMOD_META;
+        if (event._modifierFlags & NSNumericPadKeyMask)
+           mod |= RETROKMOD_NUMLOCK;
 
         if (ch && ch.length != 0)
         {
@@ -206,18 +212,18 @@ enum
             character = [ch characterAtIndex:0];
 
             apple_input_keyboard_event(event._isKeyDown,
-                                       (uint32_t)event._keyCode, 0, mod,
-                                       RETRO_DEVICE_KEYBOARD);
+                  (uint32_t)event._keyCode, 0, mod,
+                  RETRO_DEVICE_KEYBOARD);
 
             for (i = 1; i < ch.length; i++)
                 apple_input_keyboard_event(event._isKeyDown,
-                                           0, [ch characterAtIndex:i], mod,
-                                           RETRO_DEVICE_KEYBOARD);
+                      0, [ch characterAtIndex:i], mod,
+                      RETRO_DEVICE_KEYBOARD);
         }
 
         apple_input_keyboard_event(event._isKeyDown,
-                                   (uint32_t)event._keyCode, character, mod,
-                                   RETRO_DEVICE_KEYBOARD);
+              (uint32_t)event._keyCode, character, mod,
+              RETRO_DEVICE_KEYBOARD);
     }
 
     [super handleKeyUIEvent:event];
@@ -243,12 +249,18 @@ enum
       uint32_t character = 0;
       uint32_t mod       = 0;
 
-      mod |= (event._modifierFlags & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
-      mod |= (event._modifierFlags & NSShiftKeyMask     ) ? RETROKMOD_SHIFT    : 0;
-      mod |= (event._modifierFlags & NSControlKeyMask   ) ? RETROKMOD_CTRL     : 0;
-      mod |= (event._modifierFlags & NSAlternateKeyMask ) ? RETROKMOD_ALT      : 0;
-      mod |= (event._modifierFlags & NSCommandKeyMask   ) ? RETROKMOD_META     : 0;
-      mod |= (event._modifierFlags & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK  : 0;
+      if (event._modifierFlags & NSAlphaShiftKeyMask)
+         mod |= RETROKMOD_CAPSLOCK;
+      if (event._modifierFlags & NSShiftKeyMask)
+         mod |= RETROKMOD_SHIFT;
+      if (event._modifierFlags & NSControlKeyMask)
+         mod |= RETROKMOD_CTRL;
+      if (event._modifierFlags & NSAlternateKeyMask)
+         mod |= RETROKMOD_ALT;
+      if (event._modifierFlags & NSCommandKeyMask)
+         mod |= RETROKMOD_META;
+      if (event._modifierFlags & NSNumericPadKeyMask)
+         mod |= RETROKMOD_NUMLOCK;
 
       if (ch && ch.length != 0)
       {
@@ -279,33 +291,35 @@ enum
 
 - (void)sendEvent:(UIEvent *)event
 {
-   int major, minor;
    [super sendEvent:event];
 
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
-   get_ios_version(&major, &minor);
-
 #if __IPHONE_OS_VERSION_MAX_ALLOWED < 70000
-   if ((major < 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
-      /* Keyboard event hack for iOS versions prior to iOS 7.
-       *
-       * Derived from:
-       * http://nacho4d-nacho4d.blogspot.com/2012/01/
-       * catching-keyboard-events-in-ios.html
-       */
-      const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
-      int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
+      int major, minor;
+      get_ios_version(&major, &minor);
 
-      switch (eventType)
+      if ((major < 7) && [event respondsToSelector:@selector(_gsEvent)])
       {
-         case GSEVENT_TYPE_KEYDOWN:
-         case GSEVENT_TYPE_KEYUP:
-            apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
-                  *(uint16_t*)&eventMem[0x3C], 0, 0, RETRO_DEVICE_KEYBOARD);
-            break;
+         /* Keyboard event hack for iOS versions prior to iOS 7.
+          *
+          * Derived from:
+                  * http://nacho4d-nacho4d.blogspot.com/2012/01/
+                  * catching-keyboard-events-in-ios.html
+                  */
+         const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
+         int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
+
+         switch (eventType)
+         {
+            case GSEVENT_TYPE_KEYDOWN:
+            case GSEVENT_TYPE_KEYUP:
+               apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
+                     *(uint16_t*)&eventMem[0x3C], 0, 0, RETRO_DEVICE_KEYBOARD);
+               break;
+         }
       }
    }
 #endif
