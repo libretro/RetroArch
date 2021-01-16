@@ -294,16 +294,17 @@ HRESULT GetHandleFromStorageFile(Windows::Storage::StorageFile^ file, HANDLE* ha
 {
    Microsoft::WRL::ComPtr<IUnknown> abiPointer(reinterpret_cast<IUnknown*>(file));
    Microsoft::WRL::ComPtr<IStorageItemHandleAccess> handleAccess;
-   if (SUCCEEDED(abiPointer.As(&handleAccess))) {
+   if (SUCCEEDED(abiPointer.As(&handleAccess)))
+   {
       HANDLE hFile = INVALID_HANDLE_VALUE;
 
       if (SUCCEEDED(handleAccess->Create(accessMode,
-         HANDLE_SHARING_OPTIONS::HSO_SHARE_READ,
-         HANDLE_OPTIONS::HO_NONE,
-         nullptr,
-         &hFile))) {
+                  HANDLE_SHARING_OPTIONS::HSO_SHARE_READ,
+                  HANDLE_OPTIONS::HO_NONE,
+                  nullptr,
+                  &hFile)))
+      {
          *handle = hFile;
-
          return S_OK;
       }
    }
@@ -375,17 +376,22 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    retro_assert(!dirpath_str->IsEmpty() && !filename_str->IsEmpty());
 
    /* Try Win32 first, this should work in AppData */
-   if (mode == RETRO_VFS_FILE_ACCESS_READ) {
-      desireAccess = GENERIC_READ;
+   if (mode == RETRO_VFS_FILE_ACCESS_READ)
+   {
+      desireAccess        = GENERIC_READ;
       creationDisposition = OPEN_ALWAYS;
    }
-   else {
-      desireAccess = GENERIC_WRITE;
+   else
+   {
+      desireAccess        = GENERIC_WRITE;
       creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
          OPEN_ALWAYS : CREATE_ALWAYS;
    }
+
    file_handle = CreateFile2(path_str->Data(), desireAccess, FILE_SHARE_READ, creationDisposition, NULL);
-   if (file_handle != INVALID_HANDLE_VALUE) {
+
+   if (file_handle != INVALID_HANDLE_VALUE)
+   {
       libretro_vfs_implementation_file* stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
       if (!stream)
          return (libretro_vfs_implementation_file*)NULL;
@@ -415,21 +421,25 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          /* Try to use IStorageItemHandleAccess to get the file handle,
           * with that we can use Win32 APIs for subsequent reads/writes
           */
-         if (mode == RETRO_VFS_FILE_ACCESS_READ) {
-            handleAccess = HANDLE_ACCESS_OPTIONS::HAO_READ;
+         if (mode == RETRO_VFS_FILE_ACCESS_READ)
+         {
+            handleAccess    = HANDLE_ACCESS_OPTIONS::HAO_READ;
             creationOptions = HANDLE_CREATION_OPTIONS::HCO_OPEN_ALWAYS;
-         } else {
-            handleAccess = HANDLE_ACCESS_OPTIONS::HAO_WRITE;
+         }
+         else
+         {
+            handleAccess    = HANDLE_ACCESS_OPTIONS::HAO_WRITE;
             creationOptions = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
                HANDLE_CREATION_OPTIONS::HCO_OPEN_ALWAYS : HANDLE_CREATION_OPTIONS::HCO_CREATE_ALWAYS;
             
          }
          hr = GetHandleFromStorageFile(file, &file_handle, handleAccess);
 
-         if (SUCCEEDED(hr)) {
+         if (SUCCEEDED(hr))
             /* Success, let's return a null pointer and continue */
             return concurrency::create_task([&]() { return (IRandomAccessStream^) nullptr; });
-         } else {
+         else
+         {
             /* Failed, open a WinRT buffer of the file */
             FileAccessMode accessMode = (mode == RETRO_VFS_FILE_ACCESS_READ) ?
                FileAccessMode::Read : FileAccessMode::ReadWrite;
@@ -446,19 +456,22 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          stream->buffer_left = 0;
          stream->buffer_fill = 0;
 
-         if (fpstream) {
+         if (fpstream)
+         {
             /* We are using WinRT.
              * Preallocate a small buffer for manually buffered I/O,
               * makes short read faster */
             stream->fp->Seek(0);
-            int buf_size = 8 * 1024;
-            stream->buffer = (char*)malloc(buf_size);
-            stream->bufferp = CreateNativeBuffer(stream->buffer, buf_size, 0);
+            int buf_size        = 8 * 1024;
+            stream->buffer      = (char*)malloc(buf_size);
+            stream->bufferp     = CreateNativeBuffer(stream->buffer, buf_size, 0);
             stream->buffer_size = buf_size;
-         } else {
-            /* If we can use Win32 file api, buffering shouldn't be necessary */
-            stream->buffer = NULL;
-            stream->bufferp = nullptr;
+         }
+         else
+         {
+            /* If we can use Win32 file API, buffering shouldn't be necessary */
+            stream->buffer      = NULL;
+            stream->bufferp     = nullptr;
             stream->buffer_size = 0;
          }
          return stream;
@@ -471,9 +484,10 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    if (!stream || (!stream->fp && stream->file_handle == INVALID_HANDLE_VALUE))
       return -1;
 
-   if (stream->file_handle != INVALID_HANDLE_VALUE) {
+   if (stream->file_handle != INVALID_HANDLE_VALUE)
       CloseHandle(stream->file_handle);
-   } else {
+   else
+   {
       /* Apparently, this is how you close a file in WinRT */
       /* Yes, really */
       stream->fp = nullptr;
@@ -493,17 +507,15 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
    if (!stream || (!stream->fp && stream->file_handle == INVALID_HANDLE_VALUE))
       return 0;
 
-   if (stream->file_handle != INVALID_HANDLE_VALUE) {
+   if (stream->file_handle != INVALID_HANDLE_VALUE)
+   {
       LARGE_INTEGER sz;
-      if (GetFileSizeEx(stream->file_handle, &sz)) {
+      if (GetFileSizeEx(stream->file_handle, &sz))
          return sz.QuadPart;
-      } else {
-         return 0;
-      }
-   } else {
-      return stream->fp->Size;
+      return 0;
    }
-   
+
+   return stream->fp->Size;
 }
 
 int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t length)
@@ -511,17 +523,17 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
    if (!stream || (!stream->fp && stream->file_handle == INVALID_HANDLE_VALUE))
       return -1;
 
-   if (stream->file_handle != INVALID_HANDLE_VALUE) {
+   if (stream->file_handle != INVALID_HANDLE_VALUE)
+   {
       int64_t p = retro_vfs_file_tell_impl(stream);
       retro_vfs_file_seek_impl(stream, length, RETRO_VFS_SEEK_POSITION_START);
       SetEndOfFile(stream->file_handle);
 
-      if (p < length) {
+      if (p < length)
          retro_vfs_file_seek_impl(stream, p, RETRO_VFS_SEEK_POSITION_START);
-      }
-   } else {
-      stream->fp->Size = length;
    }
+   else
+      stream->fp->Size = length;
    
    return 0;
 }
@@ -535,12 +547,13 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
    if (!stream || (!stream->fp && stream->file_handle == INVALID_HANDLE_VALUE))
       return -1;
 
-   if (stream->file_handle != INVALID_HANDLE_VALUE) {
+   if (stream->file_handle != INVALID_HANDLE_VALUE)
+   {
       SetFilePointerEx(stream->file_handle, _offset, &out, FILE_CURRENT);
       return out.QuadPart;
-   } else {
-      return stream->fp->Position - stream->buffer_left;
    }
+
+   return stream->fp->Position - stream->buffer_left;
 }
 
 int64_t retro_vfs_file_seek_impl(
@@ -556,31 +569,28 @@ int64_t retro_vfs_file_seek_impl(
    switch (seek_position)
    {
       case RETRO_VFS_SEEK_POSITION_START:
-         if (stream->file_handle != INVALID_HANDLE_VALUE) {
+         if (stream->file_handle != INVALID_HANDLE_VALUE)
             SetFilePointerEx(stream->file_handle, _offset, NULL, FILE_BEGIN);
-         } else {
+         else
             stream->fp->Seek(offset);
-         }
          break;
 
       case RETRO_VFS_SEEK_POSITION_CURRENT:
-         if (stream->file_handle != INVALID_HANDLE_VALUE) {
+         if (stream->file_handle != INVALID_HANDLE_VALUE)
             SetFilePointerEx(stream->file_handle, _offset, NULL, FILE_CURRENT);
-         } else {
+         else
             stream->fp->Seek(retro_vfs_file_tell_impl(stream) + offset);
-         }
          break;
 
       case RETRO_VFS_SEEK_POSITION_END:
-         if (stream->file_handle != INVALID_HANDLE_VALUE) {
+         if (stream->file_handle != INVALID_HANDLE_VALUE)
             SetFilePointerEx(stream->file_handle, _offset, NULL, FILE_END);
-         } else {
+         else
             stream->fp->Seek(stream->fp->Size - offset);
-         }
          break;
    }
 
-   // For simplicity always flush the buffer on seek
+   /* For simplicity always flush the buffer on seek */
    stream->buffer_left = 0;
 
    return 0;
@@ -596,85 +606,84 @@ int64_t retro_vfs_file_read_impl(
    if (!stream || (!stream->fp && stream->file_handle == INVALID_HANDLE_VALUE) || !s)
       return -1;
 
-   if (stream->file_handle != INVALID_HANDLE_VALUE) {
+   if (stream->file_handle != INVALID_HANDLE_VALUE)
+   {
       DWORD _bytes_read;
       ReadFile(stream->file_handle, (char*)s, len, &_bytes_read, NULL);
       return (int64_t)_bytes_read;
    }
-   else
+
+   if (len <= stream->buffer_size)
    {
-      if (len <= stream->buffer_size)
+      /* Small read, use manually buffered I/O */
+      if (stream->buffer_left < len)
       {
-         /* Small read, use manually buffered I/O */
-         if (stream->buffer_left < len)
-         {
-            /* Exhaust the buffer */
-            memcpy(s,
+         /* Exhaust the buffer */
+         memcpy(s,
                &stream->buffer[stream->buffer_fill - stream->buffer_left],
                stream->buffer_left);
-            len                 -= stream->buffer_left;
-            bytes_read          += stream->buffer_left;
-            stream->buffer_left = 0;
+         len                 -= stream->buffer_left;
+         bytes_read          += stream->buffer_left;
+         stream->buffer_left = 0;
 
-            /* Fill buffer */
-            stream->buffer_left = RunAsyncAndCatchErrors<int64_t>([&]() {
+         /* Fill buffer */
+         stream->buffer_left = RunAsyncAndCatchErrors<int64_t>([&]() {
                return concurrency::create_task(stream->fp->ReadAsync(stream->bufferp, stream->bufferp->Capacity, InputStreamOptions::None)).then([&](IBuffer^ buf) {
-                  retro_assert(stream->bufferp == buf);
-                  return (int64_t)stream->bufferp->Length;
-                  });
+                     retro_assert(stream->bufferp == buf);
+                     return (int64_t)stream->bufferp->Length;
+                     });
                }, -1);
-            stream->buffer_fill = stream->buffer_left;
+         stream->buffer_fill = stream->buffer_left;
 
-            if (stream->buffer_left == -1)
-            {
-               stream->buffer_left = 0;
-               stream->buffer_fill = 0;
-               return -1;
-            }
+         if (stream->buffer_left == -1)
+         {
+            stream->buffer_left = 0;
+            stream->buffer_fill = 0;
+            return -1;
+         }
 
-            if (stream->buffer_left < len)
-            {
-               /* EOF */
-               memcpy(&((char*)s)[bytes_read],
+         if (stream->buffer_left < len)
+         {
+            /* EOF */
+            memcpy(&((char*)s)[bytes_read],
                   stream->buffer, stream->buffer_left);
-               bytes_read += stream->buffer_left;
-               stream->buffer_left = 0;
-               return bytes_read;
-            }
-
-            memcpy(&((char*)s)[bytes_read], stream->buffer, len);
-            bytes_read += len;
-            stream->buffer_left -= len;
+            bytes_read += stream->buffer_left;
+            stream->buffer_left = 0;
             return bytes_read;
          }
 
-         /* Internal buffer already contains requested amount */
-         memcpy(s,
-            &stream->buffer[stream->buffer_fill - stream->buffer_left],
-            len);
+         memcpy(&((char*)s)[bytes_read], stream->buffer, len);
+         bytes_read += len;
          stream->buffer_left -= len;
-         return len;
+         return bytes_read;
       }
 
-      /* Big read exceeding buffer size,
-      * exhaust small buffer and read rest in one go */
-      memcpy(s, &stream->buffer[stream->buffer_fill - stream->buffer_left], stream->buffer_left);
-      len                 -= stream->buffer_left;
-      bytes_read          += stream->buffer_left;
-      stream->buffer_left  = 0;
+      /* Internal buffer already contains requested amount */
+      memcpy(s,
+            &stream->buffer[stream->buffer_fill - stream->buffer_left],
+            len);
+      stream->buffer_left -= len;
+      return len;
+   }
 
-      buffer               = CreateNativeBuffer(&((char*)s)[bytes_read], len, 0);
-      ret                  = RunAsyncAndCatchErrors<int64_t>([&]() {
+   /* Big read exceeding buffer size,
+    * exhaust small buffer and read rest in one go */
+   memcpy(s, &stream->buffer[stream->buffer_fill - stream->buffer_left], stream->buffer_left);
+   len                 -= stream->buffer_left;
+   bytes_read          += stream->buffer_left;
+   stream->buffer_left  = 0;
+
+   buffer               = CreateNativeBuffer(&((char*)s)[bytes_read], len, 0);
+   ret                  = RunAsyncAndCatchErrors<int64_t>([&]() {
          return concurrency::create_task(stream->fp->ReadAsync(buffer, buffer->Capacity - bytes_read, InputStreamOptions::None)).then([&](IBuffer^ buf) {
-            retro_assert(buf == buffer);
-            return (int64_t)buffer->Length;
-            });
+               retro_assert(buf == buffer);
+               return (int64_t)buffer->Length;
+               });
          }, -1);
 
-      if (ret == -1)
-         return -1;
-      return bytes_read + ret;
-   }
+   if (ret == -1)
+      return -1;
+   return bytes_read + ret;
 }
 
 int64_t retro_vfs_file_write_impl(
@@ -684,19 +693,20 @@ int64_t retro_vfs_file_write_impl(
    if (!stream || (!stream->fp && stream->file_handle == INVALID_HANDLE_VALUE) || !s)
       return -1;
 
-   if (stream->file_handle != INVALID_HANDLE_VALUE) {
+   if (stream->file_handle != INVALID_HANDLE_VALUE)
+   {
       DWORD bytes_written;
       WriteFile(stream->file_handle, s, len, &bytes_written, NULL);
       return (int64_t)bytes_written;
-   } else {
-      /* const_cast to remove const modifier is undefined behaviour, but the buffer is only read, should be safe */
-      buffer = CreateNativeBuffer(const_cast<void*>(s), len, len);
-      return RunAsyncAndCatchErrors<int64_t>([&]() {
-         return concurrency::create_task(stream->fp->WriteAsync(buffer)).then([&](unsigned int written) {
-            return (int64_t)written;
-            });
-         }, -1);
    }
+
+   /* const_cast to remove const modifier is undefined behaviour, but the buffer is only read, should be safe */
+   buffer = CreateNativeBuffer(const_cast<void*>(s), len, len);
+   return RunAsyncAndCatchErrors<int64_t>([&]() {
+         return concurrency::create_task(stream->fp->WriteAsync(buffer)).then([&](unsigned int written) {
+               return (int64_t)written;
+               });
+         }, -1);
 }
 
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
@@ -704,25 +714,26 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
    if (!stream || (!stream->fp && stream->file_handle == INVALID_HANDLE_VALUE) || !stream->fp)
       return -1;
 
-   if (stream->file_handle != INVALID_HANDLE_VALUE) {
+   if (stream->file_handle != INVALID_HANDLE_VALUE)
+   {
       FlushFileBuffers(stream->file_handle);
       return 0;
-   } else {
-      return RunAsyncAndCatchErrors<int>([&]() {
-         return concurrency::create_task(stream->fp->FlushAsync()).then([&](bool this_value_is_not_even_documented_wtf) {
-            /* The bool value may be reporting an error or something, but just leave it alone for now */
-            /* https://github.com/MicrosoftDocs/winrt-api/issues/841 */
-            return 0;
-            });
-         }, -1);
    }
+
+   return RunAsyncAndCatchErrors<int>([&]() {
+         return concurrency::create_task(stream->fp->FlushAsync()).then([&](bool this_value_is_not_even_documented_wtf) {
+               /* The bool value may be reporting an error or something, but just leave it alone for now */
+               /* https://github.com/MicrosoftDocs/winrt-api/issues/841 */
+               return 0;
+               });
+         }, -1);
 }
 
 int retro_vfs_file_remove_impl(const char *path)
 {
+   BOOL result;
    wchar_t *path_wide;
    Platform::String^ path_str;
-   BOOL result;
 
    if (!path || !*path)
       return -1;
@@ -734,21 +745,20 @@ int retro_vfs_file_remove_impl(const char *path)
 
    /* Try Win32 first, this should work in AppData */
    result = DeleteFileW(path_str->Data());
-   if (result) {
+   if (result)
       return 0;
-   } else {
-      DWORD err = GetLastError();
-      if (err == ERROR_FILE_NOT_FOUND) return -1;
 
-      /* Fallback to WinRT */
-      return RunAsyncAndCatchErrors<int>([&]() {
+   if (GetLastError() == ERROR_FILE_NOT_FOUND)
+      return -1;
+
+   /* Fallback to WinRT */
+   return RunAsyncAndCatchErrors<int>([&]() {
          return concurrency::create_task(LocateStorageItem<StorageFile>(path_str)).then([&](StorageFile^ file) {
-            return file->DeleteAsync(StorageDeleteOption::PermanentDelete);
-            }).then([&]() {
-               return 0;
-               });
+               return file->DeleteAsync(StorageDeleteOption::PermanentDelete);
+               }).then([&]() {
+                  return 0;
+                  });
          }, -1);
-   }
 }
 
 /* TODO: this may not work if trying to move a directory */
@@ -828,33 +838,37 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
    /* Try Win32 first, this should work in AppData */
    file_info = GetFileAttributesW(path_str->Data());
-   if (file_info != INVALID_FILE_ATTRIBUTES) {
+   if (file_info != INVALID_FILE_ATTRIBUTES)
+   {
       HANDLE file_handle = CreateFile2(path_str->Data(), GENERIC_READ, FILE_SHARE_READ, OPEN_ALWAYS, NULL);
-      if (file_handle != INVALID_HANDLE_VALUE) {
+      if (file_handle != INVALID_HANDLE_VALUE)
+      {
          LARGE_INTEGER sz;
-         if (GetFileSizeEx(file_handle, &sz)) {
-            if (size) *size = sz.QuadPart;
+         if (GetFileSizeEx(file_handle, &sz))
+         {
+            if (size)
+               *size = sz.QuadPart;
          }
          CloseHandle(file_handle);
       }
       return (file_info & FILE_ATTRIBUTE_DIRECTORY) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
-   } else {
-      DWORD err = GetLastError();
-      if (err == ERROR_FILE_NOT_FOUND) return 0;
-
-      /* Fallback to WinRT */
-      item = LocateStorageFileOrFolder(path_str);
-      if (!item)
-         return 0;
-
-      return RunAsyncAndCatchErrors<int>([&]() {
-         return concurrency::create_task(item->GetBasicPropertiesAsync()).then([&](BasicProperties^ properties) {
-            if (size)
-               *size = properties->Size;
-            return item->IsOfType(StorageItemTypes::Folder) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
-            });
-         }, 0);
    }
+
+   if (GetLastError() == ERROR_FILE_NOT_FOUND)
+      return 0;
+
+   /* Fallback to WinRT */
+   item = LocateStorageFileOrFolder(path_str);
+   if (!item)
+      return 0;
+
+   return RunAsyncAndCatchErrors<int>([&]() {
+         return concurrency::create_task(item->GetBasicPropertiesAsync()).then([&](BasicProperties^ properties) {
+               if (size)
+               *size = properties->Size;
+               return item->IsOfType(StorageItemTypes::Folder) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
+               });
+         }, 0);
 }
 
 int retro_vfs_mkdir_impl(const char *dir)
@@ -904,32 +918,31 @@ int retro_vfs_mkdir_impl(const char *dir)
 
    /* Try Win32 first, this should work in AppData */
    result = CreateDirectoryW(dir_str->Data(), NULL);
-   if (result) {
+   if (result)
       return 0;
-   } else {
-      DWORD err = GetLastError();
-      if (err == ERROR_ALREADY_EXISTS) return -2;
+   
+   if (GetLastError() == ERROR_ALREADY_EXISTS)
+      return -2;
 
-      /* Fallback to WinRT */
-      return RunAsyncAndCatchErrors<int>([&]() {
+   /* Fallback to WinRT */
+   return RunAsyncAndCatchErrors<int>([&]() {
          return concurrency::create_task(LocateStorageItem<StorageFolder>(
-            parent_path_str)).then([&](StorageFolder^ parent) {
-               return parent->CreateFolderAsync(dir_name_str);
-               }).then([&](concurrency::task<StorageFolder^> new_dir) {
-                  try
-                  {
+                  parent_path_str)).then([&](StorageFolder^ parent) {
+                  return parent->CreateFolderAsync(dir_name_str);
+                  }).then([&](concurrency::task<StorageFolder^> new_dir) {
+                     try
+                     {
                      new_dir.get();
-                  }
-                  catch (Platform::COMException^ e)
-                  {
+                     }
+                     catch (Platform::COMException^ e)
+                     {
                      if (e->HResult == HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS))
-                        return -2;
+                     return -2;
                      throw;
-                  }
-                  return 0;
-                  });
+                     }
+                     return 0;
+                     });
          }, -1);
-   }
 }
 
 #ifdef VFS_FRONTEND
