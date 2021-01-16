@@ -200,7 +200,7 @@ void *glkitview_init(void);
 
 - (void)viewWillLayoutSubviews
 {
-   float width       = 0.0f, height = 0.0f, tenpctw, tenpcth;
+   float width       = 0.0f, height = 0.0f;
    RAScreen *screen  = (BRIDGE RAScreen*)get_chosen_screen();
    UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [screen bounds];
@@ -221,9 +221,6 @@ void *glkitview_init(void);
          ? CGRectGetHeight(screenSize) 
          : CGRectGetWidth(screenSize);
    }
-
-   tenpctw        = width  / 10.0f;
-   tenpcth        = height / 10.0f;
 
    [self adjustViewFrameForSafeArea];
 }
