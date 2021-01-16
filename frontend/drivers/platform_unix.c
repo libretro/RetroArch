@@ -1235,7 +1235,7 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
    return ret;
 }
 
-static enum frontend_architecture frontend_unix_get_architecture(void)
+static enum frontend_architecture frontend_unix_get_arch(void)
 {
    struct utsname buffer;
    const char *val        = NULL;
