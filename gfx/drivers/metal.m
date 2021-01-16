@@ -164,32 +164,31 @@ static void *metal_init(
       input_driver_t **input,
       void **input_data)
 {
+   const char *shader_path;
+   enum rarch_shader_type type;
+   MetalDriver *md = nil;
+
    [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
 
-   MetalDriver *md = [[MetalDriver alloc] initWithVideo:video input:input inputData:input_data];
+   md = [[MetalDriver alloc] initWithVideo:video input:input inputData:input_data];
    if (md == nil)
       return NULL;
 
-   {
-      const char *shader_path;
-      enum rarch_shader_type type;
+   metal_fake_context.get_flags = metal_get_flags;
+   video_context_driver_set(&metal_fake_context);
 
-      metal_fake_context.get_flags = metal_get_flags;
-      video_context_driver_set(&metal_fake_context);
-
-      shader_path = retroarch_get_shader_preset();
-      type = video_shader_parse_type(shader_path);
-      metal_set_shader((__bridge void *)md, type, shader_path);
-   }
+   shader_path = retroarch_get_shader_preset();
+   type = video_shader_parse_type(shader_path);
+   metal_set_shader((__bridge void *)md, type, shader_path);
 
    return (__bridge_retained void *)md;
 }
 
 static bool metal_frame(void *data, const void *frame,
-                        unsigned frame_width, unsigned frame_height,
-                        uint64_t frame_count,
-                        unsigned pitch, const char *msg,
-                        video_frame_info_t *video_info)
+      unsigned frame_width, unsigned frame_height,
+      uint64_t frame_count,
+      unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    return [md renderFrame:frame

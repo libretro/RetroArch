@@ -289,7 +289,7 @@ static char **waiting_argv;
          break;
 
        case APPLE_VIEW_TYPE_NONE:
-                         default:
+       default:
          return;
    }
 
