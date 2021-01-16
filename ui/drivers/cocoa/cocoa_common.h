@@ -109,7 +109,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 
 void *nsview_get_ptr(void);
 
-void nsview_set_ptr(BRIDGE void *ptr);
+void nsview_set_ptr(CocoaView *ptr);
 
 void *get_chosen_screen(void);
 
