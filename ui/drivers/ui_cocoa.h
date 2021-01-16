@@ -23,8 +23,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "cocoa/cocoa_common.h"
-
 #include "../ui_companion_driver.h"
 
 RETRO_BEGIN_DECLS

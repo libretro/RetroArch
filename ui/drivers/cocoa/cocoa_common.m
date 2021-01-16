@@ -23,9 +23,6 @@
 
 #include "../../../verbosity.h"
 
-#include "../../../input/drivers/cocoa_input.h"
-#include "../../../retroarch.h"
-
 #ifdef HAVE_COCOATOUCH
 #import "GCDWebUploader.h"
 #import "WebServer.h"
