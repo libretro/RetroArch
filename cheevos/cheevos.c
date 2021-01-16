@@ -360,14 +360,15 @@ static void rcheevos_log_post_url(
 
 static bool rcheevos_condset_contains_memref(const rc_condset_t* condset, const rc_memref_value_t* memref)
 {
-   rc_condition_t* cond;
-   if (!condset)
-      return false;
-
-   for (cond = condset->conditions; cond; cond = cond->next)
+   if (condset)
    {
-      if (cond->operand1.value.memref == memref || cond->operand2.value.memref == memref)
-         return true;
+      rc_condition_t* cond = NULL;
+      for (cond = condset->conditions; cond; cond = cond->next)
+      {
+         if (     cond->operand1.value.memref == memref 
+               || cond->operand2.value.memref == memref)
+            return true;
+      }
    }
 
    return false;
@@ -394,16 +395,14 @@ static bool rcheevos_trigger_contains_memref(const rc_trigger_t* trigger, const 
 static void rcheevos_invalidate_address(unsigned address)
 {
    unsigned i, count;
-   rcheevos_racheevo_t* cheevo;
-   rcheevos_ralboard_t* lboard;
-   rc_memref_value_t* memref;
-   rc_memref_value_t** last_memref;
-
+   rcheevos_racheevo_t* cheevo     = NULL;
+   rcheevos_ralboard_t* lboard     = NULL;
    /* remove the invalid memref from the chain so we don't try to evaluate it in the future.
     * it's still there, so anything referencing it will continue to fetch 0.
     */
-   last_memref = &rcheevos_locals.runtime.memrefs;
-   memref = *last_memref;
+   rc_memref_value_t **last_memref = &rcheevos_locals.runtime.memrefs;
+   rc_memref_value_t *memref       = *last_memref;
+
    do
    {
       if (memref->memref.address == address && !memref->memref.is_indirect)
@@ -413,25 +412,26 @@ static void rcheevos_invalidate_address(unsigned address)
       }
 
       last_memref = &memref->next;
-      memref = *last_memref;
+      memref      = *last_memref;
    } while (memref);
 
-   /* if the address is only used indirectly, don't disable anything dependent on it */
+   /* If the address is only used indirectly, 
+    * don't disable anything dependent on it */
    if (!memref)
       return;
 
-   /* disable any achievements dependent on the address */
+   /* Disable any achievements dependent on the address */
    for (i = 0; i < 2; ++i)
    {
       if (i == 0)
       {
          cheevo = rcheevos_locals.patchdata.core;
-         count = rcheevos_locals.patchdata.core_count;
+         count  = rcheevos_locals.patchdata.core_count;
       }
       else
       {
          cheevo = rcheevos_locals.patchdata.unofficial;
-         count = rcheevos_locals.patchdata.unofficial_count;
+         count  = rcheevos_locals.patchdata.unofficial_count;
       }
 
       while (count--)
@@ -532,28 +532,28 @@ static retro_time_t rcheevos_async_send_rich_presence(
       rcheevos_locals_t *locals,
       rcheevos_async_io_request* request)
 {
+   char url[256], post_data[1024];
    settings_t *settings             = config_get_ptr();
    const char *cheevos_username     = settings->arrays.cheevos_username;
    bool cheevos_richpresence_enable = settings->bools.cheevos_richpresence_enable;
-
-   {
-      char url[256], post_data[1024];
-      int ret = rc_url_ping(url, sizeof(url), post_data, sizeof(post_data),
+   int ret                          = rc_url_ping(
+         url, sizeof(url), post_data, sizeof(post_data),
          cheevos_username, locals->token, locals->patchdata.game_id,
-         cheevos_richpresence_enable ? rc_runtime_get_richpresence(&locals->runtime) : "");
+         cheevos_richpresence_enable 
+         ? rc_runtime_get_richpresence(&locals->runtime) 
+         : "");
 
-      if (ret < 0)
-      {
-         CHEEVOS_ERR(RCHEEVOS_TAG "buffer too small to create URL\n");
-      }
-      else
-      {
-         rcheevos_log_post_url("rc_url_ping", url, post_data);
+   if (ret < 0)
+   {
+      CHEEVOS_ERR(RCHEEVOS_TAG "buffer too small to create URL\n");
+   }
+   else
+   {
+      rcheevos_log_post_url("rc_url_ping", url, post_data);
 
-         rcheevos_get_user_agent(locals,
-               request->user_agent, sizeof(request->user_agent));
-         task_push_http_post_transfer_with_user_agent(url, post_data, true, "POST", request->user_agent, NULL, NULL);
-      }
+      rcheevos_get_user_agent(locals,
+            request->user_agent, sizeof(request->user_agent));
+      task_push_http_post_transfer_with_user_agent(url, post_data, true, "POST", request->user_agent, NULL, NULL);
    }
 
 #ifdef HAVE_DISCORD
@@ -702,9 +702,7 @@ static void rcheevos_activate_achievements(rcheevos_locals_t *locals,
    }
 }
 
-static int rcheevos_parse(
-      rcheevos_locals_t *locals,
-      const char* json)
+static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
 {
    char buffer[256];
    settings_t *settings        = config_get_ptr();
@@ -720,7 +718,9 @@ static int rcheevos_parse(
 
       /* extract the Error field from the JSON. if not found, remove the colon from the message */
       if (rcheevos_get_json_error(json, ptr, sizeof(buffer) - (ptr - buffer)) == -1)
-         ptr[-2] = '\0';
+      {
+         ptr[-2] = '\0'; /* TODO/FIXME - writing 1 byte into a region of size 0 [-Wstringop-overflow=] at offset -2 to object 'buffer' with size 256 declared here */
+      }
 
       runloop_msg_queue_push(buffer, 0, 5 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
@@ -1345,7 +1345,7 @@ bool rcheevos_unload(void)
          CHEEVOS_LOCK(rcheevos_locals.task_lock);
          running = rcheevos_locals.task != NULL;
          CHEEVOS_UNLOCK(rcheevos_locals.task_lock);
-      }while (running);
+      } while(running);
 #endif
    }
 
@@ -1633,8 +1633,8 @@ static int rcheevos_match_value(const char* val, const char* match)
    {
       do
       {
-         const char* ptr = ++match;
          int size;
+         const char* ptr = ++match;
 
          while (*match && *match != ',')
             ++match;
@@ -1642,20 +1642,16 @@ static int rcheevos_match_value(const char* val, const char* match)
          size = match - ptr;
          if (val[size] == '\0')
          {
+            char buffer[128];
             if (string_is_equal_fast(ptr, val, size))
-            {
                return true;
-            }
-            else
-            {
-               char buffer[128];
-               memcpy(buffer, ptr, size);
-               buffer[size] = '\0';
-               if (string_is_equal_case_insensitive(buffer, val))
-                  return true;
-            }
+
+            memcpy(buffer, ptr, size);
+            buffer[size] = '\0';
+            if (string_is_equal_case_insensitive(buffer, val))
+               return true;
          }
-      } while (*match == ',');
+      } while(*match == ',');
 
       return false;
    }
@@ -2386,7 +2382,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          {
             CORO_YIELD();
             t1 = cpu_features_get_time_usec();
-         }while ((t1 - coro->t0) < 3000000);
+         } while((t1 - coro->t0) < 3000000);
       }
 
       CORO_RET();
