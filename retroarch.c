@@ -10660,14 +10660,17 @@ static void handle_translation_cb(
    {
       static const char* keys[] = { "image", "sound", "text", "error", "auto", "press" };
 
-      const char* string;
-      size_t string_len;
-
+      const char *str           = NULL;
+      size_t str_len            = 0;
       enum rjson_type json_type = rjson_next(json);
-      if (json_type == RJSON_DONE || json_type == RJSON_ERROR) break;
-      if (json_type != RJSON_STRING) continue;
-      if (rjson_get_context_type(json) != RJSON_OBJECT) continue;
-      string = rjson_get_string(json, &string_len);
+
+      if (json_type == RJSON_DONE || json_type == RJSON_ERROR)
+         break;
+      if (json_type != RJSON_STRING)
+         continue;
+      if (rjson_get_context_type(json) != RJSON_OBJECT)
+         continue;
+      str                       = rjson_get_string(json, &str_len);
 
       if ((rjson_get_context_count(json) & 1) == 1)
       {
@@ -10675,7 +10678,7 @@ static void handle_translation_cb(
          json_current_key = -1;
          for (i = 0; i != (sizeof(keys)/sizeof(keys[0])); i++)
          {
-            if (string_is_equal(string, keys[i]))
+            if (string_is_equal(str, keys[i]))
             {
                json_current_key = i;
                break;
@@ -10687,26 +10690,26 @@ static void handle_translation_cb(
          switch (json_current_key)
          {
             case 0: /* image */
-               raw_image_file_data = (char*)unbase64(string,
-                    string_len, &new_image_size);
+               raw_image_file_data = (char*)unbase64(str,
+                    (int)str_len, &new_image_size);
                break;
 #ifdef HAVE_AUDIOMIXER
             case 1: /* sound */
-               raw_sound_data = (void*)unbase64(string,
-                    string_len, &new_sound_size);
+               raw_sound_data = (void*)unbase64(str,
+                    (int)str_len, &new_sound_size);
                break;
 #endif
             case 2: /* text */
-               text_string = strdup(string);
+               text_string = strdup(str);
                break;
             case 3: /* error */
-               err_string = strdup(string);
+               err_string  = strdup(str);
                break;
             case 4: /* auto */
-               auto_string = strdup(string);
+               auto_string = strdup(str);
                break;
             case 5: /* press */
-               key_string = strdup(string);
+               key_string  = strdup(str);
                break;
          }
          json_current_key = -1;
