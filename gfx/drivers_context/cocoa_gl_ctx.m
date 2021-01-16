@@ -336,7 +336,6 @@ static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
    SEL selector;
-   bool selector_exists = false;
    static CGFloat ret   = 0.0f;
    RAScreen *screen     = NULL;
    
