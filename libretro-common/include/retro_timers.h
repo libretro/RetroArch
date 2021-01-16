@@ -95,31 +95,6 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #define retro_sleep(msec) (usleep(1000 * (msec)))
 #elif defined(WIIU)
 #define retro_sleep(msec) (OSSleepTicks(ms_to_ticks((msec))))
-#elif 0
-static INLINE void retro_sleep(unsigned msec)
-{
-   static struct mach_timebase_info   s_Info;
-   static KBOOL s_fNanoseconds = K_UNKNOWN;
-   KU64 uNow = mach_absolute_time();
-   KU64 uDeadline;
-   KU64 uPeriod;
-
-   if (s_fNanoseconds == K_UNKNOWN)
-   {
-      if (mach_timebase_info(&s_Info))
-         s_fNanoseconds = K_TRUE; /* the easy way out */
-      else if (s_Info.denom == s_Info.numer)
-         s_fNanoseconds = K_TRUE;
-      else
-         s_fNanoseconds = K_FALSE;
-   }
-
-   uPeriod = (KU64)msec * 1000 * 1000;
-   if (!s_fNanoseconds)
-      uPeriod = (double)uPeriod * s_Info.denom / s_Info.numer; /* Use double to avoid 32-bit trouble. */
-   uDeadline = uNow + uPeriod;
-   mach_wait_until(uDeadline);
-}
 #else
 #define retro_sleep(msec) \
 { \
