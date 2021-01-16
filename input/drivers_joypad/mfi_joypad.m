@@ -319,7 +319,7 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
     }
 }
 
-bool apple_gamecontroller_joypad_init(void *data)
+void *apple_gamecontroller_joypad_init(void *data)
 {
    static bool inited = false;
    if (inited)
