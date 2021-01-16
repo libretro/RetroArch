@@ -3834,11 +3834,11 @@ static int xmb_menu_entry_action(
 static void xmb_render(void *data, 
       unsigned width, unsigned height, bool is_idle)
 {
-   size_t i;
+   unsigned i;
    float scale_factor;
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
-   unsigned      end        = (unsigned)menu_entries_get_size();
+   size_t      end          = menu_entries_get_size();
    gfx_display_t *p_disp    = disp_get_ptr();
    gfx_animation_t *p_anim  = anim_get_ptr();
 
@@ -3883,7 +3883,7 @@ static void xmb_render(void *data,
       if ((pointer_x > margin_left) && (pointer_x < margin_right))
       {
          unsigned first = 0;
-         unsigned last = end;
+         unsigned last  = end;
 
          if (height)
             xmb_calculate_visible_range(xmb, height,
@@ -3891,17 +3891,12 @@ static void xmb_render(void *data,
 
          for (i = first; i <= last; i++)
          {
-            float entry_size      = (i == selection) ?
+            float entry_size      = (i == (unsigned)selection) ?
                   xmb->icon_spacing_vertical * xmb->active_item_factor : xmb->icon_spacing_vertical;
             float half_entry_size = entry_size * 0.5f;
-            float y_curr;
-            int y1;
-            int y2;
-
-            y_curr = xmb_item_y(xmb, (int)i, selection) + xmb->margins_screen_top;
-
-            y1 = (int)((y_curr - half_entry_size) + 0.5f);
-            y2 = (int)((y_curr + half_entry_size) + 0.5f);
+            float y_curr          = xmb_item_y(xmb, (int)i, selection) + xmb->margins_screen_top;
+            int y1                = (int)((y_curr - half_entry_size) + 0.5f);
+            int y2                = (int)((y_curr + half_entry_size) + 0.5f);
 
             if ((pointer_y > y1) && (pointer_y < y2))
             {

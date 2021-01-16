@@ -10613,9 +10613,9 @@ static void handle_translation_cb(
    char* raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   size_t new_image_size             = 0;
+   int new_image_size                = 0;
 #ifdef HAVE_AUDIOMIXER
-   size_t new_sound_size             = 0;
+   int new_sound_size                = 0;
 #endif
    const void* dummy_data            = NULL;
    void* raw_image_data              = NULL;
@@ -10781,7 +10781,7 @@ static void handle_translation_cb(
 
          ai_res = gfx_widgets_ai_service_overlay_load(
                &p_rarch->dispwidget_st,
-               raw_image_file_data, (unsigned) new_image_size,
+               raw_image_file_data, (unsigned)new_image_size,
                image_type);
 
          if (!ai_res)
@@ -10851,13 +10851,14 @@ static void handle_translation_cb(
                goto finish;
             }
 
-            rpng_set_buf_ptr(rpng, raw_image_file_data, new_image_size);
+            rpng_set_buf_ptr(rpng, raw_image_file_data, (size_t)new_image_size);
             rpng_start(rpng);
             while (rpng_iterate_image(rpng));
 
             do
             {
-               retval = rpng_process_image(rpng, &raw_image_data_alpha, new_image_size, &image_width, &image_height);
+               retval = rpng_process_image(rpng, &raw_image_data_alpha,
+                     (size_t)new_image_size, &image_width, &image_height);
             } while (retval == IMAGE_PROCESS_NEXT);
 
             /* Returned output from the png processor is an upside down RGBA
