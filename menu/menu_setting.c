@@ -7494,7 +7494,7 @@ static void general_write_handler(rarch_setting_t *setting)
           * that all sensors are actually disabled */
          if (!*setting->value.target.boolean)
          {
-            size_t i;
+            unsigned i;
 
             for (i = 0; i < DEFAULT_MAX_PADS; i++)
             {

@@ -3820,7 +3820,7 @@ bool config_save_autoconf_profile(const
       "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
       NULL
    };
-   size_t i;
+   unsigned i;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
    config_file_t *conf                  = NULL;
