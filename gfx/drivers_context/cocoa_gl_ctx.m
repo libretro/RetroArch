@@ -50,6 +50,14 @@
 #include "../common/metal_common.h"
 #endif
 
+#if defined(HAVE_COCOATOUCH)
+#define GLContextClass  EAGLContext
+#define GLFrameworkID   CFSTR("com.apple.opengles")
+#else
+#define GLContextClass  NSOpenGLContext
+#define GLFrameworkID   CFSTR("com.apple.opengl")
+#endif
+
 typedef struct cocoa_ctx_data
 {
 #ifdef HAVE_VULKAN

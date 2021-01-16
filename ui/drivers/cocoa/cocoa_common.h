@@ -20,8 +20,12 @@
 #include <Foundation/Foundation.h>
 
 #if defined(HAVE_COCOATOUCH)
-#define GLContextClass EAGLContext
-#define GLFrameworkID CFSTR("com.apple.opengles")
+#include <UIKit/UIKit.h>
+
+#if TARGET_OS_TV
+#import <GameController/GameController.h>
+#endif
+
 #define RAScreen UIScreen
 
 #ifndef UIUserInterfaceIdiomTV
@@ -32,25 +36,24 @@
 #define UIUserInterfaceIdiomCarPlay 3
 #endif
 #else
-#define GLContextClass NSOpenGLContext
-#define GLFrameworkID CFSTR("com.apple.opengl")
+
 #define RAScreen NSScreen
 #endif
 
-typedef enum apple_view_type {
-   APPLE_VIEW_TYPE_NONE,
+#if TARGET_OS_OSX
+#include <AppKit/AppKit.h>
+#endif
+
+typedef enum apple_view_type
+{
+   APPLE_VIEW_TYPE_NONE = 0,
    APPLE_VIEW_TYPE_OPENGL_ES,
    APPLE_VIEW_TYPE_OPENGL,
    APPLE_VIEW_TYPE_VULKAN,
-   APPLE_VIEW_TYPE_METAL,
+   APPLE_VIEW_TYPE_METAL
 } apple_view_type_t;
 
 #if defined(HAVE_COCOATOUCH)
-#include <UIKit/UIKit.h>
-
-#if TARGET_OS_TV
-#import <GameController/GameController.h>
-#endif
 
 #if TARGET_OS_IOS
 @interface CocoaView : UIViewController
@@ -73,8 +76,6 @@ typedef struct
 extern apple_frontend_settings_t apple_frontend_settings;
 
 #if TARGET_OS_OSX
-#include <AppKit/AppKit.h>
-
 @interface CocoaView : NSView
 
 + (CocoaView*)get;
