@@ -425,7 +425,7 @@ enum
    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 
 #ifdef HAVE_MFI
-   extern bool apple_gamecontroller_joypad_init(void *data);
+   extern void *apple_gamecontroller_joypad_init(void *data);
    apple_gamecontroller_joypad_init(NULL);
 #endif
 }
