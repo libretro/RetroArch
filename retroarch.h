@@ -1182,6 +1182,7 @@ typedef struct video_frame_info
    bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
+   bool input_driver_grab_mouse_state;
    bool hard_sync;
    bool fps_show;
    bool memory_show;
@@ -1980,6 +1981,8 @@ unsigned int retroarch_get_rotation(void);
 void retroarch_init_task_queue(void);
 
 bool input_key_pressed(int key, bool keyboard_pressed);
+
+bool input_mouse_grabbed(void);
 
 const char *joypad_driver_name(unsigned i);
 void joypad_driver_reinit(void *data, const char *joypad_driver_name);

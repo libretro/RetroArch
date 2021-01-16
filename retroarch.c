@@ -14389,8 +14389,10 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_GRAB_MOUSE_TOGGLE:
          {
-            bool ret = false;
+            bool ret              = false;
             bool grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
+            bool video_fullscreen =
+                  settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
 
             grab_mouse_state = !grab_mouse_state;
 
@@ -14408,7 +14410,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (grab_mouse_state)
                video_driver_hide_mouse();
-            else
+            else if (!video_fullscreen)
                video_driver_show_mouse();
          }
          break;
@@ -24762,6 +24764,12 @@ bool input_key_pressed(int key, bool keyboard_pressed)
          key);
 }
 
+bool input_mouse_grabbed(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->input_driver_grab_mouse_state;
+}
+
 int16_t button_is_pressed(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
@@ -29880,7 +29888,15 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
 
-   if (video.fullscreen)
+   /* Ensure that we preserve the 'grab mouse'
+    * state if it was enabled prior to driver
+    * (re-)initialisation */
+   if (p_rarch->input_driver_grab_mouse_state)
+   {
+      video_driver_hide_mouse();
+      input_driver_grab_mouse(p_rarch);
+   }
+   else if (video.fullscreen)
    {
       video_driver_hide_mouse();
       if (!settings->bools.video_windowed_fullscreen)
@@ -31514,6 +31530,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_slowmotion       = p_rarch->runloop_slowmotion;
 
    video_info->input_driver_nonblock_state = p_rarch->input_driver_nonblock_state;
+   video_info->input_driver_grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
+
    video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(false);
 
 #ifdef HAVE_THREADS
