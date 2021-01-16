@@ -10613,9 +10613,9 @@ static void handle_translation_cb(
    char* raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   int new_image_size                = 0;
+   size_t new_image_size             = 0;
 #ifdef HAVE_AUDIOMIXER
-   int new_sound_size                = 0;
+   size_t new_sound_size             = 0;
 #endif
    const void* dummy_data            = NULL;
    void* raw_image_data              = NULL;
@@ -10971,12 +10971,12 @@ static void handle_translation_cb(
    if (key_string)
    {
       char key[8];
-      int length = strlen(key_string);
-      int i      = 0;
-      int start  = 0;
-      char t     = ' ';
+      size_t length = strlen(key_string);
+      int i         = 0;
+      int start     = 0;
+      char t        = ' ';
 
-      for (i = 1; i < length; i++)
+      for (i = 1; i < (int)length; i++)
       {
          t = key_string[i];
          if (i == length-1 || t == ' ' || t == ',')
@@ -13437,7 +13437,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_REWIND
          {
             bool rewind_enable        = settings->bools.rewind_enable;
-            unsigned rewind_buf_size  = settings->sizes.rewind_buffer_size;
+            size_t rewind_buf_size    = settings->sizes.rewind_buffer_size;
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
                return false;
