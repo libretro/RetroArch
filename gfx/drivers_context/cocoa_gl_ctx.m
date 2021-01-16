@@ -335,22 +335,30 @@ static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
-   static CGFloat ret = 0.0f;
-   SEL selector     = NSSelectorFromString(BOXSTRING("nativeScale"));
-   RAScreen *screen = (BRIDGE RAScreen*)get_chosen_screen();
-
+   SEL selector;
+   bool selector_exists = false;
+   static CGFloat ret   = 0.0f;
+   RAScreen *screen     = NULL;
+   
    if (ret != 0.0f)
       return ret;
+   screen             = (BRIDGE RAScreen*)get_chosen_screen();
    if (!screen)
       return 0.0f;
 
-   if ([screen respondsToSelector:selector])
-      return (float)get_from_selector([screen class], screen, selector, &ret);
+   selector            = NSSelectorFromString(BOXSTRING("nativeScale"));
 
-   ret          = 1.0f;
-   selector     = NSSelectorFromString(BOXSTRING("scale"));
    if ([screen respondsToSelector:selector])
-      ret       = screen.scale;
+      ret                 = (float)get_from_selector(
+            [screen class], screen, selector, &ret);
+   else
+   {
+      ret                 = 1.0f;
+      selector            = NSSelectorFromString(BOXSTRING("scale"));
+      if ([screen respondsToSelector:selector])
+         ret              = screen.scale;
+   }
+
    return ret;
 }
 
