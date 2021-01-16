@@ -19,11 +19,6 @@
 
 #include <Foundation/Foundation.h>
 
-#ifdef HAVE_MENU
-#include "../../menu/menu_setting.h"
-#include "../../menu/menu_driver.h"
-#endif
-
 #if defined(HAVE_COCOATOUCH)
 #define GLContextClass EAGLContext
 #define GLFrameworkID CFSTR("com.apple.opengles")
