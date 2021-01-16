@@ -41,7 +41,7 @@ static int frontend_dos_get_rating(void)
 	return -1;
 }
 
-enum frontend_architecture frontend_dos_get_architecture(void)
+enum frontend_architecture frontend_dos_get_arch(void)
 {
 	return FRONTEND_ARCH_X86;
 }
@@ -189,12 +189,12 @@ frontend_ctx_driver_t frontend_ctx_dos = {
 	NULL,                         /* get_name */
 	NULL,                         /* get_os */
 	frontend_dos_get_rating,      /* get_rating */
-	NULL,                         /* load_content */
-	frontend_dos_get_architecture,/* get_architecture */
+	NULL,                         /* content_loaded   */
+	frontend_dos_get_arch,        /* get_architecture */
 	NULL,                         /* get_powerstate */
 	NULL,                         /* parse_drive_list */
-	NULL,                         /* get_mem_total */
-	NULL,                         /* get_mem_free */
+	NULL,                         /* get_total_mem */
+	NULL,                         /* get_free_mem  */
 	NULL,                         /* install_signal_handler */
 	NULL,                         /* get_sighandler_state */
 	NULL,                         /* set_sighandler_state */
@@ -210,5 +210,6 @@ frontend_ctx_driver_t frontend_ctx_dos = {
 	NULL,                         /* get_user_language */
 	NULL,                         /* is_narrator_running */
 	NULL,                         /* accessibility_speak */
-	"dos",
+	"dos",                        /* ident               */
+   NULL                          /* get_video_driver    */
 };

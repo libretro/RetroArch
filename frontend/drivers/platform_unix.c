@@ -2269,7 +2269,7 @@ static void frontend_unix_exitspawn(char *s, size_t len, char *args)
 }
 #endif
 
-static uint64_t frontend_unix_get_mem_total(void)
+static uint64_t frontend_unix_get_total_mem(void)
 {
 #if defined(DINGUX)
    char line[256];
@@ -2309,7 +2309,7 @@ static uint64_t frontend_unix_get_mem_total(void)
 #endif
 }
 
-static uint64_t frontend_unix_get_mem_free(void)
+static uint64_t frontend_unix_get_free_mem(void)
 {
    char line[256];
    unsigned long mem_available = 0;
@@ -2759,7 +2759,7 @@ end:
 #endif
 
 frontend_ctx_driver_t frontend_ctx_unix = {
-   frontend_unix_get_env,       /* environment_get */
+   frontend_unix_get_env,       /* get_env */
    frontend_unix_init,          /* init */
    frontend_unix_deinit,        /* deinit */
 #ifdef ANDROID
@@ -2783,26 +2783,26 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    NULL,                         /* get_name */
 #endif
    frontend_unix_get_os,
-   frontend_unix_get_rating,    /* get_rating */
-   NULL,                         /* load_content */
-   frontend_unix_get_architecture,
+   frontend_unix_get_rating,           /* get_rating */
+   NULL,                               /* content_loaded */
+   frontend_unix_get_arch,             /* get_architecture */
    frontend_unix_get_powerstate,
    frontend_unix_parse_drive_list,
-   frontend_unix_get_mem_total,
-   frontend_unix_get_mem_free,
+   frontend_unix_get_total_mem,
+   frontend_unix_get_free_mem,
    frontend_unix_install_signal_handlers,
    frontend_unix_get_signal_handler_state,
    frontend_unix_set_signal_handler_state,
    frontend_unix_destroy_signal_handler_state,
-   NULL,                         /* attach_console */
-   NULL,                         /* detach_console */
+   NULL,                               /* attach_console */
+   NULL,                               /* detach_console */
 #ifdef HAVE_LAKKA
    frontend_unix_get_lakka_version,    /* get_lakka_version */
 #else
-   NULL,                         /* get_lakka_version */
+   NULL,                               /* get_lakka_version */
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || (defined(HAVE_LAKKA) && defined(HAVE_ODROIDGO2))
-   frontend_unix_set_screen_brightness,    /* set_screen_brightness */
+   frontend_unix_set_screen_brightness,/* set_screen_brightness */
 #else 
    NULL,                         /* set_screen_brightness */
 #endif
@@ -2812,15 +2812,16 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_cpu_model_name,
    frontend_unix_get_user_language,
 #if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
-   is_narrator_running_unix,
-   accessibility_speak_unix,
+   is_narrator_running_unix,     /* is_narrator_running */
+   accessibility_speak_unix,     /* accessibility_speak */
 #else
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
 #endif
 #ifdef ANDROID
-   "android"
+   "android",                    /* ident               */
 #else
-   "unix"
+   "unix",                       /* ident               */
 #endif
+   NULL                          /* get_video_driver    */
 };

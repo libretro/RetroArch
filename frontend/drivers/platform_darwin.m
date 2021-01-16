@@ -333,7 +333,7 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 #endif
 }
 
-static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
+static void frontend_darwin_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
    CFURLRef bundle_url;
@@ -507,7 +507,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 }
 
-static void frontend_darwin_load_content(void)
+static void frontend_darwin_content_loaded(void)
 {
    ui_companion_driver_notify_content_loaded();
 }
@@ -703,7 +703,7 @@ end:
    return ret;
 }
 
-static enum frontend_architecture frontend_darwin_get_architecture(void)
+static enum frontend_architecture frontend_darwin_get_arch(void)
 {
    struct utsname buffer;
 
@@ -766,7 +766,7 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    return ret;
 }
 
-static uint64_t frontend_darwin_get_mem_total(void)
+static uint64_t frontend_darwin_get_total_mem(void)
 {
 #if defined(OSX)
     uint64_t size;
@@ -782,7 +782,7 @@ static uint64_t frontend_darwin_get_mem_total(void)
 #endif
 }
 
-static uint64_t frontend_darwin_get_mem_used(void)
+static uint64_t frontend_darwin_get_free_mem(void)
 {
 #if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
     vm_size_t page_size;
@@ -949,45 +949,47 @@ static bool accessibility_speak_macos(int speed,
 #endif
 
 frontend_ctx_driver_t frontend_ctx_darwin = {
-   frontend_darwin_get_environment_settings,
-   NULL,                         /* init */
-   NULL,                         /* deinit */
-   NULL,                         /* exitspawn */
-   NULL,                         /* process_args */
-   NULL,                         /* exec */
-   NULL,                         /* set_fork */
-   NULL,                         /* shutdown */
-   frontend_darwin_get_name,
-   frontend_darwin_get_os,
-   frontend_darwin_get_rating,
-   frontend_darwin_load_content,
-   frontend_darwin_get_architecture,
-   frontend_darwin_get_powerstate,
-   frontend_darwin_parse_drive_list,
-   frontend_darwin_get_mem_total,
-   frontend_darwin_get_mem_used,
-   NULL,                         /* install_signal_handler */
-   NULL,                         /* get_sighandler_state */
-   NULL,                         /* set_sighandler_state */
-   NULL,                         /* destroy_signal_handler_state */
-   NULL,                         /* attach_console */
-   NULL,                         /* detach_console */
-   NULL,                         /* get_lakka_version */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
-   NULL,                         /* set_sustained_performance_mode */
+   frontend_darwin_get_env,         /* get_env */
+   NULL,                            /* init */
+   NULL,                            /* deinit */
+   NULL,                            /* exitspawn */
+   NULL,                            /* process_args */
+   NULL,                            /* exec */
+   NULL,                            /* set_fork */
+   NULL,                            /* shutdown */
+   frontend_darwin_get_name,        /* get_name */
+   frontend_darwin_get_os,          /* get_os               */
+   frontend_darwin_get_rating,      /* get_rating           */
+   frontend_darwin_content_loaded,  /* content_loaded       */
+   frontend_darwin_get_arch,        /* get_architecture     */
+   frontend_darwin_get_powerstate,  /* get_powerstate       */
+   frontend_darwin_parse_drive_list,/* parse_drive_list     */
+   frontend_darwin_get_total_mem,   /* get_total_mem        */
+   frontend_darwin_get_free_mem,    /* get_free_mem         */
+   NULL,                            /* install_signal_handler */
+   NULL,                            /* get_sighandler_state */
+   NULL,                            /* set_sighandler_state */
+   NULL,                            /* destroy_signal_handler_state */
+   NULL,                            /* attach_console */
+   NULL,                            /* detach_console */
+   NULL,                            /* get_lakka_version */
+   NULL,                            /* set_screen_brightness */
+   NULL,                            /* watch_path_for_changes */
+   NULL,                            /* check_for_path_changes */
+   NULL,                            /* set_sustained_performance_mode */
 #if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
-    frontend_darwin_get_cpu_model_name,
+    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
 #else
-   NULL,
+   NULL,                            /* get_cpu_model_name */
 #endif
-   NULL,                         /* get_user_language */
+   NULL,                            /* get_user_language   */
 #if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
-   is_narrator_running_macos,    /* is_narrator_running */
-   accessibility_speak_macos,    /* accessibility_speak */
+   is_narrator_running_macos,       /* is_narrator_running */
+   accessibility_speak_macos,       /* accessibility_speak */
 #else
-   NULL,                         /* is_narrator_running */
-   NULL,                         /* accessibility_speak */
+   NULL,                            /* is_narrator_running */
+   NULL,                            /* accessibility_speak */
 #endif
-   "darwin",
+   "darwin",                        /* ident               */
+   NULL                             /* get_video_driver    */
 };

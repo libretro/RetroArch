@@ -88,7 +88,7 @@ char user_path[512];
 
 static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 
-static void frontend_psp_get_environment_settings(int *argc, char *argv[],
+static void frontend_psp_get_env_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    unsigned i;
@@ -491,7 +491,7 @@ static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *p
    return ret;
 }
 
-enum frontend_architecture frontend_psp_get_architecture(void)
+enum frontend_architecture frontend_psp_get_arch(void)
 {
 #ifdef VITA
    return FRONTEND_ARCH_ARMV7;
@@ -608,43 +608,43 @@ enum retro_language frontend_psp_get_user_language(void)
    return psp_get_retro_lang_from_langid(langid);
 }
 
-static uint64_t frontend_psp_get_mem_total(void)
+static uint64_t frontend_psp_get_total_mem(void)
 {
    return _newlib_heap_end - _newlib_heap_base;
 }
 
-static uint64_t frontend_psp_get_mem_free(void)
+static uint64_t frontend_psp_get_free_mem(void)
 {
    return _newlib_heap_end - _newlib_heap_cur;
 }
 #endif
 
 frontend_ctx_driver_t frontend_ctx_psp = {
-   frontend_psp_get_environment_settings,
-   frontend_psp_init,
-   frontend_psp_deinit,
-   frontend_psp_exitspawn,
-   NULL,                         /* process_args */
-   frontend_psp_exec,
+   frontend_psp_get_env_settings,/* get_env_settings */
+   frontend_psp_init,            /* init             */
+   frontend_psp_deinit,          /* deinit           */
+   frontend_psp_exitspawn,       /* exitspawn        */
+   NULL,                         /* process_args     */
+   frontend_psp_exec,            /* exec             */
 #ifdef IS_SALAMANDER
-   NULL,
+   NULL,                         /* set_fork         */
 #else
-   frontend_psp_set_fork,
+   frontend_psp_set_fork,        /* set_fork         */
 #endif
-   frontend_psp_shutdown,
-   NULL,                         /* get_name */
-   NULL,                         /* get_os */
-   frontend_psp_get_rating,
-   NULL,                         /* load_content */
-   frontend_psp_get_architecture,
+   frontend_psp_shutdown,        /* shutdown         */
+   NULL,                         /* get_name         */
+   NULL,                         /* get_os           */
+   frontend_psp_get_rating,      /* get_rating       */
+   NULL,                         /* content_loaded   */
+   frontend_psp_get_arch,        /* get_architecture */
    frontend_psp_get_powerstate,
    frontend_psp_parse_drive_list,
 #ifdef VITA
-   frontend_psp_get_mem_total,
-   frontend_psp_get_mem_free,
+   frontend_psp_get_total_mem,
+   frontend_psp_get_free_mem,
 #else
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   NULL,                         /* get_total_mem    */
+   NULL,                         /* get_free_mem     */
 #endif
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
@@ -659,14 +659,15 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
 #ifdef VITA
-   frontend_psp_get_user_language,
+   frontend_psp_get_user_language, /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "vita",
+   "vita",                       /* ident */
 #else
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "psp",
+   "psp",                        /* ident */
 #endif
+   NULL                          /* get_video_driver */
 };

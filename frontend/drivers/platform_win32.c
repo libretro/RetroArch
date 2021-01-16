@@ -512,7 +512,7 @@ enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percen
    return ret;
 }
 
-enum frontend_architecture frontend_win32_get_architecture(void)
+enum frontend_architecture frontend_win32_get_arch(void)
 {
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Windows 2000 and later */
@@ -565,7 +565,7 @@ static int frontend_win32_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-static void frontend_win32_environment_get(int *argc, char *argv[],
+static void frontend_win32_env_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    const char *tmp_dir = getenv("TMP");
@@ -1114,9 +1114,9 @@ static bool accessibility_speak_windows(int speed,
 #endif
 
 frontend_ctx_driver_t frontend_ctx_win32 = {
-   frontend_win32_environment_get,
-   frontend_win32_init,
-   NULL,                           /* deinit */
+   frontend_win32_env_get,         /* env_get   */
+   frontend_win32_init,            /* init      */
+   NULL,                           /* deinit    */
 #if defined(_WIN32) && !defined(_XBOX)
    frontend_win32_respawn,         /* exitspawn */
 #else
@@ -1129,35 +1129,36 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
 #else
    NULL,                           /* set_fork */
 #endif
-   NULL,                           /* shutdown */
-   NULL,                           /* get_name */
+   NULL,                           /* shutdown                  */
+   NULL,                           /* get_name                  */
    frontend_win32_get_os,
-   NULL,                           /* get_rating */
-   NULL,                           /* load_content */
-   frontend_win32_get_architecture,
+   NULL,                           /* get_rating                */
+   NULL,                           /* content_loaded            */
+   frontend_win32_get_arch,        /* get_architecture          */
    frontend_win32_get_powerstate,
    frontend_win32_parse_drive_list,
    frontend_win32_get_total_mem,
    frontend_win32_get_free_mem,
-   NULL,                            /* install_signal_handler */
-   NULL,                            /* get_sighandler_state */
-   NULL,                            /* set_sighandler_state */
+   NULL,                            /* install_signal_handler   */
+   NULL,                            /* get_sighandler_state     */
+   NULL,                            /* set_sighandler_state     */
    NULL,                            /* destroy_sighandler_state */
-   frontend_win32_attach_console,   /* attach_console */
-   frontend_win32_detach_console,   /* detach_console */
-   NULL,                            /* get_lakka_version */
-   NULL,                            /* set_screen_brightness */
-   NULL,                            /* watch_path_for_changes */
-   NULL,                            /* check_for_path_changes */
+   frontend_win32_attach_console,   /* attach_console           */
+   frontend_win32_detach_console,   /* detach_console           */
+   NULL,                            /* get_lakka_version        */
+   NULL,                            /* set_screen_brightness    */
+   NULL,                            /* watch_path_for_changes   */
+   NULL,                            /* check_for_path_changes   */
    NULL,                            /* set_sustained_performance_mode */
    frontend_win32_get_cpu_model_name,
    frontend_win32_get_user_language,
 #if defined(_WIN32) && !defined(_XBOX)
-   is_narrator_running_windows,
-   accessibility_speak_windows,
+   is_narrator_running_windows,     /* is_narrator_running */
+   accessibility_speak_windows,     /* accessibility_speak */
 #else
-   NULL,                         /* is_narrator_running */
-   NULL,                         /* accessibility_speak */
+   NULL,                            /* is_narrator_running */
+   NULL,                            /* accessibility_speak */
 #endif
-   "win32"
+   "win32",                         /* ident               */
+   NULL                             /* get_video_driver    */
 };

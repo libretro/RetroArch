@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
    return rarch_main(argc, argv, NULL);
 }
 
-static void frontend_orbis_get_environment_settings(int *argc, char *argv[],
+static void frontend_orbis_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
    unsigned i;
@@ -313,7 +313,7 @@ static int frontend_orbis_get_rating(void)
    return 6; /* Go with a conservative figure for now. */
 }
 
-enum frontend_architecture frontend_orbis_get_architecture(void)
+enum frontend_architecture frontend_orbis_get_arch(void)
 {
    return FRONTEND_ARCH_X86_64;
 }
@@ -337,7 +337,7 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
 }
 
 frontend_ctx_driver_t frontend_ctx_orbis = {
-   frontend_orbis_get_environment_settings,
+   frontend_orbis_get_env,
    frontend_orbis_init,
    frontend_orbis_deinit,
    frontend_orbis_exitspawn,
@@ -352,12 +352,12 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    NULL,                         /* get_name */
    NULL,                         /* get_os */
    frontend_orbis_get_rating,
-   NULL,                         /* load_content */
-   frontend_orbis_get_architecture,
+   NULL,                         /* content_loaded */
+   frontend_orbis_get_arch,
    NULL,
    frontend_orbis_parse_drive_list,
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -373,5 +373,6 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "orbis",
+   "orbis",                      /* ident */
+   NULL                          /* get_video_driver */
 };

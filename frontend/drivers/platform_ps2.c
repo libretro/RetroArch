@@ -101,7 +101,7 @@ static void reset_IOP()
    sbv_patch_disable_prefix_check();
 }
 
-static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
+static void frontend_ps2_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
    int i;
@@ -279,16 +279,10 @@ static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
    frontend_ps2_exec(s, should_load_content);
 }
 
-static void frontend_ps2_shutdown(bool unused)
-{
-}
+static void frontend_ps2_shutdown(bool unused) { }
+static int frontend_ps2_get_rating(void) { return 10; }
 
-static int frontend_ps2_get_rating(void)
-{
-    return 10;
-}
-
-enum frontend_architecture frontend_ps2_get_architecture(void)
+enum frontend_architecture frontend_ps2_get_arch(void)
 {
     return FRONTEND_ARCH_MIPS;
 }
@@ -339,27 +333,27 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
 }
 
 frontend_ctx_driver_t frontend_ctx_ps2 = {
-   frontend_ps2_get_environment_settings,                         /* environment_get */
-   frontend_ps2_init,                         /* init */
-   frontend_ps2_deinit,                         /* deinit */
-   frontend_ps2_exitspawn,                         /* exitspawn */
+   frontend_ps2_get_env,         /* get_env */
+   frontend_ps2_init,            /* init */
+   frontend_ps2_deinit,          /* deinit */
+   frontend_ps2_exitspawn,       /* exitspawn */
    NULL,                         /* process_args */
-   frontend_ps2_exec,                         /* exec */
+   frontend_ps2_exec,            /* exec */
 #ifdef IS_SALAMANDER
    NULL,                         /* set_fork */
 #else
-   frontend_ps2_set_fork,                         /* set_fork */
+   frontend_ps2_set_fork,        /* set_fork */
 #endif
-   frontend_ps2_shutdown,                         /* shutdown */
+   frontend_ps2_shutdown,        /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ps2_get_rating,                         /* get_rating */
+   frontend_ps2_get_rating,      /* get_rating */
    NULL,                         /* load_content */
-   frontend_ps2_get_architecture,                         /* get_architecture */
+   frontend_ps2_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
-   frontend_ps2_parse_drive_list,                         /* parse_drive_list */
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   frontend_ps2_parse_drive_list,/* parse_drive_list */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -375,5 +369,6 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "null",
+   "ps2",                        /* ident */
+   NULL                          /* get_video_driver */
 };

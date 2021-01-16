@@ -189,8 +189,8 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* get_architecture */
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_used */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem  */
    NULL,                         /* install_sighandlers */
    NULL,                         /* get_signal_handler_state */
    NULL,                         /* set_signal_handler_state */
@@ -206,5 +206,6 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "emscripten"
+   "emscripten",                 /* ident               */
+   NULL                          /* get_video_driver    */
 };

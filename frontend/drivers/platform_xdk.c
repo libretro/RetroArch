@@ -351,7 +351,7 @@ static int frontend_xdk_get_rating(void)
 #endif
 }
 
-enum frontend_architecture frontend_xdk_get_architecture(void)
+enum frontend_architecture frontend_xdk_get_arch(void)
 {
 #if defined(_XBOX360)
    return FRONTEND_ARCH_PPC;
@@ -409,27 +409,27 @@ static int frontend_xdk_parse_drive_list(void *data, bool load_content)
 }
 
 frontend_ctx_driver_t frontend_ctx_xdk = {
-   frontend_xdk_get_environment_settings,
-   frontend_xdk_init,
+   frontend_xdk_get_env_settings,/* env_settings */
+   frontend_xdk_init,            /* init   */
    NULL,                         /* deinit */
-   frontend_xdk_exitspawn,
+   frontend_xdk_exitspawn,       /* exitspawn */
    NULL,                         /* process_args */
-   frontend_xdk_exec,
+   frontend_xdk_exec,            /* exec */
 #ifdef IS_SALAMANDER
-   NULL,
+   NULL,                         /* set_fork */
 #else
-   frontend_xdk_set_fork,
+   frontend_xdk_set_fork,        /* set_fork */
 #endif
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
    frontend_xdk_get_rating,
-   NULL,                         /* load_content */
-   frontend_xdk_get_architecture,
+   NULL,                         /* content_loaded */
+   frontend_xdk_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
-   frontend_xdk_parse_drive_list,
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   frontend_xdk_parse_drive_list,/* parse_drive_list */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -445,5 +445,6 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "xdk",
+   "xdk",                        /* ident */
+   NULL                          /* get_video_driver */
 };

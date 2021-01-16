@@ -178,7 +178,7 @@ static void use_app_path(char *content_info_path)
 }
 
 #ifdef __PSL1GHT__
-static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
+static void frontend_ps3_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
 #ifndef IS_SALAMANDER
@@ -213,7 +213,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 }
 
 #else
-static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
+static void frontend_ps3_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
    int ret;
@@ -579,7 +579,7 @@ static int frontend_ps3_get_rating(void)
    return 10;
 }
 
-enum frontend_architecture frontend_ps3_get_architecture(void)
+enum frontend_architecture frontend_ps3_get_arch(void)
 {
    return FRONTEND_ARCH_PPC;
 }
@@ -675,7 +675,7 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
 }
 
 frontend_ctx_driver_t frontend_ctx_ps3 = {
-   frontend_ps3_get_environment_settings,
+   frontend_ps3_get_env,
    frontend_ps3_init,
    frontend_ps3_deinit,
    frontend_ps3_exitspawn,
@@ -689,13 +689,13 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ps3_get_rating,
+   frontend_ps3_get_rating,      /* get_rating */
    NULL,                         /* load_content */
-   frontend_ps3_get_architecture,
+   frontend_ps3_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
-   frontend_ps3_parse_drive_list,
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   frontend_ps3_parse_drive_list,/* parse_drive_list */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -711,5 +711,6 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "ps3",
+   "ps3",                        /* ident */
+   NULL                          /* get_video_driver */
 };

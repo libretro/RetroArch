@@ -52,7 +52,7 @@ static int frontend_qnx_get_rating(void)
    return -1;
 }
 
-static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
+static void frontend_qnx_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
    unsigned i;
@@ -171,13 +171,13 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
 #endif
 }
 
-enum frontend_architecture frontend_qnx_get_architecture(void)
+enum frontend_architecture frontend_qnx_get_arch(void)
 {
    return FRONTEND_ARCH_ARM;
 }
 
 frontend_ctx_driver_t frontend_ctx_qnx = {
-   frontend_qnx_get_environment_settings,
+   frontend_qnx_get_env_settings,
    frontend_qnx_init,
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
@@ -189,11 +189,11 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* get_os */
    frontend_qnx_get_rating,
    NULL,                         /* load_content */
-   frontend_qnx_get_architecture,
+   frontend_qnx_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -209,5 +209,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "qnx",
+   "qnx",                        /* ident               */
+   NULL                          /* get_video_driver    */
 };

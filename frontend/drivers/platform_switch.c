@@ -177,7 +177,7 @@ static void get_first_valid_core(char *path_return, size_t len)
 }
 #endif
 
-static void frontend_switch_get_environment_settings(
+static void frontend_switch_get_env(
       int *argc, char *argv[], void *args, void *params_data)
 {
    unsigned i;
@@ -754,7 +754,7 @@ static int frontend_switch_get_rating(void)
    return 11;
 }
 
-enum frontend_architecture frontend_switch_get_architecture(void)
+enum frontend_architecture frontend_switch_get_arch(void)
 {
    return FRONTEND_ARCH_ARMV8;
 }
@@ -779,13 +779,13 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-static uint64_t frontend_switch_get_mem_free(void)
+static uint64_t frontend_switch_get_free_mem(void)
 {
    struct mallinfo mem_info = mallinfo();
    return mem_info.fordblks;
 }
 
-static uint64_t frontend_switch_get_mem_total(void)
+static uint64_t frontend_switch_get_total_mem(void)
 {
    struct mallinfo mem_info = mallinfo();
    return mem_info.usmblks;
@@ -892,49 +892,50 @@ void frontend_switch_process_args(int *argc, char *argv[])
 }
 
 frontend_ctx_driver_t frontend_ctx_switch =
-    {
-        frontend_switch_get_environment_settings,
-        frontend_switch_init,
-        frontend_switch_deinit,
+{
+   frontend_switch_get_env,
+   frontend_switch_init,
+   frontend_switch_deinit,
 #ifdef HAVE_LIBNX
-        frontend_switch_exitspawn,
-        frontend_switch_process_args,
-        frontend_switch_exec,
+   frontend_switch_exitspawn,
+   frontend_switch_process_args,
+   frontend_switch_exec,
 #ifdef IS_SALAMANDER
-        NULL,
+   NULL,
 #else
-        frontend_switch_set_fork,
+   frontend_switch_set_fork,
 #endif
 #else /* HAVE_LIBNX */
-        NULL,
-        NULL,
-        NULL,
-        NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
 #endif /* HAVE_LIBNX */
-        frontend_switch_shutdown,
-        frontend_switch_get_name,
-        frontend_switch_get_os,
-        frontend_switch_get_rating,
-        NULL, /* load_content */
-        frontend_switch_get_architecture,
-        frontend_switch_get_powerstate,
-        frontend_switch_parse_drive_list,
-        frontend_switch_get_mem_total,
-        frontend_switch_get_mem_free,
-        NULL, /* install_signal_handler */
-        NULL, /* get_signal_handler_state */
-        NULL, /* set_signal_handler_state */
-        NULL, /* destroy_signal_handler_state */
-        NULL, /* attach_console */
-        NULL, /* detach_console */
-        NULL, /* get_lakka_version */
-        NULL, /* set_screen_brightness */
-        NULL, /* watch_path_for_changes */
-        NULL, /* check_for_path_changes */
-        NULL, /* set_sustained_performance_mode */
-        NULL, /* get_cpu_model_name */
-        NULL, /* get_user_language */
-        NULL, /* is_narrator_running */
-        NULL, /* accessibility_speak */
-        "switch",
+   frontend_switch_shutdown,
+   frontend_switch_get_name,
+   frontend_switch_get_os,
+   frontend_switch_get_rating,
+   NULL,                               /* content_loaded */
+   frontend_switch_get_arch,           /* get_architecture       */
+   frontend_switch_get_powerstate,     /* get_powerstate         */
+   frontend_switch_parse_drive_list,   /* parse_drive_list       */
+   frontend_switch_get_total_mem,      /* get_total_mem          */
+   frontend_switch_get_free_mem,       /* get_free_mem           */
+   NULL,                               /* install_signal_handler */
+   NULL,                               /* get_signal_handler_state */
+   NULL,                               /* set_signal_handler_state */
+   NULL,                               /* destroy_signal_handler_state */
+   NULL,                               /* attach_console */
+   NULL,                               /* detach_console */
+   NULL,                               /* get_lakka_version */
+   NULL,                               /* set_screen_brightness */
+   NULL,                               /* watch_path_for_changes */
+   NULL,                               /* check_for_path_changes */
+   NULL,                               /* set_sustained_performance_mode */
+   NULL,                               /* get_cpu_model_name */
+   NULL,                               /* get_user_language */
+   NULL,                               /* is_narrator_running */
+   NULL,                               /* accessibility_speak */
+   "switch",                           /* ident */
+   NULL                                /* get_video_driver */
 };
