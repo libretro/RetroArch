@@ -823,49 +823,48 @@ bool video_shader_write_root_preset(const struct video_shader *shader, const cha
 
 config_file_t *video_shader_get_root_preset_config(const char *path)
 {
+   int reference_depth           = 1;
    config_file_t *conf           = config_file_new_from_path_to_string(path);
    char* nested_reference_path   = (char*)malloc(PATH_MAX_LENGTH);
 
    if (!conf)
       goto end;
-   else
+
+   while (conf->reference)
    {
-      int reference_depth = 1;
-
-      while (conf->reference)
+      /* If we have reached the max depth of nested references,
+       * stop attempting to read the next reference,
+       * because we are likely in a self referential loop. 
+       *
+       * SHADER_MAX_REFERENCE_DEPTH references deep seems 
+       * like more than enough depth for expected usage */
+      if (reference_depth > SHADER_MAX_REFERENCE_DEPTH)
       {
-         /* If we have reached the max depth of nested references stop attempting to read 
-          * the next reference because we are likely in a self referential loop. 
-          * SHADER_MAX_REFERENCE_DEPTH references deep seems like more than enough depth for expected usage */
-         if (reference_depth > SHADER_MAX_REFERENCE_DEPTH)
-         {
-            RARCH_ERR("[ Shaders - Get Root Preset ]:  Exceeded maximum reference depth(%u) without finding a full preset. "
-                        "This chain of referenced presets is likely cyclical.\n", SHADER_MAX_REFERENCE_DEPTH);
-            config_file_free(conf);
-            conf = NULL;
-            goto end;
-         }
-
-         /* Get the absolute path for the reference */
-         fill_pathname_expanded_and_absolute(nested_reference_path, conf->path, conf->reference);
-
-         /* Create a new config from the referenced path */
+         RARCH_ERR("[ Shaders - Get Root Preset ]:  Exceeded maximum reference depth(%u) without finding a full preset. "
+               "This chain of referenced presets is likely cyclical.\n", SHADER_MAX_REFERENCE_DEPTH);
          config_file_free(conf);
-         conf = config_file_new_from_path_to_string(nested_reference_path);
-
-         /* If we can't read the reference preset */
-         if (!conf)
-         {
-            RARCH_WARN("[ Shaders ]:  Could not read shader preset in #reference line: %s\n", nested_reference_path);
-            goto end;
-         }
-
-         reference_depth += 1;
+         conf = NULL;
+         goto end;
       }
+
+      /* Get the absolute path for the reference */
+      fill_pathname_expanded_and_absolute(nested_reference_path, conf->path, conf->reference);
+
+      /* Create a new config from the referenced path */
+      config_file_free(conf);
+      conf = config_file_new_from_path_to_string(nested_reference_path);
+
+      /* If we can't read the reference preset */
+      if (!conf)
+      {
+         RARCH_WARN("[ Shaders ]:  Could not read shader preset in #reference line: %s\n", nested_reference_path);
+         goto end;
+      }
+
+      reference_depth += 1;
    }
 
-   end:
-
+end:
    free(nested_reference_path);
 
    return conf;
@@ -899,9 +898,10 @@ config_file_t *video_shader_get_root_preset_config(const char *path)
  **/
 bool video_shader_check_reference_chain_for_save(const char *path_to_save, const char *reference_path)
 {
-   config_file_t *conf           = config_file_new_from_path_to_string(reference_path);
+   config_file_t *conf           = config_file_new_from_path_to_string(
+         reference_path);
    char* nested_reference_path   = (char*)malloc(PATH_MAX_LENGTH);
-   char* path_to_save_conformed   = (char*)malloc(PATH_MAX_LENGTH);
+   char* path_to_save_conformed  = (char*)malloc(PATH_MAX_LENGTH);
    bool return_val               = true;
 
    strlcpy(path_to_save_conformed, path_to_save, PATH_MAX_LENGTH);
@@ -1602,13 +1602,11 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
 {
    unsigned i                                        = 0;
    bool ret                                          = true;
-   int reference_depth                               = 1;
    char override_conf_paths[SHADER_MAX_REFERENCE_DEPTH][PATH_MAX_LENGTH];
    config_file_t *conf                               = NULL;
-   config_file_t *root_conf                          = NULL;
-   
    /* Get the root config, If we were able to get a root_config that means the reference chain is valid */
-   root_conf  = video_shader_get_root_preset_config(path);
+   config_file_t *root_conf                          = 
+      video_shader_get_root_preset_config(path);
 
    if (!root_conf)
    {

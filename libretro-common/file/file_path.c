@@ -1152,9 +1152,6 @@ int get_pathname_num_slashes(const char *in_path)
  * in_path can be an absolute, relative or abbreviated path */
 void fill_pathname_abbreviated_or_relative(char *out_path, const char *in_refpath, const char *in_path, size_t size)
 {
-   unsigned relative_length = 0;
-   unsigned abbreviated_length = 0;
-
    char in_path_conformed[PATH_MAX_LENGTH];
    char in_refpath_conformed[PATH_MAX_LENGTH];
    char expanded_path[PATH_MAX_LENGTH];
@@ -1162,44 +1159,45 @@ void fill_pathname_abbreviated_or_relative(char *out_path, const char *in_refpat
    char relative_path[PATH_MAX_LENGTH];
    char abbreviated_path[PATH_MAX_LENGTH];
    
-   in_path_conformed[0] = '\0';
+   in_path_conformed[0]    = '\0';
    in_refpath_conformed[0] = '\0';
-   absolute_path[0] = '\0';
-   relative_path[0] = '\0';
-   abbreviated_path[0] = '\0';
+   absolute_path[0]        = '\0';
+   relative_path[0]        = '\0';
+   abbreviated_path[0]     = '\0';
 
-   strcpy(in_path_conformed, in_path);
-   strcpy(in_refpath_conformed, in_refpath);
+   strcpy_literal(in_path_conformed, in_path);
+   strcpy_literal(in_refpath_conformed, in_refpath);
 
    pathname_conform_slashes_to_os(in_path_conformed);
    pathname_conform_slashes_to_os(in_refpath_conformed);
 
    /* Expand paths which start with :\ to an absolute path */
-   fill_pathname_expand_special(expanded_path, in_path_conformed, sizeof(expanded_path));
+   fill_pathname_expand_special(expanded_path,
+         in_path_conformed, sizeof(expanded_path));
 
    /* Get the absolute path if it is not already */
    if (path_is_absolute(expanded_path))
       strlcpy(absolute_path, expanded_path, PATH_MAX_LENGTH);
    else
-      fill_pathname_resolve_relative(absolute_path, in_refpath_conformed, in_path_conformed, PATH_MAX_LENGTH);
+      fill_pathname_resolve_relative(absolute_path,
+            in_refpath_conformed, in_path_conformed, PATH_MAX_LENGTH);
 
    pathname_conform_slashes_to_os(absolute_path);
 
    /* Get the relative path and see how many directories long it is */
-   path_relative_to(relative_path, absolute_path, in_refpath_conformed, sizeof(relative_path));
+   path_relative_to(relative_path, absolute_path,
+         in_refpath_conformed, sizeof(relative_path));
 
    /* Get the abbreviated path and see how many directories long it is */
-   fill_pathname_abbreviate_special(abbreviated_path, absolute_path, sizeof(abbreviated_path));
+   fill_pathname_abbreviate_special(abbreviated_path,
+         absolute_path, sizeof(abbreviated_path));
 
    /* Use the shortest path, preferring the relative path*/
-   if (get_pathname_num_slashes(relative_path) <= get_pathname_num_slashes(abbreviated_path))
-   {
+   if (  get_pathname_num_slashes(relative_path) <= 
+         get_pathname_num_slashes(abbreviated_path))
       retro_assert(strlcpy(out_path, relative_path, size) < size);
-   }
    else
-   {
       retro_assert(strlcpy(out_path, abbreviated_path, size) < size);
-   }
 }
 
 /**
