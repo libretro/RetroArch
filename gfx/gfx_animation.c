@@ -510,7 +510,8 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
 
       /* Determine number of characters to copy */
       *num_chars_to_copy3 = remaining_width / glyph_width;
-      *num_chars_to_copy3 = (*num_chars_to_copy3 > num_chars) ? num_chars : *num_chars_to_copy3;
+      if (*num_chars_to_copy3 > num_chars)
+         *num_chars_to_copy3 = num_chars;
    }
 }
 
