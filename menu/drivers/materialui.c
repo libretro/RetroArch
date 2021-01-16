@@ -6606,6 +6606,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    unsigned 
       materialui_color_theme      = video_info->materialui_color_theme;
    bool video_fullscreen          = video_info->fullscreen;
+   bool mouse_grabbed             = video_info->input_driver_grab_mouse_state;
    bool menu_mouse_enable         = video_info->menu_mouse_enable;
    gfx_animation_t *p_anim        = anim_get_ptr();
 
@@ -6791,14 +6792,14 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    /* Draw mouse cursor */
    if (mui->mouse_show && (mui->pointer.type != MENU_POINTER_DISABLED))
    {
-      float color_white[16]  = {
+      float color_white[16] = {
          1.0f, 1.0f, 1.0f, 1.0f,
          1.0f, 1.0f, 1.0f, 1.0f,
          1.0f, 1.0f, 1.0f, 1.0f,
          1.0f, 1.0f, 1.0f, 1.0f
       };
-      bool cursor_visible   = video_fullscreen 
-         && menu_mouse_enable;
+      bool cursor_visible   = (video_fullscreen || mouse_grabbed) &&
+            menu_mouse_enable;
 
       if (cursor_visible)
          gfx_display_draw_cursor(

@@ -2791,6 +2791,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    float xmb_alpha_factor                  = video_info->xmb_alpha_factor;
    bool xmb_shadows_enable                 = video_info->xmb_shadows_enable;
    bool video_fullscreen                   = video_info->fullscreen;
+   bool mouse_grabbed                      = video_info->input_driver_grab_mouse_state;
    bool menu_mouse_enable                  = video_info->menu_mouse_enable;
    const float under_thumb_margin          = 0.96;
    float scale_factor                      = 0.0f;
@@ -3029,8 +3030,8 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    if (stripes->mouse_show)
    {
       menu_input_pointer_t pointer;
-      bool cursor_visible   = video_fullscreen 
-         && menu_mouse_enable;
+      bool cursor_visible = (video_fullscreen || mouse_grabbed) &&
+            menu_mouse_enable;
 
       menu_input_get_pointer_state(&pointer);
 

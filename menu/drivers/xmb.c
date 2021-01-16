@@ -4653,6 +4653,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool timedate_enable                    = video_info->timedate_enable;
    bool battery_level_enable               = video_info->battery_level_enable;
    bool video_fullscreen                   = video_info->fullscreen;
+   bool mouse_grabbed                      = video_info->input_driver_grab_mouse_state;
    bool menu_mouse_enable                  = video_info->menu_mouse_enable;
    unsigned xmb_color_theme                = video_info->xmb_color_theme;
    bool libretro_running                   = video_info->libretro_running;
@@ -5286,8 +5287,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Cursor image */
    if (xmb->mouse_show)
    {
-      bool cursor_visible   = video_fullscreen 
-         && menu_mouse_enable;
+      bool cursor_visible = (video_fullscreen || mouse_grabbed) &&
+            menu_mouse_enable;
 
       gfx_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
       if (cursor_visible)
