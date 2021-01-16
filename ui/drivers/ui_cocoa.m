@@ -41,6 +41,10 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
+/* TODO/FIXME - static global variables */
+static int waiting_argc;
+static char **waiting_argv;
+
 #if defined(HAVE_COCOA_METAL)
 @interface RAWindow : NSWindow
 @end
@@ -53,6 +57,11 @@
 @implementation RApplication
 #endif
 
+#ifdef HAVE_COCOA_METAL
+#define CONVERT_POINT() [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil]
+#else
+#define CONVERT_POINT() [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil]
+#endif
 
 - (void)sendEvent:(NSEvent *)event {
    NSEventType event_type = event.type;
@@ -117,13 +126,7 @@
          {
             CGFloat delta_x             = event.deltaX;
             CGFloat delta_y             = event.deltaY;
-#if defined(HAVE_COCOA_METAL)
-            CGPoint pos                 = [apple_platform.renderView 
-               convertPoint:[event locationInWindow] fromView:nil];
-#elif defined(HAVE_COCOA)
-            CGPoint pos                 = [[CocoaView get] 
-               convertPoint:[event locationInWindow] fromView:nil];
-#endif
+            CGPoint pos                 = CONVERT_POINT();
             cocoa_input_data_t 
                *apple                   = (cocoa_input_data_t*)
                input_driver_get_data();
@@ -152,11 +155,7 @@
        case NSEventTypeOtherMouseDown:
        {
            NSInteger number      = event.buttonNumber;
-#ifdef HAVE_COCOA_METAL
-           CGPoint pos           = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-#else
-           CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-#endif
+           CGPoint pos           = CONVERT_POINT();
            cocoa_input_data_t 
               *apple             = (cocoa_input_data_t*)
               input_driver_get_data();
@@ -171,12 +170,8 @@
       case NSEventTypeOtherMouseUp:
          {
             NSInteger number      = event.buttonNumber;
-#ifdef HAVE_COCOA_METAL
-            CGPoint pos           = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-#else
-            CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-#endif
-           cocoa_input_data_t 
+            CGPoint pos           = CONVERT_POINT();
+            cocoa_input_data_t 
               *apple              = (cocoa_input_data_t*)
               input_driver_get_data();
             if (!apple || pos.y < 0)
@@ -191,10 +186,6 @@
 }
 
 @end
-
-/* TODO/FIXME - static global variables */
-static int waiting_argc;
-static char **waiting_argv;
 
 @implementation RetroArch_OSX
 
