@@ -1323,9 +1323,9 @@ bool gfx_animation_update(
 
 static void build_ticker_loop_string(
       const char* src_str, const char *spacer,
-      unsigned char_offset1, unsigned num_chars1,
-      unsigned char_offset2, unsigned num_chars2,
-      unsigned char_offset3, unsigned num_chars3,
+      size_t char_offset1, size_t num_chars1,
+      size_t char_offset2, size_t num_chars2,
+      size_t char_offset3, size_t num_chars3,
       char *dest_str, size_t dest_str_len)
 {
    char tmp[PATH_MAX_LENGTH];
