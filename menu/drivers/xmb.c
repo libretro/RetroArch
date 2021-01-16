@@ -3883,7 +3883,7 @@ static void xmb_render(void *data,
       if ((pointer_x > margin_left) && (pointer_x < margin_right))
       {
          unsigned first = 0;
-         unsigned last  = end;
+         unsigned last  = (unsigned)end;
 
          if (height)
             xmb_calculate_visible_range(xmb, height,
@@ -7055,8 +7055,8 @@ static int xmb_pointer_up(void *userdata,
             /* Swipe down between left and right margins:
              * move selection pointer up by 1 'page' */
             unsigned bottom_idx = (unsigned)selection + 1;
-            size_t new_idx;
-            unsigned step;
+            size_t new_idx      = 0;
+            unsigned step       = 0;
 
             /* Determine index of entry at bottom of screen
              * Note: cannot use xmb_calculate_visible_range()
@@ -7066,7 +7066,8 @@ static int xmb_pointer_up(void *userdata,
              * selection... */
             for (;;)
             {
-               float top = xmb_item_y(xmb, bottom_idx, selection) + xmb->margins_screen_top;
+               float top = xmb_item_y(xmb, bottom_idx, selection) 
+                  + xmb->margins_screen_top;
 
                if (top > height)
                {
@@ -7080,8 +7081,10 @@ static int xmb_pointer_up(void *userdata,
                bottom_idx++;
             }
 
-            step     = (bottom_idx >= selection) ? bottom_idx - selection : 0;
-            new_idx  = (selection  > step)       ? selection - step       : 0;
+            if (bottom_idx >= selection)
+               step     = bottom_idx - selection;
+            if (selection > step)
+               new_idx  = selection - step;
 
             if (new_idx > 0)
             {
