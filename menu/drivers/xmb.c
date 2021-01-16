@@ -6682,8 +6682,10 @@ static int xmb_list_push(void *data, void *userdata,
    bool menu_show_dump_disc        = settings->bools.menu_show_dump_disc;
    bool menu_show_shutdown         = settings->bools.menu_show_shutdown;
    bool menu_show_reboot           = settings->bools.menu_show_reboot;
+#if !defined(IOS)
    bool menu_show_quit_retroarch   = settings->bools.menu_show_quit_retroarch;
    bool menu_show_restart_ra       = settings->bools.menu_show_restart_retroarch;
+#endif
    bool menu_show_information      = settings->bools.menu_show_information;
    bool menu_show_help             = settings->bools.menu_show_help;
    bool kiosk_mode_enable          = settings->bools.kiosk_mode_enable;

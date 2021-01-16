@@ -144,7 +144,6 @@ static INLINE uint32_t dword_be(const uint8_t *buf)
 #if defined(DEBUG) || defined(RPNG_TEST)
 static bool png_process_ihdr(struct png_ihdr *ihdr)
 {
-   unsigned i;
    uint8_t ihdr_depth = ihdr->depth;
 
    switch (ihdr->color_type)

@@ -1373,7 +1373,7 @@ static int action_bind_sublabel_playlist_entry(
    /* Check whether runtime info is valid */
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
    {
-      int n = 0;
+      size_t n = 0;
       char tmp[64];
 
       tmp[0  ] = '\n';

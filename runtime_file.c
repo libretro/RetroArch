@@ -659,7 +659,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
    char tmp[64];
    bool has_am_pm         = false;
    const char *format_str = "";
-   int n                  = 0;
+   size_t n               = 0;
 
    tmp[0] = '\0';
 

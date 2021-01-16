@@ -5997,7 +5997,7 @@ static int action_ok_push_dropdown_item_video_shader_num_pass(const char *path,
    if (!shader)
       return menu_cbs_exit();
 
-   shader->passes              = idx;
+   shader->passes              = (unsigned)idx;
 
    video_shader_resolve_parameters(shader);
 
