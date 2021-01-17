@@ -22,6 +22,7 @@
 
 #include "../font_driver.h"
 
+/* TODO/FIXME gskti FONTM family isnt supported in all consoles */
 #define FONTM_TEXTURE_COLOR         GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00)
 #define FONTM_TEXTURE_SCALED        0.5f
 #define FONTM_TEXTURE_LEFT_MARGIN   0
@@ -51,7 +52,7 @@ static void ps2_font_free_font(void *data, bool is_threaded)
    ps2_font_info_t *ps2 = (ps2_font_info_t *)data;
    gsKit_free_fontm(ps2->ps2_video->gsGlobal, ps2->gsFontM);
    ps2->ps2_video = NULL;
-   
+
    free(ps2);
    ps2 = NULL;
 }
@@ -63,12 +64,12 @@ static void ps2_font_render_msg(
 {
    ps2_font_info_t *ps2 = (ps2_font_info_t *)data;
 
-   if (ps2) 
+   if (ps2)
    {
       int x = FONTM_TEXTURE_LEFT_MARGIN;
       int y = ps2->ps2_video->gsGlobal->Height - FONTM_TEXTURE_BOTTOM_MARGIN;
       gsKit_fontm_print_scaled(
-            ps2->ps2_video->gsGlobal, 
+            ps2->ps2_video->gsGlobal,
             ps2->gsFontM, x, y, FONTM_TEXTURE_ZPOSITION,
             FONTM_TEXTURE_SCALED , FONTM_TEXTURE_COLOR, msg);
    }

@@ -33,7 +33,7 @@
 
 typedef struct ps2_video
 {
-   /* I need to create this additional field 
+   /* I need to create this additional field
     * to be used in the font driver*/
    bool clearVRAM_font;
    bool menuVisible;
@@ -112,14 +112,14 @@ static void gsKit_sync(GSGLOBAL *gsGlobal)
 {
    if(!gsGlobal->FirstFrame)
       WaitSema(vsync_sema_id);
-      
+
       while (PollSema(vsync_sema_id) >= 0)
          ;
 }
 
 // Copy of gsKit_sync_flip, but without the 'sync'
-   static void gsKit_flip(GSGLOBAL *gsGlobal)
-   {
+static void gsKit_flip(GSGLOBAL *gsGlobal)
+{
    if(!gsGlobal->FirstFrame)
    {
       if(gsGlobal->DoubleBuffering == GS_SETTING_ON)
@@ -129,7 +129,6 @@ static void gsKit_sync(GSGLOBAL *gsGlobal)
 
          gsGlobal->ActiveBuffer ^= 1;
       }
-
    }
 
    gsKit_setactive(gsGlobal);
@@ -145,7 +144,7 @@ static void init_ps2_video(ps2_video_t *ps2)
 {
    ps2->gsGlobal    = init_GSGlobal();
    gsKit_TexManager_init(ps2->gsGlobal);
-   
+
    ps2->vsync_callback_id = gsKit_add_vsync_handler(vsync_handler);
    ps2->menuTexture = prepare_new_texture();
    ps2->coreTexture = prepare_new_texture();
@@ -282,10 +281,10 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       struct retro_hw_ps2_insets padding = empty_ps2_insets;
       /* Checking if the transfer is done in the core */
       if (frame != RETRO_HW_FRAME_BUFFER_VALID)
-      { 
+      {
          /* calculate proper width based in the pitch */
          int shifh_per_bytes = (ps2->PSM == GS_PSM_CT32) ? 2 : 1;
-         int real_width      = pitch >> shifh_per_bytes; 
+         int real_width      = pitch >> shifh_per_bytes;
          set_texture(ps2->coreTexture, frame, real_width, height, ps2->PSM, ps2->core_filter);
 
          padding.right       = real_width - width;
@@ -401,7 +400,7 @@ static bool ps2_get_hw_render_interface(void* data,
 {
    ps2_video_t          *ps2 = (ps2_video_t*)data;
    ps2->iface.padding        = empty_ps2_insets;
-   *iface                    = 
+   *iface                    =
       (const struct retro_hw_render_interface*)&ps2->iface;
    return true;
 }

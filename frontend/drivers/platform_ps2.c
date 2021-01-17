@@ -48,7 +48,7 @@ static void create_path_names(void)
     * rootDevicePath(bootDeviceID) */
    strlcpy(user_path, rootDevicePath(bootDeviceID), sizeof(user_path));
    strlcat(user_path, "RETROARCH", sizeof(user_path));
-   
+
    /* Content in the same folder */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], cwd,
          "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -164,6 +164,7 @@ static void frontend_ps2_init(void *data)
 
 #ifndef IS_SALAMANDER
    /* Controllers */
+   SifExecModuleBuffer(&mtapman_irx, size_mtapman_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&padman_irx, size_padman_irx, 0, NULL, NULL);
 
    /* Audio */
@@ -176,7 +177,11 @@ static void frontend_ps2_init(void *data)
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
-   /* Initializes pad library */
+   /* Initializes pad un multitap libraries */
+   if (mtapInit() != 1)
+   {
+      RARCH_ERR("mtapInit library not initalizated\n");
+   }
    if (padInit(0) != 1)
    {
       RARCH_ERR("padInit library not initalizated\n");

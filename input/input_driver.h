@@ -224,7 +224,7 @@ struct rarch_joypad_driver
 #elif defined(PSP)
 #define DEFAULT_MAX_PADS 1
 #elif defined(PS2)
-#define DEFAULT_MAX_PADS 2
+#define DEFAULT_MAX_PADS 8
 #elif defined(GEKKO) || defined(HW_RVL)
 #define DEFAULT_MAX_PADS 4
 #elif defined(HAVE_ODROIDGO2)
