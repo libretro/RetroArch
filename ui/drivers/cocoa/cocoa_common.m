@@ -42,7 +42,7 @@ void *glkitview_init(void);
 
 @implementation CocoaView
 
-#if TARGET_OS_OSX
+#if defined(OSX)
 #ifdef HAVE_COCOA_METAL
 - (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window { return YES; }
 #endif
@@ -64,7 +64,7 @@ void *glkitview_init(void);
 {
    self = [super init];
 
-#if TARGET_OS_OSX
+#if defined(OSX)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    NSArray *array = [NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil];
    [self registerForDraggedTypes:array];
@@ -81,7 +81,7 @@ void *glkitview_init(void);
 #endif
 #endif
     
-#if TARGET_OS_OSX
+#if defined(OSX)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)self);
@@ -95,7 +95,7 @@ void *glkitview_init(void);
    return self;
 }
 
-#if TARGET_OS_OSX
+#if defined(OSX)
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];

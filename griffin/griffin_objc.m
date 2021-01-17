@@ -32,18 +32,14 @@
 #include "../ui/drivers/cocoa/cocoa_common.m"
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
 
-#if defined(HAVE_COCOATOUCH)
-#include "../ui/drivers/ui_cocoatouch.m"
-#else
-
-#if TARGET_OS_OSX
+#if defined(OSX)
 #include "../ui/drivers/cocoa/ui_cocoa_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_browser_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_application.m"
 #include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
 #include "../ui/drivers/ui_cocoa.m"
-#endif
-
+#else
+#include "../ui/drivers/ui_cocoatouch.m"
 #endif
 
 #endif

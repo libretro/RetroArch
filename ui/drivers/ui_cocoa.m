@@ -126,7 +126,7 @@ static char **waiting_argv;
          {
             CGFloat delta_x             = event.deltaX;
             CGFloat delta_y             = event.deltaY;
-            CGPoint pos                 = CONVERT_POINT();
+            NSPoint pos                 = CONVERT_POINT();
             cocoa_input_data_t 
                *apple                   = (cocoa_input_data_t*)
                input_driver_get_data();
@@ -155,7 +155,7 @@ static char **waiting_argv;
        case NSEventTypeOtherMouseDown:
        {
            NSInteger number      = event.buttonNumber;
-           CGPoint pos           = CONVERT_POINT();
+           NSPoint pos           = CONVERT_POINT();
            cocoa_input_data_t 
               *apple             = (cocoa_input_data_t*)
               input_driver_get_data();
@@ -170,7 +170,7 @@ static char **waiting_argv;
       case NSEventTypeOtherMouseUp:
          {
             NSInteger number      = event.buttonNumber;
-            CGPoint pos           = CONVERT_POINT();
+            NSPoint pos           = CONVERT_POINT();
             cocoa_input_data_t 
               *apple              = (cocoa_input_data_t*)
               input_driver_get_data();

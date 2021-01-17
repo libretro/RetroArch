@@ -40,7 +40,7 @@
 #define RAScreen NSScreen
 #endif
 
-#if TARGET_OS_OSX
+#if defined(OSX)
 #include <AppKit/AppKit.h>
 #endif
 
@@ -75,7 +75,7 @@ typedef struct
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
 
-#if TARGET_OS_OSX
+#if defined(OSX)
 @interface CocoaView : NSView
 
 + (CocoaView*)get;
