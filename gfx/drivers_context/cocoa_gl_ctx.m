@@ -224,35 +224,26 @@ void *get_chosen_screen(void)
    return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
 
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
 /* NOTE: backingScaleFactor only available on MacOS X 10.7 and up. */
 float get_backing_scale_factor(void)
 {
    static float
       backing_scale_def        = 0.0f;
-   if (backing_scale_def != 0.0f)
-      return backing_scale_def;
-
-   backing_scale_def           = 1.0f;
-#ifdef OSX
+   if (backing_scale_def == 0.0f)
    {
-      id nsscreen              = objc_getClass("NSScreen");
-      SEL selector             = sel_registerName("backingScaleFactor");
-      if (class_respondsToSelector(nsscreen, selector))
-      {
-         CGFloat ret;
 #if defined(HAVE_COCOA_METAL)
-         NSView *g_view        = apple_platform.renderView;
+      NSView *g_view        = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-         CocoaView *g_view     = g_instance;
+      CocoaView *g_view     = g_instance;
 #endif
-         backing_scale_def     = (float)get_from_selector
-            ([[g_view window] class], [g_view window], selector, &ret);
-      }
+      backing_scale_def     = [[[g_view] window] backingScaleFactor];
    }
-#endif
-
    return backing_scale_def;
 }
+#else
+float get_backing_scale_factor(void) { return 1.0f; }
+#endif
 
 void cocoagl_gfx_ctx_update(void)
 {
