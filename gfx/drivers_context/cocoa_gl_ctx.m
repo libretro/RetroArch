@@ -314,6 +314,8 @@ static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 #endif
 }
 
+#ifndef OSX
+/* NOTE: nativeScale only available on iOS 8.0 and up. */
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
    SEL selector;
@@ -341,6 +343,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 
    return ret;
 }
+#endif
 
 #ifdef OSX
 static void cocoagl_gfx_ctx_update_title(void *data)
@@ -459,7 +462,6 @@ static void cocoagl_gfx_ctx_input_driver(void *data,
 static void cocoagl_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
       unsigned* width, unsigned* height)
 {
-   float screenscale               = cocoagl_gfx_ctx_get_native_scale();
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view                  = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
@@ -469,15 +471,14 @@ static void cocoagl_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
    GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
    GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
    CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size)  * screenscale;
-   *height                         = CGRectGetHeight(size) * screenscale;
+   *width                          = CGRectGetWidth(size);
+   *height                         = CGRectGetHeight(size);
 }
 #endif
 
 static void cocoagl_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
-   float screenscale               = cocoagl_gfx_ctx_get_native_scale();
 #ifdef OSX
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view                  = apple_platform.renderView;
@@ -488,11 +489,14 @@ static void cocoagl_gfx_ctx_get_video_size(void *data,
    GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
    GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
    CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
+   *width                          = CGRectGetWidth(size);
+   *height                         = CGRectGetHeight(size);
 #else
+   float screenscale               = cocoagl_gfx_ctx_get_native_scale();
    CGRect size                     = g_view.bounds;
-#endif
    *width                          = CGRectGetWidth(size)  * screenscale;
    *height                         = CGRectGetHeight(size) * screenscale;
+#endif
 }
 
 static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
