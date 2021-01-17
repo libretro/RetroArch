@@ -232,12 +232,10 @@ float get_backing_scale_factor(void)
       backing_scale_def        = 0.0f;
    if (backing_scale_def == 0.0f)
    {
-#if defined(HAVE_COCOA_METAL)
-      NSView *g_view        = apple_platform.renderView;
-#elif defined(HAVE_COCOA)
-      CocoaView *g_view     = g_instance;
-#endif
-      backing_scale_def     = [[[g_view] window] backingScaleFactor];
+      RAScreen *screen      = (BRIDGE RAScreen*)get_chosen_screen();
+      if (!screen)
+          return 1.0f;
+      backing_scale_def     = [screen backingScaleFactor];
    }
    return backing_scale_def;
 }
