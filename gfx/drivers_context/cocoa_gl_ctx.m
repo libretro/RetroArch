@@ -224,6 +224,7 @@ void *get_chosen_screen(void)
    return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
 
+/* NOTE: backingScaleFactor only available on MacOS X 10.7 and up. */
 float get_backing_scale_factor(void)
 {
    static float
@@ -461,28 +462,43 @@ static void cocoagl_gfx_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
-static void cocoagl_gfx_ctx_get_video_size(void *data,
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
+/* NOTE: convertRectToBacking only available on MacOS X 10.7 and up.
+ * Therefore, make specialized version of this function instead of
+ * going through a selector for every call. */
+
+static void cocoagl_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
       unsigned* width, unsigned* height)
 {
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
-#ifdef OSX
-   CGRect size, cgrect;
-   GLsizei backingPixelWidth, backingPixelHeight;
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view                  = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
    CocoaView *g_view               = g_instance;
 #endif
-#if MAC_OS_X_VERSION_10_7
-   SEL selector                    = NSSelectorFromString(BOXSTRING("convertRectToBacking:"));
-   if ([g_view respondsToSelector:selector])
-      cgrect                       = NSRectToCGRect([g_view convertRectToBacking:[g_view bounds]]);
-   else
+   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:[g_view bounds]]);
+   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
+   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
+   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
+   *width                          = CGRectGetWidth(size)  * screenscale;
+   *height                         = CGRectGetHeight(size) * screenscale;
+}
 #endif
-      cgrect                       = NSRectToCGRect([g_view frame]);
-   backingPixelWidth               = CGRectGetWidth(cgrect);
-   backingPixelHeight              = CGRectGetHeight(cgrect);
-   size                            = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
+
+static void cocoagl_gfx_ctx_get_video_size(void *data,
+      unsigned* width, unsigned* height)
+{
+   float screenscale               = cocoagl_gfx_ctx_get_native_scale();
+#ifdef OSX
+#if defined(HAVE_COCOA_METAL)
+   NSView *g_view                  = apple_platform.renderView;
+#elif defined(HAVE_COCOA)
+   CocoaView *g_view               = g_instance;
+#endif
+   CGRect cgrect                   = NSRectToCGRect([g_view frame]);
+   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
+   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
+   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
 #else
    CGRect size                     = g_view.bounds;
 #endif
@@ -554,7 +570,12 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
          break;
    }
 
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
+   cocoagl_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
+#else
    cocoagl_gfx_ctx_get_video_size(data, &new_width, &new_height);
+#endif
+
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -897,7 +918,11 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoagl_gfx_ctx_bind_api,
    cocoagl_gfx_ctx_swap_interval,
    cocoagl_gfx_ctx_set_video_mode,
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
+   cocoagl_gfx_ctx_get_video_size_osx10_7_and_up,
+#else
    cocoagl_gfx_ctx_get_video_size,
+#endif
    NULL, /* get_refresh_rate */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
