@@ -207,27 +207,22 @@ static char **waiting_argv;
    unsigned i;
    apple_platform   = self;
    [self.window setAcceptsMouseMovedEvents: YES];
-#ifdef HAVE_COCOA_METAL
-   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
+#if MAC_OS_X_VERSION_10_7
+   self.window.collectionBehavior = NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY;
+#endif
+
+#ifdef HAVE_COCOA_METAL
    _listener = [WindowListener new];
 
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
-
-   [[self.window contentView] setAutoresizesSubviews:YES];
 #else
-   SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
-   SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
-
-   if ([self.window respondsToSelector:selector])
-   {
-      if ([self.window respondsToSelector:fsselector])
-       [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
-   }
-
    [[CocoaView get] setFrame: [[self.window contentView] bounds]];
+#endif
    [[self.window contentView] setAutoresizesSubviews:YES];
+
+#ifndef HAVE_COCOA_METAL
    [[self.window contentView] addSubview:[CocoaView get]];
    [self.window makeFirstResponder:[CocoaView get]];
 #endif
