@@ -260,13 +260,8 @@ void cocoagl_gfx_ctx_update(void)
       case GFX_CTX_OPENGL_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
 #ifdef OSX
-#if MAC_OS_X_VERSION_10_7
-         CGLUpdateContext(g_hw_ctx.CGLContextObj);
-         CGLUpdateContext(g_context.CGLContextObj);
-#else
          [g_context update];
          [g_hw_ctx update];
-#endif
 #endif
 #endif
          break;
@@ -304,11 +299,9 @@ static void cocoagl_gfx_ctx_destroy(void *data)
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          vulkan_context_destroy(&cocoa_ctx->vk, cocoa_ctx->vk.vk_surface != VK_NULL_HANDLE);
-         if (cocoa_ctx->vk.context.queue_lock) {
+         if (cocoa_ctx->vk.context.queue_lock)
             slock_free(cocoa_ctx->vk.context.queue_lock);
-         }
          memset(&cocoa_ctx->vk, 0, sizeof(cocoa_ctx->vk));
-
 #endif
          break;
       case GFX_CTX_NONE:
@@ -403,7 +396,7 @@ static bool cocoagl_gfx_ctx_get_metrics(
    float   physical_height       = screen_rect.size.height * scale;
    float   dpi                   = 160                     * scale;
    CGFloat maxSize               = fmaxf(physical_width, physical_height);
-   NSInteger idiom_type           = UI_USER_INTERFACE_IDIOM();
+   NSInteger idiom_type          = UI_USER_INTERFACE_IDIOM();
 
    switch (idiom_type)
    {
@@ -786,11 +779,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    {
       if (!has_went_fullscreen)
       {
-#if defined(HAVE_COCOA_METAL)
          [g_view enterFullScreenMode:(BRIDGE NSScreen *)get_chosen_screen() withOptions:nil];
-#elif defined(HAVE_COCOA)
-         [g_view enterFullScreenMode:get_chosen_screen() withOptions:nil];
-#endif
          cocoagl_gfx_ctx_show_mouse(data, false);
       }
    }
@@ -829,7 +818,7 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
 #if defined(HAVE_COCOATOUCH)
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_COCOA_METAL)
-         /* the metal build supports both the OpenGL 
+         /* The metal build supports both the OpenGL 
           * and Metal video drivers */
          [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
 #endif
