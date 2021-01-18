@@ -86,16 +86,6 @@ static GLKView *glk_view            = NULL;
 + (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
 - (void)makeCurrentContext  { [EAGLContext setCurrentContext:self]; }
 @end
-#else
-@interface NSScreen (IOSCompat) @end
-@implementation NSScreen (IOSCompat)
-- (CGRect)bounds
-{
-   CGRect cgrect  = NSRectToCGRect(self.frame);
-   return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
-}
-- (float) scale  { return 1.0f; }
-@end
 #endif
 
 static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
@@ -214,7 +204,9 @@ static void cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
       unsigned* width, unsigned* height)
 {
    CocoaView *g_view               = cocoaview_get();
-   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:[g_view bounds]]);
+   CGRect _cgrect                  = NSRectToCGRect(g_view.frame);
+   CGRect bounds                   = CGRectMake(0, 0, CGRectGetWidth(_cgrect), CGRectGetHeight(_cgrect));
+   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:bounds]);
    GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
    GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
    CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
@@ -288,13 +280,12 @@ static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
 
 static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
 {
-   unsigned interval           = (unsigned)i;
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-
+   unsigned interval             = (unsigned)i;
 #ifdef OSX
-   GLint value                 = interval ? 1 : 0;
+   GLint value                   = interval ? 1 : 0;
    [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #else
+   cocoa_ctx_data_t *cocoa_ctx   = (cocoa_ctx_data_t*)data;
    /* < No way to disable Vsync on iOS? */
    /*   Just skip presents so fast forward still works. */
    cocoa_ctx->is_syncing         = interval ? true : false;
@@ -304,12 +295,11 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
 
 static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-
 #ifdef OSX
    [g_context flushBuffer];
    [g_hw_ctx  flushBuffer];
 #else
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
    if (!(--cocoa_ctx->fast_forward_skips < 0))
       return;
    if (glk_view)
