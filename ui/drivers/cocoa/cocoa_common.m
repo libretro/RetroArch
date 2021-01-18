@@ -30,7 +30,7 @@
 #endif
 
 /* forward declarations */
-void cocoagl_gfx_ctx_update(void);
+void cocoa_gl_gfx_ctx_update(void);
 
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
@@ -101,7 +101,7 @@ void *glkitview_init(void);
 {
    [super setFrame:frameRect];
 
-   cocoagl_gfx_ctx_update();
+   cocoa_gl_gfx_ctx_update();
 }
 
 /* Stop the annoying sound when pressing a key. */
@@ -168,7 +168,7 @@ void *glkitview_init(void);
     * the notch in iPhone X phones */
    if (@available(iOS 11, *))
    {
-      RAScreen *screen                   = (BRIDGE RAScreen*)get_chosen_screen();
+      RAScreen *screen                   = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
       CGRect screenSize                  = [screen bounds];
       UIEdgeInsets inset                 = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
       UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
@@ -202,7 +202,7 @@ void *glkitview_init(void);
 - (void)viewWillLayoutSubviews
 {
    float width       = 0.0f, height = 0.0f;
-   RAScreen *screen  = (BRIDGE RAScreen*)get_chosen_screen();
+   RAScreen *screen  = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
    UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [screen bounds];
    SEL selector      = NSSelectorFromString(BOXSTRING("coordinateSpace"));
@@ -309,3 +309,105 @@ void *glkitview_init(void);
 #endif
 
 @end
+
+void *cocoa_screen_get_chosen(void)
+{
+    unsigned monitor_index;
+    settings_t *settings = config_get_ptr();
+    NSArray *screens     = [RAScreen screens];
+    if (!screens || !settings)
+        return NULL;
+    
+    monitor_index        = settings->uints.video_monitor_index;
+    
+    if (monitor_index >= screens.count)
+    {
+        RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
+        return (BRIDGE void*)screens;
+    }
+    
+    return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
+}
+
+bool cocoa_has_focus(void *data)
+{
+#if defined(HAVE_COCOATOUCH)
+    return ([[UIApplication sharedApplication] applicationState]
+            == UIApplicationStateActive);
+#else
+    return [NSApp isActive];
+#endif
+}
+
+void cocoa_show_mouse(void *data, bool state)
+{
+#ifdef OSX
+    if (state)
+        [NSCursor unhide];
+    else
+        [NSCursor hide];
+#endif
+}
+
+#ifdef OSX
+#if MAC_OS_X_VERSION_10_7
+/* NOTE: backingScaleFactor only available on MacOS X 10.7 and up. */
+float cocoa_screen_get_backing_scale_factor(void)
+{
+    static float
+    backing_scale_def        = 0.0f;
+    if (backing_scale_def == 0.0f)
+    {
+        RAScreen *screen      = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
+        if (!screen)
+            return 1.0f;
+        backing_scale_def     = [screen backingScaleFactor];
+    }
+    return backing_scale_def;
+}
+#else
+float cocoa_screen_get_backing_scale_factor(void) { return 1.0f; }
+#endif
+#else
+static float get_from_selector(
+                               Class obj_class, id obj_id, SEL selector, CGFloat *ret)
+{
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
+                                [obj_class instanceMethodSignatureForSelector:selector]];
+    [invocation setSelector:selector];
+    [invocation setTarget:obj_id];
+    [invocation invoke];
+    [invocation getReturnValue:ret];
+    RELEASE(invocation);
+    return *ret;
+}
+
+/* NOTE: nativeScale only available on iOS 8.0 and up. */
+float cocoa_screen_get_native_scale(void)
+{
+    SEL selector;
+    static CGFloat ret   = 0.0f;
+    RAScreen *screen     = NULL;
+    
+    if (ret != 0.0f)
+        return ret;
+    screen             = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
+    if (!screen)
+        return 0.0f;
+    
+    selector            = NSSelectorFromString(BOXSTRING("nativeScale"));
+    
+    if ([screen respondsToSelector:selector])
+        ret                 = (float)get_from_selector(
+                                                       [screen class], screen, selector, &ret);
+    else
+    {
+        ret                 = 1.0f;
+        selector            = NSSelectorFromString(BOXSTRING("scale"));
+        if ([screen respondsToSelector:selector])
+            ret              = screen.scale;
+    }
+    
+    return ret;
+}
+#endif

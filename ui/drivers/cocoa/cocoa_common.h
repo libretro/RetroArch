@@ -107,6 +107,16 @@ void *nsview_get_ptr(void);
 
 void nsview_set_ptr(CocoaView *ptr);
 
-void *get_chosen_screen(void);
+bool cocoa_has_focus(void *data);
+
+void cocoa_show_mouse(void *data, bool state);
+
+void *cocoa_screen_get_chosen(void);
+
+#ifdef OSX
+float cocoa_screen_get_backing_scale_factor(void);
+#else
+float cocoa_screen_get_native_scale(void);
+#endif
 
 #endif

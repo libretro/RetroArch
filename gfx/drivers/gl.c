@@ -237,8 +237,8 @@ typedef struct gl2_renderchain_data
 /* Prototypes */
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
-void cocoagl_bind_game_view_fbo(void);
-#define gl2_renderchain_bind_backbuffer() cocoagl_bind_game_view_fbo()
+void glkitview_bind_fbo(void);
+#define gl2_renderchain_bind_backbuffer() glkitview_bind_fbo()
 #else
 #define gl2_renderchain_bind_backbuffer() gl2_bind_fb(0)
 #endif
