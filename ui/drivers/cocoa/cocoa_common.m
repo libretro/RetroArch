@@ -455,4 +455,98 @@ void cocoa_update_title(void *data)
          window->set_title((void*)video_driver_display_userdata_get(), title);
    }
 }
+
+bool cocoa_get_metrics(
+      void *data, enum display_metric_types type,
+      float *value)
+{
+   RAScreen *screen              = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
+   NSDictionary *desc            = [screen deviceDescription];
+   CGSize  display_physical_size = CGDisplayScreenSize(
+         [[desc objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+
+   float   physical_width        = display_physical_size.width;
+   float   physical_height       = display_physical_size.height;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = physical_width;
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = physical_height;
+         break;
+      case DISPLAY_METRIC_DPI:
+         {
+            NSSize disp_pixel_size = [[desc objectForKey:NSDeviceSize] sizeValue];
+            float dispwidth = disp_pixel_size.width;
+            float   scale   = cocoa_screen_get_backing_scale_factor();
+            float   dpi     = (dispwidth / physical_width) * 25.4f * scale;
+            *value          = dpi;
+         }
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
+}
+#else
+bool cocoa_get_metrics(
+      void *data, enum display_metric_types type,
+      float *value)
+{
+   RAScreen *screen              = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
+   float   scale                 = cocoa_screen_get_native_scale();
+   CGRect  screen_rect           = [screen bounds];
+   float   physical_width        = screen_rect.size.width  * scale;
+   float   physical_height       = screen_rect.size.height * scale;
+   float   dpi                   = 160                     * scale;
+   NSInteger idiom_type          = UI_USER_INTERFACE_IDIOM();
+
+   switch (idiom_type)
+   {
+      case -1: /* UIUserInterfaceIdiomUnspecified */
+         /* TODO */
+         break;
+      case UIUserInterfaceIdiomPad:
+         dpi = 132 * scale;
+         break;
+      case UIUserInterfaceIdiomPhone:
+         {
+            CGFloat maxSize = fmaxf(physical_width, physical_height);
+            /* Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 11, 11 Pro Max */
+            if (maxSize >= 2208.0)
+               dpi = 81 * scale;
+            else
+               dpi = 163 * scale;
+         }
+         break;
+      case UIUserInterfaceIdiomTV:
+      case UIUserInterfaceIdiomCarPlay:
+         /* TODO */
+         break;
+   }
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = physical_width;
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = physical_height;
+         break;
+      case DISPLAY_METRIC_DPI:
+         *value = dpi;
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
+}
 #endif

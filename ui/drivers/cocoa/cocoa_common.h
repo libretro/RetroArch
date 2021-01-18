@@ -120,4 +120,8 @@ void cocoa_update_title(void *data);
 float cocoa_screen_get_native_scale(void);
 #endif
 
+bool cocoa_get_metrics(
+      void *data, enum display_metric_types type,
+      float *value);
+
 #endif
