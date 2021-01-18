@@ -31,9 +31,10 @@
 
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
-void *glkitview_init(void);
 
 #ifdef HAVE_COCOATOUCH
+void *glkitview_init(void);
+
 @interface CocoaView()<GCDWebUploaderDelegate> {
 
 }

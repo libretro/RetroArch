@@ -105,7 +105,7 @@ static CocoaView* g_instance;
 
 void *nsview_get_ptr(void)
 {
-#if defined(HAVE_COCOA) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+#if defined(OSX)
    video_driver_display_type_set(RARCH_DISPLAY_OSX);
    video_driver_display_set(0);
    video_driver_display_userdata_set((uintptr_t)g_instance);
@@ -114,7 +114,6 @@ void *nsview_get_ptr(void)
 }
 
 void nsview_set_ptr(CocoaView *p) { g_instance = p; }
-
 
 static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
 {
@@ -166,27 +165,25 @@ static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
       cocoa_ctx->core_hw_context_enable = true;
 }
 
+#if !defined(OSX)
+#if defined(HAVE_COCOATOUCH)
 void *glkitview_init(void)
 {
-#if defined(HAVE_COCOATOUCH)
-   g_view = [GLKView new];
+   g_view                      = [GLKView new];
 #if TARGET_OS_IOS
    g_view.multipleTouchEnabled = YES;
 #endif
    g_view.enableSetNeedsDisplay = NO;
 
    return (BRIDGE void *)((GLKView*)g_view);
-#else
-   return nsview_get_ptr();
-#endif
 }
 
-#if defined(HAVE_COCOATOUCH)
 void cocoagl_bind_game_view_fbo(void)
 {
    if (g_context)
       [g_view bindDrawable];
 }
+#endif
 #endif
 
 void *get_chosen_screen(void)
