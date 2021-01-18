@@ -2254,7 +2254,7 @@ ifeq ($(HAVE_COMPRESSION), 1)
 endif
 
 ifeq ($(HAVE_COCOA),1)
-   DEFINES += -DHAVE_MAIN
+   DEFINES += -DHAVE_MAIN -DOSX
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
           ui/drivers/cocoa/ui_cocoa_window.o \
