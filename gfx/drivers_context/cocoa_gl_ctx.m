@@ -304,17 +304,70 @@ static void cocoagl_gfx_ctx_destroy(void *data)
 
 static enum gfx_ctx_api cocoagl_gfx_ctx_get_api(void *data) { return cocoagl_api; }
 
+#ifdef OSX
 static void cocoagl_gfx_ctx_show_mouse(void *data, bool state)
 {
-#ifdef OSX
    if (state)
       [NSCursor unhide];
    else
       [NSCursor hide];
-#endif
 }
 
-#ifndef OSX
+static void cocoagl_gfx_ctx_update_title(void *data)
+{
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title((void*)video_driver_display_userdata_get(), title);
+   }
+}
+
+static bool cocoagl_gfx_ctx_get_metrics(
+      void *data, enum display_metric_types type,
+      float *value)
+{
+   RAScreen *screen              = (BRIDGE RAScreen*)get_chosen_screen();
+   NSDictionary *desc            = [screen deviceDescription];
+   CGSize  display_physical_size = CGDisplayScreenSize(
+         [[desc objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+
+   float   physical_width        = display_physical_size.width;
+   float   physical_height       = display_physical_size.height;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = physical_width;
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = physical_height;
+         break;
+      case DISPLAY_METRIC_DPI:
+         {
+            NSSize disp_pixel_size = [[desc objectForKey:NSDeviceSize] sizeValue];
+            float dispwidth = disp_pixel_size.width;
+            float   scale   = get_backing_scale_factor();
+            float   dpi     = (dispwidth / physical_width) * 25.4f * scale;
+            *value          = dpi;
+         }
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
+}
+#else
 /* NOTE: nativeScale only available on iOS 8.0 and up. */
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
@@ -343,52 +396,17 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 
    return ret;
 }
-#endif
-
-#ifdef OSX
-static void cocoagl_gfx_ctx_update_title(void *data)
-{
-   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-
-   if (window)
-   {
-      char title[128];
-
-      title[0] = '\0';
-
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         window->set_title((void*)video_driver_display_userdata_get(), title);
-   }
-}
-#endif
 
 static bool cocoagl_gfx_ctx_get_metrics(
       void *data, enum display_metric_types type,
       float *value)
 {
    RAScreen *screen              = (BRIDGE RAScreen*)get_chosen_screen();
-#ifdef OSX
-   NSDictionary *description     = [screen deviceDescription];
-   NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
-   CGSize  display_physical_size = CGDisplayScreenSize(
-         [[description objectForKey:@"NSScreenNumber"] unsignedIntValue]);
-
-   float   display_width         = display_pixel_size.width;
-   float   display_height        = display_pixel_size.height;
-   float   physical_width        = display_physical_size.width;
-   float   physical_height       = display_physical_size.height;
-   float   scale                 = get_backing_scale_factor();
-   float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
-#else
    float   scale                 = cocoagl_gfx_ctx_get_native_scale();
    CGRect  screen_rect           = [screen bounds];
-   float   display_height        = screen_rect.size.height;
    float   physical_width        = screen_rect.size.width  * scale;
    float   physical_height       = screen_rect.size.height * scale;
    float   dpi                   = 160                     * scale;
-   CGFloat maxSize               = fmaxf(physical_width, physical_height);
    NSInteger idiom_type          = UI_USER_INTERFACE_IDIOM();
 
    switch (idiom_type)
@@ -400,20 +418,20 @@ static bool cocoagl_gfx_ctx_get_metrics(
          dpi = 132 * scale;
          break;
       case UIUserInterfaceIdiomPhone:
-         /* Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 11, 11 Pro Max */
-         if (maxSize >= 2208.0)
-            dpi = 81 * scale;
-         else
-            dpi = 163 * scale;
+         {
+            CGFloat maxSize = fmaxf(physical_width, physical_height);
+            /* Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 11, 11 Pro Max */
+            if (maxSize >= 2208.0)
+               dpi = 81 * scale;
+            else
+               dpi = 163 * scale;
+         }
          break;
       case UIUserInterfaceIdiomTV:
- case UIUserInterfaceIdiomCarPlay:
+      case UIUserInterfaceIdiomCarPlay:
          /* TODO */
          break;
    }
-#endif
-
-   (void)display_height;
 
    switch (type)
    {
@@ -434,6 +452,8 @@ static bool cocoagl_gfx_ctx_get_metrics(
 
    return true;
 }
+#endif
+
 
 static bool cocoagl_gfx_ctx_has_focus(void *data)
 {
@@ -474,30 +494,29 @@ static void cocoagl_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
    *width                          = CGRectGetWidth(size);
    *height                         = CGRectGetHeight(size);
 }
-#endif
-
+#elif defined(OSX)
 static void cocoagl_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
-#ifdef OSX
-#if defined(HAVE_COCOA_METAL)
-   NSView *g_view                  = apple_platform.renderView;
-#elif defined(HAVE_COCOA)
    CocoaView *g_view               = g_instance;
-#endif
    CGRect cgrect                   = NSRectToCGRect([g_view frame]);
    GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
    GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
    CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
    *width                          = CGRectGetWidth(size);
    *height                         = CGRectGetHeight(size);
+}
 #else
+/* iOS */
+static void cocoagl_gfx_ctx_get_video_size(void *data,
+      unsigned* width, unsigned* height)
+{
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
    CGRect size                     = g_view.bounds;
    *width                          = CGRectGetWidth(size)  * screenscale;
    *height                         = CGRectGetHeight(size) * screenscale;
-#endif
 }
+#endif
 
 static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
 {
