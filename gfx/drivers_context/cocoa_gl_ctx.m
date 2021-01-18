@@ -81,6 +81,7 @@ static unsigned g_major             = 0;
 #ifdef OSX
 static NSOpenGLPixelFormat* g_format;
 #endif
+static CocoaView* g_instance;
 #if defined(HAVE_COCOATOUCH)
 static GLKView *g_view              = NULL;
 
@@ -100,8 +101,6 @@ static GLKView *g_view              = NULL;
 - (float) scale  { return 1.0f; }
 @end
 #endif
-
-static CocoaView* g_instance;
 
 void *nsview_get_ptr(void)
 {
