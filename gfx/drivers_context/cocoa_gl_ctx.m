@@ -452,7 +452,8 @@ static bool cocoagl_gfx_ctx_get_metrics(
 static bool cocoagl_gfx_ctx_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
-   return ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive);
+   return ([[UIApplication sharedApplication] applicationState] 
+         == UIApplicationStateActive);
 #else
    return [NSApp isActive];
 #endif
@@ -599,18 +600,18 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-      {
 #if defined(HAVE_COCOATOUCH)
          /* < No way to disable Vsync on iOS? */
          /*   Just skip presents so fast forward still works. */
          cocoa_ctx->is_syncing         = interval ? true : false;
          cocoa_ctx->fast_forward_skips = interval ? 0 : 3;
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-         GLint value                     = interval ? 1 : 0;
-         [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
+         {
+            GLint value                     = interval ? 1 : 0;
+            [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
+         }
 #endif
          break;
-      }
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          if (cocoa_ctx->swap_interval != interval)
@@ -703,91 +704,102 @@ static void *cocoagl_gfx_ctx_get_context_data(void *data)
 }
 #endif
 
+#ifdef OSX
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
-#if !defined(HAVE_COCOATOUCH) && defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA_METAL)
    NSView *g_view              = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-#ifdef OSX
    static bool 
       has_went_fullscreen      = false;
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
-#endif
 
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-      {
-#ifdef OSX
-         if ([g_view respondsToSelector: @selector(setWantsBestResolutionOpenGLSurface:)])
-            [g_view setWantsBestResolutionOpenGLSurface:YES];
-
-         NSOpenGLPixelFormatAttribute attributes [] = {
-            NSOpenGLPFAColorSize,
-            24,
-            NSOpenGLPFADoubleBuffer,
-            NSOpenGLPFAAllowOfflineRenderers,
-            NSOpenGLPFADepthSize,
-            (NSOpenGLPixelFormatAttribute)16, /* 16 bit depth buffer */
-            0,                                /* profile */
-            0,                                /* profile enum */
-            (NSOpenGLPixelFormatAttribute)0
-         };
-
+         /* NOTE: setWantsBestResolutionOpenGLSurface only available on MacOS X 10.7 and up.
+          * Deprecated as of MacOS X 10.14. */
 #if MAC_OS_X_VERSION_10_7
-         if (g_major == 3 && (g_minor >= 1 && g_minor <= 3))
-         {
-            attributes[6] = NSOpenGLPFAOpenGLProfile;
-            attributes[7] = NSOpenGLProfileVersion3_2Core;
-         }
+         [g_view setWantsBestResolutionOpenGLSurface:YES];
 #endif
 
+         {
+            NSOpenGLPixelFormatAttribute attributes [] = {
+               NSOpenGLPFAColorSize,
+               24,
+               NSOpenGLPFADoubleBuffer,
+               NSOpenGLPFAAllowOfflineRenderers,
+               NSOpenGLPFADepthSize,
+               (NSOpenGLPixelFormatAttribute)16, /* 16 bit depth buffer */
+               0,                                /* profile */
+               0,                                /* profile enum */
+               (NSOpenGLPixelFormatAttribute)0
+            };
+
+            switch (g_major)
+            {
+               case 3:
+#if MAC_OS_X_VERSION_10_7
+                  if (g_minor >= 1 && g_minor <= 3)
+                  {
+                     attributes[6] = NSOpenGLPFAOpenGLProfile;
+                     attributes[7] = NSOpenGLProfileVersion3_2Core;
+                  }
+#endif
+                  break;
+               case 4:
 #if MAC_OS_X_VERSION_10_10
-         if (g_major == 4 && g_minor == 1)
-         {
-            attributes[6] = NSOpenGLPFAOpenGLProfile;
-            attributes[7] = NSOpenGLProfileVersion4_1Core;
-         }
+                  if (g_minor == 1)
+                  {
+                     attributes[6] = NSOpenGLPFAOpenGLProfile;
+                     attributes[7] = NSOpenGLProfileVersion4_1Core;
+                  }
 #endif
+                  break;
+            }
 
-         g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+            g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
-         if (g_format == nil)
-         {
-            /* NSOpenGLFPAAllowOfflineRenderers is
-             not supported on this OS version. */
-            attributes[3] = (NSOpenGLPixelFormatAttribute)0;
-            g_format      = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+            if (g_format == nil)
+            {
+               /* NSOpenGLFPAAllowOfflineRenderers is
+                  not supported on this OS version. */
+               attributes[3] = (NSOpenGLPixelFormatAttribute)0;
+               g_format      = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+            }
+#endif
          }
-#endif
 
          if (cocoa_ctx->use_hw_ctx)
-            g_hw_ctx    = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-         g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:(cocoa_ctx->use_hw_ctx) ? g_hw_ctx : nil];
+         {
+            g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+            g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:g_hw_ctx];
+         }
+         else
+            g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+
          [g_context setView:g_view];
-#else
-         if (cocoa_ctx->use_hw_ctx)
-            g_hw_ctx    = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-         g_context      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-         g_view.context = g_context;
-#endif
-
          [g_context makeCurrentContext];
          break;
-      }
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         RARCH_LOG("[macOS]: Native window size: %u x %u.\n", cocoa_ctx->width, cocoa_ctx->height);
-         if (!vulkan_surface_create(&cocoa_ctx->vk,
-                  VULKAN_WSI_MVK_MACOS, NULL,
-                  (BRIDGE void *)g_view, cocoa_ctx->width, cocoa_ctx->height,
+         RARCH_LOG("[macOS]: Native window size: %u x %u.\n",
+               cocoa_ctx->width, cocoa_ctx->height);
+
+         if (!vulkan_surface_create(
+                  &cocoa_ctx->vk,
+                  VULKAN_WSI_MVK_MACOS,
+                  NULL,
+                  (BRIDGE void *)g_view,
+                  cocoa_ctx->width,
+                  cocoa_ctx->height,
                   cocoa_ctx->swap_interval))
          {
             RARCH_ERR("[macOS]: Failed to create surface.\n");
@@ -800,7 +812,6 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
          break;
    }
 
-#ifdef OSX
    /* TODO: Screen mode support. */
    if (fullscreen)
    {
@@ -823,10 +834,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    }
 
    has_went_fullscreen = fullscreen;
-#endif
 
-   /* TODO: Maybe iOS users should be able to 
-    * show/hide the status bar here? */
    return true;
 }
 
@@ -842,19 +850,7 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
 
    switch (cocoagl_api)
    {
-#if defined(HAVE_COCOATOUCH)
-      case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_COCOA_METAL)
-         /* The Metal build supports both the OpenGL 
-          * and Metal video drivers */
-         [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
-#endif
-         /* setViewType is not (yet?) defined for iOS */
-#if 0
-         [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
-#endif
-         break;
-#elif defined(HAVE_COCOA_METAL)
       case GFX_CTX_OPENGL_API:
          [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL];
          break;
@@ -876,6 +872,60 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
     
    return cocoa_ctx;
 }
+#else
+static bool cocoagl_gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height, bool fullscreen)
+{
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+
+   switch (cocoagl_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         if (cocoa_ctx->use_hw_ctx)
+            g_hw_ctx    = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+         g_context      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+         g_view.context = g_context;
+
+         [g_context makeCurrentContext];
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   /* TODO: Maybe iOS users should be able to 
+    * show/hide the status bar here? */
+   return true;
+}
+
+static void *cocoagl_gfx_ctx_init(void *video_driver)
+{
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
+   calloc(1, sizeof(cocoa_ctx_data_t));
+
+   if (!cocoa_ctx)
+      return NULL;
+
+   cocoa_ctx->is_syncing       = true;
+
+   switch (cocoagl_api)
+   {
+      case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_COCOA_METAL)
+         /* The Metal build supports both the OpenGL 
+          * and Metal video drivers */
+         [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+    
+   return cocoa_ctx;
+}
+#endif
 
 #ifdef HAVE_COCOA_METAL
 static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
