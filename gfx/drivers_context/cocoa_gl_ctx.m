@@ -76,16 +76,10 @@ static GLContextClass* g_context    = NULL;
 static unsigned g_gl_minor          = 0;
 static unsigned g_gl_major          = 0;
 #ifdef OSX
-static NSOpenGLPixelFormat* g_format;
+static NSOpenGLPixelFormat *g_fmt   = NULL;
 #endif
 #if defined(HAVE_COCOATOUCH)
 static GLKView *glk_view            = NULL;
-
-@interface EAGLContext (OSXCompat) @end
-@implementation EAGLContext (OSXCompat)
-+ (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
-- (void)makeCurrentContext  { [EAGLContext setCurrentContext:self]; }
-@end
 #endif
 
 static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
@@ -167,18 +161,18 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
 
    if (!cocoa_ctx)
       return;
-
-   [GLContextClass clearCurrentContext];
-
 #ifdef OSX
+   [GLContextClass clearCurrentContext];
    [g_context clearDrawable];
    RELEASE(g_context);
-   RELEASE(g_format);
+   RELEASE(g_fmt);
    if (g_hw_ctx)
       [g_hw_ctx clearDrawable];
    RELEASE(g_hw_ctx);
-#endif
    [GLContextClass clearCurrentContext];
+#else
+   [EAGLContext setCurrentContext:nil];
+#endif
    g_context = nil;
 
    free(cocoa_ctx);
@@ -251,10 +245,26 @@ static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
 
    cocoa_ctx->use_hw_ctx = enable;
 
+#ifdef OSX
    if (enable)
+   {
       [g_hw_ctx makeCurrentContext];
+   }
    else
+   {
       [g_context makeCurrentContext];
+   }
+#else
+   if (enable)
+   {
+      [EAGLContext setCurrentContext:g_hw_ctx];
+   }
+   else
+   {
+      [EAGLContext setCurrentContext:g_context];
+   }
+#endif
+
 }
 
 static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
@@ -375,31 +385,35 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
             break;
       }
 
-      g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+      g_fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
-      if (g_format == nil)
+      if (g_fmt == nil)
       {
          /* NSOpenGLFPAAllowOfflineRenderers is
             not supported on this OS version. */
          attributes[3] = (NSOpenGLPixelFormatAttribute)0;
-         g_format      = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+         g_fmt         = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
       }
 #endif
    }
 
    if (cocoa_ctx->use_hw_ctx)
    {
-      g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-      g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:g_hw_ctx];
+      g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:g_fmt shareContext:nil];
+      g_context      = [[NSOpenGLContext alloc] initWithFormat:g_fmt shareContext:g_hw_ctx];
    }
    else
-      g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+      g_context      = [[NSOpenGLContext alloc] initWithFormat:g_fmt shareContext:nil];
 
    [g_context setView:g_view];
+#ifdef OSX
    [g_context makeCurrentContext];
+#else
+   [EAGLContext setCurrentContext:g_context];
+#endif
 
-   /* TODO: Screen mode support. */
+   /* TODO/FIXME: Screen mode support. */
    if (fullscreen)
    {
       if (!has_went_fullscreen)
@@ -454,7 +468,11 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    g_context        = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
    glk_view.context = g_context;
 
+#ifdef OSX
    [g_context makeCurrentContext];
+#else
+   [EAGLContext setCurrentContext:g_context];
+#endif
 
    /* TODO: Maybe iOS users should be able to 
     * show/hide the status bar here? */
