@@ -73,16 +73,14 @@ typedef struct cocoa_ctx_data
 } cocoa_ctx_data_t;
 
 /* TODO/FIXME - static globals */
-#if defined(HAVE_COCOATOUCH)
-static GLKView *g_view              = NULL;
-#endif
 static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 static GLContextClass* g_hw_ctx     = NULL;
 static GLContextClass* g_context    = NULL;
 static unsigned g_minor             = 0;
 static unsigned g_major             = 0;
-
 #if defined(HAVE_COCOATOUCH)
+static GLKView *g_view              = NULL;
+
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
 + (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
@@ -191,19 +189,6 @@ void cocoagl_bind_game_view_fbo(void)
       [g_view bindDrawable];
 }
 #endif
-
-static float get_from_selector(
-      Class obj_class, id obj_id, SEL selector, CGFloat *ret)
-{
-    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
-    [obj_class instanceMethodSignatureForSelector:selector]];
-    [invocation setSelector:selector];
-    [invocation setTarget:obj_id];
-    [invocation invoke];
-    [invocation getReturnValue:ret];
-    RELEASE(invocation);
-    return *ret;
-}
 
 void *get_chosen_screen(void)
 {
@@ -368,6 +353,19 @@ static bool cocoagl_gfx_ctx_get_metrics(
    return true;
 }
 #else
+static float get_from_selector(
+      Class obj_class, id obj_id, SEL selector, CGFloat *ret)
+{
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
+    [obj_class instanceMethodSignatureForSelector:selector]];
+    [invocation setSelector:selector];
+    [invocation setTarget:obj_id];
+    [invocation invoke];
+    [invocation getReturnValue:ret];
+    RELEASE(invocation);
+    return *ret;
+}
+
 /* NOTE: nativeScale only available on iOS 8.0 and up. */
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
@@ -851,7 +849,7 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
 #if defined(HAVE_COCOATOUCH)
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_COCOA_METAL)
-         /* The metal build supports both the OpenGL 
+         /* The Metal build supports both the OpenGL 
           * and Metal video drivers */
          [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
 #endif
