@@ -2264,6 +2264,7 @@ ifeq ($(HAVE_COCOA),1)
           ui/drivers/cocoa/cocoa_common.o
           
    ifeq ($(HAVE_OPENGL), 1)
+           DEFINES += -DGL_SILENCE_DEPRECATION	 
 	   OBJ += gfx/drivers_context/cocoa_gl_ctx.o
    endif
    ifeq ($(HAVE_VULKAN), 1)
