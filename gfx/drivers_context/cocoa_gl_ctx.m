@@ -767,7 +767,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
 #endif
    cocoa_gl_gfx_ctx_check_window,
 #if defined(HAVE_COCOA_METAL)
-   cocoagl_gfx_ctx_set_resize,
+   cocoa_gl_gfx_ctx_set_resize,
 #else
    NULL, /* set_resize */
 #endif
