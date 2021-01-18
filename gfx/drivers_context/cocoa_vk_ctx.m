@@ -55,17 +55,6 @@ typedef struct cocoa_ctx_data
 static enum gfx_ctx_api cocoavk_api = GFX_CTX_NONE;
 static unsigned g_vk_minor          = 0;
 static unsigned g_vk_major          = 0;
-#if !defined(HAVE_COCOATOUCH)
-@interface NSScreen (IOSCompat) @end
-@implementation NSScreen (IOSCompat)
-- (CGRect)bounds
-{
-   CGRect cgrect  = NSRectToCGRect(self.frame);
-   return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
-}
-- (float) scale  { return 1.0f; }
-@end
-#endif
 
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
@@ -116,7 +105,9 @@ static void cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
       unsigned* width, unsigned* height)
 {
    CocoaView *g_view               = cocoaview_get();
-   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:[g_view bounds]]);
+   CGRect _cgrect                  = NSRectToCGRect(g_view.frame);
+   CGRect bounds                   = CGRectMake(0, 0, CGRectGetWidth(_cgrect), CGRectGetHeight(_cgrect));
+   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:bounds]);
    GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
    GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
    CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
