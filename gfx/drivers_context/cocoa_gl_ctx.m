@@ -64,10 +64,14 @@ typedef struct cocoa_ctx_data
    gfx_ctx_vulkan_data_t vk;
    int swap_interval;
 #endif
+#ifndef OSX
    int fast_forward_skips;
+#endif
    unsigned width;
    unsigned height;
+#ifndef OSX
    bool is_syncing;
+#endif
    bool core_hw_context_enable;
    bool use_hw_ctx;
 } cocoa_ctx_data_t;
@@ -599,16 +603,16 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-#if defined(HAVE_COCOATOUCH)
-         /* < No way to disable Vsync on iOS? */
-         /*   Just skip presents so fast forward still works. */
-         cocoa_ctx->is_syncing         = interval ? true : false;
-         cocoa_ctx->fast_forward_skips = interval ? 0 : 3;
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#ifdef OSX
          {
             GLint value                     = interval ? 1 : 0;
             [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
          }
+#else
+         /* < No way to disable Vsync on iOS? */
+         /*   Just skip presents so fast forward still works. */
+         cocoa_ctx->is_syncing         = interval ? true : false;
+         cocoa_ctx->fast_forward_skips = interval ? 0 : 3;
 #endif
          break;
       case GFX_CTX_VULKAN_API:
@@ -635,18 +639,16 @@ static void cocoagl_gfx_ctx_swap_buffers(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-         if (!(--cocoa_ctx->fast_forward_skips < 0))
-            return;
-
 #ifdef OSX
          [g_context flushBuffer];
          [g_hw_ctx  flushBuffer];
 #else
+         if (!(--cocoa_ctx->fast_forward_skips < 0))
+            return;
          if (g_view)
             [g_view display];
-#endif
-
          cocoa_ctx->fast_forward_skips = cocoa_ctx->is_syncing ? 0 : 3;
+#endif
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
@@ -845,8 +847,10 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
    if (!cocoa_ctx)
       return NULL;
 
+#ifndef OSX
    cocoa_ctx->is_syncing       = true;
-
+#endif
+    
    switch (cocoagl_api)
    {
 #if defined(HAVE_COCOA_METAL)
@@ -906,8 +910,10 @@ static void *cocoagl_gfx_ctx_init(void *video_driver)
    if (!cocoa_ctx)
       return NULL;
 
+#ifndef OSX
    cocoa_ctx->is_syncing       = true;
-
+#endif
+    
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_ES_API:
