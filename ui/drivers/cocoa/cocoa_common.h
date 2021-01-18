@@ -115,6 +115,7 @@ void *cocoa_screen_get_chosen(void);
 
 #ifdef OSX
 float cocoa_screen_get_backing_scale_factor(void);
+void cocoa_update_title(void *data);
 #else
 float cocoa_screen_get_native_scale(void);
 #endif

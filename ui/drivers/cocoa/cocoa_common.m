@@ -437,3 +437,22 @@ CocoaView *cocoaview_get(void)
     return NULL;
 #endif
 }
+
+#ifdef OSX
+void cocoa_update_title(void *data)
+{
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title((void*)video_driver_display_userdata_get(), title);
+   }
+}
+#endif

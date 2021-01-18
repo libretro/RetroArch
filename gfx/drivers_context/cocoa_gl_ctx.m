@@ -238,23 +238,6 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
 static enum gfx_ctx_api cocoa_gl_gfx_ctx_get_api(void *data) { return cocoagl_api; }
 
 #ifdef OSX
-static void cocoa_gl_gfx_ctx_update_title(void *data)
-{
-   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-
-   if (window)
-   {
-      char title[128];
-
-      title[0] = '\0';
-
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         window->set_title((void*)video_driver_display_userdata_get(), title);
-   }
-}
-
 static bool cocoa_gl_gfx_ctx_get_metrics(
       void *data, enum display_metric_types type,
       float *value)
@@ -874,7 +857,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_get_metrics,
    NULL, /* translate_aspect */
 #ifdef OSX
-   cocoa_gl_gfx_ctx_update_title,
+   cocoa_update_title,
 #else
    NULL, /* update_title */
 #endif
