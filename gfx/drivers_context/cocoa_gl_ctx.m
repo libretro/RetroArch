@@ -78,6 +78,9 @@ static GLContextClass* g_hw_ctx     = NULL;
 static GLContextClass* g_context    = NULL;
 static unsigned g_minor             = 0;
 static unsigned g_major             = 0;
+#ifdef OSX
+static NSOpenGLPixelFormat* g_format;
+#endif
 #if defined(HAVE_COCOATOUCH)
 static GLKView *g_view              = NULL;
 
@@ -112,10 +115,6 @@ void *nsview_get_ptr(void)
 
 void nsview_set_ptr(CocoaView *p) { g_instance = p; }
 
-#ifdef OSX
-static NSOpenGLPixelFormat* g_format;
-void *glcontext_get_ptr(void) { return (BRIDGE void *)g_context; }
-#endif
 
 static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
 {
