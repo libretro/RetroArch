@@ -209,6 +209,9 @@ typedef struct dispgfx_widget
    unsigned divider_width_1px;
 
    float last_scale_factor;
+   float backdrop_orig[16];
+   float msg_queue_bg[16];
+   float pure_white[16];
 #ifdef HAVE_TRANSLATE
    unsigned ai_service_overlay_width;
    unsigned ai_service_overlay_height;
@@ -268,37 +271,13 @@ struct gfx_widget
    void (*frame)(void* data, void *userdata);
 };
 
-uintptr_t gfx_widgets_get_generic_tag(void *data);
-
-unsigned gfx_widgets_get_padding(void *data);
-
-unsigned gfx_widgets_get_divider_width(void *data);
-
-unsigned gfx_widgets_get_height(void *data);
-
-gfx_widget_font_data_t* gfx_widgets_get_font_regular(void *data);
-
-gfx_widget_font_data_t* gfx_widgets_get_font_bold(void *data);
-
-gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void *data);
-
-float* gfx_widgets_get_backdrop_orig(void);
-
-unsigned gfx_widgets_get_last_video_width(void *data);
-
-unsigned gfx_widgets_get_last_video_height(void *data);
-
-unsigned gfx_widgets_get_generic_message_height(void *data);
-
-/* Warning: not thread safe! */
-size_t gfx_widgets_get_msg_queue_size(void *data);
-
 float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,
       const float image_width, const float image_height);
 
 void gfx_widgets_draw_icon(
       void *userdata,
+      void *data_disp,
       unsigned video_width,
       unsigned video_height,
       unsigned icon_width,
@@ -346,6 +325,7 @@ void gfx_widget_volume_update_and_show(float new_volume,
 
 void gfx_widgets_iterate(
       void *data,
+      void *data_disp,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded);
@@ -365,6 +345,7 @@ void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget);
 
 #ifdef HAVE_CHEEVOS
 void gfx_widgets_push_achievement(const char *title, const char *badge);
+void gfx_widgets_set_leaderboard_display(unsigned id, const char* value);
 #endif
 
 /* Warning: not thread safe! */
@@ -401,6 +382,7 @@ extern const gfx_widget_t gfx_widget_load_content_animation;
 
 #ifdef HAVE_CHEEVOS
 extern const gfx_widget_t gfx_widget_achievement_popup;
+extern const gfx_widget_t gfx_widget_leaderboard_display;
 #endif
 
 #endif

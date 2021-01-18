@@ -17,6 +17,8 @@
 #ifndef __RARCH_FONT_BITMAP_H
 #define __RARCH_FONT_BITMAP_H
 
+#include <stdint.h>
+
 #define FONT_WIDTH 5
 #define FONT_HEIGHT 10
 /* FONT_HEIGHT_BASELINE_OFFSET:
@@ -142,5 +144,23 @@ static const unsigned char bitmap_bin[1792] = {
    0x63, 0xF4, 0x00, 0x00, 0x40, 0x81, 0x18, 0x63, 0xF4, 0x00, 0x00, 0x44, 0x80, 0x18, 0x63, 0xF4,
    0xD0, 0x01, 0x20, 0x84, 0x17, 0x63, 0x7C, 0x21, 0x00, 0x40, 0x81, 0x18, 0x63, 0xF4, 0xD0, 0x01
 };
+
+typedef struct
+{
+   bool **lut;
+   uint16_t glyph_min;
+   uint16_t glyph_max;
+} bitmapfont_lut_t;
+
+/* Generates a boolean LUT:
+ *   lut[num_glyphs][glyph_width * glyph_height]
+ * LUT value is 'true' if glyph pixel has a
+ * non-zero value.
+ * Returned object must be freed using
+ * bitmapfont_free_lut().
+ * Returns NULL in the event of an error. */
+bitmapfont_lut_t *bitmapfont_get_lut(void);
+
+void bitmapfont_free_lut(bitmapfont_lut_t *font);
 
 #endif

@@ -102,9 +102,9 @@ typedef struct frontend_ctx_driver
    void (*destroy_signal_handler_state)(void);
    void (*attach_console)(void);
    void (*detach_console)(void);
-#ifdef HAVE_LAKKA
    void (*get_lakka_version)(char *, size_t);
-#endif
+   /* TODO/FIXME: Need to implement some sort of startup brightness setting. */
+   void (*set_screen_brightness)(int);
    void (*watch_path_for_changes)(struct string_list *list, int flags, path_change_data_t **change_data);
    bool (*check_for_path_changes)(path_change_data_t *change_data);
    void (*set_sustained_performance_mode)(bool on);
@@ -211,6 +211,10 @@ void frontend_driver_destroy_signal_handler_state(void);
 void frontend_driver_attach_console(void);
 
 void frontend_driver_detach_console(void);
+
+void frontend_driver_set_screen_brightness(int value);
+
+bool frontend_driver_can_set_screen_brightness();
 
 bool frontend_driver_can_watch_for_changes(void);
 

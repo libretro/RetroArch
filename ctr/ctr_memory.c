@@ -141,9 +141,12 @@ void* _sbrk_r(struct _reent *ptr, ptrdiff_t incr)
 
    __heap_size += diff;
 
-   if (diff < 0)
-      svcControlMemory(&tmp, __heapBase + __heap_size,
-            0x0, -diff, MEMOP_FREE, MEMPERM_READ | MEMPERM_WRITE);
+   while (diff < 0) {
+      int size = -diff < 0x100000 ? -diff : 0x100000;
+      diff += size;
+      svcControlMemory(&tmp, __heapBase + __heap_size - diff,
+            0x0, size, MEMOP_FREE, 0);
+   }
 
    sbrk_top += incr;
 

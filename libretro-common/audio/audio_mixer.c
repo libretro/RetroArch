@@ -991,18 +991,15 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
 {
    int i;
    float samplef                    = 0.0f;
-   int samplei                      = 0;
    unsigned temp_samples            = 0;
    unsigned buf_free                = (unsigned)(num_frames * 2);
    int* pcm                         = NULL;
 
-   if (voice->types.mod.position == voice->types.mod.samples)
+   if (voice->types.mod.samples == 0)
    {
 again:
       temp_samples = replay_get_audio(
-            voice->types.mod.stream, voice->types.mod.buffer );
-
-      temp_samples *= 2; /* stereo */
+            voice->types.mod.stream, voice->types.mod.buffer, 0 ) * 2;
 
       if (temp_samples == 0)
       {
@@ -1031,10 +1028,9 @@ again:
    {
       for (i = voice->types.mod.samples; i != 0; i--)
       {
-         samplei     = *pcm++ * volume;
-         samplef     = (float)((int)samplei + 32768) / 65535.0f;
+         samplef     = ((float)(*pcm++) + 32768.0f) / 65535.0f;
          samplef     = samplef * 2.0f - 1.0f;
-         *buffer++  += samplef;
+         *buffer++  += samplef * volume;
       }
 
       buf_free -= voice->types.mod.samples;
@@ -1043,10 +1039,9 @@ again:
 
    for (i = buf_free; i != 0; --i )
    {
-      samplei     = *pcm++ * volume;
-      samplef     = (float)((int)samplei + 32768) / 65535.0f;
+      samplef     = ((float)(*pcm++) + 32768.0f) / 65535.0f;
       samplef     = samplef * 2.0f - 1.0f;
-      *buffer++  += samplef;
+      *buffer++  += samplef * volume;
    }
 
    voice->types.mod.position += buf_free;

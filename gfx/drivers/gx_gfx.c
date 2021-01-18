@@ -282,6 +282,9 @@ static void retrace_callback(u32 retrace_count)
 
 static bool gx_is_valid_xorigin(gx_video_t *gx, int origin)
 {
+   if (!gx)
+      return false;
+   
    if (origin < 0 || origin + gx->used_system_xOrigin < 0 ||
          gx_mode.viWidth + origin + gx->used_system_xOrigin > 720)
       return false;
@@ -309,7 +312,11 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    uint16_t xfbWidth           = 0;
    uint16_t xfbHeight          = 0;
    gx_video_t *gx              = (gx_video_t*)data;
+   if (!gx)
+      return;
    settings_t *settings        = config_get_ptr();
+   if (!settings)
+      return;
    unsigned viHeightMultiplier = 1;
    bool vfilter                = settings->bools.video_vfilter;
    unsigned viWidth            = settings->uints.video_viwidth;
@@ -596,6 +603,8 @@ static void gx_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
    global_t *global = global_get_ptr();
+   if (!global)
+      return;
 
    (void)data;
 
@@ -636,6 +645,9 @@ static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
    GXTexObj *fb_ptr   	= (GXTexObj*)&g_tex.obj;
    GXTexObj *menu_ptr 	= (GXTexObj*)&menu_tex.obj;
 
+   if (!gx)
+      return;
+
    width               &= ~3;
    height              &= ~3;
 
@@ -656,6 +668,9 @@ static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
 static void init_vtx(gx_video_t *gx, const video_info_t *video,
       bool video_smooth)
 {
+   if (!gx || !video)
+      return;
+
    Mtx44 m;
    uint32_t level      = 0;
    _CPU_ISR_Disable(level);
@@ -961,6 +976,9 @@ static void gx_resize(gx_video_t *gx,
    unsigned width                   = gx->vp.full_width;
    unsigned height                  = gx->vp.full_height;
 
+   if (!gx)
+      return;
+
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
    gamma = global->console.screen.gamma_correction;
@@ -1125,6 +1143,9 @@ static void gx_blit_line(gx_video_t *gx,
    unsigned width, height, h;
    bool double_width = false;
 
+   if (!gx)
+      return;
+
    const GXColor b = {
       .r = 0x00,
       .g = 0x00,
@@ -1241,10 +1262,12 @@ static bool gx_suppress_screensaver(void *data, bool enable)
 static void gx_set_rotation(void *data, unsigned orientation)
 {
    gx_video_t *gx  = (gx_video_t*)data;
-   gx->orientation = orientation;
 
-   if (gx)
-      gx->should_resize = true;
+   if (!gx)
+      return;
+   
+   gx->orientation = orientation;
+   gx->should_resize = true;
 }
 
 static void gx_set_texture_frame(void *data, const void *frame,
@@ -1287,7 +1310,8 @@ static void gx_apply_state_changes(void *data)
 static void gx_viewport_info(void *data, struct video_viewport *vp)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   *vp = gx->vp;
+   if (gx)
+      *vp = gx->vp;
 }
 
 static void gx_get_video_output_prev(void *data)
@@ -1306,6 +1330,8 @@ static void gx_get_video_output_prev(void *data)
 static void gx_get_video_output_next(void *data)
 {
    global_t *global = global_get_ptr();
+   if (!global)
+      return;
 
    if (global->console.screen.resolutions.current.id >= GX_RESOLUTIONS_LAST)
    {
@@ -1413,9 +1439,12 @@ static void gx_overlay_vertex_geom(void *data, unsigned image,
 
 static void gx_free_overlay(gx_video_t *gx)
 {
-   free(gx->overlay);
-   gx->overlay = NULL;
-   gx->overlays = 0;
+   if (gx)
+   {
+      free(gx->overlay);
+      gx->overlay = NULL;
+      gx->overlays = 0;
+   }
    GX_InvalidateTexAll();
 }
 
@@ -1424,6 +1453,8 @@ static bool gx_overlay_load(void *data,
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
+   if (!gx)
+      return false;
    const struct texture_image *images = (const struct texture_image*)image_data;
 
    gx_free_overlay(gx);
@@ -1457,13 +1488,17 @@ static bool gx_overlay_load(void *data,
 static void gx_overlay_enable(void *data, bool state)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   gx->overlay_enable = state;
+   
+   if (gx)
+      gx->overlay_enable = state;
 }
 
 static void gx_overlay_full_screen(void *data, bool enable)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   gx->overlay_full_screen = enable;
+   
+   if (gx)
+      gx->overlay_full_screen = enable;
 }
 
 static void gx_overlay_set_alpha(void *data, unsigned image, float mod)
@@ -1478,7 +1513,9 @@ static void gx_render_overlay(void *data)
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
-
+   if (!gx)
+      return;
+   
    GX_SetCurrentMtx(GX_PNMTX1);
    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);

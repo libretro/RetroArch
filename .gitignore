@@ -34,6 +34,7 @@ Release
 ipch
 *.user
 /bootstrap/gx/wii/app_booter/app_booter.bin
+/wii/app_booter/app_booter.bin
 *.zip
 RetroArch-w32/
 RetroArch-w64/
@@ -80,9 +81,27 @@ info
 content_history.lpl
 content_image_history.lpl
 content_music_history.lpl
+content_video_history.lpl
 saves
 screenshots
+autoconfig
+config
+database
+overlays
+playlists
+states
+system
+shaders/shaders_cg
+shaders/shaders_glsl
+shaders/shaders_slang
 
+# Qt Creator
+*.cflags
+*.cxxflags
+*.creator*
+*.config
+*.files
+*.includes
 
 # Wii U
 *.depend
@@ -188,3 +207,17 @@ gfx/common/wayland/xdg-decoration-unstable-v1.h
 gfx/common/wayland/xdg-decoration-unstable-v1.c
 gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
+
+# libretro-common samples
+libretro-common/samples/streams/rzip/rzip
+
+# DINGUX
+*.opk
+
+#VITA
+param.sfo
+*.S
+*.wo
+*.elf
+*.self
+*.vpk

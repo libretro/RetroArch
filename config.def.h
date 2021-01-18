@@ -37,6 +37,11 @@
 #include "gfx/common/ctr_common.h"
 #endif
 
+/* Required for OpenDingux IPU filter setting */
+#if defined(DINGUX)
+#include "dingux/dingux_utils.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -45,7 +50,7 @@
 #define MAX_GAMMA_SETTING 1
 #endif
 
-#if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
+#if defined(XENON) || defined(_XBOX360)
 #define DEFAULT_ASPECT_RATIO 1.7778f
 #elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
 #define DEFAULT_ASPECT_RATIO 1.3333f
@@ -129,6 +134,8 @@
  *   thumbnails of different sizes */
 #define DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE true
 
+#define DEFAULT_SCREEN_BRIGHTNESS 100
+
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION_SUPER 2560
@@ -140,6 +147,8 @@
 #define DEFAULT_HISTORY_LIST_ENABLE true
 
 #define DEFAULT_PLAYLIST_ENTRY_RENAME true
+
+#define DEFAULT_WIFI_ENABLE true
 
 #define DEFAULT_ACCESSIBILITY_ENABLE false
 
@@ -177,8 +186,9 @@
 
 /* To start in Fullscreen, or not. */
 
-#ifdef HAVE_STEAM
-/* Start in fullscreen mode for Steam build */
+#if defined(HAVE_STEAM) || defined(DINGUX)
+/* Start in fullscreen mode for Steam and
+ * Dingux builds */
 #define DEFAULT_FULLSCREEN true
 #else
 #define DEFAULT_FULLSCREEN false
@@ -199,8 +209,13 @@
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
+#if defined(DINGUX)
+#define DEFAULT_FULLSCREEN_X 320
+#define DEFAULT_FULLSCREEN_Y 240
+#else
 #define DEFAULT_FULLSCREEN_X 0
 #define DEFAULT_FULLSCREEN_Y 0
+#endif
 
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
@@ -309,7 +324,7 @@
 #endif
 
 /* Smooths picture. */
-#if defined(_3DS) || defined(GEKKO) || defined(HW_RVL) || defined(PSP) || defined(VITA) || defined(SN_TARGET_PSP2) || defined(PS2) || defined(_XBOX)
+#if defined(_3DS) || defined(GEKKO) || defined(HW_RVL) || defined(PSP) || defined(VITA) || defined(SN_TARGET_PSP2) || defined(PS2) || defined(_XBOX) || defined(DINGUX)
 #define DEFAULT_VIDEO_SMOOTH true
 #else
 #define DEFAULT_VIDEO_SMOOTH false
@@ -332,6 +347,10 @@
 #define DEFAULT_SHADER_ENABLE false
 #endif
 
+/* When presets are saved they will be saved using the #reference 
+ * directive by default */
+#define DEFAULT_VIDEO_SHADER_PRESET_SAVE_REFERENCE_ENABLE true
+
 #define DEFAULT_SHADER_DELAY 0
 
 /* Only scale in integer steps.
@@ -345,7 +364,7 @@
 /* 1:1 PAR */
 #define DEFAULT_ASPECT_RATIO_AUTO false
 
-#if defined(__CELLOS_LV2) || defined(_XBOX360)
+#if defined(_XBOX360)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_16_9
 #elif defined(PSP) || defined(_3DS) || defined(HAVE_LIBNX) || defined(VITA)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
@@ -353,6 +372,15 @@
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_4_3
 #else
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
+#endif
+
+#if defined(DINGUX)
+/* Enables aspect ratio correction (1:1 PAR) when
+ * using the IPU hardware scaler in Dingux devices */
+#define DEFAULT_DINGUX_IPU_KEEP_ASPECT true
+/* Sets image filtering method when using the
+ * IPU hardware scaler in Dingux devices */
+#define DEFAULT_DINGUX_IPU_FILTER_TYPE DINGUX_IPU_FILTER_BICUBIC
 #endif
 
 /* Save configuration file on exit. */
@@ -439,6 +467,8 @@
 
 #define DEFAULT_SETTINGS_SHOW_LOGGING true
 
+#define DEFAULT_SETTINGS_SHOW_FILE_BROWSER true
+
 #define DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE true
 
 #define DEFAULT_SETTINGS_SHOW_RECORDING true
@@ -448,6 +478,8 @@
 #define DEFAULT_SETTINGS_SHOW_USER_INTERFACE true
 
 #define DEFAULT_SETTINGS_SHOW_AI_SERVICE true
+
+#define DEFAULT_SETTINGS_SHOW_ACCESSIBILITY true
 
 #define DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT true
 
@@ -512,18 +544,18 @@ static const bool menu_show_quit_retroarch     = true;
 static const bool menu_show_restart_retroarch  = true;
 static const bool menu_show_reboot             = true;
 static const bool menu_show_shutdown           = true;
-#if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
+#if defined(HAVE_LAKKA) || defined(VITA)
 static const bool menu_show_core_updater       = false;
 #else
 static const bool menu_show_core_updater       = true;
 #endif
 static const bool menu_show_legacy_thumbnail_updater = false;
-static const bool menu_show_sublabels          = true;
+static const bool menu_show_sublabels                = true;
+static const bool menu_dynamic_wallpaper_enable      = true;
+static const bool menu_scroll_fast                   = false;
 
-static const bool menu_scroll_fast             = false;
-
-#define DEFAULT_MENU_TICKER_TYPE                 (TICKER_TYPE_LOOP)
-static const float menu_ticker_speed           = 2.0f;
+#define DEFAULT_MENU_TICKER_TYPE (TICKER_TYPE_LOOP)
+static const float menu_ticker_speed        = 2.0f;
 
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
@@ -534,6 +566,8 @@ static const bool menu_savestate_resume     = false;
 #endif
 
 #define DEFAULT_MENU_INSERT_DISK_RESUME true
+
+#define DEFAULT_QUIT_ON_CLOSE_CONTENT QUIT_ON_CLOSE_CONTENT_DISABLED
 
 static const bool content_show_settings     = true;
 static const bool content_show_favorites    = true;
@@ -566,6 +600,8 @@ static const bool content_show_playlists    = true;
 #endif
 
 #ifdef HAVE_XMB
+#define DEFAULT_XMB_ANIMATION 0
+
 static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
 static const unsigned menu_font_color_green = 255;
@@ -644,7 +680,7 @@ static const bool default_savefiles_in_content_dir = false;
 static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
-#if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360) || defined(DINGUX)
+#if defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
 static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(PS2) || defined(PSP)
 static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
@@ -793,12 +829,6 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG true
 #endif
 
-#if defined(HAVE_SCREENSHOTS)
-#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN true
-#else
-#define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_TAKEN false
-#endif
-
 /* Display a notification when cheats are being
  * applied */
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
@@ -819,6 +849,7 @@ static const bool audio_enable_menu_bgm    = false;
  * content */
 #define DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD true
 
+#if defined(HAVE_SCREENSHOTS)
 /*Display a notification when taking a screenshot*/
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT true
 
@@ -828,6 +859,10 @@ static const bool audio_enable_menu_bgm    = false;
 /* Display a white flashing effect with the desired 
  * duration when taking a screenshot*/
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH 0
+#endif
+
+/*Display a notification when setting the refresh rate*/
+#define DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE true
 
 /* Output samplerate. */
 #ifdef GEKKO
@@ -988,6 +1023,15 @@ static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFE
  * to the highest existing value. */
 static const bool savestate_auto_index = false;
 
+/* Specifies the maximum number of savestates to keep
+ * when savestate auto index is enabled
+ * > When limit is exceeded, savestate with the lowest
+ *   index will be deleted automatically when creating
+ *   a new savestate
+ * > Setting value to zero disables the limit (no
+ *   savestates will be deleted in this case) */
+#define DEFAULT_SAVESTATE_MAX_KEEP 0
+
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.
  * RetroArch will automatically load any savestate with this path on
@@ -999,11 +1043,7 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save (srm) files, compress
  * written data */
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-#define DEFAULT_SAVE_FILE_COMPRESSION true
-#else
 #define DEFAULT_SAVE_FILE_COMPRESSION false
-#endif
 
 /* When creating save state files, compress
  * written data */
@@ -1076,11 +1116,7 @@ static const int default_content_favorites_size = 200;
 #define DEFAULT_PLAYLIST_USE_OLD_FORMAT false
 
 /* When creating/updating playlists, compress written data */
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-#define DEFAULT_PLAYLIST_COMPRESSION true
-#else
 #define DEFAULT_PLAYLIST_COMPRESSION false
-#endif
 
 #ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
@@ -1114,7 +1150,11 @@ static const int default_content_favorites_size = 200;
 
 /* Default scale factor for non-frambuffer-based display
  * drivers and display widgets */
+#if defined(VITA)
+#define DEFAULT_MENU_SCALE_FACTOR 1.5f
+#else
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
+#endif
 /* Specifies whether display widgets should be scaled
  * automatically using the default menu scale factor */
 #define DEFAULT_MENU_WIDGET_SCALE_AUTO true
@@ -1169,13 +1209,21 @@ static const bool input_autodetect_enable = true;
 #define DEFAULT_INPUT_SENSORS_ENABLE true
 #endif
 
+/* Automatically enable game focus when running or
+ * resuming content */
+#define DEFAULT_INPUT_AUTO_GAME_FOCUS AUTO_GAME_FOCUS_OFF
+
 /* Show the input descriptors set by the core instead
  * of the default ones. */
 static const bool input_descriptor_label_show = true;
 
 static const bool input_descriptor_hide_unbound = false;
 
+#if defined(DINGUX)
+static const unsigned input_max_users = 1;
+#else
 static const unsigned input_max_users = 5;
+#endif
 
 static const unsigned input_poll_type_behavior = 2;
 
@@ -1230,7 +1278,7 @@ static const bool ui_companion_toggle = false;
 
 #define DEFAULT_UI_MENUBAR_ENABLE true
 
-#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
+#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) | defined(__PS3__)
 static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;
@@ -1250,6 +1298,12 @@ static const bool sustained_performance_mode = false;
 
 static const bool vibrate_on_keypress        = false;
 static const bool enable_device_vibration    = false;
+
+/* Defines the strength of rumble effects
+ * on OpenDingux devices */
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#define DEFAULT_DINGUX_RUMBLE_GAIN 50
+#endif
 
 #ifdef HAVE_VULKAN
 #define DEFAULT_VULKAN_GPU_INDEX 0
@@ -1349,12 +1403,8 @@ static const bool enable_device_vibration    = false;
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/"
 #elif defined(HAVE_LIBNX)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/"
-#elif defined(__CELLOS_LV2__) && defined(DEX_BUILD)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/dex-ps3/"
-#elif defined(__CELLOS_LV2__) && defined(CEX_BUILD)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/cex-ps3/"
-#elif defined(__CELLOS_LV2__) && defined(ODE_BUILD)
-#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/ode-ps3/"
+#elif defined(_3DS)
+#define DEFAULT_BUILDBOT_SERVER_URL envIsHomebrew() ? "http://buildbot.libretro.com/nightly/nintendo/3ds/latest/3dsx/" : "http://buildbot.libretro.com/nightly/nintendo/3ds/latest/cia/"
 #else
 #define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif

@@ -20,8 +20,6 @@
 #ifndef _OZONE_SIDEBAR_H
 #define _OZONE_SIDEBAR_H
 
-#include "ozone_texture.h"
-
 enum
 {
    OZONE_SYSTEM_TAB_MAIN = 0,
@@ -46,13 +44,5 @@ enum
    /* End of this enum - use the last one to determine num of possible tabs */
    OZONE_SYSTEM_TAB_LAST
 };
-
-extern enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST];
-
-extern enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST];
-
-extern enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST];
-
-extern unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST];
 
 #endif

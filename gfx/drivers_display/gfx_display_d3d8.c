@@ -74,7 +74,7 @@ static INT32 gfx_display_prim_to_d3d8_enum(
          break;
    }
 
-   /* TOD/FIXME - hack */
+   /* TODO/FIXME - hack */
    return 0;
 }
 
@@ -97,8 +97,6 @@ static void gfx_display_d3d8_blend_end(void *data)
 
    d3d8_disable_blend_func(d3d->dev);
 }
-
-static void gfx_display_d3d8_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_d3d8_bind_texture(gfx_display_ctx_draw_t *draw,
       d3d8_video_t *d3d)
@@ -220,9 +218,6 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    d3d->menu_display.offset += draw->coords->vertices;
 }
 
-static void gfx_display_d3d8_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height) { }
-
 static bool gfx_display_d3d8_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
@@ -239,8 +234,7 @@ static bool gfx_display_d3d8_font_init_first(
 
 gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
    gfx_display_d3d8_draw,
-   gfx_display_d3d8_draw_pipeline,
-   gfx_display_d3d8_viewport,
+   NULL,                                        /* draw_pipeline */
    gfx_display_d3d8_blend_begin,
    gfx_display_d3d8_blend_end,
    gfx_display_d3d8_get_default_mvp,

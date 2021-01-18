@@ -1351,8 +1351,8 @@ bool core_info_hw_api_supported(core_info_t *info)
          {
             case STATE_API_NAME:
             {
-               if (  isupper((unsigned char)cur_api[j]) || 
-                     islower((unsigned char)cur_api[j]))
+               if (  ISUPPER((unsigned char)cur_api[j]) || 
+                     ISLOWER((unsigned char)cur_api[j]))
                   api_str[api_pos++] = cur_api[j];
                else
                {
@@ -1401,14 +1401,21 @@ bool core_info_hw_api_supported(core_info_t *info)
             }
             case STATE_API_VERSION:
             {
-               if (!found_minor && cur_api[j] >= '0' && cur_api[j] <= '9' && cur_api[j] != '.')
+               if (    !found_minor 
+                     && cur_api[j] >= '0'
+                     && cur_api[j] <= '9'
+                     && cur_api[j] != '.')
                {
                   found_major = true;
 
                   if (major_str_pos < sizeof(major_str) - 1)
                      major_str[major_str_pos++] = cur_api[j];
                }
-               else if (found_major && found_minor && cur_api[j] >= '0' && cur_api[j] <= '9')
+               else if (
+                        found_major 
+                     && found_minor
+                     && cur_api[j] >= '0'
+                     && cur_api[j] <= '9')
                {
                   if (minor_str_pos < sizeof(minor_str) - 1)
                      minor_str[minor_str_pos++] = cur_api[j];

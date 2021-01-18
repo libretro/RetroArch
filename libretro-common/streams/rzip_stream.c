@@ -577,7 +577,8 @@ int64_t rzipstream_read(rzipstream_t *stream, void *data, int64_t len)
        * > i.e. minimum of remaining output buffer
        *   occupancy and remaining 'read data' size */
       read_size = stream->out_buf_occupancy - stream->out_buf_ptr;
-      read_size = (read_size > data_len) ? data_len : read_size;
+      if (read_size > data_len)
+         read_size = data_len;
 
       /* Copy as much cached data as possible into
        * the read buffer */
@@ -831,7 +832,8 @@ int64_t rzipstream_write(rzipstream_t *stream, const void *data, int64_t len)
        * > i.e. minimum of space remaining in input buffer
        *   and remaining 'write data' size */
       cache_size = stream->in_buf_size - stream->in_buf_ptr;
-      cache_size = (cache_size > data_len) ? data_len : cache_size;
+      if (cache_size > data_len)
+         cache_size = data_len;
 
       /* Copy as much data as possible into
        * the input buffer */

@@ -5,7 +5,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:3.4.2'
+    classpath 'com.android.tools.build:gradle:4.1.0'
   }
 }
 
@@ -25,8 +25,9 @@ allprojects {
 apply plugin: 'com.android.application'
 
 android {
-  compileSdkVersion 28
-  buildToolsVersion "28.0.3"
+  compileSdkVersion 29
+  buildToolsVersion "29.0.3"
+  ndkVersion "22.0.7026061"
 
   flavorDimensions "variant"
 
@@ -38,6 +39,8 @@ android {
       }
     }
     targetSdkVersion 28
+    versionCode System.currentTimeSeconds().toInteger()
+    versionName "${getManifestAttribute("versionName")}_GIT"
   }
 
   productFlavors {
@@ -69,23 +72,26 @@ android {
     }
     playStoreNormal {
       minSdkVersion 21
+      targetSdkVersion 29
+      versionCode getPlayStoreVersionCode()
+      versionName getPlayStoreVersionName()
 
       resValue "string", "app_name", "RetroArch"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
     }
-    playStoreAarch64 {
-      minSdkVersion 21
+    playStorePlus {
+      minSdkVersion 26
+      targetSdkVersion 29
+      versionCode getPlayStoreVersionCode()
+      versionName getPlayStoreVersionName()
 
       applicationIdSuffix '.aarch64'
-      resValue "string", "app_name", "RetroArch (AArch64)"
+      resValue "string", "app_name", "RetroArch Plus"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
-      ndk {
-        abiFilters 'arm64-v8a', 'x86_64'
-      }
     }
   }
 
@@ -141,4 +147,31 @@ dependencies {
 def dynamicFeatures = file("dynamic_features.gradle")
 if(dynamicFeatures.exists()) {
   apply from: "dynamic_features.gradle"
+}
+
+int getPlayStoreVersionCode() {
+  def baseVersion = getManifestAttribute("versionCode").toInteger()
+  def baseTime = 1609632000
+  def halfWeek = 302400
+  def increment = (System.currentTimeSeconds() - baseTime) / halfWeek
+
+  return baseVersion + increment
+}
+
+String getPlayStoreVersionName() {
+  def versionName = getManifestAttribute("versionName")
+  return "$versionName (${new Date().format("yyyy-MM-dd")})"
+}
+
+String getManifestAttribute(String attribute) {
+  def manifest = new XmlParser().parse("${project.projectDir}/AndroidManifest.xml")
+  return manifest.attributes().find {
+    ((String) it.key).contains(attribute)
+  }.value
+}
+
+tasks.register("outputVersionCode") {
+  doLast {
+    println getPlayStoreVersionCode()
+  }
 }

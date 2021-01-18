@@ -72,22 +72,22 @@
 {
    if (self = [super init])
    {
-      _inflightSemaphore = dispatch_semaphore_create(MAX_INFLIGHT);
-      _device = d;
-      _layer = layer;
-#if TARGET_OS_OSX
-      _layer.framebufferOnly = NO;
-      _layer.displaySyncEnabled = YES;
+      _inflightSemaphore         = dispatch_semaphore_create(MAX_INFLIGHT);
+      _device                    = d;
+      _layer                     = layer;
+#ifdef OSX
+      _layer.framebufferOnly     = NO;
+      _layer.displaySyncEnabled  = YES;
 #endif
-      _library = l;
-      _commandQueue = [_device newCommandQueue];
-      _clearColor = MTLClearColorMake(0, 0, 0, 1);
+      _library                   = l;
+      _commandQueue              = [_device newCommandQueue];
+      _clearColor                = MTLClearColorMake(0, 0, 0, 1);
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
 
-      _rotation = 0;
+      _rotation                  = 0;
       [self setRotation:0];
-      _mvp_no_rot = matrix_proj_ortho(0, 1, 0, 1);
-      _mvp = matrix_proj_ortho(0, 1, 0, 1);
+      _mvp_no_rot                = matrix_proj_ortho(0, 1, 0, 1);
+      _mvp                       = matrix_proj_ortho(0, 1, 0, 1);
 
       {
          MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
@@ -166,17 +166,17 @@
 
 - (void)setDisplaySyncEnabled:(bool)displaySyncEnabled
 {
-#if TARGET_OS_OSX
+#ifdef OSX
    _layer.displaySyncEnabled = displaySyncEnabled;
 #endif
 }
 
 - (bool)displaySyncEnabled
 {
-#if TARGET_OS_OSX
+#ifdef OSX
    return _layer.displaySyncEnabled;
 #else
-    return NO;
+   return NO;
 #endif
 }
 
@@ -646,7 +646,7 @@
 
    if (_blitCommandBuffer)
    {
-#if TARGET_OS_OSX
+#ifdef OSX
       if (_captureEnabled)
       {
          id<MTLBlitCommandEncoder> bce = [_blitCommandBuffer blitCommandEncoder];
@@ -741,21 +741,20 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (void)commitRanges
 {
-#if TARGET_OS_OSX
-   for (BufferNode *n = _head; n != nil; n = n.next)
+#ifdef OSX
+   BufferNode *n;
+   for (n = _head; n != nil; n = n.next)
    {
       if (n.allocated > 0)
-      {
          [n.src didModifyRange:NSMakeRange(0, n.allocated)];
-      }
    }
 #endif
 }
 
 - (void)discard
 {
-   _current = _head;
-   _offset = 0;
+   _current   = _head;
+   _offset    = 0;
    _allocated = 0;
 }
 
@@ -785,9 +784,7 @@ static const NSUInteger kConstantAlignment = 4;
 
    NSUInteger blockLen = _blockLen;
    if (length > blockLen)
-   {
       blockLen = length;
-   }
 
    _current.next = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:blockLen options:opts]];
    if (!_current.next)

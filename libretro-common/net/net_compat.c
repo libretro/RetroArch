@@ -228,7 +228,7 @@ int getaddrinfo_retro(const char *node, const char *service,
 
       in_addr->sin_family = host->h_addrtype;
 
-#if defined(AF_INET6) && !defined(__CELLOS_LV2__) || defined(VITA)
+#if defined(AF_INET6) || defined(VITA)
       /* TODO/FIXME - In case we ever want to support IPv6 */
       in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
 #else
@@ -286,29 +286,6 @@ bool network_init(void)
       network_deinit();
       return false;
    }
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   int timeout_count = 10;
-
-   cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
-   sys_net_initialize_network();
-
-   if (cellNetCtlInit() < 0)
-      return false;
-
-   for (;;)
-   {
-      int state;
-      if (cellNetCtlGetState(&state) < 0)
-         return false;
-
-      if (state == CELL_NET_CTL_STATE_IPObtained)
-         break;
-
-      retro_sleep(500);
-      timeout_count--;
-      if (timeout_count < 0)
-         return 0;
-   }
 #elif defined(VITA)
    SceNetInitParam initparam;
 
@@ -356,10 +333,6 @@ void network_deinit(void)
 {
 #if defined(_WIN32)
    WSACleanup();
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   cellNetCtlTerm();
-   sys_net_finalize_network();
-   cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 #elif defined(VITA)
    sceNetCtlTerm();
    sceNetTerm();

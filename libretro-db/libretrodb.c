@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <sys/types.h>
 #ifdef _WIN32
 #include <direct.h>
@@ -506,39 +505,29 @@ int libretrodb_create_index(libretrodb_t *db,
 
    while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
+      /* Only map keys are supported */
       if (item.type != RDT_MAP)
-      {
-         printf("Only map keys are supported\n");
          goto clean;
-      }
 
       field = rmsgpack_dom_value_map_value(&item, &key);
 
+      /* Field not found in item */
       if (!field)
-      {
-         printf("field not found in item\n");
          goto clean;
-      }
 
+      /* Field is not binary */
       if (field->type != RDT_BINARY)
-      {
-         printf("field is not binary\n");
          goto clean;
-      }
 
+      /* Field is empty */
       if (field->val.binary.len == 0)
-      {
-         printf("field is empty\n");
          goto clean;
-      }
 
       if (field_size == 0)
          field_size = field->val.binary.len;
-      else if (field->val.binary.len != field_size)
-      {
-         printf("field is not of correct size\n");
+      /* Field is not of correct size */
+      else if (field->val.binary.len != field_size) 
          goto clean;
-      }
 
       buff = malloc(field_size + sizeof(uint64_t));
       if (!buff)
@@ -550,11 +539,10 @@ int libretrodb_create_index(libretrodb_t *db,
 
       memcpy(buff_u64, &item_loc, sizeof(uint64_t));
 
+      /* Value is not unique? */
       if (bintree_insert(tree, buff) != 0)
       {
-         printf("Value is not unique: ");
          rmsgpack_dom_value_print(field);
-         printf("\n");
          goto clean;
       }
       buff     = NULL;
@@ -571,8 +559,8 @@ int libretrodb_create_index(libretrodb_t *db,
    idx.next     = db->count * (field_size + sizeof(uint64_t));
    libretrodb_write_index_header(db->fd, &idx);
 
-   nictx.db  = db;
-   nictx.idx = &idx;
+   nictx.db     = db;
+   nictx.idx    = &idx;
    bintree_iterate(tree, node_iter, &nictx);
 
 clean:

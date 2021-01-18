@@ -1324,6 +1324,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    "يضيف ضباطاً طفيفاً للصورة لإخراج حافة البكسل الصلبة. هذا الخيار لا يؤثر إلا قليلاً على الأداء."
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "تأخير التقاط تلقائي"
@@ -1454,10 +1456,6 @@ MSG_HASH(
    "البدء في وضع ملء الشاشة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "ابدأ في ملء الشاشة. يمكن تغييرها في وقت التشغيل. يمكن تجاوزها بواسطة مفتاح سطر الأوامر"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "وضع ملء الشاشة النافذة"
    )
@@ -1505,10 +1503,6 @@ MSG_HASH(
    "تذكر موقع النافذة وحجمها"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "تذكر حجم النافذة ومكانها، تمكين هذا له الأسبقية على مقياس النافذة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "عرض النافذة"
    )
@@ -1547,6 +1541,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "قيمة النقاط العائمة لنسبة عرض الفيديو (العرض / الارتفاع)، تستخدم إذا تم تعيين نسبة الجوانب إلى 'نسبة الجوانب المخصصة'."
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "نسبة الجوانب المخصصة (موضع X)"
@@ -1966,6 +1962,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "إذا تم تمكين محاولات التهيئة التلقائية لوحدات التحكم ، نمط الإضافة واللعب."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "حد محاور زر الإدخال"
@@ -2057,6 +2055,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "تمكين اهتزاز الجهاز (للنواة المدعومة)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2286,10 +2286,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
    "تشغيل لوحة المفاتيح"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "تشغيل/إيقاف تشغيل لوحة المفاتيح"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -2997,16 +2993,8 @@ MSG_HASH(
    "إرجاع حجم التخزين المؤقت (MB)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "كمية الذاكرة (بالميغابايت) لاحتياطي التجديد المؤقت. زيادة هذا سيزيد من كمية تاريخ الرياح."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
    "ارجاع حجم التخزين المؤقت خطوة (MB)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
-   "في كل مرة تقوم بزيادة أو تقليل قيمة إعادة تجديد حجم المخزن المؤقت عن طريق واجهة المستخدم هذه، سوف يتغير هذا المبلغ"
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -3098,24 +3086,12 @@ MSG_HASH(
    "تراكب الشاشة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "ضبط البيزلات وأجهزة التحكم على الشاشة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    "تخطيط الفيديو"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "ضبط تخطيط الفيديو"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "إشعارات على الشاشة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "ضبط الإشعارات على الشاشة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -3131,10 +3107,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "عرض التراكب"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-   "يتم استخدام التداخلات في الحدود والتحكم على الشاشة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -3323,10 +3295,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "إشعارات رمز الغش"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "عرض رسالة على الشاشة عند تطبيق رموز الغش"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -3942,20 +3910,8 @@ MSG_HASH(
    "إظهار إعدادات الإرجاع"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "إظهار أو إخفاء خيارات الترجيع"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   "إظهار أو إخفاء خيارات Latency."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
    "عرض Latency في الإعدادات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "إظهار أو إخفاء خيارات التراكب."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
@@ -3964,10 +3920,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
    "إظهار إعدادات تخطيط الفيديو"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   "إظهار أو إخفاء خيارات تخطيط الفيديو."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -4225,10 +4177,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "إخراج خدمة AI"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "إظهار الترجمة كتراكب نصي (وضع الصورة)، أو تشغيل كنص - كلام (وضع الصورة)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -4768,10 +4716,6 @@ MSG_HASH(
    "الإنجازات التراجعية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "اكسب منجزات في الألعاب الكلاسيكية. لمزيد من المعلومات، يرجى زيارة http://retroachievements.org"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
    "يوتيوب"
    )
@@ -4794,10 +4738,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
    "كلمة المرور"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "أدخل كلمة المرور لحساب RetroAchievements الخاص بك."
-   )
 
 /* Settings > User > Accounts > YouTube */
 
@@ -4812,6 +4752,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    "مفتاح تبث تويتش"
    )
+
+/* Settings > User > Accounts > Facebook Gaming */
+
 
 /* Settings > Directory */
 
@@ -5701,10 +5644,6 @@ MSG_HASH(
    "بدء أو إعادة بدء البحث عن شفرات الغش"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
-   "يسار/يمين لتغيير حجم البت"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
    "ترميز الطرف الأكبر"
    )
@@ -5769,20 +5708,12 @@ MSG_HASH(
    "إبحث في الذاكرة عن القيم"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
-   "غير القيمة بأزرار اليسار / اليمين"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
    "يساوي السابق + %u أي %X"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
    "إبحث في الذاكرة عن القيم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
-   "غير القيمة بأزرار اليسار / اليمين"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
@@ -5998,6 +5929,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "حفظ تجهيزات شيدر الظلال تحت"
@@ -6107,24 +6040,16 @@ MSG_HASH(
 /* Quick Menu > Achievements */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "لا يوجد منجزات للعرض"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "إيقاف الوضع الصعب للإنجازات"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "إيقاف الانجازات للدورة الحالية (هذا الإجراء سيمكن من حفظ الدول، الغش، إعادة الرياح، الإيقاف المؤقت، وبطء الحركة)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "استئناف الوضع الصعب للإنجازات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "استئناف الإنجازات للدورة الحالية (سيؤدي هذا الإجراء إلى تعطيل حفظ الحالات, الغش, إعادة الرياح, الإيقاف, وبطء الحركة وإعادة تعيين اللعبة الحالية)."
    )
 
 /* Quick Menu > Information */
@@ -6136,10 +6061,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
    "إدخال قاعدة البيانات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
-   "إظهار معلومات قاعدة البيانات للمحتوى الحالي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
@@ -8550,10 +8471,6 @@ MSG_HASH(
    "ابدأ البحث عن رمز تشهير جديد"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
-   "ابدأ البحث عن غش جديد. يمكن تغيير عدد البت."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
    "متابعة البحث"
    )
@@ -10365,14 +10282,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
    "GPU فوق الساعة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "تبديل GPU على مدار الساعة أو تحت الساعة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "سطوع الشاشة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

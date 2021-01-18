@@ -57,8 +57,6 @@
 #endif
 #endif
 
-#define JSON_STATIC 1 /* must come before runtime_file, netplay_room_parse and jsonsax_full */
-
 #if _MSC_VER && !defined(__WINRT__)
 #include "../libretro-common/compat/compat_snprintf.c"
 #endif
@@ -67,10 +65,6 @@
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../network/net_logger.c"
-#endif
-
-#if TARGET_OS_OSX
-#include "../ui/drivers/cocoa/ui_cocoa_application.c"
 #endif
 
 /*============================================================
@@ -193,7 +187,6 @@ ACHIEVEMENTS
 #include "../libretro-common/net/net_http.c"
 #endif
 
-#include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
@@ -230,9 +223,9 @@ MD5
 CHEATS
 ============================================================ */
 #ifdef HAVE_CHEATS
-#include "../managers/cheat_manager.c"
+#include "../cheat_manager.c"
 #endif
-#include "../libretro-common/hash/rhash.c"
+#include "../libretro-common/hash/lrc_hash.c"
 
 /*============================================================
 UI COMMON CONTEXT
@@ -265,9 +258,7 @@ VIDEO CONTEXT
 
 #endif
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-#include "../gfx/drivers_context/ps3_ctx.c"
-#elif defined(ANDROID)
+#if defined(ANDROID)
 #include "../gfx/drivers_context/android_ctx.c"
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/android_vk_ctx.c"
@@ -277,6 +268,8 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/qnx_ctx.c"
 #elif defined(EMSCRIPTEN)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
+#elif defined(__PS3__) && !defined(__PSL1GHT__)
+#include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
@@ -574,6 +567,7 @@ FONTS
 ============================================================ */
 
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
+#include "../gfx/drivers_font_renderer/bitmapfont_10x10.c"
 #include "../gfx/font_driver.c"
 
 #if defined(HAVE_D3D9) && defined(HAVE_D3DX)
@@ -685,22 +679,22 @@ INPUT
 
 #include "../input/input_autodetect_builtin.c"
 
-#if defined(__CELLOS_LV2__)
-#ifdef __PSL1GHT__
+#if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
+#include "../input/drivers/psp_input.c"
+#include "../input/drivers_joypad/psp_joypad.c"
+#elif defined(PS2)
+#include "../input/drivers/ps2_input.c"
+#include "../input/drivers_joypad/ps2_joypad.c"
+#elif defined(__PS3__)
+#if defined(__PSL1GHT__)
 #include "../input/drivers/psl1ght_input.c"
 #else
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
 #endif
-#elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
-#include "../input/drivers/psp_input.c"
-#include "../input/drivers_joypad/psp_joypad.c"
 #elif defined(ORBIS)
 #include "../input/drivers/ps4_input.c"
 #include "../input/drivers_joypad/ps4_joypad.c"
-#elif defined(PS2)
-#include "../input/drivers/ps2_input.c"
-#include "../input/drivers_joypad/ps2_joypad.c"
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 #include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)
@@ -743,6 +737,9 @@ INPUT
 #elif defined(__WINRT__)
 #include "../input/drivers/xdk_xinput_input.c"
 #include "../input/drivers/uwp_input.c"
+#elif defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+#include "../input/drivers/sdl_dingux_input.c"
+#include "../input/drivers_joypad/sdl_dingux_joypad.c"
 #endif
 
 #ifdef HAVE_WAYLAND
@@ -776,6 +773,17 @@ INPUT
 #ifdef HAVE_UDEV
 #include "../input/drivers/udev_input.c"
 #include "../input/drivers_joypad/udev_joypad.c"
+#endif
+
+#if defined(HAVE_LIBSHAKE)
+#include "../deps/libShake/src/common/error.c"
+#include "../deps/libShake/src/common/helpers.c"
+#include "../deps/libShake/src/common/presets.c"
+#if defined(OSX)
+#include "../deps/libShake/src/osx/shake.c"
+#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#include "../deps/libShake/src/linux/shake.c"
+#endif
 #endif
 
 /*============================================================
@@ -888,7 +896,7 @@ RSOUND
 /*============================================================
 AUDIO
 ============================================================ */
-#if defined(__CELLOS_LV2__)
+#if defined(__PS3__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
 #include "../audio/drivers/xenon360_audio.c"
@@ -905,7 +913,9 @@ AUDIO
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
+#ifdef HAVE_THREADS
 #include "../audio/drivers/ctr_dsp_thread_audio.c"
+#endif
 #endif
 
 #ifdef HAVE_XAUDIO
@@ -1001,12 +1011,17 @@ FILTERS
 #include "../gfx/video_filters/lq2x.c"
 #include "../gfx/video_filters/phosphor2x.c"
 #include "../gfx/video_filters/normal2x.c"
+#include "../gfx/video_filters/normal2x_width.c"
+#include "../gfx/video_filters/normal2x_height.c"
+#include "../gfx/video_filters/normal4x.c"
 #include "../gfx/video_filters/scanline2x.c"
 #include "../gfx/video_filters/grid2x.c"
+#include "../gfx/video_filters/grid3x.c"
 #include "../gfx/video_filters/gameboy3x.c"
 #include "../gfx/video_filters/gameboy4x.c"
 #include "../gfx/video_filters/dot_matrix_3x.c"
 #include "../gfx/video_filters/dot_matrix_4x.c"
+#include "../gfx/video_filters/upscale_1_5x.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER
@@ -1101,7 +1116,7 @@ CONFIGURATION
 STATE MANAGER
 ============================================================ */
 #ifdef HAVE_REWIND
-#include "../managers/state_manager.c"
+#include "../state_manager.c"
 #endif
 
 /*============================================================
@@ -1122,21 +1137,21 @@ FRONTEND
 #include "../frontend/drivers/platform_xdk.c"
 #endif
 
-#if defined(__CELLOS_LV2__)
-#include "../frontend/drivers/platform_ps3.c"
-#elif defined(GEKKO)
+#if defined(GEKKO)
 #include "../frontend/drivers/platform_gx.c"
 #ifdef HW_RVL
 #include "../frontend/drivers/platform_wii.c"
 #endif
 #elif defined(__wiiu__)
 #include "../frontend/drivers/platform_wiiu.c"
-#elif defined(PSP) || defined(VITA)
-#include "../frontend/drivers/platform_psp.c"
-#elif defined(ORBIS)
-#include "../frontend/drivers/platform_orbis.c"
 #elif defined(PS2)
 #include "../frontend/drivers/platform_ps2.c"
+#elif defined(__PS3__)
+#include "../frontend/drivers/platform_ps3.c"
+#elif defined(ORBIS)
+#include "../frontend/drivers/platform_orbis.c"
+#elif defined(PSP) || defined(VITA)
+#include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
 #include "../frontend/drivers/platform_ctr.c"
 #elif defined(SWITCH) && defined(HAVE_LIBNX)
@@ -1149,6 +1164,10 @@ FRONTEND
 #include "../frontend/drivers/platform_unix.c"
 #elif defined(DJGPP)
 #include "../frontend/drivers/platform_dos.c"
+#endif
+
+#if defined(DINGUX)
+#include "../dingux/dingux_utils.c"
 #endif
 
 #include "../core_info.c"
@@ -1207,6 +1226,7 @@ RETROARCH
 #include "../intl/msg_hash_fa.c"
 #include "../intl/msg_hash_he.c"
 #include "../intl/msg_hash_ast.c"
+#include "../intl/msg_hash_fi.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1269,8 +1289,8 @@ THREAD
 #include "../audio/audio_thread_wrapper.c"
 #endif
 
-/* needed for both playlists and netplay lobbies */
-#include "../libretro-common/formats/json/jsonsax_full.c"
+/* needed for playlists, netplay lobbies and achievements */
+#include "../libretro-common/formats/json/rjson.c"
 
 /*============================================================
 NETPLAY
@@ -1352,6 +1372,7 @@ MENU
 #include "../gfx/widgets/gfx_widget_progress_message.c"
 #ifdef HAVE_CHEEVOS
 #include "../gfx/widgets/gfx_widget_achievement_popup.c"
+#include "../gfx/widgets/gfx_widget_leaderboard_display.c"
 #endif
 #include "../gfx/widgets/gfx_widget_load_content_animation.c"
 #endif

@@ -31,18 +31,22 @@ RETRO_BEGIN_DECLS
 
 #define ANIM_IS_ACTIVE(_p) ((_p)->animation_is_active || (_p)->ticker_is_active)
 
+#define GFX_ANIMATION_CLEAR_ACTIVE(anim) \
+{ \
+   (anim)->animation_is_active = false; \
+   (anim)->ticker_is_active    = false; \
+}
+
+#define GFX_ANIMATION_SET_ACTIVE(anim) \
+{ \
+   (anim)->animation_is_active = true; \
+   (anim)->ticker_is_active    = true; \
+}
+
 typedef void  (*tween_cb)  (void*);
 
 typedef void (*update_time_cb) (float *ticker_pixel_increment,
       unsigned width, unsigned height);
-
-enum gfx_animation_ctl_state
-{
-   MENU_ANIMATION_CTL_NONE = 0,
-   MENU_ANIMATION_CTL_DEINIT,
-   MENU_ANIMATION_CTL_CLEAR_ACTIVE,
-   MENU_ANIMATION_CTL_SET_ACTIVE
-};
 
 enum gfx_animation_easing_type
 {
@@ -215,6 +219,8 @@ struct gfx_animation
    uint64_t ticker_pixel_line_idx; /* updated every frame */
    retro_time_t cur_time;
    retro_time_t old_time;
+   update_time_cb updatetime_cb;   /* ptr alignment */
+                                   /* By default, this should be a NOOP */
    struct tween* list;
    struct tween* pending;
 
@@ -228,9 +234,8 @@ struct gfx_animation
 
 typedef struct gfx_animation gfx_animation_t;
 
-void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry);
-
-void gfx_timer_kill(gfx_timer_t *timer);
+void gfx_animation_timer_start(gfx_timer_t *timer,
+      gfx_timer_ctx_entry_t *timer_entry);
 
 bool gfx_animation_update(
       gfx_animation_t *p_anim,
@@ -254,19 +259,7 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry);
 
 void gfx_animation_push_delayed(unsigned delay, gfx_animation_ctx_entry_t *entry);
 
-bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data);
-
-uint64_t gfx_animation_get_ticker_idx(void);
-
-uint64_t gfx_animation_get_ticker_slow_idx(void);
-
-uint64_t gfx_animation_get_ticker_pixel_idx(void);
-
-uint64_t gfx_animation_get_ticker_pixel_line_idx(void);
-
-void gfx_animation_set_update_time_cb(update_time_cb cb);
-
-void gfx_animation_unset_update_time_cb(void);
+void gfx_animation_deinit(gfx_animation_t *p_anim);
 
 gfx_animation_t *anim_get_ptr(void);
 

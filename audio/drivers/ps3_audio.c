@@ -39,40 +39,41 @@ typedef struct
    volatile bool quit_thread;
 } ps3_audio_t;
 
+
 #ifdef __PSL1GHT__
 static void event_loop(void *data)
 #else
 static void event_loop(uint64_t data)
 #endif
 {
-   float out_tmp[CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS]
+   float out_tmp[AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS]
       __attribute__((aligned(16)));
    sys_event_queue_t id;
    sys_ipc_key_t key;
    sys_event_t event;
    ps3_audio_t *aud = (ps3_audio_t*)(uintptr_t)data;
 
-   cellAudioCreateNotifyEventQueue(&id, &key);
-   cellAudioSetNotifyEventQueue(key);
+   audioCreateNotifyEventQueue(&id, &key);
+   audioSetNotifyEventQueue(key);
 
    while (!aud->quit_thread)
    {
-      sys_event_queue_receive(id, &event, SYS_NO_TIMEOUT);
+      sysEventQueueReceive(id, &event, PS3_SYS_NO_TIMEOUT);
 
-      sys_lwmutex_lock(&aud->lock, SYS_NO_TIMEOUT);
+      sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
       if (FIFO_READ_AVAIL(aud->buffer) >= sizeof(out_tmp))
          fifo_read(aud->buffer, out_tmp, sizeof(out_tmp));
       else
          memset(out_tmp, 0, sizeof(out_tmp));
-      sys_lwmutex_unlock(&aud->lock);
-      sys_lwcond_signal(&aud->cond);
+      sysLwMutexUnlock(&aud->lock);
+      sysLwCondSignal(&aud->cond);
 
-      cellAudioAddData(aud->audio_port, out_tmp,
-            CELL_AUDIO_BLOCK_SAMPLES, 1.0);
+      audioAddData(aud->audio_port, out_tmp,
+            AUDIO_BLOCK_SAMPLES, 1.0);
    }
 
-   cellAudioRemoveNotifyEventQueue(key);
-   sys_ppu_thread_exit(0);
+   audioRemoveNotifyEventQueue(key);
+   sysThreadExit(0);
 }
 
 static void *ps3_audio_init(const char *device,
@@ -80,67 +81,63 @@ static void *ps3_audio_init(const char *device,
       unsigned block_frames,
       unsigned *new_rate)
 {
-   CellAudioPortParam params;
-   ps3_audio_t *data = calloc(1, sizeof(*data));
-   if (!data)
-      return NULL;
-
-   (void)latency;
-   (void)device;
-   (void)rate;
-
-   cellAudioInit();
-
-   params.numChannels = AUDIO_CHANNELS;
-   params.numBlocks   = AUDIO_BLOCKS;
-#if 0
-#ifdef HAVE_HEADSET
-   if(global->console.sound.mode == SOUND_MODE_HEADSET)
-      params.param_attrib = CELL_AUDIO_PORTATTR_OUT_SECONDARY;
-   else
-#endif
-#endif
-      params.param_attrib = 0;
-
-   if (cellAudioPortOpen(&params, &data->audio_port) != CELL_OK)
-   {
-      cellAudioQuit();
-      free(data);
-      return NULL;
-   }
-
-   data->buffer = fifo_new(CELL_AUDIO_BLOCK_SAMPLES *
-         AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
-
+   audioPortParam params;
+   ps3_audio_t *data                 = NULL;
 #ifdef __PSL1GHT__
-   sys_lwmutex_attr_t lock_attr =
+   sys_lwmutex_attr_t lock_attr      =
    {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
    sys_lwmutex_attr_t cond_lock_attr =
    {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
-   sys_lwcond_attribute_t cond_attr = {"\0"};
+   sys_lwcond_attr_t cond_attr       = {"\0"};
 #else
-   sys_lwmutex_attribute_t lock_attr;
-   sys_lwmutex_attribute_t cond_lock_attr;
-   sys_lwcond_attribute_t cond_attr;
+   sys_lwmutex_attr_t lock_attr;
+   sys_lwmutex_attr_t cond_lock_attr;
+   sys_lwcond_attr_t cond_attr;
 
    sys_lwmutex_attribute_initialize(lock_attr);
    sys_lwmutex_attribute_initialize(cond_lock_attr);
    sys_lwcond_attribute_initialize(cond_attr);
 #endif
 
-   sys_lwmutex_create(&data->lock, &lock_attr);
-   sys_lwmutex_create(&data->cond_lock, &cond_lock_attr);
-   sys_lwcond_create(&data->cond, &data->cond_lock, &cond_attr);
+   data                              = calloc(1, sizeof(*data));
+   if (!data)
+      return NULL;
 
-   cellAudioPortStart(data->audio_port);
+   audioInit();
+
+   params.numChannels                = AUDIO_CHANNELS;
+   params.numBlocks                  = AUDIO_BLOCKS;
+   params.param_attrib               = 0;
+#if 0
+#ifdef HAVE_HEADSET
+   if(global->console.sound.mode == SOUND_MODE_HEADSET)
+      params.param_attrib            = CELL_AUDIO_PORTATTR_OUT_SECONDARY;
+#endif
+#endif
+
+   if (audioPortOpen(&params, &data->audio_port) != CELL_OK)
+   {
+      audioQuit();
+      free(data);
+      return NULL;
+   }
+
+   data->buffer = fifo_new(AUDIO_BLOCK_SAMPLES *
+         AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
+
+   sysLwMutexCreate(&data->lock, &lock_attr);
+   sysLwMutexCreate(&data->cond_lock, &cond_lock_attr);
+   sysLwCondCreate(&data->cond, &data->cond_lock, &cond_attr);
+
+   audioPortStart(data->audio_port);
    data->started = true;
-   sys_ppu_thread_create(&data->thread, event_loop,
+   sysThreadCreate(&data->thread, event_loop,
 #ifdef __PSL1GHT__
    data,
 #else
    (uint64_t)data,
 #endif
-   1500, 0x1000, SYS_PPU_THREAD_CREATE_JOINABLE, (char*)"sound");
+   1500, 0x1000, SYS_THREAD_CREATE_JOINABLE, (char*)"sound");
 
    return data;
 }
@@ -156,11 +153,11 @@ static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
    }
 
    while (FIFO_WRITE_AVAIL(aud->buffer) < size)
-      sys_lwcond_wait(&aud->cond, 0);
+      sysLwCondWait(&aud->cond, 0);
 
-   sys_lwmutex_lock(&aud->lock, SYS_NO_TIMEOUT);
+   sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
    fifo_write(aud->buffer, buf, size);
-   sys_lwmutex_unlock(&aud->lock);
+   sysLwMutexUnlock(&aud->lock);
 
    return size;
 }
@@ -170,7 +167,7 @@ static bool ps3_audio_stop(void *data)
    ps3_audio_t *aud = data;
    if (aud->started)
    {
-      cellAudioPortStop(aud->audio_port);
+      audioPortStop(aud->audio_port);
       aud->started = false;
    }
    return true;
@@ -181,7 +178,7 @@ static bool ps3_audio_start(void *data, bool is_shutdown)
    ps3_audio_t *aud = data;
    if (!aud->started)
    {
-      cellAudioPortStart(aud->audio_port);
+      audioPortStart(aud->audio_port);
       aud->started = true;
    }
    return true;
@@ -209,29 +206,28 @@ static void ps3_audio_free(void *data)
 
    aud->quit_thread = true;
    ps3_audio_start(aud, false);
-   sys_ppu_thread_join(aud->thread, &val);
+   sysThreadJoin(aud->thread, &val);
 
    ps3_audio_stop(aud);
-   cellAudioPortClose(aud->audio_port);
-   cellAudioQuit();
+   audioPortClose(aud->audio_port);
+   audioQuit();
    fifo_free(aud->buffer);
 
-   sys_lwmutex_destroy(&aud->lock);
-   sys_lwmutex_destroy(&aud->cond_lock);
-   sys_lwcond_destroy(&aud->cond);
+   sysLwMutexDestroy(&aud->lock);
+   sysLwMutexDestroy(&aud->cond_lock);
+   sysLwCondDestroy(&aud->cond);
 
    free(data);
 }
 
 static bool ps3_audio_use_float(void *data)
 {
-   (void)data;
    return true;
 }
 
 static size_t ps3_audio_write_avail(void *data)
 {
-   (void)data;
+   /* TODO/FIXME - implement? */
    return 0;
 }
 

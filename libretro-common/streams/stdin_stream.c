@@ -38,7 +38,7 @@
 #include <retro_environment.h>
 #include <streams/stdin_stream.h>
 
-#if (defined(_WIN32) && defined(_XBOX)) || defined(__CELLOS_LV2__) || defined(__WINRT__)
+#if (defined(_WIN32) && defined(_XBOX)) || defined(__WINRT__)
 size_t read_stdin(char *buf, size_t size)
 {
    /* Not implemented. */

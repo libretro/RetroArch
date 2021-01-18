@@ -28,7 +28,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <rhash.h>
+#include <lrc_hash.h>
 
 #include <retro_assert.h>
 #include <string/stdstring.h>

@@ -1,4 +1,10 @@
+ifeq ($(TARGET),)
+ifeq ($(LIBRETRO),)
 TARGET := retroarch.js
+else
+TARGET := $(LIBRETRO)_libretro.js
+endif
+endif
 
 EOPT = USE_ZLIB=1 # Emscripten specific options
 EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
@@ -35,8 +41,19 @@ HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_STB_FONT = 1
 HAVE_CONFIGFILE = 1
 HAVE_CHEATS = 1
+HAVE_IBXM = 1
 
-MEMORY = 134217728
+ASYNC ?= 0
+ifeq ($(LIBRETRO), mupen64plus)
+   ASYNC = 1
+endif
+
+LTO ?= 0
+ifeq ($(LIBRETRO), tyrquake)
+   LTO = 0
+endif
+
+MEMORY ?= 134217728
 
 PRECISE_F32 = 1
 

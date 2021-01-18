@@ -47,7 +47,7 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #ifdef HAVE_REWIND
-#include "../../managers/state_manager.h"
+#include "../../state_manager.h"
 #endif
 
 #include "../../retroarch.h"
@@ -1746,31 +1746,26 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Bookkeeping on start of frame. */
    struct vk_per_frame *chain                    = &vk->swapchain[frame_index];
    struct vk_image *backbuffer                   = &vk->backbuffers[swapchain_index];
+   struct vk_descriptor_manager *manager         = &chain->descriptor_manager;
+   struct vk_buffer_chain *buff_chain_vbo        = &chain->vbo;
+   struct vk_buffer_chain *buff_chain_ubo        = &chain->ubo;
 
    vk->chain                                     = chain;
    vk->backbuffer                                = backbuffer;
 
-   {
-      struct vk_descriptor_manager *manager = &chain->descriptor_manager;
-      VK_DESCRIPTOR_MANAGER_RESTART(manager);
-   }
-
-   {
-      struct vk_buffer_chain *buff_chain = &chain->vbo;
-      VK_BUFFER_CHAIN_DISCARD(buff_chain);
-   }
-   {
-      struct vk_buffer_chain *buff_chain = &chain->ubo;
-      VK_BUFFER_CHAIN_DISCARD(buff_chain);
-   }
+   VK_DESCRIPTOR_MANAGER_RESTART(manager);
+   VK_BUFFER_CHAIN_DISCARD(buff_chain_vbo);
+   VK_BUFFER_CHAIN_DISCARD(buff_chain_ubo);
 
    /* Start recording the command buffer. */
-   vk->cmd                     = chain->cmd;
+   vk->cmd                                       = chain->cmd;
 
-   begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-   begin_info.pNext            = NULL;
-   begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-   begin_info.pInheritanceInfo = NULL;
+   begin_info.sType                              = 
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin_info.pNext                              = NULL;
+   begin_info.flags                              = 
+      VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.pInheritanceInfo                   = NULL;
 
    vkResetCommandBuffer(vk->cmd, 0);
 
@@ -1850,16 +1845,15 @@ static bool vulkan_frame(void *data, const void *frame,
                memcpy(dst, src, frame_width * bpp);
       }
 
+      VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, chain->texture);
+
       /* If we have an optimal texture, copy to that now. */
       if (chain->texture_optimal.memory != VK_NULL_HANDLE)
       {
-         vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-               &chain->texture_optimal, &chain->texture);
+         struct vk_texture *dynamic = &chain->texture_optimal;
+         struct vk_texture *staging = &chain->texture;
+         VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd, dynamic, staging);
       }
-      else if (chain->texture.need_manual_cache_management
-            && chain->texture.memory != VK_NULL_HANDLE)
-         VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device,
-               chain->texture.memory);
 
       vk->last_valid_index = frame_index;
    }
@@ -1971,9 +1965,12 @@ static bool vulkan_frame(void *data, const void *frame,
            {
                if (vk->menu.dirty[vk->menu.last_index])
                {
-                   vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-                           optimal, texture);
-                   vk->menu.dirty[vk->menu.last_index] = false;
+                  struct vk_texture *dynamic = optimal;
+                  struct vk_texture *staging = texture;
+                  VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, staging);
+                  VULKAN_COPY_STAGING_TO_DYNAMIC(vk, vk->cmd,
+                        dynamic, staging);
+                  vk->menu.dirty[vk->menu.last_index] = false;
                }
            }
        }
@@ -2085,52 +2082,58 @@ static bool vulkan_frame(void *data, const void *frame,
     */
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
-   if (
-         backbuffer->image != VK_NULL_HANDLE &&
-         vk->context->has_acquired_swapchain &&
-         (vk->readback.pending || vk->readback.streamed))
+   if ( 
+         backbuffer->image != VK_NULL_HANDLE
+         && vk->context->has_acquired_swapchain
+      )
    {
-      /* We cannot safely read back from an image which
-       * has already been presented as we need to
-       * maintain the PRESENT_SRC_KHR layout.
-       *
-       * If we're reading back, perform the readback before presenting.
-       */
-      VULKAN_IMAGE_LAYOUT_TRANSITION(
-            vk->cmd, backbuffer->image,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_ACCESS_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT);
+      if (vk->readback.pending || vk->readback.streamed)
+      {
+         /* We cannot safely read back from an image which
+          * has already been presented as we need to
+          * maintain the PRESENT_SRC_KHR layout.
+          *
+          * If we're reading back, 
+          * perform the readback before presenting.
+          */
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_ACCESS_TRANSFER_READ_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-      vulkan_readback(vk);
+         vulkan_readback(vk);
 
-      /* Prepare for presentation after transfers are complete. */
-      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd,
-            backbuffer->image,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            0,
-            VK_ACCESS_MEMORY_READ_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+         /* Prepare for presentation after transfers are complete. */
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+               0,
+               VK_ACCESS_MEMORY_READ_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
-      vk->readback.pending = false;
-   }
-   else if (backbuffer->image != VK_NULL_HANDLE &&
-         vk->context->has_acquired_swapchain)
-   {
-      /* Prepare backbuffer for presentation. */
-      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd,
-            backbuffer->image,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            0,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+         vk->readback.pending = false;
+      }
+      else
+      {
+         /* Prepare backbuffer for presentation. */
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               0,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+      }
    }
 
    if (waits_for_semaphores &&
@@ -2446,9 +2449,10 @@ static void vulkan_set_texture_frame(void *data,
             NULL, rgb32 ? NULL : &br_swizzle,
             VULKAN_TEXTURE_DYNAMIC);
    }
-   else if (texture->need_manual_cache_management
-         && texture->memory != VK_NULL_HANDLE)
-       VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, texture->memory);
+   else
+   {
+      VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, texture);
+   }
 
    vkUnmapMemory(vk->context->device, texture->memory);
    vk->menu.dirty[index] = true;

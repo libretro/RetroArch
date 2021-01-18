@@ -86,7 +86,7 @@ id apple_platform;
 }
 #endif
 
-#if TARGET_OS_OSX
+#ifdef OSX
 @property(nonatomic, retain) NSWindow IBOutlet *window;
 
 @end

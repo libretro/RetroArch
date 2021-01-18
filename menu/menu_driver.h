@@ -127,6 +127,7 @@ enum menu_settings_type
    MENU_SETTING_PLAYLIST_MANAGER_SORT_MODE,
    MENU_BLUETOOTH,
    MENU_WIFI,
+   MENU_WIFI_DISCONNECT,
    MENU_ROOM,
    MENU_ROOM_LAN,
    MENU_ROOM_RELAY,
@@ -194,9 +195,10 @@ enum menu_settings_type
    MENU_SETTINGS_SUBSYSTEM_LAST = MENU_SETTINGS_SUBSYSTEM_ADD + RARCH_MAX_SUBSYSTEMS,
    MENU_SETTINGS_CHEAT_MATCH,
 
+   MENU_SET_SCREEN_BRIGHTNESS,
+
 #ifdef HAVE_LAKKA_SWITCH
    MENU_SET_SWITCH_GPU_PROFILE,
-   MENU_SET_SWITCH_BRIGHTNESS,
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
    MENU_SET_SWITCH_CPU_PROFILE,
@@ -220,13 +222,16 @@ enum menu_settings_type
    MENU_SETTING_ACTION_CORE_DELETE_BACKUP,
    MENU_SETTING_ITEM_CORE_DELETE_BACKUP,
 
+   MENU_SETTING_ACTION_VIDEO_FILTER_REMOVE,
+   MENU_SETTING_ACTION_AUDIO_DSP_PLUGIN_REMOVE,
+
    MENU_SETTINGS_LAST
 };
 
 typedef struct menu_ctx_driver
 {
    /* Set a framebuffer texture. This is used for instance by RGUI. */
-   void  (*set_texture)(void);
+   void  (*set_texture)(void *data);
    /* Render a messagebox to the screen. */
    void  (*render_messagebox)(void *data, const char *msg);
    int   (*iterate)(void *data, void *userdata, enum menu_action action);

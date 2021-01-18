@@ -1,9 +1,39 @@
-CC = /opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-gcc
-CXX = /opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-g++
+#########################
+## Toolchain variables ##
+#########################
+
+# Default toolchain directory
+TOOLCHAIN_DIR=/opt/gcw0-toolchain
+
+# All toolchain-related variables may be
+# overridden via the command line
+ifdef GCW0_CC
+CC                    = $(GCW0_CC)
+else
+CC                    = $(TOOLCHAIN_DIR)/usr/bin/mipsel-gcw0-linux-uclibc-gcc
+endif
+
+ifdef GCW0_CXX
+CXX                   = $(GCW0_CXX)
+else
+CXX                   = $(TOOLCHAIN_DIR)/usr/bin/mipsel-gcw0-linux-uclibc-g++
+endif
+
+GCW0_SDL_CONFIG      ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config
+GCW0_FREETYPE_CONFIG ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config
+GCW0_MK_SQUASH_FS    ?= $(TOOLCHAIN_DIR)/usr/bin/mksquashfs
+
+GCW0_INC_DIR         ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/include
+GCW0_LIB_DIR         ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/lib
+
+#########################
+#########################
+
 PACKAGE_NAME = retroarch
 
 DEBUG ?= 0
 
+DINGUX = 1
 HAVE_SCREENSHOTS = 1
 HAVE_REWIND = 1
 HAVE_7ZIP = 1
@@ -19,7 +49,7 @@ HAVE_CC = 1
 HAVE_CC_RESAMPLER = 1
 HAVE_CHD = 1
 HAVE_CHEEVOS = 1
-HAVE_COMMAND = 1
+HAVE_COMMAND = 0
 HAVE_CXX = 1
 HAVE_DR_MP3 = 1
 HAVE_DYNAMIC = 1
@@ -57,7 +87,7 @@ HAVE_SHADERPIPELINE = 1
 HAVE_STB_FONT = 1
 HAVE_STB_IMAGE = 1
 HAVE_STB_VORBIS = 1
-HAVE_STDIN_CMD = 1
+HAVE_STDIN_CMD = 0
 HAVE_STRCASESTR = 1
 HAVE_THREADS = 1
 HAVE_TRANSLATE = 1
@@ -68,6 +98,7 @@ HAVE_ZLIB = 1
 HAVE_CONFIGFILE = 1
 HAVE_PATCH = 1
 HAVE_CHEATS = 1
+HAVE_LIBSHAKE = 1
 
 OS = Linux
 TARGET = retroarch
@@ -75,7 +106,9 @@ OPK_NAME = retroarch.opk
 
 OBJ :=
 LINK := $(CXX)
-DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -ffast-math -fomit-frame-pointer -fdata-sections
+DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -ffast-math -fomit-frame-pointer
+DEF_FLAGS += -mplt -mno-shared
+DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DDINGUX=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
 DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE
@@ -83,9 +116,9 @@ LIBS := -ldl -lz -lrt -lcrypto -lssl -ludev -pthread
 CFLAGS :=
 CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS :=
-LDFLAGS := -flto
-INCLUDE_DIRS = -I/opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/include
-LIBRARY_DIRS = -L/opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/lib
+LDFLAGS := -flto -Wl,--gc-sections
+INCLUDE_DIRS = -I$(GCW0_INC_DIR)
+LIBRARY_DIRS = -L$(GCW0_LIB_DIR)
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
 DEFINES += -DHAVE_C99=1 -DHAVE_CXX=1 -DHAVE_OPENDINGUX_FBDEV=1
 DEFINES += -DHAVE_GETOPT_LONG=1 -DHAVE_STRCASESTR=1 -DHAVE_DYNAMIC=1
@@ -94,10 +127,10 @@ DEFINES += -DHAVE_ONLINE_UPDATER=1
 DEFINES += -DHAVE_UPDATE_ASSETS=1
 DEFINES += -DHAVE_UDEV=1
 
-SDL_DINGUX_CFLAGS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config --cflags)
-SDL_DINGUX_LIBS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config --libs)
-FREETYPE_CFLAGS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config --cflags)
-FREETYPE_LIBS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config --libs)
+SDL_DINGUX_CFLAGS := $(shell $(GCW0_SDL_CONFIG) --cflags)
+SDL_DINGUX_LIBS := $(shell $(GCW0_SDL_CONFIG) --libs)
+FREETYPE_CFLAGS := $(shell $(GCW0_FREETYPE_CONFIG) --cflags)
+FREETYPE_LIBS := $(shell $(GCW0_FREETYPE_CONFIG) --libs)
 AL_LIBS := -lopenal
 OPENGLES_CFLAGS := -DMESA_EGL_NO_X11_HEADERS
 OPENGLES_LIBS := -lGLESv2 -lEGL
@@ -127,8 +160,8 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 define DESKTOP_ENTRY
 [Desktop Entry]
-Name=retroarch
-Comment=Retroarch
+Name=RetroArch
+Comment=Frontend for emulators, game engines
 Exec=retroarch
 Terminal=false
 Type=Application
@@ -147,27 +180,27 @@ SYMBOL_MAP := -Wl,-Map=output.map
 
 $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.m
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo OBJC $<),)
-	$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
+	$(Q)$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.S $(HEADERS)
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo AS $<),)
-	$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR_BASE)
@@ -179,7 +212,7 @@ opk: $(TARGET)
 	echo "$$DESKTOP_ENTRY" > default.gcw0.desktop
 	rm -f $(OPK_NAME)
 	cp media/ico_src/icon32.png retroarch.png
-	mksquashfs retroarch default.gcw0.desktop retroarch.png $(OPK_NAME) -all-root -no-xattrs -noappend -no-exports
+	$(GCW0_MK_SQUASH_FS) retroarch default.gcw0.desktop retroarch.png $(OPK_NAME) -all-root -no-xattrs -noappend -no-exports
 	rm -f default.gcw0.desktop retroarch.png
 
 .PHONY: all clean opk

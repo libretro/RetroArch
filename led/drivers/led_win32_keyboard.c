@@ -17,87 +17,77 @@ static void key_translate(int *key)
 #ifdef _WIN32
    switch (*key)
    {
-      case RETROK_NUMLOCK:
+      case 0:
          *key = VK_NUMLOCK;
          break;
-      case RETROK_CAPSLOCK:
+      case 1:
          *key = VK_CAPITAL;
          break;
-      case RETROK_SCROLLOCK:
+      case 2:
          *key = VK_SCROLL;
          break;
    }
 #endif
 }
 
-void led_set(int key, int state)
-{
-#ifdef _WIN32
-   BYTE keyState[256];
-#endif
-
-   key_translate(&key);
-
-#ifdef _WIN32
-   GetKeyboardState((LPBYTE)&keyState);
-   if ((state && !(keyState[key] & 1)) ||
-       (!state && (keyState[key] & 1)))
-   {
-      keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
-      keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-   }
-#endif
-}
-
-int led_get(int key)
-{
-   short status;
-   key_translate(&key);
-
-#ifdef _WIN32
-   status = GetKeyState(key);
-#endif
-   return status;
-}
-
 typedef struct
 {
    int setup[MAX_LEDS];
+   int state[MAX_LEDS];
    int map[MAX_LEDS];
+   bool init;
 } keyboard_led_t;
 
 /* TODO/FIXME - static globals */
 static keyboard_led_t win32kb_curins;
 static keyboard_led_t *win32kb_cur = &win32kb_curins;
 
+static int keyboard_led(int led, int state)
+{
+   int status;
+   int key = led;
+
+   if ((led < 0) || (led >= MAX_LEDS))
+      return -1;
+
+   key_translate(&key);
+
+#ifdef _WIN32
+   status = GetKeyState(key);
+#endif
+
+   if (state == -1)
+      return status;
+
+   if ((state && !status) ||
+       (!state && status))
+   {
+#ifdef _WIN32
+      keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
+      keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+      win32kb_cur->state[led] = state;
+#endif
+   }
+   return -1;
+}
+
 static void keyboard_init(void)
 {
    int i;
    settings_t *settings = config_get_ptr();
 
-   if (!settings)
+   if (!settings || win32kb_cur->init)
       return;
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      win32kb_cur->setup[i]     = -1;
-      win32kb_cur->map[i]       = settings->uints.led_map[i];
+      win32kb_cur->setup[i] = keyboard_led(i, -1);
+      win32kb_cur->state[i] = -1;
+      win32kb_cur->map[i]   = settings->uints.led_map[i];
       if (win32kb_cur->map[i] < 0)
-         win32kb_cur->map[i]    = i;
-      
-      switch (i)
-      {
-         case 0:
-            win32kb_cur->setup[i] = led_get(RETROK_NUMLOCK);
-            break;
-         case 1:
-            win32kb_cur->setup[i] = led_get(RETROK_CAPSLOCK);
-            break;
-         case 2:
-            win32kb_cur->setup[i] = led_get(RETROK_SCROLLOCK);
-            break;
-      }
+         win32kb_cur->map[i] = i;
    }
+   win32kb_cur->init = true;
 }
 
 static void keyboard_free(void)
@@ -106,23 +96,9 @@ static void keyboard_free(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      if (win32kb_cur->setup[i] < 0)
-         continue;
-         
-      switch (i)
-      {
-         case 0:
-            led_set(RETROK_NUMLOCK, win32kb_cur->setup[i]);
-            break;
-         case 1:
-            led_set(RETROK_CAPSLOCK, win32kb_cur->setup[i]);
-            break;
-         case 2:
-            led_set(RETROK_SCROLLOCK, win32kb_cur->setup[i]);
-            break;
-      }
-
-      win32kb_cur->setup[i] = -1;
+      if (win32kb_cur->state[i] != -1 &&
+          win32kb_cur->state[i] != win32kb_cur->setup[i])
+         keyboard_led(i, win32kb_cur->setup[i]);
    }
 }
 
@@ -131,18 +107,7 @@ static void keyboard_set(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return;
 
-   switch (win32kb_cur->map[led])
-   {
-      case 0:
-         led_set(RETROK_NUMLOCK, state);
-         break;
-      case 1:
-         led_set(RETROK_CAPSLOCK, state);
-         break;
-      case 2:
-         led_set(RETROK_SCROLLOCK, state);
-         break;
-   }
+   keyboard_led(win32kb_cur->map[led], state);
 }
 
 const led_driver_t keyboard_led_driver = {

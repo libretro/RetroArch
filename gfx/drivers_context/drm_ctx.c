@@ -90,7 +90,80 @@ struct drm_fb
    uint32_t fb_id;
 };
 
+/*
+ * https://github.com/libretro/RetroArch/pull/11590
+ * https://www.raspberrypi.org/documentation/configuration/config-txt/video.md
+ */
+typedef struct hdmi_timings
+{
+   int h_active_pixels; // horizontal pixels (width)
+   int h_sync_polarity; // invert hsync polarity
+   int h_front_porch;   // horizontal forward padding from DE acitve edge
+   int h_sync_pulse;    // hsync pulse width in pixel clocks
+   int h_back_porch;    // vertical back padding from DE active edge
+   int v_active_lines;  // vertical pixels height (lines)
+   int v_sync_polarity; // invert vsync polarity
+   int v_front_porch;   // vertical forward padding from DE active edge
+   int v_sync_pulse;    // vsync pulse width in pixel clocks
+   int v_back_porch;    // vertical back padding from DE active edge
+   int v_sync_offset_a; // leave at zero
+   int v_sync_offset_b; // leave at zero
+   int pixel_rep;       // leave at zero
+   int frame_rate;      // screen refresh rate in Hz
+   int interlaced;      // leave at zero
+   int pixel_freq;      // clock frequency (width*height*framerate)
+   int aspect_ratio;    // *
+} hdmi_timings_t;
+
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
+static drmModeModeInfo gfx_ctx_crt_switch_mode;
+
+/* Load custom hdmi timings from config */
+bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
+{
+   int ret;
+   hdmi_timings_t timings;
+   settings_t *settings = config_get_ptr();
+   char *crt_switch_timings = settings->arrays.crt_switch_timings;
+
+   if(modeInfo != NULL && !string_is_empty(crt_switch_timings)) {
+      ret = sscanf(crt_switch_timings, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+                   &timings.h_active_pixels, &timings.h_sync_polarity, &timings.h_front_porch,
+                   &timings.h_sync_pulse, &timings.h_back_porch,
+                   &timings.v_active_lines, &timings.v_sync_polarity, &timings.v_front_porch,
+                   &timings.v_sync_pulse, &timings.v_back_porch,
+                   &timings.v_sync_offset_a, &timings.v_sync_offset_b, &timings.pixel_rep, &timings.frame_rate,
+                   &timings.interlaced, &timings.pixel_freq, &timings.aspect_ratio);
+      if (ret != 17) {
+         RARCH_ERR("[DRM]: malformed mode requested: %s\n", crt_switch_timings);
+         return false;
+      }
+
+      memset(modeInfo, 0, sizeof(drmModeModeInfo));
+      modeInfo->clock = timings.pixel_freq / 1000;
+      modeInfo->hdisplay = timings.h_active_pixels;
+      modeInfo->hsync_start = modeInfo->hdisplay + timings.h_front_porch;
+      modeInfo->hsync_end = modeInfo->hsync_start + timings.h_sync_pulse;
+      modeInfo->htotal = modeInfo->hsync_end + timings.h_back_porch;
+      modeInfo->hskew = 0;
+      modeInfo->vdisplay = timings.v_active_lines;
+      modeInfo->vsync_start = modeInfo->vdisplay + (timings.v_front_porch * (timings.interlaced ? 2 : 1));
+      modeInfo->vsync_end = modeInfo->vsync_start + (timings.v_sync_pulse * (timings.interlaced ? 2 : 1));
+      modeInfo->vtotal = modeInfo->vsync_end + (timings.v_back_porch * (timings.interlaced ? 2 : 1));
+      modeInfo->vscan = 0; // TODO: ??
+      modeInfo->vrefresh = timings.frame_rate;
+      modeInfo->flags = timings.interlaced ? DRM_MODE_FLAG_INTERLACE : 0;
+      modeInfo->flags |= timings.v_sync_polarity ? DRM_MODE_FLAG_NVSYNC : DRM_MODE_FLAG_PVSYNC;
+      modeInfo->flags |= timings.h_sync_polarity ? DRM_MODE_FLAG_NHSYNC : DRM_MODE_FLAG_PHSYNC;
+      modeInfo->type = 0;
+      snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "CRT_%ux%u_%u",
+               modeInfo->hdisplay, modeInfo->vdisplay, modeInfo->vrefresh);
+
+      return true;
+   }
+
+   return false;
+}
 
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
@@ -363,9 +436,15 @@ nextgpu:
    drm_setup(fd);
 
    /* Choose the optimal video mode for get_video_size():
-     - the current video mode from the CRTC
+     - custom timings from configuration
+     - else the current video mode from the CRTC
      - otherwise pick first connector mode */
-   if (g_orig_crtc->mode_valid)
+   if(gfx_ctx_drm_load_mode(&gfx_ctx_crt_switch_mode))
+   {
+      drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
+      drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
+   }
+   else if (g_orig_crtc->mode_valid)
    {
       drm->fb_width  = g_orig_crtc->mode.hdisplay;
       drm->fb_height = g_orig_crtc->mode.vdisplay;
@@ -640,28 +719,35 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       g_drm_mode = &g_drm_connector->modes[0];
    else
    {
-      /* Try to match refresh_rate as closely as possible.
-       *
-       * Lower resolutions tend to have multiple supported
-       * refresh rates as well.
-       */
-      float minimum_fps_diff = 0.0f;
-
-      /* Find best match. */
-      for (i = 0; i < g_drm_connector->count_modes; i++)
+      /* check if custom hdmi timings were asked */
+      if(gfx_ctx_crt_switch_mode.vdisplay > 0)
       {
-         float diff;
-         if (width != g_drm_connector->modes[i].hdisplay ||
+         RARCH_LOG("[DRM]: custom mode requested: %s\n", gfx_ctx_crt_switch_mode.name);
+         g_drm_mode = &gfx_ctx_crt_switch_mode;
+      }
+      else
+      {
+         /* Try to match refresh_rate as closely as possible.
+          *
+          * Lower resolutions tend to have multiple supported
+          * refresh rates as well.
+          */
+         float minimum_fps_diff = 0.0f;
+
+         /* Find best match. */
+         for (i = 0; i < g_drm_connector->count_modes; i++) {
+            float diff;
+            if (width != g_drm_connector->modes[i].hdisplay ||
                height != g_drm_connector->modes[i].vdisplay)
-            continue;
+               continue;
 
-         diff = fabsf(refresh_mod * g_drm_connector->modes[i].vrefresh
-               - video_refresh_rate);
+            diff = fabsf(refresh_mod * g_drm_connector->modes[i].vrefresh
+                            - video_refresh_rate);
 
-         if (!g_drm_mode || diff < minimum_fps_diff)
-         {
-            g_drm_mode = &g_drm_connector->modes[i];
-            minimum_fps_diff = diff;
+            if (!g_drm_mode || diff < minimum_fps_diff) {
+               g_drm_mode = &g_drm_connector->modes[i];
+               minimum_fps_diff = diff;
+            }
          }
       }
    }

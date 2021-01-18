@@ -22,6 +22,7 @@
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
+#include "../../paths.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
@@ -40,7 +41,7 @@ static int frontend_dos_get_rating(void)
 	return -1;
 }
 
-enum frontend_architecture frontend_dos_get_architecture(void)
+enum frontend_architecture frontend_dos_get_arch(void)
 {
 	return FRONTEND_ARCH_X86;
 }
@@ -105,12 +106,9 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], base_path,
 			   "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
-	for (i = 0; i < DEFAULT_DIR_LAST; i++)
-	{
-		const char *dir_path = g_defaults.dirs[i];
-		if (!string_is_empty(dir_path))
-			path_mkdir(dir_path);
-	}
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_dos_exec(const char *path, bool should_load_game)
@@ -191,18 +189,20 @@ frontend_ctx_driver_t frontend_ctx_dos = {
 	NULL,                         /* get_name */
 	NULL,                         /* get_os */
 	frontend_dos_get_rating,      /* get_rating */
-	NULL,                         /* load_content */
-	frontend_dos_get_architecture,/* get_architecture */
+	NULL,                         /* content_loaded   */
+	frontend_dos_get_arch,        /* get_architecture */
 	NULL,                         /* get_powerstate */
 	NULL,                         /* parse_drive_list */
-	NULL,                         /* get_mem_total */
-	NULL,                         /* get_mem_free */
+	NULL,                         /* get_total_mem */
+	NULL,                         /* get_free_mem  */
 	NULL,                         /* install_signal_handler */
 	NULL,                         /* get_sighandler_state */
 	NULL,                         /* set_sighandler_state */
 	NULL,                         /* destroy_sighandler_state */
 	NULL,                         /* attach_console */
 	NULL,                         /* detach_console */
+	NULL,                         /* get_lakka_version */
+	NULL,                         /* set_screen_brightness */
 	NULL,                         /* watch_path_for_changes */
 	NULL,                         /* check_for_path_changes */
 	NULL,                         /* set_sustained_performance_mode */
@@ -210,5 +210,6 @@ frontend_ctx_driver_t frontend_ctx_dos = {
 	NULL,                         /* get_user_language */
 	NULL,                         /* is_narrator_running */
 	NULL,                         /* accessibility_speak */
-	"dos",
+	"dos",                        /* ident               */
+   NULL                          /* get_video_driver    */
 };

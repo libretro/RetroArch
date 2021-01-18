@@ -318,65 +318,6 @@ uint32_t vulkan_find_memory_type_fallback(
          device_reqs, host_reqs_second, 0);
 }
 
-void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
-      struct vk_texture *dynamic,
-      struct vk_texture *staging)
-{
-   VkBufferImageCopy region;
-
-   retro_assert(dynamic->type == VULKAN_TEXTURE_DYNAMIC);
-   retro_assert(staging->type == VULKAN_TEXTURE_STAGING);
-
-   if (  staging->need_manual_cache_management && 
-         staging->memory != VK_NULL_HANDLE)
-      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, staging->memory);
-
-   /* We don't have to sync against previous TRANSFER,
-    * since we observed the completion by fences.
-    *
-    * If we have a single texture_optimal, we would need to sync against
-    * previous transfers to avoid races.
-    *
-    * We would also need to optionally maintain extra textures due to
-    * changes in resolution, so this seems like the sanest and
-    * simplest solution. */
-   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, dynamic->image,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0, VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-   region.bufferOffset                    = 0;
-   region.bufferRowLength                 = 0;
-   region.bufferImageHeight               = 0;
-   region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.imageSubresource.mipLevel       = 0;
-   region.imageSubresource.baseArrayLayer = 0;
-   region.imageSubresource.layerCount     = 1;
-   region.imageOffset.x                   = 0;
-   region.imageOffset.y                   = 0;
-   region.imageOffset.z                   = 0;
-   region.imageExtent.width               = dynamic->width;
-   region.imageExtent.height              = dynamic->height;
-   region.imageExtent.depth               = 1;
-
-   vkCmdCopyBufferToImage(cmd,
-         staging->buffer,
-         dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         1, &region);
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd,
-         dynamic->image,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-
-   dynamic->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-}
-
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
 static VkImage vk_images[4 * 1024];
 static unsigned vk_count;
@@ -454,29 +395,18 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
    memset(&tex, 0, sizeof(tex));
 
-   info.imageType     = VK_IMAGE_TYPE_2D;
-   info.format        = format;
-   info.extent.width  = width;
-   info.extent.height = height;
-   info.extent.depth  = 1;
-   info.arrayLayers   = 1;
-   info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+   info.imageType          = VK_IMAGE_TYPE_2D;
+   info.format             = format;
+   info.extent.width       = width;
+   info.extent.height      = height;
+   info.extent.depth       = 1;
+   info.arrayLayers        = 1;
+   info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
+   info.mipLevels          = 1;
+   info.samples            = VK_SAMPLE_COUNT_1_BIT;
 
    buffer_info.size        = width * height * vulkan_format_to_bpp(format);
    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-   /* For simplicity, always build mipmaps for
-    * static textures, samplers can be used to enable it dynamically.
-    */
-   if (type == VULKAN_TEXTURE_STATIC)
-   {
-      info.mipLevels  = vulkan_num_miplevels(width, height);
-      tex.mipmap      = true;
-   }
-   else
-      info.mipLevels  = 1;
-
-   info.samples       = VK_SAMPLE_COUNT_1_BIT;
 
    if (type == VULKAN_TEXTURE_STREAMED)
    {
@@ -497,6 +427,11 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    switch (type)
    {
       case VULKAN_TEXTURE_STATIC:
+         /* For simplicity, always build mipmaps for
+          * static textures, samplers can be used to enable it dynamically.
+          */
+         info.mipLevels     = vulkan_num_miplevels(width, height);
+         tex.mipmap         = true;
          retro_assert(initial && "Static textures must have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
          info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -574,51 +509,54 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          tex.need_manual_cache_management =
             (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0;
+
+         /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
+          * so fallback to copy path. */
+         if (type == VULKAN_TEXTURE_STREAMED &&
+               (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+         {
+            /* Recreate texture but for STAGING this time ... */
+#ifdef VULKAN_DEBUG
+            RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
+#endif
+            type = VULKAN_TEXTURE_STAGING;
+            vkDestroyImage(device, tex.image, NULL);
+            tex.image          = (VkImage)NULL;
+            info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+            buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+            vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
+
+            alloc.allocationSize  = mem_reqs.size;
+            alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+                  &vk->context->memory_properties,
+                  mem_reqs.memoryTypeBits,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                  VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+         }
          break;
    }
 
-   /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
-    * so fallback to copy path. */
-   if (type == VULKAN_TEXTURE_STREAMED &&
-         (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
-          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
-   {
-      /* Recreate texture but for STAGING this time ... */
-#ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
-#endif
-      type = VULKAN_TEXTURE_STAGING;
-      vkDestroyImage(device, tex.image, NULL);
-      tex.image          = (VkImage)NULL;
-      info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-      buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-      vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
-      vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
-
-      alloc.allocationSize  = mem_reqs.size;
-      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
-            &vk->context->memory_properties,
-            mem_reqs.memoryTypeBits,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-            VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-   }
-
    /* We're not reusing the objects themselves. */
-   if (old && old->view != VK_NULL_HANDLE)
-      vkDestroyImageView(vk->context->device, old->view, NULL);
-   if (old && old->image != VK_NULL_HANDLE)
+   if (old)
    {
-      vkDestroyImage(vk->context->device, old->image, NULL);
+      if (old->view != VK_NULL_HANDLE)
+         vkDestroyImageView(vk->context->device, old->view, NULL);
+      if (old->image != VK_NULL_HANDLE)
+      {
+         vkDestroyImage(vk->context->device, old->image, NULL);
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
-      vulkan_track_dealloc(old->image);
+         vulkan_track_dealloc(old->image);
 #endif
+      }
+      if (old->buffer != VK_NULL_HANDLE)
+         vkDestroyBuffer(vk->context->device, old->buffer, NULL);
    }
-   if (old && old->buffer != VK_NULL_HANDLE)
-      vkDestroyBuffer(vk->context->device, old->buffer, NULL);
 
    /* We can pilfer the old memory and move it over to the new texture. */
    if (old &&
@@ -674,7 +612,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       vkCreateImageView(device, &view, NULL, &tex.view);
    }
    else
-      tex.view = VK_NULL_HANDLE;
+      tex.view        = VK_NULL_HANDLE;
 
    if (tex.image && info.tiling == VK_IMAGE_TILING_LINEAR)
       vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
@@ -697,157 +635,186 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    tex.format = format;
    tex.type   = type;
 
-   if (initial && (type == VULKAN_TEXTURE_STREAMED || type == VULKAN_TEXTURE_STAGING))
+   if (initial)
    {
-      unsigned y;
-      uint8_t *dst       = NULL;
-      const uint8_t *src = NULL;
-      void *ptr          = NULL;
-      unsigned bpp       = vulkan_format_to_bpp(tex.format);
-      unsigned stride    = tex.width * bpp;
-
-      vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
-
-      dst                = (uint8_t*)ptr;
-      src                = (const uint8_t*)initial;
-      for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
-         memcpy(dst, src, width * bpp);
-
-      if (  tex.need_manual_cache_management && 
-            tex.memory != VK_NULL_HANDLE)
-         VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, tex.memory);
-      vkUnmapMemory(device, tex.memory);
-   }
-   else if (initial && type == VULKAN_TEXTURE_STATIC)
-   {
-      VkBufferImageCopy region;
-      VkCommandBuffer staging;
-      struct vk_texture tmp       = vulkan_create_texture(vk, NULL,
-            width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
-
-      cmd_info.commandPool        = vk->staging_pool;
-      cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-      cmd_info.commandBufferCount = 1;
-
-      vkAllocateCommandBuffers(vk->context->device, &cmd_info, &staging);
-
-      begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-      vkBeginCommandBuffer(staging, &begin_info);
-
-      /* If doing mipmapping on upload, keep in general so we can easily do transfers to
-       * and transfers from the images without having to
-       * mess around with lots of extra transitions at per-level granularity.
-       */
-      VULKAN_IMAGE_LAYOUT_TRANSITION(
-            staging,
-            tex.image,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            tex.mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            0, VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-      memset(&region, 0, sizeof(region));
-      region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      region.imageSubresource.layerCount = 1;
-      region.imageExtent.width           = width;
-      region.imageExtent.height          = height;
-      region.imageExtent.depth           = 1;
-
-      vkCmdCopyBufferToImage(staging,
-            tmp.buffer,
-            tex.image,
-            tex.mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &region);
-
-      if (tex.mipmap)
+      switch (type)
       {
-         for (i = 1; i < info.mipLevels; i++)
-         {
-            VkImageBlit blit_region;
-            unsigned src_width                        = MAX(width >> (i - 1), 1);
-            unsigned src_height                       = MAX(height >> (i - 1), 1);
-            unsigned target_width                     = MAX(width >> i, 1);
-            unsigned target_height                    = MAX(height >> i, 1);
-            memset(&blit_region, 0, sizeof(blit_region));
+         case VULKAN_TEXTURE_STREAMED:
+         case VULKAN_TEXTURE_STAGING:
+            {
+               unsigned y;
+               uint8_t *dst       = NULL;
+               const uint8_t *src = NULL;
+               void *ptr          = NULL;
+               unsigned bpp       = vulkan_format_to_bpp(tex.format);
+               unsigned stride    = tex.width * bpp;
 
-            blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-            blit_region.srcSubresource.mipLevel       = i - 1;
-            blit_region.srcSubresource.baseArrayLayer = 0;
-            blit_region.srcSubresource.layerCount     = 1;
-            blit_region.dstSubresource                = blit_region.srcSubresource;
-            blit_region.dstSubresource.mipLevel       = i;
-            blit_region.srcOffsets[1].x               = src_width;
-            blit_region.srcOffsets[1].y               = src_height;
-            blit_region.srcOffsets[1].z               = 1;
-            blit_region.dstOffsets[1].x               = target_width;
-            blit_region.dstOffsets[1].y               = target_height;
-            blit_region.dstOffsets[1].z               = 1;
+               vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
 
-            /* Only injects execution and memory barriers,
-             * not actual transition. */
-            VULKAN_IMAGE_LAYOUT_TRANSITION(
-                  staging, tex.image,
-                  VK_IMAGE_LAYOUT_GENERAL,
-                  VK_IMAGE_LAYOUT_GENERAL,
-                  VK_ACCESS_TRANSFER_WRITE_BIT,
-                  VK_ACCESS_TRANSFER_READ_BIT,
-                  VK_PIPELINE_STAGE_TRANSFER_BIT,
-                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+               dst                = (uint8_t*)ptr;
+               src                = (const uint8_t*)initial;
+               for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
+                  memcpy(dst, src, width * bpp);
 
-            vkCmdBlitImage(staging,
-                  tex.image, VK_IMAGE_LAYOUT_GENERAL,
-                  tex.image, VK_IMAGE_LAYOUT_GENERAL,
-                  1, &blit_region, VK_FILTER_LINEAR);
-         }
+               if (  tex.need_manual_cache_management && 
+                     tex.memory != VK_NULL_HANDLE)
+                  VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, tex.memory);
+               vkUnmapMemory(device, tex.memory);
+            }
+            break;
+         case VULKAN_TEXTURE_STATIC:
+            {
+               VkBufferImageCopy region;
+               VkCommandBuffer staging;
+               struct vk_texture tmp       = vulkan_create_texture(vk, NULL,
+                     width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
 
-         /* Complete our texture. */
-         VULKAN_IMAGE_LAYOUT_TRANSITION(
-               staging, tex.image,
-               VK_IMAGE_LAYOUT_GENERAL,
-               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-               VK_ACCESS_TRANSFER_WRITE_BIT,
-               VK_ACCESS_SHADER_READ_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-      }
-      else
-      {
-         VULKAN_IMAGE_LAYOUT_TRANSITION(
-               staging, tex.image,
-               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-               VK_ACCESS_TRANSFER_WRITE_BIT,
-               VK_ACCESS_SHADER_READ_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-      }
+               cmd_info.commandPool        = vk->staging_pool;
+               cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+               cmd_info.commandBufferCount = 1;
 
-      vkEndCommandBuffer(staging);
-      submit_info.commandBufferCount = 1;
-      submit_info.pCommandBuffers    = &staging;
+               vkAllocateCommandBuffers(vk->context->device,
+                     &cmd_info, &staging);
+
+               begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+               vkBeginCommandBuffer(staging, &begin_info);
+
+               /* If doing mipmapping on upload, keep in general 
+                * so we can easily do transfers to
+                * and transfers from the images without having to
+                * mess around with lots of extra transitions at 
+                * per-level granularity.
+                */
+               VULKAN_IMAGE_LAYOUT_TRANSITION(
+                     staging,
+                     tex.image,
+                     VK_IMAGE_LAYOUT_UNDEFINED,
+                     tex.mipmap 
+                     ? VK_IMAGE_LAYOUT_GENERAL 
+                     : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     0, VK_ACCESS_TRANSFER_WRITE_BIT,
+                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                     VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+               memset(&region, 0, sizeof(region));
+               region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+               region.imageSubresource.layerCount = 1;
+               region.imageExtent.width           = width;
+               region.imageExtent.height          = height;
+               region.imageExtent.depth           = 1;
+
+               vkCmdCopyBufferToImage(staging,
+                     tmp.buffer,
+                     tex.image,
+                     tex.mipmap 
+                     ? VK_IMAGE_LAYOUT_GENERAL 
+                     : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     1, &region);
+
+               if (tex.mipmap)
+               {
+                  for (i = 1; i < info.mipLevels; i++)
+                  {
+                     VkImageBlit blit_region;
+                     unsigned src_width                        = MAX(width >> (i - 1), 1);
+                     unsigned src_height                       = MAX(height >> (i - 1), 1);
+                     unsigned target_width                     = MAX(width >> i, 1);
+                     unsigned target_height                    = MAX(height >> i, 1);
+                     memset(&blit_region, 0, sizeof(blit_region));
+
+                     blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+                     blit_region.srcSubresource.mipLevel       = i - 1;
+                     blit_region.srcSubresource.baseArrayLayer = 0;
+                     blit_region.srcSubresource.layerCount     = 1;
+                     blit_region.dstSubresource                = blit_region.srcSubresource;
+                     blit_region.dstSubresource.mipLevel       = i;
+                     blit_region.srcOffsets[1].x               = src_width;
+                     blit_region.srcOffsets[1].y               = src_height;
+                     blit_region.srcOffsets[1].z               = 1;
+                     blit_region.dstOffsets[1].x               = target_width;
+                     blit_region.dstOffsets[1].y               = target_height;
+                     blit_region.dstOffsets[1].z               = 1;
+
+                     /* Only injects execution and memory barriers,
+                      * not actual transition. */
+                     VULKAN_IMAGE_LAYOUT_TRANSITION(
+                           staging,
+                           tex.image,
+                           VK_IMAGE_LAYOUT_GENERAL,
+                           VK_IMAGE_LAYOUT_GENERAL,
+                           VK_ACCESS_TRANSFER_WRITE_BIT,
+                           VK_ACCESS_TRANSFER_READ_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+                     vkCmdBlitImage(
+                           staging,
+                           tex.image,
+                           VK_IMAGE_LAYOUT_GENERAL,
+                           tex.image,
+                           VK_IMAGE_LAYOUT_GENERAL,
+                           1,
+                           &blit_region,
+                           VK_FILTER_LINEAR);
+                  }
+
+                  /* Complete our texture. */
+                  VULKAN_IMAGE_LAYOUT_TRANSITION(
+                        staging,
+                        tex.image,
+                        VK_IMAGE_LAYOUT_GENERAL,
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        VK_ACCESS_TRANSFER_WRITE_BIT,
+                        VK_ACCESS_SHADER_READ_BIT,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT,
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+               }
+               else
+               {
+                  VULKAN_IMAGE_LAYOUT_TRANSITION(
+                        staging,
+                        tex.image,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        VK_ACCESS_TRANSFER_WRITE_BIT,
+                        VK_ACCESS_SHADER_READ_BIT,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT,
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+               }
+
+               vkEndCommandBuffer(staging);
+               submit_info.commandBufferCount = 1;
+               submit_info.pCommandBuffers    = &staging;
 
 #ifdef HAVE_THREADS
-      slock_lock(vk->context->queue_lock);
+               slock_lock(vk->context->queue_lock);
 #endif
-      vkQueueSubmit(vk->context->queue,
-            1, &submit_info, VK_NULL_HANDLE);
+               vkQueueSubmit(vk->context->queue,
+                     1, &submit_info, VK_NULL_HANDLE);
 
-      /* TODO: Very crude, but texture uploads only happen
-       * during init, so waiting for GPU to complete transfer
-       * and blocking isn't a big deal. */
-      vkQueueWaitIdle(vk->context->queue);
+               /* TODO: Very crude, but texture uploads only happen
+                * during init, so waiting for GPU to complete transfer
+                * and blocking isn't a big deal. */
+               vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
+               slock_unlock(vk->context->queue_lock);
 #endif
 
-      vkFreeCommandBuffers(vk->context->device,
-            vk->staging_pool, 1, &staging);
-      vulkan_destroy_texture(
-            vk->context->device, &tmp);
-      tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+               vkFreeCommandBuffers(vk->context->device,
+                     vk->staging_pool, 1, &staging);
+               vulkan_destroy_texture(
+                     vk->context->device, &tmp);
+               tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            }
+            break;
+         case VULKAN_TEXTURE_DYNAMIC:
+         case VULKAN_TEXTURE_READBACK:
+            /* TODO/FIXME - stubs */
+            break;
+      }
    }
+
    return tex;
 }
 

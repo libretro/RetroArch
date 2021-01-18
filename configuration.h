@@ -155,6 +155,9 @@ typedef struct settings
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
+      unsigned input_dingux_rumble_gain;
+      unsigned input_auto_game_focus;
+
       unsigned netplay_port;
       unsigned netplay_input_latency_frames_min;
       unsigned netplay_input_latency_frames_range;
@@ -168,12 +171,14 @@ typedef struct settings
       unsigned rewind_granularity;
       unsigned rewind_buffer_size_step;
       unsigned autosave_interval;
+      unsigned savestate_max_keep;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;
       unsigned video_window_opacity;
       unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
+      unsigned screen_brightness;
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
@@ -194,6 +199,7 @@ typedef struct settings
       unsigned video_record_scale_factor;
       unsigned video_stream_scale_factor;
       unsigned video_3ds_display_mode;
+      unsigned video_dingux_ipu_filter_type;
 #ifdef HAVE_VIDEO_LAYOUT
       unsigned video_layout_selected_view;
 #endif
@@ -202,8 +208,10 @@ typedef struct settings
       unsigned video_overscan_correction_bottom;
 #endif
       unsigned video_shader_delay;
+#ifdef HAVE_SCREENSHOTS
       unsigned notification_show_screenshot_duration;
       unsigned notification_show_screenshot_flash;
+#endif
 
       /* Accessibility */
       unsigned accessibility_narrator_speech_speed;
@@ -270,6 +278,7 @@ typedef struct settings
 
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
+      unsigned quit_on_close_content;
    } uints;
 
    struct
@@ -338,6 +347,7 @@ typedef struct settings
       char cheevos_username[32];
       char cheevos_password[256];
       char cheevos_token[32];
+      char cheevos_leaderboards_enable[32];
       char video_context_driver[32];
       char audio_driver[32];
       char audio_resampler[32];
@@ -360,8 +370,11 @@ typedef struct settings
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
+      char facebook_stream_key[PATH_MAX_LENGTH];
       char discord_app_id[PATH_MAX_LENGTH];
       char ai_service_url[PATH_MAX_LENGTH];
+
+      char crt_switch_timings[255];
    } arrays;
 
    struct
@@ -454,10 +467,12 @@ typedef struct settings
       bool video_force_aspect;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
+      bool video_dingux_ipu_keep_aspect;
       bool video_scale_integer;
       bool video_shader_enable;
       bool video_shader_watch_files;
       bool video_shader_remember_last_dir;
+      bool video_shader_preset_save_reference_enable;
       bool video_threaded;
       bool video_font_enable;
       bool video_disable_composition;
@@ -513,6 +528,9 @@ typedef struct settings
       bool input_backtouch_toggle;
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+      bool input_nowinkey_enable;
+#endif
 
       /* Frame time counter */
       bool frame_time_counter_reset_after_fastforwarding;
@@ -529,7 +547,10 @@ typedef struct settings
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
       bool notification_show_fast_forward;
+#ifdef HAVE_SCREENSHOTS
       bool notification_show_screenshot;
+#endif
+      bool notification_show_refresh_rate;
       bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
@@ -610,11 +631,13 @@ typedef struct settings
       bool settings_show_configuration;
       bool settings_show_saving;
       bool settings_show_logging;
+      bool settings_show_file_browser;
       bool settings_show_frame_throttle;
       bool settings_show_recording;
       bool settings_show_onscreen_display;
       bool settings_show_user_interface;
       bool settings_show_ai_service;
+      bool settings_show_accessibility;
       bool settings_show_power_management;
       bool settings_show_achievements;
       bool settings_show_network;
@@ -675,7 +698,6 @@ typedef struct settings
       bool cheevos_enable;
       bool cheevos_test_unofficial;
       bool cheevos_hardcore_mode_enable;
-      bool cheevos_leaderboards_enable;
       bool cheevos_richpresence_enable;
       bool cheevos_badges_enable;
       bool cheevos_verbose_enable;
@@ -691,6 +713,7 @@ typedef struct settings
 
       /* WiFi */
       bool wifi_allow;
+      bool wifi_enabled;
 
       /* Location */
       bool location_allow;

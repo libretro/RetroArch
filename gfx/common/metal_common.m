@@ -30,7 +30,7 @@
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 
 #ifdef HAVE_REWIND
-#include "../../managers/state_manager.h"
+#include "../../state_manager.h"
 #endif
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -1003,14 +1003,10 @@ typedef struct MTLALIGN(16)
 
 #ifdef HAVE_REWIND
       if (state_manager_frame_is_reversed())
-      {
          _engine.pass[i].frame_direction = -1;
-      }
       else
 #else
-      {
          _engine.pass[i].frame_direction = 1;
-      }
 #endif
 
       for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)
@@ -1223,7 +1219,6 @@ typedef struct MTLALIGN(16)
    [self _freeVideoShader:_shader];
    _shader = nil;
 
-   config_file_t         *conf  = video_shader_read_preset(path.UTF8String);
    struct video_shader *shader  = (struct video_shader *)calloc(1, sizeof(*shader));
    settings_t        *settings  = config_get_ptr();
    const char *dir_video_shader = settings->paths.directory_video_shader;
@@ -1233,7 +1228,7 @@ typedef struct MTLALIGN(16)
    {
       unsigned i;
       texture_t *source = NULL;
-      if (!video_shader_read_conf_preset(conf, shader))
+      if (!video_shader_load_preset_into_shader(path.UTF8String, shader))
          return NO;
 
       source = &_engine.frame.texture[0];
@@ -1433,8 +1428,6 @@ typedef struct MTLALIGN(16)
          /* TODO(sgc): generate mip maps */
          image_texture_free(&image);
       }
-
-      video_shader_resolve_current_parameters(conf, shader);
       _shader = shader;
       shader = nil;
    }
@@ -1443,12 +1436,6 @@ typedef struct MTLALIGN(16)
       if (shader)
       {
          [self _freeVideoShader:shader];
-      }
-
-      if (conf)
-      {
-         config_file_free(conf);
-         conf = nil;
       }
    }
 

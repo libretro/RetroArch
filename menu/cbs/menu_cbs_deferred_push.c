@@ -158,6 +158,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_content_history_path,           DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_disc_information,               DISPLAYLIST_DISC_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_system_information,             DISPLAYLIST_SYSTEM_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_network_information,            DISPLAYLIST_NETWORK_INFO)
+GENERIC_DEFERRED_PUSH(deferred_push_achievement_pause_menu,         DISPLAYLIST_ACHIEVEMENT_PAUSE_MENU)
 GENERIC_DEFERRED_PUSH(deferred_push_achievement_list,               DISPLAYLIST_ACHIEVEMENT_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_rdb_collection,                 DISPLAYLIST_PLAYLIST_COLLECTION)
 GENERIC_DEFERRED_PUSH(deferred_main_menu_list,                      DISPLAYLIST_MAIN_MENU)
@@ -201,6 +202,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_retro_achievements_settings_list,DISPLAYLIST
 GENERIC_DEFERRED_PUSH(deferred_push_updater_settings_list,          DISPLAYLIST_UPDATER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_bluetooth_settings_list,        DISPLAYLIST_BLUETOOTH_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_wifi_networks_list,             DISPLAYLIST_WIFI_NETWORKS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_network_settings_list,          DISPLAYLIST_NETWORK_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_subsystem_settings_list,          DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_network_hosting_settings_list,          DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST)
@@ -228,6 +230,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_youtube_list,          DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_accounts_facebook_list,         DISPLAYLIST_ACCOUNTS_FACEBOOK_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_help,                           DISPLAYLIST_HELP_SCREEN_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_rdb_entry_detail,               DISPLAYLIST_DATABASE_ENTRY)
 GENERIC_DEFERRED_PUSH(deferred_push_rpl_entry_actions,              DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS)
@@ -252,7 +255,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_switch_cpu_profile,             DISPLAYLIST_
 
 #ifdef HAVE_LAKKA_SWITCH
 GENERIC_DEFERRED_PUSH(deferred_push_switch_gpu_profile,             DISPLAYLIST_SWITCH_GPU_PROFILE)
-GENERIC_DEFERRED_PUSH(deferred_push_switch_backlight_control,       DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
 GENERIC_DEFERRED_PUSH(deferred_push_manual_content_scan_list,       DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST)
@@ -662,7 +664,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       int (*cb)(menu_displaylist_info_t *info);
    } deferred_info_list_t;
 
-   deferred_info_list_t info_list[] = {
+   const deferred_info_list_t info_list[] = {
       {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST, deferred_push_dump_disk_list},
       {MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST, deferred_push_load_disk_list},
       {MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST, deferred_push_favorites_list},
@@ -715,6 +717,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST, deferred_push_network_hosting_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST, deferred_push_bluetooth_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST, deferred_push_wifi_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST, deferred_push_wifi_networks_list},
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST, deferred_push_lakka_services_list},
       {MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST, deferred_push_user_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST, deferred_push_directory_settings_list},
@@ -759,7 +762,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST, deferred_push_latency_settings_list},
 #ifdef HAVE_LAKKA_SWITCH
       {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE, deferred_push_switch_gpu_profile},
-      {MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL, deferred_push_switch_backlight_control},
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE, deferred_push_switch_cpu_profile},
@@ -780,6 +782,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS, deferred_push_quick_menu_override_options},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST, deferred_push_accounts_youtube_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST, deferred_push_accounts_twitch_list},
+      {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST, deferred_push_accounts_facebook_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST, deferred_push_video_shader_preset_save},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST, deferred_push_video_shader_preset_remove},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, deferred_push_dropdown_box_list_manual_content_scan_system_name},
@@ -820,6 +823,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_VIDEO_LAYOUT
       {MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH, deferred_push_video_layout_path}, 
 #endif
+      {MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU, deferred_push_achievement_pause_menu},
       {MENU_ENUM_LABEL_ACHIEVEMENT_LIST, deferred_push_achievement_list},
       {MENU_ENUM_LABEL_CORE_COUNTERS, deferred_push_core_counters},
       {MENU_ENUM_LABEL_FRONTEND_COUNTERS, deferred_push_frontend_counters},
@@ -866,23 +870,26 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
    };
 
-   for (i = 0; i < ARRAY_SIZE(info_list); i++)
+   if (!string_is_equal(label, "null"))
    {
-      if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+      for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
-         BIND_ACTION_DEFERRED_PUSH(cbs, info_list[i].cb);
-         return 0;
+         if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+         {
+            BIND_ACTION_DEFERRED_PUSH(cbs, info_list[i].cb);
+            return 0;
+         }
       }
-   }
 
-   /* MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL requires special
-    * treatment, since the label has the format:
-    *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
-    * i.e. cannot use a normal string_is_equal() */
-   if (string_starts_with(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
+      /* MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL requires special
+       * treatment, since the label has the format:
+       *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
+       * i.e. cannot use a normal string_is_equal() */
+      if (string_starts_with(label,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+      {
+         BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
+      }
    }
 
    if (cbs->enum_idx != MSG_UNKNOWN)
@@ -922,6 +929,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_twitch_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_facebook_list);
+            break;            
          case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
             break;

@@ -85,6 +85,12 @@ struct rbuf__hdr
    size_t cap;
 };
 
+#ifdef __GNUC__
+__attribute__((__unused__))
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4505) //unreferenced local function has been removed
+#endif
 static void *rbuf__grow(void *buf,
       size_t new_len, size_t elem_size)
 {
@@ -107,5 +113,8 @@ static void *rbuf__grow(void *buf,
    new_hdr->cap    = new_cap;
    return new_hdr + 1;
 }
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #endif

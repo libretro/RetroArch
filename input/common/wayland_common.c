@@ -72,24 +72,38 @@ static void keyboard_handle_key(void *data,
 {
    int value                  = 1;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   uint32_t keysym            = key;
+
+   /* Handle 'duplicate' inputs that correspond
+    * to the same RETROK_* key */
+   switch (key)
+   {
+      case KEY_OK:
+      case KEY_SELECT:
+         keysym = KEY_ENTER;
+      case KEY_EXIT:
+         keysym = KEY_CLEAR;
+      default:
+         break;
+   }
 
    if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
    {
-      BIT_SET(wl->input.key_state, key);
+      BIT_SET(wl->input.key_state, keysym);
       value = 1;
    }
    else if (state == WL_KEYBOARD_KEY_STATE_RELEASED)
    {
-      BIT_CLEAR(wl->input.key_state, key);
+      BIT_CLEAR(wl->input.key_state, keysym);
       value = 0;
    }
 
 #ifdef HAVE_XKBCOMMON
-   if (handle_xkb(key, value) == 0)
+   if (handle_xkb(keysym, value) == 0)
       return;
 #endif
    input_keyboard_event(value,
-			input_keymaps_translate_keysym_to_rk(key),
+			input_keymaps_translate_keysym_to_rk(keysym),
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 

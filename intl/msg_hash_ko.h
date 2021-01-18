@@ -1336,6 +1336,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    "픽셀 가장자리의 날카로운 부분을 줄이기 위해 이미지에 약간의 흐림 효과를 추가합니다. 이 옵션은 성능에 거의 영향을 주지 않습니다."
    )
+#if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "이미지 보간"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "내부 IPU를 통해 크기조절 시 사용할 이미지 보간 방법을 지정합니다. CPU로 동작하는 비디오 필터 사용시 '쌍입방' 또는 '이중선형'을 추천합니다. 해당 옵션은 퍼포먼스에 영향을 주지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "쌍입방보간"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "이중선형보간"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "최근접 이웃"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "자동 셰이더 지연"
@@ -1351,6 +1373,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "CPU가 처리하는 비디오 필터를 적용합니다.\n참고: 성능에 큰 희생이 필요할 수 있습니다. 일부 필터는 32비트 또는 16비트 색상을 사용하는 코어에만 적용될 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "비디오 필터 제거"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "활성중인 CPU로 동작하는 비디오 필터를 해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
@@ -1471,7 +1501,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "전체화면으로 시작합니다. 실행 중 변경도 가능합니다."
+   "전체화면으로 시작합니다. 실행 중 변경도 가능합니다. 명령줄 스위치로 무시할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -1522,7 +1552,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "창 크기와 위치를 기억합니다. 사용 시 창 크기 설정보다 우선 적용됩니다"
+   "창 크기와 위치를 기억합니다. 사용 시 창 크기 설정보다 우선 적용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1563,6 +1593,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "비디오 화면비를 나타내는 부동소수점 값입니다(너비/높이). 화면비가 '설정'으로 되어있을 때 사용됩니다."
    )
+#if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "화변 비율 유지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "내부 IPU를 통한 크지조절 시 1:1 픽셀 비율을 유지합니다. 사용 해제시 이미지가 확대되어 전체 화면을 채우게됩니다."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "사용자 화면비 X 위치"
@@ -1756,6 +1796,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    "드라이버로 보내기 전에 오디오를 처리하는 오디오 DSP 플러그인을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "DSP 플러그인 제거"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "사용중인 오디오 DSP 플러그인을 해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -1994,6 +2042,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "사용 시 프로필이 존재하는 컨트롤러를 자동으로 구성합니다."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "보조 센서 입력"
@@ -2109,6 +2159,16 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "장치 진동 사용 (지원 코어 한정)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   "진동 세기 (재시작)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   "햅틱 피드백으로 사용될 진동의 세기를 설정합니다."
+   )
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2492,6 +2552,14 @@ MSG_HASH(
    "현재 세션 영상을 온라인상으로 스트리밍을 시작/종료 합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   "미리 실행 (사용/해제)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "미리 실행 사용 유무를 변경합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "AI 서비스"
    )
@@ -2695,15 +2763,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "미리-실행에 두 번째 인스턴스 사용"
+   "미리 실행에 두 번째 인스턴스 사용"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "미리 실행에 두 번째 인스턴스를 시용합니다. 상태저장 불러오기 중에 발생하는 오디오 문제를 해결할 수 있습니다."
+   "미리 실행에 두 번째 인스턴스를 사용합니다. 상태저장 불러오기 중에 발생하는 오디오 문제를 해결할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-   "미리-실행 경고 숨김"
+   "미리 실행 경고 숨김"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
@@ -2879,6 +2947,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "상태저장을 생성할 때마다 자동으로 인덱스를 증가시킵니다. 불러올 때에는 가장 높은 인덱스의 상태저장을 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "상태저장 인덱스 자동 증가 상한"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "'상태저장 인덱스 자동 증가' 사용 시 활용될 상태저장의 개수 제한을 설정합니다. 상태저장이 개수 제한에 도달할 경우 가장 낮은 인덱스의 상태저장이 삭제됩니다. '0'으로 설정 시 제한을 사용하지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -3106,7 +3182,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "되감기 버퍼용으로 예약할 메모리 크기(MB)입니다. 크기를 늘리면 되감을 수 있는 시간이 늘어납니다."
+   "되감기 버퍼용으로 예약할 메모리 크기(MB) 입니다. 크기를 늘리면 되감을 수 있는 시간이 늘어납니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
@@ -3114,7 +3190,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
-   "뒤로 감기 버퍼를 변경할 시 여기에 지정한 크기만큼 변경됩니다"
+   "뒤로 감기 버퍼를 변경할 시 이곳에 지정된 크기만큼 변경됩니다."
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -3207,7 +3283,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "베젤과 온스크린 컨트롤을 조정합니다"
+   "베젤과 온스크린 컨트롤을 조정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
@@ -3215,7 +3291,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "비디오 레이아웃을 조정합니다"
+   "비디오 레이아웃을 조정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
@@ -3223,7 +3299,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "OSD 알림을 조정합니다"
+   "OSD 알림을 조정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -3242,7 +3318,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-   "오버레이 사용을 설정합니다."
+   "테두리 및 온스크린 컨트롤을 위해 오버레이를 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -3562,7 +3638,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "치트코드가 적용되었을 때 온스크린 메시지를 표시합니다."
+   "치트코드가 적용되었을 때 화면상에 메시지를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -3786,6 +3862,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
    "새 디스크 삽입이나 로딩 후 자동으로 메뉴를 닫고 현재 컨텐츠를 이어합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "컨텐츠 종료시 함께 종료"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "컨텐츠 종료 시 RetroArch를 자동으로 종료시킵니다. 'CLI' 종료는 명령줄 실행시에만 적용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
@@ -4044,11 +4128,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
-   "가져온 컨텐츠 표시"
+   "컨텐츠 가져오기 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "메인 메뉴 또는 실행목록 탭/하위메뉴 상에 가져온 컨텐츠 항목을 표시합니다."
+   "메인 메뉴 또는 실행목록 탭/하위메뉴 상에 컨텐츠 가져오기 항목을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -4259,11 +4343,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "뒤로 감기 항목을 표시/해제합니다."
+   "'뒤로 감기' 옵션을 표시/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   "지연시간 항목을 표시/해제합니다."
+   "'지연시간' 옵션을 표시/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
@@ -4271,7 +4355,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "오버레이 항목을 표시/해제합니다."
+   "'오버레이' 옵션을 표시/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
@@ -4283,7 +4367,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   "비디오 레이아웃 옵션을 표시/해제합니다."
+   "'비디오 레이아웃' 옵션을 표시/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -4393,6 +4477,14 @@ MSG_HASH(
    "'로그' 옵션을 설정화면에 표시/해제합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
+   "파일 탐색기 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
+   "'파일 탐색기' 설정을 설정화면에 표시/해제합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
    "프레임 조절 표시"
    )
@@ -4431,6 +4523,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
    "'AI 서비스' 옵션을 설정화면에 표시/해제합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
+   "접근성 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   "'접근성' 설정을 설정화면에 표시/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
@@ -4572,7 +4672,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "번역 결과를 텍스트 오버레이로 표시(이미지 모드)하거나, TTS로 읽어줍니다(음성 모드)"
+   "번역 결과를 텍스트 오버레이로 표시(이미지 모드)하거나, TTS로 읽어줍니다(음성 모드)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -4644,7 +4744,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "고전 게임에서 도전과제를 획득하세요. 자세한 정보는 https://retroachievements.org를 찾아주세요."
+   "고전 게임에서 도전과제를 하십시오. 자세한 정보는 https://retroachievements.org를 찾아주세요."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -5205,7 +5305,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "고전 게임에서 도전과제를 획득하세요. 자세한 정보는 http://retroachievements.org를 찾아주세요."
+   "고전 게임에서 도전과제를 하십시오. 자세한 정보는 https://retroachievements.org를 찾아주세요."
    )
 
 /* Settings > User > Accounts > RetroAchievements */
@@ -5224,7 +5324,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "RetroAchievements 계정 비밀번호를 입력합니다."
+   "RetroAchievements 계정의 비밀번호를 입력하십시오. 최대 길이: 255자"
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -5240,6 +5340,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    "Twitch 스트림 키"
    )
+
+/* Settings > User > Accounts > Facebook Gaming */
+
 
 /* Settings > Directory */
 
@@ -6009,6 +6112,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
    "도전과제 목록"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
+   "도전과제 및 관련 설정을 봅니다."
+   )
 
 /* Quick Menu > Options */
 
@@ -6142,7 +6249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
-   "좌/우로 bit 사이즈를 변경하세요"
+   "좌/우로 비트 크기를 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
@@ -6158,7 +6265,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
-   "좌/우로 값을 변경하세요"
+   "좌/우로 값을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
@@ -6218,7 +6325,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
-   "좌/우로 값 변경"
+   "좌/우로 값을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
@@ -6230,7 +6337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
-   "좌/우로 값 변경"
+   "좌/우로 값을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
@@ -6523,6 +6630,16 @@ MSG_HASH(
 /* Quick Menu > Shaders > Save */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "간단 프리셋"
+   )
+   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "원본 프리셋 링크와 사용자가 변경한 항목만을 포함한 셰이더 프리셋을 저장합니다."
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "셰이더 프리셋 다른 이름으로 저장"
    )
@@ -6640,24 +6757,28 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "표시할 도전과제 없음."
+   "표시할 도전과제 없음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "도전과제 하드코어 모드 일시정지"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "현재 세션의 도전과제를 일시정지합니다(상태저장, 치트, 뒤로 감기, 일시정지, 슬로모션 등을 다시 이용할 수 있게 됩니다)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "도전과제 하드코어 모드 계속하기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "현재 세션의 도전과제를 다시 재개합니다(상태저장, 치트, 뒤로 감기, 일시정지, 슬로모션등을 이용할 수 없게 됩니다)."
-   )
+   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   "로그인 되지 않음"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "이 코어로는 도전과제를 사용할 수 없습니다"
+)
 
 /* Quick Menu > Information */
 
@@ -6671,7 +6792,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
-   "현재 컨텐츠의 데이터베이스 정보를 표시합니다"
+   "현재 컨텐츠의 데이터베이스 정보를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
@@ -7151,6 +7272,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
    "지원 안 됨"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
+   "트랙커만"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
+   "알림만"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DONT_CARE,
    "상관 없음"
@@ -7969,6 +8098,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL,
    "커널 해킹"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE,
+   "환상특급"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -10595,6 +10728,18 @@ MSG_HASH(
    "코어 입력설정 파일을 불러왔습니다."
    )
 MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "미리 실행이 활성화 되었습니다. 지연 프레임 제거: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "두 번째 인스턴스와 함께 미리 실행을 활성화합니다. 지연 프레임 제거: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "미리 실행 사용해제됨."
+   )
+MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "코어가 상태 저장을 지원하지 않아 미리 실행 기능이 비활성화되었습니다."
    )
@@ -10878,6 +11023,10 @@ MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
    "코어 삭제 사용중지 - 코어 잠김: "
    )
+MSG_HASH(
+   MSG_UNSUPPORTED_VIDEO_MODE,
+   "지원되지 않는 비디오 모드"
+   )
 
 /* Lakka */
 
@@ -11084,15 +11233,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "스위치 GPU를 오버클럭 또는 언더클럭합니다"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "화면 밝기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_BACKLIGHT_CONTROL,
-   "스위치 밝기를 조절합니다."
+   "스위치 GPU를 오버클럭 또는 언더클럭합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,

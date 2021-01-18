@@ -109,45 +109,17 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_DISCORD
 #include "../network/discord.h"
 
 /* TODO/FIXME - get rid of this public global */
 extern bool discord_is_inited;
+#endif
 
 #define MAX_ARGS 32
 
 typedef struct content_stream content_stream_t;
 typedef struct content_information_ctx content_information_ctx_t;
-
-#ifdef HAVE_CDROM
-enum cdrom_dump_state
-{
-   DUMP_STATE_TOC_PENDING = 0,
-   DUMP_STATE_WRITE_CUE,
-   DUMP_STATE_NEXT_TRACK,
-   DUMP_STATE_READ_TRACK
-};
-
-typedef struct
-{
-   int64_t cur_track_bytes;
-   int64_t track_written_bytes;
-   int64_t disc_total_bytes;
-   int64_t disc_read_bytes;
-
-   RFILE *file;
-   RFILE *output_file;
-   libretro_vfs_implementation_file *stream;
-   const cdrom_toc_t *toc;
-
-   enum cdrom_dump_state state;
-   unsigned char cur_track;
-   char drive_letter[2];
-   char cdrom_path[64];
-   char title[512];
-   bool next;
-} task_cdrom_dump_state_t;
-#endif
 
 struct content_stream
 {
@@ -189,6 +161,34 @@ struct content_information_ctx
 };
 
 #ifdef HAVE_CDROM
+enum cdrom_dump_state
+{
+   DUMP_STATE_TOC_PENDING = 0,
+   DUMP_STATE_WRITE_CUE,
+   DUMP_STATE_NEXT_TRACK,
+   DUMP_STATE_READ_TRACK
+};
+
+typedef struct
+{
+   int64_t cur_track_bytes;
+   int64_t track_written_bytes;
+   int64_t disc_total_bytes;
+   int64_t disc_read_bytes;
+
+   RFILE *file;
+   RFILE *output_file;
+   libretro_vfs_implementation_file *stream;
+   const cdrom_toc_t *toc;
+
+   enum cdrom_dump_state state;
+   unsigned char cur_track;
+   char drive_letter[2];
+   char cdrom_path[64];
+   char title[512];
+   bool next;
+} task_cdrom_dump_state_t;
+
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
    task_cdrom_dump_state_t *state    = (task_cdrom_dump_state_t*)task->state;
@@ -647,8 +647,6 @@ static bool content_load(content_ctx_info_t *info,
    rarch_favorites_init();
    command_event(CMD_EVENT_RESUME, NULL);
    command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
-
-   dir_check_defaults();
 
    frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
    frontend_driver_content_loaded();

@@ -66,12 +66,6 @@ static const float *gfx_display_gl_core_get_default_tex_coords(void)
    return &gl_core_tex_coords[0];
 }
 
-static void gfx_display_gl_core_viewport(gfx_display_ctx_draw_t *draw, void *data) 
-{
-   if (draw)
-      glViewport(draw->x, draw->y, draw->width, draw->height);
-}
-
 static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data,
       unsigned video_width,
@@ -84,6 +78,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
    static float t                = 0.0f;
    float yflip                   = 0.0f;
    video_coord_array_t *ca       = NULL;
+   gfx_display_t *p_disp         = disp_get_ptr();
    gl_core_t *gl                 = (gl_core_t*)data;
 
    if (!gl || !draw)
@@ -102,7 +97,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
       default:
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = gfx_display_get_coords_array();
+         ca                               = &p_disp->dispca;
          draw->coords                     = (struct video_coords*)&ca->coords;
          draw->backend_data               = ubo_scratch_data;
          draw->backend_data_size          = 2 * sizeof(float);
@@ -155,7 +150,8 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    GLuint            texture = 0;
    gl_core_t *gl             = (gl_core_t*)data;
    const struct 
-      gl_core_buffer_locations *loc = NULL;
+      gl_core_buffer_locations 
+      *loc                   = NULL;
 
    if (!gl || !draw)
       return;
@@ -172,7 +168,7 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color           = &gl_core_colors[0];
 
-   gfx_display_gl_core_viewport(draw, gl);
+   glViewport(draw->x, draw->y, draw->width, draw->height);
 
    glActiveTexture(GL_TEXTURE1);
    glBindTexture(GL_TEXTURE_2D, texture);
@@ -219,24 +215,26 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
 
       default:
          glUseProgram(gl->pipelines.alpha_blend);
-         loc = NULL;
          break;
    }
 
-   if (loc && loc->flat_ubo_vertex >= 0)
-      glUniform4fv(loc->flat_ubo_vertex,
-                   (GLsizei)((draw->backend_data_size + 15) / 16),
-                   (const GLfloat*)draw->backend_data);
+   if (loc)
+   {
+      if (loc->flat_ubo_vertex >= 0)
+         glUniform4fv(loc->flat_ubo_vertex,
+               (GLsizei)((draw->backend_data_size + 15) / 16),
+               (const GLfloat*)draw->backend_data);
 
-   if (loc && loc->flat_ubo_fragment >= 0)
-      glUniform4fv(loc->flat_ubo_fragment,
-                   (GLsizei)((draw->backend_data_size + 15) / 16),
-                   (const GLfloat*)draw->backend_data);
-
-   if (!loc)
+      if (loc->flat_ubo_fragment >= 0)
+         glUniform4fv(loc->flat_ubo_fragment,
+               (GLsizei)((draw->backend_data_size + 15) / 16),
+               (const GLfloat*)draw->backend_data);
+   }
+   else
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)&gl->mvp_no_rot;
+                     ? (const math_matrix_4x4*)draw->matrix_data 
+                     : (const math_matrix_4x4*)&gl->mvp_no_rot;
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                       4, mat->data);
@@ -330,7 +328,6 @@ static void gfx_display_gl_core_scissor_end(
 gfx_display_ctx_driver_t gfx_display_ctx_gl_core = {
    gfx_display_gl_core_draw,
    gfx_display_gl_core_draw_pipeline,
-   gfx_display_gl_core_viewport,
    gfx_display_gl_core_blend_begin,
    gfx_display_gl_core_blend_end,
    gfx_display_gl_core_get_default_mvp,

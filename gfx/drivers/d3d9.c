@@ -324,24 +324,14 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    unsigned i;
    bool            use_extra_pass = false;
    struct video_shader_pass *pass = NULL;
-   config_file_t            *conf = video_shader_read_preset(shader_path);
-
-   if (!conf)
-   {
-      RARCH_ERR("[D3D9]: Failed to load preset.\n");
-      return false;
-   }
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
 
-   if (!video_shader_read_conf_preset(conf, &d3d->shader))
+   if (!video_shader_load_preset_into_shader(shader_path, &d3d->shader))
    {
-      config_file_free(conf);
       RARCH_ERR("[D3D9]: Failed to parse shader preset.\n");
       return false;
    }
-
-   config_file_free(conf);
 
    RARCH_LOG("[D3D9]: Found %u shaders.\n", d3d->shader.passes);
 
@@ -1732,7 +1722,7 @@ static bool d3d9_set_shader(void *data,
          if (type != supported_shader_type)
          {
             RARCH_WARN("[D3D9]: Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
-               path, video_shader_to_str(type), video_shader_to_str(supported_shader_type));
+               path, video_shader_type_to_str(type), video_shader_type_to_str(supported_shader_type));
             break;
          }
       

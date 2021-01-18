@@ -15,11 +15,13 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <array/rbuf.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <configuration.h>
 #include <verbosity.h>
-
+#include <time.h>
 #include "../wifi_driver.h"
 #include "../../retroarch.h"
 #include "../../lakka.h"
@@ -29,10 +31,8 @@
 
 typedef struct
 {
-   bool connman_cache[256];
-   unsigned connman_counter;
-   struct string_list* lines;
-   char command[256];
+   wifi_network_scan_t scan;
+   char command[300];
    bool connmanctl_widgets_supported;
 } connman_t;
 
@@ -47,6 +47,9 @@ static void *connmanctl_init(void)
 
 static void connmanctl_free(void *data)
 {
+   connman_t *connman = (connman_t*)data;
+   if (connman->scan.net_list)
+      RBUF_FREE(connman->scan.net_list);
    if (data)
       free(data);
 }
@@ -60,6 +63,74 @@ static bool connmanctl_start(void *data)
 static void connmanctl_stop(void *data)
 {
    (void)data;
+}
+
+static void connmanctl_refresh_services(connman_t *connman) {
+   char line[512];
+   FILE *serv_file = popen("connmanctl services", "r");
+   
+   if (connman->scan.net_list)
+      RBUF_FREE(connman->scan.net_list);
+
+   while (fgets(line, 512, serv_file))
+   {
+      int i;
+      struct string_list* list = NULL;
+      wifi_network_info_t entry;
+      size_t len = strlen(line);
+      if (len > 0 && line[len-1] == '\n')
+         line[--len] = '\0';
+
+      /* Parse lines directly and store net info directly */
+      memset(&entry, 0, sizeof(entry));
+      entry.connected = (line[2] == 'R' || line[2] == 'O');
+      entry.saved_password = (line[0] == '*');
+
+      /* connmanctl services outputs a 4 character prefixed lines,
+       * either whitespace or an identifier. i.e.:
+       * $ connmanctl services
+       *     '*A0 SSID some_unique_id'
+       *     '    SSID some_another_unique_id'
+       */
+      list = string_split(&line[4], " ");
+      if (!list)
+         break;
+
+      if (list->size == 0)
+         continue;
+
+      for (i = 0; i < list->size-1; i++)
+      {
+         strlcat(entry.ssid, list->elems[i].data, sizeof(entry.ssid));
+         strlcat(entry.ssid, " ", sizeof(entry.ssid)-1);
+      }
+      if (strlen(entry.ssid))
+         entry.ssid[strlen(entry.ssid)-1] = 0;
+
+      /* Store the connman network id here, for later */
+      strlcpy(entry.netid, list->elems[list->size-1].data, sizeof(entry.netid));
+      string_list_free(list);
+
+      /* Filter only wifi nets */
+      if (!strncmp(entry.netid, "wifi_", 5))
+         RBUF_PUSH(connman->scan.net_list, entry);
+   }
+
+   pclose(serv_file);
+}
+
+static bool connmanctl_enable(void *data, bool enabled)
+{
+   connman_t *connman = (connman_t*)data;
+   if (enabled)
+      pclose(popen("connmanctl enable wifi", "r"));
+   else
+      pclose(popen("connmanctl disable wifi", "r"));
+
+   /* Update the services, to ensure we properly show connection status */
+   connmanctl_refresh_services(connman);
+
+   return true;
 }
 
 static bool connmanctl_tether_status(connman_t *connman)
@@ -163,16 +234,8 @@ static void connmanctl_tether_toggle(
 
 static void connmanctl_scan(void *data)
 {
-   char line[512];
-   union string_list_elem_attr attr;
-   FILE *serv_file                  = NULL;
    settings_t *settings             = config_get_ptr();
    connman_t *connman               = (connman_t*)data;
-
-   attr.i = RARCH_FILETYPE_UNSET;
-   if (connman->lines)
-      free(connman->lines);
-   connman->lines = string_list_new();
 
    if (connmanctl_tether_status(connman))
    {
@@ -183,8 +246,6 @@ static void connmanctl_scan(void *data)
             settings->bools.localap_enable, false);
       connmanctl_tether_toggle(connman, false, "", "");
    }
-
-   pclose(popen("connmanctl enable wifi", "r"));
 
    pclose(popen("connmanctl scan wifi", "r"));
 
@@ -192,151 +253,124 @@ static void connmanctl_scan(void *data)
          1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
          MESSAGE_QUEUE_CATEGORY_INFO);
 
-   serv_file = popen("connmanctl services", "r");
-   while (fgets(line, 512, serv_file))
-   {
-      size_t len = strlen(line);
-      if (len > 0 && line[len-1] == '\n')
-         line[--len] = '\0';
-
-      string_list_append(connman->lines, line, attr);
-   }
-   pclose(serv_file);
+   /* Refresh now the services, to read the discovered networks */
+   connman->scan.scan_time = time(NULL);
+   connmanctl_refresh_services(connman);
 }
 
-static void connmanctl_get_ssids(void *data, struct string_list* ssids)
+static wifi_network_scan_t* connmanctl_get_ssids(void *data)
 {
    unsigned i;
-   union string_list_elem_attr attr;
-   attr.i = RARCH_FILETYPE_UNSET;
    connman_t *connman = (connman_t*)data;
 
-   if (!connman->lines)
-      return;
-
-   for (i = 0; i < connman->lines->size; i++)
-   {
-      char ssid[32];
-      const char *line = connman->lines->elems[i].data;
-
-      strlcpy(ssid, line+4, sizeof(ssid));
-      string_list_append(ssids, ssid, attr);
-   }
+   return &connman->scan;
 }
 
 static bool connmanctl_ssid_is_online(void *data, unsigned i)
 {
-   char ln[512]       = {0};
-   char service[128]  = {0};
    connman_t *connman = (connman_t*)data;
-   const char *line   = connman->lines->elems[i].data;
-   FILE *command_file = NULL;
+   if (!connman->scan.net_list || i >= RBUF_LEN(connman->scan.net_list))
+      return false;
+   return connman->scan.net_list[i].connected;
+}
 
-   if (connman->connman_counter == 60)
+static bool connmanctl_connection_info(void *data, wifi_network_info_t *netinfo)
+{
+   connman_t *connman = (connman_t*)data;
+   unsigned i;
+
+   if (!connman->scan.net_list)
+      return false;
+
+   for (i = 0; i < RBUF_LEN(connman->scan.net_list); i++)
    {
-      static struct string_list* list = NULL;
-      connman->connman_counter = 0;
-      list            = string_split(line, " ");
-      if (!list)
-         return false;
-
-      if (list->size == 0)
+      if (connman->scan.net_list[i].connected)
       {
-         string_list_free(list);
-         return false;
-      }
-
-      strlcpy(service, list->elems[list->size-1].data, sizeof(service));
-      string_list_free(list);
-
-      snprintf(connman->command, sizeof(connman->command), "\
-            connmanctl services %s | grep 'State = \\(online\\|ready\\)'",
-            service);
-
-      command_file = popen(connman->command, "r");
-
-      while (fgets(ln, 512, command_file))
-      {
-         connman->connman_cache[i] = true;
+         if (netinfo)
+            memcpy(netinfo, &connman->scan.net_list[i], sizeof(*netinfo));
          return true;
       }
-      pclose(command_file);
-      connman->connman_cache[i] = false;
    }
-   else
-   {
-      connman->connman_counter++;
-      return connman->connman_cache[i];
-   }
-
+      
    return false;
 }
 
+static bool connmanctl_disconnect_ssid(void *data, const wifi_network_info_t* netinfo)
+{
+   connman_t *connman = (connman_t*)data;
+
+   /* TODO:Check whether this network is actually connected */
+
+   snprintf(connman->command, sizeof(connman->command),
+         "connmanctl disconnect %s 2>&1",
+         netinfo->netid);
+
+   pclose(popen(connman->command, "r"));
+   
+   /* Refresh the state since it has definitely changed */
+   connmanctl_refresh_services(connman);
+
+   return true;
+}
+
 static bool connmanctl_connect_ssid(
-      void *data, unsigned idx, const char* passphrase)
+      void *data, const wifi_network_info_t *netinfo)
 {
    unsigned i;
-   char ln[512]                        = {0};
-   char name[64]                       = {0};
-   char service[128]                   = {0};
+   bool success = false;
    char settings_dir[PATH_MAX_LENGTH]  = {0};
    char settings_path[PATH_MAX_LENGTH] = {0};
-   FILE *command_file                  = NULL;
+   char netid[160]                     = {0};
    FILE *settings_file                 = NULL;
    connman_t *connman                  = (connman_t*)data;
-   const char *line                    = connman->lines->elems[idx].data;
    settings_t *settings                = config_get_ptr();
    static struct string_list* list     = NULL;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = connman->connmanctl_widgets_supported;
 #endif
-   /* connmanctl services outputs a 4 character prefixed lines,
-    * either whitespace or an identifier. i.e.:
-    * $ connmanctl services
-    *     '*A0 SSID some_unique_id'
-    *     '    SSID some_another_unique_id'
-    */
-   list = string_split(line+4, " ");
-   if (!list)
-      return false;
-
-   if (list->size == 0)
-   {
-      string_list_free(list);
-      return false;
-   }
-
-   for (i = 0; i < list->size-1; i++)
-   {
-      strlcat(name, list->elems[i].data, sizeof(name));
-      strlcat(name, " ", sizeof(name));
-   }
-   strlcpy(service, list->elems[list->size-1].data, sizeof(service));
-
-   string_list_free(list);
-
+   strlcat(netid, netinfo->netid, sizeof(netid));
    strlcat(settings_dir, LAKKA_CONNMAN_DIR, sizeof(settings_dir));
-   strlcat(settings_dir, service, sizeof(settings_dir));
+   strlcat(settings_dir, netid, sizeof(settings_dir));
 
    path_mkdir(settings_dir);
 
    strlcat(settings_path, settings_dir, sizeof(settings_path));
    strlcat(settings_path, "/settings", sizeof(settings_path));
 
-   settings_file = fopen(settings_path, "w");
-   fprintf(settings_file, "[%s]\n", service);
-   fprintf(settings_file, "Name=%s\n", name);
-   fprintf(settings_file, "SSID=");
+   if (!netinfo->saved_password)
+   {
+      settings_file = fopen(settings_path, "w");
+      if (!settings_file)
+         return false;
+      fprintf(settings_file, "[%s]\n", netid);
+      fprintf(settings_file, "Name=%s\n", netinfo->ssid);
+      fprintf(settings_file, "SSID=");
 
-   for (i = 0; i < strlen(name); i++)
-      fprintf(settings_file, "%02x", (unsigned int) name[i]);
-   fprintf(settings_file, "\n");
+      for (i = 0; i < strlen(netinfo->ssid); i++)
+         fprintf(settings_file, "%02x", (unsigned int) netinfo->ssid[i]);
+      fprintf(settings_file, "\n");
 
-   fprintf(settings_file, "Favorite=%s\n", "true");
-   fprintf(settings_file, "AutoConnect=%s\n", "true");
-   fprintf(settings_file, "Passphrase=%s\n", passphrase);
-   fprintf(settings_file, "IPv4.method=%s\n", "dhcp");
-   fclose(settings_file);
+      fprintf(settings_file, "Favorite=%s\n", "true");
+      fprintf(settings_file, "AutoConnect=%s\n", "true");
+      fprintf(settings_file, "Passphrase=%s\n", netinfo->passphrase);
+      fprintf(settings_file, "IPv4.method=%s\n", "dhcp");
+      fclose(settings_file);
+
+      /* connman does not pick this up automatically, so hack: */
+      system("systemctl restart connman.service");
+   }
+   else
+   {
+      /* No need for pass, config should be there already, verify it */
+      settings_file = fopen(settings_path, "r");
+      if (!settings_file)
+      {
+         /* Usually a mismatch between connman state and config, reload */
+         system("systemctl restart connman.service");
+         return false;
+      }
+      fclose(settings_file);
+   }
 
    if (connmanctl_tether_status(connman))
    {
@@ -348,26 +382,46 @@ static bool connmanctl_connect_ssid(
       connmanctl_tether_toggle(connman, false, "", "");
    }
 
-   pclose(popen("systemctl restart connman", "r"));
+   snprintf(connman->command, sizeof(connman->command),
+         "connmanctl connect %s",
+         netinfo->netid);
 
-   snprintf(connman->command, sizeof(connman->command), "\
-         connmanctl connect %s 2>&1",
-         service);
+   pclose(popen(connman->command, "r"));
 
-   command_file = popen(connman->command, "r");
-
-   while (fgets(ln, sizeof(ln), command_file))
+   /* Refresh status to reflect the updated state */
+   connmanctl_refresh_services(connman);
+   
+   /* connman is a PITA, return code is not meaningful at all :( */
+   for (i = 0; i < RBUF_LEN(connman->scan.net_list); i++)
    {
+      if (!strcmp(netid, connman->scan.net_list[i].netid))
+      {
+         /* Found it! Check if we are connected now */
+         success = connman->scan.net_list[i].connected;
+         if (!success)
+         {
+            /* TODO: Add forget password option, which gets rid of this hack */
+            connman->scan.net_list[i].saved_password = false;
+            unlink(settings_path);
+         }
+      }
+   }
+
 #ifdef HAVE_GFX_WIDGETS
-      if (!widgets_active)
+   if (!widgets_active)
 #endif
-         runloop_msg_queue_push(ln, 1, 180, true,
+   {
+      if (success)
+         runloop_msg_queue_push("Connected", 1, 180, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+               MESSAGE_QUEUE_CATEGORY_INFO);
+      else
+         runloop_msg_queue_push("Connection failed!", 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                MESSAGE_QUEUE_CATEGORY_INFO);
    }
-   pclose(command_file);
 
-   return true;
+   return success;
 }
 
 static void connmanctl_get_connected_ssid(
@@ -386,11 +440,11 @@ static void connmanctl_get_connected_ssid(
     * only 'wifi_' services, then greps the one with
     * 'R' (Ready) or 'O' (Online) flag and cuts out the ssid
     */
-   snprintf(connman->command, sizeof(connman->command), "\
-         connmanctl services | \
-         grep wifi_ | \
-         grep \"^..\\(R\\|O\\)\" | \
-         cut -d' ' -f 2");
+   snprintf(connman->command, sizeof(connman->command),
+         "connmanctl services | "
+         "grep wifi_ | "
+         "grep \"^..\\(R\\|O\\)\" | "
+         "cut -d' ' -f 2");
 
    command_file = popen(connman->command, "r");
 
@@ -734,10 +788,13 @@ wifi_driver_t wifi_connmanctl = {
    connmanctl_free,
    connmanctl_start,
    connmanctl_stop,
+   connmanctl_enable,
+   connmanctl_connection_info,
    connmanctl_scan,
    connmanctl_get_ssids,
    connmanctl_ssid_is_online,
    connmanctl_connect_ssid,
+   connmanctl_disconnect_ssid,
    connmanctl_tether_start_stop,
    "connmanctl",
 };

@@ -164,20 +164,13 @@ bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
 {
    struct stat buffer;   
    int ret = -1;
-   int retries = 10;
+   int retries = 100;
    char *rootDevice = rootDevicePath(device_id);
 
    while(ret != 0 && retries > 0)
    {
       ret = stat(rootDevice, &buffer);
       /* Wait untill the device is ready */
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
-      nopdelay();
       nopdelay();
 
       retries--;

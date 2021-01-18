@@ -10,22 +10,10 @@
 #include <chrono>
 #include <mutex>
 
-#ifndef DISCORD_DISABLE_IO_THREAD
-#include <condition_variable>
-#include <thread>
-#endif
-
 struct QueuedMessage
 {
    size_t length;
    char buffer[16384];
-
-   void Copy(const QueuedMessage& other)
-   {
-      length = other.length;
-      if (length)
-         memcpy(buffer, other.buffer, length);
-   }
 };
 
 struct User
@@ -80,66 +68,13 @@ static User connectedUser;
 static Backoff ReconnectTimeMs(500, 60 * 1000);
 static auto NextConnect = std::chrono::system_clock::now();
 
-#ifndef DISCORD_DISABLE_IO_THREAD
-static void Discord_UpdateConnection(void);
-class IoThreadHolder
-{
-   private:
-      std::atomic_bool keepRunning{true};
-      std::mutex waitForIOMutex;
-      std::condition_variable waitForIOActivity;
-      std::thread ioThread;
-
-   public:
-      void Start()
-      {
-         keepRunning.store(true);
-         ioThread = std::thread([&]() {
-               const std::chrono::duration<int64_t, std::milli> maxWait{500LL};
-               Discord_UpdateConnection();
-               while (keepRunning.load()) {
-               std::unique_lock<std::mutex> lock(waitForIOMutex);
-               waitForIOActivity.wait_for(lock, maxWait);
-               Discord_UpdateConnection();
-               }
-               });
-      }
-
-      void Notify() { waitForIOActivity.notify_all(); }
-
-      void Stop()
-      {
-         keepRunning.exchange(false);
-         Notify();
-         if (ioThread.joinable())
-            ioThread.join();
-      }
-
-      ~IoThreadHolder() { Stop(); }
-};
-#else
-class IoThreadHolder
-{
-   public:
-      void Start() {}
-      void Stop() {}
-      void Notify() {}
-};
-#endif /* DISCORD_DISABLE_IO_THREAD */
-
-static IoThreadHolder* IoThread{nullptr};
-
-static void UpdateReconnectTime(void)
+static void update_reconnect_time(void)
 {
    NextConnect = std::chrono::system_clock::now() +
       std::chrono::duration<int64_t, std::milli>{ReconnectTimeMs.nextDelay()};
 }
 
-#ifdef DISCORD_DISABLE_IO_THREAD
 extern "C" void Discord_UpdateConnection(void)
-#else
-static void Discord_UpdateConnection(void)
-#endif
 {
     if (!Connection)
         return;
@@ -148,7 +83,7 @@ static void Discord_UpdateConnection(void)
     {
         if (std::chrono::system_clock::now() >= NextConnect)
         {
-            UpdateReconnectTime();
+            update_reconnect_time();
             Connection->Open();
         }
     }
@@ -163,8 +98,43 @@ static void Discord_UpdateConnection(void)
             if (!Connection->Read(message))
                 break;
 
-            const char *evtName = GetStrMember(&message, "evt");
-            const char *nonce   = GetStrMember(&message, "nonce");
+            char *evtName       = NULL;
+            char *nonce         = NULL;
+            char *secret        = NULL;
+            char *userId        = NULL;
+            char *username      = NULL;
+            char *avatar        = NULL;
+            char *discriminator = NULL;
+            char *error_message = NULL;
+            int  error_code     = 0;
+
+            bool in_data = false, in_user = false;
+            for (JsonReader r(message); r.NextKey();)
+            {
+                if (r.depth == 1)
+                {
+                    in_data = in_user = false;
+                    if      (!strcmp(r.key, "evt"  )) r.NextStrDup(&evtName);
+                    else if (!strcmp(r.key, "nonce")) r.NextStrDup(&nonce);
+                    else if (!strcmp(r.key, "data" )) in_data = true;
+                }
+                else if (r.depth == 2 && in_data)
+                {
+                    in_user = false;
+                    if      (!strcmp(r.key, "code"   )) r.NextInt(&error_code);
+                    else if (!strcmp(r.key, "message")) r.NextStrDup(&error_message);
+                    else if (!strcmp(r.key, "secret" )) r.NextStrDup(&secret);
+                    else if (!strcmp(r.key, "secret" )) r.NextStrDup(&secret);
+                    else if (!strcmp(r.key, "user"   )) in_user = true;
+                }
+                else if (r.depth == 3 && in_user)
+                {
+                    if      (!strcmp(r.key, "id"           )) r.NextStrDup(&userId);
+                    else if (!strcmp(r.key, "username"     )) r.NextStrDup(&username);
+                    else if (!strcmp(r.key, "avatar"       )) r.NextStrDup(&avatar);
+                    else if (!strcmp(r.key, "discriminator")) r.NextStrDup(&discriminator);
+                }
+            }
 
             if (nonce)
             {
@@ -173,9 +143,8 @@ static void Discord_UpdateConnection(void)
 
                 if (evtName && !strcmp(evtName, "ERROR"))
                 {
-                    JsonValue *data = GetObjMember(&message, "data");
-                    LastErrorCode   = GetIntMember(data, "code");
-                    StringCopy(LastErrorMessage, GetStrMember(data, "message", ""));
+                    LastErrorCode = error_code;
+                    StringCopy(LastErrorMessage, error_message);
                     GotErrorMessage.store(true);
                 }
             }
@@ -185,11 +154,8 @@ static void Discord_UpdateConnection(void)
                 if (!evtName)
                     continue;
 
-                JsonValue *data = GetObjMember(&message, "data");
-
                 if (!strcmp(evtName, "ACTIVITY_JOIN"))
                 {
-                    const char *secret = GetStrMember(data, "secret");
                     if (secret)
                     {
                         StringCopy(JoinGameSecret, secret);
@@ -198,7 +164,6 @@ static void Discord_UpdateConnection(void)
                 }
                 else if (!strcmp(evtName, "ACTIVITY_SPECTATE"))
                 {
-                   const char *secret = GetStrMember(data, "secret");
                    if (secret)
                    {
                       StringCopy(SpectateGameSecret, secret);
@@ -207,18 +172,12 @@ static void Discord_UpdateConnection(void)
                 }
                 else if (!strcmp(evtName, "ACTIVITY_JOIN_REQUEST"))
                 {
-                   JsonValue *user      = GetObjMember(data, "user");
-                   const char *userId   = GetStrMember(user, "id");
-                   const char *username = GetStrMember(user, "username");
-                   const char *avatar   = GetStrMember(user, "avatar");
                    auto        joinReq  = JoinAskQueue.GetNextAddMessage();
 
                    if (userId && username && joinReq)
                    {
                       StringCopy(joinReq->userId, userId);
                       StringCopy(joinReq->username, username);
-                      const char *discriminator = GetStrMember(user,
-                            "discriminator");
                       if (discriminator)
                          StringCopy(joinReq->discriminator, discriminator);
                       if (avatar)
@@ -229,22 +188,34 @@ static void Discord_UpdateConnection(void)
                    }
                 }
             }
+
+            if (evtName      ) free(evtName      );
+            if (nonce        ) free(nonce        );
+            if (secret       ) free(secret       );
+            if (userId       ) free(userId       );
+            if (username     ) free(username     );
+            if (avatar       ) free(avatar       );
+            if (discriminator) free(discriminator);
+            if (error_message) free(error_message);
         }
 
         /* writes */
         if (QueuedPresence.length)
         {
            QueuedMessage local;
-           {
-              std::lock_guard<std::mutex> guard(PresenceMutex);
-              local.Copy(QueuedPresence);
-              QueuedPresence.length = 0;
-           }
+           std::lock_guard<std::mutex> guard(PresenceMutex);
+           local.length = QueuedPresence.length;
+           if (local.length)
+              memcpy(local.buffer, QueuedPresence.buffer, local.length);
+           QueuedPresence.length = 0;
+
            if (!Connection->Write(local.buffer, local.length))
            {
               /* if we fail to send, requeue */
               std::lock_guard<std::mutex> guard(PresenceMutex);
-              QueuedPresence.Copy(local);
+              QueuedPresence.length = local.length;
+              if (QueuedPresence.length)
+                 memcpy(QueuedPresence.buffer, local.buffer, QueuedPresence.length);
            }
         }
 
@@ -265,8 +236,6 @@ static bool RegisterForEvent(const char* evtName)
       qmessage->length =
          JsonWriteSubscribeCommand(qmessage->buffer, sizeof(qmessage->buffer), Nonce++, evtName);
       SendQueue.CommitAdd();
-      if (IoThread)
-         IoThread->Notify();
       return true;
    }
    return false;
@@ -280,8 +249,6 @@ static bool DeregisterForEvent(const char* evtName)
         qmessage->length =
           JsonWriteUnsubscribeCommand(qmessage->buffer, sizeof(qmessage->buffer), Nonce++, evtName);
         SendQueue.CommitAdd();
-        if (IoThread)
-           IoThread->Notify();
         return true;
     }
     return false;
@@ -293,10 +260,6 @@ extern "C" void Discord_Initialize(
       int autoRegister,
       const char* optionalSteamId)
 {
-    IoThread = new (std::nothrow) IoThreadHolder();
-    if (!IoThread)
-        return;
-
     if (autoRegister)
     {
        if (optionalSteamId && optionalSteamId[0])
@@ -321,20 +284,44 @@ extern "C" void Discord_Initialize(
     if (Connection)
         return;
 
-    Connection = RpcConnection::Create(applicationId);
+    Connection            = RpcConnection::Create(applicationId);
     Connection->onConnect = [](JsonDocument& readyMessage)
     {
+        char *userId        = NULL;
+        char *username      = NULL;
+        char *avatar        = NULL;
+        char *discriminator = NULL;
+        bool in_data        = false;
+        bool in_user        = false;
+
         Discord_UpdateHandlers(&QueuedHandlers);
-        JsonValue *data      = GetObjMember(&readyMessage, "data");
-        JsonValue *user      = GetObjMember(data, "user");
-        const char *userId   = GetStrMember(user, "id");
-        const char *username = GetStrMember(user, "username");
-        const char *avatar   = GetStrMember(user, "avatar");
+
+        for (JsonReader r(readyMessage); r.NextKey();)
+        {
+           if (r.depth == 1)
+           {
+              in_data = !strcmp(r.key,"data");
+              in_user = false;
+           }
+           else if (r.depth == 2 && in_data)
+              in_user = !strcmp(r.key, "user");
+           else if (r.depth == 3 && in_user)
+           {
+              if      (!strcmp(r.key, "id"           ))
+                 r.NextStrDup(&userId);
+              else if (!strcmp(r.key, "username"     ))
+                 r.NextStrDup(&username);
+              else if (!strcmp(r.key, "avatar"       ))
+                 r.NextStrDup(&avatar);
+              else if (!strcmp(r.key, "discriminator"))
+                 r.NextStrDup(&discriminator);
+           }
+        }
+
         if (userId && username)
         {
             StringCopy(connectedUser.userId, userId);
             StringCopy(connectedUser.username, username);
-            const char *discriminator = GetStrMember(user, "discriminator");
             if (discriminator)
                 StringCopy(connectedUser.discriminator, discriminator);
             if (avatar)
@@ -344,6 +331,15 @@ extern "C" void Discord_Initialize(
         }
         WasJustConnected.exchange(true);
         ReconnectTimeMs.reset();
+
+        if (userId)
+           free(userId);
+        if (username)
+           free(username);
+        if (avatar)
+           free(avatar);
+        if (discriminator)
+           free(discriminator);
     };
     Connection->onDisconnect = [](int err, const char* message)
     {
@@ -354,10 +350,8 @@ extern "C" void Discord_Initialize(
             Handlers = {};
         }
         WasJustDisconnected.exchange(true);
-        UpdateReconnectTime();
+        update_reconnect_time();
     };
-
-    IoThread->Start();
 }
 
 extern "C" void Discord_Shutdown(void)
@@ -366,26 +360,17 @@ extern "C" void Discord_Shutdown(void)
         return;
     Connection->onConnect    = nullptr;
     Connection->onDisconnect = nullptr;
-    Handlers = {};
-    if (IoThread)
-    {
-        IoThread->Stop();
-        delete IoThread;
-        IoThread = nullptr;
-    }
+    Handlers                 = {};
 
     RpcConnection::Destroy(Connection);
 }
 
 extern "C" void  Discord_UpdatePresence(const DiscordRichPresence* presence)
 {
-    {
-        std::lock_guard<std::mutex> guard(PresenceMutex);
-        QueuedPresence.length = JsonWriteRichPresenceObj(
-          QueuedPresence.buffer, sizeof(QueuedPresence.buffer), Nonce++, Pid, presence);
-    }
-    if (IoThread)
-       IoThread->Notify();
+   std::lock_guard<std::mutex> guard(PresenceMutex);
+   QueuedPresence.length = JsonWriteRichPresenceObj(
+         QueuedPresence.buffer, sizeof(QueuedPresence.buffer),
+         Nonce++, Pid, presence);
 }
 
 extern "C" void Discord_ClearPresence(void)
@@ -393,7 +378,8 @@ extern "C" void Discord_ClearPresence(void)
     Discord_UpdatePresence(nullptr);
 }
 
-extern "C" void Discord_Respond(const char* userId, /* DISCORD_REPLY_ */ int reply)
+extern "C" void Discord_Respond(const char* userId,
+      /* DISCORD_REPLY_ */ int reply)
 {
     /* if we are not connected, let's not batch up stale messages for later */
     if (!Connection || !Connection->IsOpen())
@@ -404,8 +390,6 @@ extern "C" void Discord_Respond(const char* userId, /* DISCORD_REPLY_ */ int rep
         qmessage->length =
           JsonWriteJoinReply(qmessage->buffer, sizeof(qmessage->buffer), userId, reply, Nonce++);
         SendQueue.CommitAdd();
-        if (IoThread)
-           IoThread->Notify();
     }
 }
 
@@ -472,16 +456,14 @@ extern "C" void Discord_RunCallbacks(void)
      */
     while (JoinAskQueue.HavePendingSends())
     {
-        auto req = JoinAskQueue.GetNextSendMessage();
-        {
-            std::lock_guard<std::mutex> guard(HandlerMutex);
-            if (Handlers.joinRequest)
-            {
-                DiscordUser du{req->userId, req->username, req->discriminator, req->avatar};
-                Handlers.joinRequest(&du);
-            }
-        }
-        JoinAskQueue.CommitSend();
+       auto req = JoinAskQueue.GetNextSendMessage();
+       std::lock_guard<std::mutex> guard(HandlerMutex);
+       if (Handlers.joinRequest)
+       {
+          DiscordUser du{req->userId, req->username, req->discriminator, req->avatar};
+          Handlers.joinRequest(&du);
+       }
+       JoinAskQueue.CommitSend();
     }
 
     if (!isConnected)

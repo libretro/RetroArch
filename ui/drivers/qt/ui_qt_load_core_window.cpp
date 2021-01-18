@@ -16,6 +16,7 @@
  */
 
 #include "ui_qt_load_core_window.h"
+#include "../ui_qt.h"
 
 #include <QFileDialog>
 #include <QDesktopWidget>
@@ -235,8 +236,7 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
          name_item                      = new QTableWidgetItem(name);
 
          hash["path"]                   = core->path;
-         hash["extensions"]             = QString(
-               core->supported_extensions).split("|");
+         hash["extensions"]             = string_split_to_qt(QString(core->supported_extensions), '|');
 
          name_item->setData(Qt::UserRole, hash);
          name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);

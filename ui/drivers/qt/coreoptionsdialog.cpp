@@ -33,7 +33,7 @@ extern "C" {
 #include "../../../retroarch.h"
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
-#include "../../../managers/core_option_manager.h"
+#include "../../../core_option_manager.h"
 
 #ifndef CXX_BUILD
 }

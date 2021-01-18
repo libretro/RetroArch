@@ -48,7 +48,7 @@ struct module {
 };
 
 /* Allocate and initialize a module from the specified data, returns NULL on error.
-   Message should point to a 64-character buffer to receive error messages. */
+   Message must point to a 64-character buffer to receive error messages. */
 struct module* module_load( struct data *data, char *message );
 /* Deallocate the specified module. */
 void dispose_module( struct module *module );
@@ -63,8 +63,13 @@ int replay_calculate_duration( struct replay *replay );
 int replay_seek( struct replay *replay, int sample_pos );
 /* Set the pattern in the sequence to play. The tempo is reset to the default. */
 void replay_set_sequence_pos( struct replay *replay, int pos );
-/* Generates audio and returns the number of stereo samples written into mix_buf. */
-int replay_get_audio( struct replay *replay, int *mix_buf );
+/* Generates audio and returns the number of stereo samples written into mix_buf.
+   Individual channels may be excluded using the mute bitmask. */
+int replay_get_audio( struct replay *replay, int *mix_buf, int mute );
+/* Returns the currently playing pattern in the sequence.*/
+int replay_get_sequence_pos( struct replay *replay );
+/* Returns the currently playing row in the pattern. */
+int replay_get_row( struct replay *replay );
 /* Returns the length of the output buffer required by replay_get_audio(). */
 int calculate_mix_buf_len( int sample_rate );
 

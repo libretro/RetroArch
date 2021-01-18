@@ -43,11 +43,107 @@ typedef uint32_t   pthread_cond_t;
 typedef int        pthread_condattr_t;
 #endif
 
-typedef struct {
-   uint32_t semaphore;
-   LightLock lock;
-   uint32_t waiting;
-} cond_t;
+#ifndef USE_CTRULIB_2
+/* Backported CondVar API from libctru 2.0, and under its license:
+   https://github.com/devkitPro/libctru
+   Slightly modified for compatibility with older libctru. */
+
+typedef s32 CondVar;
+
+static INLINE Result syncArbitrateAddress(s32* addr, ArbitrationType type, s32 value)
+{
+   return svcArbitrateAddress(__sync_get_arbiter(), (u32)addr, type, value, 0);
+}
+
+static INLINE Result syncArbitrateAddressWithTimeout(s32* addr, ArbitrationType type, s32 value, s64 timeout_ns)
+{
+   return svcArbitrateAddress(__sync_get_arbiter(), (u32)addr, type, value, timeout_ns);
+}
+
+static INLINE void __dmb(void)
+{
+	__asm__ __volatile__("mcr p15, 0, %[val], c7, c10, 5" :: [val] "r" (0) : "memory");
+}
+
+static INLINE void CondVar_BeginWait(CondVar* cv, LightLock* lock)
+{
+	s32 val;
+	do
+		val = __ldrex(cv) - 1;
+	while (__strex(cv, val));
+	LightLock_Unlock(lock);
+}
+
+static INLINE bool CondVar_EndWait(CondVar* cv, s32 num_threads)
+{
+	bool hasWaiters;
+	s32 val;
+
+	do {
+		val = __ldrex(cv);
+		hasWaiters = val < 0;
+		if (hasWaiters)
+		{
+			if (num_threads < 0)
+				val = 0;
+			else if (val <= -num_threads)
+				val += num_threads;
+			else
+				val = 0;
+		}
+	} while (__strex(cv, val));
+
+	return hasWaiters;
+}
+
+static INLINE void CondVar_Init(CondVar* cv)
+{
+	*cv = 0;
+}
+
+static INLINE void CondVar_Wait(CondVar* cv, LightLock* lock)
+{
+	CondVar_BeginWait(cv, lock);
+	syncArbitrateAddress(cv, ARBITRATION_WAIT_IF_LESS_THAN, 0);
+	LightLock_Lock(lock);
+}
+
+static INLINE int CondVar_WaitTimeout(CondVar* cv, LightLock* lock, s64 timeout_ns)
+{
+	CondVar_BeginWait(cv, lock);
+
+	bool timedOut = false;
+	Result rc = syncArbitrateAddressWithTimeout(cv, ARBITRATION_WAIT_IF_LESS_THAN_TIMEOUT, 0, timeout_ns);
+	if (R_DESCRIPTION(rc) == RD_TIMEOUT)
+	{
+		timedOut = CondVar_EndWait(cv, 1);
+		__dmb();
+	}
+
+	LightLock_Lock(lock);
+	return timedOut;
+}
+
+static INLINE void CondVar_WakeUp(CondVar* cv, s32 num_threads)
+{
+	__dmb();
+	if (CondVar_EndWait(cv, num_threads))
+		syncArbitrateAddress(cv, ARBITRATION_SIGNAL, num_threads);
+	else
+		__dmb();
+}
+
+static INLINE void CondVar_Signal(CondVar* cv)
+{
+	CondVar_WakeUp(cv, 1);
+}
+
+static INLINE void CondVar_Broadcast(CondVar* cv)
+{
+	CondVar_WakeUp(cv, ARBITRATION_SIGNAL_ALL);
+}
+/* End libctru 2.0 backport */
+#endif
 
 /* libctru threads return void but pthreads return void pointer */
 static bool mutex_inited = false;
@@ -139,8 +235,7 @@ static INLINE void pthread_exit(void *retval)
 
 static INLINE int pthread_detach(pthread_t thread)
 {
-   /* FIXME: pthread_detach equivalent missing? */
-   (void)thread;
+   threadDetach((Thread)thread);
    return 0;
 }
 
@@ -163,13 +258,7 @@ static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
 static INLINE int pthread_cond_wait(pthread_cond_t *cond,
       pthread_mutex_t *mutex)
 {
-   cond_t *cond_data = (cond_t *)*cond;
-   LightLock_Lock(&cond_data->lock);
-   cond_data->waiting++;
-   LightLock_Unlock(mutex);
-   LightLock_Unlock(&cond_data->lock);
-   svcWaitSynchronization(cond_data->semaphore, INT64_MAX);
-   LightLock_Lock(mutex);
+   CondVar_Wait((CondVar *)cond, (LightLock *)mutex);
    return 0;
 }
 
@@ -181,25 +270,22 @@ static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
    struct timeval tm;
    int retval = 0;
 
-   cond_t *cond_data = (cond_t *)*cond;
-   LightLock_Lock(&cond_data->lock);
-   cond_data->waiting++;
+   do {
+      gettimeofday(&tm, NULL);
+      now.tv_sec = tm.tv_sec;
+      now.tv_nsec = tm.tv_usec * 1000;
+      s64 timeout = (abstime->tv_sec - now.tv_sec) * 1000000000 + (abstime->tv_nsec - now.tv_nsec);
 
-   gettimeofday(&tm, NULL);
-   now.tv_sec = tm.tv_sec;
-   now.tv_nsec = tm.tv_usec * 1000;
-   s64 timeout = (abstime->tv_sec - now.tv_sec) * 1000000000 + (abstime->tv_nsec - now.tv_nsec);
-
-   if (timeout >= 0) {
-      LightLock_Unlock(mutex);
-      LightLock_Unlock(&cond_data->lock);
-      if (svcWaitSynchronization(cond_data->semaphore, timeout))
+      if (timeout < 0)
+      {
          retval = ETIMEDOUT;
+         break;
+      }
 
-      LightLock_Lock(mutex);
-   } else {
-      retval = ETIMEDOUT;
-   }
+      if (!CondVar_WaitTimeout((CondVar *)cond, (LightLock *)mutex, timeout)) {
+         break;
+      }
+   } while (1);
 
    return retval;
 }
@@ -207,65 +293,25 @@ static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
 static INLINE int pthread_cond_init(pthread_cond_t *cond,
       const pthread_condattr_t *attr)
 {
-   cond_t *cond_data = calloc(1, sizeof(cond_t));
-   if (!cond_data)
-      goto error;
-
-   if (svcCreateSemaphore(&cond_data->semaphore, 0, 1))
-      goto error;
-
-   LightLock_Init(&cond_data->lock);
-   cond_data->waiting = 0;
-   *cond = (pthread_cond_t)cond_data;
+   CondVar_Init((CondVar *)cond);
    return 0;
-
- error:
-   svcCloseHandle(cond_data->semaphore);
-   if (cond_data)
-      free(cond_data);
-   return -1;
 }
 
 static INLINE int pthread_cond_signal(pthread_cond_t *cond)
 {
-   int32_t count;
-   cond_t *cond_data = (cond_t *)*cond;
-   LightLock_Lock(&cond_data->lock);
-   if (cond_data->waiting) {
-      cond_data->waiting--;
-      LightLock_Unlock(&cond_data->lock);
-      svcReleaseSemaphore(&count, cond_data->semaphore, 1);
-   } else {
-      LightLock_Unlock(&cond_data->lock);
-   }
+   CondVar_Signal((CondVar *)cond);
    return 0;
 }
 
 static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-   int32_t count;
-   cond_t *cond_data = (cond_t *)*cond;
-   LightLock_Lock(&cond_data->lock);
-   while (cond_data->waiting) {
-      cond_data->waiting--;
-      LightLock_Unlock(&cond_data->lock);
-      svcReleaseSemaphore(&count, cond_data->semaphore, 1);
-      LightLock_Lock(&cond_data->lock);
-   }
-   LightLock_Unlock(&cond_data->lock);
-
+   CondVar_Broadcast((CondVar *)cond);
    return 0;
 }
 
 static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 {
-   if (*cond) {
-      cond_t *cond_data = (cond_t *)*cond;
-
-      svcCloseHandle(cond_data->semaphore);
-      free(cond_data);
-   }
-   *cond = 0;
+   /*Nothing to destroy*/
    return 0;
 }
 

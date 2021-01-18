@@ -37,11 +37,15 @@ typedef struct x11_input
    Display *display;
    Window win;
 
-   int mouse_x, mouse_y;
-   int mouse_last_x, mouse_last_y;
+   int mouse_x;
+   int mouse_y;
+   int mouse_delta_x;
+   int mouse_delta_y;
+   bool mouse_grabbed;
    char state[32];
-   bool mouse_l, mouse_r, mouse_m;
-   bool grab_mouse;
+   bool mouse_l;
+   bool mouse_r;
+   bool mouse_m;
 } x11_input_t;
 
 /* Public global variable */
@@ -222,11 +226,11 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_MOUSE_X:
                if (device == RARCH_DEVICE_MOUSE_SCREEN)
                   return x11->mouse_x;
-               return x11->mouse_x - x11->mouse_last_x;
+               return x11->mouse_delta_x;
             case RETRO_DEVICE_ID_MOUSE_Y:
                if (device == RARCH_DEVICE_MOUSE_SCREEN)
                   return x11->mouse_y;
-               return x11->mouse_y - x11->mouse_last_y;
+               return x11->mouse_delta_y;
             case RETRO_DEVICE_ID_MOUSE_LEFT:
                return x11->mouse_l;
             case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -592,9 +596,9 @@ static int16_t x_input_state(
                break;
             /*deprecated*/
             case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return x11->mouse_x - x11->mouse_last_x;
+               return x11->mouse_delta_x;
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return x11->mouse_y - x11->mouse_last_y;
+               return x11->mouse_delta_y;
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                {
                   unsigned new_id = RARCH_LIGHTGUN_START;
@@ -637,62 +641,140 @@ static void x_input_free(void *data)
 
 static void x_input_poll(void *data)
 {
-   unsigned mask;
-   int root_x, root_y, win_x, win_y;
-   Window root_win, child_win;
+   Window root_win;
+   Window child_win;
    x11_input_t *x11     = (x11_input_t*)data;
    bool video_has_focus = video_driver_has_focus();
+   int root_x           = 0;
+   int root_y           = 0;
+   int win_x            = 0;
+   int win_y            = 0;
+   unsigned mask        = 0;
 
-   if (video_has_focus)
-      XQueryKeymap(x11->display, x11->state);
-   else
-      memset(x11->state, 0, sizeof(x11->state));
-
-   x11->mouse_last_x = x11->mouse_x;
-   x11->mouse_last_y = x11->mouse_y;
-
-   XQueryPointer(x11->display,
-            x11->win,
-            &root_win, &child_win,
-            &root_x, &root_y,
-            &win_x, &win_y,
-            &mask);
-
-   if (g_x11_entered)
+   /* If window loses focus, 'reset' keyboard
+    * and ignore mouse input */
+   if (!video_has_focus)
    {
-      x11->mouse_x  = win_x;
-      x11->mouse_y  = win_y;
-      x11->mouse_l  = mask & Button1Mask;
-      x11->mouse_m  = mask & Button2Mask;
-      x11->mouse_r  = mask & Button3Mask;
+      memset(x11->state, 0, sizeof(x11->state));
+      x11->mouse_delta_x = 0;
+      x11->mouse_delta_y = 0;
+      x11->mouse_l       = 0;
+      x11->mouse_m       = 0;
+      x11->mouse_r       = 0;
+      return;
+   }
 
-      /* Somewhat hacky, but seem to do the job. */
-      if (x11->grab_mouse && video_has_focus)
+   /* If pointer is not inside the application
+    * window, ignore mouse input */
+   if (!g_x11_entered)
+   {
+      x11->mouse_delta_x = 0;
+      x11->mouse_delta_y = 0;
+      x11->mouse_l       = 0;
+      x11->mouse_m       = 0;
+      x11->mouse_r       = 0;
+      return;
+   }
+
+   /* Process keyboard */
+   XQueryKeymap(x11->display, x11->state);
+
+   /* Process mouse */
+   if (!XQueryPointer(x11->display,
+         x11->win,
+         &root_win, &child_win,
+         &root_x, &root_y,
+         &win_x, &win_y,
+         &mask))
+      return;
+
+   /* > Mouse buttons */
+   x11->mouse_l = mask & Button1Mask;
+   x11->mouse_m = mask & Button2Mask;
+   x11->mouse_r = mask & Button3Mask;
+
+   /* > Mouse pointer */
+   if (!x11->mouse_grabbed)
+   {
+      /* Mouse is not grabbed - this corresponds
+       * to 'conventional' pointer input, using
+       * absolute screen coordinates */
+      int mouse_last_x = x11->mouse_x;
+      int mouse_last_y = x11->mouse_y;
+
+      x11->mouse_x = win_x;
+      x11->mouse_y = win_y;
+
+      x11->mouse_delta_x = x11->mouse_x - mouse_last_x;
+      x11->mouse_delta_y = x11->mouse_y - mouse_last_y;
+   }
+   else
+   {
+      /* Mouse is grabbed - all pointer movement
+       * must be considered 'relative' */
+      XWindowAttributes win_attr;
+      int centre_x;
+      int centre_y;
+      int warp_x   = win_x;
+      int warp_y   = win_y;
+      bool do_warp = false;
+
+      /* Get dimensions/centre coordinates of
+       * application window */
+      if (!XGetWindowAttributes(x11->display, x11->win, &win_attr))
       {
-         int mid_w, mid_h;
-         struct video_viewport vp;
+         x11->mouse_delta_x = 0;
+         x11->mouse_delta_y = 0;
+         return;
+      }
 
-         vp.x                        = 0;
-         vp.y                        = 0;
-         vp.width                    = 0;
-         vp.height                   = 0;
-         vp.full_width               = 0;
-         vp.full_height              = 0;
+      centre_x = win_attr.width  >> 1;
+      centre_y = win_attr.height >> 1;
 
-         video_driver_get_viewport_info(&vp);
+      /* Get relative movement delta since last
+       * poll event */
+      x11->mouse_delta_x = win_x - centre_x;
+      x11->mouse_delta_y = win_y - centre_y;
 
-         mid_w = vp.full_width  >> 1;
-         mid_h = vp.full_height >> 1;
+      /* Get effective 'absolute' pointer location
+       * (last position + delta, bounded by current
+       * application window dimensions) */
+      x11->mouse_x += x11->mouse_delta_x;
+      x11->mouse_x = (x11->mouse_x < 0)                ? 0                     : x11->mouse_x;
+      x11->mouse_x = (x11->mouse_x >= win_attr.width)  ? (win_attr.width - 1)  : x11->mouse_x;
 
-         if (x11->mouse_x != mid_w || x11->mouse_y != mid_h)
-         {
-            XWarpPointer(x11->display, None,
-                  x11->win, 0, 0, 0, 0,
-                  mid_w, mid_h);
-            XSync(x11->display, False);
-         }
-         x11->mouse_last_x = mid_w;
-         x11->mouse_last_y = mid_h;
+      x11->mouse_y += x11->mouse_delta_y;
+      x11->mouse_y = (x11->mouse_y < 0)                ? 0                     : x11->mouse_y;
+      x11->mouse_y = (x11->mouse_y >= win_attr.height) ? (win_attr.height - 1) : x11->mouse_y;
+
+      /* Hack/workaround:
+       * - X11 gives absolute pointer coordinates
+       * - Once the pointer reaches a screen edge
+       *   it cannot go any further
+       * - To achieve 'relative' motion, we therefore
+       *   have to reset the hardware cursor to the
+       *   centre of the screen after polling each
+       *   movement delta, such that it is always
+       *   free to move in all directions during the
+       *   time interval until the next poll event */
+      if (win_x != centre_x)
+      {
+         warp_x  = centre_x;
+         do_warp = true;
+      }
+
+      if (win_y != centre_y)
+      {
+         warp_y  = centre_y;
+         do_warp = true;
+      }
+
+      if (do_warp)
+      {
+         XWarpPointer(x11->display, None,
+               x11->win, 0, 0, 0, 0,
+               warp_x, warp_y);
+         XSync(x11->display, False);
       }
    }
 }
@@ -700,8 +782,19 @@ static void x_input_poll(void *data)
 static void x_grab_mouse(void *data, bool state)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   if (x11)
-      x11->grab_mouse = state;
+   if (!x11)
+      return;
+
+   x11->mouse_grabbed = state;
+
+   if (state)
+   {
+      XGrabPointer(x11->display, x11->win, False,
+                   ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+                   GrabModeAsync, GrabModeAsync, x11->win, None, CurrentTime);
+   }
+   else
+      XUngrabPointer(x11->display, CurrentTime);
 }
 
 static uint64_t x_input_get_capabilities(void *data)

@@ -99,7 +99,7 @@ else
    endif
 endif
 
-INCLUDE_DIRS += -I. -I../../deps/peglib
+INCLUDE_DIRS += -I. -I../../deps/peglib -I../../libretro-common/include
 
 $(info os       : $(OS))
 $(info host     : $(ARCH))

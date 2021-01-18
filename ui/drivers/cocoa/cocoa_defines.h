@@ -23,6 +23,10 @@
 #define MAC_OS_X_VERSION_10_12 101200
 #endif
 
+#ifndef NSEventModifierFlags
+#define NSEventModifierFlags NSUInteger
+#endif
+
 #if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
 #define NSEventModifierFlagCommand NSCommandKeyMask
 #define NSEventModifierFlagControl NSControlKeyMask

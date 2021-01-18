@@ -248,6 +248,8 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CORE_DELETE:
       case MENU_ENUM_LABEL_DELETE_PLAYLIST:
       case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST:
+      case MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE:
+      case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_CORE_LOCK:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
@@ -422,10 +424,8 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PAUSE];
       case MENU_SETTING_GROUP:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
-#ifdef HAVE_LAKKA_SWITCH
-      case MENU_SET_SWITCH_BRIGHTNESS:
+      case MENU_SET_SCREEN_BRIGHTNESS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_BRIGHTNESS];
-#endif
       case MENU_INFO_MESSAGE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       case MENU_BLUETOOTH:

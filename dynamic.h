@@ -99,6 +99,7 @@ bool libretro_get_shared_context(void);
 /* Arbitrary 10 roms for each subsystem limit */
 #define SUBSYSTEM_MAX_SUBSYSTEM_ROMS 10
 
+/* TODO/FIXME - globals */
 extern struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
 extern unsigned subsystem_current_count;
 

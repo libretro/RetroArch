@@ -141,7 +141,7 @@ void PlaylistEntryDialog::loadPlaylistOptions()
          QString ui_display_name;
          QHash<QString, QString> hash;
          const core_info_t *core = &core_info_list->list[i];
-         QStringList databases   = QString(core->databases).split("|");
+         QStringList databases   = string_split_to_qt(QString(core->databases), '|');
 
          hash["core_name"]         = core->core_name;
          hash["core_display_name"] = core->display_name;
@@ -278,8 +278,7 @@ const QStringList PlaylistEntryDialog::getSelectedExtensions()
 
    /* Otherwise it would create a QStringList with a single blank entry... */
    if (!text.isEmpty())
-      list = text.split(' ');
-
+      list   = string_split_to_qt(text, ' ');
    return list;
 }
 

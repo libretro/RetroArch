@@ -31,7 +31,7 @@ RARCH_DEFINES += -DPS2 -DIS_SALAMANDER -DRARCH_CONSOLE
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lm -lelf-loader -lpatches -lpoweroff
+LIBS = -lelf-loader -lpatches
 
 ifeq ($(BUILD_FOR_PCSX2), 1)
 RARCH_DEFINES += -DBUILD_FOR_PCSX2
@@ -59,15 +59,15 @@ EE_OBJS = frontend/frontend_salamander.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
-		 libretro-common/hash/rhash.o \
+		 libretro-common/hash/lrc_hash.o \
 		 libretro-common/time/rtime.o \
 		 verbosity.o \
 		 ps2/compat_files/ps2_devices.o 
 
 # Needed IRX objects
-EE_OBJS += $(IRX_DIR)/freesio2_irx.o $(IRX_DIR)/iomanX_irx.o $(IRX_DIR)/cdfs_irx.o
-EE_OBJS += $(IRX_DIR)/fileXio_irx.o $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o $(IRX_DIR)/usbd_irx.o
-EE_OBJS += $(IRX_DIR)/usbhdfsd_irx.o $(IRX_DIR)/freesd_irx.o $(IRX_DIR)/poweroff_irx.o
+EE_OBJS += $(IRX_DIR)/sio2man_irx.o $ $(IRX_DIR)/iomanX_irx.o $(IRX_DIR)/fileXio_irx.o 
+EE_OBJS += $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/usbhdfsd_irx.o
+EE_OBJS += $(IRX_DIR)/cdfs_irx.o
 
 EE_CFLAGS = $(CFLAGS)
 EE_CXXFLAGS = $(CFLAGS)

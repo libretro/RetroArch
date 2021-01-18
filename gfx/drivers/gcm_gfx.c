@@ -261,8 +261,7 @@ error:
 }
 
 
-static void
-waitFinish(gcmContextData *context, u32 sLabelVal)
+static void waitFinish(gcmContextData *context, u32 sLabelVal)
 {
   rsxSetWriteBackendLabel (context, GCM_LABEL_INDEX, sLabelVal);
 
@@ -313,7 +312,7 @@ static void* gcm_init(const video_info_t* video,
    gcm->vp.height           = gcm->height;
    gcm->vp.full_width       = gcm->width;
    gcm->vp.full_height      = gcm->height;
-   gcm->rgb32 = video->rgb32;
+   gcm->rgb32               = video->rgb32;
    video_driver_set_size(gcm->vp.width, gcm->vp.height);
 
    if (input && input_data)
@@ -337,7 +336,12 @@ static void gcm_blit_buffer(
       rsxBuffer *buffer, const void *frame, unsigned width,
       unsigned height, unsigned pitch, int rgb32, bool do_scaling)
 {
+   int i;
+   uint32_t *dst;
+   uint32_t *dst_end;
+   int pre_clean;
    int scale = 1, xofs = 0, yofs = 0;
+
    if (width > buffer->width)
       width = buffer->width;
    if (height > buffer->height)
@@ -359,14 +363,13 @@ static void gcm_blit_buffer(
          scale = 1;
    }
 
-   /* TODO: let rsx do the copy */
-   int i;
-   int pre_clean = xofs + buffer->width * yofs;
-   uint32_t      *dst = buffer->ptr;
-   uint32_t      *dst_end = buffer->ptr + buffer->width * buffer->height;
+   /* TODO/FIXME: let RSX do the copy */
+   pre_clean = xofs + buffer->width * yofs;
+   dst       = buffer->ptr;
+   dst_end   = buffer->ptr + buffer->width * buffer->height;
 
-   memset (dst, 0, pre_clean * 4);
-   dst += pre_clean;
+   memset(dst, 0, pre_clean * 4);
+   dst      += pre_clean;
 
    if (scale == 1)
    {
@@ -444,6 +447,7 @@ static void gcm_blit_buffer(
          }
       }
    }
+
    if (dst < dst_end)
       memset(dst, 0, 4 * (dst_end - dst));
 }
@@ -531,15 +535,16 @@ static bool gcm_suppress_screensaver(void* data, bool enable)
 
 static void gcm_free(void* data)
 {
+   int i;
    gcm_video_t* gcm = (gcm_video_t*)data;
 
    if (!gcm)
       return;
 
    gcmSetWaitFlip(gcm->context);
-   for (int i = 0; i < MAX_BUFFERS; i++)
+   for (i = 0; i < MAX_BUFFERS; i++)
      rsxFree(gcm->buffers[i].ptr);
-   for (int i = 0; i < MAX_BUFFERS; i++)
+   for (i = 0; i < MAX_BUFFERS; i++)
      rsxFree(gcm->menuBuffers[i].ptr);
 
 #if 0
@@ -553,10 +558,11 @@ static void gcm_set_texture_frame(void* data, const void* frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
   gcm_video_t* gcm = (gcm_video_t*)data;
+  int newBuffer    = gcm->menuBuffer + 1;
 
-  int newBuffer = gcm->menuBuffer + 1;
   if (newBuffer >= MAX_BUFFERS)
     newBuffer = 0;
+
   /* TODO: respect alpha */
   gcm_blit_buffer(&gcm->menuBuffers[newBuffer], frame, width, height,
 	     width * (rgb32 ? 4 : 2), rgb32, true);
@@ -567,8 +573,6 @@ static void gcm_set_texture_frame(void* data, const void* frame, bool rgb32,
 
 static void gcm_set_texture_enable(void* data, bool state, bool full_screen)
 {
-   (void) full_screen;
-
    gcm_video_t* gcm = (gcm_video_t*)data;
 
    if (!gcm)

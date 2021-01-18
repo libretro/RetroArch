@@ -336,6 +336,8 @@ MSG_HASH(
 
 /* Settings > Video */
 
+#if defined(DINGUX)
+#endif
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -363,6 +365,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "יחס גובה-רוחב"
    )
+#if defined(DINGUX)
+#endif
 
 /* Settings > Video > Synchronization */
 
@@ -450,9 +454,13 @@ MSG_HASH(
 
 /* Settings > Input */
 
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -581,6 +589,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Twitch */
 
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 
@@ -650,6 +661,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 
 /* Quick Menu > Shaders > Remove */
 
@@ -662,6 +675,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
 
 /* Quick Menu > Information */
 

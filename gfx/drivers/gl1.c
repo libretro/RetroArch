@@ -57,6 +57,7 @@
 #endif
 
 #ifdef VITA
+#include "../../defines/psp_defines.h"
 static bool vgl_inited = false;
 #endif
 
@@ -280,7 +281,7 @@ static void *gl1_gfx_init(const video_info_t *video,
 #ifdef VITA
    if (!vgl_inited)
    {
-      vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
+      vglInitExtended(0x1400000, full_x, full_y, RAM_THRESHOLD, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
       vglStartRendering();
       vgl_inited = true;
@@ -695,9 +696,10 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    const void *frame_to_copy        = NULL;
    unsigned mode_width              = 0;
    unsigned mode_height             = 0;
-   unsigned width                   = 0;
-   unsigned height                  = 0;
+   unsigned width                   = video_info->width;
+   unsigned height                  = video_info->height;
    bool draw                        = true;
+   bool do_swap                     = false;
    gl1_t *gl1                       = (gl1_t*)data;
    unsigned bits                    = gl1->video_bits;
    unsigned pot_width               = 0;
@@ -737,7 +739,14 @@ static bool gl1_gfx_frame(void *data, const void *frame,
             video_width, video_height, false, true);
    }
 
-
+   if (  !frame || frame == RETRO_HW_FRAME_BUFFER_VALID || (
+         frame_width  == 4 &&
+         frame_height == 4 &&
+         (frame_width < width && frame_height < height))
+      )
+      draw = false;
+   
+   do_swap = frame || draw;
 
    if (  gl1->video_width  != frame_width  ||
          gl1->video_height != frame_height ||
@@ -751,11 +760,14 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
          pot_width = get_pot(frame_width);
          pot_height = get_pot(frame_height);
+         
+         if (draw)
+         {
+            if (gl1->video_buf)
+               free(gl1->video_buf);
 
-         if (gl1->video_buf)
-            free(gl1->video_buf);
-
-         gl1->video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
+            gl1->video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
+         }
       }
    }
 
@@ -765,13 +777,6 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
    pot_width = get_pot(width);
    pot_height = get_pot(height);
-
-   if (  !frame || frame == RETRO_HW_FRAME_BUFFER_VALID || (
-         frame_width  == 4 &&
-         frame_height == 4 &&
-         (frame_width < width && frame_height < height))
-      )
-      draw = false;
 
    if (draw && gl1->video_buf)
    {
@@ -823,6 +828,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       pot_width = get_pot(width);
       pot_height = get_pot(height);
 
+      do_swap = true;
+
       if (gl1->menu_size_changed)
       {
          gl1->menu_size_changed = false;
@@ -857,8 +864,20 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gl1->menu_texture_enable)
+   if (gl1->menu_texture_enable){
+      do_swap = true;
+#ifdef VITA
+      glUseProgram(0);
+      bool enabled = glIsEnabled(GL_DEPTH_TEST);
+      if(enabled)
+         glDisable(GL_DEPTH_TEST);
+#endif
       menu_driver_frame(menu_is_alive, video_info);
+#ifdef VITA
+      if(enabled)
+         glEnable(GL_DEPTH_TEST);
+#endif
+   }
    else
 #endif
       if (video_info->statistics_show)
@@ -900,7 +919,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
             gl1->readback_buffer_screenshot);
 
 
-   if (gl1->ctx_driver->swap_buffers)
+   if (do_swap && gl1->ctx_driver->swap_buffers)
       gl1->ctx_driver->swap_buffers(gl1->ctx_data);
 
  /* Emscripten has to do black frame insertion in its main loop */
@@ -936,9 +955,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glFinish();
    }
 
-   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-   glClear(GL_COLOR_BUFFER_BIT);
- 
+   if(draw){
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+   }
+
    gl1_context_bind_hw_render(gl1, true);
 
    return true;

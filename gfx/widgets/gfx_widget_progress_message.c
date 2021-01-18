@@ -92,11 +92,6 @@ static gfx_widget_progress_message_state_t p_w_progress_message_st = {
    false,                              /* active */
 };
 
-gfx_widget_progress_message_state_t *gfx_widget_progress_message_get_ptr(void)
-{
-   return &p_w_progress_message_st;
-}
-
 /* Callbacks */
 
 static void gfx_widget_progress_message_fadeout_cb(void *userdata)
@@ -133,9 +128,10 @@ void gfx_widget_set_progress_message(void *data,
 {
    gfx_timer_ctx_entry_t timer;
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
-   gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
-   gfx_widget_font_data_t *font_regular       = gfx_widgets_get_font_regular(p_dispwidget);
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
+   gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
+   uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Ensure we have a valid message string */
    if (string_is_empty(message))
@@ -159,7 +155,7 @@ void gfx_widget_set_progress_message(void *data,
          1.0f);
 
    /* Kill any existing timer/animation */
-   gfx_timer_kill(&state->timer);
+   gfx_animation_kill_by_tag(&timer_tag);
    gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Start new message timer */
@@ -167,7 +163,7 @@ void gfx_widget_set_progress_message(void *data,
    timer.cb       = gfx_widget_progress_message_fadeout;
    timer.userdata = state;
 
-   gfx_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start(&state->timer, &timer);
 
    /* Set initial widget opacity */
    state->alpha  = 1.0f;
@@ -184,11 +180,11 @@ static void gfx_widget_progress_message_layout(
 {
    float bar_padding;
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
-   gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
-   unsigned last_video_width                  = gfx_widgets_get_last_video_width(p_dispwidget);
-   unsigned last_video_height                 = gfx_widgets_get_last_video_height(p_dispwidget);
-   unsigned widget_padding                    = gfx_widgets_get_padding(p_dispwidget);
-   gfx_widget_font_data_t *font_regular       = gfx_widgets_get_font_regular(p_dispwidget);
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
+   unsigned last_video_width                  = p_dispwidget->last_video_width;
+   unsigned last_video_height                 = p_dispwidget->last_video_height;
+   unsigned widget_padding                    = p_dispwidget->simple_widget_padding;
+   gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
 
    /* Base widget layout */
    state->widget_width                        = last_video_width;
@@ -221,7 +217,7 @@ static void gfx_widget_progress_message_layout(
 
 static void gfx_widget_progress_message_frame(void *data, void *user_data)
 {
-   gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
 
    if (state->active)
    {
@@ -232,12 +228,11 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       unsigned video_height                = video_info->height;
       void *userdata                       = video_info->userdata;
 
-      float *backdrop_color                = gfx_widgets_get_backdrop_orig();
+      float *backdrop_color                = p_dispwidget->backdrop_orig;
       unsigned text_color                  = COLOR_TEXT_ALPHA(0xFFFFFFFF, (unsigned)(state->alpha * 255.0f));
 
-      gfx_widget_font_data_t *font_regular = gfx_widgets_get_font_regular(p_dispwidget);
-      size_t msg_queue_size                = gfx_widgets_get_msg_queue_size(p_dispwidget);
-
+      gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
+      size_t msg_queue_size                = p_dispwidget->current_msgs_size;
       unsigned bar_width                   = state->bar_max_width;
       float *bar_color                     = state->bar_disabled_color;
 
@@ -317,11 +312,12 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
 
 static void gfx_widget_progress_message_free(void)
 {
-   gfx_widget_progress_message_state_t *state = gfx_widget_progress_message_get_ptr();
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
+   uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Kill any existing timer / animation */
-   gfx_timer_kill(&state->timer);
+   gfx_animation_kill_by_tag(&timer_tag);
    gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Deactivate widget */

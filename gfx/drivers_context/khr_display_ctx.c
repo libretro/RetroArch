@@ -235,7 +235,9 @@ static void gfx_ctx_khr_display_swap_buffers(void *data)
    {
       khr->vk.context.has_acquired_swapchain = false;
       if (khr->vk.swapchain == VK_NULL_HANDLE)
+      {
          retro_sleep(10);
+      }
       else
          vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
    }

@@ -22,7 +22,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <lists/string_list.h>
 
 RETRO_BEGIN_DECLS
 
@@ -41,6 +40,22 @@ enum rarch_wifi_ctl_state
    RARCH_WIFI_CTL_INIT
 };
 
+typedef struct wifi_network_info
+{
+   char ssid[33];
+   char passphrase[33];
+   bool connected;
+   bool saved_password;
+   char netid[160];   /* Do not use, internal */
+   /* TODO Add signal strength & other info */
+} wifi_network_info_t;
+
+typedef struct wifi_network_scan
+{
+   time_t scan_time;
+   wifi_network_info_t *net_list;   /* This is an rbuf array */
+} wifi_network_scan_t;
+
 typedef struct wifi_driver
 {
    void *(*init)(void);
@@ -50,10 +65,13 @@ typedef struct wifi_driver
    bool (*start)(void *data);
    void (*stop)(void *data);
 
+   bool (*enable)(void *data, bool enabled);
+   bool (*connection_info)(void *data, wifi_network_info_t *ssid);
    void (*scan)(void *data);
-   void (*get_ssids)(void *data, struct string_list *list);
+   wifi_network_scan_t* (*get_ssids)(void *data);
    bool (*ssid_is_online)(void *data, unsigned i);
-   bool (*connect_ssid)(void *data, unsigned i, const char* passphrase);
+   bool (*connect_ssid)(void *data, const wifi_network_info_t *netinfo);
+   bool (*disconnect_ssid)(void *data, const wifi_network_info_t *netinfo);
    void (*tether_start_stop)(void *data, bool start, char* configfile);
 
    const char *ident;
@@ -76,13 +94,19 @@ void driver_wifi_stop(void);
 
 bool driver_wifi_start(void);
 
+bool driver_wifi_enable(bool);
+
+bool driver_wifi_connection_info(wifi_network_info_t *network);
+
 void driver_wifi_scan(void);
 
-void driver_wifi_get_ssids(struct string_list *list);
+wifi_network_scan_t* driver_wifi_get_ssids();
 
 bool driver_wifi_ssid_is_online(unsigned i);
 
-bool driver_wifi_connect_ssid(unsigned i, const char* passphrase);
+bool driver_wifi_connect_ssid(const wifi_network_info_t *netinfo);
+
+bool driver_wifi_disconnect_ssid(const wifi_network_info_t* netinfo);
 
 void driver_wifi_tether_start_stop(bool start, char* configfile);
 

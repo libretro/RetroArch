@@ -2565,19 +2565,13 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
-   config_file_t *conf            = NULL;
    unique_ptr<video_shader> shader{ new video_shader() };
+
    if (!shader)
       return nullptr;
 
-   if (!(conf = video_shader_read_preset(path)))
-      return nullptr;
-
-   if (!video_shader_read_conf_preset(conf, shader.get()))
-   {
-      config_file_free(conf);
-      return nullptr;
-   }
+    if (!video_shader_load_preset_into_shader(path, shader.get()))
+        return nullptr;
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
    auto tmpinfo          = *info;
@@ -2612,7 +2606,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       if (!glslang_compile_shader(pass->source.path, &output))
       {
-         RARCH_ERR("Failed to compile shader: \"%s\".\n",
+         RARCH_ERR("[Vulkan]: Failed to compile shader: \"%s\".\n",
                pass->source.path);
          goto error;
       }
@@ -2621,7 +2615,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       {
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
-            RARCH_ERR("[Vulkan]: Exceeded maximum number of parameters.\n");
+            RARCH_ERR("[Vulkan]: Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
             goto error;
          }
 
@@ -2652,7 +2646,6 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             video_shader_parameter *param = &shader->parameters[shader->num_parameters];
             strlcpy(param->id, meta_param.id.c_str(), sizeof(param->id));
             strlcpy(param->desc, meta_param.desc.c_str(), sizeof(param->desc));
-            param->current = meta_param.initial;
             param->initial = meta_param.initial;
             param->minimum = meta_param.minimum;
             param->maximum = meta_param.maximum;
@@ -2820,19 +2813,14 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
-   if (!video_shader_resolve_current_parameters(conf, shader.get()))
-      goto error;
-
    chain->set_shader_preset(move(shader));
 
    if (!chain->init())
       goto error;
 
-   config_file_free(conf);
    return chain.release();
 
 error:
-   config_file_free(conf);
    return nullptr;
 }
 

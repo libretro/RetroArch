@@ -272,6 +272,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
    "Оглянути"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "Переглянути увесь вміст, що відповідає бази даних через пошуковий інтерфейс з фільтрацією."
+   )
 
 /* Main Menu > Online Updater */
 
@@ -286,6 +290,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
    "Оновити усі встановлені ядра до найновіших версій."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Переключити ядра на версії з Play Store"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Замінити усі класичні та встановлені вручну ядра останніми версіями з Play Store, за наявності."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -1167,7 +1179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Звуковий драйвер для використання."
+   "Драйвер звуку для використання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1224,6 +1236,14 @@ MSG_HASH(
 
 /* Settings > Video */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   "ЕПТ роздільність"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "Вивід оригінального сигналу низької роздільної здатності для використання з ЕПТ дисплеями."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    "Вивід"
@@ -1293,27 +1313,109 @@ MSG_HASH(
    "GPU знімок екрана"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Зберігати знятки після обробки відеокартою, якщо доступно."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Білінійне фільтрування"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Додати легке розмиття до зображення, щоб згладити чіткі краї пікселів. Цей параметр має дуже мало впливу на продуктивність."
+   )
+#if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Інтерполяція зображення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Визначає метод інтерполяції зображення при масштабуванні вмісту внутрішнім обробником. Рекомендується \"Бікубічна\" або \"Білінійна\" при застосуванні відеофільтрів, що використовують ЦП. Цей параметр не впливає на продуктивність."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "Бікубічна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Білінійна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Методом найближчого сусіда"
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Затримка автошейдерів"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Затримка автозастосування шейдерів (у мс). Може допомогти з графічними збоями при використанні програм \"захоплення екрану\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Відеофільтр"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Застосувати відеофільтр на базі ЦП.\nПРИМІТКА: Може спричинити велике навантаження. Деякі відеофільтри працюють лише з ядрами, що використовують 32 або 16 бітний колір."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Вимкнути відеофільтр"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Вивантажити усі активні відеофільтри на базі ЦП."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Увімкнути повноекранний режим поверх шторки на пристроях Android"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "ЕПТ роздільність"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "Лише для ЕПТ дисплеїв. Використовувати оригінальну роздільну здатність та частоту зображення гри/ядра."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
    "Супер розширення ЕПТ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "Перемикання між нативною та ультраширокою роздільною здатностями."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
    "Центрування за віссю X"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Спробуйте різні значення, якщо зображення не центровано належним чином на екрані."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "Корекція імпульсу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Оберіть значення, щоб налаштувати параметри імпульсу для зміни розміру зображення."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Використовувати користувацьку швидкість оновлення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Використовувати користувацьку частоту кадрів, зазначену в файлі конфігурації."
    )
 
 /* Settings > Video > Output */
@@ -1331,8 +1433,16 @@ MSG_HASH(
    "Обертання відео"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   "Примусове застосування обертання до відео. Значення буде додано до переліку тих, що використовує ядро."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
    "Орієнтація екрану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   "Примусове застосування орієнтації екрану з операційної системи."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
@@ -1342,16 +1452,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Швидкість вертикального оновлення"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Частота оновлення екрана. Використовується для розрахунку відповідного дискового введення.\nПРИМІТКА: Це буде проігноровано якщо увімкнуто 'Threaded Video'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   "Приблизна частота оновлення екрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   "Точна розрахункова частота оновлення екрана в Гц."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    "Запуск у повноекранному режимі"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Запускати в повноекранному режимі. Можна змінити під час виконання. Можна перевизначити перемикачем у командному рядку"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -1415,6 +1533,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Користувацьке співвідношення сторін"
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Користувацьке співвідношення сторін (ширина)"
@@ -1467,7 +1587,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Змінити налаштування аудіовиходу."
+   "Зміна налаштувань аудіовиходу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -1475,7 +1595,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   "Зміна параметрів ресемплера аудіо."
+   "Зміна налаштувань ресемплера аудіо."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -1483,7 +1603,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "Зміна параметрів синхронізації звуку."
+   "Зміна налаштувань синхронізації звуку."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
@@ -1492,6 +1612,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    "Мікшер"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   "Зміна налаштувань аудіомікшера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
@@ -1514,6 +1638,10 @@ MSG_HASH(
    "Вимкнути/увімкнути звук мікшера."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Автоматично вимикати звук, коли використовується швидка перемотка."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Збільшення гучності (дБ)"
    )
@@ -1527,11 +1655,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "Глобальна гучність мікшера аудіо (у dB). 0 дБ - це нормальна гучність без посилення."
+   "Загальна гучність мікшера аудіо (у dB). 0 дБ - це нормальна гучність без посилення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    "DSP плагін"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   "Плагін звукового DSP, який обробляє звук до його надсилання драйверу."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "Вивантажити будь-який активний плаґін звукового DSP."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   "Дозвилити драйверу WASAPI контролювати звуковий пристрій повністю. Якщо вимкнено, він використовуватиме звуковий пристрій у спільному режимі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -1539,7 +1679,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   "Використовуйте формат з плаваючою комою для драйвера WASAP, якщо він підтримується вашим аудіо пристроєм."
+   "Використовуйте формат з плаваючою комою для драйвера WASAPI, якщо він підтримується вашим звуковим пристроєм."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
@@ -1566,7 +1706,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Перевизначити типовий аудіо пристрій, використовуваний звуковим драйвером. Це залежить від драйвера."
+   "Перевизначити типовий аудіо пристрій, який використовує звуковий драйвер. Це залежить від драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -1582,6 +1722,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    "Якість ресемплера"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   "Знизьте це значення, щоб підвищити продуктивість/знизити затримку над якістю звуку, збільшість, якщо ви хочете кращу якість звуку за рахунок продуктивності/затримки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
@@ -1600,7 +1744,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "Синхронізувати аудіо. Рекомендується."
+   "Синхронізувати звук. Рекомендується."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "Динамічний контроль частоти звуку"
    )
 
 /* Settings > Audio > MIDI */
@@ -1690,6 +1838,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Автоналаштування"
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "Мертва зона анолога"
@@ -1741,6 +1891,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
    "Вібрувати при натисканні клавіші"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2137,10 +2289,6 @@ MSG_HASH(
    "Розмір буфера перемотування (МБ)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "Кількість пам'яті (у МБ), для збереження буфера перемотування. Підвищення цього призведе до збільшення історії перемотування."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
    "Крок розміру буфера перемотування (МБ)"
    )
@@ -2182,10 +2330,6 @@ MSG_HASH(
    "Екранна накладка"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "Відрегулювати рамки та екранні елементи керування"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Видимість сповіщень"
    )
@@ -2195,10 +2339,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "Показувати накладку"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-   "Накладки використовуються для меж і екранного управління"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -2291,10 +2431,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Повідомлення чіт-кодів"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Відображати на екрані повідомлення, коли чіт було застосовано"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL,
@@ -2618,14 +2754,6 @@ MSG_HASH(
    "Показувати Налаштування перемотування"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Показувати або приховати опцію «Перемотування»."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "Показувати або приховати опції накладки."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
    "Показувати налаштування накладки"
    )
@@ -2763,10 +2891,6 @@ MSG_HASH(
 /* Settings > AI Service */
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Показувати переклад як текстову накладку (режим зображення) або мовний синтез (мовний режим)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "URL-адреса послуг штучного інтелекту"
    )
@@ -2793,10 +2917,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Досягнення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "Заробляйте досягнення в класичних іграх. Для отримання додаткової інформації відвідайте https://retroachievements.org"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -3055,10 +3175,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "РетроДосягнення"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Заробляйте досягнення в класичних іграх. Для отримання додаткової інформації відвідайте http://retroachievements.org"
-   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -3074,10 +3190,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
    "Пароль"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "Введіть пароль для облікового запису РетроДосягнень."
-   )
 
 /* Settings > User > Accounts > YouTube */
 
@@ -3088,6 +3200,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    "Ключ потоку Twitch"
    )
+
+/* Settings > User > Accounts > Facebook Gaming */
+
 
 /* Settings > Directory */
 
@@ -3666,6 +3781,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
    "Зберегти пресет ядра"
@@ -3692,15 +3809,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Немає досягнень, щоб показати"
+   "Немає облікових записів, шоб показати"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Призупинення досягнень для поточного сеансу (Ця дія дозволить зберегти стани, чіти, перемотування назад, паузу та повільний рух)."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Відновлення досягнень для поточного сеансу (Ця дія відключить збереження станів, читів, перемотування назад, паузу та сповільнення та скидання поточної гри)."
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 
 /* Quick Menu > Information */
@@ -4031,6 +4144,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
    "Не підтримується"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
+   "Тільки трекери"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
+   "Лише сповіщення"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DONT_CARE,
    "Байдуже"
@@ -5723,6 +5844,10 @@ MSG_HASH(
    "Натисніть праворуч п'ять разів, щоб видалити всі чіти."
    )
 MSG_HASH(
+   MSG_AUDIO_MIXER_VOLUME,
+   "Загальна гучність мікшера звуку"
+   )
+MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
    "Сканування на наявність мережевих ігор завершено."
    )
@@ -5991,6 +6116,14 @@ MSG_HASH(
    "Не вдалося надіслати псевдонім до хосту."
    )
 MSG_HASH(
+   MSG_FAILED_TO_START_AUDIO_DRIVER,
+   "Не вдалося запустити звуковий драйвер. Буде продовжено без звуку."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNMUTE_AUDIO,
+   "Не вдалося увімкнути звук."
+   )
+MSG_HASH(
    MSG_FILE_NOT_FOUND,
    "Файл не знайдено"
    )
@@ -6080,7 +6213,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESET,
-   "Скинути"
+   "Скидання"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -6377,10 +6510,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
    "Розгін GPU"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Яскравість екрану"
    )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

@@ -22,7 +22,7 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <lists/string_list.h>
-#include <rhash.h>
+#include <lrc_hash.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>

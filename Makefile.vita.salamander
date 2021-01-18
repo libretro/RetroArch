@@ -48,14 +48,14 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
-		 libretro-common/hash/rhash.o \
+		 libretro-common/hash/lrc_hash.o \
 		 libretro-common/time/rtime.o \
 		 verbosity.o
 
 all: $(TARGET).vpk
 
 %.vpk: eboot.bin
-	vita-mksfoex -s TITLE_ID=$(TITLE_ID) "$(TARGET)" -d ATTRIBUTE2=12 param.sfo
+	vita-mksfoex -s TITLE_ID=$(TITLE_ID) "RetroArch" -d ATTRIBUTE2=12 param.sfo
 	vita-pack-vpk -s param.sfo -b eboot.bin $@
 
 eboot.bin: $(TARGET).velf

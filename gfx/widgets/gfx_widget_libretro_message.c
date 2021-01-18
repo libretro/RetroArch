@@ -91,20 +91,16 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    false                               /* message_updated */
 };
 
-static gfx_widget_libretro_message_state_t* gfx_widget_libretro_message_get_state(void)
-{
-   return &p_w_libretro_message_st;
-}
-
 /* Utilities */
 
 static void gfx_widget_libretro_message_reset(bool cancel_pending)
 {
-   gfx_widget_libretro_message_state_t *state = gfx_widget_libretro_message_get_state();
+   gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
+   uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Kill any existing timers/animations */
-   gfx_timer_kill(&state->timer);
+   gfx_animation_kill_by_tag(&timer_tag);
    gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Reset status */
@@ -151,7 +147,7 @@ static void gfx_widget_libretro_message_slide_in_cb(void *userdata)
    timer.cb       = gfx_widget_libretro_message_wait_cb;
    timer.userdata = state;
 
-   gfx_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start(&state->timer, &timer);
    state->status = GFX_WIDGET_LIBRETRO_MESSAGE_WAIT;
 }
 
@@ -161,8 +157,8 @@ void gfx_widget_set_libretro_message(void *data,
       const char *msg, unsigned duration)
 {
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
-   gfx_widget_libretro_message_state_t *state = gfx_widget_libretro_message_get_state();
-   gfx_widget_font_data_t *font_msg_queue     = gfx_widgets_get_font_msg_queue(p_dispwidget);
+   gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
+   gfx_widget_font_data_t *font_msg_queue     = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Ensure we have a valid message string */
    if (string_is_empty(msg))
@@ -214,11 +210,11 @@ static void gfx_widget_libretro_message_layout(
       bool is_threaded, const char *dir_assets, char *font_path)
 {
    dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
-   gfx_widget_libretro_message_state_t *state = gfx_widget_libretro_message_get_state();
+   gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
 
-   unsigned last_video_height                 = gfx_widgets_get_last_video_height(p_dispwidget);
-   unsigned divider_width                     = gfx_widgets_get_divider_width(p_dispwidget);
-   gfx_widget_font_data_t *font_msg_queue     = gfx_widgets_get_font_msg_queue(p_dispwidget);
+   unsigned last_video_height                 = p_dispwidget->last_video_height;
+   unsigned divider_width                     = p_dispwidget->divider_width_1px;
+   gfx_widget_font_data_t *font_msg_queue     = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Set values that are independent of message length */
    state->bg_height    = font_msg_queue->line_height * 2;
@@ -250,7 +246,7 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
-   gfx_widget_libretro_message_state_t *state = gfx_widget_libretro_message_get_state();
+   gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
 
    if (state->message_updated)
    {
@@ -338,7 +334,7 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
 
 static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 {
-   gfx_widget_libretro_message_state_t *state = gfx_widget_libretro_message_get_state();
+   gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
 
    if (state->status != GFX_WIDGET_LIBRETRO_MESSAGE_IDLE)
    {
@@ -349,10 +345,9 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
       unsigned video_height                  = video_info->height;
       void *userdata                         = video_info->userdata;
 
-      gfx_widget_font_data_t *font_msg_queue = gfx_widgets_get_font_msg_queue(p_dispwidget);
-      size_t msg_queue_size                  = gfx_widgets_get_msg_queue_size(p_dispwidget);
-
-      float *bg_color                        = gfx_widgets_get_backdrop_orig();
+      gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;
+      size_t msg_queue_size                  = p_dispwidget->current_msgs_size;
+      float *bg_color                        = p_dispwidget->backdrop_orig;
       float bg_alpha;
       float bg_y;
 

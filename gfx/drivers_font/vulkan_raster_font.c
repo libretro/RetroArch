@@ -294,6 +294,8 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
       VkSubmitInfo submit_info;
       VkCommandBufferAllocateInfo cmd_info;
       VkCommandBufferBeginInfo begin_info;
+      struct vk_texture *dynamic_tex  = NULL;
+      struct vk_texture *staging_tex  = NULL;
 
       cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
       cmd_info.pNext              = NULL;
@@ -308,8 +310,13 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
       begin_info.pInheritanceInfo = NULL;
       vkBeginCommandBuffer(staging, &begin_info);
 
-      vulkan_copy_staging_to_dynamic(font->vk, staging,
-            &font->texture_optimal, &font->texture);
+      VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(font->vk, font->texture);
+
+      dynamic_tex                 = &font->texture_optimal;
+      staging_tex                 = &font->texture;
+
+      VULKAN_COPY_STAGING_TO_DYNAMIC(font->vk, staging,
+            dynamic_tex, staging_tex);
 
       vkEndCommandBuffer(staging);
 

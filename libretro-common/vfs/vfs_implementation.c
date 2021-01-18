@@ -64,16 +64,7 @@
 #  endif
 #endif
 
-#if defined (__CELLOS_LV2__)  && !defined(__PSL1GHT__)
-#include <cell/cell_fs.h>
-#define O_RDONLY CELL_FS_O_RDONLY
-#define O_WRONLY CELL_FS_O_WRONLY
-#define O_CREAT CELL_FS_O_CREAT
-#define O_TRUNC CELL_FS_O_TRUNC
-#define O_RDWR CELL_FS_O_RDWR
-#else
 #include <fcntl.h>
-#endif
 
 /* TODO: Some things are duplicated but I'm really afraid of breaking other platforms by touching this */
 #if defined(VITA)
@@ -95,7 +86,7 @@
 #  include <unistd.h>
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#if defined(__QNX__) || defined(PSP)
 #include <unistd.h> /* stat() is defined here */
 #endif
 
@@ -139,15 +130,11 @@
 #include <pspkernel.h>
 #endif
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-#include <cell/cell_fs.h>
-#endif
-
 #if defined(VITA)
 #define FIO_S_ISDIR SCE_S_ISDIR
 #endif
 
-#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#if defined(__QNX__) || defined(PSP)
 #include <unistd.h> /* stat() is defined here */
 #endif
 
@@ -922,20 +909,6 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    orbisDclose(dir_ret);
 
    is_character_special      = S_ISCHR(buf.st_mode);
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   /* CellOS Lv2 */
-   CellFsStat buf;
-
-   if (!path || !*path)
-      return 0;
-   if (cellFsStat(path, &buf) < 0)
-      return 0;
-
-   if (size)
-      *size                  = (int32_t)buf.st_size;
-
-   is_dir                    = ((buf.st_mode & S_IFMT) == S_IFDIR);
-
 #elif defined(_WIN32)
    /* Windows */
    DWORD file_info;
@@ -975,6 +948,40 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       *size = (int32_t)buf.st_size;
 
    is_dir = (file_info & FILE_ATTRIBUTE_DIRECTORY);
+
+#elif defined(GEKKO)
+   /* On GEKKO platforms, paths cannot have
+    * trailing slashes - we must therefore
+    * remove them */
+   char *path_buf = NULL;
+   int stat_ret   = -1;
+   struct stat stat_buf;
+   size_t len;
+
+   if (string_is_empty(path))
+      return 0;
+
+   path_buf = strdup(path);
+   if (!path_buf)
+      return 0;
+
+   len = strlen(path_buf);
+   if (len > 0)
+      if (path_buf[len - 1] == '/')
+         path_buf[len - 1] = '\0';
+
+   stat_ret = stat(path_buf, &stat_buf);
+   free(path_buf);
+
+   if (stat_ret < 0)
+      return 0;
+
+   if (size)
+      *size             = (int32_t)stat_buf.st_size;
+
+   is_dir               = S_ISDIR(stat_buf.st_mode);
+   is_character_special = S_ISCHR(stat_buf.st_mode);
+
 #else
    /* Every other platform */
    struct stat buf;
@@ -1024,6 +1031,28 @@ int retro_vfs_mkdir_impl(const char *dir)
    int ret = orbisMkdir(dir, 0755);
 #elif defined(__QNX__)
    int ret = mkdir(dir, 0777);
+#elif defined(GEKKO)
+   /* On GEKKO platforms, mkdir() fails if
+    * the path has a trailing slash. We must
+    * therefore remove it. */
+   int ret = -1;
+   if (!string_is_empty(dir))
+   {
+      char *dir_buf = strdup(dir);
+
+      if (dir_buf)
+      {
+         size_t len = strlen(dir_buf);
+
+         if (len > 0)
+            if (dir_buf[len - 1] == '/')
+               dir_buf[len - 1] = '\0';
+
+         ret = mkdir(dir_buf, 0750);
+
+         free(dir_buf);
+      }
+   }
 #else
    int ret = mkdir(dir, 0750);
 #endif
@@ -1052,10 +1081,6 @@ struct libretro_vfs_implementation_dir
 #elif defined(VITA) || defined(PSP)
    SceUID directory;
    SceIoDirent entry;
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   CellFsErrno error;
-   int directory;
-   CellFsDirent entry;
 #elif defined(ORBIS)
    int directory;
    struct dirent entry;
@@ -1071,8 +1096,6 @@ static bool dirent_check_error(libretro_vfs_implementation_dir *rdir)
    return (rdir->directory == INVALID_HANDLE_VALUE);
 #elif defined(VITA) || defined(PSP) || defined(ORBIS)
    return (rdir->directory < 0);
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   return (rdir->error != CELL_FS_SUCCEEDED);
 #else
    return !(rdir->directory);
 #endif
@@ -1136,8 +1159,6 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 #elif defined(_3DS)
    rdir->directory       = !string_is_empty(name) ? opendir(name) : NULL;
    rdir->entry           = NULL;
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   rdir->error           = cellFsOpendir(name, &rdir->directory);
 #elif defined(ORBIS)
    rdir->directory       = orbisDopen(name);
 #else
@@ -1173,10 +1194,6 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
    return (rdir->directory != INVALID_HANDLE_VALUE);
 #elif defined(VITA) || defined(PSP)
    return (sceIoDread(rdir->directory, &rdir->entry) > 0);
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   uint64_t nread;
-   rdir->error = cellFsReaddir(rdir->directory, &rdir->entry, &nread);
-   return (nread != 0);
 #elif defined(ORBIS)
    return (orbisDread(rdir->directory, &rdir->entry) > 0);
 #else
@@ -1197,7 +1214,7 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
    if (name)
       free(name);
    return (char*)rdir->entry.cFileName;
-#elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__) && !defined(__PSL1GHT__) || defined(ORBIS)
+#elif defined(VITA) || defined(PSP) || defined(ORBIS)
    return rdir->entry.d_name;
 #else
    if (!rdir || !rdir->entry)
@@ -1218,9 +1235,6 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 #elif defined(VITA)
    return SCE_S_ISDIR(entry->d_stat.st_mode);
 #endif
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   CellFsDirent *entry          = (CellFsDirent*)&rdir->entry;
-   return (entry->d_type == CELL_FS_TYPE_DIRECTORY);
 #elif defined(ORBIS)
    const struct dirent *entry   = &rdir->entry;
    if (entry->d_type == DT_DIR)
@@ -1257,8 +1271,6 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
       FindClose(rdir->directory);
 #elif defined(VITA) || defined(PSP)
    sceIoDclose(rdir->directory);
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   rdir->error = cellFsClosedir(rdir->directory);
 #elif defined(ORBIS)
    orbisDclose(rdir->directory);
 #else

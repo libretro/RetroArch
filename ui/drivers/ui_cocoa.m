@@ -41,6 +41,10 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
+/* TODO/FIXME - static global variables */
+static int waiting_argc;
+static char **waiting_argv;
+
 #if defined(HAVE_COCOA_METAL)
 @interface RAWindow : NSWindow
 @end
@@ -53,6 +57,11 @@
 @implementation RApplication
 #endif
 
+#ifdef HAVE_COCOA_METAL
+#define CONVERT_POINT() [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil]
+#else
+#define CONVERT_POINT() [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil]
+#endif
 
 - (void)sendEvent:(NSEvent *)event {
    NSEventType event_type = event.type;
@@ -117,13 +126,7 @@
          {
             CGFloat delta_x             = event.deltaX;
             CGFloat delta_y             = event.deltaY;
-#if defined(HAVE_COCOA_METAL)
-            CGPoint pos                 = [apple_platform.renderView 
-               convertPoint:[event locationInWindow] fromView:nil];
-#elif defined(HAVE_COCOA)
-            CGPoint pos                 = [[CocoaView get] 
-               convertPoint:[event locationInWindow] fromView:nil];
-#endif
+            NSPoint pos                 = CONVERT_POINT();
             cocoa_input_data_t 
                *apple                   = (cocoa_input_data_t*)
                input_driver_get_data();
@@ -152,11 +155,7 @@
        case NSEventTypeOtherMouseDown:
        {
            NSInteger number      = event.buttonNumber;
-#ifdef HAVE_COCOA_METAL
-           CGPoint pos           = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-#else
-           CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-#endif
+           NSPoint pos           = CONVERT_POINT();
            cocoa_input_data_t 
               *apple             = (cocoa_input_data_t*)
               input_driver_get_data();
@@ -171,12 +170,8 @@
       case NSEventTypeOtherMouseUp:
          {
             NSInteger number      = event.buttonNumber;
-#ifdef HAVE_COCOA_METAL
-            CGPoint pos           = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
-#else
-            CGPoint pos           = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-#endif
-           cocoa_input_data_t 
+            NSPoint pos           = CONVERT_POINT();
+            cocoa_input_data_t 
               *apple              = (cocoa_input_data_t*)
               input_driver_get_data();
             if (!apple || pos.y < 0)
@@ -191,10 +186,6 @@
 }
 
 @end
-
-/* TODO/FIXME - static global variables */
-static int waiting_argc;
-static char **waiting_argv;
 
 @implementation RetroArch_OSX
 
@@ -216,27 +207,22 @@ static char **waiting_argv;
    unsigned i;
    apple_platform   = self;
    [self.window setAcceptsMouseMovedEvents: YES];
-#ifdef HAVE_COCOA_METAL
-   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
+#if MAC_OS_X_VERSION_10_7
+   self.window.collectionBehavior = NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY;
+#endif
+
+#ifdef HAVE_COCOA_METAL
    _listener = [WindowListener new];
 
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
-
-   [[self.window contentView] setAutoresizesSubviews:YES];
 #else
-   SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
-   SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
-
-   if ([self.window respondsToSelector:selector])
-   {
-      if ([self.window respondsToSelector:fsselector])
-       [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
-   }
-
    [[CocoaView get] setFrame: [[self.window contentView] bounds]];
+#endif
    [[self.window contentView] setAutoresizesSubviews:YES];
+
+#ifndef HAVE_COCOA_METAL
    [[self.window contentView] addSubview:[CocoaView get]];
    [self.window makeFirstResponder:[CocoaView get]];
 #endif
@@ -298,7 +284,7 @@ static char **waiting_argv;
          break;
 
        case APPLE_VIEW_TYPE_NONE:
-                         default:
+       default:
          return;
    }
 

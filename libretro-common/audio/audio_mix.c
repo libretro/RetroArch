@@ -25,6 +25,8 @@
 #include <string.h>
 #include <memalign.h>
 
+#include <retro_environment.h>
+
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #elif defined(__ALTIVEC__)

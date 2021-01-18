@@ -33,9 +33,9 @@
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
-#include "../../managers/core_option_manager.h"
+#include "../../core_option_manager.h"
 #ifdef HAVE_CHEATS
-#include "../../managers/cheat_manager.h"
+#include "../../cheat_manager.h"
 #endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -110,10 +110,46 @@ static int action_start_video_filter_file_load(
    settings_t *settings = config_get_ptr();
 
    if (!settings)
-      return -1;
+      return menu_cbs_exit();
 
-   settings->paths.path_softfilter_plugin[0] = '\0';
-   command_event(CMD_EVENT_REINIT, NULL);
+   if (!string_is_empty(settings->paths.path_softfilter_plugin))
+   {
+      bool refresh = false;
+
+      /* Unload video filter */
+      settings->paths.path_softfilter_plugin[0] = '\0';
+      command_event(CMD_EVENT_REINIT, NULL);
+
+      /* Refresh menu */
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   }
+
+   return 0;
+}
+
+static int action_start_audio_dsp_plugin_file_load(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return menu_cbs_exit();
+
+   if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
+   {
+      bool refresh = false;
+
+      /* Unload dsp plugin filter */
+      settings->paths.path_audio_dsp_plugin[0] = '\0';
+      command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
+
+      /* Refresh menu */
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   }
+
    return 0;
 }
 
@@ -449,7 +485,7 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(__CELLOS_LV2__) || defined(GEKKO)
+#if defined(GEKKO)
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
 
@@ -462,7 +498,7 @@ static int action_start_video_resolution(
 
       msg[0] = '\0';
 
-#if defined(__CELLOS_LV2__) || defined(_WIN32)
+#if defined(_WIN32)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
       video_driver_set_video_mode(width, height, true);
@@ -603,6 +639,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_START(cbs, action_start_video_filter_file_load);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
+            BIND_ACTION_START(cbs, action_start_audio_dsp_plugin_file_load);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

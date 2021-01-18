@@ -35,6 +35,7 @@
 #include <compat/msvc.h>
 #endif
 
+#include <string/stdstring.h>
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
@@ -255,7 +256,7 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
             *subfmtiter++ = *format++;
          }
 
-         while (isdigit((unsigned char)*format))
+         while (ISDIGIT((unsigned char)*format))
             *subfmtiter++ = *format++; /* width */
 
          /* length */

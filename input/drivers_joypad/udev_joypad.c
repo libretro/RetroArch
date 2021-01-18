@@ -49,7 +49,7 @@
  * Code adapted from SDL 2.0's implementation.
  */
 
-#define UDEV_NUM_BUTTONS 32
+#define UDEV_NUM_BUTTONS 64
 #define NUM_AXES 32
 
 #ifndef NUM_HATS
@@ -386,9 +386,16 @@ static bool udev_set_rumble(unsigned i,
    {
       /* Create new or update old playing state. */
       struct ff_effect e = {0};
+      /* This defines the length of the effect and
+         the delay before playing it. This means there
+         is a limit on the maximum vibration time, but
+         it's hopefully sufficient for most cases. Maybe
+         there's a better way? */
+      struct ff_replay replay = {0xffff, 0};
 
       e.type = FF_RUMBLE;
       e.id   = old_effect;
+      e.replay = replay;
 
       switch (effect)
       {
@@ -552,7 +559,7 @@ static void *udev_joypad_init(void *data)
 
    udev_joypad_fd = udev_new();
    if (!udev_joypad_fd)
-      return false;
+      return NULL;
 
    udev_joypad_mon = udev_monitor_new_from_netlink(udev_joypad_fd, "udev");
    if (udev_joypad_mon)
@@ -638,7 +645,7 @@ static void udev_joypad_get_buttons(unsigned port, input_bits_t *state)
 
 	if (pad)
    {
-		BITS_COPY16_PTR( state, pad->buttons );
+		BITS_COPY64_PTR( state, pad->buttons );
 	}
    else
       BIT256_CLEAR_ALL_PTR(state);
@@ -653,7 +660,7 @@ static int16_t udev_joypad_axis_state(
       int16_t val = pad->axes[AXIS_NEG_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
       if ((
-               (AXIS_NEG_GET(joyaxis) == ABS_Z) || 
+               (AXIS_NEG_GET(joyaxis) == ABS_Z) ||
                (AXIS_NEG_GET(joyaxis) == ABS_RZ))
             && (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
          val = (val + 0x7fff) / 2;
@@ -665,7 +672,7 @@ static int16_t udev_joypad_axis_state(
       int16_t val = pad->axes[AXIS_POS_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
       if ((
-               (AXIS_POS_GET(joyaxis) == ABS_Z) || 
+               (AXIS_POS_GET(joyaxis) == ABS_Z) ||
                (AXIS_POS_GET(joyaxis) == ABS_RZ))
             && (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
          val = (val + 0x7fff) / 2;
@@ -704,12 +711,12 @@ static int16_t udev_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && udev_joypad_button_state(pad, port_idx, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(udev_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(udev_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

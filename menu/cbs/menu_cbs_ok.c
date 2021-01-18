@@ -16,6 +16,7 @@
  */
 
 #include <compat/strl.h>
+#include <array/rbuf.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
@@ -56,9 +57,9 @@
 #include "../../core_info.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
-#include "../../managers/core_option_manager.h"
+#include "../../core_option_manager.h"
 #ifdef HAVE_CHEATS
-#include "../../managers/cheat_manager.h"
+#include "../../cheat_manager.h"
 #endif
 #ifdef HAVE_AUDIOMIXER
 #include "../../tasks/task_audio_mixer.h"
@@ -73,7 +74,6 @@
 #include "../../verbosity.h"
 #include "../../lakka.h"
 #include "../../bluetooth/bluetooth_driver.h"
-#include "../../wifi/wifi_driver.h"
 #include "../../gfx/video_display_server.h"
 #include "../../manual_content_scan.h"
 
@@ -82,6 +82,7 @@
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #include "../../network/netplay/netplay_discovery.h"
+#include "../../wifi/wifi_driver.h"
 #endif
 
 #ifdef __WINRT__
@@ -287,6 +288,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST;
+      case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST;
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
@@ -383,6 +386,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST;
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST;
+      case ACTION_OK_DL_WIFI_NETWORKS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST;
       case ACTION_OK_DL_NETPLAY:
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY;
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
@@ -421,6 +426,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST;
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST;
+      case ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST;         
       case ACTION_OK_DL_DUMP_DISC_LIST:
          return MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST;
       case ACTION_OK_DL_LOAD_DISC_LIST:
@@ -1238,6 +1245,7 @@ int generic_action_ok_displaylist_push(const char *path,
       }
          break;
       case ACTION_OK_DL_ACCOUNTS_LIST:
+      case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
@@ -1283,6 +1291,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
       case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
+      case ACTION_OK_DL_WIFI_NETWORKS_LIST:
       case ACTION_OK_DL_NETPLAY:
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
@@ -1303,6 +1312,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
+      case ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST:      
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
       case ACTION_OK_DL_FAVORITES_LIST:
       case ACTION_OK_DL_BROWSE_URL_LIST:
@@ -1745,7 +1755,7 @@ static int generic_action_ok(const char *path,
                      shader_pass->source.path,
                      action_path,
                      sizeof(shader_pass->source.path));
-               video_shader_resolve_parameters(NULL, shader);
+               video_shader_resolve_parameters(shader);
 
                shader->modified         = true;
             }
@@ -1932,8 +1942,8 @@ static int default_action_ok_load_content_from_playlist_from_menu(const char *_p
    return 0;
 }
 
-DEFAULT_ACTION_OK_SET(action_ok_set_path_audiofilter, ACTION_OK_SET_PATH_VIDEO_FILTER, MSG_UNKNOWN)
-DEFAULT_ACTION_OK_SET(action_ok_set_path_videofilter, ACTION_OK_SET_PATH_AUDIO_FILTER, MSG_UNKNOWN)
+DEFAULT_ACTION_OK_SET(action_ok_set_path_audiofilter, ACTION_OK_SET_PATH_AUDIO_FILTER, MSG_UNKNOWN)
+DEFAULT_ACTION_OK_SET(action_ok_set_path_videofilter, ACTION_OK_SET_PATH_VIDEO_FILTER, MSG_UNKNOWN)
 DEFAULT_ACTION_OK_SET(action_ok_set_path_overlay,     ACTION_OK_SET_PATH_OVERLAY,      MSG_UNKNOWN)
 #ifdef HAVE_VIDEO_LAYOUT
 DEFAULT_ACTION_OK_SET(action_ok_set_path_video_layout,ACTION_OK_SET_PATH_VIDEO_LAYOUT, MSG_UNKNOWN)
@@ -2658,14 +2668,23 @@ static int action_ok_bluetooth(const char *path, const char *label,
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
    unsigned idx = menu_input_dialog_get_kb_idx();
+   wifi_network_scan_t *scan = driver_wifi_get_ssids();
+   wifi_network_info_t *netinfo = &scan->net_list[idx];
 
-   driver_wifi_connect_ssid(idx, passphrase);
+   if (idx < RBUF_LEN(scan->net_list) && passphrase)
+   {
+      /* Need to fill in the passphrase that we got from the user! */
+      strlcpy(netinfo->passphrase, passphrase, sizeof(netinfo->passphrase));
+      task_push_wifi_connect(NULL, netinfo);
+   }
 
    menu_input_dialog_end();
 }
+#endif
 
 static void menu_input_st_string_cb_rename_entry(void *userdata,
       const char *str)
@@ -2754,6 +2773,19 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static int action_ok_shader_pass(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_handle_t *menu       = menu_driver_get_ptr();
+
+   if (!menu)
+      return menu_cbs_exit();
+
+   menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+         entry_idx, ACTION_OK_DL_SHADER_PASS);
+}
+
 static void menu_input_st_string_cb_save_preset(void *userdata,
       const char *str)
 {
@@ -2893,6 +2925,11 @@ static int generic_action_ok_shader_preset_save(const char *path,
          return 0;
    }
 
+   /* Save Auto Preset and have it immediately reapply the preset
+    * TODO: This seems necessary so that the loaded shader gains a link to the file saved 
+    * But this is slow and seems like a redundant way to do this 
+    * It seems like it would be better to just set the path and shader_preset_loaded 
+    * on the current shader */
    if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type,
             dir_video_shader, dir_menu_config,
             true))
@@ -2966,6 +3003,84 @@ static int action_ok_shader_preset_remove_game(const char *path,
 }
 #endif
 
+#ifdef HAVE_NETWORKING
+static int action_ok_wifi(const char *path, const char *label_setting,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   wifi_network_scan_t* scan = driver_wifi_get_ssids();
+   if (idx >= RBUF_LEN(scan->net_list))
+      return -1;
+
+   if (scan->net_list[idx].saved_password)
+   {
+      /* No need to ask for a password, should be stored */
+      task_push_wifi_connect(NULL, &scan->net_list[idx]);
+      return 0;
+   }
+   else
+   {
+      /* Show password input dialog */
+      menu_input_ctx_line_t line;
+      line.label         = "Passphrase";
+      line.label_setting = label_setting;
+      line.type          = type;
+      line.idx           = (unsigned)idx;
+      line.cb            = menu_input_wifi_cb;
+      if (!menu_input_dialog_start(&line))
+         return -1;
+      return 0;
+   }
+}
+#endif
+
+static int action_ok_video_filter_remove(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return menu_cbs_exit();
+
+   if (!string_is_empty(settings->paths.path_softfilter_plugin))
+   {
+      bool refresh = false;
+
+      /* Unload video filter */
+      settings->paths.path_softfilter_plugin[0] = '\0';
+      command_event(CMD_EVENT_REINIT, NULL);
+
+      /* Refresh menu */
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   }
+
+   return 0;
+}
+
+static int action_ok_audio_dsp_plugin_remove(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return menu_cbs_exit();
+
+   if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
+   {
+      bool refresh = false;
+
+      /* Unload dsp plugin filter */
+      settings->paths.path_audio_dsp_plugin[0] = '\0';
+      command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
+
+      /* Refresh menu */
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   }
+
+   return 0;
+}
+
 #ifdef HAVE_CHEATS
 static void menu_input_st_string_cb_cheat_file_save_as(
       void *userdata, const char *str)
@@ -2998,10 +3113,6 @@ DEFAULT_ACTION_DIALOG_START(action_ok_enable_settings,
    msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
    (unsigned)entry_idx,
    menu_input_st_string_cb_enable_settings)
-DEFAULT_ACTION_DIALOG_START(action_ok_wifi,
-   "Passphrase",
-   (unsigned)idx,
-   menu_input_wifi_cb)
 #ifdef HAVE_CHEATS
 DEFAULT_ACTION_DIALOG_START(action_ok_cheat_file_save_as,
    msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME),
@@ -3375,27 +3486,6 @@ static int action_ok_set_switch_gpu_profile(const char *path,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return menu_cbs_exit();
-}
-
-static int action_ok_set_switch_backlight(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char command[PATH_MAX_LENGTH] = {0};
-   int brightness = SWITCH_BRIGHTNESS[entry_idx];
-
-   snprintf(command, sizeof(command),
-         "echo %d > /sys/class/backlight/backlight/brightness",
-         brightness);
-
-   system(command);
-
-   snprintf(command, sizeof(command),
-         "Brightness set to %d%%", brightness);
-
-   runloop_msg_queue_push(command, 1, 90, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   return 0;
 }
 
 #endif
@@ -3962,10 +4052,17 @@ static int action_ok_save_state(const char *path,
    return 0;
 }
 
+static int action_ok_close_submenu(const char* path,
+   const char* label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_cancel_pop_default(path, label, type, idx);
+}
+
 static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    generic_action_ok_command(CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
+   action_cancel_pop_default(path, label, type, idx);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
@@ -5195,7 +5292,10 @@ DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOST
 DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_bluetooth_list, ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST)
+#ifdef HAVE_NETWORKING
 DEFAULT_ACTION_OK_FUNC(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_wifi_networks_list, ACTION_OK_DL_WIFI_NETWORKS_LIST)
+#endif
 DEFAULT_ACTION_OK_FUNC(action_ok_cursor_manager_list, ACTION_OK_DL_CURSOR_MANAGER_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH)
 DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push_detect_core, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE)
@@ -5254,6 +5354,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_rpl_entry, ACTION_OK_DL_RPL_ENTRY)
 DEFAULT_ACTION_OK_FUNC(action_ok_open_archive_detect_core, ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE)
 DEFAULT_ACTION_OK_FUNC(action_ok_file_load_music, ACTION_OK_DL_MUSIC)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_list, ACTION_OK_DL_ACCOUNTS_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_push_achievements_hardcore_pause_list, ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_driver_settings_list, ACTION_OK_DL_DRIVER_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_crt_switchres_settings_list, ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_video_settings_list, ACTION_OK_DL_VIDEO_SETTINGS_LIST)
@@ -5289,6 +5390,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_L
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_facebook_list, ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_dump_disc_list, ACTION_OK_DL_DUMP_DISC_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_load_disc_list, ACTION_OK_DL_LOAD_DISC_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
@@ -5331,18 +5433,21 @@ static int action_ok_open_picker(const char *path,
    return ret;
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int action_ok_shader_pass(const char *path,
+#ifdef HAVE_NETWORKING
+static void wifi_menu_refresh_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   bool refresh = false;
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+}
+
+static int action_ok_wifi_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
-
-   if (!menu)
-      return menu_cbs_exit();
-
-   menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_SHADER_PASS);
+   task_push_wifi_disconnect(wifi_menu_refresh_callback);
+   return true;
 }
 #endif
 
@@ -5793,8 +5898,25 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
             *setting->value.target.fraction = (float)val;
          }
          break;
-      case ST_STRING:
       case ST_STRING_OPTIONS:
+         if (setting->get_string_representation)
+         {
+            struct string_list tmp_str_list = { 0 };
+            string_list_initialize(&tmp_str_list);
+            string_split_noalloc(&tmp_str_list,
+               setting->values, "|");
+
+            if (idx < tmp_str_list.size)
+            {
+               strlcpy(setting->value.target.string,
+                  tmp_str_list.elems[idx].data, setting->size);
+            }
+
+            string_list_deinitialize(&tmp_str_list);
+            break;
+         }
+         /* fallthrough */
+      case ST_STRING:
       case ST_PATH:
       case ST_DIR:
          strlcpy(setting->value.target.string, path,
@@ -5839,20 +5961,14 @@ int action_cb_push_dropdown_item_resolution(const char *path,
    unsigned height      = 0;
    unsigned refreshrate = 0;
 
-   (void)label;
-   (void)type;
-   (void)idx;
-   (void)entry_idx;
-
-   snprintf(str, sizeof(str), "%s", path);
-
-   pch = strtok(str, "x");
+   strlcpy(str, path, sizeof(str));
+   pch            = strtok(str, "x");
    if (pch)
-      width = (unsigned)strtoul(pch, NULL, 0);
-   pch = strtok(NULL, " ");
+      width       = (unsigned)strtoul(pch, NULL, 0);
+   pch            = strtok(NULL, " ");
    if (pch)
-      height = (unsigned)strtoul(pch, NULL, 0);
-   pch = strtok(NULL, "(");
+      height      = (unsigned)strtoul(pch, NULL, 0);
+   pch            = strtok(NULL, "(");
    if (pch)
       refreshrate = (unsigned)strtoul(pch, NULL, 0);
 
@@ -5881,11 +5997,11 @@ static int action_ok_push_dropdown_item_video_shader_num_pass(const char *path,
    if (!shader)
       return menu_cbs_exit();
 
-   shader->passes             = idx;
+   shader->passes              = (unsigned)idx;
 
-   video_shader_resolve_parameters(NULL, shader);
+   video_shader_resolve_parameters(shader);
 
-   shader->modified           = true;
+   shader->modified            = true;
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 #else
@@ -5907,8 +6023,9 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev = &shader_info.data->parameters[entry_idx - offset];
-   param_menu = shader ? &shader->parameters [entry_idx - offset] : NULL;
+   param_prev    = &shader_info.data->parameters[entry_idx - offset];
+   if (shader)
+      param_menu = &shader->parameters [entry_idx - offset];
 
    if (!param_prev || !param_menu)
       return menu_cbs_exit();
@@ -5927,14 +6044,17 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 static int action_ok_push_dropdown_item_video_shader_param(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_push_dropdown_item_video_shader_param_generic(path, label, type,
+   return action_ok_push_dropdown_item_video_shader_param_generic(
+         path, label, type,
          idx, entry_idx, MENU_SETTINGS_SHADER_PARAMETER_0);
 }
 
-static int action_ok_push_dropdown_item_video_shader_preset_param(const char *path,
+static int action_ok_push_dropdown_item_video_shader_preset_param(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_push_dropdown_item_video_shader_param_generic(path, label, type,
+   return action_ok_push_dropdown_item_video_shader_param_generic(
+         path, label, type,
          idx, entry_idx, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 
@@ -5951,7 +6071,8 @@ static int action_ok_push_dropdown_item_resolution(const char *path,
    return 0;
 }
 
-static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
+static int action_ok_push_dropdown_item_playlist_default_core(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    core_info_list_t *core_info_list = NULL;
@@ -6018,7 +6139,8 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(
 {
    playlist_t *playlist = playlist_get_cached();
 
-   playlist_set_label_display_mode(playlist, (enum playlist_label_display_mode)idx);
+   playlist_set_label_display_mode(playlist,
+         (enum playlist_label_display_mode)idx);
 
    /* In all cases, update file on disk */
    playlist_write_file(playlist);
@@ -6026,7 +6148,8 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int generic_set_thumbnail_mode(enum playlist_thumbnail_id thumbnail_id, size_t idx)
+static int generic_set_thumbnail_mode(
+      enum playlist_thumbnail_id thumbnail_id, size_t idx)
 {
    playlist_t *playlist = playlist_get_cached();
 
@@ -6040,13 +6163,15 @@ static int generic_set_thumbnail_mode(enum playlist_thumbnail_id thumbnail_id, s
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_item_playlist_right_thumbnail_mode(const char *path,
+static int action_ok_push_dropdown_item_playlist_right_thumbnail_mode(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_set_thumbnail_mode(PLAYLIST_THUMBNAIL_RIGHT, idx);
 }
 
-static int action_ok_push_dropdown_item_playlist_left_thumbnail_mode(const char *path,
+static int action_ok_push_dropdown_item_playlist_left_thumbnail_mode(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_set_thumbnail_mode(PLAYLIST_THUMBNAIL_LEFT, idx);
@@ -6064,7 +6189,8 @@ static int action_ok_push_dropdown_item_playlist_sort_mode(
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_item_manual_content_scan_system_name(const char *path,
+static int action_ok_push_dropdown_item_manual_content_scan_system_name(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char* system_name                                    = path;
@@ -6142,8 +6268,10 @@ static int action_ok_push_dropdown_item_input_description(const char *path,
       return menu_cbs_exit();
 
    /* Determine user/button indices */
-   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) 
+      / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN) 
+      - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
    if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return menu_cbs_exit();
@@ -6154,7 +6282,8 @@ static int action_ok_push_dropdown_item_input_description(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_item_input_description_kbd(const char *path,
+static int action_ok_push_dropdown_item_input_description_kbd(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned key_id      = (unsigned)entry_idx;
@@ -6169,8 +6298,10 @@ static int action_ok_push_dropdown_item_input_description_kbd(const char *path,
       return menu_cbs_exit();
 
    /* Determine user/button indices */
-   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
-   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+   user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) 
+      / RARCH_FIRST_CUSTOM_BIND;
+   btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) 
+      - RARCH_FIRST_CUSTOM_BIND * user_idx;
 
    if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return menu_cbs_exit();
@@ -6299,7 +6430,8 @@ static int action_ok_load_archive_detect_core(const char *path,
    return ret;
 }
 
-static int action_ok_help_send_debug_info(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+static int action_ok_help_send_debug_info(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    command_event(CMD_EVENT_SEND_DEBUG_INFO, NULL);
    return 0;
@@ -6325,7 +6457,7 @@ static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(__CELLOS_LV2__) || defined(GEKKO)
+#if defined(GEKKO)
    unsigned width   = 0;
    unsigned  height = 0;
 
@@ -6335,7 +6467,7 @@ static int action_ok_video_resolution(const char *path,
 
       msg[0] = '\0';
 
-#if defined(__CELLOS_LV2__) || defined(_WIN32)
+#if defined(_WIN32)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
       video_driver_set_video_mode(width, height, true);
@@ -6347,7 +6479,8 @@ static int action_ok_video_resolution(const char *path,
          snprintf(msg, sizeof(msg),
                "Applying: %dx%d\n START to reset",
                width, height);
-      runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    return 0;
@@ -6409,7 +6542,8 @@ static int action_ok_shader_parameter_dropdown_box_list(const char *path,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PARAMETER);
 }
 
-static int action_ok_shader_preset_parameter_dropdown_box_list(const char *path,
+static int action_ok_shader_preset_parameter_dropdown_box_list(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_dropdown_box_list(idx, 
@@ -6430,7 +6564,8 @@ static int action_ok_manual_content_scan_core_name(const char *path,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME);
 }
 
-static int action_ok_video_shader_num_passes_dropdown_box_list(const char *path,
+static int action_ok_video_shader_num_passes_dropdown_box_list(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_dropdown_box_list(idx, 
@@ -6452,7 +6587,8 @@ static int action_ok_input_description_dropdown_box_list(const char *path,
       ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION);
 }
 
-static int action_ok_input_description_kbd_dropdown_box_list(const char *path,
+static int action_ok_input_description_kbd_dropdown_box_list(
+      const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_displaylist_push(
@@ -6658,7 +6794,8 @@ static int action_ok_netplay_enable_client(const char *path,
    }
    else
    {
-      line.label         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
+      line.label         = msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
       line.label_setting = "no_setting";
       line.type          = 0;
       line.idx           = 0;
@@ -6678,10 +6815,8 @@ static int action_ok_netplay_disconnect(const char *path,
    generic_action_ok_command(CMD_EVENT_NETPLAY_DISCONNECT);
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
-
 #else
    return -1;
-
 #endif
 }
 
@@ -7182,7 +7317,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
 #ifdef HAVE_LAKKA_SWITCH
          {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,                  action_ok_push_default},
-         {MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,            action_ok_push_default},
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,                  action_ok_push_default},
@@ -7284,8 +7418,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
          {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},
          {MENU_ENUM_LABEL_DELETE_PLAYLIST,                     action_ok_delete_playlist},
-         {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,                   action_ok_cheevos_toggle_hardcore_mode}, 
+         {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,              action_ok_push_default},
+         {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,                   action_ok_cheevos_toggle_hardcore_mode},
+         {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL,            action_ok_close_submenu},
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,                  action_ok_cheevos_toggle_hardcore_mode},
+         {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,           action_ok_close_submenu },
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,            action_ok_push_manual_content_scan_list},
          {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,               action_ok_push_audio_output_settings_list},
          {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,            action_ok_push_audio_resampler_settings_list},
@@ -7306,6 +7443,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
          {MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,                    action_ok_push_accounts_youtube_list},
          {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                     action_ok_push_accounts_twitch_list},
+         {MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK,                   action_ok_push_accounts_facebook_list},
          {MENU_ENUM_LABEL_DUMP_DISC,                           action_ok_push_dump_disc_list},
          {MENU_ENUM_LABEL_LOAD_DISC,                           action_ok_push_load_disc_list},
          {MENU_ENUM_LABEL_SHADER_OPTIONS,                      action_ok_push_default},
@@ -7383,7 +7521,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},
+#ifdef HAVE_NETWORKING
          {MENU_ENUM_LABEL_WIFI_SETTINGS,                       action_ok_wifi_list},
+         {MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,                   action_ok_wifi_networks_list},
+         {MENU_ENUM_LABEL_WIFI_DISCONNECT,                     action_ok_wifi_disconnect},
+#endif
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
@@ -7632,9 +7774,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SET_SWITCH_GPU_PROFILE:
             BIND_ACTION_OK(cbs, action_ok_set_switch_gpu_profile);
             break;
-         case MENU_SET_SWITCH_BRIGHTNESS:
-            BIND_ACTION_OK(cbs, action_ok_set_switch_backlight);
-            break;
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          case MENU_SET_SWITCH_CPU_PROFILE:
@@ -7828,7 +7967,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_bluetooth);
             break;
          case MENU_WIFI:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_wifi);
+#endif
             break;
          case MENU_NETPLAY_LAN_SCAN:
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
@@ -7969,6 +8110,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_CORE_LOCK:
             BIND_ACTION_OK(cbs, action_ok_core_lock);
+            break;
+         case MENU_SETTING_ACTION_VIDEO_FILTER_REMOVE:
+            BIND_ACTION_OK(cbs, action_ok_video_filter_remove);
+            break;
+         case MENU_SETTING_ACTION_AUDIO_DSP_PLUGIN_REMOVE:
+            BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin_remove);
             break;
          default:
             return -1;

@@ -35,9 +35,9 @@
 #include "../../core_info.h"
 #include "../../configuration.h"
 #include "../../file_path_special.h"
-#include "../../managers/core_option_manager.h"
+#include "../../core_option_manager.h"
 #ifdef HAVE_CHEATS
-#include "../../managers/cheat_manager.h"
+#include "../../cheat_manager.h"
 #endif
 #include "../../performance_counters.h"
 #include "../../paths.h"
@@ -707,13 +707,14 @@ static void general_disp_set_label_perf_counters(
       const char *path, unsigned *w
       )
 {
+   gfx_animation_t *p_anim     = anim_get_ptr();
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
-   gfx_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
+   GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
 static void menu_action_setting_disp_set_label_perf_counters(

@@ -108,11 +108,11 @@ static void normal2x_generic_destroy(void *data)
 static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
-   const uint32_t *input = (const uint32_t*)thr->in_data;
-   uint32_t *output = (uint32_t*)thr->out_data;
-   unsigned in_stride = (unsigned)(thr->in_pitch >> 2);
-   unsigned out_stride = (unsigned)(thr->out_pitch >> 2);
-   unsigned x, y;
+   const uint32_t *input              = (const uint32_t*)thr->in_data;
+   uint32_t *output                   = (uint32_t*)thr->out_data;
+   uint32_t in_stride                 = (uint32_t)(thr->in_pitch >> 2);
+   uint32_t out_stride                = (uint32_t)(thr->out_pitch >> 2);
+   uint32_t x, y;
 
    for (y = 0; y < thr->height; ++y)
    {
@@ -121,15 +121,17 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
       {
          uint32_t *out_line_ptr = out_ptr;
          uint32_t color         = *(input + x);
+         uint32_t row_color[2];
+
+         row_color[0] = color;
+         row_color[1] = color;
 
          /* Row 1 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
-         out_line_ptr       += out_stride;
+         memcpy(out_line_ptr, row_color, sizeof(row_color));
+         out_line_ptr += out_stride;
 
          /* Row 2 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
+         memcpy(out_line_ptr, row_color, sizeof(row_color));
 
          out_ptr += 2;
       }
@@ -142,11 +144,11 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
 static void normal2x_work_cb_rgb565(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
-   const uint16_t *input = (const uint16_t*)thr->in_data;
-   uint16_t *output = (uint16_t*)thr->out_data;
-   unsigned in_stride = (unsigned)(thr->in_pitch >> 1);
-   unsigned out_stride = (unsigned)(thr->out_pitch >> 1);
-   unsigned x, y;
+   const uint16_t *input              = (const uint16_t*)thr->in_data;
+   uint16_t *output                   = (uint16_t*)thr->out_data;
+   uint16_t in_stride                 = (uint16_t)(thr->in_pitch >> 1);
+   uint16_t out_stride                = (uint16_t)(thr->out_pitch >> 1);
+   uint16_t x, y;
 
    for (y = 0; y < thr->height; ++y)
    {
@@ -155,15 +157,17 @@ static void normal2x_work_cb_rgb565(void *data, void *thread_data)
       {
          uint16_t *out_line_ptr = out_ptr;
          uint16_t color         = *(input + x);
+         uint16_t row_color[2];
+
+         row_color[0] = color;
+         row_color[1] = color;
 
          /* Row 1 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
-         out_line_ptr       += out_stride;
+         memcpy(out_line_ptr, row_color, sizeof(row_color));
+         out_line_ptr += out_stride;
 
          /* Row 2 */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
+         memcpy(out_line_ptr, row_color, sizeof(row_color));
 
          out_ptr += 2;
       }

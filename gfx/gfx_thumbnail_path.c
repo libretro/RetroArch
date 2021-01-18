@@ -125,7 +125,7 @@ bool gfx_thumbnail_get_sub_directory(
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
-const char *gfx_thumbnail_get_type(
+static const char *gfx_thumbnail_get_type(
       gfx_thumbnail_path_data_t *path_data,
       enum gfx_thumbnail_id thumbnail_id)
 {

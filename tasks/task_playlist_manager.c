@@ -166,24 +166,22 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
    switch (pl_manager->status)
    {
       case PL_MANAGER_BEGIN:
-         {
-            /* Load playlist */
-            if (!path_is_valid(pl_manager->playlist_config.path))
-               goto task_finished;
-            
-            pl_manager->playlist = playlist_init(&pl_manager->playlist_config);
-            
-            if (!pl_manager->playlist)
-               goto task_finished;
-            
-            pl_manager->list_size = playlist_size(pl_manager->playlist);
-            
-            if (pl_manager->list_size < 1)
-               goto task_finished;
-            
-            /* All good - can start iterating */
-            pl_manager->status = PL_MANAGER_ITERATE_ENTRY_RESET_CORE;
-         }
+         /* Load playlist */
+         if (!path_is_valid(pl_manager->playlist_config.path))
+            goto task_finished;
+
+         pl_manager->playlist = playlist_init(&pl_manager->playlist_config);
+
+         if (!pl_manager->playlist)
+            goto task_finished;
+
+         pl_manager->list_size = playlist_size(pl_manager->playlist);
+
+         if (pl_manager->list_size < 1)
+            goto task_finished;
+
+         /* All good - can start iterating */
+         pl_manager->status = PL_MANAGER_ITERATE_ENTRY_RESET_CORE;
          break;
       case PL_MANAGER_ITERATE_ENTRY_RESET_CORE:
          {
@@ -270,7 +268,8 @@ task_finished:
       task_set_finished(task, true);
 }
 
-static bool task_pl_manager_reset_cores_finder(retro_task_t *task, void *user_data)
+static bool task_pl_manager_reset_cores_finder(
+      retro_task_t *task, void *user_data)
 {
    pl_manager_handle_t *pl_manager = NULL;
    
@@ -284,7 +283,8 @@ static bool task_pl_manager_reset_cores_finder(retro_task_t *task, void *user_da
    if (!pl_manager)
       return false;
    
-   return string_is_equal((const char*)user_data, pl_manager->playlist_config.path);
+   return string_is_equal((const char*)user_data,
+         pl_manager->playlist_config.path);
 }
 
 bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
@@ -293,7 +293,8 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
    char playlist_name[PATH_MAX_LENGTH];
    char task_title[PATH_MAX_LENGTH];
    retro_task_t *task              = task_init();
-   pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)calloc(1, sizeof(pl_manager_handle_t));
+   pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
+      calloc(1, sizeof(pl_manager_handle_t));
    
    playlist_name[0] = '\0';
    task_title[0]    = '\0';
@@ -305,7 +306,8 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
    if (string_is_empty(playlist_config->path))
       goto error;
    
-   fill_pathname_base_noext(playlist_name, playlist_config->path, sizeof(playlist_name));
+   fill_pathname_base_noext(playlist_name,
+         playlist_config->path, sizeof(playlist_name));
    
    if (string_is_empty(playlist_name))
       goto error;
@@ -590,21 +592,19 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
          }
          break;
       case PL_MANAGER_VALIDATE_END:
+         /* Sanity check - if all (or all but one)
+          * playlist entries were removed during the
+          * 'validate' phase, we can stop now */
+         if (pl_manager->list_size < 2)
          {
-            /* Sanity check - if all (or all but one)
-             * playlist entries were removed during the
-             * 'validate' phase, we can stop now */
-            if (pl_manager->list_size < 2)
-            {
-               pl_manager->status = PL_MANAGER_END;
-               break;
-            }
-            
-            /* ...otherwise, reset index counter and
-             * start the duplicates check */
-            pl_manager->list_index = 0;
-            pl_manager->status = PL_MANAGER_ITERATE_ENTRY_CHECK_DUPLICATE;
+            pl_manager->status = PL_MANAGER_END;
+            break;
          }
+
+         /* ...otherwise, reset index counter and
+          * start the duplicates check */
+         pl_manager->list_index = 0;
+         pl_manager->status = PL_MANAGER_ITERATE_ENTRY_CHECK_DUPLICATE;
          break;
       case PL_MANAGER_ITERATE_ENTRY_CHECK_DUPLICATE:
          {
@@ -659,21 +659,19 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
          }
          break;
       case PL_MANAGER_CHECK_DUPLICATE_END:
+         /* Sanity check - if all (or all but one)
+          * playlist entries were removed during the
+          * 'check duplicate' phase, we can stop now */
+         if (pl_manager->list_size < 2)
          {
-            /* Sanity check - if all (or all but one)
-             * playlist entries were removed during the
-             * 'check duplicate' phase, we can stop now */
-            if (pl_manager->list_size < 2)
-            {
-               pl_manager->status = PL_MANAGER_END;
-               break;
-            }
-            
-            /* ...otherwise, reset index counter and
-             * start building the M3U file list */
-            pl_manager->list_index = 0;
-            pl_manager->status = PL_MANAGER_ITERATE_FETCH_M3U;
+            pl_manager->status = PL_MANAGER_END;
+            break;
          }
+
+         /* ...otherwise, reset index counter and
+          * start building the M3U file list */
+         pl_manager->list_index = 0;
+         pl_manager->status = PL_MANAGER_ITERATE_FETCH_M3U;
          break;
       case PL_MANAGER_ITERATE_FETCH_M3U:
          {
@@ -790,7 +788,8 @@ task_finished:
       task_set_finished(task, true);
 }
 
-static bool task_pl_manager_clean_playlist_finder(retro_task_t *task, void *user_data)
+static bool task_pl_manager_clean_playlist_finder(
+      retro_task_t *task, void *user_data)
 {
    pl_manager_handle_t *pl_manager = NULL;
    
@@ -804,16 +803,19 @@ static bool task_pl_manager_clean_playlist_finder(retro_task_t *task, void *user
    if (!pl_manager)
       return false;
    
-   return string_is_equal((const char*)user_data, pl_manager->playlist_config.path);
+   return string_is_equal((const char*)user_data,
+         pl_manager->playlist_config.path);
 }
 
-bool task_push_pl_manager_clean_playlist(const playlist_config_t *playlist_config)
+bool task_push_pl_manager_clean_playlist(
+      const playlist_config_t *playlist_config)
 {
    task_finder_data_t find_data;
    char playlist_name[PATH_MAX_LENGTH];
    char task_title[PATH_MAX_LENGTH];
    retro_task_t *task              = task_init();
-   pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)calloc(1, sizeof(pl_manager_handle_t));
+   pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
+      calloc(1, sizeof(pl_manager_handle_t));
    
    playlist_name[0] = '\0';
    task_title[0]    = '\0';
@@ -825,7 +827,8 @@ bool task_push_pl_manager_clean_playlist(const playlist_config_t *playlist_confi
    if (string_is_empty(playlist_config->path))
       goto error;
    
-   fill_pathname_base_noext(playlist_name, playlist_config->path, sizeof(playlist_name));
+   fill_pathname_base_noext(playlist_name,
+         playlist_config->path, sizeof(playlist_name));
    
    if (string_is_empty(playlist_name))
       goto error;

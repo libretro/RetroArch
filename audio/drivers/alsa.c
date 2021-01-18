@@ -83,11 +83,11 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    if (snd_pcm_hw_params_malloc(&params) < 0)
       goto error;
 
-   alsa->has_float = find_float_format(alsa->pcm, params);
-   format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
-
    if (snd_pcm_hw_params_any(alsa->pcm, params) < 0)
       goto error;
+
+   alsa->has_float = find_float_format(alsa->pcm, params);
+   format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
    if (snd_pcm_hw_params_set_access(
             alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)

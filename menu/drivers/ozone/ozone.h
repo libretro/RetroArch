@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2018      - natinusala
+ *  Copyright (C) 2018-2020 - natinusala
  *  Copyright (C) 2019      - Patrick Scheurenbrand
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -207,6 +207,7 @@ struct ozone_handle
    float dimensions_sidebar_width; /* animated field */
    float sidebar_offset;
    float last_scale_factor;
+   float pure_white[16];
 
    struct
    {
@@ -295,6 +296,14 @@ struct ozone_handle
    bool is_file_list;
    bool is_quick_menu;
    bool first_frame;
+
+   struct
+   {
+      retro_time_t start_time;
+      float amplitude;
+      enum menu_action direction;
+      bool wiggling;
+   } cursor_wiggle_state;
 };
 
 /* If you change this struct, also
@@ -394,7 +403,6 @@ static INLINE unsigned ozone_count_lines(const char *str)
    return lines;
 }
 
-
 void ozone_update_content_metadata(ozone_handle_t *ozone);
 
 void ozone_font_flush(
@@ -402,5 +410,19 @@ void ozone_font_flush(
       ozone_font_data_t *font_data);
 
 void ozone_toggle_metadata_override(ozone_handle_t *ozone);
+
+#define OZONE_WIGGLE_DURATION 15
+
+/**
+ * Starts the cursor wiggle animation in the given direction
+ * Use ozone_get_cursor_wiggle_offset to read the animation
+ * once it has started
+ */
+void ozone_start_cursor_wiggle(ozone_handle_t* ozone, enum menu_action direction);
+
+/**
+ * Changes x and y to the current offset of the cursor wiggle animation
+ */
+void ozone_apply_cursor_wiggle_offset(ozone_handle_t* ozone, int* x, size_t* y);
 
 #endif

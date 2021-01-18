@@ -50,7 +50,7 @@
 #include "SDL.h"
 #endif
 
-#if defined(__linux__) || defined(__linux__) && defined(HAVE_WAYLAND)
+#if defined(__linux__) || defined(HAVE_WAYLAND)
 #include <linux/input.h>
 #include <linux/kd.h>
 #endif
@@ -650,12 +650,17 @@ const struct rarch_key_map rarch_key_map_dinput[] = {
    { DIK_DELETE, RETROK_DELETE },
    { DIK_RSHIFT, RETROK_RSHIFT },
    { DIK_LSHIFT, RETROK_LSHIFT },
+   { DIK_RCONTROL, RETROK_RCTRL },
    { DIK_LCONTROL, RETROK_LCTRL },
+   { DIK_RMENU, RETROK_RALT },
+   { DIK_LALT, RETROK_LALT },
+   { DIK_LWIN, RETROK_LSUPER },
+   { DIK_RWIN, RETROK_RSUPER },
+   { DIK_APPS, RETROK_MENU },
    { DIK_END, RETROK_END },
    { DIK_HOME, RETROK_HOME },
    { DIK_NEXT, RETROK_PAGEDOWN },
    { DIK_PRIOR, RETROK_PAGEUP },
-   { DIK_LALT, RETROK_LALT },
    { DIK_SPACE, RETROK_SPACE },
    { DIK_ESCAPE, RETROK_ESCAPE },
    { DIK_BACKSPACE, RETROK_BACKSPACE },
@@ -698,6 +703,9 @@ const struct rarch_key_map rarch_key_map_dinput[] = {
    { DIK_F10, RETROK_F10 },
    { DIK_F11, RETROK_F11 },
    { DIK_F12, RETROK_F12 },
+   { DIK_F13, RETROK_F13 },
+   { DIK_F14, RETROK_F14 },
+   { DIK_F15, RETROK_F15 },
    { DIK_A, RETROK_a },
    { DIK_B, RETROK_b },
    { DIK_C, RETROK_c },
@@ -734,8 +742,6 @@ const struct rarch_key_map rarch_key_map_dinput[] = {
    { DIK_BACKSLASH, RETROK_BACKSLASH },
    { DIK_RBRACKET, RETROK_RIGHTBRACKET },
    { DIK_DECIMAL, RETROK_KP_PERIOD },
-   { DIK_RCONTROL, RETROK_RCTRL },
-   { DIK_RMENU, RETROK_RALT },
    { DIK_PERIOD, RETROK_PERIOD },
    { DIK_SCROLL, RETROK_SCROLLOCK },
    { DIK_CAPSLOCK, RETROK_CAPSLOCK },
@@ -981,14 +987,18 @@ const struct rarch_key_map rarch_key_map_x11[] = {
 #endif
 
 #if defined(__linux__) || defined(HAVE_WAYLAND)
+/* Note: Only one input can be mapped to each
+ * RETROK_* key. If several physical inputs
+ * correspond to the same key, these inputs
+ * must be merged at the input driver level */
 const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_BACKSPACE, RETROK_BACKSPACE },
    { KEY_TAB, RETROK_TAB },
    { KEY_CLEAR, RETROK_CLEAR },
-   { KEY_EXIT, RETROK_CLEAR },
+   /* { KEY_EXIT, RETROK_CLEAR }, */     /* Duplicate - Skip */
    { KEY_ENTER, RETROK_RETURN },
-   { KEY_OK, RETROK_RETURN },
-   { KEY_SELECT, RETROK_RETURN },
+   /* { KEY_OK, RETROK_RETURN }, */      /* Duplicate - Skip */
+   /* { KEY_SELECT, RETROK_RETURN }, */  /* Duplicate - Skip */
    { KEY_PAUSE, RETROK_PAUSE },
    { KEY_ESC, RETROK_ESCAPE },
    { KEY_SPACE, RETROK_SPACE },

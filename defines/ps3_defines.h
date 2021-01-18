@@ -29,44 +29,12 @@
 #include <lv2/mutex.h>
 #include <lv2/cond.h>
 
-/* define all the audio/audio port functions */
-#define cellAudioQuit audioQuit
-#define cellAudioInit audioInit
-#define cellAudioPortStart audioPortStart
-#define cellAudioPortOpen audioPortOpen
-#define cellAudioPortClose audioPortClose
-#define cellAudioPortStop audioPortStop
-#define CellAudioPortParam audioPortParam
-#define cellAudioPortOpen audioPortOpen
-#define cellAudioAddData audioAddData
+/*forward decl. for audioAddData */
+extern int audioAddData(uint32_t portNum, float *data,
+      uint32_t frames, float volume);
 
-/* define all the event queue functions */
-#define sys_event_queue_receive sysEventQueueReceive
-#define cellAudioSetNotifyEventQueue audioSetNotifyEventQueue
-#define cellAudioRemoveNotifyEventQueue audioRemoveNotifyEventQueue
-#define cellAudioCreateNotifyEventQueue audioCreateNotifyEventQueue
-
-/* define all the lightweight mutex functions */
-#define sys_lwmutex_destroy sysLwMutexDestroy
-#define sys_lwmutex_lock sysLwMutexLock
-#define sys_lwmutex_unlock sysLwMutexUnlock
-#define sys_lwmutex_create sysLwMutexCreate
-
-//forward decl. for audioAddData
-extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float volume);
-
-/* define all the lightweight condition functions */
-#define sys_lwcond_create sysLwCondCreate
-#define sys_lwcond_destroy sysLwCondDestroy
-#define sys_lwcond_wait sysLwCondWait
-#define sys_lwcond_signal sysLwCondSignal
-
-#define CELL_AUDIO_BLOCK_SAMPLES AUDIO_BLOCK_SAMPLES
-#define SYS_NO_TIMEOUT 0
+#define PS3_SYS_NO_TIMEOUT 0
 #define param_attrib attrib
-#define sys_lwmutex_attribute_t sys_lwmutex_attr_t
-#define sys_lwcond_attribute_t sys_lwcond_attr_t
-#define sys_semaphore_t sys_sem_t
 
 #else
 #include <sdk_version.h>
@@ -78,6 +46,40 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define numBlocks nBlock
 #define param_attrib attr
 
+#define audioQuit cellAudioQuit 
+#define audioInit cellAudioInit
+#define audioPortStart cellAudioPortStart
+#define audioPortOpen cellAudioPortOpen
+#define audioPortClose cellAudioPortClose
+#define audioPortStop cellAudioPortStop
+#define audioPortParam CellAudioPortParam
+#define audioPortOpen cellAudioPortOpen
+#define audioAddData cellAudioAddData
+
+/* event queue functions */
+#define sysEventQueueReceive sys_event_queue_receive
+#define audioSetNotifyEventQueue cellAudioSetNotifyEventQueue
+#define audioRemoveNotifyEventQueue cellAudioRemoveNotifyEventQueue
+#define audioCreateNotifyEventQueue cellAudioCreateNotifyEventQueue
+
+#define sysLwCondCreate sys_lwcond_create
+#define sysLwCondDestroy sys_lwcond_destroy
+#define sysLwCondWait sys_lwcond_wait
+#define sysLwCondSignal sys_lwcond_signal
+
+#define sysLwMutexDestroy sys_lwmutex_destroy
+#define sysLwMutexLock sys_lwmutex_lock
+#define sysLwMutexUnlock sys_lwmutex_unlock
+#define sysLwMutexCreate sys_lwmutex_create
+
+#define AUDIO_BLOCK_SAMPLES CELL_AUDIO_BLOCK_SAMPLES
+
+#define PS3_SYS_NO_TIMEOUT SYS_NO_TIMEOUT
+
+#define sys_lwmutex_attr_t sys_lwmutex_attribute_t 
+#define sys_lwcond_attr_t sys_lwcond_attribute_t 
+#define sys_sem_t sys_semaphore_t
+
 #endif
 
 /*============================================================
@@ -86,19 +88,18 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 
 #ifdef __PSL1GHT__
 #include <io/pad.h>
-/* define all the ps3 pad structs */
-#define CellPadInfo2 padInfo2
-#define CellPadData padData
-
-/* define all the ps3 pad functions */
-#define cellPadGetInfo2 ioPadGetInfo2
-#define cellPadGetData ioPadGetData
-#define cellPadInit ioPadInit
-#define cellPadEnd ioPadEnd
-
 #define now_connect connected
 #else
 #include <cell/pad.h>
+
+#define padInfo2 CellPadInfo2
+#define padData CellPadData
+
+#define ioPadGetInfo2 cellPadGetInfo2 
+#define ioPadGetData cellPadGetData
+#define ioPadInit cellPadInit
+#define ioPadEnd cellPadEnd
+
 #endif
 
 /*============================================================
@@ -209,29 +210,6 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 ============================================================ */
 
 #ifdef __PSL1GHT__
-/* define all of the JPEG/PNG structs */
-#define CellJpgDecMainHandle int
-#define CellPngDecMainHandle int
-#define CellJpgDecSubHandle int
-#define CellPngDecSubHandle int
-#define CellJpgDecThreadInParam jpgDecThreadInParam
-#define CellPngDecThreadInParam pngDecThreadInParam
-#define CellJpgDecThreadOutParam jpgDecThreadOutParam
-#define CellPngDecThreadOutParam pngDecThreadOutParam
-#define CellJpgDecSrc jpgDecSource
-#define CellPngDecSrc pngDecSource
-#define CellJpgDecOpnInfo uint32_t
-#define CellPngDecOpnInfo uint32_t
-#define CellJpgDecInfo jpgDecInfo
-#define CellPngDecInfo pngDecInfo
-#define CellJpgDecInParam jpgDecInParam
-#define CellPngDecInParam pngDecInParam
-#define CellJpgDecOutParam jpgDecOutParam
-#define CellPngDecOutParam pngDecOutParam
-#define CellJpgDecDataOutInfo jpgDecDataInfo
-#define CellPngDecDataOutInfo pngDecDataInfo
-#define CellJpgDecDataCtrlParam uint64_t
-#define CellPngDecDataCtrlParam uint64_t
 
 #define spu_enable enable
 #define stream_select stream
@@ -242,38 +220,6 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define output_width width
 #define output_height height
 
-/* define all of the JPEG/PNG functions */
-#define cellJpgDecCreate jpgDecCreate
-#define cellJpgDecOpen jpgDecOpen
-#define cellJpgDecReadHeader jpgDecReadHeader
-#define cellJpgDecSetParameter jpgDecSetParameter
-#define cellJpgDecDecodeData jpgDecDecodeData
-#define cellJpgDecClose jpgDecClose
-#define cellJpgDecDestroy jpgDecDestroy
-
-#define cellPngDecCreate pngDecCreate
-#define cellPngDecOpen pngDecOpen
-#define cellPngDecReadHeader pngDecReadHeader
-#define cellPngDecSetParameter pngDecSetParameter
-#define cellPngDecDecodeData pngDecDecodeData
-#define cellPngDecClose pngDecClose
-#define cellPngDecDestroy pngDecDestroy
-
-/* define all of the JPEG/PNG defines */
-#define CELL_PNGDEC_SPU_THREAD_ENABLE 1
-#define CELL_JPGDEC_SPU_THREAD_ENABLE 1
-#define CELL_JPGDEC_FILE JPGDEC_FILE
-#define CELL_PNGDEC_FILE PNGDEC_FILE
-#define CELL_JPGDEC_SPU_THREAD_ENABLE 1
-#define CELL_JPGDEC_FAST JPGDEC_LOW_QUALITY
-#define CELL_JPGDEC_TOP_TO_BOTTOM JPGDEC_TOP_TO_BOTTOM
-#define CELL_PNGDEC_TOP_TO_BOTTOM PNGDEC_TOP_TO_BOTTOM
-#define CELL_JPG_ARGB JPGDEC_ARGB
-#define CELL_PNGDEC_ARGB PNGDEC_ARGB
-#define CELL_JPGDEC_DEC_STATUS_FINISH 0
-#define CELL_PNGDEC_DEC_STATUS_FINISH 0
-#define CELL_PNGDEC_1BYTE_PER_1PIXEL 1
-#define CELL_PNGDEC_STREAM_ALPHA 1
 #define CELL_OK 0
 #define PTR_NULL 0
 
@@ -324,28 +270,31 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #ifdef __PSL1GHT__
 #include <sys/thread.h>
 
-/* define all the thread functions  */
-#define sys_ppu_thread_create sysThreadCreate
-#define sys_ppu_thread_join sysThreadJoin
-#define sys_ppu_thread_exit sysThreadExit
+/* FIXME - not sure if this is correct */
+#define SYS_THREAD_CREATE_JOINABLE 0
 
-#define sys_process_exit sysProcessExit
-#define sys_game_process_exitspawn sysProcessExitSpawn2
-
-#define SYS_PROCESS_PRIMARY_STACK_SIZE_1M SYS_PROCESS_SPAWN_STACK_SIZE_1M
-
-#define SYS_PPU_THREAD_CREATE_JOINABLE 0 /* FIXME - not sure if this is correct */
-#elif defined(__CELLOS_LV2__)
+#else
 #include <sys/ppu_thread.h>
+
+#define SYS_PROCESS_SPAWN_STACK_SIZE_1M SYS_PROCESS_PRIMARY_STACK_SIZE_1M 
+#define SYS_THREAD_CREATE_JOINABLE SYS_PPU_THREAD_CREATE_JOINABLE
+
+#define sysThreadCreate sys_ppu_thread_create 
+#define sysThreadJoin sys_ppu_thread_join 
+#define sysThreadExit sys_ppu_thread_exit 
+
+#define sysProcessExit sys_process_exit 
+#define sysProcessExitSpawn2 sys_game_process_exitspawn 
+
 #endif
 
 /*============================================================
 	MEMORY PROTOTYPES
 ============================================================ */
 
-#ifdef __PSL1GHT__
-#define sys_memory_container_create sysMemContainerCreate
-#define sys_memory_container_destroy sysMemContainerDestroy
+#ifndef __PSL1GHT__
+#define sysMemContainerCreate sys_memory_container_create 
+#define sysMemContainerDestroy sys_memory_container_destroy 
 #endif
 
 /*============================================================

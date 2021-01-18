@@ -34,7 +34,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #ifdef HAVE_REWIND
-#include "../../managers/state_manager.h"
+#include "../../state_manager.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -52,6 +52,7 @@ static uint32_t d3d12_get_flags(void *data);
 
 static void d3d12_gfx_sync(d3d12_video_t* d3d12)
 {
+   D3D12SignalCommandQueue(d3d12->queue.handle, d3d12->queue.fence, ++d3d12->queue.fenceValue);
    if (D3D12GetCompletedValue(d3d12->queue.fence) < d3d12->queue.fenceValue)
    {
       D3D12SetEventOnCompletion(
@@ -342,7 +343,6 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    unsigned         i;
-   config_file_t* conf     = NULL;
    d3d12_texture_t* source = NULL;
    d3d12_video_t*   d3d12  = (d3d12_video_t*)data;
 
@@ -361,12 +361,9 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       return false;
    }
 
-   if (!(conf = video_shader_read_preset(path)))
-      return false;
-
    d3d12->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d12->shader_preset));
 
-   if (!video_shader_read_conf_preset(conf, d3d12->shader_preset))
+   if (!video_shader_load_preset_into_shader(path, d3d12->shader_preset))
       goto error;
 
    source = &d3d12->frame.texture[0];
@@ -488,7 +485,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
          d3d12->pass[i].rt.rt_view.ptr =
                d3d12->desc.rtv_heap.cpu.ptr +
-               (countof(d3d12->chain.renderTargets) + i) * d3d12->desc.rtv_heap.stride;
+               (countof(d3d12->chain.renderTargets) + (2 * i)) * d3d12->desc.rtv_heap.stride;
+         d3d12->pass[i].feedback.rt_view.ptr = d3d12->pass[i].rt.rt_view.ptr + d3d12->desc.rtv_heap.stride;
 
          d3d12->pass[i].textures.ptr =
                d3d12->desc.srv_heap.gpu.ptr + i * SLANG_NUM_SEMANTICS * d3d12->desc.srv_heap.stride;
@@ -532,9 +530,6 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
       image_texture_free(&image);
    }
-
-   video_shader_resolve_current_parameters(conf, d3d12->shader_preset);
-   config_file_free(conf);
 
    d3d12->resize_render_targets = true;
    d3d12->init_history          = true;
@@ -969,7 +964,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
 
-   d3d12->sprites.capacity                = 4096;
+   d3d12->sprites.capacity                = 16 * 1024;
    d3d12->sprites.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * d3d12->sprites.capacity;
    d3d12->sprites.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
    d3d12->sprites.vbo_view.BufferLocation = d3d12_create_buffer(
@@ -1615,7 +1610,6 @@ static bool d3d12_gfx_frame(
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
-   D3D12SignalCommandQueue(d3d12->queue.handle, d3d12->queue.fence, ++d3d12->queue.fenceValue);
 
 #if 1
    DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);

@@ -47,6 +47,7 @@ QWidget *AccountsPage::widget()
    QVBoxLayout *layout         = new QVBoxLayout;
    SettingsGroup *youtubeGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE));
    SettingsGroup *twitchGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH));
+   SettingsGroup *facebookGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK));
 #ifdef HAVE_CHEEVOS
    SettingsGroup *cheevosGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS));
 
@@ -63,6 +64,10 @@ QWidget *AccountsPage::widget()
    twitchGroup->add(MENU_ENUM_LABEL_TWITCH_STREAM_KEY);
 
    layout->addWidget(twitchGroup);
+
+   facebookGroup->add(MENU_ENUM_LABEL_FACEBOOK_STREAM_KEY);
+
+   layout->addWidget(facebookGroup);
 
    layout->addStretch();
 

@@ -33,6 +33,7 @@
 #include <boolean.h>
 
 #include "../../dynamic.h"
+#include "../../paths.h"
 
 static void frontend_xenon_init(void *data)
 {
@@ -58,39 +59,40 @@ static int frontend_xenon_get_rating(void)
    return -1;
 }
 
-static void frontend_xenon_get_environment_settings(int *argc, char *argv[],
-      void *data, void *params_data)
-{
-}
+static void frontend_xenon_get_env(int *argc, char *argv[],
+      void *data, void *params_data) { }
 
-enum frontend_architecture frontend_xenon_get_architecture(void)
+enum frontend_architecture frontend_xenon_get_arch(void)
 {
    return FRONTEND_ARCH_PPC;
 }
 
 frontend_ctx_driver_t frontend_ctx_qnx = {
-   frontend_xenon_get_environment_settings,
-   frontend_xenon_init,
-   NULL,                         /* deinit */
+   frontend_xenon_get_env,       /* get_env   */
+   frontend_xenon_init,          /* init      */
+   NULL,                         /* deinit    */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
-   frontend_xenon_shutdown,
+   frontend_xenon_shutdown,      /* shutdown  */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_xenon_get_rating,
+   frontend_xenon_get_rating,    /* get_rating   */
    NULL,                         /* load_content */
-   frontend_xenon_get_architecture,
+   frontend_xenon_get_arch,      /* get_arch       */
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
-   NULL,                         /* get_mem_total */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem  */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
    NULL,                         /* destroy_sighandler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+   NULL,                         /* get_lakka_version */
+   NULL,                         /* set_screen_brightness */
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
@@ -98,5 +100,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "xenon",
+   "xenon",                      /* ident */
+   NULL                          /* get_video_driver */
 };

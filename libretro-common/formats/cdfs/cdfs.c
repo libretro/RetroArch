@@ -111,8 +111,9 @@ void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector)
 
 static int cdfs_find_file(cdfs_file_t* file, const char* path)
 {
+   size_t path_length;
+   int sector;
    uint8_t buffer[2048], *tmp;
-   int sector, path_length;
    const char* slash = strrchr(path, '\\');
 
    if (slash)

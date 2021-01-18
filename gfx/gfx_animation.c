@@ -40,9 +40,6 @@
  * */
 #define TICKER_PIXEL_PERIOD (16.666666666666668f)
 
-/* By default, this should be a NOOP */
-static update_time_cb update_time_callback = NULL;
-
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
 static float easing_linear(float t, float b, float c, float d)
@@ -271,29 +268,26 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-static void gfx_animation_ticker_generic(uint64_t idx,
-      size_t max_width, size_t *offset, size_t *width)
+static size_t gfx_animation_ticker_generic(uint64_t idx,
+      size_t max_width, size_t *width)
 {
-   int ticker_period     = (int)(2 * (*width - max_width) + 4);
-   int phase             = idx % ticker_period;
+   int ticker_period           = (int)(2 * (*width - max_width) + 4);
+   int phase                   = idx % ticker_period;
+   const int phase_left_stop   = 2;
+   int phase_left_moving       = (int)(phase_left_stop + (*width - max_width));
+   int phase_right_stop        = phase_left_moving + 2;
 
-   int phase_left_stop   = 2;
-   int phase_left_moving = (int)(phase_left_stop + (*width - max_width));
-   int phase_right_stop  = phase_left_moving + 2;
-
-   int left_offset       = phase - phase_left_stop;
-   int right_offset      = (int)((*width - max_width) - (phase - phase_right_stop));
+   *width                      = max_width;
 
    if (phase < phase_left_stop)
-      *offset = 0;
-   else if (phase < phase_left_moving)
-      *offset = left_offset;
+      return 0;
+   else if (phase < phase_left_moving) /* left offset */
+      return (phase - phase_left_stop);
    else if (phase < phase_right_stop)
-      *offset = *width - max_width;
-   else
-      *offset = right_offset;
+      return (*width - max_width);
 
-   *width = max_width;
+   /* right offset */
+   return (size_t)(int)((*width - max_width) - (phase - phase_right_stop));
 }
 
 static void gfx_animation_ticker_loop(uint64_t idx,
@@ -308,9 +302,6 @@ static void gfx_animation_ticker_loop(uint64_t idx,
    /* Output offsets/widths are unsigned size_t, but it's
     * easier to perform the required calculations with ints,
     * so create some temporary variables... */
-   int offset;
-   int width;
-   
    /* Looping text is composed of up to three strings,
     * where string 1 and 2 are different regions of the
     * source text and string 2 is a spacer:
@@ -324,62 +315,60 @@ static void gfx_animation_ticker_loop(uint64_t idx,
     */
    
    /* String 1 */
-   offset   = (phase < (int)str_width) ? phase : 0;
-   width    = (int)(str_width - phase);
-   width    = (width < 0) ? 0 : width;
-   width    = (width > (int)max_width) ? (int)max_width : width;
+   int offset = (phase < (int)str_width) ? phase : 0;
+   int width  = (int)(str_width - phase);
+   width      = (width < 0) ? 0 : width;
+   width      = (width > (int)max_width) ? (int)max_width : width;
    
-   *offset1 = offset;
-   *width1  = width;
+   *offset1   = offset;
+   *width1    = width;
    
    /* String 2 */
-   offset   = (int)(phase - str_width);
-   offset   = offset < 0 ? 0 : offset;
-   width    = (int)(max_width - *width1);
-   width    = (width > (int)spacer_width) ? (int)spacer_width : width;
-   width    = width - offset;
+   offset     = (int)(phase - str_width);
+   offset     = offset < 0 ? 0 : offset;
+   width      = (int)(max_width - *width1);
+   width      = (width > (int)spacer_width) ? (int)spacer_width : width;
+   width      = width - offset;
    
-   *offset2 = offset;
-   *width2  = width;
+   *offset2   = offset;
+   *width2    = width;
    
    /* String 3 */
-   width    = (int)(max_width - (*width1 + *width2));
-   width    = width < 0 ? 0 : width;
+   width      = (int)(max_width - (*width1 + *width2));
+   width      = width < 0 ? 0 : width;
    
    /* Note: offset is always zero here so offset3 is
     * unnecessary - but include it anyway to preserve
     * symmetry... */
-   *offset3 = 0;
-   *width3  = width;
+   *offset3   = 0;
+   *width3    = width;
 }
 
 static unsigned get_ticker_smooth_generic_scroll_offset(
       uint64_t idx, unsigned str_width, unsigned field_width)
 {
    unsigned scroll_width   = str_width - field_width;
-   unsigned scroll_offset  = 0;
-
    unsigned pause_duration = 32;
    unsigned ticker_period  = 2 * (scroll_width + pause_duration);
    unsigned phase          = idx % ticker_period;
 
    /* Determine scroll offset */
    if (phase < pause_duration)
-      scroll_offset = 0;
+      return 0;
    else if (phase < ticker_period >> 1)
-      scroll_offset = phase - pause_duration;
+      return (phase - pause_duration);
    else if (phase < (ticker_period >> 1) + pause_duration)
-      scroll_offset = (ticker_period - (2 * pause_duration)) >> 1;
-   else
-      scroll_offset = ticker_period - phase;
+      return ((ticker_period - (2 * pause_duration)) >> 1);
 
-   return scroll_offset;
+   return (ticker_period - phase);
 }
 
 /* 'Fixed width' font version of ticker_smooth_scan_characters() */
 static void ticker_smooth_scan_string_fw(
-      size_t num_chars, unsigned glyph_width, unsigned field_width, unsigned scroll_offset,
-      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset)
+      size_t num_chars, unsigned glyph_width,
+      unsigned field_width, unsigned scroll_offset,
+      unsigned *char_offset, unsigned *num_chars_to_copy,
+      unsigned *x_offset)
 {
    unsigned chars_remaining = 0;
 
@@ -397,13 +386,15 @@ static void ticker_smooth_scan_string_fw(
 
    /* Determine number of characters remaining in
     * string once offset has been subtracted */
-   chars_remaining = (*char_offset >= num_chars) ? 0 : num_chars - *char_offset;
+   if (*char_offset < num_chars)
+      chars_remaining = num_chars - *char_offset;
 
    /* Determine number of characters to copy */
    if ((chars_remaining > 0) && (field_width > *x_offset))
    {
       *num_chars_to_copy = (field_width - *x_offset) / glyph_width;
-      *num_chars_to_copy = (*num_chars_to_copy > chars_remaining) ? chars_remaining : *num_chars_to_copy;
+      if (*num_chars_to_copy > chars_remaining)
+         *num_chars_to_copy = chars_remaining;
    }
 }
 
@@ -495,8 +486,6 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
       /* Check whether we've passed the end of string 1 */
       if (phase > str_width)
          scroll_offset = phase - str_width;
-      else
-         scroll_offset = 0;
 
       ticker_smooth_scan_string_fw(
             num_spacer_chars, glyph_width, remaining_width, scroll_offset,
@@ -521,19 +510,22 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
 
       /* Determine number of characters to copy */
       *num_chars_to_copy3 = remaining_width / glyph_width;
-      *num_chars_to_copy3 = (*num_chars_to_copy3 > num_chars) ? num_chars : *num_chars_to_copy3;
+      if (*num_chars_to_copy3 > num_chars)
+         *num_chars_to_copy3 = num_chars;
    }
 }
 
 static void ticker_smooth_scan_characters(
-      const unsigned *char_widths, size_t num_chars, unsigned field_width, unsigned scroll_offset,
-      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset,
-      unsigned *str_width, unsigned *display_width)
+      const unsigned *char_widths, size_t num_chars,
+      unsigned field_width, unsigned scroll_offset,
+      unsigned *char_offset, unsigned *num_chars_to_copy,
+      unsigned *x_offset, unsigned *str_width,
+      unsigned *display_width)
 {
+   unsigned i;
    unsigned text_width     = 0;
    unsigned scroll_pos     = scroll_offset;
    bool deferred_str_width = true;
-   unsigned i;
 
    /* Initialise output variables to 'sane' values */
    *char_offset       = 0;
@@ -557,7 +549,7 @@ static void ticker_smooth_scan_characters(
              * of range here (num_chars_to_copy will be zero
              * in this case) */
             *char_offset = i + 1;
-            *x_offset = char_widths[i] - scroll_pos;
+            *x_offset    = char_widths[i] - scroll_pos;
             break;
          }
       }
@@ -580,7 +572,7 @@ static void ticker_smooth_scan_characters(
          if (str_width)
          {
             deferred_str_width = false;
-            *str_width = text_width - char_widths[i];
+            *str_width         = text_width - char_widths[i];
          }
          break;
       }
@@ -601,8 +593,10 @@ static void ticker_smooth_scan_characters(
 }
 
 static void gfx_animation_ticker_smooth_generic(uint64_t idx,
-      const unsigned *char_widths, size_t num_chars, unsigned str_width, unsigned field_width,
-      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset, unsigned *dst_str_width)
+      const unsigned *char_widths, size_t num_chars,
+      unsigned str_width, unsigned field_width,
+      unsigned *char_offset, unsigned *num_chars_to_copy,
+      unsigned *x_offset, unsigned *dst_str_width)
 {
    unsigned scroll_offset = get_ticker_smooth_generic_scroll_offset(
       idx, str_width, field_width);
@@ -691,8 +685,6 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
       /* Check whether we've passed the end of string 1 */
       if (phase > str_width)
          scroll_offset = phase - str_width;
-      else
-         scroll_offset = 0;
 
       ticker_smooth_scan_characters(
             spacer_widths, num_spacer_chars, remaining_width, scroll_offset,
@@ -739,7 +731,9 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
    }
 }
 
-static size_t get_line_display_ticks(size_t line_len)
+static void gfx_animation_line_ticker_generic(uint64_t idx,
+      size_t line_len, size_t max_lines, size_t num_lines,
+      size_t *line_offset)
 {
    /* Mean human reading speed for all western languages,
     * characters per minute */
@@ -748,14 +742,7 @@ static size_t get_line_display_ticks(size_t line_len)
    float line_duration  = (line_len * 60.0f * 1000.0f * 1000.0f) / cpm;
    /* Ticker updates (nominally) once every TICKER_SPEED us
     * > Return base number of ticks for which line should be shown */
-   return (size_t)(line_duration / (float)TICKER_SPEED);
-}
-
-static void gfx_animation_line_ticker_generic(uint64_t idx,
-      size_t line_len, size_t max_lines, size_t num_lines,
-      size_t *line_offset)
-{
-   size_t line_ticks    = get_line_display_ticks(line_len);
+   size_t line_ticks    =  (size_t)(line_duration / (float)TICKER_SPEED);
    /* Note: This function is only called if num_lines > max_lines */
    size_t excess_lines  = num_lines - max_lines;
    /* Ticker will pause for one line duration when the first
@@ -781,56 +768,56 @@ static void gfx_animation_line_ticker_generic(uint64_t idx,
       *line_offset = (excess_lines * 2) - phase;
 }
 
-static void gfx_animation_line_ticker_loop(uint64_t idx,
+static size_t gfx_animation_line_ticker_loop(uint64_t idx,
       size_t line_len, size_t num_lines,
       size_t *line_offset)
-{
-   size_t line_ticks    = get_line_display_ticks(line_len);
-   size_t ticker_period = num_lines + 1;
-   size_t phase         = (idx / line_ticks) % ticker_period;
-
-   /* In this case, line_offset is simply equal to the phase */
-   *line_offset = phase;
-}
-
-static size_t get_line_smooth_scroll_ticks(size_t line_len)
 {
    /* Mean human reading speed for all western languages,
     * characters per minute */
    float cpm            = 1000.0f;
-   /* Base time for which a line should be shown, in ms */
-   float line_duration  = (line_len * 60.0f * 1000.0f) / cpm;
-   /* Ticker updates (nominally) once every TICKER_PIXEL_PERIOD ms
-    * > Return base number of ticks for which text should scroll
-    *   from one line to the next */
-   return (size_t)(line_duration / TICKER_PIXEL_PERIOD);
+   /* Base time for which a line should be shown, in us */
+   float line_duration  = (line_len * 60.0f * 1000.0f * 1000.0f) / cpm;
+   /* Ticker updates (nominally) once every TICKER_SPEED us
+    * > Return base number of ticks for which line should be shown */
+   size_t line_ticks    = (size_t)(line_duration / (float)TICKER_SPEED);
+   size_t ticker_period = num_lines + 1;
+   size_t phase         = (idx / line_ticks) % ticker_period;
+   return phase;
 }
 
 static void set_line_smooth_fade_parameters(
-      bool scroll_up, size_t scroll_ticks, size_t line_phase, size_t line_height,
-      size_t num_lines, size_t num_display_lines, size_t line_offset, float y_offset,
-      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
-      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
+      bool scroll_up,
+      size_t scroll_ticks, size_t line_phase, size_t line_height,
+      size_t num_lines, size_t num_display_lines, size_t line_offset,
+      float y_offset,
+      size_t *top_fade_line_offset,
+      float *top_fade_y_offset, float *top_fade_alpha,
+      size_t *bottom_fade_line_offset,
+      float *bottom_fade_y_offset, float *bottom_fade_alpha)
 {
-   float fade_out_alpha     = 0.0f;
-   float fade_in_alpha      = 0.0f;
-
    /* When a line fades out, alpha transitions from
     * 1 to 0 over the course of one half of the
     * scrolling line height. When a line fades in,
     * it's the other way around */
-   fade_out_alpha           = ((float)scroll_ticks - ((float)line_phase * 2.0f)) / (float)scroll_ticks;
-   fade_in_alpha            = -1.0f * fade_out_alpha;
+   float fade_out_alpha     = ((float)scroll_ticks - ((float)line_phase * 2.0f)) / (float)scroll_ticks;
+   float fade_in_alpha      = -1.0f * fade_out_alpha;
    fade_out_alpha           = (fade_out_alpha < 0.0f) ? 0.0f : fade_out_alpha;
-   fade_in_alpha            = (fade_in_alpha < 0.0f)  ? 0.0f : fade_in_alpha;
+   fade_in_alpha            = (fade_in_alpha  < 0.0f) ? 0.0f : fade_in_alpha;
 
    *top_fade_line_offset    = (line_offset > 0) ? line_offset - 1 : num_lines;
    *top_fade_y_offset       = y_offset - (float)line_height;
-   *top_fade_alpha          = scroll_up ? fade_out_alpha : fade_in_alpha;
-
+   if (scroll_up)
+   {
+      *top_fade_alpha       = fade_out_alpha;
+      *bottom_fade_alpha    = fade_in_alpha;
+   }
+   else
+   {
+      *top_fade_alpha       = fade_in_alpha;
+      *bottom_fade_alpha    = fade_out_alpha;
+   }
    *bottom_fade_line_offset = line_offset + num_display_lines;
    *bottom_fade_y_offset    = y_offset + (float)(line_height * num_display_lines);
-   *bottom_fade_alpha       = scroll_up ? fade_in_alpha : fade_out_alpha;
 }
 
 static void set_line_smooth_fade_parameters_default(
@@ -849,12 +836,23 @@ static void set_line_smooth_fade_parameters_default(
 static void gfx_animation_line_ticker_smooth_generic(uint64_t idx,
       bool fade_enabled, size_t line_len, size_t line_height,
       size_t max_display_lines, size_t num_lines,
-      size_t *num_display_lines, size_t *line_offset, float *y_offset,
+      size_t *num_display_lines, size_t *line_offset,
+      float *y_offset,
       bool *fade_active,
-      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
-      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
+      size_t *top_fade_line_offset, float *top_fade_y_offset,
+      float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset,
+      float *bottom_fade_alpha)
 {
-   size_t scroll_ticks  = get_line_smooth_scroll_ticks(line_len);
+   /* Mean human reading speed for all western languages,
+    * characters per minute */
+   float cpm            = 1000.0f;
+   /* Base time for which a line should be shown, in ms */
+   float line_duration  = (line_len * 60.0f * 1000.0f) / cpm;
+   /* Ticker updates (nominally) once every TICKER_PIXEL_PERIOD ms
+    * > Return base number of ticks for which text should scroll
+    *   from one line to the next */
+   size_t scroll_ticks  = (size_t)(line_duration / TICKER_PIXEL_PERIOD);
    /* Note: This function is only called if num_lines > max_display_lines */
    size_t excess_lines  = num_lines - max_display_lines;
    /* Ticker will pause for one line duration when the first
@@ -940,7 +938,15 @@ static void gfx_animation_line_ticker_smooth_loop(uint64_t idx,
       size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
       size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
 {
-   size_t scroll_ticks  = get_line_smooth_scroll_ticks(line_len);
+   /* Mean human reading speed for all western languages,
+    * characters per minute */
+   float cpm            = 1000.0f;
+   /* Base time for which a line should be shown, in ms */
+   float line_duration  = (line_len * 60.0f * 1000.0f) / cpm;
+   /* Ticker updates (nominally) once every TICKER_PIXEL_PERIOD ms
+    * > Return base number of ticks for which text should scroll
+    *   from one line to the next */
+   size_t scroll_ticks  = (size_t)(line_duration / TICKER_PIXEL_PERIOD);
    size_t ticker_period = (num_lines + 1) * scroll_ticks;
    size_t phase         = idx % ticker_period;
    size_t line_phase    = phase % scroll_ticks;
@@ -998,7 +1004,7 @@ void gfx_animation_push_delayed(
    timer_entry.duration = delay;
    timer_entry.userdata = delayed_animation;
 
-   gfx_timer_start(&delayed_animation->timer, &timer_entry);
+   gfx_animation_timer_start(&delayed_animation->timer, &timer_entry);
 }
 
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
@@ -1142,23 +1148,15 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    return true;
 }
 
-void gfx_animation_set_update_time_cb(update_time_cb cb)
-{
-   update_time_callback = cb;
-}
-
-void gfx_animation_unset_update_time_cb(void)
-{
-   update_time_callback = NULL;
-}
-
-static void gfx_animation_update_time(
+bool gfx_animation_update(
       gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
-      unsigned video_width, unsigned video_height,
-      float _ticker_speed)
+      float _ticker_speed,
+      unsigned video_width,
+      unsigned video_height)
 {
+   unsigned i;
    const bool ticker_is_active                 = p_anim->ticker_is_active;
 
    static retro_time_t last_clock_update       = 0;
@@ -1185,11 +1183,11 @@ static void gfx_animation_update_time(
 
    /* Note: cur_time & old_time are in us (microseconds),
     * delta_time is in ms */
-   p_anim->cur_time   = current_time;
-   p_anim->delta_time = (p_anim->old_time == 0) 
+   p_anim->cur_time                            = current_time;
+   p_anim->delta_time                          = (p_anim->old_time == 0) 
       ? 0.0f 
       : (float)(p_anim->cur_time - p_anim->old_time) / 1000.0f;
-   p_anim->old_time   = p_anim->cur_time;
+   p_anim->old_time                            = p_anim->cur_time;
 
    if (((p_anim->cur_time - last_clock_update) > 1000000) /* 1000000 us == 1 second */
          && timedate_enable)
@@ -1237,8 +1235,8 @@ static void gfx_animation_update_time(
        *   to handle video scaling as it pleases - a callback
        *   function set by the menu driver is thus used to
        *   perform menu-specific scaling adjustments */
-      if (update_time_callback)
-         update_time_callback(&ticker_pixel_increment,
+      if (p_anim->updatetime_cb)
+         p_anim->updatetime_cb(&ticker_pixel_increment,
                video_width, video_height);
 
       /* > Update accumulators */
@@ -1262,24 +1260,6 @@ static void gfx_animation_update_time(
          ticker_pixel_line_accumulator -= (float)ticker_pixel_line_accumulator_uint;
       }
    }
-}
-
-bool gfx_animation_update(
-      gfx_animation_t *p_anim,
-      retro_time_t current_time,
-      bool timedate_enable,
-      float ticker_speed,
-      unsigned video_width,
-      unsigned video_height)
-{
-   unsigned i;
-
-   gfx_animation_update_time(
-         p_anim,
-         current_time,
-         timedate_enable,
-         video_width, video_height,
-         ticker_speed);
 
    p_anim->in_update       = true;
    p_anim->pending_deletes = false;
@@ -1343,14 +1323,14 @@ bool gfx_animation_update(
 
 static void build_ticker_loop_string(
       const char* src_str, const char *spacer,
-      unsigned char_offset1, unsigned num_chars1,
-      unsigned char_offset2, unsigned num_chars2,
-      unsigned char_offset3, unsigned num_chars3,
+      size_t char_offset1, size_t num_chars1,
+      size_t char_offset2, size_t num_chars2,
+      size_t char_offset3, size_t num_chars3,
       char *dest_str, size_t dest_str_len)
 {
    char tmp[PATH_MAX_LENGTH];
 
-   tmp[0] = '\0';
+   tmp[0]      = '\0';
    dest_str[0] = '\0';
 
    /* Copy 'trailing' chunk of source string, if required */
@@ -1404,8 +1384,6 @@ static void build_line_ticker_string(
    }
 }
 
-
-
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 {
    gfx_animation_t *p_anim = anim_get_ptr();
@@ -1437,46 +1415,41 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
    switch (ticker->type_enum)
    {
       case TICKER_TYPE_LOOP:
-      {
-         size_t offset1, offset2, offset3;
-         size_t width1, width2, width3;
-         
-         gfx_animation_ticker_loop(
-               ticker->idx,
-               ticker->len,
-               str_len, utf8len(ticker->spacer),
-               &offset1, &width1,
-               &offset2, &width2,
-               &offset3, &width3);
-         
-         build_ticker_loop_string(
-               ticker->str, ticker->spacer,
-               offset1, width1,
-               offset2, width2,
-               offset3, width3,
-               ticker->s, PATH_MAX_LENGTH);
-         
+         {
+            size_t offset1, offset2, offset3;
+            size_t width1, width2, width3;
+
+            gfx_animation_ticker_loop(
+                  ticker->idx,
+                  ticker->len,
+                  str_len, utf8len(ticker->spacer),
+                  &offset1, &width1,
+                  &offset2, &width2,
+                  &offset3, &width3);
+
+            build_ticker_loop_string(
+                  ticker->str, ticker->spacer,
+                  offset1, width1,
+                  offset2, width2,
+                  offset3, width3,
+                  ticker->s, PATH_MAX_LENGTH);
+         }
          break;
-      }
       case TICKER_TYPE_BOUNCE:
       default:
-      {
-         size_t offset  = 0;
-         
-         gfx_animation_ticker_generic(
-               ticker->idx,
-               ticker->len,
-               &offset,
-               &str_len);
-         
-         utf8cpy(
-               ticker->s,
-               PATH_MAX_LENGTH,
-               utf8skip(ticker->str, offset),
-               str_len);
-         
+         {
+            size_t offset = gfx_animation_ticker_generic(
+                  ticker->idx,
+                  ticker->len,
+                  &str_len);
+
+            utf8cpy(
+                  ticker->s,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->str, offset),
+                  str_len);
+         }
          break;
-      }
    }
 
    p_anim->ticker_is_active = true;
@@ -1922,7 +1895,8 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
    switch (line_ticker->type_enum)
    {
       case TICKER_TYPE_LOOP:
-         gfx_animation_line_ticker_loop(
+         /* In this case, line_offset is simply equal to the phase */
+         line_offset = gfx_animation_line_ticker_loop(
                line_ticker->idx,
                line_ticker->line_len,
                lines.size,
@@ -2208,39 +2182,23 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
    return true;
 }
 
-bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
+void gfx_animation_deinit(gfx_animation_t *p_anim)
 {
-   gfx_animation_t *p_anim        = anim_get_ptr();
-
-   switch (state)
-   {
-      case MENU_ANIMATION_CTL_DEINIT:
-         RBUF_FREE(p_anim->list);
-         RBUF_FREE(p_anim->pending);
-         memset(p_anim, 0, sizeof(*p_anim));
-         break;
-      case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
-         p_anim->animation_is_active = false;
-         p_anim->ticker_is_active    = false;
-         break;
-      case MENU_ANIMATION_CTL_SET_ACTIVE:
-         p_anim->animation_is_active = true;
-         p_anim->ticker_is_active    = true;
-         break;
-      case MENU_ANIMATION_CTL_NONE:
-      default:
-         break;
-   }
-
-   return true;
+   if (!p_anim)
+      return;
+   RBUF_FREE(p_anim->list);
+   RBUF_FREE(p_anim->pending);
+   if (p_anim->updatetime_cb)
+      p_anim->updatetime_cb = NULL;
+   memset(p_anim, 0, sizeof(*p_anim));
 }
 
-void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
+void gfx_animation_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 {
    gfx_animation_ctx_entry_t entry;
    uintptr_t tag        = (uintptr_t) timer;
 
-   gfx_timer_kill(timer);
+   gfx_animation_kill_by_tag(&tag);
 
    *timer               = 0.0f;
 
@@ -2253,34 +2211,4 @@ void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
    entry.userdata       = timer_entry->userdata;
 
    gfx_animation_push(&entry);
-}
-
-void gfx_timer_kill(gfx_timer_t *timer)
-{
-   uintptr_t tag = (uintptr_t) timer;
-   gfx_animation_kill_by_tag(&tag);
-}
-
-uint64_t gfx_animation_get_ticker_idx(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->ticker_idx;
-}
-
-uint64_t gfx_animation_get_ticker_slow_idx(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->ticker_slow_idx;
-}
-
-uint64_t gfx_animation_get_ticker_pixel_idx(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->ticker_pixel_idx;
-}
-
-uint64_t gfx_animation_get_ticker_pixel_line_idx(void)
-{
-   gfx_animation_t *p_anim        = anim_get_ptr();
-   return p_anim->ticker_pixel_line_idx;
 }

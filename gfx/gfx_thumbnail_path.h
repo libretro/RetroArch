@@ -70,11 +70,6 @@ void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data);
  * Returns true if 'type index' is valid */
 bool gfx_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory);
 
-/* Returns currently set thumbnail 'type' (Named_Snaps,
- * Named_Titles, Named_Boxarts) for specified thumbnail
- * identifier (right, left) */
-const char *gfx_thumbnail_get_type(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id);
-
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
 bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id);

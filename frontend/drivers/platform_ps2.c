@@ -21,10 +21,10 @@
 #include <sbv_patches.h>
 #include <sifrpc.h>
 #include <iopcontrol.h>
-#include <libpwroff.h>
 #include <ps2_devices.h>
 #include <ps2_irx_variables.h>
 #include <loadfile.h>
+#include <elf-loader.h>
 
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -33,7 +33,7 @@
 #include "../../defaults.h"
 #include "../../file_path_special.h"
 #include "../../verbosity.h"
-#include <elf-loader.h>
+#include "../../paths.h"
 
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
@@ -46,7 +46,7 @@ static void create_path_names(void)
 
    /* TODO/FIXME - third parameter here needs to be size of
     * rootDevicePath(bootDeviceID) */
-   strlcpy(user_path, rootDevicePath(bootDeviceID), rootDevicePath(bootDeviceID));
+   strlcpy(user_path, rootDevicePath(bootDeviceID), sizeof(user_path));
    strlcat(user_path, "RETROARCH", sizeof(user_path));
    
    /* Content in the same folder */
@@ -87,12 +87,6 @@ static void create_path_names(void)
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 }
 
-static void poweroffCallback(void *arg)
-{
-	printf("Shutdown!");
-	poweroffShutdown();
-}
-
 static void reset_IOP()
 {
    SifInitRpc(0);
@@ -107,9 +101,10 @@ static void reset_IOP()
    sbv_patch_disable_prefix_check();
 }
 
-static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
+static void frontend_ps2_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   int i;
    create_path_names();
 
 #ifndef IS_SALAMANDER
@@ -139,13 +134,10 @@ static void frontend_ps2_get_environment_settings(int *argc, char *argv[],
       }
    }
 #endif
-   int i;
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_ps2_init(void *data)
@@ -155,7 +147,7 @@ static void frontend_ps2_init(void *data)
    /* I/O Files */
    SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&freesio2_irx, size_freesio2_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&sio2man_irx, size_sio2man_irx, 0, NULL, NULL);
 
    /* Memory Card */
    SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
@@ -165,39 +157,35 @@ static void frontend_ps2_init(void *data)
    SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
 
+#if !defined(DEBUG)
    /* CDFS */
    SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
+#endif
 
 #ifndef IS_SALAMANDER
    /* Controllers */
-   SifExecModuleBuffer(&freemtap_irx, size_freemtap_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&freepad_irx, size_freepad_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&padman_irx, size_padman_irx, 0, NULL, NULL);
 
    /* Audio */
-   SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&libsd_irx, size_libsd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
 
    /* Initializes audsrv library */
-   if (audsrv_init()) {
+   if (audsrv_init())
+   {
       RARCH_ERR("audsrv library not initalizated\n");
    }
 
-   /* Initializes pad libraries
-      Must be init with 0 as parameter*/
-   if (mtapInit() != 1) {
-      RARCH_ERR("mtapInit library not initalizated\n");
-   }
-   if (padInit(0) != 1) {
+   /* Initializes pad library */
+   if (padInit(0) != 1)
+   {
       RARCH_ERR("padInit library not initalizated\n");
-   }
-   if (mtapPortOpen(0) != 1) {
-      RARCH_ERR("mtapPortOpen library not initalizated\n");
    }
 #endif
 
 #if defined(BUILD_FOR_PCSX2)
    bootDeviceID = BOOT_DEVICE_MC0;
-   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(rootDevicePath(bootDeviceID)));
+   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(cwd));
 #else
    getcwd(cwd, sizeof(cwd));
    bootDeviceID = getBootDeviceID(cwd);
@@ -215,7 +203,9 @@ static void frontend_ps2_init(void *data)
    verbosity_enable();
 #endif
 
+#if !defined(DEBUG)
    waitUntilDeviceIsReady(bootDeviceID);
+#endif
 }
 
 static void frontend_ps2_deinit(void *data)
@@ -289,19 +279,10 @@ static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
    frontend_ps2_exec(s, should_load_content);
 }
 
-static void frontend_ps2_shutdown(bool unused)
-{
-   poweroffInit();
-   /* Set callback function */
-	poweroffSetCallback(&poweroffCallback, NULL);
-}
+static void frontend_ps2_shutdown(bool unused) { }
+static int frontend_ps2_get_rating(void) { return 10; }
 
-static int frontend_ps2_get_rating(void)
-{
-    return 10;
-}
-
-enum frontend_architecture frontend_ps2_get_architecture(void)
+enum frontend_architecture frontend_ps2_get_arch(void)
 {
     return FRONTEND_ARCH_MIPS;
 }
@@ -352,36 +333,35 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
 }
 
 frontend_ctx_driver_t frontend_ctx_ps2 = {
-   frontend_ps2_get_environment_settings,                         /* environment_get */
-   frontend_ps2_init,                         /* init */
-   frontend_ps2_deinit,                         /* deinit */
-   frontend_ps2_exitspawn,                         /* exitspawn */
+   frontend_ps2_get_env,         /* get_env */
+   frontend_ps2_init,            /* init */
+   frontend_ps2_deinit,          /* deinit */
+   frontend_ps2_exitspawn,       /* exitspawn */
    NULL,                         /* process_args */
-   frontend_ps2_exec,                         /* exec */
+   frontend_ps2_exec,            /* exec */
 #ifdef IS_SALAMANDER
    NULL,                         /* set_fork */
 #else
-   frontend_ps2_set_fork,                         /* set_fork */
+   frontend_ps2_set_fork,        /* set_fork */
 #endif
-   frontend_ps2_shutdown,                         /* shutdown */
+   frontend_ps2_shutdown,        /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ps2_get_rating,                         /* get_rating */
+   frontend_ps2_get_rating,      /* get_rating */
    NULL,                         /* load_content */
-   frontend_ps2_get_architecture,                         /* get_architecture */
+   frontend_ps2_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
-   frontend_ps2_parse_drive_list,                         /* parse_drive_list */
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   frontend_ps2_parse_drive_list,/* parse_drive_list */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
    NULL,                         /* destroy_sighandler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
-#ifdef HAVE_LAKKA
    NULL,                         /* get_lakka_version */
-#endif
+   NULL,                         /* set_screen_brightness */
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
@@ -389,5 +369,6 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "null",
+   "ps2",                        /* ident */
+   NULL                          /* get_video_driver */
 };

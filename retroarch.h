@@ -605,7 +605,9 @@ extern audio_driver_t audio_psp;
 extern audio_driver_t audio_ps2;
 extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;
+#ifdef HAVE_THREADS
 extern audio_driver_t audio_ctr_dsp_thread;
+#endif
 extern audio_driver_t audio_switch;
 extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;
@@ -625,6 +627,7 @@ enum streaming_mode
 {
    STREAMING_MODE_TWITCH = 0,
    STREAMING_MODE_YOUTUBE,
+   STREAMING_MODE_FACEBOOK,
    STREAMING_MODE_LOCAL,
    STREAMING_MODE_CUSTOM
 };
@@ -1179,6 +1182,7 @@ typedef struct video_frame_info
    bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
+   bool input_driver_grab_mouse_state;
    bool hard_sync;
    bool fps_show;
    bool memory_show;
@@ -1591,9 +1595,6 @@ bool video_driver_set_video_mode(unsigned width,
 bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height);
 
-void video_driver_set_osd_msg(const char *msg,
-      const void *params, void *font);
-
 void video_driver_set_texture_enable(bool enable, bool full_screen);
 
 void video_driver_set_texture_frame(const void *frame, bool rgb32,
@@ -1980,6 +1981,8 @@ unsigned int retroarch_get_rotation(void);
 void retroarch_init_task_queue(void);
 
 bool input_key_pressed(int key, bool keyboard_pressed);
+
+bool input_mouse_grabbed(void);
 
 const char *joypad_driver_name(unsigned i);
 void joypad_driver_reinit(void *data, const char *joypad_driver_name);

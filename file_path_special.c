@@ -103,6 +103,14 @@ bool fill_pathname_application_data(char *s, size_t len)
             "Library/Application Support/RetroArch", len);
       return true;
    }
+#elif defined(DINGUX)
+   const char *appdata = getenv("HOME");
+
+   if (appdata)
+   {
+      fill_pathname_join(s, appdata, "/.retroarch", len);
+      return true;
+   }
 #elif !defined(RARCH_CONSOLE)
    const char *xdg     = getenv("XDG_CONFIG_HOME");
    const char *appdata = getenv("HOME");
@@ -308,6 +316,23 @@ void fill_pathname_application_special(char *s,
             /* Icons path */
             strlcat(s, "png", len);
             fill_pathname_slash(s, len);
+         }
+#endif
+         break;
+
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_RGUI_FONT:
+#ifdef HAVE_RGUI
+         {
+            char rgui_dir[PATH_MAX_LENGTH];
+            settings_t *settings     = config_get_ptr();
+            const char *dir_assets   = settings->paths.directory_assets;
+
+            rgui_dir[0] = '\0';
+
+            fill_pathname_join(rgui_dir, dir_assets, "rgui",
+                  sizeof(rgui_dir));
+            fill_pathname_join(s,
+                  rgui_dir, "font", len);
          }
 #endif
          break;

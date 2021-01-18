@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <compat/strl.h>
+#include <compat/strcasestr.h>
 #include <retro_math.h>
 #include <retro_timers.h>
 #include <streams/file_stream.h>

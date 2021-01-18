@@ -155,14 +155,22 @@ int handle_xkb(int code, int value);
 static unsigned input_unify_ev_key_code(unsigned code)
 {
    /* input_keymaps_translate_keysym_to_rk does not support the case
-      where multiple keysyms translate to the same RETROK_* code,
-      so unify remote control keysyms to keyboard keysyms here.  */
+    * where multiple keysyms translate to the same RETROK_* code,
+    * so unify remote control keysyms to keyboard keysyms here.
+    *
+    * Addendum: The rarch_keysym_lut lookup table also becomes
+    * unusable if more than one keysym translates to the same
+    * RETROK_* code, so certain keys must be left unmapped in
+    * rarch_key_map_linux and instead be handled here */
    switch (code)
    {
       case KEY_OK:
+      case KEY_SELECT:
          return KEY_ENTER;
       case KEY_BACK:
          return KEY_BACKSPACE;
+      case KEY_EXIT:
+         return KEY_CLEAR;
       default:
          break;
    }
@@ -797,6 +805,7 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
 static int16_t udev_lightgun_aiming_state(
       udev_input_t *udev, unsigned port, unsigned id )
 {
+
    const int edge_detect       = 32700;
    bool inside                 = false;
    int16_t res_x               = 0;
@@ -811,7 +820,6 @@ static int16_t udev_lightgun_aiming_state(
 
    res_x = udev_mouse_get_pointer_x(mouse, false);
    res_y = udev_mouse_get_pointer_y(mouse, false);
-
 
    inside =    (res_x >= -edge_detect) 
             && (res_y >= -edge_detect)

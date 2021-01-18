@@ -1144,6 +1144,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    "Pridá do obrázka mierne rozostrenie, aby sa odstránila hrana z okrajov pevných pixelov. Táto možnosť má veľmi malý vplyv na výkon."
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "Auto-Shader Oneskorenie"
@@ -1235,6 +1237,8 @@ MSG_HASH(
 
 /* Settings > Video > Scaling */
 
+#if defined(DINGUX)
+#endif
 
 /* Settings > Video > Synchronization */
 
@@ -1314,6 +1318,8 @@ MSG_HASH(
 
 /* Settings > Input */
 
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
    "Turbo mód"
@@ -1321,6 +1327,8 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -1439,6 +1447,9 @@ MSG_HASH(
 
 
 /* Settings > User > Accounts > Twitch */
+
+
+/* Settings > User > Accounts > Facebook Gaming */
 
 
 /* Settings > Directory */
@@ -1598,6 +1609,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 
 /* Quick Menu > Shaders > Remove */
 
@@ -1610,6 +1623,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
 
 /* Quick Menu > Information */
 
@@ -2057,14 +2074,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
    "GPU pretaktovanie"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "Pretaktovanie alebo podtaktovanie GPU Switcha"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "Jas obrazovky"
    )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

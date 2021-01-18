@@ -42,6 +42,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
+#include "../../paths.h"
 
 #include "../../uwp/uwp_func.h"
 
@@ -241,7 +242,7 @@ enum frontend_powerstate frontend_uwp_get_powerstate(
    return ret;
 }
 
-enum frontend_architecture frontend_uwp_get_architecture(void)
+enum frontend_architecture frontend_uwp_get_arch(void)
 {
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Windows 2000 and later */
@@ -323,7 +324,7 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-static void frontend_uwp_environment_get(int *argc, char *argv[],
+static void frontend_uwp_env_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    /* On UWP, we have to use the writable directory
@@ -388,13 +389,20 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    if (string_is_equal(uwp_device_family, "Windows.Mobile"))
       strcpy_literal(g_defaults.settings_menu, "glui");
-   else
-      strcpy_literal(g_defaults.settings_menu, "xmb");
 #endif
+#endif
+
+#ifndef IS_SALAMANDER
+   {
+      char custom_ini_path[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(custom_ini_path,
+            "~\\custom.ini", sizeof(custom_ini_path));
+      dir_check_defaults(custom_ini_path);
+   }
 #endif
 }
 
-static uint64_t frontend_uwp_get_mem_total(void)
+static uint64_t frontend_uwp_get_total_mem(void)
 {
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
@@ -411,7 +419,7 @@ static uint64_t frontend_uwp_get_mem_total(void)
 #endif
 }
 
-static uint64_t frontend_uwp_get_mem_used(void)
+static uint64_t frontend_uwp_get_free_mem(void)
 {
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
@@ -419,12 +427,12 @@ static uint64_t frontend_uwp_get_mem_used(void)
    MEMORYSTATUSEX mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUSEX);
    GlobalMemoryStatusEx(&mem_info);
-   return ((frontend_uwp_get_mem_total() - mem_info.ullAvailPhys));
+   return ((frontend_uwp_get_total_mem() - mem_info.ullAvailPhys));
 #else
    MEMORYSTATUS mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUS);
    GlobalMemoryStatus(&mem_info);
-   return ((frontend_uwp_get_mem_total() - mem_info.dwAvailPhys));
+   return ((frontend_uwp_get_total_mem() - mem_info.dwAvailPhys));
 #endif
 }
 
@@ -439,8 +447,8 @@ static const char* frontend_uwp_get_cpu_model_name(void)
 }
 
 frontend_ctx_driver_t frontend_ctx_uwp = {
-   frontend_uwp_environment_get,
-   frontend_uwp_init,
+   frontend_uwp_env_get,           /* env_get */
+   frontend_uwp_init,              /* init    */
    NULL,                           /* deinit */
    NULL,                           /* exitspawn */
    NULL,                           /* process_args */
@@ -449,25 +457,28 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                           /* shutdown */
    NULL,                           /* get_name */
    frontend_uwp_get_os,
-   NULL,                           /* get_rating */
-   NULL,                           /* load_content */
-   frontend_uwp_get_architecture,
+   NULL,                            /* get_rating */
+   NULL,                            /* content_loaded */
+   frontend_uwp_get_arch,           /* get_architecture       */
    frontend_uwp_get_powerstate,
    frontend_uwp_parse_drive_list,
-   frontend_uwp_get_mem_total,
-   frontend_uwp_get_mem_used,
+   frontend_uwp_get_total_mem,      /* get_total_mem          */
+   frontend_uwp_get_free_mem,       /* get_free_mem           */
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */
    NULL,                            /* destroy_sighandler_state */
    NULL,                            /* attach_console */
    NULL,                            /* detach_console */
+   NULL,                            /* get_lakka_version */
+   NULL,                            /* set_screen_brightness */
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
-   frontend_uwp_get_cpu_model_name,
-   frontend_uwp_get_user_language,
+   frontend_uwp_get_cpu_model_name, /* get_cpu_model_name  */
+   frontend_uwp_get_user_language,  /* get_user_language   */
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
-   "uwp"
+   "uwp",                           /* ident               */
+   NULL                             /* get_video_driver    */
 };

@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #include "../font_driver.h"
 #include "../../verbosity.h"
@@ -108,7 +109,7 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
       g->height            = c->y1 - c->y0;
 
       /* Make sure important characters fit */
-      if (isalnum(i) && (!g->width || !g->height))
+      if (ISALNUM(i) && (!g->width || !g->height))
       {
          int new_width  = width  * 1.2;
          int new_height = height * 1.2;

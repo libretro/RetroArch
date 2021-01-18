@@ -442,6 +442,12 @@ void fill_pathname_expand_special(char *out_path,
 void fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size);
 
+void fill_pathname_abbreviated_or_relative(char *out_path, const char *in_refpath, const char *in_path, size_t size);
+
+void pathname_conform_slashes_to_os(char *path);
+
+void pathname_make_slashes_portable(char *path);
+
 /**
  * path_basedir:
  * @path               : path

@@ -1208,21 +1208,18 @@ static int pcm_mmap_begin(struct pcm *pcm, void **areas, unsigned int *offset,
 
 static int pcm_mmap_commit(struct pcm *pcm, unsigned int offset, unsigned int frames)
 {
-    int ret;
+   int ret;
 
-    /* not used */
-    (void) offset;
+   /* not used */
+   (void) offset;
 
-    /* update the application pointer in userspace and kernel */
-    pcm_mmap_appl_forward(pcm, frames);
-    ret = pcm_sync_ptr(pcm, 0);
-    if (ret != 0)
-    {
-        printf("%d\n", ret);
-        return ret;
-    }
+   /* update the application pointer in userspace and kernel */
+   pcm_mmap_appl_forward(pcm, frames);
+   ret = pcm_sync_ptr(pcm, 0);
+   if (ret != 0)
+      return ret;
 
-    return frames;
+   return frames;
 }
 
 static void pcm_mmap_appl_forward(struct pcm *pcm, int frames)

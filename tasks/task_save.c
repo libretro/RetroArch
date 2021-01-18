@@ -55,7 +55,7 @@
 #include "../verbosity.h"
 #include "tasks_internal.h"
 #ifdef HAVE_CHEATS
-#include "../managers/cheat_manager.h"
+#include "../cheat_manager.h"
 #endif
 
 #if defined(HAVE_LIBNX) || defined(_3DS)
@@ -413,13 +413,11 @@ bool content_undo_load_state(void)
    settings_t *settings      = config_get_ptr();
    bool block_sram_overwrite = settings->bools.block_sram_overwrite;
 
-   RARCH_LOG("%s: \"%s\".\n",
+   RARCH_LOG("%s: \"%s\", %s: %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
-         undo_load_buf.path);
-
-   RARCH_LOG("%s: %u %s.\n",
+         undo_load_buf.path,
          msg_hash_to_str(MSG_STATE_SIZE),
-         (unsigned int)undo_load_buf.size,
+         (unsigned)undo_load_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
    /* TODO/FIXME - This checking of SRAM overwrite,
@@ -596,11 +594,6 @@ static void *get_serialized_data(const char *path, size_t serial_size)
 
    if (!data)
       return NULL;
-
-   RARCH_LOG("%s: %d %s.\n",
-         msg_hash_to_str(MSG_STATE_SIZE),
-         (int)serial_size,
-         msg_hash_to_str(MSG_BYTES));
 
    serial_info.data = data;
    serial_info.size = serial_size;
@@ -867,7 +860,7 @@ static void task_load_handler(retro_task_t *task)
    {
       if (state->autoload)
       {
-         char msg[8192];
+         char *msg = (char*)malloc(8192 * sizeof(char));
 
          msg[0] = '\0';
 
@@ -878,6 +871,7 @@ static void task_load_handler(retro_task_t *task)
                state->path,
                msg_hash_to_str(MSG_FAILED));
          task_set_error(task, strdup(msg));
+         free(msg);
       }
       else
          task_set_error(task, strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE)));
@@ -949,17 +943,15 @@ static void content_load_state_cb(retro_task_t *task,
    settings_t *settings        = config_get_ptr();
    bool block_sram_overwrite   = settings->bools.block_sram_overwrite;
 
-   RARCH_LOG("%s: \"%s\".\n",
+   RARCH_LOG("%s: \"%s\", %s: %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
-         load_data->path);
-
-   if (size < 0 || !buf)
-      goto error;
-
-   RARCH_LOG("%s: %u %s.\n",
+         load_data->path,
          msg_hash_to_str(MSG_STATE_SIZE),
          (unsigned)size,
          msg_hash_to_str(MSG_BYTES));
+
+   if (size < 0 || !buf)
+      goto error;
 
    /* This means we're backing up the file in memory, 
     * so content_undo_save_state()
@@ -1284,10 +1276,6 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 
    if (!save_state_in_background)
    {
-      RARCH_LOG("%s: \"%s\".\n",
-            msg_hash_to_str(MSG_SAVING_STATE),
-            path);
-
       data = get_serialized_data(path, info.size);
 
       if (!data)
@@ -1298,9 +1286,11 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
          return false;
       }
 
-      RARCH_LOG("%s: %d %s.\n",
+      RARCH_LOG("%s: \"%s\", %s: %u %s.\n",
+            msg_hash_to_str(MSG_SAVING_STATE),
+            path,
             msg_hash_to_str(MSG_STATE_SIZE),
-            (int)info.size,
+            (unsigned)info.size,
             msg_hash_to_str(MSG_BYTES));
    }
 

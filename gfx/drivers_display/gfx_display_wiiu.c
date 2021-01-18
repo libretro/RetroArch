@@ -28,13 +28,6 @@
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
 
-static const float *gfx_display_wiiu_get_default_vertices(void) { return NULL; }
-static const float *gfx_display_wiiu_get_default_tex_coords(void) { return NULL; }
-static void *gfx_display_wiiu_get_default_mvp(void *data) { return NULL; }
-static void gfx_display_wiiu_blend_begin(void *data) { }
-static void gfx_display_wiiu_blend_end(void *data) { }
-static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
-
 static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
@@ -49,43 +42,43 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 
       switch(draw->pipeline_id)
       {
-      case VIDEO_SHADER_MENU:
-         GX2SetShader(&ribbon_shader);
-         break;
-      case VIDEO_SHADER_MENU_2:
-         GX2SetShader(&ribbon_simple_shader);
-         break;
-      case VIDEO_SHADER_MENU_3:
-         GX2SetShader(&snow_simple_shader);
-         break;
-      case VIDEO_SHADER_MENU_4:
-         GX2SetShader(&snow_shader);
-         break;
-      case VIDEO_SHADER_MENU_5:
-         GX2SetShader(&bokeh_shader);
-         break;
-      case VIDEO_SHADER_MENU_6:
-         GX2SetShader(&snowflake_shader);
-         break;
-      default:
-         break;
+         case VIDEO_SHADER_MENU:
+            GX2SetShader(&ribbon_shader);
+            break;
+         case VIDEO_SHADER_MENU_2:
+            GX2SetShader(&ribbon_simple_shader);
+            break;
+         case VIDEO_SHADER_MENU_3:
+            GX2SetShader(&snow_simple_shader);
+            break;
+         case VIDEO_SHADER_MENU_4:
+            GX2SetShader(&snow_shader);
+            break;
+         case VIDEO_SHADER_MENU_5:
+            GX2SetShader(&bokeh_shader);
+            break;
+         case VIDEO_SHADER_MENU_6:
+            GX2SetShader(&snowflake_shader);
+            break;
+         default:
+            break;
       }
 
       switch(draw->pipeline_id)
       {
-      case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_2:
-         GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, draw->coords->vertices, 0, 1);
-         GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
-                            GX2_BLEND_COMBINE_MODE_ADD,
-                            GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
-                            GX2_BLEND_COMBINE_MODE_ADD);
-      case VIDEO_SHADER_MENU_3:
-      case VIDEO_SHADER_MENU_4:
-      case VIDEO_SHADER_MENU_5:
-      case VIDEO_SHADER_MENU_6:
-         GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
-         break;
+         case VIDEO_SHADER_MENU:
+         case VIDEO_SHADER_MENU_2:
+            GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, draw->coords->vertices, 0, 1);
+            GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
+                  GX2_BLEND_COMBINE_MODE_ADD,
+                  GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
+                  GX2_BLEND_COMBINE_MODE_ADD);
+         case VIDEO_SHADER_MENU_3:
+         case VIDEO_SHADER_MENU_4:
+         case VIDEO_SHADER_MENU_5:
+         case VIDEO_SHADER_MENU_6:
+            GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
+            break;
       }
 
    }
@@ -101,10 +94,10 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
       GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
       GX2SetShader(&tex_shader);
       GX2SetVertexUniformBlock(tex_shader.vs.uniformBlocks[0].offset,
-                               tex_shader.vs.uniformBlocks[0].size,
-                               wiiu->ubo_mvp);
+            tex_shader.vs.uniformBlocks[0].size,
+            wiiu->ubo_mvp);
       GX2SetAttribBuffer(0, wiiu->vertex_cache_tex.size * sizeof(*wiiu->vertex_cache_tex.v),
-                         sizeof(*wiiu->vertex_cache_tex.v), wiiu->vertex_cache_tex.v);
+            sizeof(*wiiu->vertex_cache_tex.v), wiiu->vertex_cache_tex.v);
 
       if (!draw->coords->vertex)
       {
@@ -188,7 +181,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
       v->coord.height = 1.0f;
 
       v->color = COLOR_RGBA(0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
-                          0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
+            0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
 
       if (draw->texture)
          GX2SetPixelTexture((GX2Texture*)draw->texture, sprite_shader.ps.samplerVars[0].location);
@@ -200,22 +193,25 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 
    GX2SetShaderMode(GX2_SHADER_MODE_GEOMETRY_SHADER);
    GX2SetShader(&sprite_shader);
-//      GX2SetGeometryShaderInputRingBuffer(wiiu->input_ring_buffer, wiiu->input_ring_buffer_size);
-//      GX2SetGeometryShaderOutputRingBuffer(wiiu->output_ring_buffer, wiiu->output_ring_buffer_size);
+#if 0
+   GX2SetGeometryShaderInputRingBuffer(wiiu->input_ring_buffer, wiiu->input_ring_buffer_size);
+   GX2SetGeometryShaderOutputRingBuffer(wiiu->output_ring_buffer, wiiu->output_ring_buffer_size);
+#endif
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[0].offset,
-                            sprite_shader.vs.uniformBlocks[0].size,
-                            wiiu->ubo_vp);
+         sprite_shader.vs.uniformBlocks[0].size,
+         wiiu->ubo_vp);
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
-                            sprite_shader.vs.uniformBlocks[1].size,
-                            wiiu->ubo_tex);
+         sprite_shader.vs.uniformBlocks[1].size,
+         wiiu->ubo_tex);
    GX2SetAttribBuffer(0, wiiu->vertex_cache.size * sizeof(*wiiu->vertex_cache.v),
-                      sizeof(*wiiu->vertex_cache.v), wiiu->vertex_cache.v);
+         sizeof(*wiiu->vertex_cache.v), wiiu->vertex_cache.v);
 }
 
 static void gfx_display_wiiu_draw_pipeline(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
    video_coord_array_t *ca        = NULL;
+   gfx_display_t *p_disp          = disp_get_ptr();
    wiiu_video_t             *wiiu = (wiiu_video_t*)data;
 
    if (!wiiu || !draw)
@@ -225,7 +221,7 @@ static void gfx_display_wiiu_draw_pipeline(gfx_display_ctx_draw_t *draw,
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = gfx_display_get_coords_array();
+         ca = &p_disp->dispca;
          if (!wiiu->menu_shader_vbo)
          {
             wiiu->menu_shader_vbo = MEM2_alloc(ca->coords.vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -272,7 +268,7 @@ static bool gfx_display_wiiu_font_init_first(
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
+   *handle              = font_driver_init_first(video_data,
          font_path, font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_WIIU);
@@ -301,12 +297,11 @@ static void gfx_display_wiiu_scissor_end(
 gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    gfx_display_wiiu_draw,
    gfx_display_wiiu_draw_pipeline,
-   gfx_display_wiiu_viewport,
-   gfx_display_wiiu_blend_begin,
-   gfx_display_wiiu_blend_end,
-   gfx_display_wiiu_get_default_mvp,
-   gfx_display_wiiu_get_default_vertices,
-   gfx_display_wiiu_get_default_tex_coords,
+   NULL,                                     /* blend_begin            */
+   NULL,                                     /* blend_end              */
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
    gfx_display_wiiu_font_init_first,
    GFX_VIDEO_DRIVER_WIIU,
    "gx2",

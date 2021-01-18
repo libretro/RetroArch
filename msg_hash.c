@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <rhash.h>
+#include <lrc_hash.h>
 #include <string/stdstring.h>
 #include <libretro.h>
 
@@ -100,6 +100,8 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_ASTURIAN:
          ret = msg_hash_get_help_ast_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_FINNISH:
+         ret = msg_hash_get_help_fi_enum(msg, s, len);
       default:
          break;
    }
@@ -113,84 +115,60 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 
 const char *get_user_language_iso639_1(bool limit)
 {
-   const char *voice;
-   voice = "en";
    switch (uint_user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
-         voice = "fr";
-         break;
+         return "fr";
       case RETRO_LANGUAGE_GERMAN:
-         voice = "de";
-         break;
+         return "de";
       case RETRO_LANGUAGE_SPANISH:
-         voice = "es";
-         break;
+         return "es";
       case RETRO_LANGUAGE_ITALIAN:
-         voice = "it";
-         break;
+         return "it";
       case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
          if (limit)
-            voice = "pt";
-         else
-            voice = "pt_br";
-         break;
+            return "pt";
+         return "pt_br";
       case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
          if (limit)
-            voice = "pt";
-         else
-            voice = "pt_pt";
-         break;
+            return "pt";
+         return "pt_pt";
       case RETRO_LANGUAGE_DUTCH:
-         voice = "nl";
-         break;
+         return "nl";
       case RETRO_LANGUAGE_ESPERANTO:
-         voice = "eo";
-         break;
+         return "eo";
       case RETRO_LANGUAGE_POLISH:
-         voice = "pl";
-         break;
+         return "pl";
       case RETRO_LANGUAGE_JAPANESE:
-         voice = "ja";
-         break;
+         return "ja";
       case RETRO_LANGUAGE_KOREAN:
-         voice = "ko";
-         break;
+         return "ko";
       case RETRO_LANGUAGE_VIETNAMESE:
-         voice = "vi";
-         break;
+         return "vi";
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-         voice = "zh";
-         break;
+         return "zh";
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         voice = "zh";
-         break;
+         return "zh";
       case RETRO_LANGUAGE_ARABIC:
-         voice = "ar";
-         break;
+         return "ar";
       case RETRO_LANGUAGE_GREEK:
-         voice = "el";
-         break;
+         return "el";
       case RETRO_LANGUAGE_TURKISH:
-         voice = "tr";
-         break;
+         return "tr";
       case RETRO_LANGUAGE_SLOVAK:
-         voice = "sk";
-         break;
+         return "sk";
       case RETRO_LANGUAGE_RUSSIAN:
-         voice = "ru";
-         break;
+         return "ru";
       case RETRO_LANGUAGE_PERSIAN:
-         voice = "fa";
-         break;
+         return "fa";
       case RETRO_LANGUAGE_HEBREW:
-         voice = "he";
-         break;
+         return "he";
       case RETRO_LANGUAGE_ASTURIAN:
-         voice = "ast";
-         break;
+         return "ast";
+      case RETRO_LANGUAGE_FINNISH:
+         return "fi";
    }
-   return voice;
+   return "en";
 }
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
@@ -265,6 +243,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_ASTURIAN:
          ret = msg_hash_to_str_ast(msg);
+         break;
+      case RETRO_LANGUAGE_FINNISH:
+         ret = msg_hash_to_str_fi(msg);
          break;
       default:
          break;

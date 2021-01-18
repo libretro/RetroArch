@@ -102,6 +102,17 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 2                  RT_MANIFEST    "rarch.manifest"
 
+
+//
+// Accelerator
+//
+
+IDR_ACCELERATOR1 ACCELERATORS
+BEGIN
+"O", ID_M_LOAD_CONTENT, VIRTKEY, CONTROL, NOINVERT
+VK_RETURN, ID_M_FULL_SCREEN, VIRTKEY, ALT, NOINVERT
+END
+
 // Per the documentation, this should be used before including resource files.
 // https://docs.microsoft.com/en-us/windows/desktop/menurc/pragma-directives
 #pragma code_page(932)

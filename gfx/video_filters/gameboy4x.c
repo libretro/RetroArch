@@ -38,9 +38,20 @@
 
 typedef struct
 {
-   uint16_t pixel_lut[4];
-   uint16_t shadow_lut[4];
-   uint16_t grid_lut[4];
+   struct
+   {
+      uint32_t pixel_lut[4];
+      uint32_t shadow_lut[4];
+      uint32_t grid_lut[4];
+   } xrgb8888;
+
+   struct
+   {
+      uint16_t pixel_lut[4];
+      uint16_t shadow_lut[4];
+      uint16_t grid_lut[4];
+   } rgb565;
+
 } gameboy4x_colors_t;
 
 struct softfilter_thread_data
@@ -66,7 +77,7 @@ struct filter_data
 
 static unsigned gameboy4x_generic_input_fmts(void)
 {
-   return SOFTFILTER_FMT_RGB565;
+   return SOFTFILTER_FMT_RGB565 | SOFTFILTER_FMT_XRGB8888;
 }
 
 static unsigned gameboy4x_generic_output_fmts(unsigned input_fmts)
@@ -128,15 +139,18 @@ static void gameboy4x_initialize(struct filter_data *filt,
       uint32_t shadow_color;
       uint32_t grid_color;
 
-      /* Populate pixel lookup table */
-      filt->colors.pixel_lut[i] = GAMEBOY_4X_RGB24_TO_RGB565(palette[i]);
+      /* Populate pixel lookup tables */
+      filt->colors.rgb565.pixel_lut[i]   = GAMEBOY_4X_RGB24_TO_RGB565(palette[i]);
+      filt->colors.xrgb8888.pixel_lut[i] = palette[i];
 
-      /* Populate pixel shadow lookup table
+      /* Populate pixel shadow lookup tables
        * > 4:3 mix of palette:grid */
       shadow_color = gameboy4x_get_weighted_colour(palette[i], palette_grid, 4, 3);
-      filt->colors.shadow_lut[i] = GAMEBOY_4X_RGB24_TO_RGB565(shadow_color);
 
-      /* Populate grid lookup table
+      filt->colors.rgb565.shadow_lut[i]   = GAMEBOY_4X_RGB24_TO_RGB565(shadow_color);
+      filt->colors.xrgb8888.shadow_lut[i] = shadow_color;
+
+      /* Populate grid lookup tables
        * > 2:3 mix of palette:grid
        * > Would like to set this to the pure grid
        *   colour (to highlight the pixel shadow
@@ -144,7 +158,9 @@ static void gameboy4x_initialize(struct filter_data *filt,
        *   2:3 is about as light as we can make this
        *   without producing ugly optical illusions */
       grid_color = gameboy4x_get_weighted_colour(palette[i], palette_grid, 2, 3);
-      filt->colors.grid_lut[i] = GAMEBOY_4X_RGB24_TO_RGB565(grid_color);
+
+      filt->colors.rgb565.grid_lut[i]   = GAMEBOY_4X_RGB24_TO_RGB565(grid_color);
+      filt->colors.xrgb8888.grid_lut[i] = grid_color;
    }
 }
 
@@ -200,12 +216,12 @@ static void gameboy4x_work_cb_rgb565(void *data, void *thread_data)
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
    const uint16_t *input              = (const uint16_t*)thr->in_data;
    uint16_t *output                   = (uint16_t*)thr->out_data;
-   unsigned in_stride                 = (unsigned)(thr->in_pitch >> 1);
-   unsigned out_stride                = (unsigned)(thr->out_pitch >> 1);
-   uint16_t *pixel_lut                = filt->colors.pixel_lut;
-   uint16_t *shadow_lut               = filt->colors.shadow_lut;
-   uint16_t *grid_lut                 = filt->colors.grid_lut;
-   unsigned x, y;
+   uint16_t in_stride                 = (uint16_t)(thr->in_pitch >> 1);
+   uint16_t out_stride                = (uint16_t)(thr->out_pitch >> 1);
+   uint16_t *pixel_lut                = filt->colors.rgb565.pixel_lut;
+   uint16_t *shadow_lut               = filt->colors.rgb565.shadow_lut;
+   uint16_t *grid_lut                 = filt->colors.rgb565.grid_lut;
+   uint16_t x, y;
 
    for (y = 0; y < thr->height; ++y)
    {
@@ -222,7 +238,10 @@ static void gameboy4x_work_cb_rgb565(void *data, void *thread_data)
          uint16_t out_pixel_color;
          uint16_t out_shadow_color;
          uint16_t out_grid_color;
-         uint8_t  lut_index;
+         uint16_t lut_index;
+         uint16_t row_a_color[4];
+         uint16_t row_b_color[4];
+         uint16_t row_c_color[4];
 
          /* Calculate mean value of the 3 RGB
           * colour components */
@@ -250,32 +269,132 @@ static void gameboy4x_work_cb_rgb565(void *data, void *thread_data)
           *          (s)(s)(s)(g)
           */
 
+         row_a_color[0] = out_grid_color;
+         row_a_color[1] = out_pixel_color;
+         row_a_color[2] = out_pixel_color;
+         row_a_color[3] = out_pixel_color;
+
+         row_b_color[0] = out_shadow_color;
+         row_b_color[1] = out_pixel_color;
+         row_b_color[2] = out_pixel_color;
+         row_b_color[3] = out_pixel_color;
+
+         row_c_color[0] = out_shadow_color;
+         row_c_color[1] = out_shadow_color;
+         row_c_color[2] = out_shadow_color;
+         row_c_color[3] = out_grid_color;
+
          /* Row 1: (g)(p)(p)(p) */
-         *out_line_ptr       = out_grid_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_a_color, sizeof(row_a_color));
          out_line_ptr       += out_stride;
 
          /* Row 2: (s)(p)(p)(p) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_b_color, sizeof(row_b_color));
          out_line_ptr       += out_stride;
 
          /* Row 3: (s)(p)(p)(p) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_pixel_color;
-         *(out_line_ptr + 2) = out_pixel_color;
-         *(out_line_ptr + 3) = out_pixel_color;
+         memcpy(out_line_ptr, row_b_color, sizeof(row_b_color));
          out_line_ptr       += out_stride;
 
          /* Row 4: (s)(s)(s)(g) */
-         *out_line_ptr       = out_shadow_color;
-         *(out_line_ptr + 1) = out_shadow_color;
-         *(out_line_ptr + 2) = out_shadow_color;
-         *(out_line_ptr + 3) = out_grid_color;
+         memcpy(out_line_ptr, row_c_color, sizeof(row_c_color));
+
+         out_ptr += 4;
+      }
+
+      input  += in_stride;
+      output += out_stride << 2;
+   }
+}
+
+static void gameboy4x_work_cb_xrgb8888(void *data, void *thread_data)
+{
+   struct filter_data *filt           = (struct filter_data*)data;
+   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   const uint32_t *input              = (const uint32_t*)thr->in_data;
+   uint32_t *output                   = (uint32_t*)thr->out_data;
+   uint32_t in_stride                 = (uint32_t)(thr->in_pitch >> 2);
+   uint32_t out_stride                = (uint32_t)(thr->out_pitch >> 2);
+   uint32_t *pixel_lut                = filt->colors.xrgb8888.pixel_lut;
+   uint32_t *shadow_lut               = filt->colors.xrgb8888.shadow_lut;
+   uint32_t *grid_lut                 = filt->colors.xrgb8888.grid_lut;
+   uint32_t x, y;
+
+   for (y = 0; y < thr->height; ++y)
+   {
+      uint32_t *out_ptr = output;
+
+      for (x = 0; x < thr->width; ++x)
+      {
+         uint32_t *out_line_ptr = out_ptr;
+         uint32_t in_color      = *(input + x);
+         uint32_t in_rgb_mean   =
+               (in_color >> 16 & 0xFF) +
+               (in_color >>  8 & 0xFF) +
+               (in_color       & 0xFF);
+         uint32_t out_pixel_color;
+         uint32_t out_shadow_color;
+         uint32_t out_grid_color;
+         uint32_t lut_index;
+         uint32_t row_a_color[4];
+         uint32_t row_b_color[4];
+         uint32_t row_c_color[4];
+
+         /* Calculate mean value of the 3 RGB
+          * colour components */
+         in_rgb_mean += (in_rgb_mean +   2) >> 2;
+         in_rgb_mean += (in_rgb_mean +   8) >> 4;
+         in_rgb_mean += (in_rgb_mean + 128) >> 8;
+         in_rgb_mean >>= 2;
+
+         /* Convert to lookup table index
+          * > This can never be greater than 3,
+          *   but check anyway... */
+         lut_index = in_rgb_mean >> 6;
+         lut_index = (lut_index > 3) ? 3 : lut_index;
+
+         /* Get output pixel, pixel shadow and grid colours */
+         out_pixel_color  = *(pixel_lut + lut_index);
+         out_shadow_color = *(shadow_lut + lut_index);
+         out_grid_color   = *(grid_lut + lut_index);
+
+         /* - Pixel layout (p = pixel, s = shadow, g = grid) -
+          * Before:  After:
+          * (p)      (g)(p)(p)(p)
+          *          (s)(p)(p)(p)
+          *          (s)(p)(p)(p)
+          *          (s)(s)(s)(g)
+          */
+
+         row_a_color[0] = out_grid_color;
+         row_a_color[1] = out_pixel_color;
+         row_a_color[2] = out_pixel_color;
+         row_a_color[3] = out_pixel_color;
+
+         row_b_color[0] = out_shadow_color;
+         row_b_color[1] = out_pixel_color;
+         row_b_color[2] = out_pixel_color;
+         row_b_color[3] = out_pixel_color;
+
+         row_c_color[0] = out_shadow_color;
+         row_c_color[1] = out_shadow_color;
+         row_c_color[2] = out_shadow_color;
+         row_c_color[3] = out_grid_color;
+
+         /* Row 1: (g)(p)(p)(p) */
+         memcpy(out_line_ptr, row_a_color, sizeof(row_a_color));
+         out_line_ptr       += out_stride;
+
+         /* Row 2: (s)(p)(p)(p) */
+         memcpy(out_line_ptr, row_b_color, sizeof(row_b_color));
+         out_line_ptr       += out_stride;
+
+         /* Row 3: (s)(p)(p)(p) */
+         memcpy(out_line_ptr, row_b_color, sizeof(row_b_color));
+         out_line_ptr       += out_stride;
+
+         /* Row 4: (s)(s)(s)(g) */
+         memcpy(out_line_ptr, row_c_color, sizeof(row_c_color));
 
          out_ptr += 4;
       }
@@ -305,6 +424,8 @@ static void gameboy4x_generic_packets(void *data,
 
    if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
       packets[0].work = gameboy4x_work_cb_rgb565;
+   else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+      packets[0].work = gameboy4x_work_cb_xrgb8888;
 
    packets[0].thread_data = thr;
 }

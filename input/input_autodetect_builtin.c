@@ -66,6 +66,34 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+#define DINGUX_SDL_DEFAULT_BINDS \
+DECL_BTN_EX(a,           8, "A") \
+DECL_BTN_EX(b,           0, "B") \
+DECL_BTN_EX(x,           9, "X") \
+DECL_BTN_EX(y,           1, "Y") \
+DECL_BTN_EX(start,       3, "Start") \
+DECL_BTN_EX(select,      2, "Select") \
+DECL_BTN_EX(up,          4, "D-Pad Up") \
+DECL_BTN_EX(down,        5, "D-Pad Down") \
+DECL_BTN_EX(left,        6, "D-Pad Left") \
+DECL_BTN_EX(right,       7, "D-Pad Right") \
+DECL_BTN_EX(l,          10, "L") \
+DECL_BTN_EX(r,          11, "R") \
+DECL_BTN_EX(l2,         12, "L2") \
+DECL_BTN_EX(r2,         13, "R2") \
+DECL_BTN_EX(l3,         14, "L3") \
+DECL_BTN_EX(r3,         15, "R3") \
+DECL_AXIS_EX(l_x_plus,  +0, "L-Stick right") \
+DECL_AXIS_EX(l_x_minus, -0, "L-Stick left") \
+DECL_AXIS_EX(l_y_plus,  +1, "L-Stick down") \
+DECL_AXIS_EX(l_y_minus, -1, "L-Stick up") \
+DECL_AXIS_EX(r_x_plus,  +2, "R-Stick right") \
+DECL_AXIS_EX(r_x_minus, -2, "R-Stick left") \
+DECL_AXIS_EX(r_y_plus,  +3, "R-Stick down") \
+DECL_AXIS_EX(r_y_minus, -3, "R-Stick up")
+#endif
+
 #if defined(ANDROID)
 #define ANDROID_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
@@ -671,6 +699,9 @@ const char* const input_builtin_autoconfs[] =
 #ifdef HAVE_SDL2
    DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl2", SDL2_DEFAULT_BINDS),
 #endif
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+   DECL_AUTOCONF_DEVICE("Dingux Gamepad", "sdl_dingux", DINGUX_SDL_DEFAULT_BINDS),
+#endif
 #if defined(ANDROID)
    DECL_AUTOCONF_DEVICE("Android Gamepad", "android", ANDROID_DEFAULT_BINDS),
 #endif
@@ -715,7 +746,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("GameCube Controller", "wiiu", WIIUINPUT_GAMECUBE_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Sony DualShock 3", "wiiu", WIIUINPUT_DS3_DEFAULT_BINDS),
 #endif
-#ifdef __CELLOS_LV2__
+#ifdef __PS3__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),
 #endif
 #if defined(__SWITCH__) || defined(SWITCH)

@@ -30,7 +30,6 @@
 #include <psp2/apputil.h>
 
 #include "../../bootstrap/vita/sbrk.c"
-#include "../../bootstrap/vita/threading.c"
 
 #else
 #include <pspkernel.h>
@@ -67,6 +66,10 @@
 #endif
 #endif
 
+#if defined(HAVE_VITAGLES)
+#include "../../deps/Pigs-In-A-Blanket/include/pib.h"
+#endif
+
 #ifndef VITA
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
@@ -76,12 +79,16 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(4*1024);
 PSP_HEAP_SIZE_MAX();
 #endif
 
+#ifdef SCE_LIBC_SIZE
+unsigned int sceLibcHeapSize = SCE_LIBC_SIZE;
+#endif
+
 char eboot_path[512];
 char user_path[512];
 
 static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 
-static void frontend_psp_get_environment_settings(int *argc, char *argv[],
+static void frontend_psp_get_env_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    unsigned i;
@@ -218,14 +225,9 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG("Auto-start game %s.\n", argv[1]);
       }
    }
-#endif
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_psp_deinit(void *data)
@@ -293,6 +295,10 @@ static void frontend_psp_init(void *data)
    memset(&appUtilParam, 0, sizeof(SceAppUtilInitParam));
    memset(&appUtilBootParam, 0, sizeof(SceAppUtilBootParam));
    sceAppUtilInit(&appUtilParam, &appUtilBootParam);
+#if defined(HAVE_VITAGLES)
+   if(pibInit(PIB_SHACCCG|PIB_ENABLE_MSAA|PIB_GET_PROC_ADDR_CORE))
+      return;
+#endif
 #else
    (void)data;
    /* initialize debug screen */
@@ -346,13 +352,43 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    sceAppMgrGetAppParam(boot_params);
    if (strstr(boot_params,"psgm:play"))
    {
-      int ret;
-      char *param1 = strstr(boot_params, "&param=")+7;
+      char *param1 = strstr(boot_params, "&param=");
       char *param2 = strstr(boot_params, "&param2=");
-      memcpy(core_name, param1, param2 - param1);
-      core_name[param2-param1] = 0;
-      sprintf(argp, param2 + 8);
-      ret = sceAppMgrLoadExec(core_name, (char * const*)((const char*[]){argp, 0}), NULL);
+
+      /* copy path to core_name for normal boot */
+      strlcpy(core_name, path, sizeof(core_name));
+
+      if (param1 != NULL && param2 != NULL)
+      {
+         if (param2 > param1 && (param2 - (param1+7) < sizeof(core_name)) && strlen(param2+8) < sizeof(argp))
+         {
+            /* handle case where param2 follows param1 */
+            param1 += 7;
+            memcpy(core_name, param1, param2 - param1);
+            core_name[param2-param1] = 0;
+            sprintf(argp, param2 + 8);
+            args = strlen(argp);
+         }
+         else if (param1 > param2 && (param1 - (param2+8) < sizeof(argp)) && strlen(param1+7) < sizeof(core_name))
+         {
+            /* handle case where param1 follows param2 */
+            param2 += 8;
+            memcpy(argp, param2, param1 - param2);
+            argp[param1-param2] = 0;
+            sprintf(core_name, param1 + 7);
+            args = strlen(argp);
+         }
+         else
+         {
+            RARCH_LOG("Boot params are too long. Continue normal boot.");
+         }
+      }
+      else
+      {
+         RARCH_LOG("Required boot params missing. Continue nornal boot.");
+      }
+      
+      int ret =  sceAppMgrLoadExec(core_name, args == 0 ? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
       RARCH_LOG("Attempt to load executable: [%d].\n", ret);
    }
    else
@@ -455,7 +491,7 @@ static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *p
    return ret;
 }
 
-enum frontend_architecture frontend_psp_get_architecture(void)
+enum frontend_architecture frontend_psp_get_arch(void)
 {
 #ifdef VITA
    return FRONTEND_ARCH_ARMV7;
@@ -572,43 +608,43 @@ enum retro_language frontend_psp_get_user_language(void)
    return psp_get_retro_lang_from_langid(langid);
 }
 
-static uint64_t frontend_psp_get_mem_total(void)
+static uint64_t frontend_psp_get_total_mem(void)
 {
    return _newlib_heap_end - _newlib_heap_base;
 }
 
-static uint64_t frontend_psp_get_mem_free(void)
+static uint64_t frontend_psp_get_free_mem(void)
 {
    return _newlib_heap_end - _newlib_heap_cur;
 }
 #endif
 
 frontend_ctx_driver_t frontend_ctx_psp = {
-   frontend_psp_get_environment_settings,
-   frontend_psp_init,
-   frontend_psp_deinit,
-   frontend_psp_exitspawn,
-   NULL,                         /* process_args */
-   frontend_psp_exec,
+   frontend_psp_get_env_settings,/* get_env_settings */
+   frontend_psp_init,            /* init             */
+   frontend_psp_deinit,          /* deinit           */
+   frontend_psp_exitspawn,       /* exitspawn        */
+   NULL,                         /* process_args     */
+   frontend_psp_exec,            /* exec             */
 #ifdef IS_SALAMANDER
-   NULL,
+   NULL,                         /* set_fork         */
 #else
-   frontend_psp_set_fork,
+   frontend_psp_set_fork,        /* set_fork         */
 #endif
-   frontend_psp_shutdown,
-   NULL,                         /* get_name */
-   NULL,                         /* get_os */
-   frontend_psp_get_rating,
-   NULL,                         /* load_content */
-   frontend_psp_get_architecture,
+   frontend_psp_shutdown,        /* shutdown         */
+   NULL,                         /* get_name         */
+   NULL,                         /* get_os           */
+   frontend_psp_get_rating,      /* get_rating       */
+   NULL,                         /* content_loaded   */
+   frontend_psp_get_arch,        /* get_architecture */
    frontend_psp_get_powerstate,
    frontend_psp_parse_drive_list,
 #ifdef VITA
-   frontend_psp_get_mem_total,
-   frontend_psp_get_mem_free,
+   frontend_psp_get_total_mem,
+   frontend_psp_get_free_mem,
 #else
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
+   NULL,                         /* get_total_mem    */
+   NULL,                         /* get_free_mem     */
 #endif
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
@@ -616,19 +652,22 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* destroy_sighandler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+   NULL,                         /* get_lakka_version */
+   NULL,                         /* set_screen_brightness */
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
 #ifdef VITA
-   frontend_psp_get_user_language,
+   frontend_psp_get_user_language, /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "vita",
+   "vita",                       /* ident */
 #else
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "psp",
+   "psp",                        /* ident */
 #endif
+   NULL                          /* get_video_driver */
 };

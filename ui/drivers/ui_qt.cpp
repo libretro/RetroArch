@@ -656,6 +656,7 @@ static void ui_companion_qt_toggle(void *data, bool force)
    settings_t *settings        = config_get_ptr();
    bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
    bool video_fullscreen       = settings->bools.video_fullscreen;
+   bool mouse_grabbed          = input_mouse_grabbed();
 
    if (ui_companion_toggle || force)
    {
@@ -664,7 +665,11 @@ static void ui_companion_qt_toggle(void *data, bool force)
 
       win_handle->qtWindow->activateWindow();
       win_handle->qtWindow->raise();
+
+      if (mouse_grabbed)
+         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
       video_driver_show_mouse();
+
       win_handle->qtWindow->show();
 
       if (video_driver_started_fullscreen())
@@ -764,3 +769,26 @@ ui_companion_driver_t ui_companion_qt = {
    &ui_application_qt,
    "qt",
 };
+
+QStringList string_split_to_qt(QString str, char delim)
+{
+   int at;
+   QStringList list = QStringList();
+
+   for (at = 0;;)
+   {
+      /* Find next split */
+      int spl = str.indexOf(delim, at);
+
+      /* Store split into list of extensions */
+      list << str.mid(at, (spl < 0 ? -1 : spl - at));
+
+      /* No more splits */
+      if (spl < 0)
+         break;
+
+      at = spl + 1;
+   }
+
+   return list;
+}

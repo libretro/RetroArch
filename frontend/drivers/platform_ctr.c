@@ -91,11 +91,9 @@ static void get_first_valid_core(char* path_return, size_t len)
 }
 #endif
 
-static void frontend_ctr_get_environment_settings(int* argc, char* argv[],
+static void frontend_ctr_get_env(int* argc, char* argv[],
       void* args, void* params_data)
 {
-   (void)args;
-
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
@@ -115,12 +113,16 @@ static void frontend_ctr_get_environment_settings(int* argc, char* argv[],
                       "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], g_defaults.dirs[DEFAULT_DIR_CORE],
                       "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "config/remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "filters", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+                      "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
@@ -129,6 +131,10 @@ static void frontend_ctr_get_environment_settings(int* argc, char* argv[],
                       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
+
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void frontend_ctr_deinit(void* data)
@@ -238,10 +244,7 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
 
          if (core_path[0] == '\0')
          {
-            errorInit(&error_dialog, ERROR_TEXT, CFG_LANGUAGE_EN);
-            errorText(&error_dialog, "There are no cores installed, install a core to continue.");
-            errorDisp(&error_dialog);
-            exit(0);
+            error_and_quit("There are no cores installed, install a core to continue.");
          }
       }
 #endif
@@ -262,13 +265,11 @@ static void frontend_ctr_exec(const char* path, bool should_load_game)
          exec_cia(path, arg_data);
       }
 
-      errorInit(&error_dialog, ERROR_TEXT, CFG_LANGUAGE_EN);
+      /* couldnt launch new core, but context
+      is corrupt so we have to quit */
       snprintf(error_string, sizeof(error_string),
             "Can't launch core:%s", path);
-      errorText(&error_dialog, error_string);
-      errorDisp(&error_dialog);
-      exit(0); /* couldnt launch new core, but context 
-                  is corrupt so we have to quit */
+      error_and_quit(error_string);
    }
 }
 
@@ -485,7 +486,9 @@ static void frontend_ctr_init(void* data)
    ctr_check_dspfirm();
    if (ndspInit() != 0) {
       audio_ctr_dsp = audio_null;
+#ifdef HAVE_THREADS
       audio_ctr_dsp_thread = audio_null;
+#endif
    }
    cfguInit();
    ptmuInit();
@@ -520,7 +523,7 @@ static int frontend_ctr_get_rating(void)
    return -1;
 }
 
-enum frontend_architecture frontend_ctr_get_architecture(void)
+enum frontend_architecture frontend_ctr_get_arch(void)
 {
    return FRONTEND_ARCH_ARM;
 }
@@ -547,12 +550,12 @@ static int frontend_ctr_parse_drive_list(void* data, bool load_content)
    return 0;
 }
 
-static uint64_t frontend_ctr_get_mem_total(void)
+static uint64_t frontend_ctr_get_total_mem(void)
 {
    return osGetMemRegionSize(MEMREGION_ALL);
 }
 
-static uint64_t frontend_ctr_get_mem_free(void)
+static uint64_t frontend_ctr_get_free_mem(void)
 {
    return osGetMemRegionFree(MEMREGION_ALL);
 }
@@ -641,39 +644,42 @@ static void frontend_ctr_get_name(char* s, size_t len)
 
 frontend_ctx_driver_t frontend_ctx_ctr =
 {
-   frontend_ctr_get_environment_settings,
-   frontend_ctr_init,
-   frontend_ctr_deinit,
-   frontend_ctr_exitspawn,
-   NULL,                         /* process_args */
-   frontend_ctr_exec,
+   frontend_ctr_get_env,         /* get_env                        */
+   frontend_ctr_init,            /* init                           */
+   frontend_ctr_deinit,          /* deinit                         */
+   frontend_ctr_exitspawn,       /* exitspawn                      */
+   NULL,                         /* process_args                   */
+   frontend_ctr_exec,            /* exec                           */
 #ifdef IS_SALAMANDER
-   NULL,
+   NULL,                         /* set_fork                       */
 #else
-   frontend_ctr_set_fork,
+   frontend_ctr_set_fork,        /* set_fork                       */
 #endif
-   frontend_ctr_shutdown,
-   frontend_ctr_get_name,
-   frontend_ctr_get_os,
-   frontend_ctr_get_rating,
-   NULL,                         /* load_content */
-   frontend_ctr_get_architecture,
-   frontend_ctr_get_powerstate,
-   frontend_ctr_parse_drive_list,
-   frontend_ctr_get_mem_total,
-   frontend_ctr_get_mem_free,
-   NULL,                         /* install_signal_handler */
-   NULL,                         /* get_signal_handler_state */
-   NULL,                         /* set_signal_handler_state */
-   NULL,                         /* destroy_signal_handler_state */
-   NULL,                         /* attach_console */
-   NULL,                         /* detach_console */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
+   frontend_ctr_shutdown,        /* shutdown                       */
+   frontend_ctr_get_name,        /* get_name                       */
+   frontend_ctr_get_os,          /* get_os                         */
+   frontend_ctr_get_rating,      /* get_rating                     */
+   NULL,                         /* load_content                   */
+   frontend_ctr_get_arch,        /* get_architecture               */
+   frontend_ctr_get_powerstate,  /* get_powerstate                 */
+   frontend_ctr_parse_drive_list,/* parse_drive_list               */
+   frontend_ctr_get_total_mem,   /* get_total_mem                  */
+   frontend_ctr_get_free_mem,    /* get_free_mem                   */
+   NULL,                         /* install_signal_handler         */
+   NULL,                         /* get_signal_handler_state       */
+   NULL,                         /* set_signal_handler_state       */
+   NULL,                         /* destroy_signal_handler_state   */
+   NULL,                         /* attach_console                 */
+   NULL,                         /* detach_console                 */
+   NULL,                         /* get_lakka_version              */
+   NULL,                         /* set_screen_brightness          */
+   NULL,                         /* watch_path_for_changes         */
+   NULL,                         /* check_for_path_changes         */
    NULL,                         /* set_sustained_performance_mode */
-   NULL,                         /* get_cpu_model_name */
-   NULL,                         /* get_user_language */
-   NULL,                         /* is_narrator_running */
-   NULL,                         /* accessibility_speak */
-   "ctr",
+   NULL,                         /* get_cpu_model_name             */
+   NULL,                         /* get_user_language              */
+   NULL,                         /* is_narrator_running            */
+   NULL,                         /* accessibility_speak            */
+   "ctr",                        /* ident                          */
+   NULL                          /* get_video_driver               */
 };

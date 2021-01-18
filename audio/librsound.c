@@ -31,16 +31,7 @@
 
 #include "drivers/rsound.h"
 
-#if defined(__CELLOS_LV2__)
-#include <cell/sysmodule.h>
-#include <sys/timer.h>
-#include <sys/sys_time.h>
-
-/* Network headers */
-#include <netex/net.h>
-#include <netex/errno.h>
-#define NETWORK_COMPAT_HEADERS 1
-#elif defined(GEKKO)
+#if defined(GEKKO)
 #include <network.h>
 #else
 #define NETWORK_COMPAT_HEADERS 1
@@ -52,11 +43,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
-#ifdef __CELLOS_LV2__
-#include <sys/poll.h>
-#else
 #include <poll.h>
-#endif
 #endif
 #include <fcntl.h>
 #ifdef _WIN32
@@ -107,16 +94,7 @@ enum rsd_conn_type
 #define RSD_ERR(fmt, args...)
 #define RSD_DEBUG(fmt, args...)
 
-#if defined(__CELLOS_LV2__)
-static int init_count = 0;
-#define pollfd_fd(x) x.fd
-#define net_send(a,b,c,d) send(a,b,c,d)
-#define net_socket(a,b,c) socket(a,b,c)
-#define net_connect(a,b,c) connect(a,b,c)
-#define net_shutdown(a,b) shutdown(a,b)
-#define net_socketclose(x) socketclose(x)
-#define net_recv(a,b,c,d) recv(a,b,c,d)
-#elif defined(GEKKO)
+#if defined(GEKKO)
 #define SHUT_RD 0
 
 #define socketpoll(x, y, z)  net_poll(x, y, z)
@@ -254,13 +232,8 @@ static int rsnd_connect_server( rsound_t *rd )
 
    /* Uses non-blocking IO since it performed more deterministic with poll()/send() */
 
-#ifdef __CELLOS_LV2__
-   setsockopt(rd->conn.socket, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
-   setsockopt(rd->conn.ctl_socket, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
-#else
    fcntl(rd->conn.socket, F_SETFL, O_NONBLOCK);
    fcntl(rd->conn.ctl_socket, F_SETFL, O_NONBLOCK);
-#endif
 
    /* Nonblocking connect with 3 second timeout */
    net_connect(rd->conn.socket, (struct sockaddr*)&addr, sizeof(addr));
@@ -725,8 +698,6 @@ static int64_t rsnd_get_time_usec(void)
    if (!QueryPerformanceCounter(&count))
       return 0;
    return count.QuadPart * 1000000 / freq.QuadPart;
-#elif defined(__CELLOS_LV2__)
-   return sys_time_get_system_time();
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
 #elif defined(__MACH__) // OSX doesn't have clock_gettime ...
@@ -1375,12 +1346,7 @@ int rsd_exec(rsound_t *rsound)
 
    rsnd_stop_thread(rsound);
 
-#if defined(__CELLOS_LV2__)
-   int i = 0;
-   setsockopt(rsound->conn.socket, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
-#else
    fcntl(rsound->conn.socket, F_SETFL, O_NONBLOCK);
-#endif
 
    /* Flush the buffer */
    if (FIFO_READ_AVAIL(rsound->fifo_buffer) > 0 )
@@ -1566,15 +1532,6 @@ int rsd_init(rsound_t** rsound)
 
    rsd_set_param(*rsound, RSD_HOST, RSD_DEFAULT_HOST);
    rsd_set_param(*rsound, RSD_PORT, RSD_DEFAULT_PORT);
-
-#ifdef __CELLOS_LV2__
-   if (init_count == 0)
-   {
-      cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
-      sys_net_initialize_network();
-      init_count++;
-   }
-#endif
 
    return 0;
 }

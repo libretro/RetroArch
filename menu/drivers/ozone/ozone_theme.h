@@ -20,13 +20,6 @@
 #include "ozone.h"
 #include "ozone_texture.h"
 
-static float ozone_pure_white[16] = {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-};
-
 typedef struct ozone_theme
 {
    /* Background color */
@@ -70,10 +63,12 @@ extern ozone_theme_t ozone_theme_nord;
 extern ozone_theme_t ozone_theme_gruvbox_dark;
 extern ozone_theme_t ozone_theme_boysenberry;
 extern ozone_theme_t ozone_theme_hacking_the_kernel;
+extern ozone_theme_t ozone_theme_twilight_zone;
 
 extern ozone_theme_t *ozone_themes[];
 
-extern unsigned ozone_themes_count;
+/* TODO/FIXME - global variables referenced outside */
+extern const unsigned ozone_themes_count;
 extern unsigned last_color_theme;
 extern bool last_use_preferred_system_color_theme;
 extern ozone_theme_t *ozone_default_theme;

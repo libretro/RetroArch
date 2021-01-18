@@ -67,6 +67,7 @@ static void ozone_draw_entry_value(
    /* check icon */
    if (entry->checked)
    {
+      float *col = ozone->theme_dynamic.entries_checkmark;
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
       ozone_draw_icon(
@@ -82,7 +83,7 @@ static void ozone_draw_entry_value(
             video_height,
             0,
             1,
-            ozone->theme_dynamic.entries_checkmark);
+            col);
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
       return;
@@ -182,6 +183,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
    unsigned icon_size      = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   float                        *col = ozone->theme->entries_icon;
 
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
@@ -196,7 +198,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
          video_height/2 - icon_size/2 - y_offset,
          video_width,
          video_height,
-         0, 1, ozone->theme->entries_icon);
+         0, 1, col);
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
 
@@ -501,6 +503,7 @@ void ozone_draw_entries(
    float scale_factor      = ozone->last_scale_factor;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_animation_t          *p_anim  = anim_get_ptr();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -655,7 +658,7 @@ border_iterate:
       /* Initial ticker configuration */
       if (use_smooth_ticker)
       {
-         ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+         ticker_smooth.idx           = p_anim->ticker_pixel_idx;
          ticker_smooth.font          = ozone->fonts.entries_label.font;
          ticker_smooth.font_scale    = 1.0f;
          ticker_smooth.type_enum     = menu_ticker_type;
@@ -665,7 +668,7 @@ border_iterate:
       }
       else
       {
-         ticker.idx                  = gfx_animation_get_ticker_idx();
+         ticker.idx                  = p_anim->ticker_idx;
          ticker.type_enum            = menu_ticker_type;
          ticker.spacer               = ticker_spacer;
       }
@@ -787,7 +790,7 @@ border_iterate:
          ))
             icon_color = ozone->theme_dynamic.entries_icon;
          else
-            icon_color = ozone_pure_white;
+            icon_color = ozone->pure_white;
 
          gfx_display_set_alpha(icon_color, alpha);
 
@@ -813,7 +816,7 @@ border_iterate:
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);
 
-         if (icon_color == ozone_pure_white)
+         if (icon_color == ozone->pure_white)
             gfx_display_set_alpha(icon_color, 1.0f);
 
          text_offset = 0;
@@ -930,6 +933,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
    enum gfx_thumbnail_alignment left_thumbnail_alignment;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_animation_t          *p_anim  = anim_get_ptr();
 
    /* Background */
    if (!libretro_running || (menu_framebuffer_opacity >= 1.0f))
@@ -1151,7 +1155,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
          /* Initial ticker configuration */
          if (use_smooth_ticker)
          {
-            ticker_smooth.idx                = gfx_animation_get_ticker_pixel_idx();
+            ticker_smooth.idx                = p_anim->ticker_pixel_idx;
             ticker_smooth.font_scale         = 1.0f;
             ticker_smooth.type_enum          = menu_ticker_type;
             ticker_smooth.spacer             = ticker_spacer;
@@ -1166,7 +1170,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
          }
          else
          {
-            ticker.idx                       = gfx_animation_get_ticker_idx();
+            ticker.idx                       = p_anim->ticker_idx;
             ticker.type_enum                 = menu_ticker_type;
             ticker.spacer                    = ticker_spacer;
 
@@ -1314,6 +1318,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
        * is available */
       if (metadata_override_enabled)
       {
+         float         *col = ozone->theme_dynamic.entries_icon;
          /* Icon should be small and unobtrusive
           * > Make it 80% of the normal entry icon size */
          unsigned icon_size = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 0.8f);
@@ -1336,7 +1341,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_entry_icon_padding - icon_size,
                video_width,
                video_height,
-               0, 1, ozone->theme_dynamic.entries_icon);
+               0, 1, col);
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);
       }

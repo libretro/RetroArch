@@ -1280,6 +1280,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    "Lägger till en liten oskärpa till bilden för att mjuka upp de hårda kanterna mellan pixlar. Detta har mycket liten inverkan på prestanda."
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "Autoshader-fördröjning"
@@ -1410,10 +1412,6 @@ MSG_HASH(
    "Starta i helskärmsläge"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Starta i helskärm. Kan ändras medan programmet körs. Om ett annat val anges via parameter när RetroArch körs så prioriteras det valet"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Fönster-helskärmsläge"
    )
@@ -1447,6 +1445,8 @@ MSG_HASH(
 
 /* Settings > Video > Scaling */
 
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "Anpassad bildproportion (X-position)"
@@ -1670,6 +1670,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Maximalt antal användare som stöds av RetroArch."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -1677,6 +1679,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Aktivera enheters vibration (för kärnor som stödjer det)"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -1805,6 +1809,9 @@ MSG_HASH(
 /* Settings > User > Accounts > Twitch */
 
 
+/* Settings > User > Accounts > Facebook Gaming */
+
+
 /* Settings > Directory */
 
 
@@ -1874,6 +1881,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 
 /* Quick Menu > Shaders > Remove */
 
@@ -1886,6 +1895,10 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
+   )
 
 /* Quick Menu > Information */
 

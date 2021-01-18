@@ -69,6 +69,7 @@ enum input_turbo_mode
 {
    INPUT_TURBO_MODE_CLASSIC = 0,
    INPUT_TURBO_MODE_SINGLEBUTTON,
+   INPUT_TURBO_MODE_SINGLEBUTTON_HOLD,
    INPUT_TURBO_MODE_LAST
 };
 
@@ -232,7 +233,7 @@ struct rarch_joypad_driver
 #define DEFAULT_MAX_PADS 8
 #elif defined(__QNX__)
 #define DEFAULT_MAX_PADS 8
-#elif defined(__CELLOS_LV2__)
+#elif defined(__PS3__)
 #define DEFAULT_MAX_PADS 7
 #elif defined(_XBOX)
 #define DEFAULT_MAX_PADS 4
@@ -518,6 +519,7 @@ extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;
 extern input_device_driver_t xinput_joypad;
 extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t sdl_dingux_joypad;
 extern input_device_driver_t ps4_joypad;
 extern input_device_driver_t ps3_joypad;
 extern input_device_driver_t psp_joypad;
@@ -536,6 +538,7 @@ extern input_device_driver_t rwebpad_joypad;
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
+extern input_driver_t input_sdl_dingux;
 extern input_driver_t input_dinput;
 extern input_driver_t input_x;
 extern input_driver_t input_ps4;

@@ -69,7 +69,7 @@ extern "C" {
 #      endif
 #    endif
 #  else
-#      if defined(__GNUC__) && __GNUC__ >= 4 && !defined(__CELLOS_LV2__)
+#      if defined(__GNUC__) && __GNUC__ >= 4
 #        define RETRO_API RETRO_CALLCONV __attribute__((__visibility__("default")))
 #      else
 #        define RETRO_API RETRO_CALLCONV
@@ -282,6 +282,7 @@ enum retro_language
    RETRO_LANGUAGE_PERSIAN             = 20,
    RETRO_LANGUAGE_HEBREW              = 21,
    RETRO_LANGUAGE_ASTURIAN            = 22,
+   RETRO_LANGUAGE_FINNISH             = 23,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -712,6 +713,9 @@ enum retro_mod
                                             * state of rumble motors in controllers.
                                             * A strong and weak motor is supported, and they can be
                                             * controlled indepedently.
+                                            * Should be called from either retro_init() or retro_load_game().
+                                            * Should not be called from retro_set_environment().
+                                            * Returns false if rumble functionality is unavailable.
                                             */
 #define RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES 24
                                            /* uint64_t * --
@@ -1333,6 +1337,45 @@ enum retro_mod
                                             * If callback returns false, the number of active input
                                             * devices is unknown. In this case, all input devices
                                             * should be considered active.
+                                            */
+
+#define RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK 62
+                                           /* const struct retro_audio_buffer_status_callback * --
+                                            * Lets the core know the occupancy level of the frontend
+                                            * audio buffer. Can be used by a core to attempt frame
+                                            * skipping in order to avoid buffer under-runs.
+                                            * A core may pass NULL to disable buffer status reporting
+                                            * in the frontend.
+                                            */
+
+#define RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY 63
+                                           /* const unsigned * --
+                                            * Sets minimum frontend audio latency in milliseconds.
+                                            * Resultant audio latency may be larger than set value,
+                                            * or smaller if a hardware limit is encountered. A frontend
+                                            * is expected to honour requests up to 512 ms.
+                                            *
+                                            * - If value is less than current frontend
+                                            *   audio latency, callback has no effect
+                                            * - If value is zero, default frontend audio
+                                            *   latency is set
+                                            *
+                                            * May be used by a core to increase audio latency and
+                                            * therefore decrease the probability of buffer under-runs
+                                            * (crackling) when performing 'intensive' operations.
+                                            * A core utilising RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK
+                                            * to implement audio-buffer-based frame skipping may achieve
+                                            * optimal results by setting the audio latency to a 'high'
+                                            * (typically 6x or 8x) integer multiple of the expected
+                                            * frame time.
+                                            *
+                                            * WARNING: This can only be called from within retro_run().
+                                            * Calling this can require a full reinitialization of audio
+                                            * drivers in the frontend, so it is important to call it very
+                                            * sparingly, and usually only with the users explicit consent.
+                                            * An eventual driver reinitialize will happen so that audio
+                                            * callbacks happening after this call within the same retro_run()
+                                            * call will target the newly initialized driver.
                                             */
 
 /* VFS functionality */
@@ -2222,6 +2265,30 @@ struct retro_frame_time_callback
     * 1000000 / fps, but the implementation will resolve the
     * rounding to ensure that framestepping, etc is exact. */
    retro_usec_t reference;
+};
+
+/* Notifies a libretro core of the current occupancy
+ * level of the frontend audio buffer.
+ *
+ * - active: 'true' if audio buffer is currently
+ *           in use. Will be 'false' if audio is
+ *           disabled in the frontend
+ *
+ * - occupancy: Given as a value in the range [0,100],
+ *              corresponding to the occupancy percentage
+ *              of the audio buffer
+ *
+ * - underrun_likely: 'true' if the frontend expects an
+ *                    audio buffer underrun during the
+ *                    next frame (indicates that a core
+ *                    should attempt frame skipping)
+ *
+ * It will be called right before retro_run() every frame. */
+typedef void (RETRO_CALLCONV *retro_audio_buffer_status_callback_t)(
+      bool active, unsigned occupancy, bool underrun_likely);
+struct retro_audio_buffer_status_callback
+{
+   retro_audio_buffer_status_callback_t callback;
 };
 
 /* Pass this to retro_video_refresh_t if rendering to hardware.

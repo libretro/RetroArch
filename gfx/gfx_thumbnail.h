@@ -93,7 +93,7 @@ typedef struct
 } gfx_thumbnail_shadow_t;
 
 /* Structure containing all gfx_thumbnail
- * global variables */
+ * variables */
 struct gfx_thumbnail_state
 {
    /* Due to the asynchronous nature of thumbnail
@@ -143,18 +143,6 @@ void gfx_thumbnail_set_fade_duration(float duration);
  * > When 'true', allows menu driver to animate
  *   any 'thumbnail unavailable' notifications */
 void gfx_thumbnail_set_fade_missing(bool fade_missing);
-
-/* Getters */
-
-/* Fetches current streaming thumbnails request delay */
-float gfx_thumbnail_get_stream_delay(void);
-
-/* Fetches current 'fade in' animation duration */
-float gfx_thumbnail_get_fade_duration(void);
-
-/* Fetches current enable state for missing
- * thumbnail 'fade in' animations */
-bool gfx_thumbnail_get_fade_missing(bool fade_missing);
 
 /* Core interface */
 

@@ -281,6 +281,8 @@ static void switch_input_poll(void *data)
 
 static int16_t switch_input_state(
       void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       bool keyboard_mapping_blocked,

@@ -197,7 +197,7 @@ static uint32_t task_core_updater_get_core_crc(const char *core_path)
       {
          uint32_t crc = 0;
 
-         /* Get crc value */
+         /* Get CRC value */
          bool success = intfstream_get_crc(core_file, &crc);
 
          /* Close core file */

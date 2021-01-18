@@ -22,7 +22,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
-#include <rhash.h>
+#include <lrc_hash.h>
 #include <retro_timers.h>
 
 #include "netplay_private.h"
@@ -872,7 +872,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
       return true;
    }
 
-   RECV(&info_buf.core_name, cmd_size)
+   RECV(&info_buf.content_crc, cmd_size)
    {
       RARCH_ERR("Failed to receive netplay info payload.\n");
       return false;

@@ -142,6 +142,7 @@ enum input_driver_enum
    INPUT_ANDROID            = AUDIO_RESAMPLER_NULL + 1,
    INPUT_SDL,
    INPUT_SDL2,
+   INPUT_SDL_DINGUX,
    INPUT_X,
    INPUT_WAYLAND,
    INPUT_DINPUT,
@@ -183,6 +184,7 @@ enum joypad_driver_enum
    JOYPAD_LINUXRAW,
    JOYPAD_ANDROID,
    JOYPAD_SDL,
+   JOYPAD_SDL_DINGUX,
    JOYPAD_DOS,
    JOYPAD_HID,
    JOYPAD_QNX,
@@ -258,7 +260,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #endif
 #elif defined(HAVE_VITA2D)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
-#elif (defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)) && !defined(__WINRT__) && !defined(__HAIKU__)
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
@@ -312,9 +314,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #endif
 
-#if defined(__CELLOS_LV2__)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS3;
-#elif defined(XENON)
+#if defined(XENON)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XENON360;
 #elif defined(GEKKO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
@@ -324,6 +324,8 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
 #elif defined(PS2)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS2;
+#elif defined(__PS3__)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS3;
 #elif defined(_3DS)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
 #elif defined(SWITCH)
@@ -408,14 +410,14 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 #elif defined(_WIN32) && !defined(HAVE_DINPUT) && _WIN32_WINNT >= 0x0501
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WINRAW;
-#elif defined(ORBIS)
-static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
-#elif defined(__CELLOS_LV2__)
-static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
-#elif defined(PSP) || defined(VITA)
-static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
 #elif defined(PS2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS2;
+#elif defined(__PS3__)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
+#elif defined(ORBIS)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
+#elif defined(PSP) || defined(VITA)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
 #elif defined(_3DS)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
 #elif defined(SWITCH)
@@ -424,6 +426,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SWITCH;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WII;
 #elif defined(WIIU)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WIIU;
+#elif defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL_DINGUX;
 #elif defined(HAVE_X11)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_X;
 #elif defined(HAVE_UDEV)
@@ -446,9 +450,7 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DOS;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_NULL;
 #endif
 
-#if defined(__CELLOS_LV2__)
-static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
-#elif defined(HAVE_XINPUT)
+#if defined(HAVE_XINPUT)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XINPUT;
 #elif defined(GEKKO)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
@@ -456,16 +458,20 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 #elif defined(_XBOX)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
+#elif defined(PS2)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
+#elif defined(__PS3__) && !defined(__PSL1GHT__)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
 #elif defined(ORBIS)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
 #elif defined(PSP) || defined(VITA)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
-#elif defined(PS2)
-static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
 #elif defined(_3DS)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
 #elif defined(SWITCH)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SWITCH;
+#elif defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL_DINGUX;
 #elif defined(HAVE_DINPUT)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
 #elif defined(HAVE_UDEV)
@@ -522,10 +528,9 @@ static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROI
 static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif
 
-#if defined(_3DS) && defined(HAVE_RGUI)
+#if (defined(_3DS) || defined(DINGUX)) && defined(HAVE_RGUI)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
-#else
-#if defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
+#elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
 #elif defined(HAVE_OZONE)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
@@ -535,7 +540,6 @@ static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 #else
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
-#endif
 #endif
 
 /* All config related settings go here. */
@@ -904,6 +908,8 @@ const char *config_get_default_input(void)
          return "sdl";
       case INPUT_SDL2:
          return "sdl2";
+      case INPUT_SDL_DINGUX:
+         return "sdl_dingux";
       case INPUT_DINPUT:
          return "dinput";
       case INPUT_WINRAW:
@@ -992,6 +998,8 @@ const char *config_get_default_joypad(void)
 #else
          return "sdl";
 #endif
+      case JOYPAD_SDL_DINGUX:
+         return "sdl_dingux";
       case JOYPAD_HID:
          return "hid";
       case JOYPAD_QNX:
@@ -1207,6 +1215,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("cheevos_username",         settings->arrays.cheevos_username, false, NULL, true);
    SETTING_ARRAY("cheevos_password",         settings->arrays.cheevos_password, false, NULL, true);
    SETTING_ARRAY("cheevos_token",            settings->arrays.cheevos_token, false, NULL, true);
+   SETTING_ARRAY("cheevos_leaderboards_enable", settings->arrays.cheevos_leaderboards_enable, true, "false", true);
 #endif
    SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);
    SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
@@ -1224,8 +1233,10 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("youtube_stream_key",       settings->arrays.youtube_stream_key, true, NULL, true);
    SETTING_ARRAY("twitch_stream_key",       settings->arrays.twitch_stream_key, true, NULL, true);
+   SETTING_ARRAY("facebook_stream_key",      settings->arrays.facebook_stream_key, true, NULL, true);
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
    SETTING_ARRAY("ai_service_url",           settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
+   SETTING_ARRAY("crt_switch_timings",       settings->arrays.crt_switch_timings, false, NULL, true);
 
    *size = count;
 
@@ -1446,6 +1457,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_shader_enable",           &settings->bools.video_shader_enable, true, DEFAULT_SHADER_ENABLE, false);
    SETTING_BOOL("video_shader_watch_files",      &settings->bools.video_shader_watch_files, true, DEFAULT_VIDEO_SHADER_WATCH_FILES, false);
    SETTING_BOOL("video_shader_remember_last_dir", &settings->bools.video_shader_remember_last_dir, true, DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR, false);
+   SETTING_BOOL("video_shader_preset_save_reference_enable",   &settings->bools.video_shader_preset_save_reference_enable, true, DEFAULT_VIDEO_SHADER_PRESET_SAVE_REFERENCE_ENABLE, false);
 
    /* Let implementation decide if automatic, or 1:1 PAR. */
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->bools.video_aspect_ratio_auto, true, DEFAULT_ASPECT_RATIO_AUTO, false);
@@ -1457,6 +1469,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, DEFAULT_VIDEO_SMOOTH, false);
    SETTING_BOOL("video_ctx_scaling",              &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
+#if defined(DINGUX)
+   SETTING_BOOL("video_dingux_ipu_keep_aspect",  &settings->bools.video_dingux_ipu_keep_aspect, true, DEFAULT_DINGUX_IPU_KEEP_ASPECT, false);
+#endif
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, DEFAULT_VIDEO_SHARED_CONTEXT, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);
@@ -1485,6 +1500,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_SCREENSHOTS
    SETTING_BOOL("notification_show_screenshot", &settings->bools.notification_show_screenshot, true, DEFAULT_NOTIFICATION_SHOW_SCREENSHOT, false);
 #endif
+   SETTING_BOOL("notification_show_refresh_rate", &settings->bools.notification_show_refresh_rate, true, DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE, false);
    SETTING_BOOL("menu_widget_scale_auto",        &settings->bools.menu_widget_scale_auto, true, DEFAULT_MENU_WIDGET_SCALE_AUTO, false);
    SETTING_BOOL("audio_enable_menu",             &settings->bools.audio_enable_menu, true, audio_enable_menu, false);
    SETTING_BOOL("audio_enable_menu_ok",          &settings->bools.audio_enable_menu_ok, true, audio_enable_menu_ok, false);
@@ -1502,10 +1518,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("core_updater_show_experimental_cores", &settings->bools.network_buildbot_show_experimental_cores, true, DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES, false);
    SETTING_BOOL("core_updater_auto_backup",      &settings->bools.core_updater_auto_backup, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP, false);
    SETTING_BOOL("camera_allow",                  &settings->bools.camera_allow, true, false, false);
-   SETTING_BOOL("discord_allow",                  &settings->bools.discord_enable, true, false, false);
+   SETTING_BOOL("discord_allow",                 &settings->bools.discord_enable, true, false, false);
 #if defined(VITA)
-   SETTING_BOOL("input_backtouch_enable",         &settings->bools.input_backtouch_enable, false, false, false);
-   SETTING_BOOL("input_backtouch_toggle",         &settings->bools.input_backtouch_toggle, false, false, false);
+   SETTING_BOOL("input_backtouch_enable",        &settings->bools.input_backtouch_enable, false, false, false);
+   SETTING_BOOL("input_backtouch_toggle",        &settings->bools.input_backtouch_toggle, false, false, false);
 #endif
 #if TARGET_OS_IPHONE
    SETTING_BOOL("small_keyboard_enable",         &settings->bools.input_small_keyboard_enable, true, false, false);
@@ -1530,55 +1546,59 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
    SETTING_BOOL("menu_show_sublabels",           &settings->bools.menu_show_sublabels, true, menu_show_sublabels, false);
-   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, false, false);
+   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, menu_dynamic_wallpaper_enable, false);
    SETTING_BOOL("menu_ticker_smooth",            &settings->bools.menu_ticker_smooth, true, DEFAULT_MENU_TICKER_SMOOTH, false);
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, false, false);
-   SETTING_BOOL("settings_show_drivers",      &settings->bools.settings_show_drivers, true, DEFAULT_SETTINGS_SHOW_DRIVERS, false);
-   SETTING_BOOL("settings_show_video",      &settings->bools.settings_show_video, true, DEFAULT_SETTINGS_SHOW_VIDEO, false);
-   SETTING_BOOL("settings_show_audio",      &settings->bools.settings_show_audio, true, DEFAULT_SETTINGS_SHOW_AUDIO, false);
-   SETTING_BOOL("settings_show_input",      &settings->bools.settings_show_input, true, DEFAULT_SETTINGS_SHOW_INPUT, false);
-   SETTING_BOOL("settings_show_latency",      &settings->bools.settings_show_latency, true, DEFAULT_SETTINGS_SHOW_LATENCY, false);
-   SETTING_BOOL("settings_show_core",      &settings->bools.settings_show_core, true, DEFAULT_SETTINGS_SHOW_CORE, false);
-   SETTING_BOOL("settings_show_configuration",      &settings->bools.settings_show_configuration, true, DEFAULT_SETTINGS_SHOW_CONFIGURATION, false);
-   SETTING_BOOL("settings_show_saving",      &settings->bools.settings_show_saving, true, DEFAULT_SETTINGS_SHOW_SAVING, false);
-   SETTING_BOOL("settings_show_logging",     &settings->bools.settings_show_logging, true, DEFAULT_SETTINGS_SHOW_LOGGING, false);
-   SETTING_BOOL("settings_show_frame_throttle",      &settings->bools.settings_show_frame_throttle, true, DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE, false);
-   SETTING_BOOL("settings_show_recording",      &settings->bools.settings_show_recording, true, DEFAULT_SETTINGS_SHOW_RECORDING, false);
-   SETTING_BOOL("settings_show_onscreen_display",      &settings->bools.settings_show_onscreen_display, true, DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY, false);
-   SETTING_BOOL("settings_show_user_interface",      &settings->bools.settings_show_user_interface, true, DEFAULT_SETTINGS_SHOW_USER_INTERFACE, false);
-   SETTING_BOOL("settings_show_ai_service",      &settings->bools.settings_show_ai_service, true, DEFAULT_SETTINGS_SHOW_AI_SERVICE, false);
-   SETTING_BOOL("settings_show_power_management",      &settings->bools.settings_show_power_management, true, DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT, false);
-   SETTING_BOOL("settings_show_achievements",      &settings->bools.settings_show_achievements, true, DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS, false);
-   SETTING_BOOL("settings_show_network",      &settings->bools.settings_show_network, true, DEFAULT_SETTINGS_SHOW_NETWORK, false);
-   SETTING_BOOL("settings_show_playlists",      &settings->bools.settings_show_playlists, true, DEFAULT_SETTINGS_SHOW_PLAYLISTS, false);
-   SETTING_BOOL("settings_show_user",      &settings->bools.settings_show_user, true, DEFAULT_SETTINGS_SHOW_USER, false);
-   SETTING_BOOL("settings_show_directory",      &settings->bools.settings_show_directory, true, DEFAULT_SETTINGS_SHOW_DIRECTORY, false);
-   SETTING_BOOL("quick_menu_show_resume_content",      &settings->bools.quick_menu_show_resume_content, true, DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT, false);
-   SETTING_BOOL("quick_menu_show_restart_content",      &settings->bools.quick_menu_show_restart_content, true, DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT, false);
-   SETTING_BOOL("quick_menu_show_close_content",      &settings->bools.quick_menu_show_close_content, true, DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT, false);
-   SETTING_BOOL("quick_menu_show_recording",      &settings->bools.quick_menu_show_recording, true, quick_menu_show_recording, false);
-   SETTING_BOOL("quick_menu_show_streaming",      &settings->bools.quick_menu_show_streaming, true, quick_menu_show_streaming, false);
-   SETTING_BOOL("quick_menu_show_save_load_state",      &settings->bools.quick_menu_show_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE, false);
-   SETTING_BOOL("quick_menu_show_take_screenshot",      &settings->bools.quick_menu_show_take_screenshot, true, DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT, false);
-   SETTING_BOOL("quick_menu_show_undo_save_load_state", &settings->bools.quick_menu_show_undo_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE, false);
-   SETTING_BOOL("quick_menu_show_add_to_favorites",     &settings->bools.quick_menu_show_add_to_favorites, true, quick_menu_show_add_to_favorites, false);
-   SETTING_BOOL("quick_menu_show_start_recording",      &settings->bools.quick_menu_show_start_recording, true, quick_menu_show_start_recording, false);
-   SETTING_BOOL("quick_menu_show_start_streaming",      &settings->bools.quick_menu_show_start_streaming, true, quick_menu_show_start_streaming, false);
-   SETTING_BOOL("quick_menu_show_set_core_association", &settings->bools.quick_menu_show_set_core_association, true, quick_menu_show_set_core_association, false);
-   SETTING_BOOL("quick_menu_show_reset_core_association", &settings->bools.quick_menu_show_reset_core_association, true, quick_menu_show_reset_core_association, false);
-   SETTING_BOOL("quick_menu_show_options",       &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
-   SETTING_BOOL("quick_menu_show_controls",      &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
-   SETTING_BOOL("quick_menu_show_cheats",        &settings->bools.quick_menu_show_cheats, true, quick_menu_show_cheats, false);
-   SETTING_BOOL("quick_menu_show_shaders",       &settings->bools.quick_menu_show_shaders, true, quick_menu_show_shaders, false);
-   SETTING_BOOL("quick_menu_show_save_core_overrides",  &settings->bools.quick_menu_show_save_core_overrides, true, quick_menu_show_save_core_overrides, false);
-   SETTING_BOOL("quick_menu_show_save_game_overrides",  &settings->bools.quick_menu_show_save_game_overrides, true, quick_menu_show_save_game_overrides, false);
-   SETTING_BOOL("quick_menu_show_save_content_dir_overrides",  &settings->bools.quick_menu_show_save_content_dir_overrides, true, quick_menu_show_save_content_dir_overrides, false);
-   SETTING_BOOL("quick_menu_show_information",   &settings->bools.quick_menu_show_information, true, quick_menu_show_information, false);
+
+   SETTING_BOOL("settings_show_drivers",          &settings->bools.settings_show_drivers, true, DEFAULT_SETTINGS_SHOW_DRIVERS, false);
+   SETTING_BOOL("settings_show_video",            &settings->bools.settings_show_video, true, DEFAULT_SETTINGS_SHOW_VIDEO, false);
+   SETTING_BOOL("settings_show_audio",            &settings->bools.settings_show_audio, true, DEFAULT_SETTINGS_SHOW_AUDIO, false);
+   SETTING_BOOL("settings_show_input",            &settings->bools.settings_show_input, true, DEFAULT_SETTINGS_SHOW_INPUT, false);
+   SETTING_BOOL("settings_show_latency",          &settings->bools.settings_show_latency, true, DEFAULT_SETTINGS_SHOW_LATENCY, false);
+   SETTING_BOOL("settings_show_core",             &settings->bools.settings_show_core, true, DEFAULT_SETTINGS_SHOW_CORE, false);
+   SETTING_BOOL("settings_show_configuration",    &settings->bools.settings_show_configuration, true, DEFAULT_SETTINGS_SHOW_CONFIGURATION, false);
+   SETTING_BOOL("settings_show_saving",           &settings->bools.settings_show_saving, true, DEFAULT_SETTINGS_SHOW_SAVING, false);
+   SETTING_BOOL("settings_show_logging",          &settings->bools.settings_show_logging, true, DEFAULT_SETTINGS_SHOW_LOGGING, false);
+   SETTING_BOOL("settings_show_file_browser",     &settings->bools.settings_show_file_browser, true, DEFAULT_SETTINGS_SHOW_FILE_BROWSER, false);
+   SETTING_BOOL("settings_show_frame_throttle",   &settings->bools.settings_show_frame_throttle, true, DEFAULT_SETTINGS_SHOW_FRAME_THROTTLE, false);
+   SETTING_BOOL("settings_show_recording",        &settings->bools.settings_show_recording, true, DEFAULT_SETTINGS_SHOW_RECORDING, false);
+   SETTING_BOOL("settings_show_onscreen_display", &settings->bools.settings_show_onscreen_display, true, DEFAULT_SETTINGS_SHOW_ONSCREEN_DISPLAY, false);
+   SETTING_BOOL("settings_show_user_interface",   &settings->bools.settings_show_user_interface, true, DEFAULT_SETTINGS_SHOW_USER_INTERFACE, false);
+   SETTING_BOOL("settings_show_ai_service",       &settings->bools.settings_show_ai_service, true, DEFAULT_SETTINGS_SHOW_AI_SERVICE, false);
+   SETTING_BOOL("settings_show_accessibility",    &settings->bools.settings_show_accessibility, true, DEFAULT_SETTINGS_SHOW_ACCESSIBILITY, false);
+   SETTING_BOOL("settings_show_power_management", &settings->bools.settings_show_power_management, true, DEFAULT_SETTINGS_SHOW_POWER_MANAGEMENT, false);
+   SETTING_BOOL("settings_show_achievements",     &settings->bools.settings_show_achievements, true, DEFAULT_SETTINGS_SHOW_ACHIEVEMENTS, false);
+   SETTING_BOOL("settings_show_network",          &settings->bools.settings_show_network, true, DEFAULT_SETTINGS_SHOW_NETWORK, false);
+   SETTING_BOOL("settings_show_playlists",        &settings->bools.settings_show_playlists, true, DEFAULT_SETTINGS_SHOW_PLAYLISTS, false);
+   SETTING_BOOL("settings_show_user",             &settings->bools.settings_show_user, true, DEFAULT_SETTINGS_SHOW_USER, false);
+   SETTING_BOOL("settings_show_directory",        &settings->bools.settings_show_directory, true, DEFAULT_SETTINGS_SHOW_DIRECTORY, false);
+
+   SETTING_BOOL("quick_menu_show_resume_content",             &settings->bools.quick_menu_show_resume_content, true, DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT, false);
+   SETTING_BOOL("quick_menu_show_restart_content",            &settings->bools.quick_menu_show_restart_content, true, DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT, false);
+   SETTING_BOOL("quick_menu_show_close_content",              &settings->bools.quick_menu_show_close_content, true, DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT, false);
+   SETTING_BOOL("quick_menu_show_recording",                  &settings->bools.quick_menu_show_recording, true, quick_menu_show_recording, false);
+   SETTING_BOOL("quick_menu_show_streaming",                  &settings->bools.quick_menu_show_streaming, true, quick_menu_show_streaming, false);
+   SETTING_BOOL("quick_menu_show_save_load_state",            &settings->bools.quick_menu_show_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE, false);
+   SETTING_BOOL("quick_menu_show_take_screenshot",            &settings->bools.quick_menu_show_take_screenshot, true, DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT, false);
+   SETTING_BOOL("quick_menu_show_undo_save_load_state",       &settings->bools.quick_menu_show_undo_save_load_state, true, DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE, false);
+   SETTING_BOOL("quick_menu_show_add_to_favorites",           &settings->bools.quick_menu_show_add_to_favorites, true, quick_menu_show_add_to_favorites, false);
+   SETTING_BOOL("quick_menu_show_start_recording",            &settings->bools.quick_menu_show_start_recording, true, quick_menu_show_start_recording, false);
+   SETTING_BOOL("quick_menu_show_start_streaming",            &settings->bools.quick_menu_show_start_streaming, true, quick_menu_show_start_streaming, false);
+   SETTING_BOOL("quick_menu_show_set_core_association",       &settings->bools.quick_menu_show_set_core_association, true, quick_menu_show_set_core_association, false);
+   SETTING_BOOL("quick_menu_show_reset_core_association",     &settings->bools.quick_menu_show_reset_core_association, true, quick_menu_show_reset_core_association, false);
+   SETTING_BOOL("quick_menu_show_options",                    &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
+   SETTING_BOOL("quick_menu_show_controls",                   &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
+   SETTING_BOOL("quick_menu_show_cheats",                     &settings->bools.quick_menu_show_cheats, true, quick_menu_show_cheats, false);
+   SETTING_BOOL("quick_menu_show_shaders",                    &settings->bools.quick_menu_show_shaders, true, quick_menu_show_shaders, false);
+   SETTING_BOOL("quick_menu_show_save_core_overrides",        &settings->bools.quick_menu_show_save_core_overrides, true, quick_menu_show_save_core_overrides, false);
+   SETTING_BOOL("quick_menu_show_save_game_overrides",        &settings->bools.quick_menu_show_save_game_overrides, true, quick_menu_show_save_game_overrides, false);
+   SETTING_BOOL("quick_menu_show_save_content_dir_overrides", &settings->bools.quick_menu_show_save_content_dir_overrides, true, quick_menu_show_save_content_dir_overrides, false);
+   SETTING_BOOL("quick_menu_show_information",                &settings->bools.quick_menu_show_information, true, quick_menu_show_information, false);
 #ifdef HAVE_NETWORKING
-   SETTING_BOOL("quick_menu_show_download_thumbnails",   &settings->bools.quick_menu_show_download_thumbnails, true, quick_menu_show_download_thumbnails, false);
+   SETTING_BOOL("quick_menu_show_download_thumbnails",        &settings->bools.quick_menu_show_download_thumbnails, true, quick_menu_show_download_thumbnails, false);
 #endif
    SETTING_BOOL("kiosk_mode_enable",             &settings->bools.kiosk_mode_enable, true, DEFAULT_KIOSK_MODE_ENABLE, false);
-   SETTING_BOOL("menu_use_preferred_system_color_theme",         &settings->bools.menu_use_preferred_system_color_theme, true, DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, false);
+   SETTING_BOOL("menu_use_preferred_system_color_theme", &settings->bools.menu_use_preferred_system_color_theme, true, DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME, false);
    SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, content_show_settings, false);
    SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, content_show_favorites, false);
 #ifdef HAVE_IMAGEVIEWER
@@ -1605,9 +1625,9 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("menu_show_information",         &settings->bools.menu_show_information, true, menu_show_information, false);
    SETTING_BOOL("menu_show_configurations",      &settings->bools.menu_show_configurations, true, menu_show_configurations, false);
-   SETTING_BOOL("menu_show_latency",      &settings->bools.menu_show_latency, true, true, false);
-   SETTING_BOOL("menu_show_rewind",      &settings->bools.menu_show_rewind, true, true, false);
-   SETTING_BOOL("menu_show_overlays",      &settings->bools.menu_show_overlays, true, true, false);
+   SETTING_BOOL("menu_show_latency",             &settings->bools.menu_show_latency, true, true, false);
+   SETTING_BOOL("menu_show_rewind",              &settings->bools.menu_show_rewind, true, true, false);
+   SETTING_BOOL("menu_show_overlays",            &settings->bools.menu_show_overlays, true, true, false);
 #ifdef HAVE_VIDEO_LAYOUT
    SETTING_BOOL("menu_show_video_layout",        &settings->bools.menu_show_video_layout, true, true, false);
 #endif
@@ -1653,7 +1673,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("cheevos_enable",               &settings->bools.cheevos_enable, true, DEFAULT_CHEEVOS_ENABLE, false);
    SETTING_BOOL("cheevos_test_unofficial",      &settings->bools.cheevos_test_unofficial, true, false, false);
    SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, false, false);
-   SETTING_BOOL("cheevos_leaderboards_enable",  &settings->bools.cheevos_leaderboards_enable, true, false, false);
    SETTING_BOOL("cheevos_richpresence_enable",  &settings->bools.cheevos_richpresence_enable, true, true, false);
    SETTING_BOOL("cheevos_unlock_sound_enable",  &settings->bools.cheevos_unlock_sound_enable, true, false, false);
    SETTING_BOOL("cheevos_verbose_enable",       &settings->bools.cheevos_verbose_enable, true, false, false);
@@ -1707,6 +1726,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("config_save_on_exit",          &settings->bools.config_save_on_exit, true, DEFAULT_CONFIG_SAVE_ON_EXIT, false);
    SETTING_BOOL("show_hidden_files",            &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
    SETTING_BOOL("input_autodetect_enable",      &settings->bools.input_autodetect_enable, true, input_autodetect_enable, false);
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   SETTING_BOOL("input_nowinkey_enable",        &settings->bools.input_nowinkey_enable, true, false, false);
+#endif
    SETTING_BOOL("input_sensors_enable",         &settings->bools.input_sensors_enable, true, DEFAULT_INPUT_SENSORS_ENABLE, false);
    SETTING_BOOL("audio_rate_control",           &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
 #ifdef HAVE_WASAPI
@@ -1751,8 +1773,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("log_to_file", &settings->bools.log_to_file, true, DEFAULT_LOG_TO_FILE, false);
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_LOG_TO_FILE);
    SETTING_BOOL("log_to_file_timestamp", &settings->bools.log_to_file_timestamp, true, DEFAULT_LOG_TO_FILE_TIMESTAMP, false);
-   SETTING_BOOL("ai_service_enable", &settings->bools.ai_service_enable, true, DEFAULT_AI_SERVICE_ENABLE, false);
+   SETTING_BOOL("ai_service_enable",     &settings->bools.ai_service_enable, true, DEFAULT_AI_SERVICE_ENABLE, false);
    SETTING_BOOL("ai_service_pause",      &settings->bools.ai_service_pause, true, DEFAULT_AI_SERVICE_PAUSE, false);
+   SETTING_BOOL("wifi_enabled",          &settings->bools.wifi_enabled, true, DEFAULT_WIFI_ENABLE, false);
 
    *size = count;
 
@@ -1834,6 +1857,7 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_NETWORKING
    SETTING_UINT("streaming_mode",  		         &settings->uints.streaming_mode, true, STREAMING_MODE_TWITCH, false);
 #endif
+   SETTING_UINT("screen_brightness",	  		&settings->uints.screen_brightness, true, DEFAULT_SCREEN_BRIGHTNESS, false);
    SETTING_UINT("crt_switch_resolution",  		&settings->uints.crt_switch_resolution, true, DEFAULT_CRT_SWITCH_RESOLUTION, false);
    SETTING_UINT("input_bind_timeout",           &settings->uints.input_bind_timeout,     true, input_bind_timeout, false);
    SETTING_UINT("input_bind_hold",              &settings->uints.input_bind_hold,        true, input_bind_hold, false);
@@ -1849,6 +1873,10 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef GEKKO
    SETTING_UINT("input_mouse_scale",            &settings->uints.input_mouse_scale, true, DEFAULT_MOUSE_SCALE, false);
 #endif
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+   SETTING_UINT("input_dingux_rumble_gain",     &settings->uints.input_dingux_rumble_gain, true, DEFAULT_DINGUX_RUMBLE_GAIN, false);
+#endif
+   SETTING_UINT("input_auto_game_focus",        &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, audio_resampler_quality_level, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
@@ -1858,6 +1886,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("rewind_granularity",           &settings->uints.rewind_granularity, true, DEFAULT_REWIND_GRANULARITY, false);
    SETTING_UINT("rewind_buffer_size_step",      &settings->uints.rewind_buffer_size_step, true, DEFAULT_REWIND_BUFFER_SIZE_STEP, false);
    SETTING_UINT("autosave_interval",            &settings->uints.autosave_interval,  true, DEFAULT_AUTOSAVE_INTERVAL, false);
+   SETTING_UINT("savestate_max_keep",           &settings->uints.savestate_max_keep, true, DEFAULT_SAVESTATE_MAX_KEEP, false);
    SETTING_UINT("frontend_log_level",           &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
    SETTING_UINT("libretro_log_level",           &settings->uints.libretro_log_level, true, DEFAULT_LIBRETRO_LOG_LEVEL, false);
    SETTING_UINT("keyboard_gamepad_mapping_type",&settings->uints.input_keyboard_gamepad_mapping_type, true, 1, false);
@@ -1909,9 +1938,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("split_joycon_p8", &settings->uints.input_split_joycon[7], true, 0, false);
 #endif
 #ifdef HAVE_XMB
-   SETTING_UINT("menu_xmb_animation_opening_main_menu",   &settings->uints.menu_xmb_animation_opening_main_menu, true, 0 /* TODO/FIXME - implement */, false);
-   SETTING_UINT("menu_xmb_animation_horizontal_highlight",   &settings->uints.menu_xmb_animation_horizontal_highlight, true, 0 /* TODO/FIXME - implement */, false);
-   SETTING_UINT("menu_xmb_animation_move_up_down",   &settings->uints.menu_xmb_animation_move_up_down, true, 0 /* TODO/FIXME - implement */, false);
+   SETTING_UINT("menu_xmb_animation_opening_main_menu",    &settings->uints.menu_xmb_animation_opening_main_menu, true, DEFAULT_XMB_ANIMATION, false);
+   SETTING_UINT("menu_xmb_animation_horizontal_highlight", &settings->uints.menu_xmb_animation_horizontal_highlight, true, DEFAULT_XMB_ANIMATION, false);
+   SETTING_UINT("menu_xmb_animation_move_up_down",         &settings->uints.menu_xmb_animation_move_up_down, true, DEFAULT_XMB_ANIMATION, false);
    SETTING_UINT("xmb_alpha_factor",             &settings->uints.menu_xmb_alpha_factor, true, xmb_alpha_factor, false);
    SETTING_UINT("xmb_layout",                   &settings->uints.menu_xmb_layout, true, xmb_menu_layout, false);
    SETTING_UINT("xmb_theme",                    &settings->uints.menu_xmb_theme, true, xmb_icon_theme, false);
@@ -1976,8 +2005,8 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("midi_volume",                  &settings->uints.midi_volume, true, midi_volume, false);
 
    SETTING_UINT("video_stream_port",            &settings->uints.video_stream_port,    true, RARCH_STREAM_DEFAULT_PORT, false);
-   SETTING_UINT("video_record_quality",            &settings->uints.video_record_quality,    true, RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY, false);
-   SETTING_UINT("video_stream_quality",            &settings->uints.video_stream_quality,    true, RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY, false);
+   SETTING_UINT("video_record_quality",            &settings->uints.video_record_quality,    true, RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY, false);
+   SETTING_UINT("video_stream_quality",            &settings->uints.video_stream_quality,    true, RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY, false);
    SETTING_UINT("video_record_scale_factor",            &settings->uints.video_record_scale_factor,    true, 1, false);
    SETTING_UINT("video_stream_scale_factor",            &settings->uints.video_stream_scale_factor,    true, 1, false);
    SETTING_UINT("video_windowed_position_x",            &settings->uints.window_position_x,    true, 0, false);
@@ -1998,16 +2027,23 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_3ds_display_mode",  &settings->uints.video_3ds_display_mode, true, video_3ds_display_mode, false);
 #endif
 
+#if defined(DINGUX)
+   SETTING_UINT("video_dingux_ipu_filter_type", &settings->uints.video_dingux_ipu_filter_type, true, DEFAULT_DINGUX_IPU_FILTER_TYPE, false);
+#endif
+
 #ifdef HAVE_MENU
    SETTING_UINT("playlist_entry_remove_enable",    &settings->uints.playlist_entry_remove_enable, true, DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE, false);
    SETTING_UINT("playlist_show_inline_core_name",  &settings->uints.playlist_show_inline_core_name, true, DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME, false);
    SETTING_UINT("playlist_sublabel_runtime_type",  &settings->uints.playlist_sublabel_runtime_type, true, DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE, false);
    SETTING_UINT("playlist_sublabel_last_played_style", &settings->uints.playlist_sublabel_last_played_style, true, DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, false);
+
+   SETTING_UINT("quit_on_close_content",           &settings->uints.quit_on_close_content, true, DEFAULT_QUIT_ON_CLOSE_CONTENT, false);
 #endif
 
    SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
 
    SETTING_UINT("video_black_frame_insertion",   &settings->uints.video_black_frame_insertion, true, DEFAULT_BLACK_FRAME_INSERTION, false);
+
    *size = count;
 
    return tmp;
@@ -2320,6 +2356,7 @@ void config_set_defaults(void *data)
 
    configuration_set_string(settings,
          settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
+
    configuration_set_string(settings,
          settings->paths.network_buildbot_assets_url,
          DEFAULT_BUILDBOT_ASSETS_SERVER_URL);
@@ -2402,7 +2439,7 @@ void config_set_defaults(void *data)
 #endif
    *settings->paths.path_record_config     = '\0';
    *settings->paths.path_stream_config     = '\0';
-   *settings->paths.path_stream_url     = '\0';
+   *settings->paths.path_stream_url        = '\0';
    *settings->paths.path_softfilter_plugin = '\0';
 
    *settings->paths.directory_content_history = '\0';
@@ -2490,14 +2527,6 @@ void config_set_defaults(void *data)
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OVERLAY,
                sizeof(settings->paths.path_overlay));
-
-         /* Handle the case where old asset files
-          * are installed */
-         if (!path_is_valid(settings->paths.path_overlay))
-            fill_pathname_join(settings->paths.path_overlay,
-                  settings->paths.directory_overlay,
-                  FILE_PATH_DEFAULT_OVERLAY_FALLBACK,
-                  sizeof(settings->paths.path_overlay));
       }
 #endif
    }
@@ -2569,6 +2598,15 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->paths.log_dir,
             g_defaults.dirs[DEFAULT_DIR_LOGS]);
+
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]))
+      fill_pathname_expand_special(global->record.output_dir,
+            g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
+            sizeof(global->record.output_dir));
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]))
+      fill_pathname_expand_special(global->record.config_dir,
+            g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
+            sizeof(global->record.config_dir));
 
    if (!string_is_empty(g_defaults.path_config))
    {
@@ -3632,7 +3670,7 @@ bool config_load_remap(const char *directory_input_remapping,
    settings_t *settings                   = config_get_ptr();
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
 
-   if (string_is_empty(core_name) || string_is_empty(game_name))
+   if (string_is_empty(core_name))
       return false;
 
    /* Remap directory: remap_directory.
@@ -3782,7 +3820,7 @@ bool config_save_autoconf_profile(const
       "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
       NULL
    };
-   size_t i;
+   unsigned i;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
    config_file_t *conf                  = NULL;

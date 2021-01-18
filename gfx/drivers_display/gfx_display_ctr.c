@@ -27,19 +27,12 @@
 #include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 
-static const float *gfx_display_ctr_get_default_vertices(void) { return NULL; }
-static const float *gfx_display_ctr_get_default_tex_coords(void) { return NULL; }
-static void *gfx_display_ctr_get_default_mvp(void *data) { return NULL; }
-
-static void gfx_display_ctr_blend_begin(void *data) { }
-static void gfx_display_ctr_blend_end(void *data) { }
-static void gfx_display_ctr_viewport(gfx_display_ctx_draw_t *draw,
-      void *data) { }
-
 static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
+   ctr_scale_vector_t scale_vector;
    int colorR, colorG, colorB, colorA;
+   ctr_vertex_t *v                  = NULL;
    struct ctr_texture *texture      = NULL;
    const float *color               = NULL;
    ctr_video_t             *ctr     = (ctr_video_t*)data;
@@ -53,16 +46,17 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
    if (!texture)
       return;
 
-   ctr_scale_vector_t scale_vector;
    ctr_set_scale_vector(&scale_vector,
          CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
          texture->width, texture->height);
+   GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
    ctrGuSetVertexShaderFloatUniform(0, (float*)&scale_vector, 1);
 
-   if ((ctr->vertex_cache.size - (ctr->vertex_cache.current - ctr->vertex_cache.buffer)) < 1)
+   if ((ctr->vertex_cache.size - (ctr->vertex_cache.current 
+               - ctr->vertex_cache.buffer)) < 1)
       ctr->vertex_cache.current = ctr->vertex_cache.buffer;
 
-   ctr_vertex_t* v = ctr->vertex_cache.current++;
+   v     = ctr->vertex_cache.current++;
 
    v->x0 = draw->x;
    v->y0 = 240 - draw->height - draw->y;
@@ -104,16 +98,22 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
          0x3FFFFFFF);
 #endif
 
-   ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(texture->data), texture->width, texture->height,
-         GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
-         GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+   ctrGuSetTexture(GPU_TEXUNIT0,
+         VIRT_TO_PHYS(texture->data),
+         texture->width,
+         texture->height,
+           GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)  
+         | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) 
+         | GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE)
+         | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
          GPU_RGBA8);
 
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ?
-         CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 
+         ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 
+         : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
@@ -134,9 +134,6 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
 #endif
 }
 
-static void gfx_display_ctr_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height) { }
-
 static bool gfx_display_ctr_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
@@ -152,13 +149,12 @@ static bool gfx_display_ctr_font_init_first(
 
 gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
    gfx_display_ctr_draw,
-   gfx_display_ctr_draw_pipeline,
-   gfx_display_ctr_viewport,
-   gfx_display_ctr_blend_begin,
-   gfx_display_ctr_blend_end,
-   gfx_display_ctr_get_default_mvp,
-   gfx_display_ctr_get_default_vertices,
-   gfx_display_ctr_get_default_tex_coords,
+   NULL,                                     /* draw_pipeline          */
+   NULL,                                     /* blend_begin            */
+   NULL,                                     /* blend_end              */
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
    gfx_display_ctr_font_init_first,
    GFX_VIDEO_DRIVER_CTR,
    "ctr",

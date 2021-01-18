@@ -299,7 +299,7 @@ static void gl2_load_texture_image(GLenum target,
       GLenum type,
       const GLvoid * data)
 {
-#if !defined(HAVE_PSGL) && !defined(ORBIS)
+#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA)
 #ifdef HAVE_OPENGLES2
    enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE_EXT;
 #else
@@ -857,11 +857,16 @@ static void gl2_create_fbo_texture(gl_t *gl,
       else
 #endif
       {
-#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#if defined(HAVE_OPENGLES2)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_RGBA,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#elif defined(HAVE_PSGL)
+         glTexImage2D(GL_TEXTURE_2D,
+               0, GL_ARGB_SCE,
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+               GL_ARGB_SCE, GL_UNSIGNED_BYTE, NULL);
 #else
          /* Avoid potential performance
           * reductions on particular platforms. */
@@ -2036,7 +2041,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    {
       if (!string_is_empty(shader_path))
          RARCH_WARN("[GL] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
-            shader_path, video_shader_to_str(parse_type), video_shader_to_str(type));
+            shader_path, video_shader_type_to_str(parse_type), video_shader_type_to_str(type));
 
       shader_path = NULL;
    }
@@ -2808,7 +2813,9 @@ static bool gl2_frame(void *data, const void *frame,
    bool use_rgba                       = video_info->use_rgba;
    bool statistics_show                = video_info->statistics_show;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
+#ifndef EMSCRIPTEN
    unsigned black_frame_insertion      = video_info->black_frame_insertion;
+#endif
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state; 
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
@@ -4082,7 +4089,7 @@ static bool gl2_set_shader(void *data,
    if (type != fallback)
    {
       RARCH_ERR("[GL]: %s shader not supported, falling back to stock %s\n",
-            video_shader_to_str(type), video_shader_to_str(fallback));
+            video_shader_type_to_str(type), video_shader_type_to_str(fallback));
       path = NULL;
    }
 
@@ -4509,15 +4516,16 @@ static void gl2_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    GLuint glid;
-   gl_t *gl                     = (gl_t*)data;
    if (!id)
       return;
 
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      if (gl->ctx_driver->make_current)
-         gl->ctx_driver->make_current(false);
+      gl_t *gl = (gl_t*)data;
+      if (gl && gl->ctx_driver)
+         if (gl->ctx_driver->make_current)
+            gl->ctx_driver->make_current(false);
    }
 #endif
 

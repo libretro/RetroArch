@@ -45,6 +45,7 @@
 #include "../../command.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
+#include "../../paths.h"
 
 void dummyErrnoCodes(void);
 void emscripten_mainloop(void);
@@ -114,6 +115,10 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
          "bundle/shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], base_path,
+         "bundle/filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], base_path,
+         "bundle/filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
 
    /* user data dirs */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
@@ -151,12 +156,9 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path_config, user_path,
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
-   for (i = 0; i < DEFAULT_DIR_LAST; i++)
-   {
-      const char *dir_path = g_defaults.dirs[i];
-      if (!string_is_empty(dir_path))
-         path_mkdir(dir_path);
-   }
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 int main(int argc, char *argv[])
@@ -187,14 +189,16 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* get_architecture */
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_used */
+   NULL,                         /* get_total_mem */
+   NULL,                         /* get_free_mem  */
    NULL,                         /* install_sighandlers */
    NULL,                         /* get_signal_handler_state */
    NULL,                         /* set_signal_handler_state */
    NULL,                         /* destroy_signal_handler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+   NULL,                         /* get_lakka_version */
+   NULL,                         /* set_screen_brightness */
    NULL,                         /* watch_path_for_changes */
    NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
@@ -202,5 +206,6 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
-   "emscripten"
+   "emscripten",                 /* ident               */
+   NULL                          /* get_video_driver    */
 };

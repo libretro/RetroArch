@@ -2281,6 +2281,7 @@ static int stripes_draw_item(
    stripes_node_t *   node               = (stripes_node_t*)
       file_list_get_userdata_at_offset(list, i);
    settings_t *settings              = config_get_ptr();
+   gfx_animation_t *p_anim           = anim_get_ptr();
 
    /* Initial ticker configuration */
    ticker.type_enum = settings->uints.menu_ticker_type;
@@ -2400,7 +2401,7 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
-   ticker.idx      = gfx_animation_get_ticker_idx();
+   ticker.idx      = p_anim->ticker_idx;
    ticker.str      = ticker_str;
    ticker.selected = (i == current);
 
@@ -2436,7 +2437,7 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = 35 * stripes_scale_mod[7];
-   ticker.idx      = gfx_animation_get_ticker_idx();
+   ticker.idx      = p_anim->ticker_idx;
    ticker.selected = (i == current);
 
    if (!string_is_empty(entry->value))
@@ -2619,9 +2620,10 @@ static void stripes_render(void *data,
 {
    size_t i;
    menu_input_pointer_t pointer;
-   settings_t   *settings   = config_get_ptr();
-   stripes_handle_t *stripes        = (stripes_handle_t*)data;
-   unsigned      end        = (unsigned)menu_entries_get_size();
+   settings_t   *settings    = config_get_ptr();
+   stripes_handle_t *stripes = (stripes_handle_t*)data;
+   unsigned      end         = (unsigned)menu_entries_get_size();
+   gfx_animation_t *p_anim   = anim_get_ptr();
 
    if (!stripes)
       return;
@@ -2660,7 +2662,7 @@ static void stripes_render(void *data,
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
    }
 
-   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
 static bool stripes_shader_pipeline_active(unsigned menu_shader_pipeline)
@@ -2789,6 +2791,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    float xmb_alpha_factor                  = video_info->xmb_alpha_factor;
    bool xmb_shadows_enable                 = video_info->xmb_shadows_enable;
    bool video_fullscreen                   = video_info->fullscreen;
+   bool mouse_grabbed                      = video_info->input_driver_grab_mouse_state;
    bool menu_mouse_enable                  = video_info->menu_mouse_enable;
    const float under_thumb_margin          = 0.96;
    float scale_factor                      = 0.0f;
@@ -2844,19 +2847,30 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    for (i = 0; i <= stripes_list_get_size(stripes, MENU_LIST_HORIZONTAL)
       + stripes->system_tab_end; i++)
    {
+      float color[16];
+      float rgb[3];
       stripes_node_t *node = stripes_get_node(stripes, i);
 
       if (!node)
          continue;
 
-      float rgb[3];
       HSLToRGB(0.07*(float)i,0.5,0.5, &rgb[0]) ;
-      float color[16] = {
-         rgb[0], rgb[1], rgb[2], 0.55,
-         rgb[0], rgb[1], rgb[2], 0.55,
-         rgb[0], rgb[1], rgb[2], 0.55,
-         rgb[0], rgb[1], rgb[2], 0.55,
-      };
+      color[0]        = rgb[0];
+      color[1]        = rgb[1];
+      color[2]        = rgb[2];
+      color[3]        = 0.55;
+      color[4]        = rgb[0];
+      color[5]        = rgb[1];
+      color[6]        = rgb[2];
+      color[7]        = 0.55;
+      color[8]        = rgb[0];
+      color[9]        = rgb[1];
+      color[10]       = rgb[2];
+      color[11]       = 0.55;
+      color[12]       = rgb[0];
+      color[13]       = rgb[1];
+      color[14]       = rgb[2];
+      color[15]       = 0.55;
 
       gfx_display_draw_polygon(
             userdata,
@@ -2993,7 +3007,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
             sizeof(msg));
       free(stripes->box_message);
       stripes->box_message  = NULL;
-      render_background = true;
+      render_background     = true;
    }
 
    if (render_background)
@@ -3016,25 +3030,26 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    if (stripes->mouse_show)
    {
       menu_input_pointer_t pointer;
-      bool cursor_visible   = video_fullscreen 
-         && menu_mouse_enable;
+      bool cursor_visible = (video_fullscreen || mouse_grabbed) &&
+            menu_mouse_enable;
 
       menu_input_get_pointer_state(&pointer);
 
       gfx_display_set_alpha(stripes_coord_white, MIN(stripes->alpha, 1.00f));
 
-      gfx_display_draw_cursor(
-            userdata,
-            video_width,
-            video_height,
-            cursor_visible,
-            &stripes_coord_white[0],
-            stripes->cursor_size,
-            stripes->textures.list[STRIPES_TEXTURE_POINTER],
-            pointer.x,
-            pointer.y,
-            video_width,
-            video_height);
+      if (cursor_visible)
+         gfx_display_draw_cursor(
+               userdata,
+               video_width,
+               video_height,
+               cursor_visible,
+               &stripes_coord_white[0],
+               stripes->cursor_size,
+               stripes->textures.list[STRIPES_TEXTURE_POINTER],
+               pointer.x,
+               pointer.y,
+               video_width,
+               video_height);
    }
 
    video_driver_set_viewport(video_width, video_height, false, true);
@@ -3043,6 +3058,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
 {
    unsigned new_font_size, new_header_height;
+   gfx_display_t *p_disp         = disp_get_ptr();
    settings_t *settings          = config_get_ptr();
 
    float scale_factor            =
@@ -3123,12 +3139,13 @@ static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)
    RARCH_LOG("[XMB] icon size:          %.2f\n",  stripes->icon_size);
 #endif
 
-   gfx_display_set_header_height(new_header_height);
+   p_disp->header_height = new_header_height;
 }
 
 static void stripes_layout_psp(stripes_handle_t *stripes, int width)
 {
    unsigned new_font_size, new_header_height;
+   gfx_display_t *p_disp         = disp_get_ptr();
    settings_t *settings          = config_get_ptr();
    float scale_factor            =
       ((settings->floats.menu_scale_factor * width) / 1920.0) * 1.5;
@@ -3193,7 +3210,7 @@ static void stripes_layout_psp(stripes_handle_t *stripes, int width)
    RARCH_LOG("[XMB] icon size:          %.2f\n",  stripes->icon_size);
 #endif
 
-   gfx_display_set_header_height(new_header_height);
+   p_disp->header_height = new_header_height;
 }
 
 static void stripes_layout(stripes_handle_t *stripes)
@@ -4353,7 +4370,8 @@ static int stripes_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
             /* Normal pointer input */
-            unsigned header_height = gfx_display_get_header_height();
+            gfx_display_t *p_disp  = disp_get_ptr();
+            unsigned header_height = p_disp->header_height;
 
             if (y < header_height)
                return (unsigned)generic_menu_entry_action(stripes,

@@ -125,7 +125,7 @@ static int16_t uwp_input_state(
             bool id_plus_valid    = false;
             bool id_minus_valid   = false;
 
-            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+            input_conv_analog_id_to_bind_id(index, id, id_minus, id_plus);
 
             id_minus_valid        = binds[port][id_minus].valid;
             id_plus_valid         = binds[port][id_plus].valid;
@@ -134,12 +134,12 @@ static int16_t uwp_input_state(
 
             if (id_plus_valid && id_plus_key < RETROK_LAST)
             {
-               if (uwp_keyboard_pressed(bind_plus_key))
+               if (uwp_keyboard_pressed(id_plus_key))
                   ret = 0x7fff;
             }
             if (id_minus_valid && id_minus_key < RETROK_LAST)
             {
-               if (uwp_keyboard_pressed(bind_minus_key))
+               if (uwp_keyboard_pressed(id_minus_key))
                   ret += -0x7fff;
             }
 

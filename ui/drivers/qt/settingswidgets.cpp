@@ -8,6 +8,7 @@
 #include <QButtonGroup>
 
 #include "settingswidgets.h"
+#include "../ui_qt.h"
 
 #include <math.h>
 
@@ -442,7 +443,7 @@ StringComboBox::StringComboBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.string)
 {
-   addItems(QString(setting->values).split("|"));
+   addItems(string_split_to_qt(QString(setting->values), '|'));
 
    connect(this, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onCurrentTextChanged(const QString&)));
 

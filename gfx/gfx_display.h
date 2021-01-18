@@ -115,7 +115,6 @@ typedef struct gfx_display_ctx_driver
    /* Draw one of the menu pipeline shaders. */
    void (*draw_pipeline)(gfx_display_ctx_draw_t *draw,
          void *data, unsigned video_width, unsigned video_height);
-   void (*viewport)(gfx_display_ctx_draw_t *draw, void *data);
    /* Start blending operation. */
    void (*blend_begin)(void *data);
    /* Finish blending operation. */
@@ -227,11 +226,6 @@ void gfx_display_push_quad(
       const float *colors, int x1, int y1,
       int x2, int y2);
 
-void gfx_display_snow(
-      int16_t pointer_x,
-      int16_t pointer_y,
-      int width, int height);
-
 void gfx_display_draw_cursor(
       void *userdata,
       unsigned video_width,
@@ -253,27 +247,17 @@ font_data_t *gfx_display_font(
       bool video_is_threaded);
 
 void gfx_display_scissor_begin(void *data, unsigned video_width, unsigned video_height, int x, int y, unsigned width, unsigned height);
-void gfx_display_scissor_end(void *data, unsigned width, unsigned height);
 
 void gfx_display_font_free(font_data_t *font);
-
-void gfx_display_coords_array_reset(void);
-video_coord_array_t *gfx_display_get_coords_array(void);
 
 void gfx_display_set_width(unsigned width);
 void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
       size_t *fb_pitch);
 void gfx_display_set_height(unsigned height);
-void gfx_display_set_header_height(unsigned height);
-unsigned gfx_display_get_header_height(void);
-size_t gfx_display_get_framebuffer_pitch(void);
 void gfx_display_set_framebuffer_pitch(size_t pitch);
 
 bool gfx_display_get_msg_force(void);
 void gfx_display_set_msg_force(bool state);
-bool gfx_display_get_framebuffer_dirty_flag(void);
-void gfx_display_set_framebuffer_dirty_flag(void);
-void gfx_display_unset_framebuffer_dirty_flag(void);
 bool gfx_display_init_first_driver(bool video_is_threaded);
 
 gfx_display_t *disp_get_ptr(void);
@@ -329,19 +313,9 @@ bool gfx_display_reset_textures_list(
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height);
 
-bool gfx_display_reset_textures_list_buffer(
-        uintptr_t *item, enum texture_filter_type filter_type,
-        void* buffer, unsigned buffer_len,
-        enum image_type_enum image_type,
-        unsigned *width, unsigned *height);
-
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
-
-enum menu_driver_id_type gfx_display_get_driver_id(void);
-
-void gfx_display_set_driver_id(enum menu_driver_id_type type);
 
 float gfx_display_get_dpi_scale(unsigned width, unsigned height);
 

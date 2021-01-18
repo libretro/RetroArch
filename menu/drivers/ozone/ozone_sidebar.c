@@ -3,7 +3,7 @@
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *  Copyright (C) 2018      - Alfredo Monclús
- *  Copyright (C) 2018      - natinusala
+ *  Copyright (C) 2018-2020 - natinusala
  *  Copyright (C) 2019      - Patrick Scheurenbrand
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -31,7 +31,7 @@
 
 #include "../../../configuration.h"
 
-enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
+static const enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
@@ -54,7 +54,7 @@ enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
 #endif
 };
 
-enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
+static const enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
    MENU_SETTINGS,
    MENU_SETTINGS_TAB,
    MENU_HISTORY_TAB,
@@ -77,7 +77,7 @@ enum menu_settings_type ozone_system_tabs_type[OZONE_SYSTEM_TAB_LAST] = {
 #endif
 };
 
-enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
+static const enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
    MENU_ENUM_LABEL_MAIN_MENU,
    MENU_ENUM_LABEL_SETTINGS_TAB,
    MENU_ENUM_LABEL_HISTORY_TAB,
@@ -100,7 +100,7 @@ enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST] = {
 #endif
 };
 
-unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
+static const unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
    OZONE_TAB_TEXTURE_MAIN_MENU,
    OZONE_TAB_TEXTURE_SETTINGS,
    OZONE_TAB_TEXTURE_HISTORY,
@@ -128,19 +128,19 @@ static void ozone_sidebar_collapse_end(void *userdata)
 static float ozone_sidebar_get_scroll_y(
       ozone_handle_t *ozone, unsigned video_height)
 {
-   float scroll_y                          = 
+   float scroll_y                          =
       ozone->animations.scroll_y_sidebar;
-   float selected_position_y               = 
+   float selected_position_y               =
       ozone_get_selected_sidebar_y_position(ozone);
-   float current_selection_middle_onscreen = 
-        ozone->dimensions.header_height 
-      + ozone->dimensions.spacer_1px 
-      + ozone->animations.scroll_y_sidebar 
-      + selected_position_y 
+   float current_selection_middle_onscreen =
+        ozone->dimensions.header_height
+      + ozone->dimensions.spacer_1px
+      + ozone->animations.scroll_y_sidebar
+      + selected_position_y
       + ozone->dimensions.sidebar_entry_height / 2.0f;
-   float bottom_boundary                   = 
-      (float)video_height 
-      - (ozone->dimensions.header_height + ozone->dimensions.spacer_1px) 
+   float bottom_boundary                   =
+      (float)video_height
+      - (ozone->dimensions.header_height + ozone->dimensions.spacer_1px)
       - ozone->dimensions.footer_height;
    float entries_middle                    = (float)video_height / 2.0f;
    float entries_height                    = ozone_get_sidebar_height(ozone);
@@ -171,22 +171,23 @@ void ozone_draw_sidebar(
    unsigned i, sidebar_height;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-   static const char* const 
-      ticker_spacer              = OZONE_TICKER_SPACER;
-   unsigned ticker_x_offset      = 0;
-   settings_t *settings          = config_get_ptr();
-   uint32_t text_alpha           = ozone->animations.sidebar_text_alpha 
+   static const char* const
+      ticker_spacer                  = OZONE_TICKER_SPACER;
+   unsigned ticker_x_offset          = 0;
+   settings_t *settings              = config_get_ptr();
+   uint32_t text_alpha               = ozone->animations.sidebar_text_alpha 
       * 255.0f;
-   bool use_smooth_ticker        = settings->bools.menu_ticker_smooth;
-   float scale_factor            = ozone->last_scale_factor;
+   bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
+   float scale_factor                = ozone->last_scale_factor;
    enum gfx_animation_ticker_type
-      menu_ticker_type           = (enum gfx_animation_ticker_type)
+      menu_ticker_type               = (enum gfx_animation_ticker_type)
       settings->uints.menu_ticker_type;
-   unsigned selection_y          = 0;
-   unsigned selection_old_y      = 0;
-   unsigned horizontal_list_size = 0;
+   unsigned selection_y              = 0;
+   unsigned selection_old_y          = 0;
+   unsigned horizontal_list_size     = 0;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_animation_t          *p_anim  = anim_get_ptr();
 
    if (!ozone->draw_sidebar)
       return;
@@ -194,7 +195,7 @@ void ozone_draw_sidebar(
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
+      ticker_smooth.idx           = p_anim->ticker_pixel_idx;
       ticker_smooth.font          = ozone->fonts.sidebar.font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = menu_ticker_type;
@@ -204,7 +205,7 @@ void ozone_draw_sidebar(
    }
    else
    {
-      ticker.idx                  = gfx_animation_get_ticker_idx();
+      ticker.idx                  = p_anim->ticker_idx;
       ticker.type_enum            = menu_ticker_type;
       ticker.spacer               = ticker_spacer;
    }
@@ -305,10 +306,10 @@ void ozone_draw_sidebar(
             video_width,
             video_height,
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
-				entry_width - ozone->dimensions.spacer_5px,
-				ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
-				selection_old_y + ozone->animations.scroll_y_sidebar,
-				1-ozone->animations.cursor_alpha);
+            entry_width - ozone->dimensions.spacer_5px,
+            ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
+            selection_old_y + ozone->animations.scroll_y_sidebar,
+            1-ozone->animations.cursor_alpha);
 
    /* Menu tabs */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_padding_vertical;
@@ -323,6 +324,10 @@ void ozone_draw_sidebar(
       unsigned     icon    = ozone_system_tabs_icons[ozone->tabs[i]];
 
       uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
+      float *col           = (selected ? ozone->theme->text_selected : ozone->theme->entries_icon);
+
+      if (!col)
+         col               = ozone->pure_white;
 
       /* Icon */
       ozone_draw_icon(
@@ -338,7 +343,7 @@ void ozone_draw_sidebar(
             video_height,
             0,
             1,
-            (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+            col);
 
       value_idx = ozone_system_tabs_value[ozone->tabs[i]];
       title     = msg_hash_to_str(value_idx);
@@ -397,9 +402,13 @@ void ozone_draw_sidebar(
          uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
 
          ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, i);
+         float *col         = (selected ? ozone->theme->text_selected : ozone->theme->entries_icon);
 
          if (!node)
             goto console_iterate;
+
+         if (!col)
+            col             = ozone->pure_white;
 
          /* Icon */
          ozone_draw_icon(
@@ -415,7 +424,7 @@ void ozone_draw_sidebar(
                video_height,
                0,
                1,
-               (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+               col);
 
          /* Text */
          if (ozone->sidebar_collapsed)
@@ -474,8 +483,9 @@ console_iterate:
 
    ozone_font_flush(video_width, video_height, &ozone->fonts.sidebar);
 
-   gfx_display_scissor_end(userdata, video_width,
-         video_height);
+   if (dispctx && dispctx->scissor_end)
+      dispctx->scissor_end(userdata,
+            video_width, video_height);
 }
 
 void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)

@@ -1324,6 +1324,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    "イメージにわずかなぼかしを加えて, ピクセルの輪郭の硬さを和らげます. このオプションはパフォーマンスにはほとんど影響しません."
    )
+#if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "バイリニア (双線形)"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "シェーダの自動ロード遅延 (ms)"
@@ -1446,10 +1452,6 @@ MSG_HASH(
    "フルスクリーンモード"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "フルスクリーンで起動します. 実行時にも切り替え可能です."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "ウィンドウフルスクリーンモード"
    )
@@ -1497,10 +1499,6 @@ MSG_HASH(
    "ウィンドウの位置とサイズを記憶"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "ウィンドウの位置とサイズを記憶します. [ウィンドウの拡大率]設定より優先されます."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "ウィンドウの幅"
    )
@@ -1539,6 +1537,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "ビデオのアスペクト比(幅/高さ)の浮動小数点値です. [アスペクト比]に'Config'を設定しているときに使用されます."
    )
+#if defined(DINGUX)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "カスタム表示領域のX位置"
@@ -1954,6 +1954,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    "プラグアンドプレイ対応のプロファイルを持つコントローラを自動的に設定します."
    )
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "入力ボタン軸のしきい値"
@@ -2061,6 +2063,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "(対応コアで)デバイスの振動を有効"
    )
+#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
+#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -2953,16 +2957,8 @@ MSG_HASH(
    "巻き戻しバッファサイズ(MB)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "巻き戻しバッファ用に予約するメモリ量(MB)。これを増やすと, 巻き戻し履歴の量が増えます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
    "巻き戻しバッファサイズのステップ(MB)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
-   "このUIで巻き戻しバッファサイズの値を増減するたびに, この量だけ変化します。"
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -3054,24 +3050,12 @@ MSG_HASH(
    "OSDオーバーレイ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "OSDコントロールとベゼルを調整します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    "ビデオレイアウト"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "ビデオレイアウトを調整します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "OSD通知"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "OSD通知を調整します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -3087,10 +3071,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
    "オーバーレイを表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-   "オーバーレイを有効にします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -3239,6 +3219,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "OSDメッセージのフォント"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+   "画面上の通知のフォントを選択します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -3798,20 +3782,8 @@ MSG_HASH(
    "[巻き戻し]を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "[巻き戻し]オプションを表示/非表示にします。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   "[遅延]オプションを表示/非表示にします。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
    "[遅延]を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "[OSDオーバーレイ]オプションを表示/非表示にします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
@@ -3820,10 +3792,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
    "[ビデオレイアウト]を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   "[ビデオレイアウト]オプションを表示/非表示にします."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -4028,6 +3996,10 @@ MSG_HASH(
    "メニューの倍率"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "メニューの背景に画像を使用する"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "壁紙の不透明度"
    )
@@ -4077,10 +4049,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "AIサービス出力"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "テキストオーバーレイとして翻訳を表示する(画像モード)か, テキスト読み上げとして再生します(音声モード)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -4145,10 +4113,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "有効"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "古典的なゲームで実績を獲得しましょう. 詳細については, https://retroachievements.org をご覧ください."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -4659,10 +4623,6 @@ MSG_HASH(
 
 /* Settings > User > Accounts */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "古典的なゲームで実績を獲得しましょう. 詳細については, http://retroachievements.org をご覧ください."
-   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -4680,7 +4640,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "RetroAchievementsアカウントのパスワードです。"
+   "RetroAchievementsアカウントのパスワードを入力してください。最大長：255文字"
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -4696,6 +4656,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    "Twitch配信キー"
    )
+
+/* Settings > User > Accounts > Facebook Gaming */
+
 
 /* Settings > Directory */
 
@@ -5141,6 +5104,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
    "すべて表示"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "ジャンル別"
+   )
 
 /* Playlist > Playlist Item */
 
@@ -5533,10 +5500,6 @@ MSG_HASH(
    "チート検索を開始/再開始"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
-   "左/右でビット幅を変更"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
    "ビッグエンディアン"
    )
@@ -5547,10 +5510,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "値でメモリ空間を検索"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
-   "左/右で値を変更"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
@@ -5609,20 +5568,12 @@ MSG_HASH(
    "値でメモリ空間を検索"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
-   "左/右で値を変更"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
    "以前の値 +%u (%X ) に等しい"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
    "値でメモリ空間を検索"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
-   "左/右で値を変更"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
@@ -5814,6 +5765,8 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+   
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "シェーダのプリセットに名前を付けて保存"
@@ -5919,24 +5872,16 @@ MSG_HASH(
 /* Quick Menu > Achievements */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "表示する実績はありません。"
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "実績ハードコアモードを一時停止"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "現在のセッションの実績を一時停止します (これにより, セーブ状態, チート, 巻き戻し, 一時停止, スローモーションが可能になります)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "実績ハードコアモードを再開"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "現在のセッションの実績を再開します (これにより, セーブ状態, チート, 巻き戻し, 一時停止, スローモーションを無効にし, 現在のゲームをリセットします)."
    )
 
 /* Quick Menu > Information */
@@ -5944,10 +5889,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
    "データベースエントリ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
-   "現在のコンテンツに関するデータベースの情報を表示します"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
@@ -7416,6 +7357,10 @@ MSG_HASH(
    "(サムネイルを見つかることに使う)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   "アイテム「%1」を削除してよろしいですか？"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    "まずひとつのプレイリストを選択してください。"
    )
@@ -7625,6 +7570,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
    "プレイリストが見つかりません。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   "コネクティッド"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
@@ -9513,14 +9462,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
    "GPUオーバークロック"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "SwitchのGPUをオーバークロックまたはアンダークロックします。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_BACKLIGHT_CONTROL,
-   "画面の明るさ"
    )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

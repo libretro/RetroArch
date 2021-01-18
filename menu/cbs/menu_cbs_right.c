@@ -35,7 +35,7 @@
 #include "../../core.h"
 #include "../../core_info.h"
 #ifdef HAVE_CHEATS
-#include "../../managers/cheat_manager.h"
+#include "../../cheat_manager.h"
 #endif
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
@@ -154,13 +154,13 @@ static int action_right_input_desc_kbd(unsigned type, const char *label,
    remap_id =
       settings->uints.input_keymapper_ids[user_idx][btn_idx];
 
-   for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
+   for (key_id = 0; key_id < RARCH_MAX_KEYS; key_id++)
    {
       if (remap_id == key_descriptors[key_id].key)
          break;
    }
 
-   if (key_id < (RARCH_MAX_KEYS - 1) + MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+   if (key_id < (RARCH_MAX_KEYS - 1))
       key_id++;
    else
       key_id = 0;
@@ -380,7 +380,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   video_shader_resolve_parameters(NULL, shader);
+   video_shader_resolve_parameters(shader);
 
    shader->modified         = true;
 
@@ -995,6 +995,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
             case MENU_ENUM_LABEL_EXPLORE_ITEM:
+            case MENU_ENUM_LABEL_NO_SETTINGS_FOUND:
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:

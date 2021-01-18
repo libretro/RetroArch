@@ -124,19 +124,21 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
    const char *extensionsString  = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
    const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
    const char *pos               = strstr(extensionsString, extension);
+   size_t pos_ext_len            = strlen(extension);
 
    if (  pos &&
          (pos == extensionsString || pos[-1] == ' ') &&
-         (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0')
+         (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
       )
       return 1;
 
-   pos = strstr(client_extensions, extension);
+   pos                           = strstr(client_extensions, extension);
+   pos_ext_len                   = strlen(extension);
 
    if (
          pos &&
          (pos == extensionsString || pos[-1] == ' ') &&
-         (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0')
+         (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
       )
       return 1;
 
