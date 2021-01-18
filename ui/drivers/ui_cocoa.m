@@ -78,7 +78,7 @@ static char **waiting_argv;
             uint32_t mod              = 0;
             const char *inputTextUTF8 = ch.UTF8String;
             uint32_t character        = inputTextUTF8[0];
-            NSEventModifierFlags mods = event.modifierFlags;
+            NSUInteger mods           = event.modifierFlags;
             uint16_t keycode          = event.keyCode;
 
                if (mods & NSEventModifierFlagCapsLock)
@@ -108,8 +108,8 @@ static char **waiting_argv;
         case NSFlagsChanged:
 #endif
          {
-            static NSEventModifierFlags old_flags = 0;
-            NSEventModifierFlags new_flags        = event.modifierFlags;
+            static NSUInteger old_flags           = 0;
+            NSUInteger new_flags                  = event.modifierFlags;
             bool down                             = (new_flags & old_flags) == old_flags;
             uint16_t keycode                      = event.keyCode;
 
