@@ -21,6 +21,8 @@
 
 #include <retro_assert.h>
 
+#include "../../../configuration.h"
+#include "../../../retroarch.h"
 #include "../../../verbosity.h"
 
 #ifdef HAVE_COCOATOUCH

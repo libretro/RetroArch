@@ -44,6 +44,8 @@
 #include <AppKit/AppKit.h>
 #endif
 
+#include "../../../retroarch.h"
+
 typedef enum apple_view_type
 {
    APPLE_VIEW_TYPE_NONE = 0,
