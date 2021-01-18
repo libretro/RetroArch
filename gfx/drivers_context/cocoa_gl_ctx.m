@@ -43,9 +43,6 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#ifdef HAVE_VULKAN
-#include "../common/vulkan_common.h"
-#endif
 #ifdef HAVE_METAL
 #include "../common/metal_common.h"
 #endif
@@ -60,10 +57,6 @@
 
 typedef struct cocoa_ctx_data
 {
-#ifdef HAVE_VULKAN
-   gfx_ctx_vulkan_data_t vk;
-   int swap_interval;
-#endif
 #ifndef OSX
    int fast_forward_skips;
 #endif
@@ -80,8 +73,8 @@ typedef struct cocoa_ctx_data
 static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 static GLContextClass* g_hw_ctx     = NULL;
 static GLContextClass* g_context    = NULL;
-static unsigned g_minor             = 0;
-static unsigned g_major             = 0;
+static unsigned g_gl_minor          = 0;
+static unsigned g_gl_major          = 0;
 #ifdef OSX
 static NSOpenGLPixelFormat* g_format;
 #endif
@@ -135,11 +128,6 @@ static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
 #endif
          }
          break;
-      case GFX_CTX_VULKAN_API:
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-         break;
       default:
          break;
    }
@@ -155,7 +143,13 @@ static void cocoa_gl_gfx_ctx_set_flags(void *data, uint32_t flags)
       cocoa_ctx->core_hw_context_enable = true;
 }
 
-#if !defined(OSX)
+#if defined(OSX)
+void cocoa_gl_gfx_ctx_update(void)
+{
+   [g_context update];
+   [g_hw_ctx update];
+}
+#else
 #if defined(HAVE_COCOATOUCH)
 void *glkitview_init(void)
 {
@@ -176,22 +170,6 @@ void glkitview_bind_fbo(void)
 #endif
 #endif
 
-void cocoa_gl_gfx_ctx_update(void)
-{
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-#ifdef OSX
-         [g_context update];
-         [g_hw_ctx update];
-#endif
-#endif
-         break;
-      default:
-         break;
-   }
-}
 
 static void cocoa_gl_gfx_ctx_destroy(void *data)
 {
@@ -200,37 +178,18 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
    if (!cocoa_ctx)
       return;
 
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-         [GLContextClass clearCurrentContext];
+   [GLContextClass clearCurrentContext];
 
 #ifdef OSX
-         [g_context clearDrawable];
-         RELEASE(g_context);
-         RELEASE(g_format);
-         if (g_hw_ctx)
-            [g_hw_ctx clearDrawable];
-         RELEASE(g_hw_ctx);
+   [g_context clearDrawable];
+   RELEASE(g_context);
+   RELEASE(g_format);
+   if (g_hw_ctx)
+      [g_hw_ctx clearDrawable];
+   RELEASE(g_hw_ctx);
 #endif
-         [GLContextClass clearCurrentContext];
-         g_context = nil;
-#endif
-         break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         vulkan_context_destroy(&cocoa_ctx->vk, cocoa_ctx->vk.vk_surface != VK_NULL_HANDLE);
-         if (cocoa_ctx->vk.context.queue_lock)
-            slock_free(cocoa_ctx->vk.context.queue_lock);
-         memset(&cocoa_ctx->vk, 0, sizeof(cocoa_ctx->vk));
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
+   [GLContextClass clearCurrentContext];
+   g_context = nil;
 
    free(cocoa_ctx);
 }
@@ -288,67 +247,30 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 
 static gfx_ctx_proc_t cocoa_gl_gfx_ctx_get_proc_address(const char *symbol_name)
 {
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(
-               CFBundleGetBundleWithIdentifier(GLFrameworkID),
-               (BRIDGE CFStringRef)BOXSTRING(symbol_name)
-               );
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
-   return NULL;
+   return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(
+         CFBundleGetBundleWithIdentifier(GLFrameworkID),
+         (BRIDGE CFStringRef)BOXSTRING(symbol_name)
+         );
 }
 
 static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         cocoa_ctx->use_hw_ctx = enable;
+   cocoa_ctx->use_hw_ctx = enable;
 
-         if (enable)
-            [g_hw_ctx makeCurrentContext];
-         else
-            [g_context makeCurrentContext];
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
+   if (enable)
+      [g_hw_ctx makeCurrentContext];
+   else
+      [g_context makeCurrentContext];
 }
 
 static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
-#ifdef HAVE_VULKAN
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-#endif
 
    *quit                       = false;
-
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         *resize               = cocoa_ctx->vk.need_new_swapchain;
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
 #if MAC_OS_X_VERSION_10_7 && defined(OSX)
    cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
@@ -369,111 +291,42 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
    unsigned interval           = (unsigned)i;
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
 #ifdef OSX
-         {
-            GLint value                     = interval ? 1 : 0;
-            [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
-         }
+   GLint value                 = interval ? 1 : 0;
+   [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #else
-         /* < No way to disable Vsync on iOS? */
-         /*   Just skip presents so fast forward still works. */
-         cocoa_ctx->is_syncing         = interval ? true : false;
-         cocoa_ctx->fast_forward_skips = interval ? 0 : 3;
+   /* < No way to disable Vsync on iOS? */
+   /*   Just skip presents so fast forward still works. */
+   cocoa_ctx->is_syncing         = interval ? true : false;
+   cocoa_ctx->fast_forward_skips = interval ? 0 : 3;
 #endif
-         break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         if (cocoa_ctx->swap_interval != interval)
-         {
-            cocoa_ctx->swap_interval = interval;
-            if (cocoa_ctx->vk.swapchain)
-               cocoa_ctx->vk.need_new_swapchain = true;
-         }
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
 #ifdef OSX
-         [g_context flushBuffer];
-         [g_hw_ctx  flushBuffer];
+   [g_context flushBuffer];
+   [g_hw_ctx  flushBuffer];
 #else
-         if (!(--cocoa_ctx->fast_forward_skips < 0))
-            return;
-         if (glk_view)
-            [glk_view display];
-         cocoa_ctx->fast_forward_skips = cocoa_ctx->is_syncing ? 0 : 3;
+   if (!(--cocoa_ctx->fast_forward_skips < 0))
+      return;
+   if (glk_view)
+      [glk_view display];
+   cocoa_ctx->fast_forward_skips = cocoa_ctx->is_syncing ? 0 : 3;
 #endif
-         break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         if (cocoa_ctx->vk.context.has_acquired_swapchain)
-         {
-            cocoa_ctx->vk.context.has_acquired_swapchain = false;
-            if (cocoa_ctx->vk.swapchain == VK_NULL_HANDLE)
-               retro_sleep(10);
-            else
-               vulkan_present(&cocoa_ctx->vk, cocoa_ctx->vk.context.current_swapchain_index);
-         }
-         vulkan_acquire_next_image(&cocoa_ctx->vk);
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 }
 
 static bool cocoa_gl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor)
 {
-   switch (api)
-   {
-#if defined(HAVE_COCOATOUCH)
-      case GFX_CTX_OPENGL_ES_API:
-         break;
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-      case GFX_CTX_OPENGL_API:
-         break;
-#ifdef HAVE_VULKAN
-      case GFX_CTX_VULKAN_API:
-         break;
-#endif
-#endif
-      case GFX_CTX_NONE:
-      default:
-         return false;
-   }
-
    cocoagl_api = api;
-   g_minor     = minor;
-   g_major     = major;
+   g_gl_minor  = minor;
+   g_gl_major  = major;
 
    return true;
 }
-
-#ifdef HAVE_VULKAN
-static void *cocoa_vk_gfx_ctx_get_context_data(void *data)
-{
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-   return &cocoa_ctx->vk.context;
-}
-#endif
 
 #ifdef OSX
 static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
@@ -490,98 +343,71 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 
-   switch (cocoagl_api)
+   /* NOTE: setWantsBestResolutionOpenGLSurface only 
+    * available on MacOS X 10.7 and up.
+    * Deprecated as of MacOS X 10.14. */
+#if MAC_OS_X_VERSION_10_7
+   [g_view setWantsBestResolutionOpenGLSurface:YES];
+#endif
+
    {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         /* NOTE: setWantsBestResolutionOpenGLSurface only available on MacOS X 10.7 and up.
-          * Deprecated as of MacOS X 10.14. */
+      NSOpenGLPixelFormatAttribute attributes [] = {
+         NSOpenGLPFAColorSize,
+         24,
+         NSOpenGLPFADoubleBuffer,
+         NSOpenGLPFAAllowOfflineRenderers,
+         NSOpenGLPFADepthSize,
+         (NSOpenGLPixelFormatAttribute)16, /* 16 bit depth buffer */
+         0,                                /* profile */
+         0,                                /* profile enum */
+         (NSOpenGLPixelFormatAttribute)0
+      };
+
+      switch (g_gl_major)
+      {
+         case 3:
 #if MAC_OS_X_VERSION_10_7
-         [g_view setWantsBestResolutionOpenGLSurface:YES];
-#endif
-
-         {
-            NSOpenGLPixelFormatAttribute attributes [] = {
-               NSOpenGLPFAColorSize,
-               24,
-               NSOpenGLPFADoubleBuffer,
-               NSOpenGLPFAAllowOfflineRenderers,
-               NSOpenGLPFADepthSize,
-               (NSOpenGLPixelFormatAttribute)16, /* 16 bit depth buffer */
-               0,                                /* profile */
-               0,                                /* profile enum */
-               (NSOpenGLPixelFormatAttribute)0
-            };
-
-            switch (g_major)
+            if (g_gl_minor >= 1 && g_gl_minor <= 3)
             {
-               case 3:
-#if MAC_OS_X_VERSION_10_7
-                  if (g_minor >= 1 && g_minor <= 3)
-                  {
-                     attributes[6] = NSOpenGLPFAOpenGLProfile;
-                     attributes[7] = NSOpenGLProfileVersion3_2Core;
-                  }
-#endif
-                  break;
-               case 4:
-#if MAC_OS_X_VERSION_10_10
-                  if (g_minor == 1)
-                  {
-                     attributes[6] = NSOpenGLPFAOpenGLProfile;
-                     attributes[7] = NSOpenGLProfileVersion4_1Core;
-                  }
-#endif
-                  break;
+               attributes[6] = NSOpenGLPFAOpenGLProfile;
+               attributes[7] = NSOpenGLProfileVersion3_2Core;
             }
+#endif
+            break;
+         case 4:
+#if MAC_OS_X_VERSION_10_10
+            if (g_gl_minor == 1)
+            {
+               attributes[6] = NSOpenGLPFAOpenGLProfile;
+               attributes[7] = NSOpenGLProfileVersion4_1Core;
+            }
+#endif
+            break;
+      }
 
-            g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+      g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
-            if (g_format == nil)
-            {
-               /* NSOpenGLFPAAllowOfflineRenderers is
-                  not supported on this OS version. */
-               attributes[3] = (NSOpenGLPixelFormatAttribute)0;
-               g_format      = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-            }
+      if (g_format == nil)
+      {
+         /* NSOpenGLFPAAllowOfflineRenderers is
+            not supported on this OS version. */
+         attributes[3] = (NSOpenGLPixelFormatAttribute)0;
+         g_format      = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+      }
 #endif
-         }
-
-         if (cocoa_ctx->use_hw_ctx)
-         {
-            g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-            g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:g_hw_ctx];
-         }
-         else
-            g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-
-         [g_context setView:g_view];
-         [g_context makeCurrentContext];
-         break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         RARCH_LOG("[macOS]: Native window size: %u x %u.\n",
-               cocoa_ctx->width, cocoa_ctx->height);
-
-         if (!vulkan_surface_create(
-                  &cocoa_ctx->vk,
-                  VULKAN_WSI_MVK_MACOS,
-                  NULL,
-                  (BRIDGE void *)g_view,
-                  cocoa_ctx->width,
-                  cocoa_ctx->height,
-                  cocoa_ctx->swap_interval))
-         {
-            RARCH_ERR("[macOS]: Failed to create surface.\n");
-            return false;
-         }
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
    }
+
+   if (cocoa_ctx->use_hw_ctx)
+   {
+      g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+      g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:g_hw_ctx];
+   }
+   else
+      g_context      = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+
+   [g_context setView:g_view];
+   [g_context makeCurrentContext];
 
    /* TODO: Screen mode support. */
    if (fullscreen)
@@ -612,7 +438,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
-   calloc(1, sizeof(cocoa_ctx_data_t));
+      calloc(1, sizeof(cocoa_ctx_data_t));
 
    if (!cocoa_ctx)
       return NULL;
@@ -620,29 +446,11 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 #ifndef OSX
    cocoa_ctx->is_syncing       = true;
 #endif
-    
-   switch (cocoagl_api)
-   {
+
 #if defined(HAVE_COCOA_METAL)
-      case GFX_CTX_OPENGL_API:
-         [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL];
-         break;
+   [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL];
 #endif
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         [apple_platform setViewType:APPLE_VIEW_TYPE_VULKAN];
-         if (!vulkan_context_init(&cocoa_ctx->vk, VULKAN_WSI_MVK_MACOS))
-         {
-            free(cocoa_ctx);
-            return NULL;
-         }
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-    
+
    return cocoa_ctx;
 }
 #else
@@ -651,21 +459,12 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         if (cocoa_ctx->use_hw_ctx)
-            g_hw_ctx      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-         g_context        = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-         glk_view.context = g_context;
+   if (cocoa_ctx->use_hw_ctx)
+      g_hw_ctx      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+   g_context        = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+   glk_view.context = g_context;
 
-         [g_context makeCurrentContext];
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
+   [g_context makeCurrentContext];
 
    /* TODO: Maybe iOS users should be able to 
     * show/hide the status bar here? */
@@ -705,39 +504,6 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 #ifdef HAVE_COCOA_METAL
 static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
-#ifdef HAVE_VULKAN
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-#endif
-
-   switch (cocoagl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-         break;
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         cocoa_ctx->width  = width;
-         cocoa_ctx->height = height;
-
-         if (!vulkan_create_swapchain(&cocoa_ctx->vk,
-                  width, height, cocoa_ctx->swap_interval))
-         {
-            RARCH_ERR("[macOS/Vulkan]: Failed to update swapchain.\n");
-            return false;
-         }
-
-         cocoa_ctx->vk.context.invalid_swapchain = true;
-         if (cocoa_ctx->vk.created_new_swapchain)
-            vulkan_acquire_next_image(&cocoa_ctx->vk);
-
-         cocoa_ctx->vk.need_new_swapchain        = false;
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
    return true;
 }
 #endif
@@ -788,10 +554,6 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_get_flags,
    cocoa_gl_gfx_ctx_set_flags,
    cocoa_gl_gfx_ctx_bind_hw_render,
-#if defined(HAVE_VULKAN)
-   cocoa_vk_gfx_ctx_get_context_data,
-#else
    NULL, /* get_context_data */
-#endif
    NULL  /* make_current */
 };

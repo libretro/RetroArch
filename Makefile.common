@@ -2261,8 +2261,14 @@ ifeq ($(HAVE_COCOA),1)
           ui/drivers/cocoa/ui_cocoa_browser_window.o \
           ui/drivers/cocoa/ui_cocoa_msg_window.o \
           ui/drivers/cocoa/ui_cocoa_application.o \
-          ui/drivers/cocoa/cocoa_common.o \
-          gfx/drivers_context/cocoa_gl_ctx.o
+          ui/drivers/cocoa/cocoa_common.o
+          
+   ifeq ($(HAVE_OPENGL), 1)
+	   OBJ += gfx/drivers_context/cocoa_gl_ctx.o
+   endif
+   ifeq ($(HAVE_VULKAN), 1)
+	   OBJ += gfx/drivers_context/cocoa_vk_ctx.o
+   endif
 endif
 
 ifneq ($(findstring DOS,$(OS)),)
