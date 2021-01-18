@@ -29,6 +29,8 @@
 #include "apple_platform.h"
 #endif
 
+static CocoaView* g_instance;
+
 /* forward declarations */
 void cocoa_gl_gfx_ctx_update(void);
 
@@ -411,3 +413,27 @@ float cocoa_screen_get_native_scale(void)
     return ret;
 }
 #endif
+
+void *nsview_get_ptr(void)
+{
+#if defined(OSX)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#endif
+    return (BRIDGE void *)g_instance;
+}
+
+void nsview_set_ptr(CocoaView *p) { g_instance = p; }
+
+CocoaView *cocoaview_get(void)
+{
+#if defined(HAVE_COCOA_METAL)
+    return (CocoaView*)apple_platform.renderView;
+#elif defined(HAVE_COCOA)
+    return g_instance;
+#else
+    /* TODO/FIXME - implement */
+    return NULL;
+#endif
+}

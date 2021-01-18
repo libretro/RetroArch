@@ -85,7 +85,6 @@ static unsigned g_major             = 0;
 #ifdef OSX
 static NSOpenGLPixelFormat* g_format;
 #endif
-static CocoaView* g_instance;
 #if defined(HAVE_COCOATOUCH)
 static GLKView *glk_view            = NULL;
 
@@ -105,30 +104,6 @@ static GLKView *glk_view            = NULL;
 - (float) scale  { return 1.0f; }
 @end
 #endif
-
-void *nsview_get_ptr(void)
-{
-#if defined(OSX)
-   video_driver_display_type_set(RARCH_DISPLAY_OSX);
-   video_driver_display_set(0);
-   video_driver_display_userdata_set((uintptr_t)g_instance);
-#endif
-   return (BRIDGE void *)g_instance;
-}
-
-void nsview_set_ptr(CocoaView *p) { g_instance = p; }
-
-CocoaView *cocoaview_get(void)
-{
-#if defined(HAVE_COCOA_METAL)
-   return (CocoaView*)apple_platform.renderView;
-#elif defined(HAVE_COCOA)
-   return g_instance;
-#else
-   /* TODO/FIXME - implement */
-   return NULL;
-#endif
-}
 
 static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
 {
