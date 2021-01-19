@@ -192,6 +192,12 @@ static void frontend_gx_get_env(
     * as a result the cfg file is not found. */
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
+      if (strncmp("usb1", argv[0], 4) == 0 || strncmp("usb2", argv[0], 4) == 0)
+      {
+         strncpy(g_defaults.dirs[DEFAULT_DIR_CORE],argv[0], strlen(argv[0]));
+         strncpy(g_defaults.dirs[DEFAULT_DIR_CORE]," usb", 4);
+         memmove(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_CORE]+1, strlen(g_defaults.dirs[DEFAULT_DIR_CORE]));
+      }
       if(gx_devices[GX_DEVICE_SD].mounted)
       {
          chdir("sd:/");
