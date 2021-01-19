@@ -537,7 +537,10 @@ public class RetroActivityCommon extends NativeActivity
    * @return The path to the RetroArch cores directory
    */
   private String getCorePath() {
-    return getApplicationInfo().dataDir + "/cores/";
+    String path = getApplicationInfo().dataDir + "/cores/";
+    new File(path).mkdirs();
+
+    return path;
   }
 
   /**
