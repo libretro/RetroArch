@@ -79,6 +79,9 @@ static unsigned g_gl_major          = 0;
 static GLKView *glk_view            = NULL;
 #endif
 
+/* Forward declaration */
+CocoaView *cocoaview_get(void);
+
 static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
 {
    uint32_t flags                 = 0;
