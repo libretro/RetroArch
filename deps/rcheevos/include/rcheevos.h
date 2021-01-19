@@ -392,6 +392,7 @@ typedef struct rc_runtime_trigger_t {
   rc_trigger_t* trigger;
   void* buffer;
   unsigned char md5[16];
+  int serialized_size;
   char owns_memrefs;
 }
 rc_runtime_trigger_t;
