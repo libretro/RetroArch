@@ -52,7 +52,6 @@ typedef struct cocoa_ctx_data
 } cocoa_ctx_data_t;
 
 /* TODO/FIXME - static globals */
-static enum gfx_ctx_api cocoavk_api = GFX_CTX_NONE;
 static unsigned g_vk_minor          = 0;
 static unsigned g_vk_major          = 0;
 
@@ -85,7 +84,7 @@ static void cocoa_vk_gfx_ctx_destroy(void *data)
    free(cocoa_ctx);
 }
 
-static enum gfx_ctx_api cocoa_vk_gfx_ctx_get_api(void *data) { return cocoavk_api; }
+static enum gfx_ctx_api cocoa_vk_gfx_ctx_get_api(void *data) { return GFX_CTX_VULKAN_API; }
 
 static bool cocoa_vk_gfx_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 
@@ -190,7 +189,6 @@ static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
 static bool cocoa_vk_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor)
 {
-   cocoavk_api = api;
    g_vk_minor  = minor;
    g_vk_major  = major;
 
