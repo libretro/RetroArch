@@ -1,6 +1,5 @@
 BUILD_FOR_PCSX2   = 0
 DEBUG             = 0
-HAVE_FILE_LOGGER  = 0
 MUTE_WARNINGS     = 1
 PS2_IP = 192.168.1.150
 
@@ -35,10 +34,6 @@ LIBS = -lelf-loader -lpatches
 
 ifeq ($(BUILD_FOR_PCSX2), 1)
 RARCH_DEFINES += -DBUILD_FOR_PCSX2
-endif
-
-ifeq ($(HAVE_FILE_LOGGER), 1)
-CFLAGS		+= -DHAVE_FILE_LOGGER
 endif
 
 CFLAGS += $(RARCH_DEFINES)

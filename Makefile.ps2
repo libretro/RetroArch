@@ -1,10 +1,8 @@
 BUILD_FOR_PCSX2    = 0
 DEBUG              = 0
-HAVE_LOGGER        = 0
-HAVE_FILE_LOGGER   = 0
 HAVE_THREADS       = 0
 MUTE_WARNINGS      = 1
-PS2_IP = 192.168.1.150
+PS2_IP = 192.168.1.10
 
 TARGET = retroarchps2-debug.elf
 TARGET_RELEASE = retroarchps2.elf
@@ -45,10 +43,6 @@ endif
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
-endif
-
-ifeq ($(HAVE_FILE_LOGGER), 1)
-CFLAGS += -DHAVE_FILE_LOGGER
 endif
 
 CFLAGS += $(RARCH_DEFINES)
