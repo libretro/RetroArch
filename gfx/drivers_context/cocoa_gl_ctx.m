@@ -72,12 +72,9 @@ typedef struct cocoa_ctx_data
 /* TODO/FIXME - static globals */
 static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 static GLContextClass* g_hw_ctx     = NULL;
-static GLContextClass* g_context    = NULL;
+static GLContextClass* g_ctx        = NULL;
 static unsigned g_gl_minor          = 0;
 static unsigned g_gl_major          = 0;
-#ifdef OSX
-static NSOpenGLPixelFormat *g_fmt   = NULL;
-#endif
 #if defined(HAVE_COCOATOUCH)
 static GLKView *glk_view            = NULL;
 #endif
@@ -130,7 +127,7 @@ static void cocoa_gl_gfx_ctx_set_flags(void *data, uint32_t flags)
 #if defined(OSX)
 void cocoa_gl_gfx_ctx_update(void)
 {
-   [g_context update];
+   [g_ctx    update];
    [g_hw_ctx update];
 }
 #else
@@ -148,7 +145,7 @@ void *glkitview_init(void)
 
 void glkitview_bind_fbo(void)
 {
-   if (g_context)
+   if (glk_view)
       [glk_view bindDrawable];
 }
 #endif
@@ -163,9 +160,8 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
       return;
 #ifdef OSX
    [GLContextClass clearCurrentContext];
-   [g_context clearDrawable];
-   RELEASE(g_context);
-   RELEASE(g_fmt);
+   [g_ctx clearDrawable];
+   RELEASE(g_ctx);
    if (g_hw_ctx)
       [g_hw_ctx clearDrawable];
    RELEASE(g_hw_ctx);
@@ -173,7 +169,7 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
 #else
    [EAGLContext setCurrentContext:nil];
 #endif
-   g_context = nil;
+   g_ctx = nil;
 
    free(cocoa_ctx);
 }
@@ -252,7 +248,7 @@ static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
    }
    else
    {
-      [g_context makeCurrentContext];
+      [g_ctx makeCurrentContext];
    }
 #else
    if (enable)
@@ -261,7 +257,7 @@ static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
    }
    else
    {
-      [EAGLContext setCurrentContext:g_context];
+      [EAGLContext setCurrentContext:g_ctx];
    }
 #endif
 
@@ -293,7 +289,7 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
    unsigned interval             = (unsigned)i;
 #ifdef OSX
    GLint value                   = interval ? 1 : 0;
-   [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
+   [g_ctx setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #else
    cocoa_ctx_data_t *cocoa_ctx   = (cocoa_ctx_data_t*)data;
    /* < No way to disable Vsync on iOS? */
@@ -306,7 +302,7 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
 static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
 {
 #ifdef OSX
-   [g_context flushBuffer];
+   [g_ctx flushBuffer];
    [g_hw_ctx  flushBuffer];
 #else
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
@@ -351,6 +347,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 #endif
 
    {
+      NSOpenGLPixelFormat *fmt;
       NSOpenGLPixelFormatAttribute attributes [] = {
          NSOpenGLPFAColorSize,
          24,
@@ -385,32 +382,34 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
             break;
       }
 
-      g_fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+      fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
-      if (g_fmt == nil)
+      if (fmt == nil)
       {
          /* NSOpenGLFPAAllowOfflineRenderers is
             not supported on this OS version. */
-         attributes[3] = (NSOpenGLPixelFormatAttribute)0;
-         g_fmt         = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+         attributes[3]  = (NSOpenGLPixelFormatAttribute)0;
+         fmt            = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
       }
 #endif
+
+      if (cocoa_ctx->use_hw_ctx)
+      {
+         g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
+         g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:g_hw_ctx];
+      }
+      else
+         g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
+
+      RELEASE(fmt);
    }
 
-   if (cocoa_ctx->use_hw_ctx)
-   {
-      g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:g_fmt shareContext:nil];
-      g_context      = [[NSOpenGLContext alloc] initWithFormat:g_fmt shareContext:g_hw_ctx];
-   }
-   else
-      g_context      = [[NSOpenGLContext alloc] initWithFormat:g_fmt shareContext:nil];
-
-   [g_context setView:g_view];
+   [g_ctx setView:g_view];
 #ifdef OSX
-   [g_context makeCurrentContext];
+   [g_ctx makeCurrentContext];
 #else
-   [EAGLContext setCurrentContext:g_context];
+   [EAGLContext setCurrentContext:g_ctx];
 #endif
 
    /* TODO/FIXME: Screen mode support. */
@@ -465,13 +464,13 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
    if (cocoa_ctx->use_hw_ctx)
       g_hw_ctx      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   g_context        = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   glk_view.context = g_context;
+   g_ctx            = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+   glk_view.context = g_ctx;
 
 #ifdef OSX
-   [g_context makeCurrentContext];
+   [g_ctx makeCurrentContext];
 #else
-   [EAGLContext setCurrentContext:g_context];
+   [EAGLContext setCurrentContext:g_ctx];
 #endif
 
    /* TODO: Maybe iOS users should be able to 
