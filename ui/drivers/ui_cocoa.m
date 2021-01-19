@@ -29,6 +29,11 @@
 #include "cocoa/cocoa_defines.h"
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
+
+#if defined(HAVE_COCOA_METAL)
+#include "../../gfx/common/metal_common.h"
+#endif
+
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
@@ -191,16 +196,15 @@ static char **waiting_argv;
 
 @synthesize window = _window;
 
-#ifdef HAVE_COCOA_METAL
-#else
-#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
-
+#ifndef HAVE_COCOA_METAL
 - (void)dealloc
 {
    [_window release];
    [super dealloc];
 }
 #endif
+
+#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {

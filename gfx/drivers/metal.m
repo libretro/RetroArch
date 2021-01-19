@@ -60,11 +60,10 @@ static uint32_t metal_get_flags(void *data);
 
 // The graphics context for the Metal driver is just a stubbed out version
 // It supports getting metrics such as dpi which is needed for iOS/tvOS
-
+#if defined(HAVE_COCOATOUCH)
 static bool metal_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
 {
-#ifdef HAVE_COCOATOUCH
     CGRect screenRect = [[UIScreen mainScreen] bounds];
     CGFloat scale = [[UIScreen mainScreen] scale];
     float   displayHeight        = screenRect.size.height;
@@ -112,10 +111,8 @@ static bool metal_gfx_ctx_get_metrics(void *data, enum display_metric_types type
             return false;
     }
     return true;
-#else
-    return false;
-#endif
 }
+#endif
 
 /* Temporary workaround for metal not being able to poll flags during init */
 static gfx_ctx_driver_t metal_fake_context = {

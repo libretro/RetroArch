@@ -17,6 +17,7 @@
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
 #include "cocoa_common.h"
+#include "apple_platform.h"
 #include "../ui_cocoa.h"
 
 #include <retro_assert.h>

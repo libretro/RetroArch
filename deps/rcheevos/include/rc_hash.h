@@ -112,7 +112,7 @@ extern "C" {
     rc_hash_cdreader_close_track_handler     close_track;
   };
 
-  void rc_hash_init_default_cdreader();
+  void rc_hash_init_default_cdreader(void);
   void rc_hash_init_custom_cdreader(struct rc_hash_cdreader* reader);
 
   /* ===================================================== */

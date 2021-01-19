@@ -46,15 +46,6 @@
 
 #include "../../../retroarch.h"
 
-typedef enum apple_view_type
-{
-   APPLE_VIEW_TYPE_NONE = 0,
-   APPLE_VIEW_TYPE_OPENGL_ES,
-   APPLE_VIEW_TYPE_OPENGL,
-   APPLE_VIEW_TYPE_VULKAN,
-   APPLE_VIEW_TYPE_METAL
-} apple_view_type_t;
-
 #if defined(HAVE_COCOATOUCH)
 
 #if TARGET_OS_IOS

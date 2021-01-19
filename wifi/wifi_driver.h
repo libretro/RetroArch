@@ -100,7 +100,7 @@ bool driver_wifi_connection_info(wifi_network_info_t *network);
 
 void driver_wifi_scan(void);
 
-wifi_network_scan_t* driver_wifi_get_ssids();
+wifi_network_scan_t* driver_wifi_get_ssids(void);
 
 bool driver_wifi_ssid_is_online(unsigned i);
 
