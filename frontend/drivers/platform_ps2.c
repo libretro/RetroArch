@@ -195,14 +195,6 @@ static void frontend_ps2_init(void *data)
 #endif
 #endif
 
-#if defined(HAVE_FILE_LOGGER)
-   char fileLog[FILENAME_MAX];
-   strlcpy(fileLog, rootDevicePath(bootDeviceID), sizeof(fileLog));
-   strcat(fileLog, "retroarch.log");
-   retro_main_log_file_init(fileLog, false);
-   verbosity_enable();
-#endif
-
 #if !defined(DEBUG)
    waitUntilDeviceIsReady(bootDeviceID);
 #endif
@@ -210,10 +202,6 @@ static void frontend_ps2_init(void *data)
 
 static void frontend_ps2_deinit(void *data)
 {
-#if defined(HAVE_FILE_LOGGER)
-   verbosity_disable();
-   retro_main_log_file_deinit();
-#endif
 }
 
 static void frontend_ps2_exec(const char *path, bool should_load_game)
