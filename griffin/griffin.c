@@ -270,8 +270,6 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
 #elif defined(__PS3__) && !defined(__PSL1GHT__)
 #include "../gfx/drivers_context/ps3_ctx.c"
-#elif defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
-#include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
 #if defined(HAVE_VIVANTE_FBDEV)
