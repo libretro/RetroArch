@@ -17,7 +17,7 @@ build-retroarch-windows-x64:
     paths:
     - retroarch.exe
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "MOC=/usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/bin/moc ./configure --host=x86_64-w64-mingw32.shared"
@@ -58,7 +58,7 @@ build-retroarch-windows-i686:
     paths:
     - retroarch.exe
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "MOC=/usr/lib/mxe/usr/i686-w64-mingw32.shared/qt5/bin/moc ./configure --host=i686-w64-mingw32.shared"
@@ -100,7 +100,7 @@ build-retroarch-linux-x64:
     - retroarch
     - retroarch_qt
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     # Qt build
@@ -140,7 +140,7 @@ build-retroarch-linux-i686:
     paths:
     - retroarch
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     # Qt build
@@ -180,7 +180,7 @@ build-retroarch-dingux-mips32:
     paths:
     - retroarch_rg350.opk
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "make -j$NUMPROC -f Makefile.rg350"
@@ -195,7 +195,7 @@ build-retroarch-android-normal:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   script:
     - "cd pkg/android/phoenix && ./gradlew assembleNormalRelease && cd -"
     - "mkdir .retroarch-precompiled"
@@ -208,7 +208,7 @@ build-retroarch-android-aarch64:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   script:
     - "cd pkg/android/phoenix && ./gradlew assembleAarch64Release && cd -"
     - "mkdir .retroarch-precompiled"
@@ -221,7 +221,7 @@ build-retroarch-android-ra32:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   script:
     - "cd pkg/android/phoenix && ./gradlew assembleRa32Release && cd -"
     - "mkdir .retroarch-precompiled"
@@ -234,7 +234,7 @@ build-retroarch-android-playstore-normal:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   script:
     - "cd pkg/android/phoenix && ./gradlew bundlePlayStoreNormalRelease && cd -"
     - "mkdir .retroarch-precompiled"
@@ -247,7 +247,7 @@ build-retroarch-android-playstore-plus:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   script:
     - "cd pkg/android/phoenix && ./gradlew bundlePlayStorePlusRelease && cd -"
     - "mkdir .retroarch-precompiled"
@@ -262,7 +262,7 @@ build-static-retroarch-libnx-aarch64:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Static dummy builds without a core so its a good check if it properly builds
@@ -286,7 +286,7 @@ build-static-retroarch-dummy-libnx-aarch64:
     - retroarch_switch.nro
     - retroarch_switch.elf
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "make -f Makefile.libnx -j$NUMPROC HAVE_STATIC_DUMMY=1"
@@ -304,7 +304,7 @@ build-static-retroarch-vita:
     paths:
     -  retroarch-precompiled/
     -  retroarch-precompiled-gl/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -333,7 +333,7 @@ build-static-retroarch-dummy-vita:
     -  eboot.bin
     -  param.sfo
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "make -f Makefile.vita.salamander -j$NUMPROC"
@@ -348,7 +348,7 @@ build-static-retroarch-ps2:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -370,7 +370,7 @@ build-static-retroarch-dummy-ps2:
   artifacts:
     paths:
     -  raboot.elf
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "make -f Makefile.ps2.salamander -j$NUMPROC release"
@@ -383,7 +383,7 @@ build-static-retroarch-psp:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -409,7 +409,7 @@ build-static-retroarch-dummy-psp:
     - EBOOT.PBP
     - kernel_functions.prx
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "(cd bootstrap/psp1/kernel_functions_prx/ && make && cd -)"
@@ -427,7 +427,7 @@ build-static-retroarch-ctr:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -452,7 +452,7 @@ build-static-retroarch-dummy-ctr:
     - RetroArch.3dsx
     - RetroArch.smdh
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "make -f Makefile.ctr.salamander -j$NUMPROC USE_CTRULIB_2=1"
@@ -472,7 +472,7 @@ build-static-retroarch-wiiu:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -495,7 +495,7 @@ build-static-retroarch-dummy-wiiu:
     paths:
     - retroarch.rpx
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "make -f Makefile.wiiu -j$NUMPROC SALAMANDER_BUILD=1"
@@ -514,7 +514,7 @@ build-static-retroarch-wii:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -537,7 +537,7 @@ build-static-retroarch-dummy-wii:
     paths:
     - boot.dol
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "make -f Makefile.wii.salamander -j$NUMPROC EXTERNAL_LIBOGC=1 GX_PTHREAD_LEGACY=0"
@@ -558,7 +558,7 @@ build-static-retroarch-ngc:
   artifacts:
     paths:
     -  retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -580,7 +580,7 @@ build-static-retroarch-dummy-ngc:
   artifacts:
     paths:
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
@@ -596,7 +596,7 @@ build-static-retroarch-emscripten:
   artifacts:
     paths:
     - retroarch-precompiled/
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   needs:
     # Dummy build requires no core
@@ -618,7 +618,7 @@ build-static-retroarch-dummy-emscripten:
   artifacts:
     paths:
     - ${MEDIA_PATH}
-    expire_in: 1 day
+    expire_in: 10 seconds
   dependencies: []
   script:
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
