@@ -507,7 +507,7 @@ void ozone_draw_entries(
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
-   entries_end    = file_list_get_size(selection_buf);
+   entries_end    = selection_buf->size;
    y              = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.entry_padding_vertical;
    sidebar_offset = ozone->sidebar_offset;
    entry_width    = video_width - (unsigned) ozone->dimensions_sidebar_width - ozone->sidebar_offset - entry_padding * 2 - ozone->animations.thumbnail_bar_position;

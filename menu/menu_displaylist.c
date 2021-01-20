@@ -3372,7 +3372,7 @@ static unsigned menu_displaylist_parse_cores(
 
       menu_entries_get_last_stack(&dir, NULL, NULL, NULL, NULL);
 
-      list_size = file_list_get_size(info->list);
+      list_size                      = info->list->size;
 
       for (i = 0; i < list_size; i++)
       {

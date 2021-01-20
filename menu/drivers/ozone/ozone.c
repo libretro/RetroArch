@@ -1409,7 +1409,7 @@ static void *ozone_list_get_entry(void *data,
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         list_size = file_list_get_size(&ozone->horizontal_list);
+         list_size = ozone->horizontal_list.size;
          if (i < list_size)
             return (void*)&ozone->horizontal_list.list[i];
          break;
@@ -3753,7 +3753,7 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type)
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_HORIZONTAL:
-         return file_list_get_size(&ozone->horizontal_list);
+         return ozone->horizontal_list.size;
       case MENU_LIST_TABS:
          return ozone->system_tab_end;
    }
@@ -3763,7 +3763,7 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type)
 
 void ozone_free_list_nodes(file_list_t *list, bool actiondata)
 {
-   unsigned i, size = (unsigned)file_list_get_size(list);
+   unsigned i, size = (unsigned)list->size;
 
    for (i = 0; i < size; ++i)
    {

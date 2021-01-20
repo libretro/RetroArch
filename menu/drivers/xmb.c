@@ -679,7 +679,7 @@ static void xmb_free_node(xmb_node_t *node)
  */
 static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
 {
-   unsigned i, size = (unsigned)file_list_get_size(list);
+   unsigned i, size = (unsigned)list->size;
 
    for (i = 0; i < size; ++i)
    {
@@ -773,7 +773,7 @@ static size_t xmb_list_get_size(void *data, enum menu_list_type type)
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_HORIZONTAL:
-         return file_list_get_size(&xmb->horizontal_list);
+         return xmb->horizontal_list.size;
       case MENU_LIST_TABS:
          return xmb->system_tab_end;
    }
@@ -798,7 +798,7 @@ static void *xmb_list_get_entry(void *data,
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         list_size = file_list_get_size(&xmb->horizontal_list);
+         list_size = xmb->horizontal_list.size;
          if (i < list_size)
             return (void*)&xmb->horizontal_list.list[i];
          break;
@@ -1546,9 +1546,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
 {
    unsigned i, height = 0;
    int        threshold = xmb->icon_size * 10;
-   size_t           end = 0;
-
-   end = file_list_get_size(list);
+   size_t           end = list->size;
 
    video_driver_get_size(NULL, &height);
 
@@ -1607,7 +1605,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    unsigned xmb_system_tab = 0;
    size_t skip             = 0;
    int        threshold    = xmb->icon_size * 10;
-   size_t           end    = file_list_get_size(list);
+   size_t           end    = list->size;
 
    video_driver_get_size(NULL, &height);
 
@@ -1767,7 +1765,7 @@ static void xmb_list_switch_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height;
-   size_t end          = file_list_get_size(list);
+   size_t end          = list->size;
    float ix            = -xmb->icon_spacing_horizontal * dir;
    float ia            = 0;
    unsigned first      = 0;
@@ -1840,8 +1838,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       }
    }
 
-   end = file_list_get_size(list);
-
+   end   = list->size;
    first = 0;
    last  = (unsigned)(end > 0 ? end - 1 : 0);
 
@@ -3478,7 +3475,7 @@ static void xmb_draw_items(
       core_node = xmb_get_userdata_from_horizontal_list(
             xmb, (unsigned)(cat_selection_ptr - (xmb->system_tab_end + 1)));
 
-   end                      = file_list_get_size(list);
+   end                      = list->size;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;
@@ -5445,7 +5442,7 @@ static void xmb_layout(xmb_handle_t *xmb)
       return;
 
    current = (unsigned)xmb->selection_ptr_old;
-   end     = (unsigned)file_list_get_size(&xmb->selection_buf_old);
+   end     = (unsigned)xmb->selection_buf_old.size;
 
    for (i = 0; i < end; i++)
    {
