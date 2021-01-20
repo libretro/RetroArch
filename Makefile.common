@@ -1512,7 +1512,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       GL_LIBS := $(OPENGL_LIBS)
       ifeq ($(OSX), 1)
          GL_LIBS := -framework OpenGL
-         OBJ += gfx/drivers_context/cgl_ctx.o
       else ifneq ($(findstring Win32,$(OS)),)
          GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32
     WANT_WGL=1
