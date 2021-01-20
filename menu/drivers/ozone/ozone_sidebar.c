@@ -401,7 +401,7 @@ void ozone_draw_sidebar(
 
          uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
 
-         ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(&ozone->horizontal_list, i);
+         ozone_node_t *node = (ozone_node_t*)ozone->horizontal_list.list[i].userdata;
          float *col         = (selected ? ozone->theme->text_selected : ozone->theme->entries_icon);
 
          if (!node)
@@ -898,7 +898,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
    {
       const char *path         = NULL;
       const char *console_name = NULL;
-      ozone_node_t *node       = (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, i);
+      ozone_node_t *node       = (ozone_node_t*)ozone->horizontal_list.list[i].userdata;
 
       if (!node)
       {
@@ -1008,7 +1008,7 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
    for (i = 0; i < list_size; i++)
    {
       const char *path = NULL;
-      ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, i);
+      ozone_node_t *node = (ozone_node_t*)ozone->horizontal_list.list[i].userdata;
 
       if (!node)
          continue;
