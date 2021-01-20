@@ -679,7 +679,7 @@ static void xmb_free_node(xmb_node_t *node)
  */
 static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
 {
-   unsigned i, size = (unsigned)list->size;
+   unsigned i, size = list ? (unsigned)list->size : 0;
 
    for (i = 0; i < size; ++i)
    {
@@ -1546,7 +1546,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
 {
    unsigned i, height = 0;
    int        threshold = xmb->icon_size * 10;
-   size_t           end = list->size;
+   size_t           end = list ? list->size : 0;
 
    video_driver_get_size(NULL, &height);
 
@@ -1605,7 +1605,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    unsigned xmb_system_tab = 0;
    size_t skip             = 0;
    int        threshold    = xmb->icon_size * 10;
-   size_t           end    = list->size;
+   size_t end              = list ? list->size : 0;
 
    video_driver_get_size(NULL, &height);
 
@@ -1765,7 +1765,7 @@ static void xmb_list_switch_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height;
-   size_t end          = list->size;
+   size_t end          = list ? list->size : 0;
    float ix            = -xmb->icon_spacing_horizontal * dir;
    float ia            = 0;
    unsigned first      = 0;
@@ -1838,7 +1838,8 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       }
    }
 
-   end   = list->size;
+   end   = list ? list->size : 0;
+
    first = 0;
    last  = (unsigned)(end > 0 ? end - 1 : 0);
 
@@ -2334,6 +2335,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 
    xmb_list_open_old(xmb, &xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
+
    xmb_list_open_new(xmb, selection_buf,
          dir, selection);
 
@@ -3475,7 +3477,7 @@ static void xmb_draw_items(
       core_node = xmb_get_userdata_from_horizontal_list(
             xmb, (unsigned)(cat_selection_ptr - (xmb->system_tab_end + 1)));
 
-   end                      = list->size;
+   end                      = list ? list->size : 0;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;

@@ -434,7 +434,7 @@ static void stripes_free_node(stripes_node_t *node)
  */
 static void stripes_free_list_nodes(file_list_t *list, bool actiondata)
 {
-   unsigned i, size = list->size;
+   unsigned i, size = list ? list->size : 0;
 
    for (i = 0; i < size; ++i)
    {
@@ -1195,7 +1195,7 @@ static void stripes_list_open_old(stripes_handle_t *stripes,
 {
    unsigned i, height = 0;
    int        threshold = stripes->icon_size * 10;
-   size_t           end = list->size;
+   size_t           end = list ? list->size : NULL;
 
    video_driver_get_size(NULL, &height);
 
@@ -1255,7 +1255,7 @@ static void stripes_list_open_new(stripes_handle_t *stripes,
    unsigned stripes_system_tab = 0;
    size_t skip                 = 0;
    int        threshold        = stripes->icon_size * 10;
-   size_t           end        = list->size;
+   size_t           end        = list ? list->size : NULL;
 
    video_driver_get_size(NULL, &height);
 
@@ -1399,7 +1399,7 @@ static void stripes_list_switch_old(stripes_handle_t *stripes,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, first, last, height;
-   size_t end = list->size;
+   size_t end = list ? list->size : NULL;
    float ix   = -stripes->icon_spacing_horizontal * dir;
    float ia   = 0;
 
@@ -1472,7 +1472,7 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
        }
    }
 
-   end   = list->size;
+   end   = list ? list->size : NULL;
    first = 0;
    last  = end > 0 ? end - 1 : 0;
 
@@ -2554,7 +2554,7 @@ static void stripes_draw_items(
       core_node = stripes_get_userdata_from_horizontal_list(
             stripes, (unsigned)(cat_selection_ptr - (stripes->system_tab_end + 1)));
 
-   end                      = list->size;
+   end                      = list ? list->size : NULL;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;

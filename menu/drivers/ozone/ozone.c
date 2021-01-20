@@ -3763,7 +3763,7 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type)
 
 void ozone_free_list_nodes(file_list_t *list, bool actiondata)
 {
-   unsigned i, size = (unsigned)list->size;
+   unsigned i, size = list ? (unsigned)list->size : 0;
 
    for (i = 0; i < size; ++i)
    {
