@@ -79,10 +79,9 @@ static void task_wifi_disable_handler(retro_task_t *task)
 
 static void task_wifi_disconnect_handler(retro_task_t *task)
 {
+   wifi_network_info_t netinfo;
    if (!task)
       return;
-
-   wifi_network_info_t netinfo;
 
    if (driver_wifi_connection_info(&netinfo))
      driver_wifi_disconnect_ssid(&netinfo);
@@ -105,7 +104,7 @@ static void task_wifi_connect_handler(retro_task_t *task)
 
 bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr) {
    char msg[128];
-   retro_task_t   *task = task_init();
+   retro_task_t           *task = task_init();
    wifi_network_info_t *netinfo = (wifi_network_info_t*)netptr;
    if (!task)
       return false;
