@@ -5947,7 +5947,7 @@ static void handle_discord_join_cb(retro_task_t *task,
    struct rarch_state *p_rarch       = &rarch_st;
    discord_state_t *discord_st       = &p_rarch->discord_st;
 
-   if (!data || err)
+   if (!data || err || !data->data)
       goto finish;
 
    data->data                        = (char*)realloc(data->data, data->len + 1);
@@ -10648,7 +10648,7 @@ static void handle_translation_cb(
       RARCH_LOG("RESULT FROM AI SERVICE...\n");
 #endif
 
-   if (!data || error)
+   if (!data || error || !data->data)
       goto finish;
 
    json = rjson_open_buffer(data->data, data->len);

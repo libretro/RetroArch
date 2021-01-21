@@ -4248,7 +4248,7 @@ static void cb_net_generic(retro_task_t *task,
    menu->core_buf = NULL;
    menu->core_len = 0;
 
-   if (!data || err)
+   if (!data || err || !data->data)
       goto finish;
 
    menu->core_buf = (char*)malloc((data->len+1) * sizeof(char));
