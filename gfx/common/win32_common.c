@@ -1824,7 +1824,11 @@ static void win32_localize_menu(HMENU menu)
       memset(&menuItemInfo, 0, sizeof(menuItemInfo));
       menuItemInfo.cbSize     = sizeof(menuItemInfo);
       menuItemInfo.dwTypeData = NULL;
+#if(WINVER >= 0x0500)
       menuItemInfo.fMask      = MIIM_STRING | MIIM_FTYPE | MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
+#else
+      menuItemInfo.fMask      =                            MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
+#endif
 
 #ifndef LEGACY_WIN32
       okay                    = GetMenuItemInfoW(menu, index, true, &menuItemInfo);
