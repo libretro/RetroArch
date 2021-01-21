@@ -55,6 +55,7 @@ typedef struct
 {
    char *data;
    size_t len;
+   int status;
 } http_transfer_data_t;
 
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
