@@ -85,11 +85,21 @@ extern apple_frontend_settings_t apple_frontend_settings;
 #define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]
 #define BOXFLOAT(x)  [NSNumber numberWithDouble:x]
 
+#if defined(__clang__)
+/* ARC is only available for Clang */
 #if __has_feature(objc_arc)
 #define RELEASE(x)   x = nil
 #define BRIDGE       __bridge
 #define UNSAFE_UNRETAINED __unsafe_unretained
 #else
+#define RELEASE(x)   [x release]; \
+   x = nil
+#define BRIDGE
+#define UNSAFE_UNRETAINED
+#endif
+#else
+/* On compilers other than Clang (e.g. GCC), assume ARC 
+   is going to be unavailable */
 #define RELEASE(x)   [x release]; \
    x = nil
 #define BRIDGE
