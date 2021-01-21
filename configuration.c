@@ -1284,16 +1284,16 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("rgui_menu_theme_preset",
          settings->paths.path_rgui_theme_preset, false, NULL, true);
 #endif
-   SETTING_PATH("content_history_path",
-         settings->paths.path_content_history, false, NULL, true);
    SETTING_PATH("content_favorites_path",
          settings->paths.path_content_favorites, false, NULL, true);
+   SETTING_PATH("content_history_path",
+         settings->paths.path_content_history, false, NULL, true);
+   SETTING_PATH("content_image_history_path",
+         settings->paths.path_content_image_history, false, NULL, true);
    SETTING_PATH("content_music_history_path",
          settings->paths.path_content_music_history, false, NULL, true);
    SETTING_PATH("content_video_history_path",
          settings->paths.path_content_video_history, false, NULL, true);
-   SETTING_PATH("content_image_history_path",
-         settings->paths.path_content_image_history, false, NULL, true);
 #ifdef HAVE_OVERLAY
    SETTING_PATH("input_overlay",
          settings->paths.path_overlay, false, NULL, true);
@@ -1314,8 +1314,6 @@ static struct config_path_setting *populate_settings_path(
          settings->paths.path_font, false, NULL, true);
    SETTING_PATH("cursor_directory",
          settings->paths.directory_cursor, false, NULL, true);
-   SETTING_PATH("content_history_dir",
-         settings->paths.directory_content_history, false, NULL, true);
    SETTING_PATH("screenshot_directory",
          settings->paths.directory_screenshot, true, NULL, true);
    SETTING_PATH("system_directory",
@@ -1340,6 +1338,16 @@ static struct config_path_setting *populate_settings_path(
          settings->paths.directory_thumbnails, true, NULL, true);
    SETTING_PATH("playlist_directory",
          settings->paths.directory_playlist, true, NULL, true);
+   SETTING_PATH("content_favorites_directory",
+         settings->paths.directory_content_favorites, true, NULL, true);
+   SETTING_PATH("content_history_directory",
+         settings->paths.directory_content_history, true, NULL, true);
+   SETTING_PATH("content_image_history_directory",
+         settings->paths.directory_content_image_history, true, NULL, true);
+   SETTING_PATH("content_music_history_directory",
+         settings->paths.directory_content_music_history, true, NULL, true);
+   SETTING_PATH("content_video_directory",
+         settings->paths.directory_content_video_history, true, NULL, true);
    SETTING_PATH("runtime_log_directory",
          settings->paths.directory_runtime_log, true, NULL, true);
    SETTING_PATH("joypad_autoconfig_dir",
@@ -2397,6 +2405,11 @@ void config_set_defaults(void *data)
    *settings->paths.directory_dynamic_wallpapers = '\0';
    *settings->paths.directory_thumbnails = '\0';
    *settings->paths.directory_playlist = '\0';
+   *settings->paths.directory_content_favorites = '\0';
+   *settings->paths.directory_content_history = '\0';
+   *settings->paths.directory_content_image_history = '\0';
+   *settings->paths.directory_content_music_history = '\0';
+   *settings->paths.directory_content_video_history = '\0';
    *settings->paths.directory_runtime_log = '\0';
    *settings->paths.directory_autoconfig = '\0';
 #ifdef HAVE_MENU
@@ -2418,10 +2431,10 @@ void config_set_defaults(void *data)
    }
 
    *settings->paths.path_core_options      = '\0';
-   *settings->paths.path_content_history   = '\0';
    *settings->paths.path_content_favorites = '\0';
-   *settings->paths.path_content_music_history   = '\0';
+   *settings->paths.path_content_history   = '\0';
    *settings->paths.path_content_image_history   = '\0';
+   *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
    *settings->paths.path_cheat_settings    = '\0';
 #ifndef IOS
@@ -2442,7 +2455,6 @@ void config_set_defaults(void *data)
    *settings->paths.path_stream_url        = '\0';
    *settings->paths.path_softfilter_plugin = '\0';
 
-   *settings->paths.directory_content_history = '\0';
    *settings->paths.path_audio_dsp_plugin = '\0';
 
    *settings->paths.log_dir = '\0';
@@ -2477,6 +2489,26 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->paths.directory_playlist,
             g_defaults.dirs[DEFAULT_DIR_PLAYLIST]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES]))
+      configuration_set_string(settings,
+            settings->paths.directory_content_favorites,
+            g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]))
+      configuration_set_string(settings,
+            settings->paths.directory_content_history,
+            g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY]))
+      configuration_set_string(settings,
+            settings->paths.directory_content_image_history,
+            g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY]))
+      configuration_set_string(settings,
+            settings->paths.directory_content_music_history,
+            g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY]);
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY]))
+      configuration_set_string(settings,
+            settings->paths.directory_content_video_history,
+            g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE]))
       fill_pathname_expand_special(settings->paths.directory_libretro,
             g_defaults.dirs[DEFAULT_DIR_CORE],
@@ -2590,10 +2622,6 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->paths.directory_resampler,
             g_defaults.dirs[DEFAULT_DIR_RESAMPLER]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]))
-      configuration_set_string(settings,
-            settings->paths.directory_content_history,
-            g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
       configuration_set_string(settings,
             settings->paths.log_dir,
@@ -3179,80 +3207,85 @@ static bool config_load_file(global_t *global,
 
    path_config = path_get(RARCH_PATH_CONFIG);
 
-   if (string_is_empty(settings->paths.path_content_history))
-   {
-      if (string_is_empty(settings->paths.directory_content_history))
-         fill_pathname_resolve_relative(
-               settings->paths.path_content_history,
-               path_config,
-               FILE_PATH_CONTENT_HISTORY,
-               sizeof(settings->paths.path_content_history));
-      else
-         fill_pathname_join(settings->paths.path_content_history,
-               settings->paths.directory_content_history,
-               FILE_PATH_CONTENT_HISTORY,
-               sizeof(settings->paths.path_content_history));
-   }
-
    if (string_is_empty(settings->paths.path_content_favorites))
-   {
-      if (string_is_empty(settings->paths.directory_content_history))
+         strlcpy(settings->paths.directory_content_favorites, "default", sizeof(settings->paths.directory_content_favorites));
+
+   if (string_is_empty(settings->paths.directory_content_favorites) || string_is_equal(settings->paths.directory_content_favorites, "default"))
          fill_pathname_resolve_relative(
                settings->paths.path_content_favorites,
                path_config,
                FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
-      else
-         fill_pathname_join(settings->paths.path_content_favorites,
-               settings->paths.directory_content_history,
+   else
+         fill_pathname_join(
+               settings->paths.path_content_favorites,
+               settings->paths.directory_content_favorites,
                FILE_PATH_CONTENT_FAVORITES,
                sizeof(settings->paths.path_content_favorites));
-   }
 
-   if (string_is_empty(settings->paths.path_content_music_history))
-   {
-      if (string_is_empty(settings->paths.directory_content_history))
-         fill_pathname_resolve_relative(
-               settings->paths.path_content_music_history,
-               path_config,
-               FILE_PATH_CONTENT_MUSIC_HISTORY,
-               sizeof(settings->paths.path_content_music_history));
-      else
-         fill_pathname_join(settings->paths.path_content_music_history,
-               settings->paths.directory_content_history,
-               FILE_PATH_CONTENT_MUSIC_HISTORY,
-               sizeof(settings->paths.path_content_music_history));
-   }
+   if (string_is_empty(settings->paths.path_content_history))
+         strlcpy(settings->paths.directory_content_history, "default", sizeof(settings->paths.directory_content_history));
 
-   if (string_is_empty(settings->paths.path_content_video_history))
-   {
-      if (string_is_empty(settings->paths.directory_content_history))
+   if (string_is_empty(settings->paths.directory_content_history) || string_is_equal(settings->paths.directory_content_history, "default"))
          fill_pathname_resolve_relative(
-               settings->paths.path_content_video_history,
+               settings->paths.path_content_history,
                path_config,
-               FILE_PATH_CONTENT_VIDEO_HISTORY,
-               sizeof(settings->paths.path_content_video_history));
-      else
-         fill_pathname_join(settings->paths.path_content_video_history,
+               FILE_PATH_CONTENT_HISTORY,
+               sizeof(settings->paths.path_content_history));
+   else
+         fill_pathname_join(
+               settings->paths.path_content_history,
                settings->paths.directory_content_history,
-               FILE_PATH_CONTENT_VIDEO_HISTORY,
-               sizeof(settings->paths.path_content_video_history));
-   }
+               FILE_PATH_CONTENT_HISTORY,
+               sizeof(settings->paths.path_content_history));
 
    if (string_is_empty(settings->paths.path_content_image_history))
-   {
-      if (string_is_empty(settings->paths.directory_content_history))
+         strlcpy(settings->paths.directory_content_image_history, "default", sizeof(settings->paths.directory_content_image_history));
+
+   if (string_is_empty(settings->paths.directory_content_image_history) || string_is_equal(settings->paths.directory_content_image_history, "default"))
          fill_pathname_resolve_relative(
                settings->paths.path_content_image_history,
                path_config,
                FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
-      else
-         fill_pathname_join(settings->paths.path_content_image_history,
-               settings->paths.directory_content_history,
+   else
+         fill_pathname_join(
+               settings->paths.path_content_image_history,
+               settings->paths.directory_content_image_history,
                FILE_PATH_CONTENT_IMAGE_HISTORY,
                sizeof(settings->paths.path_content_image_history));
-   }
+
+   if (string_is_empty(settings->paths.path_content_music_history))
+         strlcpy(settings->paths.directory_content_music_history, "default", sizeof(settings->paths.directory_content_music_history));
+
+   if (string_is_empty(settings->paths.directory_content_music_history) || string_is_equal(settings->paths.directory_content_music_history, "default"))
+         fill_pathname_resolve_relative(
+               settings->paths.path_content_music_history,
+               path_config,
+               FILE_PATH_CONTENT_MUSIC_HISTORY,
+               sizeof(settings->paths.path_content_music_history));
+   else
+         fill_pathname_join(
+               settings->paths.path_content_music_history,
+               settings->paths.directory_content_music_history,
+               FILE_PATH_CONTENT_MUSIC_HISTORY,
+               sizeof(settings->paths.path_content_music_history));
+
+   if (string_is_empty(settings->paths.path_content_video_history))
+         strlcpy(settings->paths.directory_content_video_history, "default", sizeof(settings->paths.directory_content_video_history));
+
+   if (string_is_empty(settings->paths.directory_content_video_history) || string_is_equal(settings->paths.directory_content_video_history, "default"))
+         fill_pathname_resolve_relative(
+               settings->paths.path_content_video_history,
+               path_config,
+               FILE_PATH_CONTENT_VIDEO_HISTORY,
+               sizeof(settings->paths.path_content_video_history));
+   else
+         fill_pathname_join(
+               settings->paths.path_content_video_history,
+               settings->paths.directory_content_video_history,
+               FILE_PATH_CONTENT_VIDEO_HISTORY,
+               sizeof(settings->paths.path_content_video_history));
 
    if (!string_is_empty(settings->paths.directory_screenshot))
    {
@@ -3285,6 +3318,16 @@ static bool config_load_file(global_t *global,
       *settings->paths.directory_thumbnails = '\0';
    if (string_is_equal(settings->paths.directory_playlist, "default"))
       *settings->paths.directory_playlist = '\0';
+   if (string_is_equal(settings->paths.directory_content_favorites, "default"))
+      *settings->paths.directory_content_favorites = '\0';
+   if (string_is_equal(settings->paths.directory_content_history, "default"))
+      *settings->paths.directory_content_history = '\0';
+   if (string_is_equal(settings->paths.directory_content_image_history, "default"))
+      *settings->paths.directory_content_image_history = '\0';
+   if (string_is_equal(settings->paths.directory_content_music_history, "default"))
+      *settings->paths.directory_content_music_history = '\0';
+   if (string_is_equal(settings->paths.directory_content_video_history, "default"))
+      *settings->paths.directory_content_video_history = '\0';
    if (string_is_equal(settings->paths.directory_runtime_log, "default"))
       *settings->paths.directory_runtime_log = '\0';
 #ifdef HAVE_MENU
