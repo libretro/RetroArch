@@ -94,14 +94,17 @@ static size_t find_change(const uint16_t *a, const uint16_t *b)
    {
       __m128i v0    = _mm_loadu_si128(a128);
       __m128i v1    = _mm_loadu_si128(b128);
-      __m128i c     = _mm_cmpeq_epi32(v0, v1);
+      __m128i c     = _mm_cmpeq_epi8(v0, v1);
       uint32_t mask = _mm_movemask_epi8(c);
 
       if (mask != 0xffff) /* Something has changed, figure out where. */
       {
+         /* calculate the real offset to the differing byte */
          size_t ret = (((uint8_t*)a128 - (uint8_t*)a) |
-               (compat_ctz(~mask))) >> 1;
-         return ret | (a[ret] == b[ret]);
+               (compat_ctz(~mask)));
+
+         /* and convert that to the uint16_t offset */
+         return (ret >> 1);
       }
 
       a128++;
