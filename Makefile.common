@@ -1510,6 +1510,9 @@ endif
 
 ifeq ($(HAVE_METAL), 1)
    DEFINES += -DHAVE_METAL
+   LIBS += -framework Metal -framework MetalKit
+   # Metal code relies on ARC (Automatic Reference Counting), enable it
+   DEF_FLAGS += -fobjc-arc
    OBJ += gfx/common/metal/Context.o \
 			 gfx/common/metal/Filter.o \
 			 gfx/common/metal/RendererCommon.o \
@@ -2253,7 +2256,14 @@ ifeq ($(HAVE_COMPRESSION), 1)
    OBJ     += tasks/task_decompress.o
 endif
 
-ifeq ($(HAVE_COCOA),1)
+ifeq ($(HAVE_COCOA), 1)
+   HAVE_COCOA_COMMON = 1
+endif
+ifeq ($(HAVE_COCOA_METAL), 1)
+   HAVE_COCOA_COMMON = 1
+endif
+
+ifeq ($(HAVE_COCOA_COMMON),1)
    DEFINES += -DHAVE_MAIN -DOSX
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \

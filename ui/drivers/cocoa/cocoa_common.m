@@ -34,8 +34,6 @@
 
 static CocoaView* g_instance;
 
-
-
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
 
