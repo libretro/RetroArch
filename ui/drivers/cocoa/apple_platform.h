@@ -1,14 +1,12 @@
 #ifndef COCOA_APPLE_PLATFORM_H
 #define COCOA_APPLE_PLATFORM_H
 
-#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
-
-#ifdef HAVE_COCOA_METAL
+#ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 #endif
 
-#if !defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
 
@@ -23,6 +21,8 @@
 @end
 #endif
 
+
+#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 @protocol ApplePlatform
 
 /*! @brief renderView returns the current render view based on the viewType */
@@ -41,9 +41,15 @@
 - (bool)setDisableDisplaySleep:(bool)disable;
 @end
 
+#endif
+
+#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 extern id<ApplePlatform> apple_platform;
 
 id<ApplePlatform> apple_platform;
+#else
+id apple_platform;
+#endif
 
 #if defined(HAVE_COCOATOUCH)
 @interface RetroArch_iOS : UINavigationController<ApplePlatform, UIApplicationDelegate,
@@ -63,30 +69,23 @@ UINavigationControllerDelegate> {
 
 - (void)refreshSystemConfig;
 @end
-
 #else
+#if defined(HAVE_COCOA_METAL)
 @interface RetroArch_OSX : NSObject<ApplePlatform, NSApplicationDelegate> {
+#elif (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+@interface RetroArch_OSX : NSObject {
+#else
+@interface RetroArch_OSX : NSObject<NSApplicationDelegate> {
+#endif
 	NSWindow *_window;
 	apple_view_type_t _vt;
 	NSView *_renderView;
 	id _sleepActivity;
+#if defined(HAVE_COCOA_METAL)
 	WindowListener *_listener;
+#endif
 }
-#endif
 
-#elif defined(HAVE_COCOA)
-id apple_platform;
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-@interface RetroArch_OSX : NSObject
-#else
-@interface RetroArch_OSX : NSObject<NSApplicationDelegate>
-#endif
-{
-	NSWindow *_window;
-}
-#endif
-
-#ifdef OSX
 @property(nonatomic, retain) NSWindow IBOutlet *window;
 
 @end

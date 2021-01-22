@@ -54,6 +54,8 @@
 
 #import "../video_coord_array.h"
 
+#include "../../ui/drivers/cocoa/apple_platform.h"
+
 static uint32_t metal_get_flags(void *data);
 
 #pragma mark Graphics Context for Metal
