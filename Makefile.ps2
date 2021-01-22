@@ -11,11 +11,11 @@ TARGET_RELEASE = retroarchps2.elf
 IRX_DIR = ps2/irx
 
 ifeq ($(DEBUG), 1)
-   OPTIMIZE_LV   := -O0 -g
-   RARCH_DEFINES += -DDEBUG
+   OPTIMIZE_LV	:= -O0 -g
+	RARCH_DEFINES += -DDEBUG
 else
-   OPTIMIZE_LV   := -O3
-   LDFLAGS       := -s
+   OPTIMIZE_LV	:= -O3
+	LDFLAGS :=  -s
 endif
 
 ifeq ($(MUTE_WARNINGS), 1)
