@@ -63,7 +63,7 @@ static INLINE int compat_ctz(unsigned x)
    return __builtin_ctz(x);
 #elif _MSC_VER >= 1400 && !defined(_XBOX) && !defined(__WINRT__)
    unsigned long r = 0;
-   _BitScanReverse((unsigned long*)&r, x);
+   _BitScanForward((unsigned long*)&r, x);
    return (int)r;
 #else
 /* Only checks at nibble granularity,
