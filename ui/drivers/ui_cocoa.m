@@ -29,6 +29,11 @@
 #include "cocoa/cocoa_defines.h"
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
+
+#if defined(HAVE_COCOA_METAL)
+#include "../../gfx/common/metal_common.h"
+#endif
+
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
@@ -78,7 +83,7 @@ static char **waiting_argv;
             uint32_t mod              = 0;
             const char *inputTextUTF8 = ch.UTF8String;
             uint32_t character        = inputTextUTF8[0];
-            NSEventModifierFlags mods = event.modifierFlags;
+            NSUInteger mods           = event.modifierFlags;
             uint16_t keycode          = event.keyCode;
 
                if (mods & NSEventModifierFlagCapsLock)
@@ -108,8 +113,8 @@ static char **waiting_argv;
         case NSFlagsChanged:
 #endif
          {
-            static NSEventModifierFlags old_flags = 0;
-            NSEventModifierFlags new_flags        = event.modifierFlags;
+            static NSUInteger old_flags           = 0;
+            NSUInteger new_flags                  = event.modifierFlags;
             bool down                             = (new_flags & old_flags) == old_flags;
             uint16_t keycode                      = event.keyCode;
 
@@ -191,10 +196,7 @@ static char **waiting_argv;
 
 @synthesize window = _window;
 
-#ifdef HAVE_COCOA_METAL
-#else
-#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
-
+#ifndef HAVE_COCOA_METAL
 - (void)dealloc
 {
    [_window release];
@@ -202,32 +204,29 @@ static char **waiting_argv;
 }
 #endif
 
+#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    unsigned i;
    apple_platform   = self;
    [self.window setAcceptsMouseMovedEvents: YES];
-#ifdef HAVE_COCOA_METAL
-   self.window.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
+#if MAC_OS_X_VERSION_10_7
+   self.window.collectionBehavior = NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY;
+#endif
+
+#ifdef HAVE_COCOA_METAL
    _listener = [WindowListener new];
 
    [self.window setNextResponder:_listener];
    self.window.delegate = _listener;
-
-   [[self.window contentView] setAutoresizesSubviews:YES];
 #else
-   SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
-   SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
-
-   if ([self.window respondsToSelector:selector])
-   {
-      if ([self.window respondsToSelector:fsselector])
-       [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
-   }
-
    [[CocoaView get] setFrame: [[self.window contentView] bounds]];
+#endif
    [[self.window contentView] setAutoresizesSubviews:YES];
+
+#ifndef HAVE_COCOA_METAL
    [[self.window contentView] addSubview:[CocoaView get]];
    [self.window makeFirstResponder:[CocoaView get]];
 #endif

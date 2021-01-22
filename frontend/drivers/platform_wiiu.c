@@ -99,9 +99,6 @@ static void fix_asset_directory(void)
 static void frontend_wiiu_get_env_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   unsigned i;
-   (void)args;
-
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],

@@ -44,14 +44,7 @@
 #include <AppKit/AppKit.h>
 #endif
 
-typedef enum apple_view_type
-{
-   APPLE_VIEW_TYPE_NONE = 0,
-   APPLE_VIEW_TYPE_OPENGL_ES,
-   APPLE_VIEW_TYPE_OPENGL,
-   APPLE_VIEW_TYPE_VULKAN,
-   APPLE_VIEW_TYPE_METAL
-} apple_view_type_t;
+#include "../../../retroarch.h"
 
 #if defined(HAVE_COCOATOUCH)
 
@@ -92,6 +85,8 @@ extern apple_frontend_settings_t apple_frontend_settings;
 #define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]
 #define BOXFLOAT(x)  [NSNumber numberWithDouble:x]
 
+#if defined(__clang__)
+/* ARC is only available for Clang */
 #if __has_feature(objc_arc)
 #define RELEASE(x)   x = nil
 #define BRIDGE       __bridge
@@ -102,11 +97,34 @@ extern apple_frontend_settings_t apple_frontend_settings;
 #define BRIDGE
 #define UNSAFE_UNRETAINED
 #endif
+#else
+/* On compilers other than Clang (e.g. GCC), assume ARC 
+   is going to be unavailable */
+#define RELEASE(x)   [x release]; \
+   x = nil
+#define BRIDGE
+#define UNSAFE_UNRETAINED
+#endif
 
 void *nsview_get_ptr(void);
 
 void nsview_set_ptr(CocoaView *ptr);
 
-void *get_chosen_screen(void);
+bool cocoa_has_focus(void *data);
+
+void cocoa_show_mouse(void *data, bool state);
+
+void *cocoa_screen_get_chosen(void);
+
+#ifdef OSX
+float cocoa_screen_get_backing_scale_factor(void);
+void cocoa_update_title(void *data);
+#else
+float cocoa_screen_get_native_scale(void);
+#endif
+
+bool cocoa_get_metrics(
+      void *data, enum display_metric_types type,
+      float *value);
 
 #endif

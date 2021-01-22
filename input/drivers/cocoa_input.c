@@ -35,8 +35,10 @@
 /* TODO/FIXME -
  * fix game focus toggle */
 
-/* Forward declarations */
-float get_backing_scale_factor(void);
+#ifdef OSX
+/* Forward declaration */
+float cocoa_screen_get_backing_scale_factor(void);
+#endif
 
 static bool apple_key_state[MAX_KEYS];
 #if TARGET_OS_IPHONE
@@ -338,7 +340,7 @@ static void cocoa_input_poll(void *data)
    uint32_t i;
    cocoa_input_data_t *apple    = (cocoa_input_data_t*)data;
 #ifndef IOS
-   float   backing_scale_factor = get_backing_scale_factor();
+   float   backing_scale_factor = cocoa_screen_get_backing_scale_factor();
 #endif
 
    if (!apple)
@@ -428,7 +430,7 @@ static int16_t cocoa_input_state(
 #ifdef IOS
                      return apple->window_pos_x;
 #else
-                     return apple->window_pos_x * get_backing_scale_factor();
+                     return apple->window_pos_x * cocoa_screen_get_backing_scale_factor();
 #endif
                   }
                   val = apple->window_pos_x - apple->mouse_x_last;
@@ -440,7 +442,7 @@ static int16_t cocoa_input_state(
 #ifdef IOS
                      return apple->window_pos_y;
 #else
-                     return apple->window_pos_y * get_backing_scale_factor();
+                     return apple->window_pos_y * cocoa_screen_get_backing_scale_factor();
 #endif
                   }
                   val = apple->window_pos_y - apple->mouse_y_last;

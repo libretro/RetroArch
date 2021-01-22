@@ -214,7 +214,7 @@ void frontend_driver_detach_console(void);
 
 void frontend_driver_set_screen_brightness(int value);
 
-bool frontend_driver_can_set_screen_brightness();
+bool frontend_driver_can_set_screen_brightness(void);
 
 bool frontend_driver_can_watch_for_changes(void);
 

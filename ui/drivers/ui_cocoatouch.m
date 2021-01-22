@@ -107,14 +107,12 @@ void get_ios_version(int *major, int *minor)
         *minor = (int)[decomposed_os_version[1] integerValue];
 }
 
-extern float cocoagl_gfx_ctx_get_native_scale(void);
-
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
    unsigned i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
-   float scale               = cocoagl_gfx_ctx_get_native_scale();
+   float scale               = cocoa_screen_get_native_scale();
 
    if (!apple)
       return;
@@ -192,18 +190,19 @@ enum
         NSString       *ch = (NSString*)event._privateInput;
         uint32_t character = 0;
         uint32_t mod       = 0;
+        NSUInteger mods    = event._modifierFlags;
 
-        if (event._modifierFlags & NSAlphaShiftKeyMask)
+        if (mods & NSAlphaShiftKeyMask)
            mod |= RETROKMOD_CAPSLOCK;
-        if (event._modifierFlags & NSShiftKeyMask)
+        if (mods & NSShiftKeyMask)
            mod |= RETROKMOD_SHIFT;
-        if (event._modifierFlags & NSControlKeyMask)
+        if (mods & NSControlKeyMask)
            mod |= RETROKMOD_CTRL;
-        if (event._modifierFlags & NSAlternateKeyMask)
+        if (mods & NSAlternateKeyMask)
            mod |= RETROKMOD_ALT;
-        if (event._modifierFlags & NSCommandKeyMask)
+        if (mods & NSCommandKeyMask)
            mod |= RETROKMOD_META;
-        if (event._modifierFlags & NSNumericPadKeyMask)
+        if (mods & NSNumericPadKeyMask)
            mod |= RETROKMOD_NUMLOCK;
 
         if (ch && ch.length != 0)
@@ -248,18 +247,19 @@ enum
       NSString       *ch = (NSString*)event._privateInput;
       uint32_t character = 0;
       uint32_t mod       = 0;
+      NSUInteger mods    = event._modifierFlags;
 
-      if (event._modifierFlags & NSAlphaShiftKeyMask)
+      if (mods & NSAlphaShiftKeyMask)
          mod |= RETROKMOD_CAPSLOCK;
-      if (event._modifierFlags & NSShiftKeyMask)
+      if (mods & NSShiftKeyMask)
          mod |= RETROKMOD_SHIFT;
-      if (event._modifierFlags & NSControlKeyMask)
+      if (mods & NSControlKeyMask)
          mod |= RETROKMOD_CTRL;
-      if (event._modifierFlags & NSAlternateKeyMask)
+      if (mods & NSAlternateKeyMask)
          mod |= RETROKMOD_ALT;
-      if (event._modifierFlags & NSCommandKeyMask)
+      if (mods & NSCommandKeyMask)
          mod |= RETROKMOD_META;
-      if (event._modifierFlags & NSNumericPadKeyMask)
+      if (mods & NSNumericPadKeyMask)
          mod |= RETROKMOD_NUMLOCK;
 
       if (ch && ch.length != 0)

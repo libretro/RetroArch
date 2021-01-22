@@ -501,7 +501,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    if (pipe(msgpipe))
    {
       RARCH_ERR("could not create pipe: %s.\n", strerror(errno));
-      if(android_app->savedState)
+      if (android_app->savedState)
         free(android_app->savedState);
       free(android_app);
       return NULL;
@@ -655,7 +655,7 @@ bool test_permissions(const char *path)
       "RetroArch", "Create %s in %s %s\n", buf, path,
       ret ? "true" : "false");
 
-   if(ret)
+   if (ret)
       rmdir(buf);
 
    return ret;
@@ -668,8 +668,7 @@ static void frontend_android_shutdown(bool unused)
    exit(0);
 }
 
-#else
-
+#elif !defined(DINGUX)
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 {
     char *ptr = *_ptr;
@@ -818,7 +817,6 @@ end:
    buf      = NULL;
    buf_info = NULL;
 }
-
 static void check_proc_acpi_sysfs_battery(const char *node,
       bool *have_battery, bool *charging,
       int *seconds, int *percent)
@@ -957,7 +955,7 @@ static bool int_string(char *str, int *val)
    if (!str)
       return false;
 
-   *val = (int) strtol(str, &endptr, 0);
+   *val = (int)strtol(str, &endptr, 0);
    return ((*str != '\0') && (*endptr == '\0'));
 }
 
@@ -1180,14 +1178,13 @@ static enum frontend_powerstate frontend_unix_get_powerstate(
       int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-
 #if defined(ANDROID)
-   jint powerstate = ret;
-   jint battery_level = 0;
-   JNIEnv *env = jni_thread_getenv();
+   jint powerstate              = FRONTEND_POWERSTATE_NONE;
+   jint battery_level           = 0;
+   JNIEnv *env                  = jni_thread_getenv();
 
    if (!env || !g_android)
-      return ret;
+      return FRONTEND_POWERSTATE_NONE;
 
    if (g_android->getPowerstate)
       CALL_INT_METHOD(env, powerstate,
@@ -1328,19 +1325,19 @@ static void frontend_unix_get_lakka_version(char *s,
 
 static void frontend_unix_set_screen_brightness(int value)
 {
-   int brightness = 0;
+   int brightness  = 0;
    char svalue[16] = {0};
-   #if defined(HAVE_LAKKA_SWITCH)
+#if defined(HAVE_LAKKA_SWITCH)
    /* Values from 0 to 100 */
-   brightness = value;
-   #elif defined(HAVE_ODROIDGO2)
+   brightness      = value;
+#elif defined(HAVE_ODROIDGO2)
    /* GOA screen PWM value does not linearly relate to perceived brightness */
-   brightness = (pow(1.0369f, value) - 1) * 7;
-   #endif
+   brightness      = (pow(1.0369f, value) - 1) * 7;
+#endif
 
    snprintf(svalue, sizeof(svalue), "%d\n", brightness);
    filestream_write_file("/sys/class/backlight/backlight/brightness",
-                         svalue, strlen(svalue));
+         svalue, strlen(svalue));
 }
 
 #endif
@@ -1571,14 +1568,14 @@ static void frontend_unix_get_env(int *argc,
       /* set paths depending on the ability to write
        * to internal_storage_path */
 
-      if(!string_is_empty(internal_storage_path))
+      if (!string_is_empty(internal_storage_path))
       {
-         if(test_permissions(internal_storage_path))
+         if (test_permissions(internal_storage_path))
             storage_permissions = INTERNAL_STORAGE_WRITABLE;
       }
-      else if(!string_is_empty(internal_storage_app_path))
+      else if (!string_is_empty(internal_storage_app_path))
       {
-         if(test_permissions(internal_storage_app_path))
+         if (test_permissions(internal_storage_app_path))
             storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
       }
       else
@@ -2156,7 +2153,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       strlcat(udisks_media_path, user, sizeof(udisks_media_path));
    }
 
-   if(!string_is_empty(base_path))
+   if (!string_is_empty(base_path))
    {
       menu_entries_append_enum(list, base_path,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),

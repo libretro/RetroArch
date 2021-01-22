@@ -186,7 +186,7 @@ typedef struct rjsonwriter rjsonwriter_t;
 /* Create a new writer instance to various targets */
 rjsonwriter_t *rjsonwriter_open_stream(struct intfstream_internal *stream);
 rjsonwriter_t *rjsonwriter_open_rfile(struct RFILE *rfile);
-rjsonwriter_t *rjsonwriter_open_memory();
+rjsonwriter_t *rjsonwriter_open_memory(void);
 rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data);
 
 /* When opened with rjsonwriter_open_memory, will return the generated JSON.

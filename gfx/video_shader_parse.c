@@ -1016,7 +1016,7 @@ bool video_shader_write_referenced_preset(const char *path_to_save,
    fill_pathname_application_special(config_dir, PATH_MAX_LENGTH, APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    /* If there is no initial preset path loaded */
-   if (!shader->loaded_preset_path)
+   if (string_is_empty(shader->loaded_preset_path))
    {
       RARCH_WARN("[ Shaders ]: Saving Full Preset because the loaded Shader does not have "
                   "a path to a previously loaded preset file on disk.\n");

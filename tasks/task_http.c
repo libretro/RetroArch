@@ -191,15 +191,28 @@ task_finished:
             free(tmp);
 
          if (task_get_cancelled(task))
+         {
             task_set_error(task, strdup("Task cancelled."));
-         else if (!task->mute)
-            task_set_error(task, strdup("Download failed."));
+         }
+         else
+         {
+            data = (http_transfer_data_t*)malloc(sizeof(*data));
+            data->data   = NULL;
+            data->len    = 0;
+            data->status = net_http_status(http->handle);
+
+            task_set_data(task, data);
+
+            if (!task->mute)
+               task_set_error(task, strdup("Download failed."));
+         }
       }
       else
       {
-         data       = (http_transfer_data_t*)malloc(sizeof(*data));
-         data->data = tmp;
-         data->len  = len;
+         data = (http_transfer_data_t*)malloc(sizeof(*data));
+         data->data   = tmp;
+         data->len    = len;
+         data->status = net_http_status(http->handle);
 
          task_set_data(task, data);
       }

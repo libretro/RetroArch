@@ -30,7 +30,12 @@
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_ES)
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
+#endif
+#if defined(HAVE_VULKAN)
+#include "../gfx/drivers_context/cocoa_vk_ctx.m"
+#endif
 
 #if defined(OSX)
 #include "../ui/drivers/cocoa/ui_cocoa_window.m"

@@ -1994,6 +1994,15 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name);
 /* creates folder and core options stub file for subsequent runs */
 bool create_folder_and_core_options(void);
 
+typedef enum apple_view_type
+{
+   APPLE_VIEW_TYPE_NONE = 0,
+   APPLE_VIEW_TYPE_OPENGL_ES,
+   APPLE_VIEW_TYPE_OPENGL,
+   APPLE_VIEW_TYPE_VULKAN,
+   APPLE_VIEW_TYPE_METAL
+} apple_view_type_t;
+
 RETRO_END_DECLS
 
 #endif

@@ -51,7 +51,7 @@ void rcheevos_get_achievement_state(unsigned index, char* buffer, size_t buffer_
 
 bool rcheevos_get_description(rcheevos_ctx_desc_t *desc);
 
-void rcheevos_pause_hardcore();
+void rcheevos_pause_hardcore(void);
 
 bool rcheevos_unload(void);
 

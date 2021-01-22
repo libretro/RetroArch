@@ -1,6 +1,5 @@
 BUILD_PRX         = 0
 PSP_LARGE_MEMORY  = 1
-HAVE_FILE_LOGGER  = 0
 DEBUG             = 0
 
 TARGET = retroarchpsp_salamander
@@ -20,10 +19,6 @@ RARCH_DEFINES = -DPSP -DIS_SALAMANDER -DRARCH_CONSOLE
 LIBDIR =
 LDFLAGS =
 LIBS = -lstdc++ -lm -lpsppower
-
-ifeq ($(HAVE_FILE_LOGGER), 1)
-CFLAGS		+= -DHAVE_FILE_LOGGER
-endif
 
 CFLAGS += $(RARCH_DEFINES)
 

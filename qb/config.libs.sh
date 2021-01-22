@@ -644,6 +644,10 @@ check_macro NEON __ARM_NEON__
 
 add_define MAKEFILE OS "$OS"
 
+if [ "$ARCHITECTURE_NAME" = 'Power Macintosh' ]; then
+   HAVE_LANGEXTRA='no'
+fi
+
 if [ "$HAVE_DEBUG" = 'yes' ]; then
    add_define MAKEFILE DEBUG 1
    if [ "$HAVE_OPENGL" = 'yes' ] ||

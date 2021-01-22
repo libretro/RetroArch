@@ -2724,8 +2724,7 @@ static void materialui_compute_entries_box_default(
    for (i = 0; i < entries_end; i++)
    {
       unsigned num_sublabel_lines = 0;
-      materialui_node_t *node     = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+      materialui_node_t *node     = (materialui_node_t*)list->list[i].userdata;
       bool has_icon               = false;
 
       if (!node)
@@ -2824,8 +2823,7 @@ static void materialui_compute_entries_box_playlist_list(
    for (i = 0; i < entries_end; i++)
    {
       unsigned num_sublabel_lines = 0;
-      materialui_node_t *node     = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+      materialui_node_t *node     = (materialui_node_t*)list->list[i].userdata;
 
       if (!node)
          continue;
@@ -2888,8 +2886,7 @@ static void materialui_compute_entries_box_playlist_dual_icon(
 
    for (i = 0; i < entries_end; i++)
    {
-      materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+      materialui_node_t *node = (materialui_node_t*)list->list[i].userdata;
 
       if (!node)
          continue;
@@ -2955,8 +2952,7 @@ static void materialui_compute_entries_box_playlist_desktop(
 
    for (i = 0; i < entries_end; i++)
    {
-      materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+      materialui_node_t *node = (materialui_node_t*)list->list[i].userdata;
 
       if (!node)
          continue;
@@ -3015,7 +3011,7 @@ static float materialui_get_scroll(materialui_handle_t *mui)
    /* > Account for entries *before* current selection */
    for (i = 0; i < selection; i++)
    {
-      node = (materialui_node_t*)file_list_get_userdata_at_offset(list, i);
+      node = (materialui_node_t*)list->list[i].userdata;
 
       /* If this ever happens, the scroll position
        * will be entirely wrong... */
@@ -3026,7 +3022,7 @@ static float materialui_get_scroll(materialui_handle_t *mui)
    }
 
    /* > Account for current selection */
-   node = (materialui_node_t*)file_list_get_userdata_at_offset(list, selection);
+   node = (materialui_node_t*)list->list[selection].userdata;
    if (node)
       selection_centre += node->entry_height / 2.0f;
 
@@ -3570,10 +3566,9 @@ static void materialui_render(void *data,
 
    for (i = 0; i < entries_end; i++)
    {
-      materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
       int entry_x;
       int entry_y;
+      materialui_node_t *node = (materialui_node_t*)list->list[i].userdata;
 
       /* Sanity check */
       if (!node)
@@ -4649,7 +4644,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       unsigned header_height, int x_offset,
       file_list_t *list, size_t selection)
 {
-   materialui_node_t *node    = (materialui_node_t*)file_list_get_userdata_at_offset(list, selection);
+   materialui_node_t *node    = (materialui_node_t*)list->list[selection].userdata;
    float background_x         = (float)(x_offset + (int)mui->landscape_optimization.border_width);
    float background_y         = (float)header_height;
    /* Note: If landscape optimisations are enabled,
@@ -4725,9 +4720,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       if ((primary_thumbnail->status   == GFX_THUMBNAIL_STATUS_UNKNOWN) &&
           (secondary_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN))
       {
-         materialui_node_t *last_node = (materialui_node_t*)
-               file_list_get_userdata_at_offset(list,
-                     mui->desktop_thumbnail_last_selection);
+         materialui_node_t *last_node = (materialui_node_t*)list->list[mui->desktop_thumbnail_last_selection].userdata;
 
          if (last_node)
          {
@@ -4936,7 +4929,7 @@ static void materialui_render_menu_list(
    {
       bool entry_selected        = (selection == i);
       bool touch_feedback_active = touch_feedback_enabled && (mui->touch_feedback_selection == i);
-      materialui_node_t *node    = (materialui_node_t*)file_list_get_userdata_at_offset(list, i);
+      materialui_node_t *node    = (materialui_node_t*)list->list[i].userdata;
       menu_entry_t entry;
 
       /* Sanity check */
@@ -5139,7 +5132,7 @@ static void materialui_render_selection_highlight(
       if (!list)
          return;
 
-      node = (materialui_node_t*)file_list_get_userdata_at_offset(list, selection);
+      node = (materialui_node_t*)list->list[selection].userdata;
       if (!node)
          return;
 
@@ -5981,7 +5974,7 @@ static bool materialui_get_selected_thumbnails(
    if (!list)
       return false;
 
-   node = (materialui_node_t*)file_list_get_userdata_at_offset(list, selection);
+   node = (materialui_node_t*)list->list[selection].userdata;
    if (!node)
       return false;
 
@@ -7792,8 +7785,7 @@ static void materialui_reset_thumbnails(void)
    /* Free node thumbnails */
    for (i = 0; i < list->size; i++)
    {
-      materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+      materialui_node_t *node = (materialui_node_t*)list->list[i].userdata;
 
       if (!node)
          continue;
@@ -9505,7 +9497,7 @@ static int materialui_pointer_up(void *userdata,
                if (!list)
                   break;
 
-               node = (materialui_node_t*)file_list_get_userdata_at_offset(list, ptr);
+               node = (materialui_node_t*)list->list[ptr].userdata;
                if (!node)
                   break;
 
@@ -9656,8 +9648,8 @@ static void materialui_list_insert(
    if (!mui || !list)
       return;
 
-   mui->need_compute = true;
-   node = (materialui_node_t*)file_list_get_userdata_at_offset(list, i);
+   mui->need_compute        = true;
+   node                     = (materialui_node_t*)list->list[i].userdata;
 
    if (!node)
    {
@@ -10269,8 +10261,7 @@ static void materialui_list_clear(file_list_t *list)
 
    for (i = 0; i < size; i++)
    {
-      materialui_node_t *node = (materialui_node_t*)
-            file_list_get_userdata_at_offset(list, i);
+      materialui_node_t *node = (materialui_node_t*)list->list[i].userdata;
 
       if (!node)
          continue;
@@ -10334,7 +10325,8 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
       if (!list)
          return;
 
-      node = (materialui_node_t*)file_list_get_userdata_at_offset(list, (size_t)i);
+      node                    = (materialui_node_t*)
+         list->list[(size_t)i].userdata;
 
       if (!node)
          return;

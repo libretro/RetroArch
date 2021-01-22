@@ -120,7 +120,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
       menu_entry_t entry;
       size_t selection           = menu_navigation_get_selection();
       file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-      ozone_node_t         *node = (ozone_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
+      ozone_node_t *node         = (ozone_node_t*)selection_buf->list[selection].userdata;
 
       if (node)
       {
@@ -1409,7 +1409,7 @@ static void *ozone_list_get_entry(void *data,
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         list_size = file_list_get_size(&ozone->horizontal_list);
+         list_size = ozone->horizontal_list.size;
          if (i < list_size)
             return (void*)&ozone->horizontal_list.list[i];
          break;
@@ -1874,9 +1874,8 @@ static void ozone_render(void *data,
 
       for (i = 0; i < entries_end; i++)
       {
-         ozone_node_t *node = (ozone_node_t*)
-               file_list_get_userdata_at_offset(selection_buf, i);
          float entry_y;
+         ozone_node_t *node = (ozone_node_t*)selection_buf->list[i].userdata;
 
          /* Sanity check */
          if (!node)
@@ -2636,8 +2635,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t new_selection       = menu_navigation_get_selection();
-   ozone_node_t *node         = (ozone_node_t*)
-      file_list_get_userdata_at_offset(selection_buf, new_selection);
+   ozone_node_t *node         = (ozone_node_t*)selection_buf->list[new_selection].userdata;
 
    if (!node)
       return;
@@ -3358,7 +3356,7 @@ static void ozone_list_insert(void *userdata,
 
    ozone->need_compute = true;
 
-   node = (ozone_node_t*)file_list_get_userdata_at_offset(list, i);
+   node = (ozone_node_t*)list->list[i].userdata;
 
    if (!node)
       node = ozone_alloc_node();
@@ -3453,7 +3451,7 @@ static void ozone_list_cache(void *data,
 
    for (i = 0; i < entries_end; i++)
    {
-      ozone_node_t *node = (ozone_node_t*) file_list_get_userdata_at_offset(selection_buf, i);
+      ozone_node_t *node = (ozone_node_t*)selection_buf->list[i].userdata;
 
       if (!node)
          continue;
@@ -3474,8 +3472,7 @@ text_iterate:
    last                    -= 1;
    last                    += first;
 
-   first_node               = (ozone_node_t*)file_list_get_userdata_at_offset(
-         selection_buf, first);
+   first_node               = (ozone_node_t*)selection_buf->list[first].userdata;
    ozone->old_list_offset_y = first_node->position_y;
 
    ozone_list_deep_copy(selection_buf,
@@ -3756,7 +3753,7 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type)
       case MENU_LIST_PLAIN:
          return menu_entries_get_stack_size(0);
       case MENU_LIST_HORIZONTAL:
-         return file_list_get_size(&ozone->horizontal_list);
+         return ozone->horizontal_list.size;
       case MENU_LIST_TABS:
          return ozone->system_tab_end;
    }
@@ -3766,7 +3763,7 @@ size_t ozone_list_get_size(void *data, enum menu_list_type type)
 
 void ozone_free_list_nodes(file_list_t *list, bool actiondata)
 {
-   unsigned i, size = (unsigned)file_list_get_size(list);
+   unsigned i, size = list ? (unsigned)list->size : 0;
 
    for (i = 0; i < size; ++i)
    {

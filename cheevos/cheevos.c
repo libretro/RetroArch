@@ -621,12 +621,34 @@ static void rcheevos_async_task_callback(
       retro_task_t* task, void* task_data, void* user_data, const char* error)
 {
    rcheevos_async_io_request* request = (rcheevos_async_io_request*)user_data;
+   http_transfer_data_t* data = (http_transfer_data_t*)task_data;
 
    if (!error)
    {
-      char buffer[224];
-      const http_transfer_data_t* data = (http_transfer_data_t*)task->task_data;
-      if (rcheevos_get_json_error(data->data, buffer, sizeof(buffer)) == RC_OK)
+      char buffer[224] = "";
+      if (!data)
+      {
+         /* server did not return HTTP headers */
+         snprintf(buffer, sizeof(buffer), "Server communication error");
+      }
+      else if (data->status != 200)
+      {
+         /* server returned an error via status code - check to see if it also returned a JSON error */
+         if (!data->data || rcheevos_get_json_error(data->data, buffer, sizeof(buffer)) != RC_OK)
+            snprintf(buffer, sizeof(buffer), "HTTP error code: %d", data->status);
+      }
+      else if (!data->data || !data->len)
+      {
+         /* server sent an empty response without an error status code */
+         snprintf(buffer, sizeof(buffer), "No response from server");
+      }
+      else
+      {
+         /* server sent a message - assume its JSON and check for a JSON error */
+         rcheevos_get_json_error(data->data, buffer, sizeof(buffer));
+      }
+
+      if (buffer[0])
       {
          char errbuf[256];
          snprintf(errbuf, sizeof(errbuf), "%s %u: %s", request->failure_message, request->id, buffer);
@@ -668,6 +690,14 @@ static void rcheevos_async_task_callback(
       rcheevos_async_schedule(request, retry_delay);
 
       CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s\n", request->failure_message, request->id, error);
+   }
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+
+      free(data);
    }
 }
 

@@ -664,6 +664,9 @@ static void x_input_poll(void *data)
       return;
    }
 
+   /* Process keyboard */
+   XQueryKeymap(x11->display, x11->state);
+
    /* If pointer is not inside the application
     * window, ignore mouse input */
    if (!g_x11_entered)
@@ -675,9 +678,6 @@ static void x_input_poll(void *data)
       x11->mouse_r       = 0;
       return;
    }
-
-   /* Process keyboard */
-   XQueryKeymap(x11->display, x11->state);
 
    /* Process mouse */
    if (!XQueryPointer(x11->display,
