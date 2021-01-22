@@ -56,7 +56,7 @@ static void *ps2_joypad_init(void *data)
    for (port = 0; port < PS2_MAX_PORT; port++)
       mtapPortOpen(port);
    /* it can fail - we dont care, we will check it more strictly when padPortOpen */
-   
+
    for (slot = 0; slot < PS2_MAX_SLOT; slot++)
    {
       for (port = 0; port < PS2_MAX_PORT; port++)
@@ -186,9 +186,9 @@ static void ps2_joypad_poll(void)
    {
       int ps2_slot = player >> 1;
       int ps2_port = player & 0x1;
-      
+
       int state = padGetState(ps2_port, ps2_slot);
-      if (state == PAD_STATE_STABLE)
+      if (state != PAD_STATE_DISCONN || state != PAD_STATE_EXECCMD || state != PAD_STATE_ERROR)
       {
          int ret = padRead(ps2_port, ps2_slot, &buttons); /* port, slot, buttons */
          if (ret != 0)
@@ -244,8 +244,11 @@ static void ps2_joypad_destroy(void)
    unsigned port;
    unsigned slot;
    for (port = 0; port < PS2_MAX_PORT; port++)
+   {
       for (slot = 0; slot < PS2_MAX_SLOT; slot++)
          padPortClose(port, slot);
+      mtapPortClose(port);
+   }
 }
 
 input_device_driver_t ps2_joypad = {
