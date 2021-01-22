@@ -243,7 +243,13 @@ check_platform Darwin METAL 'Metal is' true
 if [ "$OS" = 'Darwin' ]; then
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
-   check_lib '' COCOA "-framework AppKit" NSApplicationMain
+
+   if [ "$HAVE_METAL" = yes ]; then
+      check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
+   else
+      check_lib '' COCOA "-framework AppKit" NSApplicationMain
+   fi
+
    check_lib '' AVFOUNDATION "-framework AVFoundation"
    check_lib '' CORELOCATION "-framework CoreLocation"
    check_lib '' IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
