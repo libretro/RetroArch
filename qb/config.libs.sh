@@ -246,6 +246,10 @@ if [ "$OS" = 'Darwin' ]; then
 
    if [ "$HAVE_METAL" = yes ]; then
       check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
+      add_opt OPENGL no
+      add_opt OPENGL1 no
+      add_opt OPENGL_CORE no
+      die : 'Notice: Metal cannot coexist with OpenGL (yet), so disabling OpenGL.'
    else
       check_lib '' COCOA "-framework AppKit" NSApplicationMain
    fi
