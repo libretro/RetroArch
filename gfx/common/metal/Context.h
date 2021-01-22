@@ -11,6 +11,8 @@
 #import <QuartzCore/CAMetalLayer.h>
 #import "RendererCommon.h"
 
+#include "../../../retroarch.h"
+
 @interface Texture : NSObject
 @property (nonatomic, readonly) id<MTLTexture> texture;
 @property (nonatomic, readonly) id<MTLSamplerState> sampler;

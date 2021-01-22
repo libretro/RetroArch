@@ -11,6 +11,8 @@
 #import <QuartzCore/QuartzCore.h>
 #import "metal_common.h"
 
+#include "../../verbosity.h"
+
 @interface BufferNode : NSObject
 @property (nonatomic, readonly) id<MTLBuffer> src;
 @property (nonatomic, readwrite) NSUInteger allocated;
