@@ -21,11 +21,16 @@
 
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
-
 #if TARGET_OS_TV
 #import <GameController/GameController.h>
 #endif
+#else
+#include <AppKit/AppKit.h>
+#endif
 
+#include "../../../retroarch.h"
+
+#if defined(HAVE_COCOATOUCH)
 #define RAScreen UIScreen
 
 #ifndef UIUserInterfaceIdiomTV
@@ -35,18 +40,6 @@
 #ifndef UIUserInterfaceIdiomCarPlay
 #define UIUserInterfaceIdiomCarPlay 3
 #endif
-#else
-
-#define RAScreen NSScreen
-#endif
-
-#if defined(OSX)
-#include <AppKit/AppKit.h>
-#endif
-
-#include "../../../retroarch.h"
-
-#if defined(HAVE_COCOATOUCH)
 
 #if TARGET_OS_IOS
 @interface CocoaView : UIViewController
@@ -57,7 +50,17 @@
 @end
 
 void get_ios_version(int *major, int *minor);
+#else
+#define RAScreen NSScreen
 
+@interface CocoaView : NSView
+
++ (CocoaView*)get;
+#if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
+- (void)display;
+#endif
+
+@end
 #endif
 
 typedef struct
@@ -67,18 +70,6 @@ typedef struct
    char bluetooth_mode[64];
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
-
-#if defined(OSX)
-@interface CocoaView : NSView
-
-+ (CocoaView*)get;
-#if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
-- (void)display;
-#endif
-
-@end
-
-#endif
 
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]
@@ -116,11 +107,11 @@ void cocoa_show_mouse(void *data, bool state);
 
 void *cocoa_screen_get_chosen(void);
 
-#ifdef OSX
+#ifdef HAVE_COCOATOUCH
+float cocoa_screen_get_native_scale(void);
+#else
 float cocoa_screen_get_backing_scale_factor(void);
 void cocoa_update_title(void *data);
-#else
-float cocoa_screen_get_native_scale(void);
 #endif
 
 bool cocoa_get_metrics(

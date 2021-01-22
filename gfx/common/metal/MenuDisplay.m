@@ -2,13 +2,13 @@
  * Created by Stuart Carnie on 6/24/18.
  */
 
+#import <Metal/Metal.h>
+
 #import "Context.h"
 #import "MenuDisplay.h"
 #import "ShaderTypes.h"
+
 #include "../../../menu/menu_driver.h"
-#import <Metal/Metal.h>
-/* TODO(sgc): this dependency is incorrect */
-#import "../metal_common.h"
 
 @implementation MenuDisplay
 {
@@ -24,17 +24,17 @@
 {
    if (self = [super init])
    {
-      _context = context;
-      _clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
+      _context                   = context;
+      _clearColor                = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
-      _useScissorRect = NO;
+      _useScissorRect            = NO;
    }
    return self;
 }
 
 + (const float *)defaultVertices
 {
-   static float dummy[] = {
+   static float dummy[8] = {
       0.0f, 0.0f,
       1.0f, 0.0f,
       0.0f, 1.0f,
@@ -45,7 +45,7 @@
 
 + (const float *)defaultTexCoords
 {
-   static float dummy[] = {
+   static float dummy[8] = {
       0.0f, 1.0f,
       1.0f, 1.0f,
       0.0f, 0.0f,
@@ -56,7 +56,7 @@
 
 + (const float *)defaultColor
 {
-   static float dummy[] = {
+   static float dummy[16] = {
       1.0f, 0.0f, 1.0f, 1.0f,
       1.0f, 0.0f, 1.0f, 1.0f,
       1.0f, 0.0f, 1.0f, 1.0f,
@@ -67,7 +67,7 @@
 
 - (void)setClearColor:(MTLClearColor)clearColor
 {
-   _clearColor = clearColor;
+   _clearColor      = clearColor;
    _clearNextRender = YES;
 }
 
@@ -95,11 +95,12 @@
       case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
          return MTLPrimitiveTypeTriangleStrip;
       case GFX_DISPLAY_PRIM_TRIANGLES:
-         return MTLPrimitiveTypeTriangle;
       default:
-         RARCH_LOG("unexpected primitive type %d\n", prim);
-         return MTLPrimitiveTypeTriangle;
+         /* Unexpected primitive type, defaulting to triangle */
+         break;
    }
+
+   return MTLPrimitiveTypeTriangle;
 }
 
 - (void)drawPipeline:(gfx_display_ctx_draw_t *)draw
@@ -145,21 +146,21 @@
 
 - (void)draw:(gfx_display_ctx_draw_t *)draw
 {
-   const float *vertex = draw->coords->vertex ?: MenuDisplay.defaultVertices;
-   const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;
-   const float *color = draw->coords->color ?: MenuDisplay.defaultColor;
-
-   NSUInteger needed = draw->coords->vertices * sizeof(SpriteVertex);
+   unsigned i;
    BufferRange range;
+   NSUInteger vertex_count;
+   SpriteVertex *pv;
+   const float *vertex    = draw->coords->vertex ?: MenuDisplay.defaultVertices;
+   const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;
+   const float *color     = draw->coords->color ?: MenuDisplay.defaultColor;
+   NSUInteger needed      = draw->coords->vertices * sizeof(SpriteVertex);
    if (![_context allocRange:&range length:needed])
-   {
-      RARCH_ERR("[Metal]: MenuDisplay unable to allocate buffer of %d bytes", needed);
       return;
-   }
 
-   NSUInteger vertexCount = draw->coords->vertices;
-   SpriteVertex *pv = (SpriteVertex *)range.data;
-   for (unsigned i = 0; i < draw->coords->vertices; i++, pv++)
+   vertex_count           = draw->coords->vertices;
+   pv                     = (SpriteVertex *)range.data;
+
+   for (i = 0; i < draw->coords->vertices; i++, pv++)
    {
       pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
       vertex += 2;
@@ -197,9 +198,8 @@
    };
    [rce setViewport:vp];
 
-   if (_useScissorRect) {
+   if (_useScissorRect)
       [rce setScissorRect:_scissorRect];
-   }
 
    switch (draw->pipeline_id)
    {
@@ -214,7 +214,7 @@
          [rce setVertexBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
          [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
          [rce setFragmentBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
-         [rce drawPrimitives:[self _toPrimitiveType:draw->prim_type] vertexStart:0 vertexCount:vertexCount];
+         [rce drawPrimitives:[self _toPrimitiveType:draw->prim_type] vertexStart:0 vertexCount:vertex_count];
          return;
 #endif
       default:
@@ -235,6 +235,6 @@
    [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
    [rce setFragmentTexture:tex.texture atIndex:TextureIndexColor];
    [rce setFragmentSamplerState:tex.sampler atIndex:SamplerIndexDraw];
-   [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:vertexCount];
+   [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:vertex_count];
 }
 @end

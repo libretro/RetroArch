@@ -22,6 +22,9 @@
 
 #include "../font_driver.h"
 
+#include "../../configuration.h"
+#include "../../verbosity.h"
+
 @interface MetalRaster : NSObject
 {
    __weak MetalDriver *_driver;

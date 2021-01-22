@@ -6,10 +6,14 @@
 //  Copyright © 2018 Stuart Carnie. All rights reserved.
 //
 
+#include <retro_assert.h>
+
 #import "Context.h"
 #import "Filter.h"
 #import <QuartzCore/QuartzCore.h>
-#import "metal_common.h"
+#import "../metal_common.h"
+
+#include "../../verbosity.h"
 
 @interface BufferNode : NSObject
 @property (nonatomic, readonly) id<MTLBuffer> src;

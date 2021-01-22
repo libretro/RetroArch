@@ -9,6 +9,8 @@
 #import "RendererCommon.h"
 #import <Metal/Metal.h>
 
+#include "../../verbosity.h"
+
 NSUInteger RPixelFormatToBPP(RPixelFormat format)
 {
    switch (format)

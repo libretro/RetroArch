@@ -27,6 +27,7 @@
 #import "metal_common.h"
 #include "metal/Context.h"
 
+#include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 
 #ifdef HAVE_REWIND
@@ -38,6 +39,9 @@
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
 #endif
+
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 #define STRUCT_ASSIGN(x, y) \
 { \
@@ -192,7 +196,6 @@
 
 - (void)dealloc
 {
-   RARCH_LOG("[MetalDriver]: destroyed\n");
    if (_viewport)
    {
       free(_viewport);
@@ -264,10 +267,6 @@
 
 - (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate
 {
-#if 0
-   RARCH_LOG("[Metal]: setViewportWidth size %dx%d\n", width, height);
-#endif
-
    _viewport->full_width = width;
    _viewport->full_height = height;
    video_driver_set_size(_viewport->full_width, _viewport->full_height);
@@ -856,8 +855,6 @@ typedef struct MTLALIGN(16)
 
 - (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle
 {
-   RARCH_LOG("[Metal]: readViewport is_idle = %s\n", isIdle ? "YES" : "NO");
-
    bool enabled = _context.captureEnabled;
    if (!enabled)
       _context.captureEnabled = YES;
@@ -1149,7 +1146,7 @@ typedef struct MTLALIGN(16)
          height = _viewport->height;
       }
 
-      RARCH_LOG("[Metal]: Updating framebuffer size %u x %u.\n", width, height);
+      /* Updating framebuffer size */
 
       MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
       if ((i != (_shader->passes - 1)) ||
@@ -1375,7 +1372,7 @@ typedef struct MTLALIGN(16)
                NSError *err = nil;
                NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
 
-               RARCH_LOG("[Metal]: saving metal shader files to %s\n", basePath.UTF8String);
+               /* Saving Metal shader files... */
 
                [vs_src writeToFile:[basePath stringByAppendingPathExtension:@"vs.metal"]
                         atomically:NO

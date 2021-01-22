@@ -16,25 +16,23 @@
 
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
+
+#include <retro_assert.h>
+
 #include "cocoa_common.h"
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
 
-#include <retro_assert.h>
+#ifdef HAVE_COCOATOUCH
+#import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
+#import "WebServer.h"
+#endif
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
 
-#ifdef HAVE_COCOATOUCH
-#import "GCDWebUploader.h"
-#import "WebServer.h"
-#include "apple_platform.h"
-#endif
-
 static CocoaView* g_instance;
-
-
 
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);

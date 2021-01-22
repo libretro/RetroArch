@@ -1475,19 +1475,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       endif
    endif
 
-   ifeq ($(HAVE_METAL), 1)
-      DEFINES += -DHAVE_METAL
-      OBJ += gfx/common/metal/Context.o \
-             gfx/common/metal/Filter.o \
-             gfx/common/metal/RendererCommon.o \
-             gfx/common/metal/View.o \
-             gfx/common/metal/TexturedView.o \
-             gfx/common/metal/MenuDisplay.o \
-             gfx/common/metal_common.o \
-             gfx/drivers/metal.o \
-             gfx/drivers_font/metal_raster_font.o \
-				 gfx/drivers_display/gfx_display_metal.o
-   endif
 
    ifeq ($(HAVE_MPV), 1)
       OBJ += cores/libretro-mpv/mpv-libretro.o
@@ -1519,6 +1506,23 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       LIBS += $(GL_LIBS)
    endif
 
+endif
+
+ifeq ($(HAVE_METAL), 1)
+   DEFINES += -DHAVE_METAL
+   LIBS += -framework Metal -framework MetalKit
+   # Metal code relies on ARC (Automatic Reference Counting), enable it
+   DEF_FLAGS += -fobjc-arc
+   OBJ += gfx/common/metal/Context.o \
+			 gfx/common/metal/Filter.o \
+			 gfx/common/metal/RendererCommon.o \
+			 gfx/common/metal/View.o \
+			 gfx/common/metal/TexturedView.o \
+			 gfx/common/metal/MenuDisplay.o \
+			 gfx/common/metal_common.o \
+			 gfx/drivers/metal.o \
+			 gfx/drivers_font/metal_raster_font.o \
+			 gfx/drivers_display/gfx_display_metal.o
 endif
 
 ifeq ($(HAVE_EGL), 1)
@@ -2252,7 +2256,14 @@ ifeq ($(HAVE_COMPRESSION), 1)
    OBJ     += tasks/task_decompress.o
 endif
 
-ifeq ($(HAVE_COCOA),1)
+ifeq ($(HAVE_COCOA), 1)
+   HAVE_COCOA_COMMON = 1
+endif
+ifeq ($(HAVE_COCOA_METAL), 1)
+   HAVE_COCOA_COMMON = 1
+endif
+
+ifeq ($(HAVE_COCOA_COMMON),1)
    DEFINES += -DHAVE_MAIN -DOSX
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \

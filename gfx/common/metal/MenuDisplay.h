@@ -4,6 +4,8 @@
 
 #import <Foundation/Foundation.h>
 
+#include "../../gfx_display.h"
+
 @class Context;
 
 @interface MenuDisplay : NSObject

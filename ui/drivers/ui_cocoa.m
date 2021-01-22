@@ -121,7 +121,7 @@ static char **waiting_argv;
             old_flags                             = new_flags;
 
             apple_input_keyboard_event(down, keycode,
-                  0, new_flags, RETRO_DEVICE_KEYBOARD);
+                  0, (uint32_t)new_flags, RETRO_DEVICE_KEYBOARD);
          }
          break;
         case NSEventTypeMouseMoved:
