@@ -877,6 +877,10 @@ MSG_HASH(
    "deferred_accessibility_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST,
+   "deferred_power_management_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST,
    "deferred_lakka_list"
    )
