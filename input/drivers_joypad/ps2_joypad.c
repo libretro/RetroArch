@@ -21,14 +21,16 @@
 
 #include "../input_driver.h"
 
+#include "libmtap.h"
 #include "libpad.h"
 
-#define PS2_PAD_SLOT 0 /* Always zero if not using multitap */
+#define PS2_MAX_PORT 2 /* each ps2 has 2 ports */
+#define PS2_MAX_SLOT 4 /* maximum - 4 slots in one multitap */
 #define PS2_ANALOG_STICKS 2
 #define PS2_ANALOG_AXIS 2
 
 /* TODO/FIXME - static globals */
-static unsigned char padBuf[2][256] ALIGNED(64);
+static unsigned char padBuf[PS2_MAX_PORT][PS2_MAX_SLOT][256] ALIGNED(64);
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][PS2_ANALOG_STICKS][PS2_ANALOG_AXIS];
 
@@ -48,21 +50,39 @@ static void *ps2_joypad_init(void *data)
 {
    unsigned ret  = 0;
    unsigned port = 0;
+   unsigned slot = 0;
+   unsigned pad  = 0;
 
-   for (port = 0; port < DEFAULT_MAX_PADS; port++)
+   for (port = 0; port < PS2_MAX_PORT; port++)
+      mtapPortOpen(port);
+   /* it can fail - we dont care, we will check it more strictly when padPortOpen */
+
+   for (slot = 0; slot < PS2_MAX_SLOT; slot++)
    {
-      input_autoconfigure_connect( ps2_joypad_name(port),
-            NULL,
-            ps2_joypad.ident,
-            port,
-            0,
-            0);
+      for (port = 0; port < PS2_MAX_PORT; port++)
+      {
+         input_autoconfigure_connect( ps2_joypad_name(pad), /* name */
+            NULL,                                           /* display name */
+            ps2_joypad.ident,                               /* driver */
+            pad,                                            /* idx */
+            0,                                              /* vid */
+            0);                                             /* pid */
+         pad++;
+         /* 2 main controller ports acts the same with and without multitap
+            Port 0,0 -> Connector 1 - the same as Port 0
+            Port 1,0 -> Connector 2 - the same as Port 1
+            Port 0,1 -> Connector 3
+            Port 1,1 -> Connector 4
+            Port 0,2 -> Connector 5
+            Port 1,2 -> Connector 6
+            Port 0,3 -> Connector 7
+            Port 1,3 -> Connector 8
+          */
 
-      /* Port 0 -> Connector 1, Port 1 -> Connector 2 */
-      if((ret = padPortOpen(port, PS2_PAD_SLOT, padBuf[port])) == 0)
-         return NULL;
+         if((ret = padPortOpen(port, slot, padBuf[port][slot])) == 0)
+            return NULL;
+      }
    }
-
    return (void*)-1;
 }
 
@@ -132,12 +152,12 @@ static int16_t ps2_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && pad_state[port_idx] & (UINT64_C(1) << joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(ps2_joypad_axis_state(port_idx, joyaxis)) 
+            ((float)abs(ps2_joypad_axis_state(port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -154,7 +174,7 @@ static int16_t ps2_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void ps2_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	BIT256_CLEAR_ALL_PTR(state);
+   BIT256_CLEAR_ALL_PTR(state);
 }
 
 static void ps2_joypad_poll(void)
@@ -164,10 +184,13 @@ static void ps2_joypad_poll(void)
 
    for (player = 0; player < DEFAULT_MAX_PADS; player++)
    {
-      int state = padGetState(player, PS2_PAD_SLOT);
-      if (state == PAD_STATE_STABLE)
+      int ps2_slot = player >> 1;
+      int ps2_port = player & 0x1;
+
+      int state = padGetState(ps2_port, ps2_slot);
+      if (state != PAD_STATE_DISCONN || state != PAD_STATE_EXECCMD || state != PAD_STATE_ERROR)
       {
-         int ret = padRead(player, PS2_PAD_SLOT, &buttons); /* port, slot, buttons */
+         int ret = padRead(ps2_port, ps2_slot, &buttons); /* port, slot, buttons */
          if (ret != 0)
          {
             int32_t state_tmp = 0xffff ^ buttons.btns;
@@ -219,8 +242,13 @@ static bool ps2_joypad_rumble(unsigned pad,
 static void ps2_joypad_destroy(void)
 {
    unsigned port;
-   for (port = 0; port < DEFAULT_MAX_PADS; port++)
-      padPortClose(port, PS2_PAD_SLOT);
+   unsigned slot;
+   for (port = 0; port < PS2_MAX_PORT; port++)
+   {
+      for (slot = 0; slot < PS2_MAX_SLOT; slot++)
+         padPortClose(port, slot);
+      mtapPortClose(port);
+   }
 }
 
 input_device_driver_t ps2_joypad = {

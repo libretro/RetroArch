@@ -24,8 +24,8 @@ extern unsigned int size_mcman_irx;
 extern unsigned char mcserv_irx;
 extern unsigned int size_mcserv_irx;
 
-extern unsigned char freemtap_irx;
-extern unsigned int size_freemtap_irx;
+extern unsigned char mtapman_irx;
+extern unsigned int size_mtapman_irx;
 
 extern unsigned char padman_irx;
 extern unsigned int size_padman_irx;
