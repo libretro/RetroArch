@@ -33,8 +33,6 @@ import android.os.VibrationEffect;
 import android.util.Log;
 
 import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -100,6 +98,7 @@ public class RetroActivityCommon extends NativeActivity
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    cleanupSymlinks();
     updateSymlinks();
 
     SplitInstallManager manager = SplitInstallManagerFactory.create(this);
@@ -544,6 +543,23 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
+   * Cleans up existing symlinks before new ones are created.
+   */
+  private void cleanupSymlinks() {
+    if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+
+    File[] files = new File(getCorePath()).listFiles();
+    for(int i = 0; i < files.length; i++) {
+      try {
+        Os.readlink(files[i].getAbsolutePath());
+        files[i].delete();
+      } catch (Exception e) {
+        // File is not a symlink, so don't delete.
+      }
+    }
+  }
+
+  /**
    * Triggers a symlink update in the known places that Dynamic Feature Modules
    * are installed to.
    */
@@ -570,6 +586,8 @@ public class RetroActivityCommon extends NativeActivity
    * @param filenames List of filenames to update.
    */
   private void traverseFilesystem(File file) {
+    if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+
     File[] list = file.listFiles();
     if(list == null) return;
 
@@ -593,19 +611,7 @@ public class RetroActivityCommon extends NativeActivity
           new File(newFilename).delete();
 
           try {
-            // On Android 5.0+, use the official API for creating a symlink.
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-              Os.symlink(filename, newFilename);
-            } else {
-              // On older versions, resort to using reflection instead.
-              Class<?> clazz = Class.forName("libcore.io.Libcore");
-              Field field = clazz.getDeclaredField("os");
-              field.setAccessible(true);
-
-              Object os = field.get(null);
-              Method method = os.getClass().getMethod("symlink", String.class, String.class);
-              method.invoke(os, filename, newFilename);
-            }
+            Os.symlink(filename, newFilename);
           } catch (Exception e) {
             // Symlink failed to be created. Should never happen.
           }
