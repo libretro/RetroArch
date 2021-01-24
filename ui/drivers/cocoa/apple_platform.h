@@ -30,9 +30,6 @@
 - (bool)setDisableDisplaySleep:(bool)disable;
 @end
 
-#endif
-
-#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 extern id<ApplePlatform> apple_platform;
 
 id<ApplePlatform> apple_platform;
