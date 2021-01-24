@@ -36187,54 +36187,48 @@ static bool input_driver_toggle_button_combo(
    switch (mode)
    {
       case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
+         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+            return true;
          break;
       case INPUT_TOGGLE_L3_R3:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
-            return false;
+         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
+            return true;
          break;
       case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
+         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+            return true;
          break;
       case INPUT_TOGGLE_START_SELECT:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return false;
+         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+            return true;
          break;
       case INPUT_TOGGLE_L3_R:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
+         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+            return true;
          break;
       case INPUT_TOGGLE_L_R:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return false;
+         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+            return true;
          break;
       case INPUT_TOGGLE_DOWN_SELECT:
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-            return false;
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return false;
+         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+            return true;
+         break;
+      case INPUT_TOGGLE_L2_R2:
+         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L2) &&
+             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R2))
+            return true;
          break;
       case INPUT_TOGGLE_HOLD_START:
       {
@@ -36306,10 +36300,10 @@ static bool input_driver_toggle_button_combo(
       }
       default:
       case INPUT_TOGGLE_NONE:
-         return false;
+         break;
    }
 
-   return true;
+   return false;
 }
 
 /* Display the libretro core's framebuffer onscreen. */

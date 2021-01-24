@@ -681,17 +681,17 @@ static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
 #if defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
-static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_L3_R3
 #elif defined(PS2) || defined(PSP)
-static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_HOLD_START
 #elif defined(VITA)
-static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_L1_R1_START_SELECT
 #elif defined(SWITCH) || defined(ORBIS)
-static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_START_SELECT
 #elif TARGET_OS_TV
-static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_DOWN_Y_L_R;
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_DOWN_Y_L_R
 #else
-static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_NONE
 #endif
 
 #if defined(VITA)
