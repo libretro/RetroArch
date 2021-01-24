@@ -35,7 +35,7 @@
 /* TODO/FIXME -
  * fix game focus toggle */
 
-#if !defined(HAVE_COCOATOUCH)
+#ifdef OSX
 /* Forward declaration */
 float cocoa_screen_get_backing_scale_factor(void);
 #endif

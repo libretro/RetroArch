@@ -23,7 +23,7 @@
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#if !defined(HAVE_COCOATOUCH)
+#ifdef OSX
 #include <AppKit/NSScreen.h>
 #endif
 
@@ -96,7 +96,7 @@ static void cocoa_vk_gfx_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
-#if MAC_OS_X_VERSION_10_7 && !defined(HAVE_COCOATOUCH)
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
 /* NOTE: convertRectToBacking only available on MacOS X 10.7 and up.
  * Therefore, make specialized version of this function instead of
  * going through a selector for every call. */
@@ -113,7 +113,7 @@ static void cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
    *width                          = CGRectGetWidth(size);
    *height                         = CGRectGetHeight(size);
 }
-#elif !defined(HAVE_COCOATOUCH)
+#elif defined(OSX)
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
@@ -144,7 +144,7 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
 
    *resize                     = cocoa_ctx->vk.need_new_swapchain;
 
-#if MAC_OS_X_VERSION_10_7 && !defined(HAVE_COCOATOUCH)
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
    cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
 #else
    cocoa_vk_gfx_ctx_get_video_size(data, &new_width, &new_height);
@@ -201,7 +201,7 @@ static void *cocoa_vk_gfx_ctx_get_context_data(void *data)
    return &cocoa_ctx->vk.context;
 }
 
-#if !defined(HAVE_COCOATOUCH)
+#ifdef OSX
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height, bool fullscreen)
 {
@@ -261,7 +261,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
 static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
-      calloc(1, sizeof(cocoa_ctx_data_t));
+   calloc(1, sizeof(cocoa_ctx_data_t));
 
    if (!cocoa_ctx)
       return NULL;
@@ -272,7 +272,7 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
       free(cocoa_ctx);
       return NULL;
    }
-
+    
    return cocoa_ctx;
 }
 #else
@@ -289,7 +289,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
 static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
-      calloc(1, sizeof(cocoa_ctx_data_t));
+   calloc(1, sizeof(cocoa_ctx_data_t));
 
    if (!cocoa_ctx)
       return NULL;
@@ -330,7 +330,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_bind_api,
    cocoa_vk_gfx_ctx_swap_interval,
    cocoa_vk_gfx_ctx_set_video_mode,
-#if MAC_OS_X_VERSION_10_7 && !defined(HAVE_COCOATOUCH)
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
    cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up,
 #else
    cocoa_vk_gfx_ctx_get_video_size,
@@ -341,7 +341,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
    NULL, /* translate_aspect */
-#if !defined(HAVE_COCOATOUCH)
+#ifdef OSX
    cocoa_update_title,
 #else
    NULL, /* update_title */

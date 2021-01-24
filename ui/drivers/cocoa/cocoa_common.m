@@ -45,7 +45,7 @@ void *glkitview_init(void);
 
 @implementation CocoaView
 
-#if !defined(HAVE_COCOATOUCH)
+#if defined(OSX)
 #ifdef HAVE_COCOA_METAL
 - (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window { return YES; }
 #endif
@@ -67,36 +67,86 @@ void *glkitview_init(void);
 {
    self = [super init];
 
-#if defined(HAVE_COCOATOUCH)
+#if defined(OSX)
+   [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+   NSArray *array = [NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil];
+   [self registerForDraggedTypes:array];
+#endif
+
+#if defined(HAVE_COCOA)
+   ui_window_cocoa_t cocoa_view;
+   cocoa_view.data = (CocoaView*)self;
+#elif defined(HAVE_COCOATOUCH)
 #if defined(HAVE_COCOA_METAL)
    self.view       = [UIView new];
 #else
    self.view       = (BRIDGE GLKView*)glkitview_init();
 #endif
-
-#if TARGET_OS_IOS
-   UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
-   swipe.numberOfTouchesRequired = 4;
-   swipe.direction = UISwipeGestureRecognizerDirectionDown;
-   [self.view addGestureRecognizer:swipe];
 #endif
-#else
-   [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-   NSArray *array = [NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil];
-   [self registerForDraggedTypes:array];
-
-   ui_window_cocoa_t cocoa_view;
-   cocoa_view.data = (CocoaView*)self;
-
-   video_driver_display_type_set(RARCH_DISPLAY_OSX);
-   video_driver_display_set(0);
-   video_driver_display_userdata_set((uintptr_t)self);
+    
+#if defined(OSX)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)self);
+#elif TARGET_OS_IOS
+    UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
+    swipe.numberOfTouchesRequired = 4;
+    swipe.direction = UISwipeGestureRecognizerDirectionDown;
+    [self.view addGestureRecognizer:swipe];
 #endif
 
    return self;
 }
 
-#if TARGET_OS_IOS
+#if defined(OSX)
+- (void)setFrame:(NSRect)frameRect
+{
+   [super setFrame:frameRect];
+/* forward declarations */
+#if defined(HAVE_OPENGL)
+   void cocoa_gl_gfx_ctx_update(void);
+   cocoa_gl_gfx_ctx_update();
+#endif
+}
+
+/* Stop the annoying sound when pressing a key. */
+- (BOOL)acceptsFirstResponder { return YES; }
+- (BOOL)isFlipped { return YES; }
+- (void)keyDown:(NSEvent*)theEvent { }
+
+- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
+{
+    NSDragOperation sourceDragMask = [sender draggingSourceOperationMask];
+    NSPasteboard           *pboard = [sender draggingPasteboard];
+
+    if ( [[pboard types] containsObject:NSFilenamesPboardType] )
+    {
+        if (sourceDragMask & NSDragOperationCopy)
+            return NSDragOperationCopy;
+    }
+
+    return NSDragOperationNone;
+}
+
+- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
+{
+    NSPasteboard *pboard = [sender draggingPasteboard];
+
+    if ( [[pboard types] containsObject:NSURLPboardType])
+    {
+        NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
+        NSString    *s = [fileURL path];
+        if (s != nil)
+        {
+           RARCH_LOG("Drop name is: %s\n", [s UTF8String]);
+        }
+    }
+    return YES;
+}
+
+- (void)draggingExited:(id <NSDraggingInfo>)sender { [self setNeedsDisplay: YES]; }
+
+#elif TARGET_OS_IOS
 -(void) showNativeMenu
 {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -216,6 +266,7 @@ void *glkitview_init(void);
 }
 #endif
 
+#ifdef HAVE_COCOATOUCH
 - (void)viewDidAppear:(BOOL)animated
 {
 #if TARGET_OS_IOS
@@ -260,53 +311,6 @@ void *glkitview_init(void);
     }];
 #endif
 }
-#else
-- (void)setFrame:(NSRect)frameRect
-{
-   [super setFrame:frameRect];
-/* forward declarations */
-#if defined(HAVE_OPENGL)
-   void cocoa_gl_gfx_ctx_update(void);
-   cocoa_gl_gfx_ctx_update();
-#endif
-}
-
-/* Stop the annoying sound when pressing a key. */
-- (BOOL)acceptsFirstResponder { return YES; }
-- (BOOL)isFlipped { return YES; }
-- (void)keyDown:(NSEvent*)theEvent { }
-
-- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
-{
-    NSDragOperation sourceDragMask = [sender draggingSourceOperationMask];
-    NSPasteboard           *pboard = [sender draggingPasteboard];
-
-    if ( [[pboard types] containsObject:NSFilenamesPboardType] )
-    {
-        if (sourceDragMask & NSDragOperationCopy)
-            return NSDragOperationCopy;
-    }
-
-    return NSDragOperationNone;
-}
-
-- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
-{
-    NSPasteboard *pboard = [sender draggingPasteboard];
-
-    if ( [[pboard types] containsObject:NSURLPboardType])
-    {
-        NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
-        NSString    *s = [fileURL path];
-        if (s != nil)
-        {
-           RARCH_LOG("Drop name is: %s\n", [s UTF8String]);
-        }
-    }
-    return YES;
-}
-
-- (void)draggingExited:(id <NSDraggingInfo>)sender { [self setNeedsDisplay: YES]; }
 #endif
 
 @end
@@ -342,7 +346,7 @@ bool cocoa_has_focus(void *data)
 
 void cocoa_show_mouse(void *data, bool state)
 {
-#if !defined(HAVE_COCOATOUCH)
+#ifdef OSX
     if (state)
         [NSCursor unhide];
     else
@@ -350,7 +354,26 @@ void cocoa_show_mouse(void *data, bool state)
 #endif
 }
 
-#if defined(HAVE_COCOATOUCH)
+#ifdef OSX
+#if MAC_OS_X_VERSION_10_7
+/* NOTE: backingScaleFactor only available on MacOS X 10.7 and up. */
+float cocoa_screen_get_backing_scale_factor(void)
+{
+    static float
+    backing_scale_def        = 0.0f;
+    if (backing_scale_def == 0.0f)
+    {
+        RAScreen *screen      = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
+        if (!screen)
+            return 1.0f;
+        backing_scale_def     = [screen backingScaleFactor];
+    }
+    return backing_scale_def;
+}
+#else
+float cocoa_screen_get_backing_scale_factor(void) { return 1.0f; }
+#endif
+#else
 static float get_from_selector(
                                Class obj_class, id obj_id, SEL selector, CGFloat *ret)
 {
@@ -392,30 +415,11 @@ float cocoa_screen_get_native_scale(void)
     
     return ret;
 }
-#else
-#if MAC_OS_X_VERSION_10_7
-/* NOTE: backingScaleFactor only available on MacOS X 10.7 and up. */
-float cocoa_screen_get_backing_scale_factor(void)
-{
-    static float
-    backing_scale_def        = 0.0f;
-    if (backing_scale_def == 0.0f)
-    {
-        RAScreen *screen      = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
-        if (!screen)
-            return 1.0f;
-        backing_scale_def     = [screen backingScaleFactor];
-    }
-    return backing_scale_def;
-}
-#else
-float cocoa_screen_get_backing_scale_factor(void) { return 1.0f; }
-#endif
 #endif
 
 void *nsview_get_ptr(void)
 {
-#if !defined(HAVE_COCOATOUCH)
+#if defined(OSX)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);
@@ -437,7 +441,62 @@ CocoaView *cocoaview_get(void)
 #endif
 }
 
-#if defined(HAVE_COCOATOUCH)
+#ifdef OSX
+void cocoa_update_title(void *data)
+{
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title((void*)video_driver_display_userdata_get(), title);
+   }
+}
+
+bool cocoa_get_metrics(
+      void *data, enum display_metric_types type,
+      float *value)
+{
+   RAScreen *screen              = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
+   NSDictionary *desc            = [screen deviceDescription];
+   CGSize  display_physical_size = CGDisplayScreenSize(
+         [[desc objectForKey:@"NSScreenNumber"] unsignedIntValue]);
+
+   float   physical_width        = display_physical_size.width;
+   float   physical_height       = display_physical_size.height;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = physical_width;
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = physical_height;
+         break;
+      case DISPLAY_METRIC_DPI:
+         {
+            NSSize disp_pixel_size = [[desc objectForKey:NSDeviceSize] sizeValue];
+            float dispwidth = disp_pixel_size.width;
+            float   scale   = cocoa_screen_get_backing_scale_factor();
+            float   dpi     = (dispwidth / physical_width) * 25.4f * scale;
+            *value          = dpi;
+         }
+         break;
+      case DISPLAY_METRIC_NONE:
+      default:
+         *value = 0;
+         return false;
+   }
+
+   return true;
+}
+#else
 bool cocoa_get_metrics(
       void *data, enum display_metric_types type,
       float *value)
@@ -493,72 +552,4 @@ bool cocoa_get_metrics(
 
    return true;
 }
-#else
-void cocoa_update_title(void *data)
-{
-   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-
-   if (window)
-   {
-      char title[128];
-
-      title[0] = '\0';
-
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         window->set_title((void*)video_driver_display_userdata_get(), title);
-   }
-}
-
-bool cocoa_get_metrics(
-      void *data, enum display_metric_types type,
-      float *value)
-{
-   RAScreen *screen              = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
-   NSDictionary *desc            = [screen deviceDescription];
-   CGSize  display_physical_size = CGDisplayScreenSize(
-         [[desc objectForKey:@"NSScreenNumber"] unsignedIntValue]);
-
-   float   physical_width        = display_physical_size.width;
-   float   physical_height       = display_physical_size.height;
-
-   switch (type)
-   {
-      case DISPLAY_METRIC_MM_WIDTH:
-         *value = physical_width;
-         break;
-      case DISPLAY_METRIC_MM_HEIGHT:
-         *value = physical_height;
-         break;
-      case DISPLAY_METRIC_DPI:
-         {
-            NSSize disp_pixel_size = [[desc objectForKey:NSDeviceSize] sizeValue];
-            float dispwidth = disp_pixel_size.width;
-            float   scale   = cocoa_screen_get_backing_scale_factor();
-            float   dpi     = (dispwidth / physical_width) * 25.4f * scale;
-            *value          = dpi;
-         }
-         break;
-      case DISPLAY_METRIC_NONE:
-      default:
-         *value = 0;
-         return false;
-   }
-
-   return true;
-}
-#endif
-
-#if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
-@implementation WindowListener
-
-/* Similarly to SDL, we'll respond to key events 
- * by doing nothing so we don't beep.
- */
-- (void)flagsChanged:(NSEvent *)event { }
-- (void)keyDown:(NSEvent *)event { }
-- (void)keyUp:(NSEvent *)event { }
-
-@end
 #endif

@@ -28,6 +28,7 @@
 #endif
 
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+
 #include "../ui/drivers/cocoa/cocoa_common.m"
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_ES)
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
@@ -35,16 +36,17 @@
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/cocoa_vk_ctx.m"
 #endif
-#endif
 
-#if defined(HAVE_COCOATOUCH)
-#include "../ui/drivers/ui_cocoatouch.m"
-#else
+#if defined(OSX)
 #include "../ui/drivers/cocoa/ui_cocoa_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_browser_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_application.m"
 #include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
 #include "../ui/drivers/ui_cocoa.m"
+#else
+#include "../ui/drivers/ui_cocoatouch.m"
+#endif
+
 #endif
 
 #ifdef HAVE_MFI
