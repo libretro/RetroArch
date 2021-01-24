@@ -79,7 +79,7 @@
       _inflightSemaphore         = dispatch_semaphore_create(MAX_INFLIGHT);
       _device                    = d;
       _layer                     = layer;
-#ifdef OSX
+#if !defined(HAVE_COCOATOUCH)
       _layer.framebufferOnly     = NO;
       _layer.displaySyncEnabled  = YES;
 #endif
@@ -170,17 +170,17 @@
 
 - (void)setDisplaySyncEnabled:(bool)displaySyncEnabled
 {
-#ifdef OSX
+#if !defined(HAVE_COCOATOUCH)
    _layer.displaySyncEnabled = displaySyncEnabled;
 #endif
 }
 
 - (bool)displaySyncEnabled
 {
-#ifdef OSX
-   return _layer.displaySyncEnabled;
-#else
+#if !defined(HAVE_COCOATOUCH)
    return NO;
+#else
+   return _layer.displaySyncEnabled;
 #endif
 }
 
@@ -650,7 +650,7 @@
 
    if (_blitCommandBuffer)
    {
-#ifdef OSX
+#if !defined(HAVE_COCOATOUCH)
       if (_captureEnabled)
       {
          id<MTLBlitCommandEncoder> bce = [_blitCommandBuffer blitCommandEncoder];
@@ -745,7 +745,7 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (void)commitRanges
 {
-#ifdef OSX
+#if !defined(HAVE_COCOATOUCH)
    BufferNode *n;
    for (n = _head; n != nil; n = n.next)
    {
