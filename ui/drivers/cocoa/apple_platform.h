@@ -9,18 +9,7 @@
 #if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
 @end
-
-@implementation WindowListener
-
-/* Similarly to SDL, we'll respond to key events by doing nothing so we don't beep.
- */
-- (void)flagsChanged:(NSEvent *)event { }
-- (void)keyDown:(NSEvent *)event { }
-- (void)keyUp:(NSEvent *)event { }
-
-@end
 #endif
-
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 @protocol ApplePlatform
