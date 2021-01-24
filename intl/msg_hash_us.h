@@ -7441,6 +7441,30 @@ MSG_HASH(
    "Unknown"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   "Down + Y + L1 + R1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_L3_R3,
+   "L3 + R3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_L1_R1_START_SELECT,
+   "L1 + R1 + Start + Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_START_SELECT,
+   "Start + Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_L3_R,
+   "L3 + R1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_L_R,
+   "L1 + R1"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HOLD_START,
    "Hold Start (2 seconds)"
    )
@@ -7451,6 +7475,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
    "Down + Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_L2_R2,
+   "L2 + R2"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,

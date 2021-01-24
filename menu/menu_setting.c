@@ -6150,22 +6150,22 @@ static void setting_get_string_representation_toggle_gamepad_combo(
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          break;
       case INPUT_TOGGLE_DOWN_Y_L_R:
-         strlcpy(s, "Down + L1 + R1 + Y", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R), len);
          break;
       case INPUT_TOGGLE_L3_R3:
-         strlcpy(s, "L3 + R3", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L3_R3), len);
          break;
       case INPUT_TOGGLE_L1_R1_START_SELECT:
-         strlcpy(s, "L1 + R1 + Start + Select", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L1_R1_START_SELECT), len);
          break;
       case INPUT_TOGGLE_START_SELECT:
-         strlcpy(s, "Start + Select", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_SELECT), len);
          break;
       case INPUT_TOGGLE_L3_R:
-         strlcpy(s, "L3 + R", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L3_R), len);
          break;
       case INPUT_TOGGLE_L_R:
-         strlcpy(s, "L + R", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L_R), len);
          break;
       case INPUT_TOGGLE_HOLD_START:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_START), len);
@@ -6175,6 +6175,9 @@ static void setting_get_string_representation_toggle_gamepad_combo(
          break;
       case INPUT_TOGGLE_DOWN_SELECT:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_SELECT), len);
+         break;
+      case INPUT_TOGGLE_L2_R2:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L2_R2), len);
          break;
    }
 }
@@ -12018,7 +12021,7 @@ static bool setting_append_list(
                   &settings->uints.input_menu_toggle_gamepad_combo,
                   MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
                   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-                  menu_toggle_gamepad_combo,
+                  DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO,
                   &group_info,
                   &subgroup_info,
                   parent_group,
