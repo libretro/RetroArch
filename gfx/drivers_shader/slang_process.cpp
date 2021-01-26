@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2017 - Hans-Kristian Arntzen
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -40,7 +40,7 @@ template <typename M, typename S>
 static string get_semantic_name(const unordered_map<string, M>* map,
       S semantic, unsigned index)
 {
-   for (const pair<string, M>& m : *map)
+   for (const auto& m : *map)
    {
       if (m.second.semantic == semantic && m.second.index == index)
          return m.first;

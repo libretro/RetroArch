@@ -228,7 +228,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    db->path  = strdup(path);
    db->root  = filestream_tell(fd);
 
-   if ((rv = (int)filestream_read(fd, &header, sizeof(header))) == -1)
+   if ((int)filestream_read(fd, &header, sizeof(header)) == -1)
    {
       rv = -errno;
       goto error;
