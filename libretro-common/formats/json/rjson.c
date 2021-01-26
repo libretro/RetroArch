@@ -607,7 +607,8 @@ static bool _rjson_optional_skip(rjson_t *json, const unsigned char **p, const u
                   (skip == '/' ? "comment" : "utf8 byte order mark"));
             return false;
          }
-         *p = json->input_p, *end = json->input_end;
+         *p   = json->input_p;
+         *end = json->input_end;
       }
       c = *(*p)++;
       if (skip == '/')
@@ -697,7 +698,8 @@ enum rjson_type rjson_next(rjson_t *json)
          }
          else if (_rJSON_LIKELY(_rjson_io_input(json)))
          {
-            p = json->input_p, end = json->input_end;
+            p   = json->input_p;
+            end = json->input_end;
             continue;
          }
          else
