@@ -7,6 +7,8 @@ mkdir -p RetroArch.app/Contents/MacOS
 cp -r pkg/apple/OSX/* RetroArch.app/Contents
 cp retroarch RetroArch.app/Contents/MacOS
 
+mv RetroArch.app/Contents/Info_Metal.plist RetroArch.app/Contents/Info.plist
+
 sed -i'.bak' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
 sed -i'.bak' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch.app/Contents/Info.plist
 sed -i'.bak' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
