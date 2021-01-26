@@ -170,7 +170,7 @@ RHMAP__UNUSED static void* rhmap__grow(struct rhmap__hdr *old_hdr, void* old_ptr
    new_hdr->maxlen = new_max;
    new_hdr->keys = (uint32_t *)calloc(new_max + 1, sizeof(uint32_t));
    if (!new_hdr->keys)
-      return (free(new_hdr), old_ptr); /* out of memory */
+       return (void*)((void)(free(new_hdr)), old_ptr); /* out of memory */
 
    new_vals = ((char*)(new_hdr + 1)) + elem_size;
    if (old_ptr)
