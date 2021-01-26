@@ -731,6 +731,7 @@ static void iohidmanager_hid_device_add_device(
                case kIOHIDElementTypeInput_Button:
                case kIOHIDElementTypeOutput:
                case kIOHIDElementTypeInput_Axis:
+               case kIOHIDElementTypeInput_NULL:
                   /* TODO/FIXME */
                   break;
                case kIOHIDElementTypeInput_Misc:
@@ -795,6 +796,7 @@ static void iohidmanager_hid_device_add_device(
                case kIOHIDElementTypeInput_ScanCodes:
                case kIOHIDElementTypeInput_Axis:
                case kIOHIDElementTypeOutput:
+               case kIOHIDElementTypeInput_NULL:
                   /* TODO/FIXME */
                   break;
                case kIOHIDElementTypeInput_Misc:
