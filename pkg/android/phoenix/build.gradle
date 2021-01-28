@@ -38,7 +38,7 @@ android {
         arguments "-j${Runtime.runtime.availableProcessors()}"
       }
     }
-    targetSdkVersion 28
+    targetSdkVersion 29
     versionCode System.currentTimeSeconds().toInteger()
     versionName "${getManifestAttribute("versionName")}_GIT"
   }
@@ -72,7 +72,6 @@ android {
     }
     playStoreNormal {
       minSdkVersion 21
-      targetSdkVersion 29
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -83,7 +82,6 @@ android {
     }
     playStorePlus {
       minSdkVersion 26
-      targetSdkVersion 29
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
