@@ -1991,6 +1991,14 @@ MSG_HASH(
    "Configura automaticamente os controles que possuem um perfil, estilo Plug-and-Play."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Desative os atalhos do Windows"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Mantém as combinações das teclas dentro do aplicativo. (requer reinício)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -3665,6 +3673,14 @@ MSG_HASH(
    "LIGADO (rápido)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Notificações da taxa de atualização"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Exibe uma mensagem na tela ao definir a taxa de atualização."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Fonte das notificações na tela"
    )
@@ -5243,6 +5259,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Ganhe conquistas em jogos clássicos. Para mais informações, visite 'https://retroachievements.org'."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK,
+   "Jogos do Facebook"
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -5279,6 +5299,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Chave de transmissão dos jogos do Facebook"
+   )
 
 /* Settings > Directory */
 
@@ -6676,12 +6700,36 @@ MSG_HASH(
    "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "Pausar as conquistas no modo Hardcore"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "Deixa o modo hardcore ativado para a sessão atual"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "Cancela a pausa das conquistas no modo hardcore"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "Deixa o modo de conquista hardcore desativado para a sessão atual"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Pausar conquistas no modo Hardcore"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Pausa as conquistas no modo hardcore para a sessão atual. (Esta ação ativará os jogos já salvos, as trapaças, o rebobinamento, a pausa e a câmera lenta)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Continuar conquistas no modo Hardcore"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Continua as conquistas no modo hardcore para a sessão atual. (Isso reiniciará a partida atual e irá desativar o salvamento das partidas, das trapaças, do rebobinamento, da pausa e da câmera lenta)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -10528,6 +10576,18 @@ MSG_HASH(
    "Analisando redes sem fio..."
    )
 MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Ativando o Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Desativando o Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Desconectando do Wi-Fi..."
+   )
+MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
    "Analisando por anfitriões de jogo em rede..."
    )
@@ -10718,6 +10778,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_MISSING_ASSETS,
    "Atenção: Recursos ausentes, use a opção de atualizações e downloads se disponível"
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Atenção: Falta fontes para o idioma selecionado, se disponível, use o atualizador online"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Atenção: Não há suporte para o idioma - usando o Inglês"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -10954,6 +11022,22 @@ MSG_HASH(
    "Analisa redes sem fio e estabelecer uma conexão."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Ativar o Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "Conectar à rede"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "Conectar à rede"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Desconectar"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    "Reduzir tremulação de vídeo"
    )
@@ -11053,6 +11137,14 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Somente leitura"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Brilho da tela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Aumenta ou diminui o brilho da tela."
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
@@ -11126,6 +11218,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_WIFI_DISCONNECT_FROM,
    "Desconectando do Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Conectando-se ao Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[Sem SSID]"
    )
 MSG_HASH(
    MSG_LOCALAP_ALREADY_RUNNING,

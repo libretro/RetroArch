@@ -1363,7 +1363,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-   "Résolution adaptée aux écrans CRT"
+   "Résolution adaptée aux écrans CRT "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
@@ -2003,6 +2003,14 @@ MSG_HASH(
    "Tente de configurer automatiquement les manettes, style Plug-and-Play."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Désactiver les raccourcis clavier Windows"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Conserve les combinaisons de touches de Windows à l'intérieur de l'application. (Redémarrage requis)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -3364,7 +3372,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
-   "(Paysage) Échelle de la surimpression"
+   "(Paysage) Échelle de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
@@ -3372,7 +3380,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-   "(Paysage) Ajustement d'aspect de la surimpression"
+   "(Paysage) Ajustement d'aspect de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
@@ -3380,7 +3388,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "(Paysage) Séparation horizontale de la surimpression"
+   "(Paysage) Séparation horizontale de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
@@ -3388,7 +3396,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "(Paysage) Séparation verticale de la surimpression"
+   "(Paysage) Séparation verticale de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
@@ -3396,7 +3404,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
-   "(Paysage) Décalage X de la surimpression"
+   "(Paysage) Décalage X de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
@@ -3404,7 +3412,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "(Paysage) Décalage Y de la surimpression"
+   "(Paysage) Décalage Y de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
@@ -3412,7 +3420,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
-   "(Portrait) Échelle de la surimpression"
+   "(Portrait) Échelle de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
@@ -3420,7 +3428,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
-   "(Portrait) Ajustement d'aspect de la surimpression"
+   "(Portrait) Ajustement d'aspect de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
@@ -3428,7 +3436,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
-   "(Portrait) Séparation horizontale de la surimpression"
+   "(Portrait) Séparation horizontale de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
@@ -3436,7 +3444,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "(Portrait) Séparation verticale de la surimpression"
+   "(Portrait) Séparation verticale de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
@@ -3444,7 +3452,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
-   "(Portrait) Décalage X de la surimpression"
+   "(Portrait) Décalage X de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
@@ -3452,7 +3460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
-   "(Portrait) Décalage Y de la surimpression"
+   "(Portrait) Décalage Y de la surimpression "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
@@ -3514,7 +3522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "Remplacement de l'échelle des widgets graphiques (Plein écran)"
+   "Remplacement de l'échelle des widgets graphiques (Plein écran) "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
@@ -3522,7 +3530,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "Remplacement de l'échelle des widgets graphiques (Fenêtré)"
+   "Remplacement de l'échelle des widgets graphiques (Fenêtré) "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
@@ -3566,7 +3574,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
-   "Fréquence d'actualisation de l'utilisation mémoire (en images)"
+   "Fréquence d'actualisation de l'utilisation mémoire (en images) "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
@@ -3642,7 +3650,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   "Persistence de la notification de capture d'écran"
+   "Persistence de la notification de capture d'écran "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
@@ -3666,7 +3674,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "Effet de flash lors de la capture d'écran"
+   "Effet de flash lors de la capture d'écran "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
@@ -3679,6 +3687,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
    "Activé (court)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Notifications pour la fréquence de rafraîchissement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Afficher un message à l'écran lors du réglage de la fréquence de rafraîchissement."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -3781,7 +3797,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-   "Définir le mot de passe pour désactiver le mode kiosque"
+   "Définir le mot de passe pour désactiver le mode kiosque "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
@@ -4020,7 +4036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Définir le mot de passe pour l'activation de l'onglet Réglages"
+   "Définir le mot de passe pour l'activation de l'onglet Réglages "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -4132,7 +4148,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
-   "Séparateur de date"
+   "Séparateur de date "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
@@ -4541,7 +4557,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Facteur de mise à l'échelle du menu"
+   "Facteur de mise à l'échelle du menu "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
@@ -4589,7 +4605,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-   "Seuil de l'agrandissement des miniatures"
+   "Seuil de l'agrandissement des miniatures "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
@@ -4624,7 +4640,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
-   "Sortie du service IA"
+   "Sortie du service IA "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
@@ -4632,7 +4648,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
-   "URL du service IA"
+   "URL du service IA "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
@@ -4656,7 +4672,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
-   "Langue source"
+   "Langue source "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
@@ -4664,7 +4680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
-   "Langue cible"
+   "Langue cible "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
@@ -4712,7 +4728,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Classements"
+   "Classements "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -4994,7 +5010,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   "Taille de l'historique de sauvegarde des cœurs"
+   "Taille de l'historique de sauvegarde des cœurs "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -5303,6 +5319,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Clé de stream Facebook Gaming "
+   )
 
 /* Settings > Directory */
 
@@ -6684,12 +6704,36 @@ MSG_HASH(
    "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "Annuler la mise en pause du mode Hardcore des succès"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "Laisse le mode Hardcore des succès activé pour la session en cours"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "Annuler la reprise du mode Hardcore des succès"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "Laisse le mode Hardcore des succès désactivé pour la session en cours"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Mettre en pause le mode Hardcore des succès"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Mettre le mode Hardcore des succès en pause pour la session en cours. (Cette action activera les sauvegardes instantanées, les cheats, le rembobinage, la mise en pause et le ralenti)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Reprendre le mode Hardcore des succès"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Réactiver le mode Hardcore des succès pour la session en cours. (Cette action désactivera les sauvegardes instantanées, les cheats, le rembobinage, la mise en pause, le ralenti et réinitialisera le jeu en cours)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -7142,7 +7186,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OFF,
-   "Désactivé"
+   "Désactivé(e)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_YES,
@@ -7166,7 +7210,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISABLED,
-   "Désactivé"
+   "Désactivé(e)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
@@ -7437,7 +7481,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Thème de couleur du menu"
+   "Thème de couleur du menu "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
@@ -7835,7 +7879,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
-   "Facteur de mise à l'échelle des miniatures"
+   "Facteur de mise à l'échelle des miniatures "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
@@ -8017,7 +8061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Thème de couleur du menu"
+   "Thème de couleur du menu "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -8108,7 +8152,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Couleur de thème du menu"
+   "Thème de couleur du menu "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
@@ -10576,6 +10620,18 @@ MSG_HASH(
    "Recherche de réseaux sans fil..."
    )
 MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Activation du Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Désactivation du Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Déconnexion du Wi-Fi..."
+   )
+MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
    "Recherche d'hôtes de jeu en réseau..."
    )
@@ -10772,6 +10828,14 @@ MSG_HASH(
    "AVERTISSEMENT : Assets manquants, utilisez la mise à jour en ligne si disponible"
    )
 MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Avertissement: Polices manquantes pour la langue sélectionnée, utilisez la Mise à jour en ligne si disponible"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Avertissement : Langue non prise en charge - utilisation de l'anglais"
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Importation du disque..."
    )
@@ -10955,7 +11019,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-   "Remplacement de l'échelle des widgets graphiques"
+   "Remplacement de l'échelle des widgets graphiques "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
@@ -11004,6 +11068,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    "Analyser les réseaux sans fil et établir la connexion."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Activer le Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "Se connecter au réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "Se connecter au réseau"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Déconnecter"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
@@ -11105,6 +11185,14 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Lecture seule"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Luminosité de l'écran"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Augmenter ou diminuer la luminosité de l'écran."
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
@@ -11162,6 +11250,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_WIFI_DISCONNECT_FROM,
    "Déconnexion du Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Connexion au réseau Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[Pas de SSID]"
    )
 MSG_HASH(
    MSG_LOCALAP_ALREADY_RUNNING,

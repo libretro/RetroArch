@@ -2011,6 +2011,14 @@ MSG_HASH(
    "Profili Tak ve Çalıştır şeklinde olan kontrolcüleri otomatik olarak yapılandırır."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Windows Kısayol Tuşlarını Devre Dışı Bırak"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Win-tuş kombinasyonlarını uygulama içinde tutar. (Yeniden başlatılmalı)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -3685,6 +3693,14 @@ MSG_HASH(
    "AÇIK (Hızlı)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Yenileme Hızı Bildirimleri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Yenileme oranını ayarlarken bir ekran mesajı görüntüleyin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Bildirim Yazı Tipi"
    )
@@ -5303,6 +5319,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Facebook Gaming Akış Anahtarı"
+   )
 
 /* Settings > Directory */
 
@@ -6720,12 +6740,36 @@ MSG_HASH(
    "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "Zorlu Kipte Başarıları Duraklatmayı İptal Et"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "Mevcut oturum için zorlu kip başarımını etkinleştirir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "Zorlu Kipte Başarıları Devam Ettirmeyi İptal Et"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "Mevcut oturum için zorlu kip başarımını devre dışı bırakır"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Zorlu Kipte Başarıları Duraklat"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Mevcut oturum için zorlu kip başarımlarını duraklatır. (Bu eylem durum kayıtları, hileler, geri sarma, duraklatma ve yavaş hareketi etkinleştirir)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Zorlu Kipte Başarılara Devam Et"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Mevcut oturum için zorlu kipta başarımları sürdürür. (Bu eylem, durum kayıtlarını, hileleri, geri sarma, duraklatma ve yavaş hareketi devre dışı bırakır ve mevcut oyunu sıfırlar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -10684,6 +10728,18 @@ MSG_HASH(
    "Kablosuz ağlar taranıyor..."
    )
 MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Wi-Fi Etkinleştiriliyor..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Wi-Fi Devre Dışı Bırakılıyor..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Wi-Fi Bağlantısı Kesiliyor..."
+   )
+MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
    "Netplay sunucuları taranıyor..."
    )
@@ -10874,6 +10930,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_MISSING_ASSETS,
    "Uyarı: Eksik içerikler varsa Çevrimiçi Güncelleyici kullanın"
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Uyarı: Seçilen dil için eksik yazı tipleri varsa Çevrimiçi Güncelleyiciyi kullanın"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Uyarı: Desteklenmeyen dil - İngilizce kullanıyor"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -11106,6 +11170,22 @@ MSG_HASH(
    "Kablosuz ağları tarar ve bağlantı kurar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Wi-Fi Etkinleştir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "Ağa Bağlan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "Ağa Bağlan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Bağlantıyı Kes"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    "VI Ekran Genişliğini Ayarla"
    )
@@ -11209,6 +11289,14 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Salt-Okunur"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Ekran Parlaklığı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Ekran parlaklığını arttır veya azalt."
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
@@ -11270,6 +11358,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_WIFI_DISCONNECT_FROM,
    "Wi-Fi '%s' bağlantısı kesiliyor"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Wi-Fi '%s' ağına bağlanılıyor"
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[SSID Yok]"
    )
 MSG_HASH(
    MSG_LOCALAP_ALREADY_RUNNING,

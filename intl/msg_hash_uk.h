@@ -1464,12 +1464,32 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    "Точна розрахункова частота оновлення екрана в Гц."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "Частота оновлення дисплея"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "Частота оновлення, згідно драйвера дисплея."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   "Примусово вимкнути sRGB FBO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Примусово вимкнути підтримку sRGB FBO. Деякі драйвери Intel OpenGL на Windows мають проблеми з підтримкою sRGB FBO, якщо це увімкнено. Ввімкнення може працювати в обхід цього."
+   )
 
 /* Settings > Video > Fullscreen Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    "Запуск у повноекранному режимі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Запускати в повноекранному режимі. Можна змінити під час виконання. Можна перевизначити перемикачем у командному рядку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -1491,12 +1511,20 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    "Висота у повноекранному режимі"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   "Встановити користувацький розмір ширини для не віконного повноекранного режиму. Залиште пустим, щоб використовувати роздільну здатність комп'ютера."
+   )
 
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    "Масштабування вікна"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Встановлює розмір вікна щодо розміру основного вікна перегляду. Крім того, ви можете встановити ширину та висоту вікна нижче для фіксованого розміру вікна."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1511,12 +1539,24 @@ MSG_HASH(
    "Запам'ятовувати позицію і розмір вікна"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Запам'ятати розмір та положення вікна, що дає перевагу над Масштабуванням Вікна."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Ширина вікна"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   "Встановити користувацьку ширину для вікна дисплея."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    "Висота вікна"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   "Встановити користувацьку висоту для вікна дисплея."
    )
 
 /* Settings > Video > Scaling */
