@@ -1991,6 +1991,14 @@ MSG_HASH(
    "Configura automaticamente i controller che hanno un profilo, stile Plug-and-Play."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Disabilita Scorciatoie Windows"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Mantiene le combinazioni Win-key all'interno dell'applicazione. (Riavvio Richiesto)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -3669,6 +3677,14 @@ MSG_HASH(
    "Attivato (veloce)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Aggiorna il Tasso delle Notifiche"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Visualizza un messaggio sullo schermo quando si imposta la velocità di aggiornamento."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Font delle notifiche su schermo"
    )
@@ -5239,6 +5255,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Guadagna trofei nei giochi classici. Per ulteriori informazioni, visita 'https://retroachievements.org'."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK,
+   "Gioco su Facebook"
+   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -5271,6 +5291,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Gioco su Facebook Stream Key"
+   )
 
 /* Settings > Directory */
 
@@ -5504,7 +5528,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Connetti all'host netplay"
+   "Connetti al Netplay dell'host"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
@@ -5624,11 +5648,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
-   "Elenco dei tipi di file da includere nella scansione, separati da spazi. Se vuoto, include tutti i tipi di file, o se è specificato un core, tutti i file supportati dal nucleo."
+   "Elenco dei tipi di file da includere nella scansione, separati da spazi. Se vuoto, include tutti i tipi di file, o se è specificato un core, tutti i file supportati dal core."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
-   "Scansiona Ricorsivamente"
+   "Scansiona Ripetutamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
@@ -5660,11 +5684,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "Sovrascrivi Scaletta Esistente"
+   "Sovrascrivi Playlist Esistente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "Se abilitata, qualsiasi scaletta esistente verrà eliminata prima di scansionare il contenuto. Quando disabilitato, le voci della scaletta esistenti sono conservate e solo i contenuti attualmente mancanti dalla scaletta saranno aggiunti."
+   "Se abilitata, qualsiasi playlist esistente verrà eliminata prima di scansionare il contenuto. Quando disabilitato, le voci della scaletta esistenti sono conservate e solo i contenuti attualmente mancanti dalla scaletta saranno aggiunti."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
@@ -5726,7 +5750,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
-   "Per Anno Di Uscita"
+   "Per Anno di Uscita"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
@@ -5746,7 +5770,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
-   "Per Franchise"
+   "Per Saga"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
@@ -5754,7 +5778,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
-   "Per Nome Di Sistema"
+   "Per Nome di Sistema"
    )
 
 /* Playlist > Playlist Item */
@@ -5835,7 +5859,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
-   "Tempo Di Gioco"
+   "Tempo di Gioco"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
@@ -6648,12 +6672,36 @@ MSG_HASH(
    "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "Annulla Pausa Modalità Hardcore Trofei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "Lascia la modalità hardcore dei trofei abilitata per la sessione attuale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "Annulla Riprendi Modalità Hardcore dei Trofei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "Lascia la modalità hardcore dei Trofei disabilitata per la sessione attuale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Pausa della modalità Hardcore dei Trofei"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "Mette in pausa i trofei della modalità hardcore per la sessione attuale. (Questa azione abiliterà gli stati di salvataggio, i trucchi, il riavvolgimento, la pausa e il rallentatore)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Riprendi la Modalità Hardcore dei trofei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "Riattiva i trofei della modalità hardcore per la sessione attuale. (Questa azione disabiliterà gli stati di salvataggio, i trucchi, il riavvolgimento, la pausa e il rallentatore)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -10472,6 +10520,18 @@ MSG_HASH(
    "Scansione delle reti wireless in corso..."
    )
 MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Attivazione Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Disattivazione Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Disconnessione Wi-Fi..."
+   )
+MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
    "Scansione hosts netplay in corso..."
    )
@@ -10666,6 +10726,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_MISSING_ASSETS,
    "Attenzione: risorse mancanti, utilizzare l'aggiornamento online se disponibile"
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Attenzione: Carattere mancante per la lingua selezionata, utilizzare l'aggiornamento online se disponibile"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Attenzione: lingua non supportata - impostato su inglese"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -10906,6 +10974,22 @@ MSG_HASH(
    "Effettua una scansione delle reti wireless e stabilisce la connessione."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Abilita WiFi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "Connettiti alla rete"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "Connettiti alla rete"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Disconnessione"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    "Eliminazione flicker"
    )
@@ -11009,6 +11093,14 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Sola Lettura"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Luminosità dello schermo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Aumenta o diminuisce la luminosità dello schermo."
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
@@ -11082,6 +11174,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_WIFI_DISCONNECT_FROM,
    "Disconnessione dal Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Connessione al Wi-Fi '%s'"
    )
 MSG_HASH(
    MSG_LOCALAP_ALREADY_RUNNING,

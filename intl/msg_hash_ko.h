@@ -2043,6 +2043,14 @@ MSG_HASH(
    "사용 시 프로필이 존재하는 컨트롤러를 자동으로 구성합니다."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Windows 핫키 비활성화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "윈도우 키와 함께 입력되는 핫키들을 비활성화합니다. (재시작 필요)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -3725,6 +3733,14 @@ MSG_HASH(
    "켬 (빠르게)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "주사율 알림"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "화면의 주사율을 설정할 때 화면에 메시지를 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "OSD 알림 폰트"
    )
@@ -5343,6 +5359,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Facebook Gaming 스트림 키"
+   )
 
 /* Settings > Directory */
 
@@ -6764,12 +6784,36 @@ MSG_HASH(
    "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "도전과제 하드코어 모드 일시정지 해제"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   "현재 세션에 한해 도전과제 하드코어 모드를 활성화합니다"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "도전과제 하드코어 모드 계속하기 취소"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   "현재 세션에 한해 도전과제 하드코어 모드를 비활성화합니다"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "도전과제 하드코어 모드 일시정지"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   "현재 세션의 하드코어 도전과제 모드를 일시정지합니다(상태저장, 치트, 뒤로 감기, 일시정지, 슬로모션 등을 다시 이용할 수 있게 됩니다)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "도전과제 하드코어 모드 계속하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   "현재 세션의 하드코어 도전과제 모드를 재개합니다(상태저장, 치트, 뒤로 감기, 일시정지, 슬로모션등을 이용할 수 없게 됩니다)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -10680,6 +10724,18 @@ MSG_HASH(
    "무선 네트워크 검색 중..."
    )
 MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Wi-Fi를 켜는 중..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Wi-Fi를 끄는 중..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Wi-Fi 연결 해제 중..."
+   )
+MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
    "넷플레이 호스트 검색 중..."
    )
@@ -10874,6 +10930,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_MISSING_ASSETS,
    "경고: 애셋이 없습니다. 온라인 업데이터를 사용하십시오"
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "경고: 선택된 언어의 폰트가 없습니다. 온라인 업데이터를 사용하십시오"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "경고: 지원되지 않는 언어입니다 - 영어로 전환합니다"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -11118,6 +11182,22 @@ MSG_HASH(
    "무선 네트워크를 검색하고 연결합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Wi-Fi 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   "네트워크에 연결"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   "네트워크에 연결"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "연결 해제"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    "디플리커"
    )
@@ -11225,6 +11305,14 @@ MSG_HASH(
    MSG_READ_ONLY,
    "읽기 전용"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "화면 밝기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "화면의 밝기를 조절합니다."
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
@@ -11298,6 +11386,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_WIFI_DISCONNECT_FROM,
    "Wi-Fi '%s'에서 연결 해제됨"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "'%s' Wi-Fi에 연결 중"
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[SSID 없음]"
    )
 MSG_HASH(
    MSG_LOCALAP_ALREADY_RUNNING,
