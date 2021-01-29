@@ -69,6 +69,7 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /rsound.h
 .pc
 /media/shaders_glsl/
+/media/shaders_slang/
 /obj-w32/
 .cproject
 .settings
