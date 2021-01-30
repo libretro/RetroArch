@@ -180,6 +180,9 @@ static int action_scan_input_desc(const char *path,
 
    if (target)
    {
+      /* Clear mapping bit */
+      input_keyboard_mapping_bits(0, target->key);
+
       target->key     = RETROK_UNKNOWN;
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;

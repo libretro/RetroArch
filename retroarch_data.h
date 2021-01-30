@@ -2340,6 +2340,7 @@ struct rarch_state
 
    bool main_ui_companion_is_on_foreground;
    bool keyboard_mapping_blocked;
+   retro_bits_512_t keyboard_mapping_bits;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool shader_presets_need_reload;

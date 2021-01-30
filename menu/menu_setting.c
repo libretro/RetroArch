@@ -561,6 +561,9 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    keybind->joykey  = NO_BTN;
    keybind->joyaxis = AXIS_NONE;
 
+   /* Clear old mapping bit */
+   input_keyboard_mapping_bits(0, keybind->key);
+
    if (setting->index_offset)
       def_binds = (struct retro_keybind*)retro_keybinds_rest;
 
@@ -568,6 +571,9 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    keybind->key = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
 
    keybind->mbutton = NO_BTN;
+
+   /* Store new mapping bit */
+   input_keyboard_mapping_bits(1, keybind->key);
 
    return 0;
 }

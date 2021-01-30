@@ -242,6 +242,8 @@ int core_setting_right(unsigned type, const char *label,
 int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
 
+void input_keyboard_mapping_bits(unsigned mode, unsigned key);
+
 /* End of function callbacks */
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,

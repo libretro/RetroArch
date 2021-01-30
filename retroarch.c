@@ -797,6 +797,22 @@ static void menu_dialog_reset(menu_dialog_t *p_dialog)
    p_dialog->current_type  = MENU_DIALOG_NONE;
 }
 
+void input_keyboard_mapping_bits(unsigned mode, unsigned key)
+{
+   struct rarch_state *p_rarch    = &rarch_st;
+   switch (mode)
+   {
+      case 0:
+         BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, key);
+         break;
+      case 1:
+         BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, key);
+         break;
+      default:
+         break;
+   }
+}
+
 static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
 {
@@ -807,8 +823,14 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
+   /* Clear old mapping bit */
+   input_keyboard_mapping_bits(0, binds->buffer.key);
+
    /* store key in bind */
    binds->buffer.key = (enum retro_key)code;
+
+   /* Store new mapping bit */
+   input_keyboard_mapping_bits(1, binds->buffer.key);
 
    /* write out the bind */
    *(binds->output)  = binds->buffer;
@@ -21922,6 +21944,7 @@ static void input_driver_poll(void)
                         && !MAPPER_GET_KEY(handle, remap_key))
                   {
                      handle->key_button[remap_key] = j;
+
                      MAPPER_SET_KEY(handle, remap_key);
                      input_keyboard_event(true,
                            remap_key,
@@ -21934,10 +21957,10 @@ static void input_driver_poll(void)
                      if (handle->key_button[remap_key] != j)
                         continue;
 
-                     MAPPER_UNSET_KEY(handle, remap_key);
                      input_keyboard_event(false,
                            remap_key,
                            0, 0, RETRO_DEVICE_KEYBOARD);
+                     MAPPER_UNSET_KEY(handle, remap_key);
                   }
                }
                break;
@@ -25463,6 +25486,24 @@ void input_keyboard_event(bool down, unsigned code,
    else
    {
       retro_keyboard_event_t *key_event = &p_rarch->runloop_key_event;
+      input_mapper_t            *handle = p_rarch->input_driver_mapper;
+      bool block                        = false;
+
+      if (code == RETROK_UNKNOWN ||
+            key_event == NULL)
+         return;
+
+      /* Block hotkey+RetroPad mapped keyboard key events,
+       * but not with game focus and from keyboard device type */
+      if (!p_rarch->game_focus_state.enabled)
+      {
+         block = BIT512_GET(p_rarch->keyboard_mapping_bits, code);
+         if (block && MAPPER_GET_KEY(handle, code))
+            block = false;
+      }
+
+      if (block)
+         return;
 
       if (*key_event)
          (*key_event)(down, code, character, mod);
@@ -25531,6 +25572,9 @@ static void input_config_parse_key(
          && (!string_is_empty(entry->value))
       )
       bind->key = input_config_translate_str_to_rk(entry->value);
+
+   /* Store mapping bit */
+   input_keyboard_mapping_bits(1, bind->key);
 }
 
 static const char *input_config_get_prefix(unsigned user, bool meta)
