@@ -218,7 +218,7 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       args++;
-      argv[0] = path_get(RARCH_PATH_CONTENT);
+      argv[0] = (char *)path_get(RARCH_PATH_CONTENT);
    }
 #endif
    LoadELFFromFile(path, args, argv);
