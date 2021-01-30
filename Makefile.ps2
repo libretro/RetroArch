@@ -19,7 +19,7 @@ else
 endif
 
 ifeq ($(MUTE_WARNINGS), 1)
-   DISABLE_WARNINGS := -Wno-sign-compare -Wno-unused -Wno-parentheses -Wdiscarded-qualifiers
+   DISABLE_WARNINGS := -Wno-unused -Wno-format -Wno-format-truncation
 endif
 
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include

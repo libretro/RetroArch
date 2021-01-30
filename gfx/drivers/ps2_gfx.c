@@ -274,7 +274,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
 
 #if defined(DEBUG)
    if (frame_count % 180 == 0)
-      printf("ps2_gfx_frame %lu\n", frame_count);
+      printf("ps2_gfx_frame %llu\n", frame_count);
 #endif
 
    if (frame)
