@@ -291,6 +291,7 @@ extern const struct softfilter_implementation *gameboy4x_get_implementation(soft
 extern const struct softfilter_implementation *dot_matrix_3x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *dot_matrix_4x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *upscale_1_5x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *upscale_256x_320x240_get_implementation(softfilter_simd_mask_t simd);
 
 static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    blargg_ntsc_snes_get_implementation,
@@ -315,6 +316,7 @@ static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    dot_matrix_3x_get_implementation,
    dot_matrix_4x_get_implementation,
    upscale_1_5x_get_implementation,
+   upscale_256x_320x240_get_implementation,
 };
 
 static bool append_softfilter_plugs(rarch_softfilter_t *filt,
