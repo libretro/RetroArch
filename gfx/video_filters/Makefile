@@ -74,7 +74,7 @@ objects += blargg_ntsc_snes.$(DYLIB) phosphor2x.$(DYLIB) epx.$(DYLIB) lq2x.$(DYL
 	   scanline2x.$(DYLIB) grid2x.$(DYLIB) grid3x.$(DYLIB) \
 	   gameboy3x.$(DYLIB) gameboy4x.$(DYLIB) \
 	   dot_matrix_3x.$(DYLIB) dot_matrix_4x.$(DYLIB) \
-	   upscale_1_5x.$(DYLIB)
+	   upscale_1_5x.$(DYLIB) upscale_256x_320x240.$(DYLIB)
 
 all: build;
 
