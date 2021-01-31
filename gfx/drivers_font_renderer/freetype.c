@@ -246,37 +246,37 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    }
    else
 #elif HAVE_FONTCONFIG
-   // if fallback font is requested, instead of loading it, we find the full font in the system
+   /* if fallback font is requested, instead of loading it, we find the full font in the system */
    if (!*font_path || strstr(font_path, "fallback"))
    {
       FcConfig* config = FcInitLoadConfigAndFonts();
       FcResult result = FcResultNoMatch;
       FcChar8* font_path = NULL;
       int face_index = 0;
-      // select Sans fonts
+      /* select Sans fonts */
       FcPattern* pattern = FcNameParse((const FcChar8*)"Sans");
-      // since fontconfig uses LL-TT style, we need to normalize locale names
+      /* since fontconfig uses LL-TT style, we need to normalize locale names */
       FcChar8* locale = FcLangNormalize((const FcChar8*)get_user_language_iso639_1(false));
-      // box the locale data in a FcValue container
+      /* box the locale data in a FcValue container */
       FcValue locale_boxed = {.type = FcTypeString, {locale}};
-      // configure fontconfig substitute policies, this will increase the search scope
+      /* configure fontconfig substitute policies, this will increase the search scope */
       FcConfigSubstitute(config, pattern, FcMatchPattern);
-      // pull in system-wide defaults, so the font selection respects system (or user) configurations
+      /* pull in system-wide defaults, so the font selection respects system (or user) configurations */
       FcDefaultSubstitute(pattern);
-      // override locale settins, since we are not using the system locale
+      /* override locale settins, since we are not using the system locale */
       FcPatternAdd(pattern, FC_LANG, locale_boxed, false);
-      // let's find the best matching font given our search criteria
+      /* let's find the best matching font given our search criteria */
       FcPattern* found = FcFontMatch(config, pattern, &result);
-      // uh-oh, for some reason, we can't find any font
+      /* uh-oh, for some reason, we can't find any font */
       if (result != FcResultMatch)
          goto error;
       if (FcPatternGetString(found, FC_FILE, 0, &font_path) != FcResultMatch)
          goto error;
       if (FcPatternGetInteger(found, FC_INDEX, 0, &face_index) != FcResultMatch)
          goto error;
-      // initialize font renderer
+      /* initialize font renderer */
       err = FT_New_Face(handle->lib, (const char*)font_path, face_index, &handle->face);
-      // free up fontconfig internal structures
+      /* free up fontconfig internal structures */
       FcPatternDestroy(pattern);
       FcPatternDestroy(found);
       FcStrFree(locale);
@@ -346,8 +346,8 @@ static const char *font_paths[] = {
 /* Highly OS/platform dependent. */
 static const char *font_renderer_ft_get_default_font(void)
 {
-// Since fontconfig will return parameters more than a simple path
-// we will process these in the init function
+/* Since fontconfig will return parameters more than a simple path
+   we will process these in the init function */
 #if defined(WIIU) || defined(HAVE_FONTCONFIG)
    return "";
 #else
