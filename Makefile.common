@@ -1079,6 +1079,10 @@ ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/drivers_font_renderer/freetype.o
    LIBS += $(FREETYPE_LIBS)
    DEF_FLAGS += $(FREETYPE_CFLAGS)
+   ifeq ($(HAVE_FREETYPE), 1)
+      LIBS += $(FONTCONFIG_LIBS)
+      DEF_FLAGS += $(FONTCONFIG_CFLAGS)
+   endif
 endif
 
 ifeq ($(HAVE_THREADS), 1)
