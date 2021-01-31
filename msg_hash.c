@@ -146,9 +146,13 @@ const char *get_user_language_iso639_1(bool limit)
       case RETRO_LANGUAGE_VIETNAMESE:
          return "vi";
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-         return "zh";
+         if (limit)
+            return "zh";
+         return "zh_cn";
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         return "zh";
+         if (limit)
+            return "zh";
+         return "zh_tw";
       case RETRO_LANGUAGE_ARABIC:
          return "ar";
       case RETRO_LANGUAGE_GREEK:
