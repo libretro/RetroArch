@@ -8013,9 +8013,10 @@ static bool setting_append_list_input_player_options(
 
       label[0] = name[0]          = '\0';
 
-      fill_pathname_noext(label, buffer[user],
-            " ",
-            sizeof(label));
+      if (!string_is_empty(buffer[user]))
+         fill_pathname_noext(label, buffer[user],
+               " ",
+               sizeof(label));
 
       if (
             settings->bools.input_descriptor_label_show
