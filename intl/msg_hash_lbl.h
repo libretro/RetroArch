@@ -2135,6 +2135,26 @@ MSG_HASH(
    "playlist_directory"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_FAVORITES_DIRECTORY,
+   "content_favorites_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_HISTORY_DIRECTORY,
+   "content_history_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
+   "content_image_history_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   "content_music_history_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
+   "content_video_history_directory"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,
    "runtime_log_directory"
    )

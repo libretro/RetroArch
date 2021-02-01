@@ -800,6 +800,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_directory,                     
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_info_directory,                   MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_joypad_autoconfig_directory,           MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlists_directory,                   MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_favorites_directory,           MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_history_directory,             MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_image_history_directory,       MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_music_history_directory,       MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_video_history_directory,       MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_runtime_log_directory,                 MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cache_directory,                       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_database_directory,                    MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY)
@@ -1994,6 +1999,21 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlists_directory);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_FAVORITES_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_favorites_directory);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_HISTORY_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_history_directory);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_IMAGE_HISTORY_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_image_history_directory);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_MUSIC_HISTORY_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_music_history_directory);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_VIDEO_HISTORY_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_video_history_directory);
             break;
          case MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_runtime_log_directory);

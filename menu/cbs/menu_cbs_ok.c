@@ -2117,9 +2117,9 @@ static int action_ok_playlist_entry_collection(const char *path,
    settings_t *settings                   = config_get_ptr();
    bool playlist_sort_alphabetical        = settings->bools.playlist_sort_alphabetical;
    const char *path_content_history       = settings->paths.path_content_history;
+   const char *path_content_image_history = settings->paths.path_content_image_history;
    const char *path_content_music_history = settings->paths.path_content_music_history;
    const char *path_content_video_history = settings->paths.path_content_video_history;
-   const char *path_content_image_history = settings->paths.path_content_image_history;
 
    playlist_config.capacity               = COLLECTION_SIZE;
    playlist_config.old_format             = settings->bools.playlist_use_old_format;
@@ -2146,9 +2146,10 @@ static int action_ok_playlist_entry_collection(const char *path,
        *   the same here - otherwise entry_idx may
        *   go out of sync... */
       bool is_content_history = string_is_equal(menu->db_playlist_file, path_content_history) ||
+                                string_is_equal(menu->db_playlist_file, path_content_image_history) ||
                                 string_is_equal(menu->db_playlist_file, path_content_music_history) ||
-                                string_is_equal(menu->db_playlist_file, path_content_video_history) ||
-                                string_is_equal(menu->db_playlist_file, path_content_image_history);
+                                string_is_equal(menu->db_playlist_file, path_content_video_history);
+
       enum playlist_sort_mode current_sort_mode;
 
       playlist_config_set_path(&playlist_config, menu->db_playlist_file);

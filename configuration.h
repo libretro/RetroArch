@@ -409,10 +409,10 @@ typedef struct settings
       char path_audio_dsp_plugin[PATH_MAX_LENGTH];
       char path_softfilter_plugin[PATH_MAX_LENGTH];
       char path_core_options[PATH_MAX_LENGTH];
-      char path_content_history[PATH_MAX_LENGTH];
       char path_content_favorites[PATH_MAX_LENGTH];
-      char path_content_music_history[PATH_MAX_LENGTH];
+      char path_content_history[PATH_MAX_LENGTH];
       char path_content_image_history[PATH_MAX_LENGTH];
+      char path_content_music_history[PATH_MAX_LENGTH];
       char path_content_video_history[PATH_MAX_LENGTH];
       char path_libretro_info[PATH_MAX_LENGTH];
       char path_cheat_settings[PATH_MAX_LENGTH];
@@ -423,8 +423,6 @@ typedef struct settings
       char directory_autoconfig[PATH_MAX_LENGTH];
       char directory_video_filter[PATH_MAX_LENGTH];
       char directory_video_shader[PATH_MAX_LENGTH];
-      char directory_content_history[PATH_MAX_LENGTH];
-      char directory_content_favorites[PATH_MAX_LENGTH];
       char directory_libretro[PATH_MAX_LENGTH];
       char directory_cursor[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];
@@ -437,6 +435,11 @@ typedef struct settings
       char directory_system[PATH_MAX_LENGTH];
       char directory_cache[PATH_MAX_LENGTH];
       char directory_playlist[PATH_MAX_LENGTH];
+      char directory_content_favorites[PATH_MAX_LENGTH];
+      char directory_content_history[PATH_MAX_LENGTH];
+      char directory_content_image_history[PATH_MAX_LENGTH];
+      char directory_content_music_history[PATH_MAX_LENGTH];
+      char directory_content_video_history[PATH_MAX_LENGTH];
       char directory_runtime_log[PATH_MAX_LENGTH];
       char directory_core_assets[PATH_MAX_LENGTH];
       char directory_assets[PATH_MAX_LENGTH];

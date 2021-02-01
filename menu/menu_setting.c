@@ -18708,6 +18708,81 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
+               settings->paths.directory_content_favorites,
+               sizeof(settings->paths.directory_content_favorites),
+               MENU_ENUM_LABEL_CONTENT_FAVORITES_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_CONTENT_FAVORITES],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
+               settings->paths.directory_content_history,
+               sizeof(settings->paths.directory_content_history),
+               MENU_ENUM_LABEL_CONTENT_HISTORY_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
+               settings->paths.directory_content_image_history,
+               sizeof(settings->paths.directory_content_image_history),
+               MENU_ENUM_LABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_CONTENT_IMAGE_HISTORY],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
+               settings->paths.directory_content_music_history,
+               sizeof(settings->paths.directory_content_music_history),
+               MENU_ENUM_LABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_CONTENT_MUSIC_HISTORY],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
+               settings->paths.directory_content_video_history,
+               sizeof(settings->paths.directory_content_video_history),
+               MENU_ENUM_LABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_CONTENT_VIDEO_HISTORY],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
                settings->paths.directory_runtime_log,
                sizeof(settings->paths.directory_runtime_log),
                MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,

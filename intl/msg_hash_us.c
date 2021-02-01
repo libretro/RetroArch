@@ -390,6 +390,41 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Save all playlist files to this \n"
                              "directory.");
             break;
+        case MENU_ENUM_LABEL_CONTENT_FAVORITES_DIRECTORY:
+            snprintf(s, len,
+                     "Favorites Playlist Directory. \n"
+                             " \n"
+                             "Save the favorites playlist to this \n"
+                             "directory.");
+            break;
+        case MENU_ENUM_LABEL_CONTENT_HISTORY_DIRECTORY:
+            snprintf(s, len,
+                     "History Playlist Directory. \n"
+                             " \n"
+                             "Save the history playlist to this \n"
+                             "directory.");
+            break;
+        case MENU_ENUM_LABEL_CONTENT_IMAGE_HISTORY_DIRECTORY:
+            snprintf(s, len,
+                     "Images Playlist Directory. \n"
+                             " \n"
+                             "Save the images playlist to this \n"
+                             "directory.");
+            break;
+        case MENU_ENUM_LABEL_CONTENT_MUSIC_HISTORY_DIRECTORY:
+            snprintf(s, len,
+                     "Music Playlist Directory. \n"
+                             " \n"
+                             "Save the music playlist to this \n"
+                             "directory.");
+            break;
+        case MENU_ENUM_LABEL_CONTENT_VIDEO_HISTORY_DIRECTORY:
+            snprintf(s, len,
+                     "Videos Playlist Directory. \n"
+                             " \n"
+                             "Save the videos playlist to this \n"
+                             "directory.");
+            break;
         case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
             snprintf(s, len,
                      "Some cores might have \n"
