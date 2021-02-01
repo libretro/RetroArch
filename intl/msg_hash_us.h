@@ -3654,7 +3654,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
-   "Displays the used and total amount of memory on the system."
+   "Display the used and total amount of memory on the system."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
@@ -6756,7 +6756,7 @@ MSG_HASH(
    
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   "Saves a shader preset which has a link to the original preset loaded and includes only the parameter changes you made."
+   "Save a shader preset which has a link to the original preset loaded and includes only the parameter changes you made."
    )
 
 MSG_HASH(
