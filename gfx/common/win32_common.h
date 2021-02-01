@@ -98,6 +98,8 @@ HWND win32_get_window(void);
 
 bool win32_has_focus(void *data);
 
+void win32_clip_window(bool grab);
+
 void win32_check_window(void *data,
       bool *quit,
       bool *resize, unsigned *width, unsigned *height);

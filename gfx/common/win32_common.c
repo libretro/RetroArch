@@ -1018,6 +1018,9 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             taskbar_is_created = true;
 #endif
          break;
+      case WM_SETFOCUS:
+         win32_clip_window(input_mouse_grabbed());
+         break;
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -1123,6 +1126,9 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
             taskbar_is_created = true;
 #endif
+         break;
+      case WM_SETFOCUS:
+         win32_clip_window(input_mouse_grabbed());
          break;
    }
 
@@ -1528,6 +1534,30 @@ void win32_check_window(void *data,
       *height             = g_win32_resize_height;
       g_win32->resized    = false;
    }
+#endif
+}
+
+void win32_clip_window(bool state)
+{
+#if !defined(_XBOX)
+   RECT clip_rect;
+
+   if (state && main_window.hwnd)
+   {
+      PWINDOWINFO info;
+      info = malloc(sizeof(*info));
+      info->cbSize = sizeof(PWINDOWINFO);
+
+      if (GetWindowInfo(main_window.hwnd, info))
+         clip_rect = info->rcClient;
+
+      free(info);
+      info = NULL;
+   }
+   else
+      GetWindowRect(GetDesktopWindow(), &clip_rect);
+
+   ClipCursor(&clip_rect);
 #endif
 }
 

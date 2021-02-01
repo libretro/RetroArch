@@ -1007,6 +1007,10 @@ static void dinput_grab_mouse(void *data, bool state)
       (DISCL_EXCLUSIVE    | DISCL_FOREGROUND) :
       (DISCL_NONEXCLUSIVE | DISCL_FOREGROUND));
    IDirectInputDevice8_Acquire(di->mouse);
+
+#ifndef _XBOX
+   win32_clip_window(state);
+#endif
 }
 
 static uint64_t dinput_get_capabilities(void *data)
