@@ -3826,7 +3826,9 @@ static int xmb_menu_entry_action(
 static void xmb_render(void *data, 
       unsigned width, unsigned height, bool is_idle)
 {
-   unsigned i;
+   /* 'i' must be of 'size_t', since it is passed
+    * by reference to menu_entries_ctl() */
+   size_t i;
    float scale_factor;
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
@@ -3881,7 +3883,7 @@ static void xmb_render(void *data,
             xmb_calculate_visible_range(xmb, height,
                   end, (unsigned)selection, &first, &last);
 
-         for (i = first; i <= last; i++)
+         for (i = (size_t)first; i <= (size_t)last; i++)
          {
             float entry_size      = (i == (unsigned)selection) ?
                   xmb->icon_spacing_vertical * xmb->active_item_factor : xmb->icon_spacing_vertical;
