@@ -11444,7 +11444,7 @@ static bool run_translation_service(
          (uint8_t *)bit24_image,
          (const uint8_t*)data + ((int)height - 1)*pitch,
          width, height,
-         -pitch);
+         (int)-pitch);
    }
    scaler_ctx_gen_reset(scaler);
 
@@ -11479,11 +11479,11 @@ static bool run_translation_service(
       pitch        = width * 3;
       bmp_buffer   = rpng_save_image_bgr24_string(
             bit24_image + width * (height-1) * 3,
-            width, height, -pitch, &buffer_bytes);
+            width, height, (signed)-pitch, &buffer_bytes);
    }
 
    bmp64_buffer    = base64((void *)bmp_buffer,
-         sizeof(uint8_t)*buffer_bytes,
+         sizeof(uint8_t) * buffer_bytes,
          &bmp64_length);
 
    if (!bmp64_buffer)
@@ -21943,7 +21943,7 @@ static void input_driver_poll(void)
                   if ((current_button_value == 1)
                         && !MAPPER_GET_KEY(handle, remap_key))
                   {
-                     handle->key_button[remap_key] = j;
+                     handle->key_button[remap_key] = (unsigned)j;
 
                      MAPPER_SET_KEY(handle, remap_key);
                      input_keyboard_event(true,
@@ -22036,7 +22036,7 @@ static void input_driver_poll(void)
 
                for (j = 0; j < 8; j++)
                {
-                  unsigned k                 = j + RARCH_FIRST_CUSTOM_BIND;
+                  unsigned k                 = (unsigned)j + RARCH_FIRST_CUSTOM_BIND;
                   int16_t current_axis_value = p_new_state->analogs[j];
                   unsigned remap_axis        =
                      settings->uints.input_remap_ids[i][k];
