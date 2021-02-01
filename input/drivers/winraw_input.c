@@ -225,7 +225,7 @@ static BOOL winraw_set_mouse_input(HWND window, bool grab)
    RAWINPUTDEVICE rid;
 
    if (window)
-      rid.dwFlags  = grab ? RIDEV_CAPTUREMOUSE : 0;
+      rid.dwFlags  = grab ? RIDEV_CAPTUREMOUSE | RIDEV_NOLEGACY : 0;
    else
       rid.dwFlags  = RIDEV_REMOVE;
 
