@@ -52,13 +52,7 @@ static bool gfx_display_null_font_init_first(
    return false;
 }
 
-static const float *gfx_display_null_get_default_vertices(void)
-{
-   static float dummy[16] = {0.0f};
-   return &dummy[0];
-}
-
-static const float *gfx_display_null_get_default_tex_coords(void)
+static const float *null_get_default_matrix(void)
 {
    static float dummy[16] = {0.0f};
    return &dummy[0];
@@ -70,8 +64,8 @@ gfx_display_ctx_driver_t gfx_display_ctx_null = {
    NULL,                                     /* blend_begin     */
    NULL,                                     /* blend_end       */
    NULL,                                     /* get_default_mvp */
-   gfx_display_null_get_default_vertices,
-   gfx_display_null_get_default_tex_coords,
+   null_get_default_matrix,
+   null_get_default_matrix,
    gfx_display_null_font_init_first,
    GFX_VIDEO_DRIVER_GENERIC,
    "null",
