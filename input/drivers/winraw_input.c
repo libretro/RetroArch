@@ -25,6 +25,10 @@ extern "C" {
 }
 #endif
 
+#ifndef _XBOX
+#include "../../gfx/common/win32_common.h"
+#endif
+
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
@@ -225,7 +229,7 @@ static BOOL winraw_set_mouse_input(HWND window, bool grab)
    RAWINPUTDEVICE rid;
 
    if (window)
-      rid.dwFlags  = grab ? RIDEV_CAPTUREMOUSE : 0;
+      rid.dwFlags  = grab ? RIDEV_CAPTUREMOUSE | RIDEV_NOLEGACY : 0;
    else
       rid.dwFlags  = RIDEV_REMOVE;
 
@@ -874,17 +878,21 @@ static uint64_t winraw_get_capabilities(void *u)
           (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
-static void winraw_grab_mouse(void *d, bool grab)
+static void winraw_grab_mouse(void *d, bool state)
 {
    winraw_input_t *wr = (winraw_input_t*)d;
 
-   if (grab == wr->mouse_grab)
+   if (state == wr->mouse_grab)
       return;
 
-   if (!winraw_set_mouse_input(wr->window, grab))
+   if (!winraw_set_mouse_input(wr->window, state))
       return;
 
-   wr->mouse_grab = grab;
+   wr->mouse_grab = state;
+
+#ifndef _XBOX
+   win32_clip_window(state);
+#endif
 }
 
 input_driver_t input_winraw = {
