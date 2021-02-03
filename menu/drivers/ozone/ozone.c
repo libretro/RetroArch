@@ -3683,7 +3683,7 @@ static int ozone_pointer_up(void *userdata,
 
                /* Ensure that current category is valid */
                if (ozone->pointer_categories_selection <= ozone->system_tab_end + horizontal_list_size)
-                  ozone_sidebar_goto(ozone, ozone->pointer_categories_selection);
+                  ozone_sidebar_goto(ozone, (unsigned)ozone->pointer_categories_selection);
             }
          }
          break;
