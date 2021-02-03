@@ -292,12 +292,14 @@ static int action_get_title_dropdown_item(
                       (enum_idx < MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_LAST))
                      enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE;
 
-                  const char *title = msg_hash_to_str(enum_idx);
-
-                  if (s && !string_is_empty(title))
                   {
-                     SANITIZE_TO_STRING(s, title, len);
-                     return 1;
+                     const char *title = msg_hash_to_str(enum_idx);
+
+                     if (s && !string_is_empty(title))
+                     {
+                        SANITIZE_TO_STRING(s, title, len);
+                        return 1;
+                     }
                   }
                }
                break;
