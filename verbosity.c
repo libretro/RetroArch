@@ -352,6 +352,21 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
    RARCH_LOG("==================================\n");
 }
 
+void RARCH_DBG(const char *fmt, ...)
+{
+   va_list ap;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+   if (verbosity_log_level > 0)
+      return;
+
+   va_start(ap, fmt);
+   RARCH_LOG_V(FILE_PATH_LOG_INFO, fmt, ap);
+   va_end(ap);
+}
+
 void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
