@@ -1397,7 +1397,7 @@ static int action_bind_sublabel_playlist_entry(
 
       if ((n < 0) || (n >= 64))
          n = 0; /* Silence GCC warnings... */
-
+      (void)n;
       if (!string_is_empty(tmp))
          strlcat(s, tmp, len);
    }

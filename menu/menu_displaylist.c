@@ -3764,6 +3764,7 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL), sizeof(tmp));
+      (void)n;
       strlcat(tmp, ": ", sizeof(tmp));
       n        = strlcat(tmp, content_label, sizeof(tmp));
 
@@ -3771,7 +3772,7 @@ static unsigned menu_displaylist_parse_content_information(
        * (getting so sick of these...) */
       if ((n < 0) || (n >= PATH_MAX_LENGTH))
          n = 0;
-
+      (void)n;
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
             MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
@@ -3785,14 +3786,17 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH), sizeof(tmp));
+      (void)n;
       n        = strlcat(tmp, ": ", sizeof(tmp));
+      (void)n;
       n        = strlcat(tmp, content_path, sizeof(tmp));
-
+      
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
       if ((n < 0) || (n >= PATH_MAX_LENGTH))
          n = 0;
-
+      (void)n;
+      
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
             MENU_ENUM_LABEL_CONTENT_INFO_PATH,
@@ -3807,14 +3811,17 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME), sizeof(tmp));
+      (void)n;
       n        = strlcat(tmp, ": ", sizeof(tmp));
+      (void)n;
       n        = strlcat(tmp, core_name, sizeof(tmp));
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
       if ((n < 0) || (n >= PATH_MAX_LENGTH))
          n = 0;
-
+      (void)n;
+      
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
             MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME,
@@ -3876,14 +3883,17 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[0]   = '\0';
 
       n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH), sizeof(tmp));
+      (void)n;
       n        = strlcat(tmp, ": ", sizeof(tmp));
+      (void)n;
       n        = strlcat(tmp, rcheevos_get_hash(), sizeof(tmp));
 
       /* Silence gcc compiler warning
       * (getting so sick of these...) */
       if ((n < 0) || (n >= PATH_MAX_LENGTH))
          n = 0;
-
+      (void)n;
+      
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
             MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
@@ -3911,14 +3921,17 @@ static unsigned menu_displaylist_parse_content_information(
          tmp[0]   = '\0';
 
          n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
+         (void)n;
          n        = strlcat(tmp, ": ", sizeof(tmp));
+         (void)n;
          n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
 
          /* Silence gcc compiler warning
          * (getting so sick of these...) */
          if ((n < 0) || (n >= PATH_MAX_LENGTH))
             n = 0;
-
+         (void)n;
+         
          if (menu_entries_append_enum(info->list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
                MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
@@ -6688,6 +6701,7 @@ unsigned menu_displaylist_build_list(
                         /* Suppress GCC warnings... */
                         if ((n < 0) || (n >= PATH_MAX_LENGTH))
                            n = 0;
+                        (void)n;
                      }
                      else
                         snprintf(

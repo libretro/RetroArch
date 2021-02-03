@@ -168,6 +168,7 @@ bool core_backup_get_backup_path(
    if ((n < 0) || (n >= 128))
       n = 0; /* Silence GCC warnings... */
 
+   (void)n;
    /* Build final path */
    fill_pathname_join(backup_path, backup_dir,
          backup_filename, len);
@@ -742,7 +743,7 @@ bool core_backup_list_get_entry_timestamp_str(
 
    if ((n < 0) || (n >= 32))
       n = 0; /* Silence GCC warnings... */
-
+   (void)n;
    return true;
 }
 
@@ -762,6 +763,6 @@ bool core_backup_list_get_entry_crc_str(
 
    if ((n < 0) || (n >= 32))
       n = 0; /* Silence GCC warnings... */
-
+   (void)n;
    return true;
 }

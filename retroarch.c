@@ -12255,6 +12255,7 @@ static void command_event_runtime_log_deinit(struct rarch_state *p_rarch)
          hours, minutes, seconds);
    if ((n < 0) || (n >= PATH_MAX_LENGTH))
       n = 0; /* Just silence any potential gcc warnings... */
+   (void)n;
    RARCH_LOG("%s\n",log);
 
    /* Only write to file if content has run for a non-zero length of time */

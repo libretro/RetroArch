@@ -3367,7 +3367,8 @@ static bool materialui_render_process_entry_playlist_desktop(
 
             if ((n < 0) || (n >= 255))
                n = 0; /* Silence GCC warnings... */
-
+            (void)n;
+            
             /* All metadata is cached */
             mui->status_bar.cached = true;
 
@@ -7074,7 +7075,7 @@ static void materialui_status_bar_init(
 
       if ((n < 0) || (n >= 255))
             n = 0; /* Silence GCC warnings... */
-
+      (void)n;
       n = snprintf(mui->status_bar.last_played_fallback_str,
             sizeof(mui->status_bar.last_played_fallback_str), "%s %s",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
@@ -7082,6 +7083,7 @@ static void materialui_status_bar_init(
 
       if ((n < 0) || (n >= 255))
             n = 0; /* Silence GCC warnings... */
+      (void)n;
    }
 }
 

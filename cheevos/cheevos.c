@@ -217,6 +217,7 @@ static void rcheevos_get_user_agent(
       {
          frontend->get_os(tmp, sizeof(tmp), &major, &minor);
          ptr += sprintf(ptr, " (%s %d.%d)", tmp, major, minor);
+         (void)ptr;
       }
    }
 
