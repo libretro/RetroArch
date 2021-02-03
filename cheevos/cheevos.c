@@ -735,22 +735,24 @@ static void rcheevos_activate_achievements(rcheevos_locals_t *locals,
 static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
 {
    char buffer[256];
-   settings_t *settings        = config_get_ptr();
    unsigned j                  = 0;
    unsigned count              = 0;
+   settings_t *settings        = NULL;
    rcheevos_ralboard_t* lboard = NULL;
    int res                     = rcheevos_get_patchdata(
          json, &locals->patchdata);
 
    if (res != 0)
    {
-      char* ptr = buffer + snprintf(buffer, sizeof(buffer), "Error retrieving achievement data: ");
+      char* ptr = NULL;
+      strcpy_literal(buffer, "Error retrieving achievement data: ");
+      ptr = buffer + strlen(buffer);
 
-      /* extract the Error field from the JSON. if not found, remove the colon from the message */
-      if (rcheevos_get_json_error(json, ptr, sizeof(buffer) - (ptr - buffer)) == -1)
-      {
-         ptr[-2] = '\0'; /* TODO/FIXME - writing 1 byte into a region of size 0 [-Wstringop-overflow=] at offset -2 to object 'buffer' with size 256 declared here */
-      }
+      /* Extract the Error field from the JSON. 
+       * If not found, remove the colon from the message. */
+      if (rcheevos_get_json_error(json, ptr,
+               sizeof(buffer) - (ptr - buffer)) == -1)
+         ptr[-2] = '\0';
 
       runloop_msg_queue_push(buffer, 0, 5 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
@@ -766,6 +768,8 @@ static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
       rcheevos_free_patchdata(&locals->patchdata);
       return 0;
    }
+
+   settings        = config_get_ptr();
 
    if (!rcheevos_memory_init(&locals->memory, locals->patchdata.console_id))
    {
@@ -796,11 +800,10 @@ static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
 
    /* Initialize. */
    rcheevos_activate_achievements(locals, locals->patchdata.core, locals->patchdata.core_count, 0);
+
    if (settings->bools.cheevos_test_unofficial)
-   {
       rcheevos_activate_achievements(locals, locals->patchdata.unofficial,
             locals->patchdata.unofficial_count, RCHEEVOS_ACTIVE_UNOFFICIAL);
-   }
 
    if (locals->hardcore_active && locals->leaderboards_enabled)
    {
