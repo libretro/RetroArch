@@ -413,10 +413,9 @@ bool content_undo_load_state(void)
    settings_t *settings      = config_get_ptr();
    bool block_sram_overwrite = settings->bools.block_sram_overwrite;
 
-   RARCH_LOG("%s: \"%s\", %s: %u %s.\n",
+   RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
          undo_load_buf.path,
-         msg_hash_to_str(MSG_STATE_SIZE),
          (unsigned)undo_load_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
@@ -514,7 +513,7 @@ bool content_undo_load_state(void)
 
    if (!ret)
    {
-      RARCH_ERR("%s \"%s\".\n",
+      RARCH_ERR("[State]: %s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
          undo_load_buf.path);
    }
@@ -657,7 +656,7 @@ static void task_save_handler(retro_task_t *task)
 
       if (state->undo_save)
       {
-         RARCH_ERR("%s \"%s\".\n",
+         RARCH_ERR("[State]: %s \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
             undo_save_buf.path);
 
@@ -943,10 +942,9 @@ static void content_load_state_cb(retro_task_t *task,
    settings_t *settings        = config_get_ptr();
    bool block_sram_overwrite   = settings->bools.block_sram_overwrite;
 
-   RARCH_LOG("%s: \"%s\", %s: %u %s.\n",
+   RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
          load_data->path,
-         msg_hash_to_str(MSG_STATE_SIZE),
          (unsigned)size,
          msg_hash_to_str(MSG_BYTES));
 
@@ -1065,7 +1063,7 @@ static void content_load_state_cb(retro_task_t *task,
    return;
 
 error:
-   RARCH_ERR("%s \"%s\".\n",
+   RARCH_ERR("[State]: %s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
          load_data->path);
    if (buf)
@@ -1280,16 +1278,15 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 
       if (!data)
       {
-         RARCH_ERR("%s \"%s\".\n",
+         RARCH_ERR("[State]: %s \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
                path);
          return false;
       }
 
-      RARCH_LOG("%s: \"%s\", %s: %u %s.\n",
+      RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
             msg_hash_to_str(MSG_SAVING_STATE),
             path,
-            msg_hash_to_str(MSG_STATE_SIZE),
             (unsigned)info.size,
             msg_hash_to_str(MSG_BYTES));
    }
@@ -1301,7 +1298,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
          /* Before overwriting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
          /* TODO/FIXME - Use msg_hash_to_str here */
-         RARCH_LOG("%s ...\n",
+         RARCH_LOG("[State]: %s ...\n",
                msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
 
          task_push_load_and_save_state(path, data, info.size, true, autosave);
@@ -1316,7 +1313,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 
       if (!data)
       {
-         RARCH_ERR("%s \"%s\".\n",
+         RARCH_ERR("[State]: %s \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
                path);
          return false;
@@ -1440,7 +1437,7 @@ bool content_rename_state(const char *origin, const char *dest)
    if (!ret)
       return true;
 
-   RARCH_LOG("Error %d renaming file %s\n", ret, origin);
+   RARCH_ERR("[State]: Error %d renaming file \"%s\".\n", ret, origin);
    return false;
 }
 
