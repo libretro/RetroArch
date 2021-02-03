@@ -3553,7 +3553,7 @@ bool config_load_override(void *data)
    /* Create a new config file from core_path */
    if (config_file_exists(core_path))
    {
-      RARCH_LOG("[Overrides]: Core-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: Core-specific overrides found at \"%s\".\n",
             core_path);
 
       path_set(RARCH_PATH_CONFIG_APPEND, core_path);
@@ -3561,7 +3561,7 @@ bool config_load_override(void *data)
       should_append = true;
    }
    else
-      RARCH_LOG("[Overrides]: No core-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: No core-specific overrides found at \"%s\".\n",
             core_path);
 
    /* per-content-dir overrides */
@@ -3572,7 +3572,7 @@ bool config_load_override(void *data)
 
       temp_path[0]    = '\0';
 
-      RARCH_LOG("[Overrides]: Content dir-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
             game_path);
 
       if (should_append)
@@ -3590,7 +3590,7 @@ bool config_load_override(void *data)
       should_append = true;
    }
    else
-      RARCH_LOG("[Overrides]: No content-dir-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: No content-dir-specific overrides found at \"%s\".\n",
          content_path);
 
    /* per-game overrides */
@@ -3601,12 +3601,12 @@ bool config_load_override(void *data)
 
       temp_path[0]    = '\0';
 
-      RARCH_LOG("[Overrides]: Game-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
             game_path);
 
       if (should_append)
       {
-         RARCH_LOG("[Overrides]: game-specific overrides stacking on top of previous overrides\n");
+         RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
          strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
          strlcat(temp_path, "|", sizeof(temp_path));
          strlcat(temp_path, game_path, sizeof(temp_path));
@@ -3619,7 +3619,7 @@ bool config_load_override(void *data)
       should_append = true;
    }
    else
-      RARCH_LOG("[Overrides]: No game-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: No game-specific overrides found at \"%s\".\n",
             game_path);
 
    if (!should_append)
@@ -3729,7 +3729,7 @@ bool config_load_remap(const char *directory_input_remapping,
 
    strlcpy(remap_directory,
          directory_input_remapping, sizeof(remap_directory));
-   RARCH_LOG("[Remaps]: remap directory: %s\n", remap_directory);
+   RARCH_LOG("[Remaps]: Remap directory: \"%s\".\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join_special_ext(core_path,
@@ -3757,7 +3757,7 @@ bool config_load_remap(const char *directory_input_remapping,
    /* If a game remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(game_path)))
    {
-      RARCH_LOG("[Remaps]: game-specific remap found at %s.\n", game_path);
+      RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
@@ -3770,7 +3770,7 @@ bool config_load_remap(const char *directory_input_remapping,
    /* If a content-dir remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(content_path)))
    {
-      RARCH_LOG("[Remaps]: content-dir-specific remap found at %s.\n", content_path);
+      RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
       if (input_remapping_load_file(new_conf, content_path))
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
@@ -3782,7 +3782,7 @@ bool config_load_remap(const char *directory_input_remapping,
    /* If a core remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(core_path)))
    {
-      RARCH_LOG("[Remaps]: core-specific remap found at %s.\n", core_path);
+      RARCH_LOG("[Remaps]: Core-specific remap found at \"%s\".\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
@@ -4402,15 +4402,15 @@ bool config_save_overrides(enum override_type type, void *data)
       switch (type)
       {
          case OVERRIDE_CORE:
-            RARCH_LOG ("[Overrides]: path %s\n", core_path);
+            RARCH_LOG ("[Overrides]: Path \"%s\".\n", core_path);
             ret = config_file_write(conf, core_path, true);
             break;
          case OVERRIDE_GAME:
-            RARCH_LOG ("[Overrides]: path %s\n", game_path);
+            RARCH_LOG ("[Overrides]: Path \"%s\".\n", game_path);
             ret = config_file_write(conf, game_path, true);
             break;
          case OVERRIDE_CONTENT_DIR:
-            RARCH_LOG ("[Overrides]: path %s\n", content_path);
+            RARCH_LOG ("[Overrides]: Path \"%s\".\n", content_path);
             ret = config_file_write(conf, content_path, true);
             break;
          case OVERRIDE_NONE:
