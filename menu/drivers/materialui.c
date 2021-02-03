@@ -2242,7 +2242,7 @@ static void materialui_set_node_playlist_icon(
 
       if (string_is_equal(playlist_file, icon_playlist_file))
       {
-         node->icon_texture_index = i;
+         node->icon_texture_index = (unsigned)i;
          node->icon_type          = MUI_ICON_TYPE_PLAYLIST;
          break;
       }
@@ -3628,7 +3628,7 @@ static void materialui_render(void *data,
                 (pointer_y < (entry_y + node->entry_height)))
             {
                /* Pointer selection is always updated */
-               menu_input_set_pointer_selection(i);
+               menu_input_set_pointer_selection((unsigned)i);
 
                /* If pointer is pressed and stationary... */
                if (mui->pointer.pressed && !mui->pointer.dragged)
@@ -3638,7 +3638,7 @@ static void materialui_render(void *data,
                   if (mui->touch_feedback_update_selection)
                   {
                      /* ...apply touch feedback to current entry */
-                     mui->touch_feedback_selection = i;
+                     mui->touch_feedback_selection = (unsigned)i;
 
                      /* ...and if pointer has been held for at least
                       * MENU_INPUT_PRESS_TIME_SHORT ms, automatically

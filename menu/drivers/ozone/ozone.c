@@ -1923,7 +1923,7 @@ static void ozone_render(void *data,
                 (ozone->pointer.y < entry_y + node->height))
             {
                /* Pointer selection is always updated */
-               menu_input_set_pointer_selection(i);
+               menu_input_set_pointer_selection((unsigned)i);
 
                /* If pointer is a mouse, then automatically
                 * select entry under cursor */

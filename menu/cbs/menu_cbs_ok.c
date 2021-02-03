@@ -2664,7 +2664,7 @@ int  generic_action_ok_help(const char *path,
 static int action_ok_bluetooth(const char *path, const char *label,
          unsigned type, size_t idx, size_t entry_idx)
 {
-   driver_bluetooth_connect_device(idx);
+   driver_bluetooth_connect_device((unsigned)idx);
 
    return 0;
 }
@@ -6016,7 +6016,7 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    video_shader_ctx_t shader_info;
-   unsigned offset                           = setting_offset;
+   unsigned offset                           = (unsigned)setting_offset;
    float val                                 = atof(path);
    struct video_shader *shader               = menu_shader_get();
    struct video_shader_parameter *param_menu = NULL;

@@ -10048,7 +10048,7 @@ static bool command_read_ram(const char *arg)
 
 static bool command_write_ram(const char *arg)
 {
-   unsigned int addr    = strtoul(arg, (char**)&arg, 16);
+   unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
    uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr);
 
    if (!data)
