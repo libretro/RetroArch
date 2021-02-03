@@ -460,7 +460,7 @@ bool video_shader_resolve_parameters(struct video_shader *shader)
 
    /* Find all parameters in our shaders. */
 
-   RARCH_LOG("[Shaders]:  Finding Parameters in Shader Passes (#pragma parameter)\n");
+   RARCH_DBG("[Shaders]:  Finding Parameters in Shader Passes (#pragma parameter)\n");
 
    for (i = 0; i < shader->passes; i++)
    {
@@ -535,7 +535,7 @@ bool video_shader_resolve_parameters(struct video_shader *shader)
 
          param->pass     = i;
 
-         RARCH_LOG("[Shaders]:     Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
+         RARCH_DBG("[Shaders]:     Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
                param->desc,    param->id,      param->initial,
                param->minimum, param->maximum, param->step, param->pass);
          param->current  = param->initial;
@@ -588,13 +588,13 @@ bool video_shader_load_current_parameter_values(config_file_t *conf, struct vide
          /* Log the message for loading parameter values only once*/
          if (!load_parameter_message_shown)
          {
-            RARCH_LOG("[Shaders]:    Loading base parameter values\n");
+            RARCH_DBG("[Shaders]:    Loading base parameter values\n");
             load_parameter_message_shown = true;
          }
 
          /* Log each parameter read */
          if (config_get_float(conf, shader->parameters[i].id, &parameter->current))
-            RARCH_LOG("[Shaders]:      Load parameter value:   %s = %f.\n", shader->parameters[i].id, parameter->current);
+            RARCH_DBG("[Shaders]:      Load parameter value:   %s = %f.\n", shader->parameters[i].id, parameter->current);
          else
             RARCH_WARN("[Shaders]:      Load parameter value: name %s is set in preset but couldn't load its value.\n", 
                         shader->parameters[i].id);
@@ -698,7 +698,7 @@ bool video_shader_write_root_preset(const struct video_shader *shader, const cha
       goto end;
    }
 
-   RARCH_LOG("[Shaders]:  Saving FULL PRESET to: %s\n", path);
+   RARCH_DBG("[Shaders]:  Saving FULL PRESET to: %s\n", path);
 
    config_set_int(conf, "shaders", shader->passes);
    if (shader->feedback_pass >= 0)
@@ -1136,7 +1136,7 @@ bool video_shader_write_referenced_preset(const char *path_to_save,
       goto end;
    }
 
-   RARCH_LOG("[Shaders]:  Reading Preset to Compare with Current Values: %s\n", path_to_save_conformed);
+   RARCH_DBG("[Shaders]:  Reading Preset to Compare with Current Values: %s\n", path_to_save_conformed);
 
    /* Load the preset referenced in the preset into the shader */
    if (!video_shader_load_preset_into_shader(path_to_reference, referenced_shader))
@@ -1313,7 +1313,7 @@ bool video_shader_write_referenced_preset(const char *path_to_save,
             fill_pathname_abbreviated_or_relative(path_for_save, conf->path, shader->lut[i].path, PATH_MAX_LENGTH);
             pathname_make_slashes_portable(path_for_save);
             config_set_string(conf, shader->lut[i].id, path_for_save);
-            RARCH_LOG("[Shaders]:  Texture override %s = %s.\n", shader->lut[i].id, path_for_save);
+            RARCH_DBG("[Shaders]:  Texture override %s = %s.\n", shader->lut[i].id, path_for_save);
 
             free(path_for_save);
          }
@@ -1321,7 +1321,7 @@ bool video_shader_write_referenced_preset(const char *path_to_save,
    }
 
    /* Write the file, return will be true if successful */
-   RARCH_LOG("[Shaders]:  Saving simple preset to: %s\n", path_to_save_conformed);
+   RARCH_DBG("[Shaders]:  Saving simple preset to: %s\n", path_to_save_conformed);
    ret = config_file_write(conf, path_to_save_conformed, false);
 
 end:
@@ -1402,8 +1402,8 @@ bool video_shader_load_root_config_into_shader(config_file_t *conf, struct video
    /* This sets the shader to empty */
    memset(shader, 0, sizeof(*shader));
 
-   RARCH_LOG("\n");
-   RARCH_LOG("[Shaders]:  Reading ROOT PRESET:  %s\n", conf->path);
+   RARCH_DBG("\n");
+   RARCH_DBG("[Shaders]:  Reading ROOT PRESET:  %s\n", conf->path);
 
    if (!config_get_uint(conf, "shaders", &num_passes))
    {
@@ -1486,12 +1486,12 @@ bool video_shader_load_root_config_into_shader(config_file_t *conf, struct video
    /* Load the parameter values */
    video_shader_load_current_parameter_values(conf, shader);
 
-   RARCH_LOG("[Shaders]:      Number of Passes:  %u\n", shader->passes);
-   RARCH_LOG("[Shaders]:      Number of Textures:  %u\n", shader->luts);
+   RARCH_DBG("[Shaders]:      Number of Passes:  %u\n", shader->passes);
+   RARCH_DBG("[Shaders]:      Number of Textures:  %u\n", shader->luts);
 
    /* Log Texture Names & Paths */
    for (i = 0; i < shader->luts; i++)
-      RARCH_LOG("[Shaders]:        %s = %s.\n", shader->lut[i].id, shader->lut[i].path);
+      RARCH_DBG("[Shaders]:        %s = %s.\n", shader->lut[i].id, shader->lut[i].path);
 
    return true;
 
@@ -1540,7 +1540,7 @@ bool override_shader_values(config_file_t *override_conf, struct video_shader *s
             /* Set the shader's parameter value */
             config_get_float(override_conf, shader->parameters[i].id, &parameter->current);
 
-            RARCH_LOG("[Shaders]:      Parameter:  %s = %f.\n",
+            RARCH_DBG("[Shaders]:      Parameter:  %s = %f.\n",
                         shader->parameters[i].id, 
                         shader->parameters[i].current);
 
@@ -1575,7 +1575,7 @@ bool override_shader_values(config_file_t *override_conf, struct video_shader *s
             /* Get the absolute path */
             fill_pathname_expanded_and_absolute(shader->lut[i].path, override_conf->path, override_tex_path);
 
-            RARCH_LOG("[Shaders]:      Texture:    %s = %s.\n", 
+            RARCH_DBG("[Shaders]:      Texture:    %s = %s.\n", 
                         shader->lut[i].id, 
                         shader->lut[i].path);
 
@@ -1618,19 +1618,19 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
 
    /* If we were able to get a root_config that means that the whole reference chain is valid */
 
+   RARCH_DBG("\n");
+
    /* If the root_conf path matches the original path then there are no references  so we just load it and go to the end */
    if (string_is_equal(root_conf->path, path))
    {
-      RARCH_LOG("\n");
-      RARCH_LOG("[Shaders]:  Start reading FULL Preset: %s\n", path);
+      RARCH_DBG("[Shaders]:  Start reading FULL Preset: %s\n", path);
       video_shader_load_root_config_into_shader(root_conf, shader);
       goto end;
    }
    /* Otherwise this is a Simple Preset with a #reference in it */
    else
    {
-      RARCH_LOG("\n");
-      RARCH_LOG("[Shaders]:  Start reading SIMPLE Preset: %s\n", path);
+      RARCH_DBG("[Shaders]:  Start reading SIMPLE Preset: %s\n", path);
       /* Load the root full preset into the shader which should be empty at this point */
       video_shader_load_root_config_into_shader(root_conf, shader);
    }
@@ -1645,8 +1645,8 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
 
    i = 0;
 
-   RARCH_LOG("\n");
-   RARCH_LOG("[Shaders]:  Crawl Preset Reference Chain\n");
+   RARCH_DBG("\n");
+   RARCH_DBG("[Shaders]:  Crawl Preset Reference Chain\n");
 
    /* If the config has a reference then we need gather all presets from the 
     * chain of references to apply their values later */
@@ -1655,7 +1655,7 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
       char* reference_preset_path = (char*)malloc(PATH_MAX_LENGTH);
       i++;
 
-      RARCH_LOG("[Shaders]:    Preset (Depth %u):  %s \n", i, conf->path);
+      RARCH_DBG("[Shaders]:    Preset (Depth %u):  %s \n", i, conf->path);
 
       /* Add the reference to the list */
       strlcpy(override_conf_paths[i], conf->path, PATH_MAX_LENGTH);
@@ -1663,7 +1663,7 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
       /* Get the absolute path for the reference */
       fill_pathname_expanded_and_absolute(reference_preset_path, conf->path, conf->reference);
 
-      RARCH_LOG("[Shaders]:      #reference     = %s \n", reference_preset_path);
+      RARCH_DBG("[Shaders]:      #reference     = %s \n", reference_preset_path);
 
       /* Create a new config from this reference level */
       config_file_free(conf);
@@ -1674,23 +1674,23 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
    
    /* Step back through the references starting with the one referencing the root config and apply overrides for each one */
    
-   RARCH_LOG("\n");
-   RARCH_LOG("[Shaders]:  Start Applying Simple Preset Overrides\n");
+   RARCH_DBG("\n");
+   RARCH_DBG("[Shaders]:  Start Applying Simple Preset Overrides\n");
 
    while (i)
    {
       config_file_t *override_conf = config_file_new_from_path_to_string(override_conf_paths[i]);
       
-      RARCH_LOG("[Shaders]:    Depth %u Apply Overrides\n", i);
-      RARCH_LOG("[Shaders]:      Apply values from:   %s\n", override_conf->path);
+      RARCH_DBG("[Shaders]:    Depth %u Apply Overrides\n", i);
+      RARCH_DBG("[Shaders]:      Apply values from:   %s\n", override_conf->path);
       override_shader_values(override_conf, shader);
 
       config_file_free(override_conf);
       i--;
    }
 
-   RARCH_LOG("[Shaders]:  End Apply Overrides\n");
-   RARCH_LOG("\n");
+   RARCH_DBG("[Shaders]:  End Apply Overrides\n");
+   RARCH_DBG("\n");
 
    /* Set Path for originally loaded preset because it is different than the root preset path */
    strlcpy( shader->loaded_preset_path, path, sizeof(shader->loaded_preset_path));

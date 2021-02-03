@@ -28,6 +28,7 @@
 
 RETRO_BEGIN_DECLS
 
+#define FILE_PATH_LOG_DBG   "[VERBOSE]"
 #define FILE_PATH_LOG_INFO  "[INFO]"
 #define FILE_PATH_LOG_ERROR "[ERROR]"
 #define FILE_PATH_LOG_WARN  "[WARN]"
@@ -56,6 +57,10 @@ void logger_send (const char *__format,...);
 void logger_send_v(const char *__format, va_list args);
 
 #ifdef IS_SALAMANDER
+
+#define RARCH_DBG(...) do { \
+   logger_send("RetroArch Salamander: " __VA_ARGS__); \
+} while (0)
 
 #define RARCH_LOG(...) do { \
    logger_send("RetroArch Salamander: " __VA_ARGS__); \
@@ -94,6 +99,10 @@ void logger_send_v(const char *__format, va_list args);
 } while (0)
 
 #else /* IS_SALAMANDER */
+
+#define RARCH_DBG(...) do { \
+   logger_send("" __VA_ARGS__); \
+} while (0)
 
 #define RARCH_LOG(...) do { \
    logger_send("" __VA_ARGS__); \
@@ -136,6 +145,7 @@ void logger_send_v(const char *__format, va_list args);
 
 #else /* HAVE_LOGGER */
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap);
+void RARCH_DBG(const char *fmt, ...);
 void RARCH_LOG(const char *fmt, ...);
 void RARCH_LOG_BUFFER(uint8_t *buffer, size_t size);
 void RARCH_LOG_OUTPUT(const char *msg, ...);
