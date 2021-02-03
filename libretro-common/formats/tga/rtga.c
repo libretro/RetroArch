@@ -266,7 +266,7 @@ static uint8_t *rtga_tga_load(rtga_context *s,
       int RLE_repeating          = 0;
       int RLE_count              = 0;
       int read_next_pixel        = 1;
-      unsigned char raw_data[4]  = {0};
+      unsigned char raw_data[32] = {0};
       unsigned char *tga_palette = NULL;
 
       /*   Do I need to load a palette? */
