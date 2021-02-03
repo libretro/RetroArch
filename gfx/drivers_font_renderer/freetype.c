@@ -27,7 +27,13 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
-#ifdef HAVE_FONTCONFIG
+/* Was told by contributor that Windows support is pending,
+ * so exclude Windows for now */
+#if defined(HAVE_FONTCONFIG) && !defined(_WIN32)
+#define HAVE_FONTCONFIG_SUPPORT
+#endif
+
+#if defined(HAVE_FONTCONFIG_SUPPORT)
 #include <fontconfig/fontconfig.h>
 #include "../../msg_hash.h"
 #endif
@@ -245,7 +251,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       err = FT_New_Memory_Face(handle->lib, font_data, font_size, 0, &handle->face);
    }
    else
-#elif HAVE_FONTCONFIG
+#elif defined(HAVE_FONTCONFIG_SUPPORT)
    /* if fallback font is requested, instead of loading it, we find the full font in the system */
    if (!*font_path || strstr(font_path, "fallback"))
    {
@@ -362,7 +368,7 @@ static const char *font_renderer_ft_get_default_font(void)
 {
 /* Since fontconfig will return parameters more than a simple path
    we will process these in the init function */
-#if defined(WIIU) || defined(HAVE_FONTCONFIG)
+#if defined(WIIU) || defined(HAVE_FONTCONFIG_SUPPORT)
    return "";
 #else
    size_t i;
