@@ -283,7 +283,6 @@ static void *gl1_gfx_init(const video_info_t *video,
    {
       vglInitExtended(0x1400000, full_x, full_y, RAM_THRESHOLD, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
-      vglStartRendering();
       vgl_inited = true;
    }
 #endif
