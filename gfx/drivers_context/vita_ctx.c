@@ -67,8 +67,7 @@ static void vita_swap_buffers(void *data)
 #endif
 
 #if defined(HAVE_VITAGL)
-   vglStopRendering();
-   vglStartRendering();
+   vglSwapBuffers(GL_FALSE);
 #endif
 }
 
