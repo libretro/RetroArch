@@ -2761,6 +2761,22 @@ static int setting_action_ok_uint(
    return 0;
 }
 
+static int setting_action_ok_libretro_device_type(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char enum_idx[16];
+   if (!setting)
+      return -1;
+
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE);
+   return 0;
+}
+
 static int setting_string_action_left_string_options(
    rarch_setting_t* setting, size_t idx, bool wraparound)
 {
@@ -5196,7 +5212,7 @@ static int setting_action_left_analog_dpad_mode(
    return 0;
 }
 
-static unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsigned port)
+unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsigned port)
 {
    unsigned types                           = 0;
    const struct retro_controller_info *desc = NULL;
@@ -7873,12 +7889,13 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index = user + 1;
-      (*list)[list_info->index - 1].index_offset = user;
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
       (*list)[list_info->index - 1].action_left   = &setting_action_left_libretro_device_type;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_libretro_device_type;
       (*list)[list_info->index - 1].action_select = &setting_action_right_libretro_device_type;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_libretro_device_type;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_libretro_device_type;
       (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_libretro_device;
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
@@ -7895,8 +7912,8 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index = user + 1;
-      (*list)[list_info->index - 1].index_offset = user;
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
       (*list)[list_info->index - 1].action_left   = &setting_action_left_analog_dpad_mode;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_select = &setting_action_right_analog_dpad_mode;
@@ -7940,8 +7957,8 @@ static bool setting_append_list_input_player_options(
             &group_info,
             &subgroup_info,
             parent_group);
-      (*list)[list_info->index - 1].index = user + 1;
-      (*list)[list_info->index - 1].index_offset = user;
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
       (*list)[list_info->index - 1].action_left   = &setting_action_left_bind_device;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_bind_device;

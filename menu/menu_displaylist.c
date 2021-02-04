@@ -4037,6 +4037,107 @@ static unsigned menu_displaylist_parse_disk_options(
    return count;
 }
 
+static int menu_displaylist_parse_input_device_type_list(menu_displaylist_info_t *info)
+{
+   retro_ctx_controller_info_t pad;
+   const struct retro_controller_description *desc = NULL;
+   const char *name             = NULL;
+
+   rarch_system_info_t *system  = runloop_get_system_info();
+   settings_t *settings         = config_get_ptr();
+
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   size_t menu_index            = 0;
+   unsigned count               = 0;
+
+   unsigned i                   = 0;
+   unsigned types               = 0;
+   unsigned port                = 0;
+   unsigned current_device      = 0;
+   unsigned devices[128]        = {0};
+
+   char device_id[10];
+   device_id[0]                 = '\0';
+
+   if (!system || !settings || !setting)
+      goto end;
+
+   port = setting->index_offset;
+
+   if (port >= MAX_USERS)
+      goto end;
+
+   types          = libretro_device_get_size(devices, ARRAY_SIZE(devices), port);
+   current_device = input_config_get_device(port);
+   for (i = 0; i < types; i++)
+   {
+      snprintf(device_id, sizeof(device_id), "%d", devices[i]);
+
+      desc = NULL;
+      name = NULL;
+
+      if (system && port < system->ports.size)
+         desc = libretro_find_controller_description(
+               &system->ports.data[port],
+               devices[i]);
+      if (desc)
+         name = desc->desc;
+
+      if (!name)
+      {
+         /* Find generic name. */
+         switch (devices[i])
+         {
+            case RETRO_DEVICE_NONE:
+               name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+               break;
+            case RETRO_DEVICE_JOYPAD:
+               name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD);
+               break;
+            case RETRO_DEVICE_ANALOG:
+               name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG);
+               break;
+            default:
+               name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
+               break;
+         }
+      }
+
+      /* Add menu entry */
+      if (menu_entries_append_enum(info->list,
+            name,
+            device_id,
+            MENU_ENUM_LABEL_INPUT_BIND_DEVICE_TYPE,
+            MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
+            0, i))
+      {
+         /* Add checkmark if input is currently
+          * mapped to this entry */
+         if (current_device == devices[i])
+         {
+            menu_entries_set_checked(info->list, menu_index, true);
+            menu_navigation_set_selection(menu_index);
+         }
+
+         count++;
+         menu_index++;
+      }
+   }
+
+end:
+   /* Fallback */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0))
+         count++;
+
+   return count;
+}
+
 static int menu_displaylist_parse_input_description_list(menu_displaylist_info_t *info)
 {
    unsigned count              = 0;
@@ -11048,6 +11149,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                info, info->list, info->type,
                MENU_SETTINGS_SHADER_PRESET_PARAMETER_0,
                MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PRESET_PARAM);
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count              = menu_displaylist_parse_input_device_type_list(info);
          info->need_refresh = true;
          info->need_push    = true;
          break;
