@@ -55,7 +55,7 @@ else
       HAVE_SHADERPIPELINE := 1
    else
       HAVE_VITA2D		:= 1
-      HAVE_VITAGL		:= 1
+      HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1
 	HAVE_SOCKET_LEGACY	:= 1
