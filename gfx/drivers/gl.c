@@ -365,11 +365,13 @@ static bool gl2_recreate_fbo(
 static void gl2_set_projection(gl_t *gl,
       struct video_ortho *ortho, bool allow_rotate)
 {
-   math_matrix_4x4 rot;
-
    /* Calculate projection. */
    matrix_4x4_ortho(gl->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+
+   math_matrix_4x4 scrn_rot;
+   matrix_4x4_rotate_z(scrn_rot, M_PI * 90 / 180.0f);
+   matrix_4x4_multiply(gl->mvp_screen_rot, scrn_rot, gl->mvp_no_rot);
 
    if (!allow_rotate)
    {
@@ -377,6 +379,7 @@ static void gl2_set_projection(gl_t *gl,
       return;
    }
 
+   math_matrix_4x4 rot;
    matrix_4x4_rotate_z(rot, M_PI * gl->rotation / 180.0f);
    matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
 }
@@ -462,7 +465,7 @@ static void gl2_set_viewport(gl_t *gl,
       gl->vp.y *= 2;
 #endif
 
-   glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+   glViewport(gl->vp.x, gl->vp.y, gl->vp.height, gl->vp.width);
    gl2_set_projection(gl, &default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
@@ -1871,7 +1874,7 @@ static void gl2_render_overlay(gl_t *gl)
    glEnable(GL_BLEND);
 
    if (gl->overlay_full_screen)
-      glViewport(0, 0, width, height);
+      glViewport(0, 0, height, width);
 
    /* Ensure that we reset the attrib array. */
    gl->shader->use(gl, gl->shader_data,
@@ -1883,7 +1886,7 @@ static void gl2_render_overlay(gl_t *gl)
    gl->coords.vertices  = 4 * gl->overlays;
 
    gl->shader->set_coords(gl->shader_data, &gl->coords);
-   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_screen_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -2096,7 +2099,7 @@ static void gl2_set_rotation(void *data, unsigned rotation)
    if (!gl)
       return;
 
-   gl->rotation = 90 * rotation;
+   gl->rotation = 90 * (rotation + 1);
    gl2_set_projection(gl, &default_ortho, true);
 }
 
@@ -2353,7 +2356,7 @@ static void gl2_render_osd_background(gl_t *gl, const char *msg)
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_screen_rot);
 
    uniform_param.type              = UNIFORM_4F;
    uniform_param.enabled           = true;
@@ -2446,15 +2449,15 @@ static INLINE void gl2_draw_texture(gl_t *gl)
    gl->coords.vertices    = 4;
 
    gl->shader->set_coords(gl->shader_data, &gl->coords);
-   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_screen_rot);
 
    glEnable(GL_BLEND);
 
    if (gl->menu_texture_full_screen)
    {
-      glViewport(0, 0, width, height);
+      glViewport(0, 0, height, width);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.height, gl->vp.width);
    }
    else
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -2568,7 +2571,7 @@ static void gl2_video_layout_viewport(gl_t *gl)
 
       glViewport(
          bounds->x, gl->video_height - bounds->y - bounds->h,
-         bounds->w, bounds->h
+         bounds->h, bounds->w
       );
    }
 }
@@ -2580,7 +2583,7 @@ static void gl2_video_layout_render(gl_t *gl)
    if (!video_layout_valid())
       return;
 
-   glViewport(0, 0, gl->video_width, gl->video_height);
+   glViewport(0, 0, gl->video_height, gl->video_width);
    glEnable(GL_BLEND);
 
    for (i = 0; i < video_layout_layer_count(); ++i)
@@ -2697,7 +2700,7 @@ static void gl2_video_layout_image(
    gl->coords.vertices  = 4;
 
    gl->shader->set_coords(gl->shader_data, &gl->coords);
-   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_screen_rot);
 
    glBindTexture(GL_TEXTURE_2D, (GLuint)(uintptr_t)image_handle);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -2767,7 +2770,7 @@ static void gl2_video_layout_layer_end(const video_layout_render_info_t *info, v
    gl->coords.vertices = 4;
 
    gl->shader->set_coords(gl->shader_data, &gl->coords);
-   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_screen_rot);
 
    glBindTexture(GL_TEXTURE_2D, gl->video_layout_fbo_texture);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -3129,6 +3132,7 @@ static bool gl2_frame(void *data, const void *frame,
       glBindVertexArray(0);
 #endif
    gl2_context_bind_hw_render(gl, true);
+
    return true;
 }
 

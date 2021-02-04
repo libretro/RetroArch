@@ -82,6 +82,18 @@ typedef struct _sdl2_video
    const font_renderer_driver_t *font_driver;
 } sdl2_video_t;
 
+SDL_Point scrn_origin = {
+   0,
+   0
+ };
+
+ SDL_Rect scrn_transform = {
+   0,
+   480,
+   480,
+   320
+ };
+
 static void sdl2_gfx_free(void *data);
 
 static INLINE void sdl_tex_zero(sdl2_tex_t *t)
@@ -174,7 +186,7 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    settings_t *settings = config_get_ptr();
    float msg_pos_x      = settings->floats.video_msg_pos_x;
    float msg_pos_y      = settings->floats.video_msg_pos_y;
-   int x                = msg_pos_x * width;
+   int x                = (1.0f - msg_pos_x) * width;
    int y                = (1.0f - msg_pos_y) * height;
 
    if (!vid->font_data)
@@ -196,26 +208,26 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
       if (!gly)
          continue;
 
-      off_x      = gly->draw_offset_x;
-      off_y      = gly->draw_offset_y;
-      tex_x      = gly->atlas_offset_x;
-      tex_y      = gly->atlas_offset_y;
+      off_y      = gly->draw_offset_x;
+      off_x      = gly->draw_offset_y;
+      tex_y      = gly->atlas_offset_x;
+      tex_x      = gly->atlas_offset_y;
 
-      src_rect.x = tex_x;
-      src_rect.y = tex_y;
+      src_rect.x = tex_y;
+      src_rect.y = tex_x;
       src_rect.w = (int)gly->width;
       src_rect.h = (int)gly->height;
 
-      dst_rect.x = x + delta_x + off_x;
-      dst_rect.y = y + delta_y + off_y;
+      dst_rect.x = y + delta_y + off_y;
+      dst_rect.y = x + delta_x + off_x;
       dst_rect.w = (int)gly->width;
       dst_rect.h = (int)gly->height;
 
       SDL_RenderCopyEx(vid->renderer, vid->font.tex,
-            &src_rect, &dst_rect, 0, NULL, SDL_FLIP_NONE);
+            &src_rect, &dst_rect, 270, NULL, SDL_FLIP_NONE);
 
-      delta_x += gly->advance_x;
-      delta_y -= gly->advance_y;
+      delta_x -= gly->advance_x;
+      delta_y += gly->advance_y;
    }
 }
 
@@ -246,10 +258,39 @@ static void sdl_refresh_renderer(sdl2_video_t *vid)
 
    SDL_RenderClear(vid->renderer);
 
-   r.x      = vid->vp.x;
-   r.y      = vid->vp.y;
+   /*r.x      = vid->vp.x;
+   r.y      = vid->vp.y - (vid->vp.width/2);
    r.w      = (int)vid->vp.width;
-   r.h      = (int)vid->vp.height;
+   r.h      = (int)vid->vp.height;*/
+
+   /*SDL_Rect vid_transform = {
+      ((320/2) - (vid->vp.height/2)),                 // x Position
+      vid->vp.width + ((480/2) - (vid->vp.width/2)),  // y Position
+      vid->vp.width,  // w
+      vid->vp.height, // h
+   };
+
+   SDL_Rect vid_transform = {
+      0,   // x Position
+      480, // y Position
+      480, // w
+      320, // h
+   };
+
+   r.x      = 0;
+   r.y      = -160;
+   r.w      = 320;
+   r.h      = 480;*/
+
+   //RARCH_LOG("[SDL2]: viewport %ux%u: @ %u,%u\n", vid->vp.width, vid->vp.height, vid->vp.x, vid->vp.y);
+
+   r.x      = ((320/2) - (vid->vp.height/2));
+   r.y      = -160 + ((480/2) - (vid->vp.width/2));
+
+   //RARCH_LOG("[SDL2]: position %d,%d\n", r.x, r.y);
+
+   r.w      = vid->vp.height;
+   r.h      = vid->vp.width;
 
    SDL_RenderSetViewport(vid->renderer, &r);
 
@@ -407,7 +448,9 @@ static void *sdl2_gfx_init(const video_info_t *video,
    }
 
    if (!video->fullscreen)
-      RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);
+      RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->height, video->width);
+   else
+      RARCH_LOG("[SDL]: Creating screen @ %ux%u\n", video->height, video->width);
 
    if (video->fullscreen)
       flags = settings->bools.video_windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
@@ -415,7 +458,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
       flags = SDL_WINDOW_RESIZABLE;
 
    vid->window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                  video->width, video->height, flags);
+                                  video->height, video->width, flags);
 
    if (!vid->window)
    {
@@ -496,21 +539,36 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
 
+   SDL_RenderClear(vid->renderer);
+
    if (frame)
    {
-      SDL_RenderClear(vid->renderer);
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
    }
 
-   SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
+   /*SDL_Rect vid_transform = {
+      ((320/2) - (vid->vp.height/2)),                 // x Position
+      vid->vp.width + ((480/2) - (vid->vp.width/2)),  // y Position
+      vid->vp.width,  // w
+      vid->vp.height, // h
+   };*/
+
+   SDL_Rect vid_transform = {
+      0,
+      vid->vp.width,
+      vid->vp.width,
+      vid->vp.height,
+   };
+
+   SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, &vid_transform, vid->rotation + 270, &scrn_origin, SDL_FLIP_NONE);
 
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (vid->menu.active)
-      SDL_RenderCopy(vid->renderer, vid->menu.tex, NULL, NULL);
+      SDL_RenderCopyEx(vid->renderer, vid->menu.tex, NULL, &scrn_transform, 270, &scrn_origin, SDL_FLIP_NONE);
 
    if (msg)
       sdl2_render_msg(vid, msg);

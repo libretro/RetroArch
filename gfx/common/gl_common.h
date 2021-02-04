@@ -243,7 +243,7 @@ struct gl
    struct video_tex_info tex_info;
    struct scaler_ctx pbo_readback_scaler;
    struct video_viewport vp;
-   math_matrix_4x4 mvp, mvp_no_rot;
+   math_matrix_4x4 mvp, mvp_no_rot, mvp_screen_rot;
    struct video_coords coords;
    struct scaler_ctx scaler;
    video_info_t video_info;
