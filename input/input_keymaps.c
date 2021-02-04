@@ -294,6 +294,10 @@ const struct input_key_map input_config_key_map[] = {
    { "clear", RETROK_CLEAR },
    { "oem102", RETROK_OEM_102 },
 
+   { "lbrace", RETROK_LEFTBRACE },
+   { "rbrace", RETROK_RIGHTBRACE },
+   { "select", RETROK_SELECT },
+
    { "nul", RETROK_UNKNOWN },
    { NULL, RETROK_UNKNOWN },
 };
@@ -732,6 +736,13 @@ const struct rarch_key_map rarch_key_map_sdl[] = {
    { SDLK_EURO, RETROK_EURO },
 #endif
    { SDLK_UNDO, RETROK_UNDO },
+
+   // For PocketGo S30
+   { SDLK_KP_LEFTBRACE, RETROK_LEFTBRACE }, //  L1
+   { SDLK_KP_RIGHTBRACE, RETROK_RIGHTBRACE }, // R1
+   { SDLK_KP_LEFTPAREN, RETROK_LEFTPAREN }, // L2
+   { SDLK_KP_RIGHTPAREN, RETROK_RIGHTPAREN }, // R2
+   { SDLK_SELECT, RETROK_SELECT }, // Select
 
    { 0, RETROK_UNKNOWN },
 };

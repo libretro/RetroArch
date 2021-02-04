@@ -58,6 +58,7 @@ static void *sdl_input_init(const char *joypad_driver)
 
 static bool sdl_key_pressed(int key)
 {
+
    int num_keys;
 #ifdef HAVE_SDL2
    const uint8_t *keymap = SDL_GetKeyboardState(&num_keys);

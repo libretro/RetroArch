@@ -463,6 +463,9 @@ enum retro_key
    RETROK_UNDO           = 322,
    RETROK_OEM_102        = 323,
 
+   // PocketGo S30 Additions
+   RETROK_SELECT         = 324,
+
    RETROK_LAST,
 
    RETROK_DUMMY          = INT_MAX /* Ensure sizeof(enum) == sizeof(int) */

@@ -3036,6 +3036,8 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_QUOTE,         "\'"},
    {RETROK_LEFTPAREN,     "("},
    {RETROK_RIGHTPAREN,    ")"},
+   {RETROK_LEFTBRACE,     "{"},
+   {RETROK_RIGHTBRACE,    "}"},
    {RETROK_ASTERISK,      "*"},
    {RETROK_PLUS,          "+"},
    {RETROK_COMMA,         ","},
@@ -3152,6 +3154,7 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_RSUPER,         "Left Super"},
    {RETROK_MODE,           "Mode"},
    {RETROK_COMPOSE,        "Compose"},
+   {RETROK_SELECT,         "Select"},
 
    {RETROK_HELP,           "Help"},
    {RETROK_PRINT,          "Print"},
