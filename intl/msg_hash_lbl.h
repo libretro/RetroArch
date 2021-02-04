@@ -685,6 +685,10 @@ MSG_HASH(
    "deferred_dropdown_box_list_disk_index"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,
+   "deferred_dropdown_box_list_input_device_type"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,
    "deferred_dropdown_box_list_input_description"
    )

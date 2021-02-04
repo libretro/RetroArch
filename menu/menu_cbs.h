@@ -59,6 +59,7 @@ enum
    ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,
    ACTION_OK_DL_OPEN_ARCHIVE,
@@ -243,6 +244,8 @@ int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
 
 void input_keyboard_mapping_bits(unsigned mode, unsigned key);
+
+unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsigned port);
 
 /* End of function callbacks */
 
