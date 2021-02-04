@@ -660,16 +660,15 @@ static void ui_companion_qt_toggle(void *data, bool force)
 
    if (ui_companion_toggle || force)
    {
+      if (mouse_grabbed)
+         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+      video_driver_show_mouse();
+
       if (video_fullscreen)
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
 
       win_handle->qtWindow->activateWindow();
       win_handle->qtWindow->raise();
-
-      if (mouse_grabbed)
-         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      video_driver_show_mouse();
-
       win_handle->qtWindow->show();
 
       if (video_driver_started_fullscreen())
