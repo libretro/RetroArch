@@ -2029,6 +2029,26 @@ MSG_HASH(
    "Włącza dane wejściowe z akcelerometru, żyroskopu i czujników natężenia oświetlenia, jeśli jest obsługiwane przez aktualny sprzęt. Może mieć wpływ na wydajność i / lub zwiększyć pobór mocy na niektórych platformach."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "Automatycznie włącz tryb \"Aktywna gra\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "Zawsze włącz tryb \"Aktywność gry\" podczas uruchamiania i wznawiania treści. Po ustawieniu na 'Wykrywanie', opcja będzie włączona, jeśli bieżący rdzeń implementuje funkcję wywołania zwrotnego klawiatury."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "WYŁĄCZ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   "WŁĄCZ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Wykryj"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Próg osi przycisku wprowadzania danych"
    )
@@ -7023,6 +7043,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Nieznany"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   "Dół + Y + L1 + R1"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HOLD_START,

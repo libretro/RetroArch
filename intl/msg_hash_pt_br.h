@@ -2009,6 +2009,26 @@ MSG_HASH(
    "Permite a entrada a partir dos sensores do acelerômetro, giroscópio e da iluminação caso seja compatível pelo hardware atual. Pode ter um impacto no desempenho e/ou aumentar o consumo de energia em algumas plataformas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "Ative automaticamente o modo 'Foco do Jogo'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "Ao iniciar, sempre ative o modo 'Foco do Jogo' e retome o conteúdo. Se você selecionar a opção 'Detectar', a opção será ativada caso o kernel atual tiver implementada a função de rechamada do teclado na interface."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "DESLIGADO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   "LIGADO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Detectar"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Limite do eixo do botão da entrada"
    )
@@ -6979,6 +6999,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Desconhecido"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   "Baixo + Y + L1 + R1"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HOLD_START,

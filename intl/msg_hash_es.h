@@ -2021,7 +2021,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
-   "Mantiene las combinaciones de teclas que usen la tecla Win dentro de la aplicación (es necesario reiniciar)."
+   "Retiene las combinaciones de teclas que usen la tecla Windows dentro de la aplicación (es necesario reiniciar)."
    )
 #endif
 MSG_HASH(
@@ -2031,6 +2031,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Activa la entrada de acelerómetros, giroscopios y sensores de iluminación si el hardware actual los soporta. Podría afectar al rendimiento o aumentar el consumo de energía en algunas plataformas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "Dar automáticamente prioridad al juego"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "Activa el modo de prioridad al juego al iniciar y reanudar contenidos de forma automática. Si seleccionas Detectar, la opción se activará si el núcleo actual tiene implementada la función de rellamada del teclado desde el front-end."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "No"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   "Sí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Detectar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -2497,7 +2517,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Activa o desactiva el modo de prioridad al juego. Cuando el contenido tiene prioridad, se desactivarán las teclas rápidas (el núcleo recibirá todas las pulsaciones del teclado) y se capturará el ratón."
+   "Activa o desactiva el modo de prioridad al juego. Se desactivarán las teclas de acceso rápido cuando el contenido esté en primer plano (el núcleo recibirá todas las pulsaciones del teclado) y se capturará el ratón."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
@@ -2922,7 +2942,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "Antes de hacer un guardado rápido, se incrementará el índice de guardados rápidos de forma automática. Al cargar un contenidos, se asignará el mayor número disponible del índice."
+   "Antes de hacer un guardado rápido, se incrementará automáticamente el valor del índice de guardados rápidos. Al cargar un contenido se asignará el número más alto que exista en el índice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
@@ -2930,7 +2950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Limita el número de guardados rápidos que se crearán al activar la opción «Aumentar automáticamente el índice de guardados rápidos». Si se crea un nuevo guardado rápido y se supera el límite, se borrará el archivo existente en el índice más bajo. Un valor de 0 permitirá crear un número ilimitado de guardados rápidos."
+   "Limita el número de guardados rápidos que se crearán al activar la opción «Aumentar automáticamente el índice de guardados rápidos». Si se crea un nuevo guardado rápido y se supera el límite, se borrará el archivo que se tenga el valor más bajo del índice. Un valor de 0 permitirá crear un número ilimitado de guardados rápidos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -6729,7 +6749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
-   "Cancelar la pausa del modo Hardcore de logros"
+   "No pausar el modo Hardcore de logros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
@@ -6737,7 +6757,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
-   "Cancelar la reanudación del modo Hardcore de logros"
+   "No reanudar el modo Hardcore de logros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
@@ -6757,7 +6777,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Reanuda el modo Hardcore de los logros en esta sesión (se activarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
+   "Reanuda el modo Hardcore de los logros en esta sesión (se desactivarán los guardados rápidos, los trucos, el rebobinado, la pausa y la cámara lenta)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
@@ -7011,6 +7031,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Desconocido"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   "Abajo + Y + L1 + R1"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HOLD_START,
@@ -10681,7 +10705,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
-   "Anticipación predictiva activada usando una segunda instancia. Fotogramas de latencia eliminados: %u."
+   "Anticipación predictiva activada mediante una segunda instancia. Fotogramas de latencia eliminados: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_DISABLED,

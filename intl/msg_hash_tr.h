@@ -2029,6 +2029,26 @@ MSG_HASH(
    "Mevcut donanım tarafından destekleniyorsa ivmeölçer, jiroskop ve aydınlatma sensörlerinden girişi etkinleştirir. Bazı platformlarda performansı etkileyebilir ve/veya güç tüketimini artırabilir."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "Otomatik 'Oyun Odaklanma' Kipini Etkinleştir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "İçeriği başlatırken ve devam ettirirken her zaman 'Oyun Odaklaması' kipini etkinleştirin. 'Algıla' olarak ayarlandığında, mevcut çekirdek ön uç klavye geri arama işlevini uygularsa seçenek etkinleştirilecektir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "KAPALI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   "AÇIK"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Algıla"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Giriş Düğmesi Eksen Eşiği"
    )

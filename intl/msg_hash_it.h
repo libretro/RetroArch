@@ -2009,6 +2009,26 @@ MSG_HASH(
    "Consente l'ingresso all'accelerometro, giroscopio e sensori di illuminazione, se supportato dall'hardware corrente. Può avere un impatto sulle prestazioni e/o aumentare l'aumento di potenza su alcune piattaforme."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "Abilita Automaticamente la Modalità 'Gioco in primo piano'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "Abilita sempre la modalità 'Gioco in primo piano' quando avvii e riprendi i contenuti. Quando impostato a 'Detect', l'opzione sarà abilitata se il core implementa le funzionalità di callback della tastiera frontend."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "DISATTIVATO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   "ATTIVATO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "Rileva"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "Soglia dell'asse dell'imput del pulsante"
    )
@@ -6886,7 +6906,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
-   "Disattivo"
+   "Disattivato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
@@ -6947,6 +6967,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
    "Sconosciuto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   "Giù + Y + L1 + R1"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HOLD_START,
@@ -7130,7 +7154,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OFF,
-   "Disattivo"
+   "Disattivato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_YES,
@@ -7501,7 +7525,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
-   "Usa le icone invece del testo Attivo/Disattivo per rappresentare le voci del menu 'Abilità interruttore\"."
+   "Usa le icone invece del testo Attivo/Disattivato per rappresentare le voci del menu 'Abilità interruttore\"."
    )
 
 /* RGUI: Settings Options */
@@ -7536,7 +7560,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-   "Disattivo"
+   "Disattivato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
@@ -7660,7 +7684,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
-   "Disattivo"
+   "Disattivato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
@@ -8223,11 +8247,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
-   "Disattivo"
+   "Disattivato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
-   "Disattivo"
+   "Disattivato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
@@ -8243,7 +8267,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
-   "Disattivo"
+   "Disattivato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL,
@@ -10073,11 +10097,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_FOCUS_ON,
-   "Priorità del gioco attivato"
+   "Gioco in primo piano attivato"
    )
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
-   "Priorità del gioco disattivato"
+   "Gioco in primo piano disattivato"
    )
 MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
