@@ -303,6 +303,11 @@ static int action_get_title_dropdown_item(
                       (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST))
                      enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX;
 
+                  /* Mouse Index */
+                  if ((enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX) &&
+                      (enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST))
+                     enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX;
+
                   {
                      const char *title = msg_hash_to_str(enum_idx);
 
