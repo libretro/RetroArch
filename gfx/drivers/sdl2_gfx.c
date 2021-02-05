@@ -567,7 +567,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (vid->menu.active)
+   if (menu_is_alive && vid->menu.active)
       SDL_RenderCopyEx(vid->renderer, vid->menu.tex, NULL, &scrn_transform, 270, &scrn_origin, SDL_FLIP_NONE);
 
    if (msg)
