@@ -140,6 +140,8 @@ static void sdl_pad_connect(unsigned id)
 #endif
 #endif
 
+   RARCH_LOG("[SDL]: Autoconfigure device %s:%d:%d:%d\n", sdl_joypad_name(id), id, vendor, product);
+
    input_autoconfigure_connect(
          sdl_joypad_name(id),
          NULL,
@@ -266,6 +268,8 @@ static bool sdl_joypad_init(void *data)
       return false;
 
 #if HAVE_SDL2
+   SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+
    g_has_haptic = false;
    if (SDL_InitSubSystem(SDL_INIT_HAPTIC) < 0)
       RARCH_WARN("[SDL]: Failed to initialize haptic device support: %s\n",
