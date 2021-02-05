@@ -152,7 +152,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_input_overlay,                  DISPLAYLIST_
 #ifdef HAVE_VIDEO_LAYOUT
 GENERIC_DEFERRED_PUSH(deferred_push_video_layout_path,              DISPLAYLIST_VIDEO_LAYOUT_PATH)
 #endif
-GENERIC_DEFERRED_PUSH(deferred_push_video_font_path,                DISPLAYLIST_FONTS)
+GENERIC_DEFERRED_PUSH(deferred_push_video_font_path,                DISPLAYLIST_VIDEO_FONTS)
 GENERIC_DEFERRED_PUSH(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
 GENERIC_DEFERRED_PUSH(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
 GENERIC_DEFERRED_PUSH(deferred_push_disc_information,               DISPLAYLIST_DISC_INFO)
