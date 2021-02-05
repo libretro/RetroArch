@@ -298,6 +298,11 @@ static int action_get_title_dropdown_item(
                       (enum_idx <= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_LAST))
                      enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE;
 
+                  /* Device Index */
+                  if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX) &&
+                      (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST))
+                     enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX;
+
                   {
                      const char *title = msg_hash_to_str(enum_idx);
 
@@ -1649,6 +1654,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,            action_get_title_dropdown_manual_content_scan_core_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,                               action_get_title_dropdown_disk_index},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,                        action_get_title_dropdown_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_INDEX,                       action_get_title_dropdown_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,                        action_get_title_dropdown_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,                    action_get_title_dropdown_input_description_kbd},
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,                                          action_get_quick_menu_views_settings_list},
