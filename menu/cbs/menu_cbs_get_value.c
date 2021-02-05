@@ -1807,6 +1807,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          break;
 #endif
       case FILE_TYPE_FONT:
+      case FILE_TYPE_VIDEO_FONT:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_font);
          break;

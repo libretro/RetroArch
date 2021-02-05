@@ -1951,6 +1951,7 @@ static int generic_menu_iterate(
                switch (type)
                {
                   case FILE_TYPE_FONT:
+                  case FILE_TYPE_VIDEO_FONT:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_FONT;
                      break;
                   case FILE_TYPE_RDB:
@@ -32508,6 +32509,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL();
    settings_t *settings        = p_rarch->configuration_settings;
 #if defined(HAVE_GFX_WIDGETS)
+   bool video_font_enable      = settings->bools.video_font_enable;
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
 
    /* By default, we want display widgets to persist through driver reinits. */
@@ -32608,7 +32610,13 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    core_info_init_current_core();
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (menu_enable_widgets && video_driver_has_widgets())
+   /* Note that we only enable widgets if 'video_font_enable'
+    * is true. 'video_font_enable' corresponds to the generic
+    * 'On-Screen Notifications' setting, which should serve as
+    * a global notifications on/off toggle switch */
+   if (video_font_enable &&
+       menu_enable_widgets &&
+       video_driver_has_widgets())
    {
       bool rarch_force_fullscreen = p_rarch->rarch_force_fullscreen;
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||

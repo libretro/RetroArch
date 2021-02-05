@@ -154,6 +154,8 @@ enum msg_file_type
 
    FILE_TYPE_SIDELOAD_CORE,
 
+   FILE_TYPE_VIDEO_FONT,
+
    FILE_TYPE_LAST
 };
 
