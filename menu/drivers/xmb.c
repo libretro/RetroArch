@@ -2876,6 +2876,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ROOM_RELAY:
          return xmb->textures.list[XMB_TEXTURE_ROOM_RELAY];
 #endif
+      case MENU_SETTINGS_INPUT_LIBRETRO_DEVICE:
+         return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE:
          return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
    }
@@ -2905,10 +2907,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          /* Input User # Binds only */
          {
             input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if ( type == input_id)
+               return xmb->textures.list[XMB_TEXTURE_SETTING];
             if ( type == input_id + 1)
                return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
 #ifdef HAVE_LIBNX
-            // account for the additional split joycon option in Input # Binds
+            /* account for the additional split joycon option in Input # Binds */
             input_id++;
 #endif
             if ( type == input_id + 2)
@@ -2994,6 +2998,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          if ( type == (input_id + 23))
             return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U];
       }
+
+   if (
+         (type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN) &&
+         (type <= MENU_SETTINGS_REMAPPING_PORT_END)
+      )
+      return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
 
    if (checked)
       return xmb->textures.list[XMB_TEXTURE_CHECKMARK];

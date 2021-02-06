@@ -442,6 +442,8 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
 #endif
       case MENU_SETTING_ACTION:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
+      case MENU_SETTINGS_INPUT_LIBRETRO_DEVICE:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
    }
@@ -471,10 +473,12 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
          {
             input_id = MENU_SETTINGS_INPUT_BEGIN;
+            if (type == input_id)
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
             if (type == input_id + 1)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
 #ifdef HAVE_LIBNX
-            // account for the additional split joycon option in Input User # Binds
+            /* account for the additional split joycon option in Input User # Binds */
             input_id++;
 #endif
             if (type == input_id + 2)
@@ -560,6 +564,13 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          if (type == (input_id + 23))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_STCK_U];
       }
+
+   if (
+         (type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN) &&
+         (type <= MENU_SETTINGS_REMAPPING_PORT_END)
+      )
+      return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
+
    return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING];
 }
 
