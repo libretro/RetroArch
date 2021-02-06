@@ -38,15 +38,13 @@
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 static int bootDeviceID;
-char cwd[FILENAME_MAX];
+static char cwd[FILENAME_MAX];
 
 static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
 
-   /* TODO/FIXME - third parameter here needs to be size of
-    * rootDevicePath(bootDeviceID) */
-   strlcpy(user_path, rootDevicePath(bootDeviceID), sizeof(user_path));
+   strlcpy(user_path, cwd, sizeof(user_path));
    strlcat(user_path, "RETROARCH", sizeof(user_path));
 
    /* Content in the same folder */
@@ -101,6 +99,37 @@ static void reset_IOP()
    sbv_patch_disable_prefix_check();
 }
 
+static void load_modules()
+{
+   /* I/O Files */
+   SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&sio2man_irx, size_sio2man_irx, 0, NULL, NULL);
+
+   /* Memory Card */
+   SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL, NULL);
+
+   /* USB */
+   SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
+
+#if !defined(DEBUG)
+   /* CDFS */
+   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
+#endif
+
+#ifndef IS_SALAMANDER
+   /* Controllers */
+   SifExecModuleBuffer(&mtapman_irx, size_mtapman_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&padman_irx, size_padman_irx, 0, NULL, NULL);
+
+   /* Audio */
+   SifExecModuleBuffer(&libsd_irx, size_libsd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
+#endif
+}
+
 static void frontend_ps2_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -143,34 +172,10 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 static void frontend_ps2_init(void *data)
 {
    reset_IOP();
+   load_modules();
 
-   /* I/O Files */
-   SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&sio2man_irx, size_sio2man_irx, 0, NULL, NULL);
-
-   /* Memory Card */
-   SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL, NULL);
-
-   /* USB */
-   SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
-
-#if !defined(DEBUG)
-   /* CDFS */
-   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
-#endif
 
 #ifndef IS_SALAMANDER
-   /* Controllers */
-   SifExecModuleBuffer(&mtapman_irx, size_mtapman_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&padman_irx, size_padman_irx, 0, NULL, NULL);
-
-   /* Audio */
-   SifExecModuleBuffer(&libsd_irx, size_libsd_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
-
    /* Initializes audsrv library */
    if (audsrv_init())
    {
@@ -201,7 +206,7 @@ static void frontend_ps2_init(void *data)
 #endif
 
 #if !defined(DEBUG)
-   waitUntilDeviceIsReady(bootDeviceID);
+   waitUntilDeviceIsReady(cwd);
 #endif
 }
 
@@ -272,7 +277,6 @@ static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
    frontend_ps2_exec(s, should_load_content);
 }
 
-static void frontend_ps2_shutdown(bool unused) { }
 static int frontend_ps2_get_rating(void) { return 10; }
 
 enum frontend_architecture frontend_ps2_get_arch(void)
@@ -337,7 +341,7 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
 #else
    frontend_ps2_set_fork,        /* set_fork */
 #endif
-   frontend_ps2_shutdown,        /* shutdown */
+   NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
    frontend_ps2_get_rating,      /* get_rating */

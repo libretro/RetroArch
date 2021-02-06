@@ -45,6 +45,6 @@ char *rootDevicePath(enum BootDeviceIDs device_id);
 
 enum BootDeviceIDs getBootDeviceID(char *path);
 
-bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id);
+bool waitUntilDeviceIsReady(char *path);
 
 #endif
