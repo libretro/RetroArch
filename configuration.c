@@ -834,8 +834,8 @@ const char *config_get_default_video(void)
          return "sdl_dingux";
       case VIDEO_SDL:
          return "sdl";
-      case VIDEO_SDL2:
-         return "sdl2";
+      //case VIDEO_SDL2:
+      //   return "sdl2";
       case VIDEO_EXT:
          return "ext";
       case VIDEO_VG:

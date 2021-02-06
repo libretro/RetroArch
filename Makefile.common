@@ -1403,8 +1403,7 @@ endif
 
 ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
-   OBJ += gfx/drivers/sdl2_gfx.o \
-			 gfx/common/sdl2_common.o
+   OBJ += gfx/common/sdl2_common.o
    DEF_FLAGS += $(SDL2_CFLAGS)
    LIBS += $(SDL2_LIBS)
 else ifeq ($(HAVE_SDL), 1)

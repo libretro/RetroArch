@@ -515,9 +515,9 @@ static const video_driver_t *video_drivers[] = {
 #if defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
    &video_sdl,
 #endif
-#ifdef HAVE_SDL2
-   &video_sdl2,
-#endif
+//#ifdef HAVE_SDL2
+//   &video_sdl2,
+//#endif
 #ifdef HAVE_SDL_DINGUX
    &video_sdl_dingux,
 #endif
