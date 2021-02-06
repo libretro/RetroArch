@@ -246,15 +246,9 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
    gfx_display_gl_viewport(draw, gl);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   math_matrix_4x4* mvp = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)gfx_display_gl_get_default_mvp(gl);
-
-   //matrix_4x4_rotate_z(*mvp, M_PI * 90 / 180.0f);
-
    gl->shader->set_coords(gl->shader_data, draw->coords);
-   gl->shader->set_mvp(gl->shader_data, mvp);
-
-   //RARCH_LOG("[GL] drawing display\n");
+   gl->shader->set_mvp(gl->shader_data, draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
+      : (math_matrix_4x4*)gfx_display_gl_get_default_mvp(gl));
 
    glDrawArrays(gfx_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);
