@@ -2918,13 +2918,13 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             if ( type == input_id + 2)
                return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
             if ( type == input_id + 3)
-               return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
-            if ( type == input_id + 4)
-               return xmb->textures.list[XMB_TEXTURE_RELOAD];
-            if ( type == input_id + 5)
-               return xmb->textures.list[XMB_TEXTURE_SAVING];
-            if ( type == input_id + 6)
                return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
+            if ( type == input_id + 4)
+               return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
+            if ( type == input_id + 5)
+               return xmb->textures.list[XMB_TEXTURE_RELOAD];
+            if ( type == input_id + 6)
+               return xmb->textures.list[XMB_TEXTURE_SAVING];
             if ((type > (input_id + 30)) && (type < (input_id + 42)))
                return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
             if ( type == input_id + 42)
