@@ -182,7 +182,7 @@ static void gl_core_raster_font_draw_vertices(gl_core_raster_t *font,
    if (  font->gl &&
          font->gl->pipelines.font_loc.flat_ubo_vertex >= 0)
       glUniform4fv(font->gl->pipelines.font_loc.flat_ubo_vertex,
-                   4, font->gl->mvp_no_rot.data);
+                   4, font->gl->mvp_screen_rot.data);
 
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);

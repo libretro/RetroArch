@@ -22,6 +22,7 @@
 #include "../../retroarch.h"
 #include "../font_driver.h"
 #include "../common/gl_common.h"
+#include "../../verbosity.h"
 
 #include "../gfx_display.h"
 
@@ -98,7 +99,7 @@ static void *gfx_display_gl_get_default_mvp(void *data)
    if (!gl)
       return NULL;
 
-   return &gl->mvp_no_rot;
+   return &gl->mvp_screen_rot;
 }
 
 static GLenum gfx_display_prim_to_gl_enum(
@@ -138,7 +139,7 @@ static void gfx_display_gl_viewport(gfx_display_ctx_draw_t *draw,
       void *data)
 {
    if (draw)
-      glViewport(draw->x, draw->y, draw->width, draw->height);
+      glViewport(draw->y, draw->x, draw->height, draw->width);
 }
 
 #ifdef MALI_BUG
@@ -245,11 +246,15 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
    gfx_display_gl_viewport(draw, gl);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   gl->shader->set_coords(gl->shader_data, draw->coords);
-   gl->shader->set_mvp(gl->shader_data,
-         draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)gfx_display_gl_get_default_mvp(gl));
+   math_matrix_4x4* mvp = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
+      : (math_matrix_4x4*)gfx_display_gl_get_default_mvp(gl);
 
+   //matrix_4x4_rotate_z(*mvp, M_PI * 90 / 180.0f);
+
+   gl->shader->set_coords(gl->shader_data, draw->coords);
+   gl->shader->set_mvp(gl->shader_data, mvp);
+
+   //RARCH_LOG("[GL] drawing display\n");
 
    glDrawArrays(gfx_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);

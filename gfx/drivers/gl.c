@@ -375,13 +375,13 @@ static void gl2_set_projection(gl_t *gl,
 
    if (!allow_rotate)
    {
-      gl->mvp = gl->mvp_no_rot;
+      gl->mvp = gl->mvp_screen_rot;
       return;
    }
 
    math_matrix_4x4 rot;
    matrix_4x4_rotate_z(rot, M_PI * gl->rotation / 180.0f);
-   matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
+   matrix_4x4_multiply(gl->mvp, rot, gl->mvp_screen_rot);
 }
 
 static void gl2_set_viewport(gl_t *gl,
@@ -465,7 +465,7 @@ static void gl2_set_viewport(gl_t *gl,
       gl->vp.y *= 2;
 #endif
 
-   glViewport(gl->vp.x, gl->vp.y, gl->vp.height, gl->vp.width);
+   glViewport(gl->vp.y, gl->vp.x, gl->vp.height, gl->vp.width);
    gl2_set_projection(gl, &default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
@@ -1900,7 +1900,7 @@ static void gl2_render_overlay(gl_t *gl)
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
    if (gl->overlay_full_screen)
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+      glViewport(gl->vp.y, gl->vp.x, gl->vp.height, gl->vp.width);
 }
 #endif
 
@@ -2099,7 +2099,7 @@ static void gl2_set_rotation(void *data, unsigned rotation)
    if (!gl)
       return;
 
-   gl->rotation = 90 * (rotation + 1);
+   gl->rotation = 90 * rotation;
    gl2_set_projection(gl, &default_ortho, true);
 }
 
@@ -2457,7 +2457,7 @@ static INLINE void gl2_draw_texture(gl_t *gl)
    {
       glViewport(0, 0, height, width);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.height, gl->vp.width);
+      glViewport(gl->vp.y, gl->vp.x, gl->vp.height, gl->vp.width);
    }
    else
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -2570,7 +2570,7 @@ static void gl2_video_layout_viewport(gl_t *gl)
       bounds = video_layout_screen(0);
 
       glViewport(
-         bounds->x, gl->video_height - bounds->y - bounds->h,
+         gl->video_height - bounds->y - bounds->h, bounds->x,
          bounds->h, bounds->w
       );
    }

@@ -273,7 +273,7 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font,
    {
       font->gl->shader->set_coords(font->gl->shader_data, coords);
       font->gl->shader->set_mvp(font->gl->shader_data,
-            &font->gl->mvp_no_rot);
+            &font->gl->mvp_screen_rot);
    }
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
@@ -404,7 +404,7 @@ static void gl_raster_font_render_message(
 static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
       gl_raster_t *font, bool full_screen)
 {
-   video_driver_set_viewport(width, height, full_screen, false);
+   video_driver_set_viewport(height, width, full_screen, false);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -516,7 +516,7 @@ static void gl_raster_font_render_msg(
          glBindTexture(GL_TEXTURE_2D,
                font->gl->texture[font->gl->tex_index]);
          glDisable(GL_BLEND);
-         video_driver_set_viewport(width, height, false, true);
+         video_driver_set_viewport(height, width, false, true);
       }
    }
 }
@@ -551,7 +551,7 @@ static void gl_raster_font_flush_block(unsigned width, unsigned height,
       glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
       glDisable(GL_BLEND);
-      video_driver_set_viewport(width, height, block->fullscreen, true);
+      video_driver_set_viewport(height, width, block->fullscreen, true);
    }
 }
 
