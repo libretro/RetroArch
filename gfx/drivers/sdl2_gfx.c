@@ -605,7 +605,8 @@ static bool sdl2_gfx_focus(void *data)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    unsigned flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
-   return (SDL_GetWindowFlags(vid->window) & flags) == flags;
+   //return (SDL_GetWindowFlags(vid->window) & flags) == flags;
+   return true;
 }
 
 static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)

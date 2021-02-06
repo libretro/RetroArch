@@ -359,7 +359,8 @@ static bool sdl_ctx_has_focus(void *data)
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
    flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
-   return (SDL_GetWindowFlags(sdl->win) & flags) == flags;
+   //return (SDL_GetWindowFlags(sdl->win) & flags) == flags;
+   return true;
 #else
    flags = (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
    return (SDL_GetAppState() & flags) == flags;
