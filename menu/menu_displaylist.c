@@ -9478,7 +9478,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
 
                if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
-                        key_type, PARSE_ONLY_UINT, true, 0) == 0)
+                        key_type, PARSE_ONLY_UINT, true, MENU_SETTINGS_INPUT_LIBRETRO_DEVICE) == 0)
                   count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
                         key_analog, PARSE_ONLY_UINT, true, MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE) == 0)
