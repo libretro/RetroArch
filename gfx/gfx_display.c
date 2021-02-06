@@ -762,8 +762,6 @@ void gfx_display_draw(gfx_display_ctx_draw_t *draw,
    if (draw->width <= 0)
       return;
 
-   draw->y = video_height - draw->height - draw->y;
-
    dispctx->draw(draw, data, video_width, video_height);
 }
 

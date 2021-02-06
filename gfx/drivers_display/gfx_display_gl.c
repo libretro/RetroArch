@@ -243,6 +243,7 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
    if (!draw->coords->lut_tex_coord)
       draw->coords->lut_tex_coord = gfx_display_gl_get_default_tex_coords();
 
+   draw->y = video_height - draw->height - draw->y;
    gfx_display_gl_viewport(draw, gl);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
@@ -373,7 +374,7 @@ static void gfx_display_gl_scissor_begin(
       int x, int y,
       unsigned width, unsigned height)
 {
-   glScissor(x, video_height - y - height, width, height);
+   glScissor(video_height - y - height, x, height, width);
    glEnable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG
    /* TODO/FIXME: If video width/height changes between
@@ -393,7 +394,7 @@ static void gfx_display_gl_scissor_end(
       unsigned video_width,
       unsigned video_height)
 {
-   glScissor(0, 0, video_width, video_height);
+   glScissor(0, 0, video_height, video_width);
    glDisable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG
    scissor_set_rectangle(0, video_width - 1, 0, video_height - 1, 0);
