@@ -228,10 +228,16 @@ static BOOL winraw_set_mouse_input(HWND window, bool grab)
 {
    RAWINPUTDEVICE rid;
 
+#if 0
    if (window)
       rid.dwFlags  = grab ? RIDEV_CAPTUREMOUSE | RIDEV_NOLEGACY : 0;
    else
       rid.dwFlags  = RIDEV_REMOVE;
+#else
+   rid.dwFlags     = 0;
+   if (!window)
+      rid.dwFlags  = RIDEV_REMOVE;
+#endif
 
    rid.hwndTarget  = window;
    rid.usUsagePage = 0x01; /* generic desktop */

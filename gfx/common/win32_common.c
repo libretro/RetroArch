@@ -1019,7 +1019,12 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
 #endif
          break;
       case WM_SETFOCUS:
-         win32_clip_window(input_mouse_grabbed());
+         if (input_mouse_grabbed())
+            win32_clip_window(true);
+         break;
+      case WM_KILLFOCUS:
+         if (input_mouse_grabbed())
+            win32_clip_window(false);
          break;
    }
 
@@ -1128,7 +1133,12 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 #endif
          break;
       case WM_SETFOCUS:
-         win32_clip_window(input_mouse_grabbed());
+         if (input_mouse_grabbed())
+            win32_clip_window(true);
+         break;
+      case WM_KILLFOCUS:
+         if (input_mouse_grabbed())
+            win32_clip_window(false);
          break;
    }
 
