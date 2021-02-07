@@ -35,7 +35,8 @@
 #include <string/stdstring.h>
 
 #include "../input_driver.h"
-
+#include "../../configuration.h"
+#include "../../config.def.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../verbosity.h"
@@ -81,6 +82,7 @@ struct udev_joypad
    uint8_t axes_bind[ABS_MAX];
    uint16_t strength[2];
    uint16_t configured_strength[2];
+   float rumble_gain;
 
    char ident[255];
    bool has_set_ff[2];
@@ -145,6 +147,36 @@ static int udev_open_joystick(const char *path)
 error:
    close(fd);
    return -1;
+}
+
+static bool udev_set_rumble_gain(unsigned i, float gain)
+{
+   struct input_event ie;
+   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[i];
+
+   if (pad->fd < 0)
+      return false;
+
+   if (pad->rumble_gain == gain)
+      return true;
+
+   /* Does not support > 1 gains */
+   if (gain > 1.0f)
+      return false;
+
+   ie.type = EV_FF;
+   ie.code = FF_GAIN;
+   ie.value = 0xFFFF * gain;
+
+   if (write(pad->fd, &ie, sizeof(ie)) < (ssize_t)sizeof(ie))
+   {
+      RARCH_ERR("[udev]: Failed to set rumble gain on pad #%u.\n", i);
+      return false;
+   }
+
+   pad->rumble_gain = gain;
+
+   return true;
 }
 
 static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
@@ -264,6 +296,15 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
          RARCH_LOG(
                "[udev]: Pad #%u (%s) supports %d force feedback effects.\n",
                p, path, pad->num_effects);
+   }
+
+   /* Set rumble gain here, if supported */
+   if (test_bit(FF_RUMBLE, ffbit))
+   {
+      settings_t *settings = config_get_ptr();
+      unsigned rumble_gain = settings ? settings->uints.input_rumble_gain
+                                      : DEFAULT_RUMBLE_GAIN;
+      udev_set_rumble_gain(p, (float)rumble_gain);
    }
 
    return ret;
@@ -747,6 +788,7 @@ input_device_driver_t udev_joypad = {
    udev_joypad_axis,
    udev_joypad_poll,
    udev_set_rumble,
+   udev_set_rumble_gain,
    udev_joypad_name,
    "udev",
 };

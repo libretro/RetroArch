@@ -936,7 +936,8 @@ static input_device_driver_t null_joypad = {
    NULL, /* get_buttons */
    NULL, /* axis */
    NULL, /* poll */
-   NULL,
+   NULL, /* rumble */
+   NULL, /* rumble_gain */
    NULL, /* name */
    "null",
 };

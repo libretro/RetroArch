@@ -271,6 +271,7 @@ input_device_driver_t dos_joypad = {
    dos_joypad_axis,
    dos_joypad_poll,
    NULL,
+   NULL,
    dos_joypad_name,
    "dos",
 };

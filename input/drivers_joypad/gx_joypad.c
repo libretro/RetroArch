@@ -668,6 +668,7 @@ input_device_driver_t gx_joypad = {
    gx_joypad_axis,
    gx_joypad_poll,
    NULL,
+   NULL,
    gx_joypad_name,
    "gx",
 };
