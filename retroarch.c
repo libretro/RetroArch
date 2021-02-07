@@ -13372,7 +13372,15 @@ bool command_event(enum event_command cmd, void *data)
 
 #ifdef HAVE_CONFIGFILE
             if (p_rarch->runloop_overrides_active)
+            {
                command_event_disable_overrides(p_rarch);
+
+               if (!settings->bools.video_fullscreen)
+               {
+                  video_driver_show_mouse();
+                  input_driver_ungrab_mouse(p_rarch);
+               }
+            }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             retroarch_unset_runtime_shader_preset(p_rarch);
@@ -14419,8 +14427,6 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool ret              = false;
             bool grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
-            bool video_fullscreen =
-                  settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
 
             grab_mouse_state = !grab_mouse_state;
 
@@ -14438,7 +14444,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (grab_mouse_state)
                video_driver_hide_mouse();
-            else if (!video_fullscreen)
+            else
                video_driver_show_mouse();
          }
          break;
