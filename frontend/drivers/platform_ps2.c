@@ -38,53 +38,67 @@
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 static int bootDeviceID;
-char cwd[FILENAME_MAX];
+static char cwd[FILENAME_MAX];
 
 static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
 
-   /* TODO/FIXME - third parameter here needs to be size of
-    * rootDevicePath(bootDeviceID) */
-   strlcpy(user_path, rootDevicePath(bootDeviceID), sizeof(user_path));
-   strlcat(user_path, "RETROARCH", sizeof(user_path));
+   sprintf(user_path, "%s/retroarch", cwd);
+   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], cwd, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    /* Content in the same folder */
+
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], cwd,
          "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], cwd,
          "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 
+   /* user data */
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], user_path,
+         "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], user_path,
+         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], user_path,
+         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
-         "CHEATS", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], user_path,
-         "CONFIG", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], user_path,
-         "DOWNLOADS", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+         "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
-         "PLAYLISTS", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-         "REMAPS", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path,
+         "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
-         "SAVEFILES", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+         "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], user_path,
-         "SAVESTATES", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], user_path,
-         "SCREENSHOTS", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+         "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
-         "SYSTEM", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
-         "LOGS", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-
-   /* cache dir */
+         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], user_path,
-         "TEMP", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+         "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], user_path,
+         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], user_path,
+         "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], user_path,
+         "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
    /* history and main config */
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
    fill_pathname_join(g_defaults.path_config, user_path,
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
+
+#ifndef IS_SALAMANDER
+   dir_check_defaults("custom.ini");
+#endif
 }
 
 static void reset_IOP()
@@ -99,6 +113,37 @@ static void reset_IOP()
    SifInitRpc(0);
    sbv_patch_enable_lmb();
    sbv_patch_disable_prefix_check();
+}
+
+static void load_modules()
+{
+   /* I/O Files */
+   SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&sio2man_irx, size_sio2man_irx, 0, NULL, NULL);
+
+   /* Memory Card */
+   SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL, NULL);
+
+   /* USB */
+   SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
+
+#if !defined(DEBUG)
+   /* CDFS */
+   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
+#endif
+
+#ifndef IS_SALAMANDER
+   /* Controllers */
+   SifExecModuleBuffer(&mtapman_irx, size_mtapman_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&padman_irx, size_padman_irx, 0, NULL, NULL);
+
+   /* Audio */
+   SifExecModuleBuffer(&libsd_irx, size_libsd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
+#endif
 }
 
 static void frontend_ps2_get_env(int *argc, char *argv[],
@@ -143,34 +188,10 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 static void frontend_ps2_init(void *data)
 {
    reset_IOP();
+   load_modules();
 
-   /* I/O Files */
-   SifExecModuleBuffer(&iomanX_irx, size_iomanX_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&fileXio_irx, size_fileXio_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&sio2man_irx, size_sio2man_irx, 0, NULL, NULL);
-
-   /* Memory Card */
-   SifExecModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL, NULL);
-
-   /* USB */
-   SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
-
-#if !defined(DEBUG)
-   /* CDFS */
-   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
-#endif
 
 #ifndef IS_SALAMANDER
-   /* Controllers */
-   SifExecModuleBuffer(&mtapman_irx, size_mtapman_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&padman_irx, size_padman_irx, 0, NULL, NULL);
-
-   /* Audio */
-   SifExecModuleBuffer(&libsd_irx, size_libsd_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
-
    /* Initializes audsrv library */
    if (audsrv_init())
    {
@@ -201,7 +222,7 @@ static void frontend_ps2_init(void *data)
 #endif
 
 #if !defined(DEBUG)
-   waitUntilDeviceIsReady(bootDeviceID);
+   waitUntilDeviceIsReady(cwd);
 #endif
 }
 
@@ -272,7 +293,6 @@ static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
    frontend_ps2_exec(s, should_load_content);
 }
 
-static void frontend_ps2_shutdown(bool unused) { }
 static int frontend_ps2_get_rating(void) { return 10; }
 
 enum frontend_architecture frontend_ps2_get_arch(void)
@@ -337,7 +357,7 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
 #else
    frontend_ps2_set_fork,        /* set_fork */
 #endif
-   frontend_ps2_shutdown,        /* shutdown */
+   NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
    frontend_ps2_get_rating,      /* get_rating */
