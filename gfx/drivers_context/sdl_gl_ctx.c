@@ -189,7 +189,7 @@ static bool sdl_ctx_set_video_mode(void *data,
 
    if (sdl->win)
    {
-      SDL_SetWindowSize(sdl->win, width, height);
+      SDL_SetWindowSize(sdl->win, height, width);
 
       if (fullscreen)
          SDL_SetWindowFullscreen(sdl->win, fsflag);
@@ -200,13 +200,13 @@ static bool sdl_ctx_set_video_mode(void *data,
 
       sdl->win = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
-                               width, height, SDL_WINDOW_OPENGL | fsflag);
+                               height, width, SDL_WINDOW_OPENGL | fsflag);
    }
 #else
    if (fullscreen)
       fsflag = SDL_FULLSCREEN;
 
-   sdl->win = SDL_SetVideoMode(width, height, 0, SDL_OPENGL | fsflag);
+   sdl->win = SDL_SetVideoMode(height, width, 0, SDL_OPENGL | fsflag);
 #endif
 
    if (!sdl->win)
@@ -275,8 +275,8 @@ static void sdl_ctx_get_video_size(void *data,
          mode = **modes;
 #endif
 
-      *width  = mode.w;
-      *height = mode.h;
+      *width  = mode.h;
+      *height = mode.w;
    }
 }
 
@@ -345,8 +345,8 @@ static void sdl_ctx_check_window(void *data, bool *quit,
 
    if (sdl->resized)
    {
-      *width         = sdl->new_width;
-      *height        = sdl->new_height;
+      *width         = sdl->new_height;
+      *height        = sdl->new_width;
       *resize        = true;
       sdl->resized   = false;
    }
