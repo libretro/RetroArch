@@ -219,7 +219,6 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return generic_action_ok_displaylist_push(path, _path, label, type, idx, entry_idx, _id); \
 }
 
-
 #define DEFAULT_ACTION_OK_HELP(funcname, _id, _id2) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
@@ -834,6 +833,16 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = new_path;
          info_label         = label;
          dl_type            = DISPLAYLIST_GENERIC;
+
+         /* If this is the 'Start Directory' content
+          * list, use last selected directory/file */
+         if ((type == MENU_SETTING_ACTION_FAVORITES_DIR) &&
+             settings->bools.use_last_start_directory)
+         {
+            info_path       = menu_driver_get_last_start_directory();
+            menu_driver_set_pending_selection(menu_driver_get_last_start_file_name());
+         }
+
          break;
       case ACTION_OK_DL_SCAN_DIR_LIST:
          filebrowser_set_type(FILEBROWSER_SCAN_DIR);
@@ -1533,6 +1542,7 @@ static int file_load_with_detect_core_wrapper(
                   return -1;
 
                content_add_to_playlist(def_info.s);
+               menu_driver_set_last_start_content(def_info.s);
 
                ret = 0;
                break;
@@ -1917,6 +1927,7 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
             (enum rarch_core_type)_type, NULL, NULL))
       return -1;
    content_add_to_playlist(_path);
+   menu_driver_set_last_start_content(_path);
    return 0;
 }
 
@@ -3505,6 +3516,7 @@ static int action_ok_load_core_deferred(const char *path,
             NULL, NULL))
       return -1;
    content_add_to_playlist(path);
+   menu_driver_set_last_start_content(path);
 
    return 0;
 }
@@ -4012,6 +4024,7 @@ static int action_ok_file_load_detect_core(const char *path,
             NULL, NULL))
       return -1;
    content_add_to_playlist(menu->detect_content_path);
+   menu_driver_set_last_start_content(menu->detect_content_path);
 
    return 0;
 }
@@ -5411,7 +5424,7 @@ static int action_ok_open_picker(const char *path,
 
    ret = generic_action_ok_displaylist_push(path, new_path,
       msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-      type, idx,
+      MENU_SETTING_ACTION_FAVORITES_DIR, idx,
       entry_idx, ACTION_OK_DL_CONTENT_LIST);
 
    free(new_path);
@@ -6400,6 +6413,8 @@ static int action_ok_load_archive_detect_core(const char *path,
                      CORE_TYPE_PLAIN,
                      NULL, NULL))
                ret = -1;
+            else
+               menu_driver_set_last_start_content(def_info.s);
          }
          break;
       case 0:

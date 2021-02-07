@@ -1442,7 +1442,7 @@ static int ozone_list_push(void *data, void *userdata,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                   msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
                   MENU_ENUM_LABEL_FAVORITES,
-                  MENU_SETTING_ACTION, 0, 0);
+                  MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0);
 
             core_info_get_list(&list);
             if (core_info_list_num_info_files(list))
