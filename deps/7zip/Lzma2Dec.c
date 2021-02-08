@@ -66,7 +66,7 @@ static SRes Lzma2Dec_GetOldProps(uint8_t prop, uint8_t *props)
 SRes Lzma2Dec_AllocateProbs(CLzma2Dec *p, uint8_t prop, ISzAlloc *alloc)
 {
    uint8_t props[LZMA_PROPS_SIZE];
-   int result = Lzma2Dec_GetOldProps(prop, props);
+   SRes result = Lzma2Dec_GetOldProps(prop, props);
    if (result != 0)
       return result;
    return LzmaDec_AllocateProbs(&p->decoder, props, LZMA_PROPS_SIZE, alloc);
@@ -75,7 +75,7 @@ SRes Lzma2Dec_AllocateProbs(CLzma2Dec *p, uint8_t prop, ISzAlloc *alloc)
 SRes Lzma2Dec_Allocate(CLzma2Dec *p, uint8_t prop, ISzAlloc *alloc)
 {
    uint8_t props[LZMA_PROPS_SIZE];
-   int result = Lzma2Dec_GetOldProps(prop, props);
+   SRes result = Lzma2Dec_GetOldProps(prop, props);
    if (result != 0)
       return result;
    return LzmaDec_Allocate(&p->decoder, props, LZMA_PROPS_SIZE, alloc);
@@ -327,16 +327,16 @@ SRes Lzma2Decode(uint8_t *dest, size_t *destLen, const uint8_t *src, size_t *src
       uint8_t prop, ELzmaFinishMode finishMode, ELzmaStatus *status, ISzAlloc *alloc)
 {
    SRes res;
-   int result;
+   SRes result;
    CLzma2Dec decoder;
    size_t outSize = *destLen, inSize = *srcLen;
    uint8_t props[LZMA_PROPS_SIZE];
 
    Lzma2Dec_Construct(&decoder);
 
-   *destLen = *srcLen = 0;
-   *status = LZMA_STATUS_NOT_SPECIFIED;
-   decoder.decoder.dic = dest;
+   *destLen                   = *srcLen = 0;
+   *status                    = LZMA_STATUS_NOT_SPECIFIED;
+   decoder.decoder.dic        = dest;
    decoder.decoder.dicBufSize = outSize;
 
    result = Lzma2Dec_GetOldProps(prop, props);

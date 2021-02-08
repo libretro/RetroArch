@@ -9,8 +9,8 @@
 
 SRes SeqInStream_Readuint8_t(ISeqInStream *stream, uint8_t *buf)
 {
-   size_t processed = 1;
-   int result       = stream->Read(stream, buf, &processed);
+   size_t processed  = 1;
+   SRes result       = stream->Read(stream, buf, &processed);
    if (result != 0)
       return result;
    if (processed != 1)
@@ -22,8 +22,8 @@ SRes SeqInStream_Read2(ISeqInStream *stream, void *buf, size_t size, SRes errorT
 {
    while (size != 0)
    {
-      size_t processed = size;
-      int result       = stream->Read(stream, buf, &processed);
+      size_t processed  = size;
+      SRes result       = stream->Read(stream, buf, &processed);
       if (result    != 0)
          return result;
       if (processed == 0)
@@ -48,7 +48,7 @@ SRes LookInStream_SeekTo(ILookInStream *stream, uint64_t offset)
 
 SRes LookInStream_LookRead(ILookInStream *stream, void *buf, size_t *size)
 {
-   int result;
+   SRes result;
    const void *lookBuf;
    if (*size == 0)
       return SZ_OK;
@@ -64,8 +64,8 @@ SRes LookInStream_Read2(ILookInStream *stream,
 {
    while (size != 0)
    {
-      size_t processed = size;
-      int result       = stream->Read(stream, buf, &processed);
+      size_t processed  = size;
+      SRes result       = stream->Read(stream, buf, &processed);
       if (result    != 0)
          return result;
       if (processed == 0)

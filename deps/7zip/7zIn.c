@@ -318,7 +318,7 @@ static SRes SzReaduint8_ts(CSzData *sd, uint8_t *data, size_t size)
    size_t i;
    for (i = 0; i < size; i++)
    {
-      int result = SzReaduint8_t(sd, data + i);
+      SRes result = SzReaduint8_t(sd, data + i);
       if (result != 0)
          return result;
    }
@@ -331,8 +331,8 @@ static SRes SzReaduint32_t(CSzData *sd, uint32_t *value)
    *value = 0;
    for (i = 0; i < 4; i++)
    {
-      uint8_t b  = 0;
-      int result = SzReaduint8_t(sd, &b);
+      uint8_t b   = 0;
+      SRes result = SzReaduint8_t(sd, &b);
       if (result != 0)
          return result;
       *value |= ((uint32_t)(b) << (8 * i));
@@ -345,7 +345,7 @@ static SRes SzReadNumber(CSzData *sd, uint64_t *value)
    int i;
    uint8_t firstuint8_t = 0;
    uint8_t mask         = 0x80;
-   int result           = SzReaduint8_t(sd, &firstuint8_t);
+   SRes result          = SzReaduint8_t(sd, &firstuint8_t);
 
    if (result != 0)
       return result;
@@ -354,7 +354,7 @@ static SRes SzReadNumber(CSzData *sd, uint64_t *value)
 
    for (i = 0; i < 8; i++)
    {
-      int result;
+      SRes result;
       uint8_t b         = 0;
       if ((firstuint8_t & mask) == 0)
       {
@@ -375,7 +375,7 @@ static SRes SzReadNumber(CSzData *sd, uint64_t *value)
 static SRes SzReadNumber32(CSzData *sd, uint32_t *value)
 {
    uint64_t value64;
-   int result       = SzReadNumber(sd, &value64);
+   SRes result      = SzReadNumber(sd, &value64);
    if (result != 0)
       return result;
    if (value64 >= 0x80000000)
@@ -403,7 +403,7 @@ static SRes SzSkeepDataSize(CSzData *sd, uint64_t size)
 static SRes SzSkeepData(CSzData *sd)
 {
    uint64_t size;
-   int result    = SzReadNumber(sd, &size);
+   SRes result    = SzReadNumber(sd, &size);
    if (result != 0)
       return result;
    return SzSkeepDataSize(sd, size);
@@ -414,7 +414,7 @@ static SRes SzReadArchiveProperties(CSzData *sd)
    for (;;)
    {
       uint64_t type;
-      int result    = SzReadID(sd, &type);
+      SRes result    = SzReadID(sd, &type);
       if (result != 0)
          return result;
       if (type == k7zIdEnd)
@@ -429,7 +429,7 @@ static SRes SzWaitAttribute(CSzData *sd, uint64_t attribute)
    for (;;)
    {
       uint64_t type;
-      int result    = SzReadID(sd, &type);
+      SRes result    = SzReadID(sd, &type);
       if (result != 0)
          return result;
       if (type == attribute)
@@ -453,7 +453,7 @@ static SRes SzReadBoolVector(
    {
       if (mask == 0)
       {
-         int result = SzReaduint8_t(sd, &b);
+         SRes result = SzReaduint8_t(sd, &b);
          if (result != 0)
             return result;
          mask       = 0x80;
@@ -468,7 +468,7 @@ static SRes SzReadBoolVector2(CSzData *sd, size_t numItems, uint8_t **v, ISzAllo
 {
    size_t i;
    uint8_t allAreDefined = 0;
-   int result            = SzReaduint8_t(sd, &allAreDefined);
+   SRes result           = SzReaduint8_t(sd, &allAreDefined);
 
    if (result != 0)
       return result;
@@ -488,7 +488,7 @@ static SRes SzReadHashDigests(
       ISzAlloc *alloc)
 {
    size_t i;
-   int result = SzReadBoolVector2(sd, numItems, digestsDefined, alloc);
+   SRes result = SzReadBoolVector2(sd, numItems, digestsDefined, alloc);
 
    if (result != 0)
       return result;
@@ -499,7 +499,7 @@ static SRes SzReadHashDigests(
    {
       if ((*digestsDefined)[i])
       {
-         int result = SzReaduint32_t(sd, (*digests) + i);
+         SRes result = SzReaduint32_t(sd, (*digests) + i);
          if (result != 0)
             return result;
       }
@@ -517,7 +517,7 @@ static SRes SzReadPackInfo(
       ISzAlloc *alloc)
 {
    uint32_t i;
-   int result = SzReadNumber(sd, dataOffset);
+   SRes result = SzReadNumber(sd, dataOffset);
 
    if (result != 0)
       return result;
@@ -572,7 +572,7 @@ static SRes SzReadPackInfo(
 static SRes SzReadSwitch(CSzData *sd)
 {
    uint8_t external = 0;
-   int result       = SzReaduint8_t(sd, &external);
+   SRes result      = SzReaduint8_t(sd, &external);
    if (result != 0)
       return result;
    if (external != 0)
@@ -588,7 +588,7 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
    uint32_t numInStreams   = 0;
    uint32_t numOutStreams  = 0;
    uint32_t numCoders      = 0;
-   int result              = SzReadNumber32(sd, &numCoders);
+   SRes result             = SzReadNumber32(sd, &numCoders);
 
    if (result != 0)
       return result;
@@ -607,7 +607,7 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
       uint8_t longID[15];
       uint8_t mainuint8_t = 0;
       CSzCoderInfo *coder = folder->Coders + i;
-      int result          = SzReaduint8_t(sd, &mainuint8_t);
+      SRes result         = SzReaduint8_t(sd, &mainuint8_t);
 
       if (result != 0)
          return result;
@@ -627,7 +627,7 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
 
       if ((mainuint8_t & 0x10) != 0)
       {
-         int result = SzReadNumber32(sd, &coder->NumInStreams);
+         SRes result = SzReadNumber32(sd, &coder->NumInStreams);
 
          if (result != 0)
             return result;
@@ -649,7 +649,7 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
       if ((mainuint8_t & 0x20) != 0)
       {
          uint64_t propertiesSize = 0;
-         int result              = SzReadNumber(sd, &propertiesSize);
+         SRes result             = SzReadNumber(sd, &propertiesSize);
 
          if (result != 0)
             return result;
@@ -670,7 +670,7 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
          if ((mainuint8_t & 0x10) != 0)
          {
             uint32_t n;
-            int result = SzReadNumber32(sd, &n);
+            SRes result = SzReadNumber32(sd, &n);
             if (result != 0)
                return result;
             result     = SzReadNumber32(sd, &n);
@@ -680,7 +680,7 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
          if ((mainuint8_t & 0x20) != 0)
          {
             uint64_t propertiesSize = 0;
-            int result              = SzReadNumber(sd, &propertiesSize);
+            SRes result             = SzReadNumber(sd, &propertiesSize);
             if (result != 0)
                return result;
             result                  = SzSkeepDataSize(sd, propertiesSize);
@@ -701,7 +701,7 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
    for (i = 0; i < numBindPairs; i++)
    {
       CSzBindPair *bp = folder->BindPairs + i;
-      int result      = SzReadNumber32(sd, &bp->InIndex);
+      SRes result     = SzReadNumber32(sd, &bp->InIndex);
 
       if (result != 0)
          return result;
@@ -728,7 +728,7 @@ static SRes SzGetNextFolderItem(CSzData *sd, CSzFolder *folder, ISzAlloc *alloc)
    else
       for (i = 0; i < numPackStreams; i++)
       {
-         int result = SzReadNumber32(sd, folder->PackStreams + i);
+         SRes result = SzReadNumber32(sd, folder->PackStreams + i);
          if (result != 0)
             return result;
       }
@@ -743,7 +743,7 @@ static SRes SzReadUnpackInfo(
       ISzAlloc *allocTemp)
 {
    uint32_t i;
-   int result = SzWaitAttribute(sd, k7zIdFolder);
+   SRes result = SzWaitAttribute(sd, k7zIdFolder);
 
    if (result != 0)
       return result;
@@ -788,7 +788,7 @@ static SRes SzReadUnpackInfo(
 
       for (j = 0; j < numOutStreams; j++)
       {
-         int result = SzReadNumber(sd, folder->UnpackSizes + j);
+         SRes result = SzReadNumber(sd, folder->UnpackSizes + j);
          if (result != 0)
             return result;
       }
@@ -797,7 +797,7 @@ static SRes SzReadUnpackInfo(
    for (;;)
    {
       uint64_t type;
-      int result    = SzReadID(sd, &type);
+      SRes result    = SzReadID(sd, &type);
       if (result != 0)
          return result;
       if (type == k7zIdEnd)
@@ -840,7 +840,7 @@ static SRes SzReadSubStreamsInfo(
       uint32_t **digests,
       ISzAlloc *allocTemp)
 {
-   int result;
+   SRes result;
    uint32_t i;
    uint64_t type       = 0;
    uint32_t si         = 0;
@@ -852,7 +852,7 @@ static SRes SzReadSubStreamsInfo(
 
    for (;;)
    {
-      int result = SzReadID(sd, &type);
+      SRes result = SzReadID(sd, &type);
       if (result != 0)
          return result;
       if (type == k7zIdNumUnpackStream)
@@ -861,7 +861,7 @@ static SRes SzReadSubStreamsInfo(
          for (i = 0; i < numFolders; i++)
          {
             uint32_t numStreams = 0;
-            int result          = SzReadNumber32(sd, &numStreams);
+            SRes result         = SzReadNumber32(sd, &numStreams);
 
             if (result != 0)
                return result;
@@ -913,7 +913,7 @@ static SRes SzReadSubStreamsInfo(
          for (j = 1; j < numSubstreams; j++)
          {
             uint64_t size;
-            int result    = SzReadNumber(sd, &size);
+            SRes result    = SzReadNumber(sd, &size);
 
             if (result != 0)
                return result;
@@ -922,6 +922,7 @@ static SRes SzReadSubStreamsInfo(
          }
       (*unpackSizes)[si++] = SzFolder_GetUnpackSize(folders + i) - sum;
    }
+    
    if (type == k7zIdSize)
    {
       result = SzReadID(sd, &type);
@@ -1011,7 +1012,7 @@ static SRes SzReadStreamsInfo(
    for (;;)
    {
       uint64_t type;
-      int result    = SzReadID(sd, &type);
+      SRes result    = SzReadID(sd, &type);
 
       if (result != 0)
          return result;
@@ -1023,7 +1024,7 @@ static SRes SzReadStreamsInfo(
             return SZ_OK;
          case k7zIdPackInfo:
             {
-               int result = SzReadPackInfo(sd, dataOffset, &p->NumPackStreams,
+               SRes result = SzReadPackInfo(sd, dataOffset, &p->NumPackStreams,
                         &p->PackSizes, &p->PackCRCsDefined, &p->PackCRCs, alloc);
                if (result != 0)
                   return result;
@@ -1032,14 +1033,14 @@ static SRes SzReadStreamsInfo(
             }
          case k7zIdUnpackInfo:
             {
-               int result = SzReadUnpackInfo(sd, &p->NumFolders, &p->Folders, alloc, allocTemp);
+               SRes result = SzReadUnpackInfo(sd, &p->NumFolders, &p->Folders, alloc, allocTemp);
                if (result != 0)
                   return result;
                break;
             }
          case k7zIdSubStreamsInfo:
             {
-               int result = SzReadSubStreamsInfo(sd, p->NumFolders, p->Folders,
+               SRes result = SzReadSubStreamsInfo(sd, p->NumFolders, p->Folders,
                      numUnpackStreams, unpackSizes, digestsDefined, digests, allocTemp);
                if (result != 0)
                   return result;
@@ -1107,7 +1108,7 @@ static SRes SzReadHeader2(
    uint32_t numFiles         = 0;
    CSzFileItem *files        = 0;
    uint32_t numEmptyStreams  = 0;
-   int result                = SzReadID(sd, &type);
+   SRes result               = SzReadID(sd, &type);
 
    if (result != 0)
       return result;
@@ -1159,7 +1160,7 @@ static SRes SzReadHeader2(
    for (;;)
    {
       uint64_t size;
-      int result    = SzReadID(sd, &type);
+      SRes result    = SzReadID(sd, &type);
 
       if (result != 0)
          return result;
@@ -1175,7 +1176,7 @@ static SRes SzReadHeader2(
 
       if ((uint64_t)(int)type != type)
       {
-         int result = SzSkeepDataSize(sd, size);
+         SRes result = SzSkeepDataSize(sd, size);
          if (result != 0)
             return result;
       }
@@ -1184,7 +1185,7 @@ static SRes SzReadHeader2(
          {
             case k7zIdName:
                {
-                  int result        = SzReadSwitch(sd);
+                  SRes result       = SzReadSwitch(sd);
                   size_t namesSize  = (size_t)size - 1;
                   if (result != 0)
                      return result;
@@ -1204,7 +1205,7 @@ static SRes SzReadHeader2(
                }
             case k7zIdEmptyStream:
                {
-                  int result      = SzReadBoolVector(sd, numFiles, emptyStreamVector, allocTemp);
+                  SRes result    = SzReadBoolVector(sd, numFiles, emptyStreamVector, allocTemp);
                   if (result != 0)
                      return result;
                   numEmptyStreams = 0;
@@ -1215,17 +1216,17 @@ static SRes SzReadHeader2(
                }
             case k7zIdEmptyFile:
                {
-                  int result = SzReadBoolVector(sd, numEmptyStreams, emptyFileVector, allocTemp);
+                  SRes result = SzReadBoolVector(sd, numEmptyStreams, emptyFileVector, allocTemp);
                   if (result != 0)
                      return result;
                   break;
                }
             case k7zIdWinAttributes:
                {
-                  int result = SzReadBoolVector2(sd, numFiles, lwtVector, allocTemp);
+                  SRes result = SzReadBoolVector2(sd, numFiles, lwtVector, allocTemp);
                   if (result != 0)
                      return result;
-                  result     = SzReadSwitch(sd);
+                  result      = SzReadSwitch(sd);
                   if (result != 0)
                      return result;
 
@@ -1248,11 +1249,11 @@ static SRes SzReadHeader2(
                }
             case k7zIdMTime:
                {
-                  int result = SzReadBoolVector2(sd,
+                  SRes result = SzReadBoolVector2(sd,
                            numFiles, lwtVector, allocTemp);
                   if (result != 0)
                      return result;
-                  result     = SzReadSwitch(sd);
+                  result      = SzReadSwitch(sd);
                   if (result != 0)
                      return result;
 
@@ -1364,7 +1365,7 @@ static SRes SzReadAndDecodePackedStreams2(
    uint64_t dataStartPos     = 0;
    uint64_t unpackSize       = 0;
    uint32_t numUnpackStreams = 0;
-   int result                = SzReadStreamsInfo(sd, &dataStartPos, p,
+   SRes result               = SzReadStreamsInfo(sd, &dataStartPos, p,
             &numUnpackStreams,  unpackSizes, digestsDefined, digests,
             allocTemp, allocTemp);
 
@@ -1435,13 +1436,13 @@ static SRes SzArEx_Open2(
    uint64_t nextHeaderOffset, nextHeaderSize;
    size_t nextHeaderSizeT;
    uint32_t nextHeaderCRC;
-   int64_t startArcPos = 0;
-   int result          = inStream->Seek(inStream, &startArcPos, SZ_SEEK_CUR);
+   int64_t startArcPos  = 0;
+   SRes result          = inStream->Seek(inStream, &startArcPos, SZ_SEEK_CUR);
 
    if (result != 0)
       return result;
 
-   result              = LookInStream_Read2(inStream, header,
+   result               = LookInStream_Read2(inStream, header,
          k7zStartHeaderSize,
          SZ_ERROR_NO_ARCHIVE);
 
@@ -1472,11 +1473,12 @@ static SRes SzArEx_Open2(
       return SZ_ERROR_NO_ARCHIVE;
 
    {
-      int64_t pos = 0;
-      int result  = inStream->Seek(inStream, &pos, SZ_SEEK_END);
+      int64_t pos  = 0;
+      SRes result  = inStream->Seek(inStream, &pos, SZ_SEEK_END);
 
       if (result != 0)
          return result;
+       
       if ((uint64_t)pos < startArcPos + nextHeaderOffset ||
             (uint64_t)pos < startArcPos + k7zStartHeaderSize + nextHeaderOffset ||
             (uint64_t)pos < startArcPos + k7zStartHeaderSize + nextHeaderOffset + nextHeaderSize)
@@ -1571,7 +1573,7 @@ SRes SzArEx_Extract(
 
    if (*outBuffer == 0 || *blockIndex != folderIndex)
    {
-      int result;
+      SRes result;
       CSzFolder *folder       = p->db.Folders + folderIndex;
       uint64_t unpackSizeSpec = SzFolder_GetUnpackSize(folder);
       size_t unpackSize       = (size_t)unpackSizeSpec;

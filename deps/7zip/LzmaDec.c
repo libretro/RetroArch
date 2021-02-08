@@ -993,7 +993,7 @@ SRes LzmaDec_AllocateProbs(CLzmaDec *p,
       const uint8_t *props, unsigned propsSize, ISzAlloc *alloc)
 {
    CLzmaProps propNew;
-   int result         = LzmaProps_Decode(&propNew, props, propsSize);
+   SRes result        = LzmaProps_Decode(&propNew, props, propsSize);
    if (result != 0)
       return result;
    result             = LzmaDec_AllocateProbs2(p, &propNew, alloc);
@@ -1008,12 +1008,12 @@ SRes LzmaDec_Allocate(CLzmaDec *p, const uint8_t *props,
 {
    CLzmaProps propNew;
    size_t dicBufSize;
-   int result = LzmaProps_Decode(&propNew, props, propsSize);
+   SRes result = LzmaProps_Decode(&propNew, props, propsSize);
 
    if (result != 0)
       return result;
 
-   result     = LzmaDec_AllocateProbs2(p, &propNew, alloc);
+   result      = LzmaDec_AllocateProbs2(p, &propNew, alloc);
 
    if (result != 0)
       return result;

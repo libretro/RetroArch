@@ -27,7 +27,7 @@ static SRes SzDecodeLzma(CSzCoderInfo *coder,
       uint64_t inSize, ILookInStream *inStream,
       uint8_t *outBuffer, size_t outSize, ISzAlloc *allocMain)
 {
-  int result;
+  SRes result;
   CLzmaDec state;
   SRes res         = SZ_OK;
 
@@ -91,7 +91,7 @@ static SRes SzDecodeLzma2(CSzCoderInfo *coder,
       uint64_t inSize, ILookInStream *inStream,
       uint8_t *outBuffer, size_t outSize, ISzAlloc *allocMain)
 {
-   int result;
+   SRes result;
    CLzma2Dec state;
    SRes res = SZ_OK;
 
@@ -152,7 +152,7 @@ static SRes SzDecodeCopy(uint64_t inSize,
 {
    while (inSize > 0)
    {
-      int result;
+      SRes result;
       void *inBuf    = NULL;
       size_t curSize = (1 << 18);
       if (curSize > inSize)
@@ -284,7 +284,7 @@ static SRes SzFolder_Decode2(const CSzFolder *folder,
    size_t tempSizes[3] = { 0, 0, 0};
    size_t tempSize3    = 0;
    uint8_t *tempBuf3   = 0;
-   int result          = check_supported_folder(folder);
+   SRes result         = check_supported_folder(folder);
 
    if (result != 0)
       return result;
@@ -295,7 +295,7 @@ static SRes SzFolder_Decode2(const CSzFolder *folder,
 
       if (is_main_method((uint32_t)coder->MethodID))
       {
-         int result;
+         SRes result;
          uint64_t offset    = 0;
          uint64_t inSize    = 0;
          uint32_t si        = 0;
@@ -369,7 +369,7 @@ static SRes SzFolder_Decode2(const CSzFolder *folder,
       else if (coder->MethodID == k_BCJ2)
       {
          SRes res;
-         int result;
+         SRes result;
          uint64_t offset = get_sum(packSizes, 1);
          uint64_t s3Size = packSizes[1];
 

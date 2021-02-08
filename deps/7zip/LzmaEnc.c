@@ -1739,7 +1739,7 @@ void LzmaEnc_Destroy(CLzmaEncHandle p, ISzAlloc *alloc, ISzAlloc *allocBig)
 
 static SRes LzmaEnc_CodeOneBlock(CLzmaEnc *p, bool useLimits, uint32_t maxPackSize, uint32_t maxUnpackSize)
 {
-   int result;
+   SRes result;
    uint32_t nowPos32, startPos32;
    if (p->needInit)
    {
@@ -2034,7 +2034,7 @@ static SRes LzmaEnc_AllocAndInit(CLzmaEnc *p,
       uint32_t keepWindowSize, ISzAlloc *alloc, ISzAlloc *allocBig)
 {
    uint32_t i;
-   int result;
+   SRes result;
    for (i = 0; i < (uint32_t)kDicLogSizeMaxCompress; i++)
       if (p->dictSize <= ((uint32_t)1 << i))
          break;
@@ -2214,7 +2214,7 @@ SRes LzmaEnc_Encode(CLzmaEncHandle pp,
       ISeqInStream *inStream, ICompressProgress *progress,
       ISzAlloc *alloc, ISzAlloc *allocBig)
 {
-   int result = LzmaEnc_Prepare(pp, outStream, inStream, alloc, allocBig);
+   SRes result = LzmaEnc_Prepare(pp, outStream, inStream, alloc, allocBig);
    if (result != 0)
       return result;
    return LzmaEnc_Encode2((CLzmaEnc *)pp, progress);
