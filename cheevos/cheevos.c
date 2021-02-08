@@ -501,7 +501,9 @@ static unsigned rcheevos_peek(unsigned address, unsigned num_bytes, void* ud)
       }
    }
 
-   rcheevos_invalidate_address(address);
+   if (address < rcheevos_locals.memory.total_size)
+      rcheevos_invalidate_address(address);
+
    return 0;
 }
 
