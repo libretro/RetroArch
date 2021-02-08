@@ -95,7 +95,7 @@ static void task_wifi_connect_handler(retro_task_t *task)
    if (!task)
       return;
 
-   driver_wifi_connect_ssid(task->user_data);
+   driver_wifi_connect_ssid((const wifi_network_info_t*)task->user_data);
    free(task->user_data);
 
    task_set_progress(task, 100);
