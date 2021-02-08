@@ -116,6 +116,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_RESET,
    MENU_SETTING_ACTION_CORE_LOCK,
    MENU_SETTING_ACTION_CORE_DELETE,
+   MENU_SETTING_ACTION_FAVORITES_DIR, /* "Start Directory" */
    MENU_SETTING_STRING_OPTIONS,
    MENU_SETTING_GROUP,
    MENU_SETTING_SUBGROUP,
@@ -349,6 +350,14 @@ typedef struct
       char pass_dir[PATH_MAX_LENGTH];
    } last_shader_selection;
 
+   /* Used to cache the last start content
+    * loaded via the menu file browser */
+   struct
+   {
+      char directory[PATH_MAX_LENGTH];
+      char file_name[PATH_MAX_LENGTH];
+   } last_start_content;
+
    char menu_state_msg[8192];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
@@ -527,6 +536,12 @@ enum rarch_shader_type menu_driver_get_last_shader_pass_type(void);
 const char *menu_driver_get_last_shader_preset_dir(void);
 const char *menu_driver_get_last_shader_pass_dir(void);
 #endif
+
+const char *menu_driver_get_last_start_directory(void);
+const char *menu_driver_get_last_start_file_name(void);
+void menu_driver_set_last_start_content(const char *start_content_path);
+const char *menu_driver_get_pending_selection();
+void menu_driver_set_pending_selection(const char *pending_selection);
 
 menu_handle_t *menu_driver_get_ptr(void);
 

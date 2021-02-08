@@ -778,6 +778,7 @@ typedef struct settings
       bool sort_screenshots_by_content_enable;
       bool config_save_on_exit;
       bool show_hidden_files;
+      bool use_last_start_directory;
 
       bool savefiles_in_content_dir;
       bool savestates_in_content_dir;

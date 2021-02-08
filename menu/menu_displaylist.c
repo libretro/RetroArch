@@ -6074,7 +6074,7 @@ unsigned menu_displaylist_build_list(
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                         msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
                         MENU_ENUM_LABEL_FAVORITES,
-                        MENU_SETTING_ACTION, 0, 0))
+                        MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0))
                   count++;
 
 #if defined(HAVE_LIBRETRODB)
@@ -7823,6 +7823,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,                                    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER,                              PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,                                PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_USE_LAST_START_DIRECTORY,                              PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -13226,6 +13227,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       else
       {
          settings_t      *settings      = config_get_ptr();
+         const char  *pending_selection = menu_driver_get_pending_selection();
          bool show_hidden_files         = settings->bools.show_hidden_files;
          bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
          bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
@@ -13237,6 +13239,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                multimedia_builtin_imageviewer_enable,
                menu_navigation_browser_filter_supported_extensions_enable
                );
+
+         /* Apply pending selection */
+         if (!string_is_empty(pending_selection))
+         {
+            size_t selection_idx           = 0;
+            file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
+
+            if (selection_buf &&
+                file_list_search(selection_buf, pending_selection, &selection_idx))
+            {
+               menu_navigation_set_selection(selection_idx);
+               menu_driver_navigation_set(true);
+            }
+
+            menu_driver_set_pending_selection(NULL);
+         }
       }
 
       info->need_refresh = true;

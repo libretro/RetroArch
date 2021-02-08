@@ -388,6 +388,9 @@
 
 #define DEFAULT_SHOW_HIDDEN_FILES false
 
+/* Initialise file browser with the last used start directory */
+#define DEFAULT_USE_LAST_START_DIRECTORY false
+
 #define DEFAULT_OVERLAY_HIDE_IN_MENU true
 
 /* Automatically disable overlays when a

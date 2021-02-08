@@ -4557,7 +4557,6 @@ static const char *menu_driver_get_last_shader_dir_int(
    return shader_dir;
 }
 
-
 const char *menu_driver_get_last_shader_preset_dir(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -4591,6 +4590,118 @@ const char *menu_driver_get_last_shader_pass_dir(void)
 }
 
 #endif
+
+const char *menu_driver_get_last_start_directory(void)
+{
+   struct rarch_state *p_rarch   = &rarch_st;
+   menu_handle_t *menu           = p_rarch->menu_driver_data;
+   settings_t *settings          = p_rarch->configuration_settings;
+   bool use_last                 = settings->bools.use_last_start_directory;
+   const char *default_directory = settings->paths.directory_menu_content;
+
+   /* Return default directory if there is no
+    * last directory or it's invalid */
+   if (!menu ||
+       !use_last ||
+       string_is_empty(menu->last_start_content.directory) ||
+       !path_is_directory(menu->last_start_content.directory))
+      return default_directory;
+
+   return menu->last_start_content.directory;
+}
+
+const char *menu_driver_get_last_start_file_name(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+   settings_t *settings        = p_rarch->configuration_settings;
+   bool use_last               = settings->bools.use_last_start_directory;
+
+   /* Return NULL if there is no last 'file name' */
+   if (!menu ||
+       !use_last ||
+       string_is_empty(menu->last_start_content.file_name))
+      return NULL;
+
+   return menu->last_start_content.file_name;
+}
+
+void menu_driver_set_last_start_content(const char *start_content_path)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   menu_handle_t *menu         = p_rarch->menu_driver_data;
+   settings_t *settings        = p_rarch->configuration_settings;
+   bool use_last               = settings->bools.use_last_start_directory;
+   const char *archive_delim   = NULL;
+   const char *file_name       = NULL;
+   char archive_path[PATH_MAX_LENGTH];
+
+   if (!menu)
+      return;
+
+   /* Reset existing cache */
+   menu->last_start_content.directory[0] = '\0';
+   menu->last_start_content.file_name[0] = '\0';
+
+   /* If 'use_last_start_directory' is disabled or
+    * path is empty, do nothing */
+   if (!use_last ||
+       string_is_empty(start_content_path))
+      return;
+
+   /* Cache directory */
+   fill_pathname_parent_dir(menu->last_start_content.directory,
+         start_content_path, sizeof(menu->last_start_content.directory));
+
+   /* Cache file name */
+   archive_delim      = path_get_archive_delim(start_content_path);
+   if (archive_delim)
+   {
+      /* If path references a file inside an
+       * archive, must extract the string segment
+       * before the archive delimiter (i.e. path of
+       * 'parent' archive file) */
+      size_t len;
+
+      archive_path[0] = '\0';
+      len             = (size_t)(1 + archive_delim - start_content_path);
+      len             = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
+
+      strlcpy(archive_path, start_content_path, len * sizeof(char));
+
+      file_name       = path_basename(archive_path);
+   }
+   else
+      file_name       = path_basename(start_content_path);
+
+   if (!string_is_empty(file_name))
+      strlcpy(menu->last_start_content.file_name, file_name,
+            sizeof(menu->last_start_content.file_name));
+}
+
+const char *menu_driver_get_pending_selection()
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   return menu_st->pending_selection;
+}
+
+void menu_driver_set_pending_selection(const char *pending_selection)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   char *selection             = menu_st->pending_selection;
+
+   /* Reset existing cache */
+   selection[0] = '\0';
+
+   /* If path is empty, do nothing */
+   if (string_is_empty(pending_selection))
+      return;
+
+   strlcpy(selection, pending_selection,
+         sizeof(menu_st->pending_selection));
+}
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {

@@ -1608,6 +1608,11 @@ struct menu_state
     * representation string */
    char datetime_cache[255];
 
+   /* When generating a menu list in menu_displaylist_build_list(),
+    * the entry with a label matching 'pending_selection' will
+    * be selected automatically */
+   char pending_selection[PATH_MAX_LENGTH];
+
    /* when enabled, on next iteration the 'Quick Menu' list will
     * be pushed onto the stack */
    bool pending_quick_menu;

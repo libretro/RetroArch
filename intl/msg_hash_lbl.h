@@ -2749,6 +2749,10 @@ MSG_HASH(
    "show_hidden_files"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_USE_LAST_START_DIRECTORY,
+   "use_last_start_directory"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SHUTDOWN,
    "shutdown"
    )
