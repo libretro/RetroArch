@@ -5,7 +5,6 @@ stages:
   - build
   - prepare-for-static-cores
   - trigger-static-cores
-  - osx
 
 build-retroarch-windows-x64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win64-cross:gcc10
@@ -130,28 +129,13 @@ build-retroarch-linux-x64:
     - "cp -f gfx/video_filters/*.so ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
-# Mac OS x86: RetroArch Executable
+# Mac OS x86: RetroArch Unsigned DMG
 build-retroarch-osx-x64:
   tags:
     - macosx
   stage: build
   before_script:
     - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
-  artifacts:
-    paths:
-    - retroarch
-    expire_in: 10 min
-  dependencies: []
-  script:
-    - ./configure --enable-metal
-    - make -j$NUMPROC
-
-# Mac OS x86: RetroArch Unsigned DMG
-build-retroarch-osx-x64-dmg-unsigned:
-  tags:
-    - macosx
-  stage: osx
-  before_script:
     - export SHELL_ID=$$
   after_script:
     # We really do not want any garbage left over
@@ -159,11 +143,14 @@ build-retroarch-osx-x64-dmg-unsigned:
     - rm -rvf "wc$SHELL_ID" empty.dmg
   artifacts:
     paths:
-      - RetroArch.dmg
+    - RetroArch.dmg
     expire_in: 10 min
-  dependencies:
-    - build-retroarch-osx-x64
+  dependencies: []
   script:
+    # Normal RetroArch Build
+    - ./configure --enable-metal
+    - make -j$NUMPROC
+
     # Cleanup for DMG creation
     - rm -rvf "RetroArch.app/"
 
