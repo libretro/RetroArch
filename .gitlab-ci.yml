@@ -129,45 +129,70 @@ build-retroarch-linux-x64:
     - "cp -f gfx/video_filters/*.so ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
-build-retroarch-linux-i686:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-i386-ubuntu:xenial-gcc9
+# Mac OS x86: RetroArch Unsigned DMG
+build-retroarch-osx-x64:
+  tags:
+    - macosx
   stage: build
-  variables:
-    MEDIA_PATH: .media
   before_script:
-    - export NUMPROC=$(($(nproc)/3))
+    - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
+    - export SHELL_ID=$$
+  after_script:
+    # We really do not want any garbage left over
+    - umount "wc$SHELL_ID" || echo "Not mounted, so not caring right now."
+    - rm -rvf "wc$SHELL_ID" empty.dmg
   artifacts:
     paths:
-    - retroarch
-    - ${MEDIA_PATH}
+    - RetroArch.dmg
     expire_in: 10 min
   dependencies: []
   script:
-    # Qt build
-    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt"
-    - "./configure --prefix=/usr"
-    - "make -j$NUMPROC"
-    - "make install DESTDIR=${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt prefix=/usr"
-    - "rm -rf ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt/etc"
-    - "cd ${MEDIA_PATH}/${CI_PROJECT_NAME}/ && tar -czf AppDirQt.tar.gz AppDirQt && rm -rf AppDirQt && cd -"
-    - "mv -f retroarch retroarch_qt"
-    # Non-Qt build
-    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir"
-    - "make clean"
-    - "./configure --disable-qt --prefix=/usr"
-    - "make -j$NUMPROC"
-    - "make install DESTDIR=${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir prefix=/usr"
-    - "rm -rf ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir/etc"
-    - "cd ${MEDIA_PATH}/${CI_PROJECT_NAME}/ && tar -czf AppDir.tar.gz AppDir && rm -rf AppDir && cd -"
-    # Filters
-    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
-    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
-    - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && make -j$NUMPROC build=release strip && cd -"
-    - "cp -f libretro-common/audio/dsp_filters/*.so ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
-    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
-    - "cd gfx/video_filters && make -j$NUMPROC build=release && make -j$NUMPROC build=release strip && cd -"
-    - "cp -f gfx/video_filters/*.so ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
-    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    # Normal RetroArch Build
+    - ./configure --enable-metal
+    - make -j$NUMPROC
+
+    # Cleanup for DMG creation
+    - rm -rvf "RetroArch.app/"
+
+    # Initialize for DMG Creation
+    - mkdir -vp "RetroArch.app/Contents/MacOS"
+
+    # Copy resources and compiled program over
+    - cp -Rv "pkg/apple/OSX/"* "RetroArch.app/Contents"
+    - cp retroarch RetroArch.app/Contents/MacOS
+    - cp media/retroarch.icns RetroArch.app/Contents/Resources/
+    - mv RetroArch.app/Contents/Info_Metal.plist RetroArch.app/Contents/Info.plist
+
+    # Update properties within the application properties
+    - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.13/' RetroArch.app/Contents/Info.plist
+
+    # TODO: It seems this messes with code signing, so delete it??
+    - rm -rvf RetroArch.app/Contents/en.lproj
+
+    # Undo the state from a previous failure, if so
+    - umount "wc$SHELL_ID" || echo "Not mounted, so not caring right now."
+    - rm -rvf RetroArch.dmg "wc$SHELL_ID" empty.dmg
+
+    # Create template DMG
+    - mkdir -p template
+    - hdiutil create -fs HFSX -layout SPUD -size 200m empty.dmg -srcfolder template -format UDRW -volname RetroArch -quiet
+    - rmdir template
+
+    # Package the DMG together
+    - mkdir -p "wc$SHELL_ID"
+    - hdiutil attach empty.dmg -noautoopen -quiet -mountpoint "wc$SHELL_ID"
+    - rm -rf "wc$SHELL_ID"/RetroArch.app
+    - ditto -rsrc RetroArch.app "wc$SHELL_ID"/RetroArch.app
+    - ln -s /Applications "wc$SHELL_ID"/Applications
+    - WC_DEV=`hdiutil info | grep "wc$SHELL_ID" | grep "Apple_HFS" | awk '{print $1}'` && hdiutil detach "$WC_DEV" -quiet -force
+    - hdiutil convert empty.dmg -quiet -format UDZO -imagekey zlib-level=9 -o RetroArch.dmg
+
+    # Cleanup afterwards
+    - umount "wc$SHELL_ID" || echo "Not mounted, so not caring right now."
+    - rm -rvf "wc$SHELL_ID" empty.dmg
 
 build-retroarch-dingux-mips32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
