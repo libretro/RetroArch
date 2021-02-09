@@ -587,7 +587,7 @@ static int manual_content_scan_system_name_left(
       if (current_index > 0)
          next_index = current_index - 1;
       else if (wraparound && (system_name_list->size > 1))
-         next_index = system_name_list->size - 1;
+         next_index = (unsigned)(system_name_list->size - 1);
    }
 
    /* Get new system name parameters */
@@ -643,7 +643,7 @@ static int manual_content_scan_core_name_left(unsigned type, const char *label,
       if (current_index > 0)
          next_index = current_index - 1;
       else if (wraparound && (core_name_list->size > 1))
-         next_index = core_name_list->size - 1;
+         next_index = (unsigned)(core_name_list->size - 1);
    }
 
    /* Get new core name parameters */
