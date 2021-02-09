@@ -5,6 +5,7 @@ stages:
   - build
   - prepare-for-static-cores
   - trigger-static-cores
+  - osx
 
 build-retroarch-windows-x64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win64-cross:gcc10
@@ -149,7 +150,7 @@ build-retroarch-osx-x64:
 build-retroarch-osx-x64-dmg-unsigned:
   tags:
     - macosx
-  stage: build
+  stage: osx
   before_script:
     - export SHELL_ID=$$
   after_script:
