@@ -491,7 +491,11 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    enum rarch_shader_type type       = RARCH_SHADER_NONE;
 #if !defined(HAVE_MENU)
    settings_t *settings              = config_get_ptr();
-   const char *path_dir_video_shader = settings->paths.directory_video_shader;
+   const char *shader_preset_dir     = settings->paths.directory_video_shader;
+#else
+   const char *shader_preset_dir     = NULL;
+
+   menu_driver_get_last_shader_preset_path(&shader_preset_dir, NULL);
 #endif
 
    getShaders(&menu_shader, &video_shader);
@@ -516,12 +520,7 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    path       = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
-#if defined(HAVE_MENU)
-         menu_driver_get_last_shader_preset_dir(),
-#else
-         path_dir_video_shader,
-#endif
-         filter);
+         shader_preset_dir, filter);
 
    if (path.isEmpty())
       return;
@@ -532,7 +531,7 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
 
 #if defined(HAVE_MENU)
    /* Cache selected shader parent directory */
-   menu_driver_set_last_shader_preset_dir(pathData);
+   menu_driver_set_last_shader_preset_path(pathData);
 #endif
 
    menu_shader_manager_set_preset(menu_shader, type, pathData, true);
@@ -642,7 +641,11 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    const char *pathData                  = NULL;
 #if !defined(HAVE_MENU)
    settings_t *settings                  = config_get_ptr();
-   const char *path_dir_video_shader     = settings->paths.directory_video_shader;
+   const char *shader_pass_dir           = settings->paths.directory_video_shader;
+#else
+   const char *shader_pass_dir           = NULL;
+
+   menu_driver_get_last_shader_pass_path(&shader_pass_dir, NULL);
 #endif
 
    getShaders(&menu_shader, &video_shader);
@@ -668,12 +671,7 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    path = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
-#if defined(HAVE_MENU)
-         menu_driver_get_last_shader_pass_dir(),
-#else
-         path_dir_video_shader,
-#endif
-         filter);
+         shader_pass_dir, filter);
 
    if (path.isEmpty())
       return;
@@ -704,7 +702,7 @@ void ShaderParamsDialog::onShaderAddPassClicked()
 
 #if defined(HAVE_MENU)
    /* Cache selected shader parent directory */
-   menu_driver_set_last_shader_pass_dir(pathData);
+   menu_driver_set_last_shader_pass_path(pathData);
 #endif
 
    video_shader_resolve_parameters(menu_shader);
