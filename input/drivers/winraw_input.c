@@ -224,21 +224,11 @@ error:
    return false;
 }
 
-static BOOL winraw_set_mouse_input(HWND window, bool grab)
+static BOOL winraw_set_mouse_input(HWND window)
 {
    RAWINPUTDEVICE rid;
 
-#if 0
-   if (window)
-      rid.dwFlags  = grab ? RIDEV_CAPTUREMOUSE | RIDEV_NOLEGACY : 0;
-   else
-      rid.dwFlags  = RIDEV_REMOVE;
-#else
-   rid.dwFlags     = 0;
-   if (!window)
-      rid.dwFlags  = RIDEV_REMOVE;
-#endif
-
+   rid.dwFlags     = (window) ? 0 : RIDEV_REMOVE;
    rid.hwndTarget  = window;
    rid.usUsagePage = 0x01; /* generic desktop */
    rid.usUsage     = 0x02; /* mouse */
@@ -547,7 +537,7 @@ static void *winraw_init(const char *joypad_driver)
    if (!winraw_set_keyboard_input(wr->window))
       goto error;
 
-   if (!winraw_set_mouse_input(wr->window, false))
+   if (!winraw_set_mouse_input(wr->window))
       goto error;
 
    SetWindowLongPtr(wr->window, GWLP_USERDATA, (LONG_PTR)wr);
@@ -557,7 +547,7 @@ static void *winraw_init(const char *joypad_driver)
 error:
    if (wr && wr->window)
    {
-      winraw_set_mouse_input(NULL, false);
+      winraw_set_mouse_input(NULL);
       winraw_set_keyboard_input(NULL);
       winraw_destroy_window(wr->window);
    }
@@ -865,7 +855,7 @@ static void winraw_free(void *data)
 {
    winraw_input_t *wr = (winraw_input_t*)data;
 
-   winraw_set_mouse_input(NULL, false);
+   winraw_set_mouse_input(NULL);
    winraw_set_keyboard_input(NULL);
    SetWindowLongPtr(wr->window, GWLP_USERDATA, 0);
    winraw_destroy_window(wr->window);
@@ -891,7 +881,7 @@ static void winraw_grab_mouse(void *d, bool state)
    if (state == wr->mouse_grab)
       return;
 
-   if (!winraw_set_mouse_input(wr->window, state))
+   if (!winraw_set_mouse_input(wr->window))
       return;
 
    wr->mouse_grab = state;
