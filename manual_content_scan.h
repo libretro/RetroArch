@@ -95,6 +95,14 @@ typedef struct
  *   implementing unnecessary custom menu entries) */
 
 /* Returns a pointer to the internal
+ * 'content_dir' string */
+char *manual_content_scan_get_content_dir_ptr(void);
+
+/* Returns size of the internal
+ * 'content_dir' string */
+size_t manual_content_scan_get_content_dir_size(void);
+
+/* Returns a pointer to the internal
  * 'system_name_custom' string */
 char *manual_content_scan_get_system_name_custom_ptr(void);
 

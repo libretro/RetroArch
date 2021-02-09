@@ -465,6 +465,55 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
    return MSG_UNKNOWN;
 }
 
+static void action_ok_get_file_browser_start_path(
+      const char *current_path, const char *default_path,
+      char *start_path, size_t start_path_len,
+      bool set_pending)
+{
+   const char *pending_selection = NULL;
+   bool current_path_valid       = false;
+
+   if (!start_path || (start_path_len < 1))
+      return;
+
+   /* Parse current path */
+   if (!string_is_empty(current_path))
+   {
+      /* Start path is the parent directory of
+       * the current path */
+      fill_pathname_parent_dir(start_path, current_path,
+            start_path_len);
+
+      /* 'Pending selection' is the basename of
+       * the current path - either a file name
+       * or a directory name */
+      pending_selection = path_basename(current_path);
+
+      /* Check if current path is valid */
+      if (path_is_directory(start_path) &&
+          !string_is_empty(pending_selection))
+         current_path_valid = true;
+   }
+
+   /* If current path is invalid, use default path */
+   if (!current_path_valid)
+   {
+      if (string_is_empty(default_path) ||
+          !path_is_directory(default_path))
+      {
+         start_path[0] = '\0';
+         return;
+      }
+
+      strlcpy(start_path, default_path, start_path_len);
+      return;
+   }
+   /* Current path is valid - set pending selection,
+    * if required */
+   else if (set_pending)
+      menu_driver_set_pending_selection(pending_selection);
+}
+
 int generic_action_ok_displaylist_push(const char *path,
       const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -895,17 +944,27 @@ int generic_action_ok_displaylist_push(const char *path,
          filebrowser_set_type(FILEBROWSER_MANUAL_SCAN_DIR);
          info.type          = FILE_TYPE_DIRECTORY;
          info.directory_ptr = idx;
-         info_path          = new_path;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
+
+         action_ok_get_file_browser_start_path(
+               manual_content_scan_get_content_dir_ptr(),
+               new_path, parent_dir, sizeof(parent_dir), true);
+
+         info_path          = parent_dir;
          break;
       case ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE:
          filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = dir_menu_content;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+         action_ok_get_file_browser_start_path(
+               manual_content_scan_get_dat_file_path_ptr(),
+               dir_menu_content, parent_dir, sizeof(parent_dir), true);
+
+         info_path          = parent_dir;
          break;
       case ACTION_OK_DL_REMAP_FILE:
          {
