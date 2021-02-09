@@ -1217,7 +1217,7 @@ static const char* rc_hash_get_first_item_from_playlist(const char* path)
 
   rc_file_close(file_handle);
 
-  ptr = start = buffer;
+  ptr = buffer;
   do
   {
     /* ignore empty and commented lines */
