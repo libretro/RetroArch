@@ -4039,7 +4039,6 @@ static unsigned menu_displaylist_parse_disk_options(
 
 static int menu_displaylist_parse_input_device_type_list(menu_displaylist_info_t *info)
 {
-   retro_ctx_controller_info_t pad;
    const struct retro_controller_description *desc = NULL;
    const char *name             = NULL;
 

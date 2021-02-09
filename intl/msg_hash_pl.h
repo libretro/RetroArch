@@ -1442,7 +1442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Częstotliwość odświeżania pionowego ekranu. Służy do obliczania odpowiedniej szybkości wejścia audio. \ Nuwaga: zostanie zignorowana, jeśli włączona jest opcja „Wątkowe wideo”."
+   "Częstotliwość odświeżania pionowego ekranu. Służy do obliczania odpowiedniej szybkości wejścia audio. Nuwaga: zostanie zignorowana, jeśli włączona jest opcja „Wątkowe wideo”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
