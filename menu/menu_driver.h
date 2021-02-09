@@ -551,7 +551,7 @@ void menu_driver_get_last_shader_pass_path(
 const char *menu_driver_get_last_start_directory(void);
 const char *menu_driver_get_last_start_file_name(void);
 void menu_driver_set_last_start_content(const char *start_content_path);
-const char *menu_driver_get_pending_selection();
+const char *menu_driver_get_pending_selection(void);
 void menu_driver_set_pending_selection(const char *pending_selection);
 
 menu_handle_t *menu_driver_get_ptr(void);

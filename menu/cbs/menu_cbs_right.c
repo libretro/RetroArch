@@ -692,15 +692,9 @@ static int manual_content_scan_system_name_right(unsigned type, const char *labe
       next_index = current_index + 1;
       if (next_index >= system_name_list->size)
       {
-         if (wraparound)
-            next_index = 0;
-         else
-         {
-            if (system_name_list->size > 0)
-               next_index = system_name_list->size - 1;
-            else
-               next_index = 0;
-         }
+         next_index = 0;
+         if (!wraparound && system_name_list->size > 0)
+            next_index = (unsigned)(system_name_list->size - 1);
       }
    }
 
@@ -757,15 +751,9 @@ static int manual_content_scan_core_name_right(unsigned type, const char *label,
       next_index = current_index + 1;
       if (next_index >= core_name_list->size)
       {
-         if (wraparound)
-            next_index = 0;
-         else
-         {
-            if (core_name_list->size > 0)
-               next_index = core_name_list->size - 1;
-            else
-               next_index = 0;
-         }
+         next_index = 0;
+         if (!wraparound && core_name_list->size > 0)
+            next_index = (unsigned)(core_name_list->size - 1);
       }
    }
 
