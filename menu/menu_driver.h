@@ -38,6 +38,10 @@
 
 #include "../gfx/font_driver.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 RETRO_BEGIN_DECLS
 
 #ifndef MAX_COUNTERS
@@ -338,6 +342,7 @@ typedef struct
    } scratchpad;
    unsigned rpl_entry_selection_ptr;
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Used to cache the type and directory
     * of the last shader preset/pass loaded
     * via the menu file browser */
@@ -347,8 +352,12 @@ typedef struct
       enum rarch_shader_type pass_type;
 
       char preset_dir[PATH_MAX_LENGTH];
+      char preset_file_name[PATH_MAX_LENGTH];
+
       char pass_dir[PATH_MAX_LENGTH];
+      char pass_file_name[PATH_MAX_LENGTH];
    } last_shader_selection;
+#endif
 
    /* Used to cache the last start content
     * loaded via the menu file browser */
@@ -529,12 +538,14 @@ struct string_list *menu_driver_search_get_terms(void);
 void menu_driver_search_append_terms_string(char *s, size_t len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-void menu_driver_set_last_shader_preset_dir(const char *shader_path);
-void menu_driver_set_last_shader_pass_dir(const char *shader_pass_path);
+void menu_driver_set_last_shader_preset_path(const char *path);
+void menu_driver_set_last_shader_pass_path(const char *path);
 enum rarch_shader_type menu_driver_get_last_shader_preset_type(void);
 enum rarch_shader_type menu_driver_get_last_shader_pass_type(void);
-const char *menu_driver_get_last_shader_preset_dir(void);
-const char *menu_driver_get_last_shader_pass_dir(void);
+void menu_driver_get_last_shader_preset_path(
+      const char **directory, const char **file_name);
+void menu_driver_get_last_shader_pass_path(
+      const char **directory, const char **file_name);
 #endif
 
 const char *menu_driver_get_last_start_directory(void);

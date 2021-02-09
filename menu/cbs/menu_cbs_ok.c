@@ -836,22 +836,34 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_SHADER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = menu_driver_get_last_shader_pass_dir();
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            const char *shader_file_name = NULL;
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+            menu_driver_get_last_shader_pass_path(&info_path, &shader_file_name);
+            menu_driver_set_pending_selection(shader_file_name);
+         }
 #endif
          break;
       case ACTION_OK_DL_SHADER_PRESET:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = menu_driver_get_last_shader_preset_dir();
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            const char *shader_file_name = NULL;
+
+            filebrowser_clear_type();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+
+            menu_driver_get_last_shader_preset_path(&info_path, &shader_file_name);
+            menu_driver_set_pending_selection(shader_file_name);
+         }
 #endif
          break;
       case ACTION_OK_DL_CONTENT_LIST:
@@ -1762,8 +1774,8 @@ static int generic_action_ok(const char *path,
             struct video_shader      *shader  = menu_shader_get();
             flush_char = msg_hash_to_str(flush_id);
 
-            /* Cache selected shader parent directory */
-            menu_driver_set_last_shader_preset_dir(action_path);
+            /* Cache selected shader parent directory/file name */
+            menu_driver_set_last_shader_preset_path(action_path);
 
             menu_shader_manager_set_preset(shader,
                   menu_driver_get_last_shader_preset_type(),
@@ -1781,8 +1793,8 @@ static int generic_action_ok(const char *path,
 
             if (shader_pass)
             {
-               /* Cache selected shader parent directory */
-               menu_driver_set_last_shader_pass_dir(action_path);
+               /* Cache selected shader parent directory/file name */
+               menu_driver_set_last_shader_pass_path(action_path);
 
                strlcpy(
                      shader_pass->source.path,
