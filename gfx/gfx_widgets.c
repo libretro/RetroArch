@@ -1612,6 +1612,7 @@ void gfx_widgets_frame(void *data)
             MSG_REWINDING);
 
    if (runloop_is_slowmotion)
+   {
       top_right_x_advance -= gfx_widgets_draw_indicator(
             p_dispwidget,
             p_disp,
@@ -1624,6 +1625,8 @@ void gfx_widgets_frame(void *data)
             (fps_show ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_SLOW_MOTION);
+      (void)top_right_x_advance;
+   }
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {

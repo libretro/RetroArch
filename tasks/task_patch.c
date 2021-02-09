@@ -565,9 +565,11 @@ static enum patch_error ips_apply_patch(
 
          if (offset == patchlen - 3)
          {
+#if 0
             uint32_t size  = patchdata[offset++] << 16;
             size          |= patchdata[offset++] << 8;
             size          |= patchdata[offset++] << 0;
+#endif
             return PATCH_SUCCESS;
          }
       }
