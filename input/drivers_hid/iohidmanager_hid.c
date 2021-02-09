@@ -725,15 +725,6 @@ static void iohidmanager_hid_device_add_device(
          case kHIDPage_GenericDesktop:
             switch (type)
             {
-               case kIOHIDElementTypeCollection:
-               case kIOHIDElementTypeInput_ScanCodes:
-               case kIOHIDElementTypeFeature:
-               case kIOHIDElementTypeInput_Button:
-               case kIOHIDElementTypeOutput:
-               case kIOHIDElementTypeInput_Axis:
-               case 5: /* kIOHIDElementTypeInput_NULL */
-                  /* TODO/FIXME */
-                  break;
                case kIOHIDElementTypeInput_Misc:
                   switch (use)
                   {
@@ -785,23 +776,21 @@ static void iohidmanager_hid_device_add_device(
                         break;
                   }
                   break;
+               default:
+                  /* TODO/FIXME */
+                  break;
             }
             break;
          case kHIDPage_Consumer:
          case kHIDPage_Button:
             switch (type)
             {
-               case kIOHIDElementTypeCollection:
-               case kIOHIDElementTypeFeature:
-               case kIOHIDElementTypeInput_ScanCodes:
-               case kIOHIDElementTypeInput_Axis:
-               case kIOHIDElementTypeOutput:
-               case 5: /* kIOHIDElementTypeInput_NULL */
-                  /* TODO/FIXME */
-                  break;
                case kIOHIDElementTypeInput_Misc:
                case kIOHIDElementTypeInput_Button:
                   detected_button = 1;
+                  break;
+               default:
+                  /* TODO/FIXME */
                   break;
             }
             break;
