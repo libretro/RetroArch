@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2021 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rjson.c).
@@ -339,7 +339,6 @@ static bool _rjson_validate_utf8(rjson_t *json)
       else if (first <= 0xEF)
       {
          if ((from = p + 3) > to) goto invalid_utf8;
-         from = p + 3;
          continue_length_3:
          if ((c = p[2]) < 0x80 || c > 0xBF) goto invalid_utf8;
          goto continue_length_2;
