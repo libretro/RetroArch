@@ -420,6 +420,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_GFX_WIDGETS         := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -428,6 +429,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    LD = link.exe
 
    PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
+   PLATCFLAGS += -DHAVE_GFX_WIDGETS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/bin"):$(PATH)
@@ -472,6 +474,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_GFX_WIDGETS         := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -479,7 +482,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE -DHAVE_GFX_WIDGETS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib msimg32.lib
 
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin"):$(PATH)
@@ -535,6 +538,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_DSP_FILTER          := 1
    HAVE_VIDEO_FILTER        := 1
    HAVE_FILTERS_BUILTIN     := 1
+   HAVE_GFX_WIDGETS         := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -547,6 +551,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    PLATCFLAGS += -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA
    PLATCFLAGS += -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_OZONE
    PLATCFLAGS += -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DWIN32 -DHAVE_CDROM
+   PLATCFLAGS += -DHAVE_GFX_WIDGETS
    PLATCFLAGS += -bigobj
 
    LDFLAGS += -MANIFEST shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib msimg32.lib
