@@ -258,6 +258,11 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #else
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #endif
+#elif defined(HAVE_OPENGL1) && defined(_MSC_VER) && (_MSC_VER <= 1600)
+/* On Windows XP and earlier, use gl1 by default
+ * (regular opengl has compatibility issues with
+ * obsolete hardware drivers...) */
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL1;
 #elif defined(HAVE_VITA2D)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
 #elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
