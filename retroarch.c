@@ -69,6 +69,7 @@
 #include <dynamic/dylib.h>
 #include <file/config_file.h>
 #include <lists/string_list.h>
+#include <memalign.h>
 #include <retro_math.h>
 #include <retro_timers.h>
 #include <encodings/utf.h>
@@ -27707,14 +27708,18 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
    }
 
    if (p_rarch->audio_driver_output_samples_conv_buf)
-      free(p_rarch->audio_driver_output_samples_conv_buf);
+      memalign_free(p_rarch->audio_driver_output_samples_conv_buf);
    p_rarch->audio_driver_output_samples_conv_buf     = NULL;
+
+   if (p_rarch->audio_driver_input_data)
+      memalign_free(p_rarch->audio_driver_input_data);
+   p_rarch->audio_driver_input_data = NULL;
 
    p_rarch->audio_driver_data_ptr           = 0;
 
 #ifdef HAVE_REWIND
    if (p_rarch->audio_driver_rewind_buf)
-      free(p_rarch->audio_driver_rewind_buf);
+      memalign_free(p_rarch->audio_driver_rewind_buf);
    p_rarch->audio_driver_rewind_buf         = NULL;
 
    p_rarch->audio_driver_rewind_size        = 0;
@@ -27728,15 +27733,8 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
 
    audio_driver_deinit_resampler(p_rarch);
 
-   {
-      unsigned i;
-      size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-      for (i = 0; i < max_bufsamples; i++)
-         p_rarch->audio_driver_input_data[i] = 0.0f;
-   }
-
    if (p_rarch->audio_driver_output_samples_buf)
-      free(p_rarch->audio_driver_output_samples_buf);
+      memalign_free(p_rarch->audio_driver_output_samples_buf);
    p_rarch->audio_driver_output_samples_buf = NULL;
 
 #ifdef HAVE_DSP_FILTER
@@ -27832,18 +27830,22 @@ static bool audio_driver_init_internal(
 #endif
    /* Accomodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * slowmotion_ratio;
-   int16_t *conv_buf       = (int16_t*)malloc(outsamples_max
-         * sizeof(int16_t));
+   int16_t *conv_buf       = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
+   float *audio_buf        = (float*)memalign_alloc(64, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
 
    /* Used for recording even if audio isn't enabled. */
    retro_assert(conv_buf != NULL);
+   retro_assert(audio_buf != NULL);
 
-   if (!conv_buf)
+   if (!conv_buf || !audio_buf)
       goto error;
 
+   memset(audio_buf, 0, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
+
+   p_rarch->audio_driver_input_data              = audio_buf;
    p_rarch->audio_driver_output_samples_conv_buf = conv_buf;
    p_rarch->audio_driver_chunk_block_size        = AUDIO_CHUNK_SIZE_BLOCKING;
    p_rarch->audio_driver_chunk_nonblock_size     = AUDIO_CHUNK_SIZE_NONBLOCKING;
@@ -27852,7 +27854,7 @@ static bool audio_driver_init_internal(
 #ifdef HAVE_REWIND
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t));
+   rewind_buf = (int16_t*)memalign_alloc(64, max_bufsamples * sizeof(int16_t));
    retro_assert(rewind_buf != NULL);
 
    if (!rewind_buf)
@@ -27964,7 +27966,7 @@ static bool audio_driver_init_internal(
    retro_assert(settings->uints.audio_out_rate <
          p_rarch->audio_driver_input * AUDIO_MAX_RATIO);
 
-   samples_buf = (float*)malloc(outsamples_max * sizeof(float));
+   samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
 
    retro_assert(samples_buf != NULL);
 

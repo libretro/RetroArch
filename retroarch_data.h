@@ -2070,7 +2070,7 @@ struct rarch_state
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
-   float audio_driver_input_data[AUDIO_CHUNK_SIZE_NONBLOCKING * 2];
+   float *audio_driver_input_data;
    float video_driver_core_hz;
    float video_driver_aspect_ratio;
 
