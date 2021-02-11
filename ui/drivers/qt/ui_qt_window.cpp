@@ -712,7 +712,6 @@ MainWindow::MainWindow(QWidget *parent) :
    resizeDocks(QList<QDockWidget*>() << m_searchDock, QList<int>() << 1, Qt::Vertical);
 #endif
 
-   removeUpdateTempFiles();
 #ifdef HAVE_OPENSSL
    {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
