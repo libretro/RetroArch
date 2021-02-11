@@ -460,7 +460,6 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/playlistentrydialog.o \
           ui/drivers/qt/viewoptionsdialog.o \
           ui/drivers/qt/qt_playlist.o \
-          ui/drivers/qt/updateretroarch.o \
           ui/drivers/qt/thumbnaildownload.o \
           ui/drivers/qt/thumbnailpackdownload.o \
           ui/drivers/qt/playlistthumbnaildownload.o
