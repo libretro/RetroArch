@@ -170,6 +170,48 @@ build-retroarch-windows-msvc10-i686:
     - copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
     - Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
 
+build-retroarch-windows-msvc05-i686:
+  tags:
+    - win10
+  stage: build
+  variables:
+    MEDIA_PATH:     .media
+    MSYSTEM:        MINGW32
+    ARCH:           x86
+    MSYS_BIN_DIR:   C:\msys64\usr\bin
+    SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
+    PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
+    VS80COMNTOOLS:  C:\Program Files (x86)\Microsoft Visual Studio 8\Common7\Tools\
+  before_script:
+    - $Env:HOME = "."
+    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+  artifacts:
+    paths:
+    - retroarch.exe
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    # Build RetroArch
+    - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2005_x86'"
+    - Invoke-Expression $Script:MakeCmd
+    - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+    # Create .media subdirectories
+    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
+    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
+    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg" -ItemType Directory
+    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist" -ItemType Directory
+    # Copy audio/video filters
+    - Get-ChildItem -Path "libretro-common/audio/dsp_filters/*" -Include *.dsp | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio"
+    - Get-ChildItem -Path "gfx/video_filters/*" -Include *.filt | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video"
+    # Copy default config file
+    - Copy-Item -Path "retroarch.cfg" -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg/retroarch.default.cfg"
+    # Copy dll dependencies
+    # (note that msvc05 build should not have any, but this
+    # may change in the future)
+    - copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
+    - Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
+
 build-retroarch-linux-x64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-amd64-ubuntu:xenial-gcc9
   stage: build
