@@ -37,7 +37,6 @@
 
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
-static int bootDeviceID;
 static char cwd[FILENAME_MAX];
 
 static void create_path_names(void)
@@ -210,11 +209,9 @@ static void frontend_ps2_init(void *data)
 #endif
 
 #if defined(BUILD_FOR_PCSX2)
-   bootDeviceID = BOOT_DEVICE_MC0;
-   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(cwd));
+   strlcpy(cwd, rootDevicePath(BOOT_DEVICE_MC0), sizeof(cwd));
 #else
    getcwd(cwd, sizeof(cwd));
-   bootDeviceID = getBootDeviceID(cwd);
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
    // If it is not salamander we need to go one level up for set the CWD.
    path_parent_dir(cwd);
