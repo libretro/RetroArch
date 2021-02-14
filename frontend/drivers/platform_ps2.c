@@ -37,14 +37,13 @@
 
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
-static int bootDeviceID;
 static char cwd[FILENAME_MAX];
 
 static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
 
-   sprintf(user_path, "%s/retroarch", cwd);
+   sprintf(user_path, "%sretroarch", cwd);
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], cwd, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    /* Content in the same folder */
@@ -210,11 +209,9 @@ static void frontend_ps2_init(void *data)
 #endif
 
 #if defined(BUILD_FOR_PCSX2)
-   bootDeviceID = BOOT_DEVICE_MC0;
-   strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(cwd));
+   strlcpy(cwd, rootDevicePath(BOOT_DEVICE_MC0), sizeof(cwd));
 #else
    getcwd(cwd, sizeof(cwd));
-   bootDeviceID = getBootDeviceID(cwd);
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
    // If it is not salamander we need to go one level up for set the CWD.
    path_parent_dir(cwd);
