@@ -185,7 +185,7 @@ bool core_get_system_info(struct retro_system_info *system);
 
 bool core_load_game(retro_ctx_load_content_info_t *load_info);
 
-bool core_set_controller_port_device(retro_ctx_controller_info_t *pad);
+void core_set_controller_port_device(retro_ctx_controller_info_t *pad);
 
 bool core_has_set_input_descriptor(void);
 

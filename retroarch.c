@@ -12063,34 +12063,30 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
 {
    unsigned i;
    rarch_system_info_t *info     = &p_rarch->runloop_system;
+   unsigned num_active_users     = p_rarch->input_driver_max_users;
+   unsigned max_users            = MAX_USERS;
+   
+   if (!info)
+      return;
 
-   for (i = 0; i < MAX_USERS; i++)
+   max_users                     = info->ports.size;
+
+   for (i = 0; i < max_users; i++)
    {
       retro_ctx_controller_info_t pad;
-      const char *ident                               = NULL;
-      bool set_controller                             = false;
-      const struct retro_controller_description *desc = NULL;
-      unsigned num_active_users                       = p_rarch->input_driver_max_users;
       unsigned device                                 = (i < num_active_users)
          ? input_config_get_device(i)
          : RETRO_DEVICE_NONE;
+      const struct retro_controller_description *desc = 
+         libretro_find_controller_description(
+               &info->ports.data[i], device);
 
-      if (info)
-      {
-         if (i < info->ports.size)
-            desc = libretro_find_controller_description(
-                  &info->ports.data[i], device);
-      }
-
-      if (desc)
-         ident = desc->desc;
-
-      if (!ident)
+      if (desc && !desc->desc)
       {
          /* If we're trying to connect a completely unknown device,
           * revert back to JOYPAD. */
-
-         if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
+         if (     device != RETRO_DEVICE_JOYPAD 
+               && device != RETRO_DEVICE_NONE)
          {
             /* Do not fix device,
              * because any use of dummy core will reset this,
@@ -12100,40 +12096,23 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
                   device);
             device = RETRO_DEVICE_JOYPAD;
          }
-         ident = "Joypad";
       }
 
       switch (device)
       {
-         case RETRO_DEVICE_NONE:
-            RARCH_LOG("%s %u.\n",
-                  msg_hash_to_str(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT),
-                  i + 1);
-            set_controller = true;
-            break;
          case RETRO_DEVICE_JOYPAD:
             /* Ideally these checks shouldn't be required but if we always
              * call core_set_controller_port_device input won't work on
              * cores that don't set port information properly */
-            if (info && info->ports.size != 0)
-               set_controller = true;
-            break;
+            if (max_users == 0)
+               continue;
+            /* fall-through */
+         case RETRO_DEVICE_NONE:
          default:
-            /* Some cores do not properly range check port argument.
-             * This is broken behavior of course, but avoid breaking
-             * cores needlessly. */
-            RARCH_LOG("%s %u: %s (ID: %u).\n",
-                    msg_hash_to_str(MSG_CONNECTING_TO_PORT),
-                    device, ident, i+1);
-            set_controller = true;
+            pad.device     = device;
+            pad.port       = i;
+            core_set_controller_port_device(&pad);
             break;
-      }
-
-      if (set_controller && info && i < info->ports.size)
-      {
-         pad.device     = device;
-         pad.port       = i;
-         core_set_controller_port_device(&pad);
       }
    }
 }
@@ -18771,17 +18750,6 @@ static bool secondary_core_deserialize(
 }
 #endif
 
-static void remember_controller_port_device(
-      struct rarch_state *p_rarch,
-      long port, long device)
-{
-   if (port >= 0 && port < MAX_USERS)
-      p_rarch->port_map[port] = (int)device;
-   if (     p_rarch->secondary_lib_handle 
-         && p_rarch->secondary_core.retro_set_controller_port_device)
-      p_rarch->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
-}
-
 static void clear_controller_port_map(struct rarch_state *p_rarch)
 {
    unsigned port;
@@ -19105,9 +19073,6 @@ static bool secondary_core_run_use_last_input(struct rarch_state *p_rarch)
 }
 #else
 static void secondary_core_destroy(struct rarch_state *p_rarch) { }
-static void remember_controller_port_device(
-      struct rarch_state *p_rarch,
-      long port, long device) { }
 static void clear_controller_port_map(struct rarch_state *p_rarch) { }
 #endif
 
@@ -38513,18 +38478,21 @@ bool core_set_poll_type(unsigned type)
    return true;
 }
 
-bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
+void core_set_controller_port_device(retro_ctx_controller_info_t *pad)
 {
    struct rarch_state *p_rarch  = &rarch_st;
-   if (!pad)
-      return false;
-
 #ifdef HAVE_RUNAHEAD
-   remember_controller_port_device(p_rarch, pad->port, pad->device);
+   unsigned port                = pad->port;
+   unsigned device              = pad->device;
+   if (port >= 0 && port < MAX_USERS)
+      p_rarch->port_map[port] = (int)device;
+   if (     p_rarch->secondary_lib_handle 
+         && p_rarch->secondary_core.retro_set_controller_port_device)
+      p_rarch->secondary_core.retro_set_controller_port_device(
+            port, device);
 #endif
-
-   p_rarch->current_core.retro_set_controller_port_device(pad->port, pad->device);
-   return true;
+   p_rarch->current_core.retro_set_controller_port_device(
+         pad->port, pad->device);
 }
 
 bool core_get_memory(retro_ctx_memory_info_t *info)
