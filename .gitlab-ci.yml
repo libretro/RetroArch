@@ -331,7 +331,7 @@ build-retroarch-osx-x64:
     - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
     - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch.app/Contents/Info.plist
     - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
-    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.13/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.7/' RetroArch.app/Contents/Info.plist
 
     # TODO: It seems this messes with code signing, so delete it??
     - rm -rvf RetroArch.app/Contents/en.lproj
