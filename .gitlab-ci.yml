@@ -325,6 +325,9 @@ build-retroarch-osx-x64:
     - cp -Rv "pkg/apple/OSX/"* "RetroArch.app/Contents"
     - cp retroarch RetroArch.app/Contents/MacOS
     - cp media/retroarch.icns RetroArch.app/Contents/Resources/
+    - rm -rvf RetroArch.app/Contents/Info_Metal.plist
+    - rm -rvf RetroArch.app/Contents/Resources/default.metallib
+    - rm -rvf RetroArch.app/Contents/Resources/en.lproj/MainMenu_Metal.nib
 
     # Update properties within the application properties
     - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
