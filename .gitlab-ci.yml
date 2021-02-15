@@ -312,7 +312,7 @@ build-retroarch-osx-x64:
   dependencies: []
   script:
     # Normal RetroArch Build
-    - ./configure --enable-metal --disable-al
+    - ./configure --disable-al
     - make -j$NUMPROC
 
     # Cleanup for DMG creation
