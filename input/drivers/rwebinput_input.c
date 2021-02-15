@@ -515,6 +515,7 @@ static int16_t rwebinput_input_state(
                device == RARCH_DEVICE_MOUSE_SCREEN);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
+         if (idx == 0)
          {
             struct video_viewport vp;
             rwebinput_mouse_state_t 
