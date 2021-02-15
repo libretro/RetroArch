@@ -130,6 +130,17 @@ endif
 ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
    LIBS += -framework AppKit
+   ifeq ($(shell uname -p),arm)
+      DEF_FLAGS += -mmacosx-version-min=10.14 # macOS  (Metal, ARM 64bit)
+	else ifeq ($(HAVE_METAL),1)
+      DEF_FLAGS += -mmacosx-version-min=10.13 # macOS  (Metal, x86 64bit)
+   else ifeq ($(shell uname -p),powerpc)
+      DEF_FLAGS += -mmacosx-version-min=10.5  # macOSX (PowerPC 32-bit)
+   else ifeq ($(shell uname -m),i386)
+      DEF_FLAGS += -mmacosx-version-min=10.6  # macOSX (OpenGL, x86 32bit)
+   else
+      DEF_FLAGS += -mmacosx-version-min=10.7  # macOSX (OpenGL, x86 64bit)
+   endif
 else
    OSX := 0
 endif
