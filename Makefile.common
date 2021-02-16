@@ -132,7 +132,7 @@ ifneq ($(findstring Darwin,$(OS)),)
    LIBS += -framework AppKit
 	MINVERSION=
    ifeq ($(shell uname -p),arm)
-      MINVERSION = -mmacosx-version-min=10.14 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERSION = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
    else ifeq ($(HAVE_METAL),1)
       MINVERSION = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
