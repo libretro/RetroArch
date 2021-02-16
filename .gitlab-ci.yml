@@ -98,10 +98,11 @@ build-retroarch-windows-msvc10-x64:
     ARCH:           x86_64
     MSYS_BIN_DIR:   C:\msys64\usr\bin
     SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
+    RCEDIT_BIN_DIR: C:\Program Files\rcedit
     PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
   before_script:
     - $Env:HOME = "."
-    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
   artifacts:
     paths:
     - retroarch.exe
@@ -113,6 +114,7 @@ build-retroarch-windows-msvc10-x64:
     - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2010_x64'"
     - Invoke-Expression $Script:MakeCmd
     - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
     # Create .media subdirectories
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
@@ -139,10 +141,11 @@ build-retroarch-windows-msvc10-i686:
     ARCH:           x86
     MSYS_BIN_DIR:   C:\msys64\usr\bin
     SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
+    RCEDIT_BIN_DIR: C:\Program Files\rcedit
     PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
   before_script:
     - $Env:HOME = "."
-    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
   artifacts:
     paths:
     - retroarch.exe
@@ -154,6 +157,7 @@ build-retroarch-windows-msvc10-i686:
     - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2010_x86'"
     - Invoke-Expression $Script:MakeCmd
     - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
     # Create .media subdirectories
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
@@ -180,11 +184,12 @@ build-retroarch-windows-msvc05-i686:
     ARCH:           x86
     MSYS_BIN_DIR:   C:\msys64\usr\bin
     SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
+    RCEDIT_BIN_DIR: C:\Program Files\rcedit
     PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
     VS80COMNTOOLS:  C:\Program Files (x86)\Microsoft Visual Studio 8\Common7\Tools\
   before_script:
     - $Env:HOME = "."
-    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
   artifacts:
     paths:
     - retroarch.exe
@@ -196,6 +201,7 @@ build-retroarch-windows-msvc05-i686:
     - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2005_x86'"
     - Invoke-Expression $Script:MakeCmd
     - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
     # Create .media subdirectories
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
