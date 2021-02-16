@@ -29,7 +29,13 @@
 #include <features/features_cpu.h>
 #include <audio/conversion/s16_to_float.h>
 
-#if defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)
+#if (defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)) || defined(HAVE_NEON)
+#ifndef HAVE_ARM_NEON_OPTIMIZATIONS
+#define HAVE_ARM_NEON_OPTIMIZATIONS
+#endif
+#endif
+
+#if defined(HAVE_ARM_NEON_OPTIMIZATIONS)
 static bool s16_to_float_neon_enabled = false;
 
 /* Avoid potential hard-float/soft-float ABI issues. */
@@ -98,7 +104,7 @@ void convert_s16_to_float(float *out,
    samples = samples_in;
    i       = 0;
 
-#elif defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)
+#elif defined(HAVE_ARM_NEON_OPTIMIZATIONS)
    if (s16_to_float_neon_enabled)
    {
       size_t aligned_samples = samples & ~7;
@@ -181,7 +187,7 @@ void convert_s16_to_float(float *out,
  **/
 void convert_s16_to_float_init_simd(void)
 {
-#if defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)
+#if defined(HAVE_ARM_NEON_OPTIMIZATIONS)
    unsigned cpu = cpu_features_get();
 
    if (cpu & RETRO_SIMD_NEON)
