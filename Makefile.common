@@ -147,7 +147,7 @@ ifneq ($(findstring Darwin,$(OS)),)
    ifeq ($(ARCH),arm64)
       DARWINFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
       DARWINFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
-      DARWINFLAGS += -arch arm
+      DARWINFLAGS += -arch arm64
    else ifeq ($(ARCH),x86_64)
       ifeq ($(HAVE_METAL),1)
          DARWINFLAGS  = -mmacosx-version-min=10.13 -stdlib=libc++
