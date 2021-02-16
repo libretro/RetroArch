@@ -464,7 +464,7 @@ build-retroarch-metal-osx-arm64:
   script:
     # Normal RetroArch Metal (ARM64) Build
     - ./configure --enable-metal --disable-al
-    - make -j$NUMPROC
+    - make ARCH=arm64 -j$NUMPROC
 
     # Cleanup for DMG creation
     - rm -rvf "RetroArch_ARM64.app/"

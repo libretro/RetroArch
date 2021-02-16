@@ -130,20 +130,30 @@ endif
 ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
    LIBS += -framework AppKit
-	MINVERSION=
+   DARWINFLAGS=
    ifeq ($(shell uname -p),arm)
-      MINVERSION = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      DARWINFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
    else ifeq ($(HAVE_METAL),1)
-      MINVERSION = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
+      DARWINFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
-      MINVERSION = -mmacosx-version-min=10.5  # macOSX (PowerPC 32-bit)
+      DARWINFLAGS = -mmacosx-version-min=10.5  # macOSX (PowerPC 32-bit)
    else ifeq ($(shell uname -m),i386)
-      MINVERSION = -mmacosx-version-min=10.6  # macOSX (OpenGL, x86 32bit)
+      DARWINFLAGS = -mmacosx-version-min=10.6  # macOSX (OpenGL, x86 32bit)
    else
-      MINVERSION = -mmacosx-version-min=10.7 -stdlib=libc++ # macOSX (OpenGL, x86 64bit)
+      DARWINFLAGS = -mmacosx-version-min=10.7 -stdlib=libc++ # macOSX (OpenGL, x86 64bit)
    endif
-   DEF_FLAGS += $(MINVERSION)
-   LDFLAGS   += $(MINVERSION)
+	# Build for a specific architecture when ARCH is defined as a switch
+   ifeq ($(ARCH),arm64)
+      DARWINFLAGS += -arch arm64
+   else ifeq($(ARCH),x86_64)
+      DARWINFLAGS += -arch x86_64
+   else ifeq($(ARCH),x86)
+      DARWINFLAGS += -arch x86
+   else ifeq($(ARCH),ppc)
+      DARWINFLAGS += -arch ppc
+   endif
+   DEF_FLAGS += $(DARWINFLAGS)
+   LDFLAGS   += $(DARWINFLAGS)
 else
    OSX := 0
 endif
