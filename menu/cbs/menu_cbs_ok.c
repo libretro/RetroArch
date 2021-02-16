@@ -6488,7 +6488,7 @@ static int action_ok_push_dropdown_item_input_device_index(const char *path,
    if (!setting)
       return menu_cbs_exit();
 
-   settings->uints.input_joypad_map[setting->index_offset] = entry_idx;
+   settings->uints.input_joypad_map[setting->index_offset] = (unsigned)entry_idx;
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
