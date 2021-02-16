@@ -12063,33 +12063,30 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
 {
    unsigned i;
    rarch_system_info_t *info     = &p_rarch->runloop_system;
+   unsigned num_active_users     = p_rarch->input_driver_max_users;
+   unsigned ports_size           = info->ports.size;
+
+   if (!info)
+      return;
 
    for (i = 0; i < MAX_USERS; i++)
    {
       retro_ctx_controller_info_t pad;
-      const char *ident                               = NULL;
-      bool set_controller                             = false;
       const struct retro_controller_description *desc = NULL;
-      unsigned num_active_users                       = p_rarch->input_driver_max_users;
       unsigned device                                 = (i < num_active_users)
          ? input_config_get_device(i)
          : RETRO_DEVICE_NONE;
 
-      if (info)
-      {
-         if (i < info->ports.size)
-            desc = libretro_find_controller_description(
-                  &info->ports.data[i], device);
-      }
+      if (i >= ports_size)
+         break;
 
-      if (desc)
-         ident = desc->desc;
+      desc = libretro_find_controller_description(
+            &info->ports.data[i], device);
 
-      if (!ident)
+      if (desc && !desc->desc)
       {
          /* If we're trying to connect a completely unknown device,
           * revert back to JOYPAD. */
-
          if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
          {
             /* Do not fix device,
@@ -12100,40 +12097,27 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
                   device);
             device = RETRO_DEVICE_JOYPAD;
          }
-         ident = "Joypad";
       }
+
+      pad.device     = device;
+      pad.port       = i;
 
       switch (device)
       {
-         case RETRO_DEVICE_NONE:
-            RARCH_LOG("%s %u.\n",
-                  msg_hash_to_str(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT),
-                  i + 1);
-            set_controller = true;
-            break;
          case RETRO_DEVICE_JOYPAD:
             /* Ideally these checks shouldn't be required but if we always
              * call core_set_controller_port_device input won't work on
              * cores that don't set port information properly */
-            if (info && info->ports.size != 0)
-               set_controller = true;
+            if (ports_size != 0)
+               core_set_controller_port_device(&pad);
             break;
+         case RETRO_DEVICE_NONE:
          default:
             /* Some cores do not properly range check port argument.
              * This is broken behavior of course, but avoid breaking
              * cores needlessly. */
-            RARCH_LOG("%s %u: %s (ID: %u).\n",
-                    msg_hash_to_str(MSG_CONNECTING_TO_PORT),
-                    device, ident, i+1);
-            set_controller = true;
+            core_set_controller_port_device(&pad);
             break;
-      }
-
-      if (set_controller && info && i < info->ports.size)
-      {
-         pad.device     = device;
-         pad.port       = i;
-         core_set_controller_port_device(&pad);
       }
    }
 }
