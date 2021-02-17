@@ -23,6 +23,7 @@
 #include <memory.h>
 
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #pragma mark - ringbuffer
 

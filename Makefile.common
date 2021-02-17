@@ -795,13 +795,16 @@ endif
 # Audio
 
 ifeq ($(HAVE_COREAUDIO), 1)
+   DEFINES += -DHAVE_COREAUDIO
    OBJ += audio/drivers/coreaudio.o
    HAVE_COREAUDIO_LIBS = 1
 endif
 
 ifeq ($(HAVE_COREAUDIO3), 1)
+   DEFINES += -DHAVE_COREAUDIO3
    OBJ += audio/drivers/coreaudio3.o
    HAVE_COREAUDIO_LIBS = 1
+   LIBS += -framework AudioToolBox -framework AVFoundation
 endif
 
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)

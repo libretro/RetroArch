@@ -118,6 +118,7 @@ HAVE_ROAR=auto             # RoarAudio support
 HAVE_AL=auto               # OpenAL support
 HAVE_JACK=auto             # JACK support
 HAVE_COREAUDIO=auto        # CoreAudio support
+HAVE_COREAUDIO3=no         # CoreAudio3 support
 HAVE_PULSE=auto            # PulseAudio support
 C89_PULSE=no
 HAVE_FREETYPE=auto         # FreeType support

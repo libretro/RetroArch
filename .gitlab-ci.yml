@@ -396,7 +396,7 @@ build-retroarch-metal-osx-x64:
   dependencies: []
   script:
     # Normal RetroArch Metal Build
-    - ./configure --enable-metal --disable-al
+    - ./configure --enable-metal --disable-al --enable-coreaudio3
     - make -j$NUMPROC
 
     # Cleanup for DMG creation
@@ -466,7 +466,7 @@ build-retroarch-metal-osx-arm64:
   dependencies: []
   script:
     # Normal RetroArch Metal (ARM64) Build
-    - ./configure --enable-metal --disable-al
+    - ./configure --enable-metal --disable-al --enable-coreaudio3
     - make ARCH=arm64 BUILDBOT=1 -j$NUMPROC
 
     # Cleanup for DMG creation
