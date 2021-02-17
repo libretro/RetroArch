@@ -461,7 +461,7 @@ build-retroarch-metal-osx-arm64:
     - rm -rvf "wc$SHELL_ID" empty.dmg
   artifacts:
     paths:
-    - RetroArch_ARM64.dmg
+    - RetroArch.dmg
     expire_in: 10 min
   dependencies: []
   script:
@@ -470,31 +470,31 @@ build-retroarch-metal-osx-arm64:
     - make ARCH=arm64 BUILDBOT=1 -j$NUMPROC
 
     # Cleanup for DMG creation
-    - rm -rvf "RetroArch_ARM64.app/"
+    - rm -rvf "RetroArch.app/"
 
     # Initialize for DMG Creation
-    - mkdir -vp "RetroArch_ARM64.app/Contents/MacOS"
+    - mkdir -vp "RetroArch.app/Contents/MacOS"
 
     # Copy resources and compiled program over
-    - cp -Rv "pkg/apple/OSX/"* "RetroArch_ARM64.app/Contents"
-    - cp retroarch RetroArch_ARM64.app/Contents/MacOS
-    - cp media/retroarch.icns RetroArch_ARM64.app/Contents/Resources/
-    - mv RetroArch_ARM64.app/Contents/Info_Metal.plist RetroArch_ARM64.app/Contents/Info.plist
+    - cp -Rv "pkg/apple/OSX/"* "RetroArch.app/Contents"
+    - cp retroarch RetroArch.app/Contents/MacOS
+    - cp media/retroarch.icns RetroArch.app/Contents/Resources/
+    - mv RetroArch.app/Contents/Info_Metal.plist RetroArch.app/Contents/Info.plist
     - rm -rvf RetroArch.app/Contents/modules_ppc
     - rm -rvf RetroArch.app/Contents/Resources/en.lproj/MainMenu.nib
 
     # Update properties within the application properties
-    - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch_ARM64.app/Contents/Info.plist
-    - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch_ARM64.app/Contents/Info.plist
-    - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch_ARM64.app/Contents/Info.plist
-    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.15/' RetroArch_ARM64.app/Contents/Info.plist
+    - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.15/' RetroArch.app/Contents/Info.plist
 
     # TODO: It seems this messes with code signing, so delete it??
-    - rm -rvf RetroArch_ARM64.app/Contents/en.lproj
+    - rm -rvf RetroArch.app/Contents/en.lproj
 
     # Undo the state from a previous failure, if so
     - umount "wc$SHELL_ID" || echo "Not mounted, so not caring right now."
-    - rm -rvf RetroArch_ARM64.dmg "wc$SHELL_ID" empty.dmg
+    - rm -rvf RetroArch.dmg "wc$SHELL_ID" empty.dmg
 
     # Create template DMG
     - mkdir -p template
@@ -504,11 +504,11 @@ build-retroarch-metal-osx-arm64:
     # Package the DMG together
     - mkdir -p "wc$SHELL_ID"
     - hdiutil attach empty.dmg -noautoopen -quiet -mountpoint "wc$SHELL_ID"
-    - rm -rf "wc$SHELL_ID"/RetroArch_ARM64.app
-    - ditto -rsrc RetroArch_ARM64.app "wc$SHELL_ID"/RetroArch_ARM64.app
+    - rm -rf "wc$SHELL_ID"/RetroArch.app
+    - ditto -rsrc RetroArch.app "wc$SHELL_ID"/RetroArch.app
     - ln -s /Applications "wc$SHELL_ID"/Applications
     - WC_DEV=`hdiutil info | grep "wc$SHELL_ID" | grep "Apple_HFS" | awk '{print $1}'` && hdiutil detach "$WC_DEV" -quiet -force
-    - hdiutil convert empty.dmg -quiet -format UDZO -imagekey zlib-level=9 -o RetroArch_ARM64.dmg
+    - hdiutil convert empty.dmg -quiet -format UDZO -imagekey zlib-level=9 -o RetroArch.dmg
 
     # Cleanup afterwards
     - umount "wc$SHELL_ID" || echo "Not mounted, so not caring right now."
