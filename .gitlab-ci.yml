@@ -448,6 +448,9 @@ build-retroarch-metal-osx-x64:
 build-retroarch-metal-osx-arm64:
   tags:
     - macosx
+  variables:
+    LIBRETRO_APPLE_PLATFORM: arm64-apple-macos10.15
+    LIBRETRO_APPLE_ISYSROOT: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
   stage: build
   before_script:
     - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
@@ -464,7 +467,7 @@ build-retroarch-metal-osx-arm64:
   script:
     # Normal RetroArch Metal (ARM64) Build
     - ./configure --enable-metal --disable-al
-    - make -j$NUMPROC
+    - make ARCH=arm64 BUILDBOT=1 -j$NUMPROC
 
     # Cleanup for DMG creation
     - rm -rvf "RetroArch_ARM64.app/"
@@ -997,3 +1000,4 @@ trigger_static-cores:
   script:
     # Dummy for now
     - /bin/true
+
