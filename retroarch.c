@@ -441,16 +441,6 @@ static int driver_find_index(const char *label, const char *drv)
    return -1;
 }
 
-
-/* Find index of the driver, based on @drv->label */
-static bool driver_ctl_find_index(driver_ctx_info_t *drv)
-{
-   if (!drv)
-      return false;
-   drv->len = driver_find_index(drv->label, drv->s);
-   return true;
-}
-
 /**
  * driver_find_last:
  * @label              : string of driver type to be found.
@@ -459,13 +449,12 @@ static bool driver_ctl_find_index(driver_ctx_info_t *drv)
  *
  * Find last driver in driver array.
  **/
-static bool driver_find_last(const char *label, char *s, size_t len)
+static void driver_find_last(const char *label, char *s, size_t len)
 {
    unsigned i;
 
    for (i = 0;
-         find_driver_nonempty(label, i, s, len) != NULL; i++)
-   {}
+         find_driver_nonempty(label, i, s, len) != NULL; i++) { }
 
    if (i)
       i = i - 1;
@@ -473,7 +462,6 @@ static bool driver_find_last(const char *label, char *s, size_t len)
       i = 0;
 
    find_driver_nonempty(label, i, s, len);
-   return true;
 }
 
 /**
@@ -4766,16 +4754,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_FIND_DRIVER:
          {
-            int i;
-            driver_ctx_info_t drv;
-            settings_t        *settings = p_rarch->configuration_settings;
-
-            drv.label = "menu_driver";
-            drv.s     = settings->arrays.menu_driver;
-
-            driver_ctl_find_index(&drv);
-
-            i = (int)drv.len;
+            settings_t *settings = p_rarch->configuration_settings;
+            int i                = (int)driver_find_index(
+                  "menu_driver",
+                  settings->arrays.menu_driver);
 
             if (i >= 0)
                p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
@@ -19168,15 +19150,9 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
          break;
       case RARCH_BLUETOOTH_CTL_FIND_DRIVER:
          {
-            int i;
-            driver_ctx_info_t drv;
-
-            drv.label = "bluetooth_driver";
-            drv.s     = settings->arrays.bluetooth_driver;
-
-            driver_ctl_find_index(&drv);
-
-            i = (int)drv.len;
+            int i                = (int)driver_find_index(
+                  "bluetooth_driver",
+                  settings->arrays.bluetooth_driver);
 
             if (i >= 0)
                p_rarch->bluetooth_driver = (const bluetooth_driver_t*)bluetooth_drivers[i];
@@ -19321,15 +19297,9 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
          break;
       case RARCH_WIFI_CTL_FIND_DRIVER:
          {
-            int i;
-            driver_ctx_info_t drv;
-
-            drv.label = "wifi_driver";
-            drv.s     = settings->arrays.wifi_driver;
-
-            driver_ctl_find_index(&drv);
-
-            i = (int)drv.len;
+            int i                = (int)driver_find_index(
+                  "wifi_driver",
+                  settings->arrays.wifi_driver);
 
             if (i >= 0)
                p_rarch->wifi_driver = (const wifi_driver_t*)wifi_drivers[i];
@@ -19679,16 +19649,10 @@ const char* config_get_record_driver_options(void)
 /* TODO/FIXME - not used apparently */
 static void find_record_driver(void)
 {
-   int i;
-   driver_ctx_info_t drv;
    settings_t *settings = p_rarch->configuration_settings;
-
-   drv.label = "record_driver";
-   drv.s     = settings->arrays.record_driver;
-
-   driver_ctl_find_index(&drv);
-
-   i = (int)drv.len;
+   int i                = (int)driver_find_index(
+         "record_driver",
+         settings->arrays.record_driver);
 
    if (i >= 0)
       p_rarch->recording_driver = (const record_driver_t*)record_drivers[i];
@@ -24774,16 +24738,10 @@ static bool input_driver_init(struct rarch_state *p_rarch)
 
 static bool input_driver_find_driver(struct rarch_state *p_rarch)
 {
-   int i;
-   driver_ctx_info_t drv;
-   settings_t           *settings = p_rarch->configuration_settings;
-
-   drv.label                      = "input_driver";
-   drv.s                          = settings->arrays.input_driver;
-
-   driver_ctl_find_index(&drv);
-
-   i                              = (int)drv.len;
+   settings_t *settings = p_rarch->configuration_settings;
+   int i                = (int)driver_find_index(
+         "input_driver",
+         settings->arrays.input_driver);
 
    if (i >= 0)
    {
@@ -27755,16 +27713,10 @@ static bool audio_driver_deinit(struct rarch_state *p_rarch)
 
 static bool audio_driver_find_driver(struct rarch_state *p_rarch)
 {
-   int i;
-   driver_ctx_info_t drv;
-   settings_t     *settings    = p_rarch->configuration_settings;
-
-   drv.label                   = "audio_driver";
-   drv.s                       = settings->arrays.audio_driver;
-
-   driver_ctl_find_index(&drv);
-
-   i                           = (int)drv.len;
+   settings_t *settings    = p_rarch->configuration_settings;
+   int i                   = (int)driver_find_index(
+         "audio_driver",
+         settings->arrays.audio_driver);
 
    if (i >= 0)
       p_rarch->current_audio = (const audio_driver_t*)
@@ -30923,7 +30875,6 @@ static void video_driver_restore_cached(struct rarch_state *p_rarch,
 static bool video_driver_find_driver(struct rarch_state *p_rarch)
 {
    int i;
-   driver_ctx_info_t drv;
    settings_t          *settings           = p_rarch->configuration_settings;
 
    if (video_driver_is_hw_context())
@@ -31001,12 +30952,9 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
       RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
    }
 
-   drv.label = "video_driver";
-   drv.s     = settings->arrays.video_driver;
-
-   driver_ctl_find_index(&drv);
-
-   i         = (int)drv.len;
+   i                   = (int)driver_find_index(
+         "video_driver",
+         settings->arrays.video_driver);
 
    if (i >= 0)
       p_rarch->current_video = (video_driver_t*)video_drivers[i];
@@ -32434,16 +32382,10 @@ const char* config_get_location_driver_options(void)
 
 static void find_location_driver(struct rarch_state *p_rarch)
 {
-   int i;
-   driver_ctx_info_t drv;
    settings_t         *settings = p_rarch->configuration_settings;
-
-   drv.label                    = "location_driver";
-   drv.s                        = settings->arrays.location_driver;
-
-   driver_ctl_find_index(&drv);
-
-   i                            = (int)drv.len;
+   int i                        = (int)driver_find_index(
+         "location_driver",
+         settings->arrays.location_driver);
 
    if (i >= 0)
       p_rarch->location_driver  = (const location_driver_t*)location_drivers[i];
@@ -32648,16 +32590,10 @@ static void driver_camera_stop(void)
 
 static void camera_driver_find_driver(struct rarch_state *p_rarch)
 {
-   int i;
-   driver_ctx_info_t drv;
    settings_t         *settings = p_rarch->configuration_settings;
-
-   drv.label = "camera_driver";
-   drv.s     = settings->arrays.camera_driver;
-
-   driver_ctl_find_index(&drv);
-
-   i         = (int)drv.len;
+   int i                        = (int)driver_find_index(
+         "camera_driver",
+         settings->arrays.camera_driver);
 
    if (i >= 0)
       p_rarch->camera_driver = (const camera_driver_t*)camera_drivers[i];
@@ -33127,7 +33063,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
       case RARCH_DRIVER_CTL_FIND_LAST:
          if (!drv)
             return false;
-         return driver_find_last(drv->label, drv->s, drv->len);
+         driver_find_last(drv->label, drv->s, drv->len);
+         break;
       case RARCH_DRIVER_CTL_FIND_PREV:
          if (!drv)
             return false;
