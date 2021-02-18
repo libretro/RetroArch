@@ -8579,7 +8579,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
          RARCH_LOG("Saving save states in content directory is set. This overrides other save state file directory settings.\n");
    }
 
-   if (global)
+   if (global && system && !string_is_empty(system->library_name))
    {
       if (path_is_directory(new_savefile_dir))
          strlcpy(global->name.savefile, new_savefile_dir,
@@ -8594,9 +8594,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
          fill_pathname_dir(global->name.savefile,
                !string_is_empty(p_rarch->path_main_basename)
                ? p_rarch->path_main_basename
-               : system && !string_is_empty(system->library_name)
-               ? system->library_name
-               : "",
+               : system->library_name,
                FILE_PATH_SRM_EXTENSION,
                sizeof(global->name.savefile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
@@ -8609,9 +8607,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
          fill_pathname_dir(global->name.savestate,
                !string_is_empty(p_rarch->path_main_basename)
                ? p_rarch->path_main_basename
-               : system && !string_is_empty(system->library_name)
-               ? system->library_name
-               : "",
+               : system->library_name,
                FILE_PATH_STATE_EXTENSION,
                sizeof(global->name.savestate));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
@@ -8622,11 +8618,10 @@ static void path_set_redirect(struct rarch_state *p_rarch)
 #ifdef HAVE_CHEATS
       if (path_is_directory(global->name.cheatfile))
       {
-         /* FIXME: Should this optionally use system->library_name like the others? */
          fill_pathname_dir(global->name.cheatfile,
                !string_is_empty(p_rarch->path_main_basename)
                ? p_rarch->path_main_basename
-               : "",
+               : system->library_name,
                FILE_PATH_CHT_EXTENSION,
                sizeof(global->name.cheatfile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
@@ -8670,7 +8665,8 @@ static void path_set_basename(
     *
     */
    path_basedir_wrapper(p_rarch->path_main_basename);
-   fill_pathname_dir(p_rarch->path_main_basename, path, "", sizeof(p_rarch->path_main_basename));
+   if (!string_is_empty(p_rarch->path_main_basename))
+      fill_pathname_dir(p_rarch->path_main_basename, path, "", sizeof(p_rarch->path_main_basename));
 #endif
 
    if ((dst = strrchr(p_rarch->path_main_basename, '.')))
@@ -9018,9 +9014,10 @@ static void path_set_names(struct rarch_state *p_rarch, const char *path)
                ".state", sizeof(global->name.savestate));
 
 #ifdef HAVE_CHEATS
-      fill_pathname_noext(global->name.cheatfile,
-            p_rarch->path_main_basename,
-            ".cht", sizeof(global->name.cheatfile));
+      if (!string_is_empty(p_rarch->path_main_basename))
+         fill_pathname_noext(global->name.cheatfile,
+               p_rarch->path_main_basename,
+               ".cht", sizeof(global->name.cheatfile));
 #endif
    }
 
