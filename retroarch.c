@@ -5513,9 +5513,9 @@ static bool menu_shader_manager_save_preset_internal(
             shader, save_reference);
 
       if (ret)
-         RARCH_LOG("[ Shaders - Save Preset ]:  Saved shader preset to %s.\n", preset_path);
+         RARCH_LOG("[Shaders - Save Preset]: Saved shader preset to %s.\n", preset_path);
       else
-         RARCH_ERR("[ Shaders - Save Preset ]:  Failed writing shader preset to %s.\n", preset_path);
+         RARCH_ERR("[Shaders - Save Preset]: Failed writing shader preset to %s.\n", preset_path);
    }
    else
    {
@@ -5538,7 +5538,7 @@ static bool menu_shader_manager_save_preset_internal(
 
             if (!ret)
             {
-               RARCH_WARN("[ Shaders - Save Preset ]:  Failed to create preset directory %s.\n", basedir);
+               RARCH_WARN("[Shaders - Save Preset]: Failed to create preset directory %s.\n", basedir);
                continue;
             }
          }
@@ -5551,15 +5551,15 @@ static bool menu_shader_manager_save_preset_internal(
 
          if (ret)
          {
-            RARCH_LOG("[ Shaders - Save Preset ]:  Saved shader preset to %s.\n", preset_path);
+            RARCH_LOG("[Shaders - Save Preset]: Saved shader preset to %s.\n", preset_path);
             break;
          }
          else
-            RARCH_WARN("[ Shaders - Save Preset ]:  Failed writing shader preset to %s.\n", preset_path);
+            RARCH_WARN("[Shaders - Save Preset]: Failed writing shader preset to %s.\n", preset_path);
       }
 
       if (!ret)
-         RARCH_ERR("[ Shaders - Save Preset ]:  Failed to write shader preset. Make sure shader directory"
+         RARCH_ERR("[Shaders - Save Preset]: Failed to write shader preset. Make sure shader directory"
                " and/or config directory are writable.\n");
    }
 
@@ -5681,10 +5681,10 @@ static bool menu_shader_manager_operate_auto_preset(
                      if (!filestream_delete(preset_path))
                      {
                         m++;
-                        RARCH_LOG("Deleted shader preset from %s.\n", preset_path);
+                        RARCH_LOG("[Shaders]: Deleted shader preset from \"%s\".\n", preset_path);
                      }
                      else
-                        RARCH_WARN("Failed to remove shader preset at %s.\n", preset_path);
+                        RARCH_WARN("[Shaders]: Failed to remove shader preset at \"%s\".\n", preset_path);
                   }
                }
             }
@@ -7827,11 +7827,11 @@ static bool init_netplay(
 
    if (_netplay_is_client)
    {
-      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
+      RARCH_LOG("[Netplay]: %s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
    }
    else
    {
-      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
+      RARCH_LOG("[Netplay]: %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false,
@@ -12002,7 +12002,7 @@ static void command_event_set_volume(
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("[Audio]: %s\n", msg);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
 }
@@ -12031,7 +12031,8 @@ static void command_event_set_mixer_volume(
          msg_hash_to_str(MSG_AUDIO_VOLUME),
          new_volume);
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg);
+
+   RARCH_LOG("[Audio]: %s\n", msg);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
 }
@@ -12074,7 +12075,7 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
             /* Do not fix device,
              * because any use of dummy core will reset this,
              * which is not a good idea. */
-            RARCH_WARN("Input device ID %u is unknown to this "
+            RARCH_WARN("[Input]: Input device ID %u is unknown to this "
                   "libretro implementation. Using RETRO_DEVICE_JOYPAD.\n",
                   device);
             device = RETRO_DEVICE_JOYPAD;
@@ -12123,11 +12124,11 @@ static void command_event_deinit_core(
 
    if (p_rarch->current_core.inited)
    {
-      RARCH_LOG("[CORE]: Unloading core..\n");
+      RARCH_LOG("[Core]: Unloading core..\n");
       p_rarch->current_core.retro_deinit();
    }
 
-   RARCH_LOG("[CORE]: Unloading core symbols..\n");
+   RARCH_LOG("[Core]: Unloading core symbols..\n");
    uninit_libretro_symbols(p_rarch, &p_rarch->current_core);
    p_rarch->current_core.symbols_inited = false;
 
@@ -12491,7 +12492,7 @@ static void command_event_runtime_log_deinit(struct rarch_state *p_rarch)
          &hours, &minutes, &seconds);
 
    n = snprintf(log, sizeof(log),
-         "Content ran for a total of: %02u hours, %02u minutes, %02u seconds.",
+         "[Core]: Content ran for a total of: %02u hours, %02u minutes, %02u seconds.",
          hours, minutes, seconds);
    if ((n < 0) || (n >= PATH_MAX_LENGTH))
       n = 0; /* Just silence any potential gcc warnings... */
@@ -12728,7 +12729,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
 
-      strcpy_literal(log, "[config] ");
+      strcpy_literal(log, "[Config]: ");
       strlcat(log, s, sizeof(log));
       RARCH_LOG("%s\n", log);
       return true;
@@ -12740,7 +12741,7 @@ static bool command_event_save_config(
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
 
-      strcpy_literal(log, "[config] ");
+      strcpy_literal(log, "[Config]: ");
       strlcat(log, s, sizeof(log));
       RARCH_ERR("%s\n", log);
    }
@@ -12780,7 +12781,7 @@ static bool command_event_save_core_config(
    if (string_is_empty(config_dir))
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("[config] %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
+      RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       return false;
    }
 
@@ -12824,7 +12825,7 @@ static bool command_event_save_core_config(
    if (!found_path)
    {
       /* Fallback to system time... */
-      RARCH_WARN("[config] %s\n",
+      RARCH_WARN("[Config]: %s\n",
             msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
       fill_dated_filename(config_name, ".cfg", sizeof(config_name));
       fill_pathname_join(config_path, config_dir, config_name,
@@ -12870,7 +12871,7 @@ static void command_event_save_current_config(
    {
       case OVERRIDE_NONE:
          if (path_is_empty(RARCH_PATH_CONFIG))
-            strcpy_literal(msg, "[config] Config directory not set, cannot save configuration.");
+            strcpy_literal(msg, "[Config]: Config directory not set, cannot save configuration.");
          else
             command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
          break;
@@ -12880,7 +12881,7 @@ static void command_event_save_current_config(
          if (config_save_overrides(type, &p_rarch->runloop_system))
          {
             strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
-            RARCH_LOG("[config] [overrides] %s\n", msg);
+            RARCH_LOG("[Config - Overrides]: %s\n", msg);
 
             /* set overrides to active so the original config can be
                restored after closing content */
@@ -12889,7 +12890,7 @@ static void command_event_save_current_config(
          else
          {
             strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
-            RARCH_ERR("[config] [overrides] %s\n", msg);
+            RARCH_ERR("[Config - Overrides]: %s\n", msg);
          }
          break;
    }
@@ -13144,7 +13145,7 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
 
    if (is_paused)
    {
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
+      RARCH_LOG("[Core]: %s\n", msg_hash_to_str(MSG_PAUSED));
 
 #if defined(HAVE_GFX_WIDGETS)
       if (!widgets_active)
@@ -13164,7 +13165,7 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
    }
    else
    {
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
+      RARCH_LOG("[Core]: %s\n", msg_hash_to_str(MSG_UNPAUSED));
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -13535,7 +13536,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RESET:
-         RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
+         RARCH_LOG("[Core]: %s.\n", msg_hash_to_str(MSG_RESET));
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          core_reset();
@@ -14324,7 +14325,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[Netplay] connecting to %s:%d (direct)\n",
+            RARCH_LOG("[Netplay]: Connecting to %s:%d (direct)\n",
                   hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                   ? atoi(hostname->elems[1].data)
                   : netplay_port);
@@ -14366,7 +14367,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[Netplay] connecting to %s:%d (deferred)\n",
+            RARCH_LOG("[Netplay]: Connecting to %s:%d (deferred)\n",
                   hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                   ? atoi(hostname->elems[1].data)
                   : netplay_port);
@@ -14677,9 +14678,9 @@ bool command_event(enum event_command cmd, void *data)
             if (!ret)
                return false;
 
-            RARCH_LOG("%s => %s\n",
+            RARCH_LOG("[Input]: %s => %s\n",
                   msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
-                  grab_mouse_state ? "on" : "off");
+                  grab_mouse_state ? "ON" : "OFF");
 
             if (grab_mouse_state)
                video_driver_hide_mouse();
@@ -14770,8 +14771,8 @@ bool command_event(enum event_command cmd, void *data)
                         1, 60, true,
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-               RARCH_LOG("%s => %s\n",
-                     "Game focus",
+               RARCH_LOG("[Input]: %s => %s\n",
+                     "Game Focus",
                      p_rarch->game_focus_state.enabled ? "ON" : "OFF");
             }
          }
@@ -17117,7 +17118,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                   temp_path[0]     = '\0';
 
                   if (string_is_empty(dir_system))
-                     RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                     RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                            fullpath);
                   fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
                   dir_set(RARCH_DIR_SYSTEM, temp_path);
@@ -17934,7 +17935,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             geom->base_height  = in_geom->base_height;
             geom->aspect_ratio = in_geom->aspect_ratio;
 
-            RARCH_LOG("SET_GEOMETRY: %ux%u, aspect: %.3f.\n",
+            RARCH_LOG("[Environ]: SET_GEOMETRY: %ux%u, aspect: %.3f.\n",
                   geom->base_width, geom->base_height, geom->aspect_ratio);
 
             /* Forces recomputation of aspect ratios if
@@ -17946,7 +17947,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          else
          {
             RARCH_LOG("[Environ]: SET_GEOMETRY.\n");
-
          }
          break;
       }
@@ -18428,12 +18428,12 @@ static bool init_libretro_symbols_custom(
 
                if (string_is_empty(path))
                {
-                  RARCH_ERR("[CORE]: Frontend is built for dynamic libretro cores, but "
+                  RARCH_ERR("[Core]: Frontend is built for dynamic libretro cores, but "
                         "path is not set. Cannot continue.\n");
                   retroarch_fail(1, "init_libretro_symbols()");
                }
 
-               RARCH_LOG("[CORE]: Loading dynamic libretro core from: \"%s\"\n",
+               RARCH_LOG("[Core]: Loading dynamic libretro core from: \"%s\"\n",
                      path);
 
                if (!load_dynamic_core(
@@ -25303,7 +25303,7 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
    struct rarch_state *p_rarch = &rarch_st;
    if (port >= MAX_USERS || !driver)
    {
-      RARCH_ERR("[input]: input_pad_connect: bad parameters\n");
+      RARCH_ERR("[Input]: input_pad_connect: bad parameters\n");
       return;
    }
 
@@ -25360,7 +25360,7 @@ const hid_driver_t *input_hid_init_first(void)
 
       if (p_rarch->hid_data)
       {
-         RARCH_LOG("Found HID driver: \"%s\".\n",
+         RARCH_LOG("[Input]: Found HID driver: \"%s\".\n",
                hid_drivers[i]->ident);
          return hid_drivers[i];
       }
@@ -25851,7 +25851,7 @@ enum retro_key input_config_translate_str_to_rk(const char *str)
          return input_config_key_map[i].key;
    }
 
-   RARCH_WARN("Key name %s not found.\n", str);
+   RARCH_WARN("[Input]: Key name \"%s\" not found.\n", str);
    return RETROK_UNKNOWN;
 }
 
@@ -25883,7 +25883,7 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
 
    if (!dir)
    {
-      RARCH_WARN("Found invalid hat in config!\n");
+      RARCH_WARN("[Input]: Found invalid hat in config!\n");
       return;
    }
 
@@ -27874,7 +27874,7 @@ static bool audio_driver_init_internal(
    if (p_rarch->audio_driver_input <= 0.0f)
    {
       /* Should never happen. */
-      RARCH_WARN("Input rate is invalid (%.3f Hz)."
+      RARCH_WARN("[Audio]: Input rate is invalid (%.3f Hz)."
             " Using output rate (%u Hz).\n",
             p_rarch->audio_driver_input, settings->uints.audio_out_rate);
 
@@ -27928,7 +27928,7 @@ static bool audio_driver_init_internal(
          p_rarch->audio_driver_control     = true;
       }
       else
-         RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
+         RARCH_WARN("[Audio]: Rate control was desired, but driver does not support needed features.\n");
    }
 
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
@@ -29580,7 +29580,7 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
 
    if (video_driver_is_hw_context())
    {
-      RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
+      RARCH_WARN("[Video]: Cannot use CPU filters when hardware rendering is used.\n");
       return;
    }
 
@@ -29809,7 +29809,7 @@ static bool video_driver_pixel_converter_init(
    if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       return true;
 
-   RARCH_WARN("0RGB1555 pixel format is deprecated,"
+   RARCH_WARN("[Video]: 0RGB1555 pixel format is deprecated,"
          " and will be slower. For 15/16-bit, RGB565"
          " format is preferred.\n");
 
@@ -30398,7 +30398,7 @@ void video_monitor_set_refresh_rate(float hz)
    settings_t        *settings = p_rarch->configuration_settings;
 
    snprintf(msg, sizeof(msg),
-         "Setting refresh rate to: %.3f Hz.", hz);
+         "[Video]: Setting refresh rate to: %.3f Hz.", hz);
    if (settings->bools.notification_show_refresh_rate)
       runloop_msg_queue_push(msg, 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -30949,7 +30949,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
                frontend_driver_get_video_driver()))
          return true;
 
-      RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
+      RARCH_WARN("[Video]: Frontend supports get_video_driver() but did not specify one.\n");
    }
 
    i                   = (int)driver_find_index(
@@ -33938,7 +33938,7 @@ static void retroarch_print_help(const char *arg0)
 #endif
 
       strlcat(buf, "  -s, --save=PATH       Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n", sizeof(buf));
-      strlcat(buf, "  -S, --savestate=PATH  Path for the save state files (*.state). (DEPRECATED, use --apendconfig and savestate_directory)\n", sizeof(buf));
+      strlcat(buf, "  -S, --savestate=PATH  Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n", sizeof(buf));
       strlcat(buf, "      --set-shader PATH Path to a shader (preset) that will be loaded each time content is loaded.\n"
             "                        Effectively overrides automatic shader presets.\n"
             "                        An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
@@ -38556,7 +38556,7 @@ static bool core_unload_game(struct rarch_state *p_rarch)
 
    if (p_rarch->current_core.game_loaded)
    {
-      RARCH_LOG("[CORE]: Unloading game..\n");
+      RARCH_LOG("[Core]: Unloading game..\n");
       p_rarch->current_core.retro_unload_game();
       p_rarch->core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
       p_rarch->current_core.game_loaded = false;

@@ -86,7 +86,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
       uint32_t num;
       if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
       {
-         RARCH_LOG("Failed to get released buffer?\n");
+         RARCH_ERR("[Audio]: Failed to get released buffer?\n");
          return -1;
       }
 

@@ -1590,7 +1590,7 @@ static void gl_core_set_nonblock_state(void *data, bool state,
    if (!gl)
       return;
 
-   RARCH_LOG("[GLCore]: VSync => %s\n", state ? "off" : "on");
+   RARCH_LOG("[GLCore]: VSync => %s\n", state ? "OFF" : "ON");
 
    gl_core_context_bind_hw_render(gl, false);
    if (!state)
