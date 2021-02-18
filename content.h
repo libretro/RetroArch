@@ -52,7 +52,7 @@ bool content_load_state(const char* path, bool load_to_backup_buffer, bool autol
 bool content_save_state(const char *path, bool save_to_disk, bool autosave);
 
 /* Gets the number of bytes required to serialize the state. */
-size_t content_get_serialized_size();
+size_t content_get_serialized_size(void);
 
 /* Serializes the current state. buffer must be at least content_get_serialized_size bytes */
 bool content_serialize_state(void* buffer, size_t buffer_size);

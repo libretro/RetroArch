@@ -620,7 +620,7 @@ static bool content_get_rastate_size(rastate_size_info_t* size)
    return true;
 }
 
-size_t content_get_serialized_size()
+size_t content_get_serialized_size(void)
 {
    rastate_size_info_t size;
    if (!content_get_rastate_size(&size))
