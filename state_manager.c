@@ -32,6 +32,7 @@
 #include "core.h"
 #include "retroarch.h"
 #include "verbosity.h"
+#include "content.h"
 
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
@@ -575,8 +576,6 @@ void state_manager_event_init(
       struct state_manager_rewind_state *rewind_st,
       unsigned rewind_buffer_size)
 {
-   retro_ctx_serialize_info_t serial_info;
-   retro_ctx_size_info_t info;
    void *state          = NULL;
 
    if (!rewind_st || rewind_st->state)
@@ -588,9 +587,7 @@ void state_manager_event_init(
       return;
    }
 
-   core_serialize_size(&info);
-
-   rewind_st->size = info.size;
+   rewind_st->size = content_get_serialized_size();
 
    if (!rewind_st->size)
    {
@@ -611,10 +608,7 @@ void state_manager_event_init(
 
    state_manager_push_where(rewind_st->state, &state);
 
-   serial_info.data = state;
-   serial_info.size = rewind_st->size;
-
-   core_serialize(&serial_info);
+   content_serialize_state(state, rewind_st->size);
 
    state_manager_push_do(rewind_st->state);
 }
@@ -679,8 +673,6 @@ bool state_manager_check_rewind(
 
       if (state_manager_pop(rewind_st->state, &buf))
       {
-         retro_ctx_serialize_info_t serial_info;
-
 #ifdef HAVE_NETWORKING
          /* Make sure netplay isn't confused */
          if (!was_reversed)
@@ -696,10 +688,7 @@ bool state_manager_check_rewind(
          *time                  = is_paused ? 1 : 30;
          ret                    = true;
 
-         serial_info.data_const = buf;
-         serial_info.size       = rewind_st->size;
-
-         core_unserialize(&serial_info);
+         content_deserialize_state(buf, rewind_st->size);
 
 #ifdef HAVE_BSV_MOVIE
          bsv_movie_frame_rewind();
@@ -707,10 +696,7 @@ bool state_manager_check_rewind(
       }
       else
       {
-         retro_ctx_serialize_info_t serial_info;
-         serial_info.data_const = buf;
-         serial_info.size       = rewind_st->size;
-         core_unserialize(&serial_info);
+         content_deserialize_state(buf, rewind_st->size);
 
 #ifdef HAVE_NETWORKING
          /* Tell netplay we're done */
@@ -741,15 +727,11 @@ bool state_manager_check_rewind(
 
       if ((cnt == 0) || rarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL))
       {
-         retro_ctx_serialize_info_t serial_info;
          void *state = NULL;
 
          state_manager_push_where(rewind_st->state, &state);
 
-         serial_info.data = state;
-         serial_info.size = rewind_st->size;
-
-         core_serialize(&serial_info);
+         content_serialize_state(state, rewind_st->size);
 
          state_manager_push_do(rewind_st->state);
       }

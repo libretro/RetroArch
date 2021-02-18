@@ -42,6 +42,9 @@ enum
 };
 
 bool rcheevos_load(const void *data);
+size_t rcheevos_get_serialize_size(void);
+bool rcheevos_get_serialized_data(void* buffer);
+bool rcheevos_set_serialized_data(void* buffer);
 
 void rcheevos_reset_game(void);
 

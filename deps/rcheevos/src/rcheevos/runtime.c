@@ -172,6 +172,7 @@ int rc_runtime_activate_achievement(rc_runtime_t* self, unsigned id, const char*
   self->triggers[self->trigger_count].id = id;
   self->triggers[self->trigger_count].trigger = trigger;
   self->triggers[self->trigger_count].buffer = trigger_buffer;
+  self->triggers[self->trigger_count].serialized_size = 0;
   memcpy(self->triggers[self->trigger_count].md5, md5, 16);
   self->triggers[self->trigger_count].owns_memrefs = owns_memref;
   ++self->trigger_count;
