@@ -136,6 +136,7 @@ typedef struct
    retro_task_t* task;
 #ifdef HAVE_THREADS
    slock_t* task_lock;
+   enum event_command queued_command;
 #endif
 
    char token[32];
@@ -144,7 +145,6 @@ typedef struct
 
    bool hardcore_active;
    bool loaded;
-   bool reset_rewind;
    bool core_supports;
    bool leaderboards_enabled;
    bool leaderboard_notifications;
@@ -159,13 +159,13 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* task */
 #ifdef HAVE_THREADS
    NULL, /* task_lock */
+   CMD_EVENT_NONE, /* queued_command */
 #endif
    {0},  /* token */
    "N/A",/* hash */
    "",   /* user_agent_prefix */
    false,/* hardcore_active */
    false,/* loaded */
-   false,/* reset_rewind */
    true, /* core_supports */
    false,/* leaderboards_enabled */
    false,/* leaderboard_notifications */
@@ -1399,7 +1399,9 @@ bool rcheevos_unload(void)
       rcheevos_locals.hardcore_active           = false;
    }
 
-   rcheevos_locals.reset_rewind = false;
+#ifdef HAVE_THREADS
+   rcheevos_locals.queued_command = CMD_EVENT_NONE;
+#endif
 
    rc_runtime_destroy(&rcheevos_locals.runtime);
 
@@ -1828,18 +1830,11 @@ Test all the achievements (call once per frame).
 *****************************************************************************/
 void rcheevos_test(void)
 {
-#ifdef HAVE_REWIND
-   if (rcheevos_locals.reset_rewind)
+#ifdef HAVE_THREADS
+   if (rcheevos_locals.queued_command != CMD_EVENT_NONE)
    {
-      const settings_t* settings = config_get_ptr();
-      const bool rewind_enable = (settings && settings->bools.rewind_enable);
-
-      rcheevos_locals.reset_rewind = false;
-
-      /* re-enable rewind. if rcheevos_locals.loaded is true, additional space will be allocated
-       * for the achievement state data */
-      if (rewind_enable)
-         command_event(CMD_EVENT_REWIND_INIT, NULL);
+      command_event(rcheevos_locals.queued_command, NULL);
+      rcheevos_locals.queued_command = CMD_EVENT_NONE;
    }
 #endif
 
@@ -2077,9 +2072,21 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       if (!rcheevos_hardcore_active())
       {
          /* deactivate rewind while we activate the achievements */
-         const bool rewind_enable = coro->settings->bools.rewind_enable;
-         if (rewind_enable)
+         if (coro->settings->bools.rewind_enable)
+         {
+#ifdef HAVE_THREADS
+            /* have to "schedule" this. CMD_EVENT_REWIND_DEINIT should only be called on the main thread */
+            rcheevos_locals.queued_command = CMD_EVENT_REWIND_DEINIT;
+
+            /* wait for rewind to be disabled */
+            while (rcheevos_locals.queued_command != CMD_EVENT_NONE)
+            {
+               CORO_YIELD();
+            }
+#else
             command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+#endif
+         }
       }
 #endif
 
@@ -2107,8 +2114,17 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 #if HAVE_REWIND
       if (!rcheevos_hardcore_active())
       {
-         /* have to "schedule" this. CMD_EVENT_REWIND_INIT should only be called on the main thread */
-         rcheevos_locals.reset_rewind = true;
+         /* re-enable rewind. if rcheevos_locals.loaded is true, additional space will be allocated
+          * for the achievement state data */
+         if (coro->settings->bools.rewind_enable)
+         {
+#ifdef HAVE_THREADS
+            /* have to "schedule" this. CMD_EVENT_REWIND_INIT should only be called on the main thread */
+            rcheevos_locals.queued_command = CMD_EVENT_REWIND_INIT;
+#else
+            command_event(CMD_EVENT_REWIND_INIT, NULL);
+#endif
+         }
       }
 #endif
 
@@ -2770,7 +2786,9 @@ bool rcheevos_load(const void *data)
    struct rc_hash_cdreader cdreader;
 
    rcheevos_locals.loaded             = false;
-   rcheevos_locals.reset_rewind       = false;
+#ifdef HAVE_THREADS
+   rcheevos_locals.queued_command     = CMD_EVENT_NONE;
+#endif
    rc_runtime_init(&rcheevos_locals.runtime);
 
    if (!cheevos_enable || !rcheevos_locals.core_supports || !data)
