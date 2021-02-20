@@ -174,6 +174,7 @@ static size_t ozone_get_onscreen_category_selection(
 
 /* Returns true if specified entry is currently
  * displayed on screen */
+/* Check whether selected item is already on screen */
 #define OZONE_ENTRY_ONSCREEN(ozone, idx) (((idx) >= (ozone)->first_onscreen_entry) && ((idx) <= (ozone)->last_onscreen_entry))
 
 /* If currently selected entry is off screen,
@@ -184,11 +185,7 @@ static void ozone_auto_select_onscreen_entry(
       ozone_handle_t *ozone,
       enum ozone_onscreen_entry_position_type target_entry)
 {
-   size_t selection = menu_navigation_get_selection();
-
-   /* Check whether selected item is already on screen */
-   if (OZONE_ENTRY_ONSCREEN(ozone, selection))
-      return;
+   size_t selection = 0;
 
    /* Update selection index */
    switch (target_entry)
@@ -415,8 +412,9 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* If pointer is active and current selection
           * is off screen, auto select *centre* item */
          if (ozone->cursor_mode)
-            ozone_auto_select_onscreen_entry(ozone,
-                  OZONE_ONSCREEN_ENTRY_CENTRE);
+            if (!OZONE_ENTRY_ONSCREEN(ozone, selection))
+               ozone_auto_select_onscreen_entry(ozone,
+                     OZONE_ONSCREEN_ENTRY_CENTRE);
          ozone->cursor_mode = false;
          break;
       case MENU_ACTION_UP:
@@ -446,8 +444,9 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* If pointer is active and current selection
           * is off screen, auto select *centre* item */
          if (ozone->cursor_mode)
-            ozone_auto_select_onscreen_entry(ozone,
-                  OZONE_ONSCREEN_ENTRY_CENTRE);
+            if (!OZONE_ENTRY_ONSCREEN(ozone, selection))
+               ozone_auto_select_onscreen_entry(ozone,
+                     OZONE_ONSCREEN_ENTRY_CENTRE);
          ozone->cursor_mode = false;
          break;
       case MENU_ACTION_LEFT:
@@ -554,8 +553,9 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* If pointer is active and current selection
           * is off screen, auto select *last* item */
          if (ozone->cursor_mode)
-            ozone_auto_select_onscreen_entry(ozone,
-                  OZONE_ONSCREEN_ENTRY_LAST);
+            if (!OZONE_ENTRY_ONSCREEN(ozone, selection))
+               ozone_auto_select_onscreen_entry(ozone,
+                     OZONE_ONSCREEN_ENTRY_LAST);
          ozone->cursor_mode = false;
          break;
       case MENU_ACTION_SCROLL_DOWN:
@@ -571,8 +571,9 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* If pointer is active and current selection
           * is off screen, auto select *first* item */
          if (ozone->cursor_mode)
-            ozone_auto_select_onscreen_entry(ozone,
-                  OZONE_ONSCREEN_ENTRY_FIRST);
+            if (!OZONE_ENTRY_ONSCREEN(ozone, selection))
+               ozone_auto_select_onscreen_entry(ozone,
+                     OZONE_ONSCREEN_ENTRY_FIRST);
          ozone->cursor_mode = false;
          break;
 
