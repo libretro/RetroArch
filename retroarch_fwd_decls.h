@@ -13,10 +13,6 @@ extern "C"
 #endif
 
 static void retroarch_fail(int error_code, const char *error);
-static void retroarch_core_options_intl_init(
-      struct rarch_state *p_rarch,
-      const struct
-      retro_core_options_intl *core_options_intl);
 static void ui_companion_driver_toggle(
       settings_t *settings,
       struct rarch_state *p_rarch,

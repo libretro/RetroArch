@@ -16901,12 +16901,24 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL:
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
 
-         if (p_rarch->runloop_core_options)
-            retroarch_deinit_core_options(p_rarch);
-         retroarch_core_options_intl_init(p_rarch,
-               (const struct
-                retro_core_options_intl *)data);
+         {
+            struct retro_core_option_definition *option_defs =
+               core_option_manager_get_definitions((const struct retro_core_options_intl*)data);
 
+            if (p_rarch->runloop_core_options)
+               retroarch_deinit_core_options(p_rarch);
+
+            /* Parse core_options_intl to create option definitions array */
+            if (option_defs)
+            {
+               /* Initialise core options */
+               rarch_init_core_options(p_rarch, option_defs);
+
+               /* Clean up */
+               free(option_defs);
+            }
+
+         }
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY:
@@ -35525,25 +35537,6 @@ void retroarch_init_task_queue(void)
 
    task_queue_deinit();
    task_queue_init(threaded_enable, runloop_task_msg_queue_push);
-}
-
-static void retroarch_core_options_intl_init(
-      struct rarch_state *p_rarch,
-      const struct
-      retro_core_options_intl *core_options_intl)
-{
-   /* Parse core_options_intl to create option definitions array */
-   struct retro_core_option_definition *option_defs =
-      core_option_manager_get_definitions(core_options_intl);
-
-   if (option_defs)
-   {
-      /* Initialise core options */
-      rarch_init_core_options(p_rarch, option_defs);
-
-      /* Clean up */
-      free(option_defs);
-   }
 }
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
