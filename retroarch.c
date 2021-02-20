@@ -860,7 +860,7 @@ static int menu_input_key_bind_set_mode_common(
    switch (state)
    {
       case MENU_INPUT_BINDS_CTL_BIND_SINGLE:
-         keybind    = (struct retro_keybind*)setting->value.target.keybind;
+         keybind                  = (struct retro_keybind*)setting->value.target.keybind;
 
          if (!keybind)
             return -1;
@@ -879,9 +879,6 @@ static int menu_input_key_bind_set_mode_common(
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
          info.label               = strdup(
                msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND));
-         if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
-            menu_displaylist_process(&info);
-         menu_displaylist_info_free(&info);
          break;
       case MENU_INPUT_BINDS_CTL_BIND_ALL:
          binds->output            = &input_config_binds[index_offset][0];
@@ -895,15 +892,15 @@ static int menu_input_key_bind_set_mode_common(
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
          info.label               = strdup(
                msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL));
-
-         if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
-            menu_displaylist_process(&info);
-         menu_displaylist_info_free(&info);
          break;
       default:
       case MENU_INPUT_BINDS_CTL_BIND_NONE:
-         break;
+         return 0;
    }
+
+   if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
+      menu_displaylist_process(&info);
+   menu_displaylist_info_free(&info);
 
    return 0;
 }
@@ -1407,19 +1404,19 @@ static bool menu_input_key_bind_iterate(
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
       {
-         p_rarch->keyboard_press_cb                       = NULL;
-         p_rarch->keyboard_press_data                     = NULL;
-         p_rarch->keyboard_mapping_blocked                = false;
+         p_rarch->keyboard_press_cb        = NULL;
+         p_rarch->keyboard_press_data      = NULL;
+         p_rarch->keyboard_mapping_blocked = false;
       }
 
       return true;
    }
 
    {
-      bool complete                     = false;
-      struct menu_bind_state new_binds  = *_binds;
+      bool complete                        = false;
+      struct menu_bind_state new_binds     = *_binds;
 
-      p_rarch->keyboard_mapping_blocked = false;
+      p_rarch->keyboard_mapping_blocked    = false;
 
       menu_input_key_bind_poll_bind_state(p_rarch,
             &new_binds, timed_out);
@@ -1427,7 +1424,7 @@ static bool menu_input_key_bind_iterate(
 #ifdef ANDROID
       /* Keep resetting bind during the hold period, 
        * or we'll potentially bind joystick and mouse, etc.*/
-      new_binds.buffer = *(new_binds.output);
+      new_binds.buffer                     = *(new_binds.output);
 
       if (menu_input_key_bind_poll_find_hold(p_rarch, &new_binds, &new_binds.buffer))
       {
@@ -1636,14 +1633,13 @@ static void menu_cbs_init(
    bind_info.type            = type;
    bind_info.idx             = idx;
 
-   if (!p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->bind_init)
-      return;
-   p_rarch->menu_driver_ctx->bind_init(
-         bind_info.cbs,
-         bind_info.path,
-         bind_info.label,
-         bind_info.type,
-         bind_info.idx);
+   if (p_rarch->menu_driver_ctx && p_rarch->menu_driver_ctx->bind_init)
+      p_rarch->menu_driver_ctx->bind_init(
+            bind_info.cbs,
+            bind_info.path,
+            bind_info.label,
+            bind_info.type,
+            bind_info.idx);
 }
 
 /* Pretty much a stub function. TODO/FIXME - Might as well remove this. */
@@ -1683,7 +1679,7 @@ static enum action_iterate_type action_iterate_type(const char *label)
 
 #ifdef HAVE_ACCESSIBILITY
 static void get_current_menu_value(struct rarch_state *p_rarch,
-      char* retstr, size_t max)
+      char *s, size_t len)
 {
    menu_entry_t     entry;
    const char*      entry_label;
@@ -1701,11 +1697,11 @@ static void get_current_menu_value(struct rarch_state *p_rarch,
    else
       entry_label              = entry.value;
 
-   strlcpy(retstr, entry_label, max);
+   strlcpy(s, entry_label, len);
 }
 
 static void get_current_menu_label(struct rarch_state *p_rarch,
-      char* retstr, size_t max)
+      char *s, size_t len)
 {
    menu_entry_t     entry;
    const char*      entry_label;
@@ -1719,11 +1715,11 @@ static void get_current_menu_label(struct rarch_state *p_rarch,
    else
       entry_label              = entry.path;
 
-   strlcpy(retstr, entry_label, max);
+   strlcpy(s, entry_label, len);
 }
 
 static void get_current_menu_sublabel(struct rarch_state *p_rarch,
-      char* retstr, size_t max)
+      char *s, size_t len)
 {
    menu_entry_t     entry;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
@@ -1734,7 +1730,7 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
    entry.rich_label_enabled    = false;
    entry.value_enabled         = false;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   strlcpy(retstr, entry.sublabel, max);
+   strlcpy(s, entry.sublabel, len);
 }
 #endif
 
@@ -4025,31 +4021,24 @@ bool menu_driver_list_cache(menu_ctx_list_t *list)
    return true;
 }
 
-static void menu_driver_set_id(struct rarch_state *p_rarch)
+static enum menu_driver_id_type menu_driver_set_id(struct rarch_state *p_rarch)
 {
-   const char        *driver_name = NULL;
-   gfx_display_t         *p_disp  = &p_rarch->dispgfx;
+   const char *driver_name = p_rarch->menu_driver_ctx->ident;
 
-   p_disp->menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
-
-   if (!p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->ident)
-      return;
-
-   driver_name = p_rarch->menu_driver_ctx->ident;
-
-   if (string_is_empty(driver_name))
-      return;
-
-   if (string_is_equal(driver_name, "rgui"))
-      p_disp->menu_driver_id = MENU_DRIVER_ID_RGUI;
-   else if (string_is_equal(driver_name, "ozone"))
-      p_disp->menu_driver_id = MENU_DRIVER_ID_OZONE;
-   else if (string_is_equal(driver_name, "glui"))
-      p_disp->menu_driver_id = MENU_DRIVER_ID_GLUI;
-   else if (string_is_equal(driver_name, "xmb"))
-      p_disp->menu_driver_id = MENU_DRIVER_ID_XMB;
-   else if (string_is_equal(driver_name, "stripes"))
-      p_disp->menu_driver_id = MENU_DRIVER_ID_STRIPES;
+   if (!string_is_empty(driver_name))
+   {
+      if (string_is_equal(driver_name, "rgui"))
+         return MENU_DRIVER_ID_RGUI;
+      else if (string_is_equal(driver_name, "ozone"))
+         return MENU_DRIVER_ID_OZONE;
+      else if (string_is_equal(driver_name, "glui"))
+         return MENU_DRIVER_ID_GLUI;
+      else if (string_is_equal(driver_name, "xmb"))
+         return MENU_DRIVER_ID_XMB;
+      else if (string_is_equal(driver_name, "stripes"))
+         return MENU_DRIVER_ID_STRIPES;
+   }
+   return MENU_DRIVER_ID_UNKNOWN;
 }
 
 static bool generic_menu_init_list(void *data)
@@ -4085,11 +4074,16 @@ static bool menu_driver_init_internal(
       settings_t *settings,
       bool video_is_threaded)
 {
+   gfx_display_t         *p_disp              = &p_rarch->dispgfx;
+
    /* ID must be set first, since it is required for
     * the proper determination of pixel/dpi scaling
     * parameters (and some menu drivers fetch the
     * current pixel/dpi scale during 'menu_driver_ctx->init()') */
-   menu_driver_set_id(p_rarch);
+   if (p_rarch->menu_driver_ctx && p_rarch->menu_driver_ctx->ident)
+      p_disp->menu_driver_id                  = menu_driver_set_id(p_rarch);
+   else
+      p_disp->menu_driver_id                  = MENU_DRIVER_ID_UNKNOWN;
 
    if (p_rarch->menu_driver_ctx->init)
    {
