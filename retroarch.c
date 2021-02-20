@@ -6192,13 +6192,11 @@ static void handle_discord_join_response(void *ignore, const char *line)
 
 static void handle_discord_join_request(const DiscordUser* request)
 {
-   static char url[PATH_MAX_LENGTH];
-   static char url_encoded[PATH_MAX_LENGTH];
-   static char filename[PATH_MAX_LENGTH];
-   char buf[PATH_MAX_LENGTH];
 #ifdef HAVE_MENU
-   menu_input_ctx_line_t line;
+#if 0
+   char buf[PATH_MAX_LENGTH];
 #endif
+   menu_input_ctx_line_t line;
 
    RARCH_LOG("[DISCORD]: Join request from %s#%s - %s %s\n",
       request->username,
@@ -6206,7 +6204,6 @@ static void handle_discord_join_request(const DiscordUser* request)
       request->userId,
       request->avatar);
 
-#ifdef HAVE_MENU
    discord_download_avatar(request->userId, request->avatar);
 
 #if 0
