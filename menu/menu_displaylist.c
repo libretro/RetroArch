@@ -9526,7 +9526,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
-                     if (menu_entries_append_enum(list, descriptor, "",
+                     if (menu_entries_append_enum(list, descriptor, info->path,
                               MSG_UNKNOWN,
                               MENU_SETTINGS_INPUT_DESC_BEGIN +
                               (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0))
@@ -9570,7 +9570,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
-                     if (menu_entries_append_enum(list, descriptor, "",
+                     if (menu_entries_append_enum(list, descriptor, info->path,
                               MSG_UNKNOWN,
                               MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
                               (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0))

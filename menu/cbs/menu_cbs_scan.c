@@ -164,6 +164,23 @@ static int action_scan_input_desc(const char *path,
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
    if (string_is_equal(menu_label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST)))
+   {
+      settings_t *settings = config_get_ptr();
+      inp_desc_user        = atoi(label);
+      /* Skip 'Device Type' and 'Analog to Digital Type' */
+      key                  = (unsigned)(idx - 2);
+
+      if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+            && type <= MENU_SETTINGS_INPUT_DESC_END)
+         settings->uints.input_remap_ids[inp_desc_user][key] = RARCH_UNMAPPED;
+      else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+            && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+         settings->uints.input_keymapper_ids[inp_desc_user][key] = RETROK_UNKNOWN;
+
+      return 0;
+   }
+   else if (string_is_equal(menu_label,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST)))
    {
       unsigned char player_no_str = atoi(&label[1]);
@@ -213,6 +230,17 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       case FILE_TYPE_NONE:
       default:
          break;
+   }
+
+   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_END)
+   {
+      BIND_ACTION_SCAN(cbs, action_scan_input_desc);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_SCAN(cbs, action_scan_input_desc);
    }
 
    return -1;
