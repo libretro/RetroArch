@@ -37473,33 +37473,24 @@ static enum runloop_state runloop_check_state(
     * to be able to toggle between then.
     */
    {
-      static bool old_button_state      = false;
-      static bool old_hold_button_state = false;
-      bool new_button_state             = BIT256_GET(
+      static bool old_button_state            = false;
+      static bool old_hold_button_state       = false;
+      bool new_button_state                   = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_KEY);
-      bool new_hold_button_state        = BIT256_GET(
+      bool new_hold_button_state              = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
-      bool check1                       = !new_hold_button_state;
-      bool check2                       = new_button_state && !old_button_state;
+      bool check2                             = new_button_state && !old_button_state;
 
-      if (check2)
-         check1                         = p_rarch->input_driver_nonblock_state;
-      else
-         check2                         = old_hold_button_state != new_hold_button_state;
+      if (!check2)
+         check2                               = old_hold_button_state != new_hold_button_state;
 
       if (check2)
       {
+         bool check1                          = p_rarch->input_driver_nonblock_state;
+         p_rarch->input_driver_nonblock_state = !check1;
+         p_rarch->runloop_fastmotion          = !check1;
          if (check1)
-         {
-            p_rarch->input_driver_nonblock_state = false;
-            p_rarch->runloop_fastmotion          = false;
-            p_rarch->fastforward_after_frames    = 1;
-         }
-         else
-         {
-            p_rarch->input_driver_nonblock_state = true;
-            p_rarch->runloop_fastmotion          = true;
-         }
+            p_rarch->fastforward_after_frames = 1;
          driver_set_nonblock_state();
 
          /* Reset frame time counter when toggling
@@ -37820,11 +37811,11 @@ int runloop_iterate(void)
           p_rarch->audio_driver_context_audio_data &&
           p_rarch->audio_driver_buffer_size)
       {
-         size_t audio_buf_avail = p_rarch->current_audio->write_avail(
-               p_rarch->audio_driver_context_audio_data);
+         size_t audio_buf_avail;
 
-         audio_buf_avail = (audio_buf_avail > p_rarch->audio_driver_buffer_size) ?
-               p_rarch->audio_driver_buffer_size : audio_buf_avail;
+         if ((audio_buf_avail = p_rarch->current_audio->write_avail(
+               p_rarch->audio_driver_context_audio_data)) > p_rarch->audio_driver_buffer_size)
+            audio_buf_avail = p_rarch->audio_driver_buffer_size;
 
          audio_buf_occupancy = (unsigned)(100 - (audio_buf_avail * 100) /
                p_rarch->audio_driver_buffer_size);
