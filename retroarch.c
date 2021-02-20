@@ -8575,15 +8575,21 @@ static void path_set_redirect(struct rarch_state *p_rarch)
 
    if (global && system && !string_is_empty(system->library_name))
    {
-      if (path_is_directory(new_savefile_dir))
+      bool savefile_is_dir  = path_is_directory(new_savefile_dir);
+      bool savestate_is_dir = path_is_directory(new_savestate_dir);
+      if (savefile_is_dir)
          strlcpy(global->name.savefile, new_savefile_dir,
                sizeof(global->name.savefile));
+      else
+         savefile_is_dir    = path_is_directory(global->name.savefile);
 
-      if (path_is_directory(new_savestate_dir))
+      if (savestate_is_dir)
          strlcpy(global->name.savestate, new_savestate_dir,
                sizeof(global->name.savestate));
+      else
+         savestate_is_dir   = path_is_directory(global->name.savestate);
 
-      if (path_is_directory(global->name.savefile))
+      if (savefile_is_dir)
       {
          fill_pathname_dir(global->name.savefile,
                !string_is_empty(p_rarch->path_main_basename)
@@ -8596,7 +8602,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                global->name.savefile);
       }
 
-      if (path_is_directory(global->name.savestate))
+      if (savestate_is_dir)
       {
          fill_pathname_dir(global->name.savestate,
                !string_is_empty(p_rarch->path_main_basename)
@@ -8710,10 +8716,15 @@ void path_set_special(char **argv, unsigned num_content)
     * It is more complicated for special content types. */
    if (global)
    {
-      if (path_is_directory(savestate_dir))
+      bool is_dir = path_is_directory(savestate_dir);
+
+      if (is_dir)
          strlcpy(global->name.savestate, savestate_dir,
                sizeof(global->name.savestate));
-      if (path_is_directory(global->name.savestate))
+      else
+         is_dir   = path_is_directory(global->name.savestate);
+
+      if (is_dir)
       {
          fill_pathname_dir(global->name.savestate,
                str,
