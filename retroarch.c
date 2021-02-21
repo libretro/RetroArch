@@ -35920,54 +35920,41 @@ static bool retroarch_load_shader_preset_internal(
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
    };
 
-   if (string_is_empty(core_name))
+   for (i = 0; i < ARRAY_SIZE(types); i++)
    {
-      if (string_is_empty(special_name))
-      {
-         for (i = 0; i < ARRAY_SIZE(types); i++)
-         {
-            if (!video_shader_is_supported(types[i]))
-               continue;
+      if (!video_shader_is_supported(types[i]))
+         continue;
 
-            /* Concatenate strings into full paths */
-            fill_pathname_join(shader_path, shader_directory,
-                  special_name, sizeof(shader_path));
-            strlcat(shader_path,
-                  video_shader_get_preset_extension(types[i]),
-                  sizeof(shader_path));
-
-            if (path_is_valid(shader_path))
-               goto success;
-         }
-      }
-   }
-   else
-   {
-      for (i = 0; i < ARRAY_SIZE(types); i++)
-      {
-         if (!video_shader_is_supported(types[i]))
-            continue;
-
-         /* Concatenate strings into full paths */
+      /* Concatenate strings into full paths */
+      if (!string_is_empty(core_name))
          fill_pathname_join_special_ext(shader_path,
                shader_directory, core_name,
                special_name,
                video_shader_get_preset_extension(types[i]),
                sizeof(shader_path));
+      else
+      {
+         if (string_is_empty(special_name))
+            break;
 
-         if (path_is_valid(shader_path))
-            goto success;
+         fill_pathname_join(shader_path, shader_directory,
+               special_name, sizeof(shader_path));
+         strlcat(shader_path,
+               video_shader_get_preset_extension(types[i]),
+               sizeof(shader_path));
       }
+
+      if (!path_is_valid(shader_path))
+         continue;
+
+      /* Shader preset exists, load it. */
+      RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
+            shader_path);
+      retroarch_set_runtime_shader_preset(p_rarch, shader_path);
+      return true;
    }
 
    return false;
-
-success:
-   /* Shader preset exists, load it. */
-   RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
-         shader_path);
-   retroarch_set_runtime_shader_preset(p_rarch, shader_path);
-   return true;
 }
 
 /**
