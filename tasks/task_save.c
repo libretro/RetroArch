@@ -422,7 +422,6 @@ void autosave_unlock(void)
 bool content_undo_load_state(void)
 {
    unsigned i;
-   retro_ctx_serialize_info_t serial_info;
    size_t temp_data_size;
    bool ret                  = false;
    unsigned num_blocks       = 0;
@@ -494,14 +493,11 @@ bool content_undo_load_state(void)
    temp_data_size         = undo_load_buf.size;
    memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
 
-   serial_info.data_const = temp_data;
-   serial_info.size       = temp_data_size;
-
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
    content_save_state("RAM", false, false);
 
-   ret                    = core_unserialize(&serial_info);
+   ret                    = content_deserialize_state(temp_data, temp_data_size);
 
    /* Clean up the temporary copy */
    free(temp_data);
