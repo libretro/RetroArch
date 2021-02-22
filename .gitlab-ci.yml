@@ -425,7 +425,7 @@ build-retroarch-osx-arm64-metal:
   script:
     # Build RetroArch
     - ./configure --enable-metal --disable-al --enable-coreaudio3
-    - make ARCH=arm64 BUILDBOT=1 -j$NUMPROC
+    - make ARCH=arm64 BUILDBOT=1 V=1 -j$NUMPROC
     # Build filters
     - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
     - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
