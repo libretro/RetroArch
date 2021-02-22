@@ -1234,19 +1234,17 @@ static bool menu_input_key_bind_poll_find_trigger(
       struct menu_bind_state *new_state,
       struct retro_keybind * output)
 {
-   unsigned i;
-   unsigned max_users          = p_rarch->input_driver_max_users;
-
-   if (!state || !new_state)
-      return false;
-
-   for (i = 0; i < max_users; i++)
+   if (state && new_state)
    {
-      if (!menu_input_key_bind_poll_find_trigger_pad(
-               state, new_state, output, i))
-         continue;
+      unsigned i;
+      unsigned max_users = p_rarch->input_driver_max_users;
 
-      return true;
+      for (i = 0; i < max_users; i++)
+      {
+         if (menu_input_key_bind_poll_find_trigger_pad(
+                  state, new_state, output, i))
+            return true;
+      }
    }
 
    return false;
@@ -1258,18 +1256,15 @@ static bool menu_input_key_bind_poll_find_hold(
       struct menu_bind_state *new_state,
       struct retro_keybind * output)
 {
-   unsigned i;
-   unsigned        max_users   = p_rarch->input_driver_max_users;
-
-   if (!new_state)
-      return false;
-
-   for (i = 0; i < max_users; i++)
+   if (new_state)
    {
-      if (!menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
-         continue;
-
-      return true;
+      unsigned i;
+      unsigned max_users = p_rarch->input_driver_max_users;
+      for (i = 0; i < max_users; i++)
+      {
+         if (menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
+            return true;
+      }
    }
 
    return false;
@@ -1535,7 +1530,7 @@ static bool menu_input_key_bind_iterate(
  */
 static void menu_cbs_init(
       struct rarch_state *p_rarch,
-      void *data,
+      file_list_t *list,
       menu_file_list_cbs_t *cbs,
       const char *path, const char *label,
       unsigned type, size_t idx)
@@ -1543,9 +1538,6 @@ static void menu_cbs_init(
    menu_ctx_bind_t bind_info;
    const char *menu_label        = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   file_list_t *list             = (file_list_t*)data;
-   if (!list)
-      return;
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
@@ -1753,7 +1745,7 @@ static int generic_menu_iterate(
 {
 #ifdef HAVE_ACCESSIBILITY
    static enum action_iterate_type
-      last_iterate_type           = ITERATE_TYPE_DEFAULT;
+      last_iterate_type            = ITERATE_TYPE_DEFAULT;
 #endif
    enum action_iterate_type iterate_type;
    unsigned file_type              = 0;
@@ -2955,8 +2947,9 @@ void menu_entries_append(
 
    file_list_set_actiondata(list, idx, cbs);
 
-   menu_cbs_init(p_rarch,
-         list, cbs, path, label, type, idx);
+   if (list)
+      menu_cbs_init(p_rarch,
+            list, cbs, path, label, type, idx);
 }
 
 bool menu_entries_append_enum(
@@ -3047,7 +3040,7 @@ bool menu_entries_append_enum(
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
       cbs->setting                 = menu_setting_find_enum(enum_idx);
 
-   if (!string_is_equal(menu_ident, "null"))
+   if (!string_is_equal(menu_ident, "null") && list)
       menu_cbs_init(p_rarch,
             list, cbs, path, label, type, idx);
 
@@ -3130,8 +3123,9 @@ void menu_entries_prepend(file_list_t *list,
 
    file_list_set_actiondata(list, idx, cbs);
 
-   menu_cbs_init(p_rarch,
-         list, cbs, path, label, type, idx);
+   if (list)
+      menu_cbs_init(p_rarch,
+            list, cbs, path, label, type, idx);
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
