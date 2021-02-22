@@ -691,9 +691,6 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    if (!menu)
       return NULL;
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
-      goto error;
-
    video_driver_get_size(&width, &height);
 
    ozone = (ozone_handle_t*)calloc(1, sizeof(ozone_handle_t));

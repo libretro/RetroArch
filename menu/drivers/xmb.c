@@ -5583,12 +5583,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (!menu)
       return NULL;
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
-   {
-      free(menu);
-      return NULL;
-   }
-
    video_driver_get_size(&width, &height);
 
    xmb = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));

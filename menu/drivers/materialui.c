@@ -7630,9 +7630,6 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
       return NULL;
    }
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
-      goto error;
-
    mui                                    = (materialui_handle_t*)
       calloc(1, sizeof(materialui_handle_t));
 

@@ -5229,12 +5229,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->widgets_supported = gfx_widgets_ready();
 
    if (rgui->widgets_supported)
-   {
-      if (!gfx_display_init_first_driver(video_is_threaded))
-         goto error;
-
       gfx_display_init_white_texture(gfx_display_white_texture);
-   }
 #endif
 
    rgui->menu_title[0]    = '\0';

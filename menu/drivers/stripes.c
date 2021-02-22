@@ -3318,9 +3318,6 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
    if (!menu)
       goto error;
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
-      goto error;
-
    video_driver_get_size(&width, &height);
 
    stripes = (stripes_handle_t*)calloc(1, sizeof(stripes_handle_t));
