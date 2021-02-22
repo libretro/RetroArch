@@ -325,7 +325,7 @@ build-retroarch-osx-x64:
   script:
     # Build RetroArch
     - ./configure --disable-al
-    - make -j$NUMPROC
+    - make ARCH=x86_64 BUILDBOT=1 -j$NUMPROC
     # Build filters
     - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
     - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
@@ -374,7 +374,7 @@ build-retroarch-osx-x64-metal:
   script:
     # Build RetroArch
     - ./configure --enable-metal --disable-al --enable-coreaudio3
-    - make -j$NUMPROC
+    - make ARCH=x86_64 BUILDBOT=1 -j$NUMPROC
     # Build filters
     - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
     - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
