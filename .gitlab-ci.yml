@@ -325,7 +325,7 @@ build-retroarch-osx-x64:
   script:
     # Build RetroArch
     - ./configure --disable-al
-    - make V=1 -j$NUMPROC
+    - make -j$NUMPROC
     # Build filters
     - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
     - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
@@ -374,7 +374,7 @@ build-retroarch-osx-x64-metal:
   script:
     # Build RetroArch
     - ./configure --enable-metal --disable-al --enable-coreaudio3
-    - make V=1 -j$NUMPROC
+    - make -j$NUMPROC
     # Build filters
     - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
     - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
@@ -425,10 +425,10 @@ build-retroarch-osx-arm64-metal:
   script:
     # Build RetroArch
     - ./configure --enable-metal --disable-al --enable-coreaudio3
-    - make ARCH=arm64 BUILDBOT=1 V=1 -j$NUMPROC
+    - make ARCH=arm64 BUILDBOT=1 -j$NUMPROC
     # Build filters
-    - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
-    - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
+    - "cd libretro-common/audio/dsp_filters && make ARCH=arm64 BUILDBOT=1 -j$NUMPROC build=release && cd ../../.."
+    - "cd gfx/video_filters && make ARCH=arm64 BUILDBOT=1 -j$NUMPROC build=release && cd ../.."
     # Create app directory
     - rm -rvf "RetroArch.app/"
     - mkdir -vp "RetroArch.app/Contents/MacOS"
