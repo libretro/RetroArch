@@ -312,7 +312,7 @@ build-retroarch-linux-i686:
 # Mac OS x86_x64 (OpenGL, 10.7)
 build-retroarch-osx-x64:
   tags:
-    - macosx
+    - macosx-packaging
   stage: build
   before_script:
     - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
@@ -361,7 +361,7 @@ build-retroarch-osx-x64:
 # Mac OS x86_x64 (Metal, 10.13)
 build-retroarch-osx-x64-metal:
   tags:
-    - macosx
+    - macosx-packaging
   stage: build
   before_script:
     - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
@@ -409,7 +409,7 @@ build-retroarch-osx-x64-metal:
 # Mac OS AArch64 (Metal, 10.14)
 build-retroarch-osx-arm64-metal:
   tags:
-    - macosx
+    - macosx-packaging
   stage: build
   before_script:
     - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
