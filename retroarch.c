@@ -9992,24 +9992,15 @@ static void retroarch_unset_runtime_shader_preset(
 static char *strcpy_alloc(const char *src)
 {
    char *result = NULL;
-   size_t   len = src ? strlen(src) : 0;
+   size_t   len = strlen(src);
 
    if (len == 0)
       return NULL;
 
    result = (char*)malloc(len + 1);
-   strcpy(result, src);
+   strcpy_literal(result, src);
    return result;
 }
-
-static char *strcpy_alloc_force(const char *src)
-{
-   char *result = strcpy_alloc(src);
-   if (!result)
-      return (char*)calloc(1, 1);
-   return result;
-}
-
 #endif
 #endif
 
@@ -18680,7 +18671,7 @@ static void strcat_alloc(char **dst, const char *s)
 
    if (!src)
    {
-      src     = strcpy_alloc_force(s);
+      src     = (s) ? strcpy_alloc(s) : (char*)calloc(1,1);
       *dst    = src;
       return;
    }
@@ -18762,40 +18753,43 @@ static void clear_controller_port_map(struct rarch_state *p_rarch)
 
 static char *get_temp_directory_alloc(const char *override_dir)
 {
-   const char *src        = NULL;
-   char *path             = NULL;
+   const char *src    = NULL;
+   char *path         = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
-   DWORD path_length      = GetTempPath(0, NULL) + 1;
+   DWORD plen         = GetTempPath(0, NULL) + 1;
 
-   if (!(path = (char*)malloc(path_length * sizeof(char))))
+   if (!(path = (char*)malloc(plen * sizeof(char))))
       return NULL;
 
-   path[path_length - 1]   = 0;
-   GetTempPath(path_length, path);
+   path[plen - 1]     = 0;
+   GetTempPath(plen, path);
 #else
-   DWORD path_length = GetTempPathW(0, NULL) + 1;
-   wchar_t *wide_str = (wchar_t*)malloc(path_length * sizeof(wchar_t));
+   DWORD plen = GetTempPathW(0, NULL) + 1;
+   wchar_t *wide_str  = (wchar_t*)malloc(plen * sizeof(wchar_t));
 
    if (!wide_str)
       return NULL;
 
-   wide_str[path_length - 1] = 0;
-   GetTempPathW(path_length, wide_str);
+   wide_str[plen - 1] = 0;
+   GetTempPathW(plen, wide_str);
 
-   path = utf16_to_utf8_string_alloc(wide_str);
+   path               = utf16_to_utf8_string_alloc(wide_str);
    free(wide_str);
 #endif
 #else
 #if defined ANDROID
-   src     = override_dir;
+   src                = override_dir;
 #else
-   if (getenv("TMPDIR"))
-      src  = getenv("TMPDIR");
-   else
-      src  = "/tmp";
+   {
+      char *tmpdir    = getenv("TMPDIR");
+      if (tmpdir)
+         src          = tmpdir;
+      else
+         src          = "/tmp";
+   }
 #endif
-   path = strcpy_alloc_force(src);
+   path               = (src) ? strcpy_alloc(src) : (char*)calloc(1,1);
 #endif
    return path;
 }
@@ -18809,8 +18803,8 @@ static bool write_file_with_random_name(char **temp_dll_path,
    const char *prefix       = "tmp";
    time_t time_value        = time(NULL);
    unsigned number_value    = (unsigned)time_value;
-   char *ext                = strcpy_alloc_force(
-         path_get_extension(*temp_dll_path));
+   const char *src          = path_get_extension(*temp_dll_path);
+   char *ext                = (src) ? strcpy_alloc(src) : (char*)calloc(1,1);
    int ext_len              = (int)strlen(ext);
 
    if (ext_len > 0)
