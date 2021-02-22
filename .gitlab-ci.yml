@@ -409,7 +409,10 @@ build-retroarch-osx-x64-metal:
 # Mac OS AArch64 (Metal, 10.14)
 build-retroarch-osx-arm64-metal:
   tags:
-    - macosx-packaging
+    - macosx
+  variables:
+    LIBRETRO_APPLE_PLATFORM: arm64-apple-macos10.15
+    LIBRETRO_APPLE_ISYSROOT: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
   stage: build
   before_script:
     - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
@@ -422,7 +425,7 @@ build-retroarch-osx-arm64-metal:
   script:
     # Build RetroArch
     - ./configure --enable-metal --disable-al --enable-coreaudio3
-    - make ARCH=arm64 -j$NUMPROC
+    - make ARCH=arm64 BUILDBOT=1 -j$NUMPROC
     # Build filters
     - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
     - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
