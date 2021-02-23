@@ -23461,10 +23461,25 @@ static unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
+   unsigned i                                      = 0;
+   unsigned navigation_current                     = 0;
+   unsigned navigation_buttons[6] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_R
+   };
 
    ok_old                                          = ok_current;
 
-   if (bits_any_set(p_input->data, ARRAY_SIZE(p_input->data)))
+   /* Accelerate only navigation buttons */
+   for (i = 0; i < 6; i++)
+      navigation_current |= BIT256_GET_PTR(p_input, navigation_buttons[i]);
+
+   if (navigation_current)
    {
       if (!first_held)
       {
@@ -23482,12 +23497,8 @@ static unsigned menu_event(
       if (delay_count >= delay_timer)
       {
          uint32_t input_repeat = 0;
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_UP);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_DOWN);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_LEFT);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_L);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_R);
+         for (i = 0; i < 6; i++)
+            BIT32_SET(input_repeat, navigation_buttons[i]);
 
          set_scroll           = true;
          first_held           = false;
