@@ -2272,6 +2272,7 @@ struct rarch_state
    bool runloop_remaps_content_dir_active;
 #endif
    bool runloop_game_options_active;
+   bool runloop_folder_options_active;
    bool runloop_autosave;
 #ifdef HAVE_SCREENSHOTS
    bool runloop_max_frames_screenshot;
