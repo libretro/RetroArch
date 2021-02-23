@@ -3579,7 +3579,7 @@ bool config_load_override(void *data)
       temp_path[0]    = '\0';
 
       RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
-            game_path);
+            content_path);
 
       if (should_append)
       {
