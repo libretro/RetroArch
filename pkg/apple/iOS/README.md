@@ -17,7 +17,7 @@ RetroArch needs to know a couple things when building the app. You can configure
 This is the identity that will be used when signing the app after it is built. Under normal circumstance, you shouldn't have to change this. But if you have multiple Apple dev accounts on your computer, you will have to be more specific.
 
 ```
-CODE_SIGN_IDENTITY="iPhone Distribution: Bill Cosby"
+CODE_SIGN_IDENTITY="iPhone Distribution: Fred Rogers"
 ```
 
 Adding the name of the account will make sure it uses the exact codesigning identity.
