@@ -7675,6 +7675,10 @@ MSG_HASH(
    "3:2 (wypośrodkowane)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   "5:3 (wypośrodkowane)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "WYŁĄCZONE"
    )
