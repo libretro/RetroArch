@@ -2046,6 +2046,8 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
       case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_OPTIONS];
+      case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
+         return stripes->textures.list[STRIPES_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
          return stripes->textures.list[STRIPES_TEXTURE_ADD_FAVORITE];
