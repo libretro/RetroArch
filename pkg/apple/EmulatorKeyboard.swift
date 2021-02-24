@@ -146,9 +146,9 @@ class EmulatorKeyboardView: UIView {
     
     
     @objc private func keyPressed(_ sender: KeyboardButton) {
-//        if sender.key.keyCode == AppleKeyboardKey.KEY_SPECIAL_TOGGLE.rawValue {
-//            return
-//        }
+        if sender.key.keyCode == 9000 { // hack for now
+            return
+        }
         if !sender.key.isModifier {
             let label = UILabel(frame: .zero)
             label.text = sender.titleLabel?.text
