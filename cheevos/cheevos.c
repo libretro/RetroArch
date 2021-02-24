@@ -503,9 +503,6 @@ static unsigned rcheevos_peek(unsigned address, unsigned num_bytes, void* ud)
       }
    }
 
-   if (address < rcheevos_locals.memory.total_size)
-      rcheevos_invalidate_address(address);
-
    return 0;
 }
 
@@ -706,6 +703,22 @@ static void rcheevos_async_task_callback(
    }
 }
 
+static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
+{
+   rc_memref_value_t* memref = locals->runtime.memrefs;
+   while (memref)
+   {
+      if (!memref->memref.is_indirect)
+      {
+         uint8_t* data = rcheevos_memory_find(&rcheevos_locals.memory, memref->memref.address);
+         if (!data)
+            rcheevos_invalidate_address(memref->memref.address);
+      }
+
+      memref = memref->next;
+   }
+}
+
 static void rcheevos_activate_achievements(rcheevos_locals_t *locals,
       rcheevos_racheevo_t* cheevo, unsigned count, unsigned flags)
 {
@@ -877,6 +890,10 @@ static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
       request->type                      = CHEEVOS_ASYNC_RICHPRESENCE;
       rcheevos_async_schedule(request, CHEEVOS_PING_FREQUENCY / 4);
    }
+
+   /* validate the memrefs */
+   if (rcheevos_locals.memory.count != 0)
+      rcheevos_validate_memrefs(&rcheevos_locals);
 
    return 0;
 
@@ -1861,6 +1878,8 @@ void rcheevos_test(void)
          rcheevos_pause_hardcore();
          return;
       }
+
+      rcheevos_validate_memrefs(&rcheevos_locals);
    }
 
    rc_runtime_do_frame(&rcheevos_locals.runtime, &rcheevos_runtime_event_handler, rcheevos_peek, NULL, 0);
