@@ -25775,12 +25775,14 @@ void input_keyboard_event(bool down, unsigned code,
 
       /* Block hotkey+RetroPad mapped keyboard key events,
        * but not with game focus and from keyboard device type */
+#ifndef HAVE_COCOATOUCH
       if (!p_rarch->game_focus_state.enabled)
       {
          block = BIT512_GET(p_rarch->keyboard_mapping_bits, code);
          if (block && MAPPER_GET_KEY(handle, code))
             block = false;
       }
+#endif
 
       if (block)
          return;

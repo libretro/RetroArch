@@ -26,19 +26,24 @@
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
+#import "RetroArch-Swift.h"
 #endif
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
 
+#include "../../input/drivers/cocoa_input.h"
+#include "../../input/drivers_keyboard/keyboard_event_apple.h"
+
+
 static CocoaView* g_instance;
 
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
 
-@interface CocoaView()<GCDWebUploaderDelegate> {
-
+@interface CocoaView()<GCDWebUploaderDelegate, EmulatorKeyboardKeyPressedDelegate> {
+    EmulatorKeyboardController *keyboardController;
 }
 @end
 #endif
@@ -76,23 +81,12 @@ void *glkitview_init(void);
 #if defined(HAVE_COCOA)
    ui_window_cocoa_t cocoa_view;
    cocoa_view.data = (CocoaView*)self;
-#elif defined(HAVE_COCOATOUCH)
-#if defined(HAVE_COCOA_METAL)
-   self.view       = [UIView new];
-#else
-   self.view       = (BRIDGE GLKView*)glkitview_init();
-#endif
 #endif
     
 #if defined(OSX)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)self);
-#elif TARGET_OS_IOS
-    UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
-    swipe.numberOfTouchesRequired = 4;
-    swipe.direction = UISwipeGestureRecognizerDirectionDown;
-    [self.view addGestureRecognizer:swipe];
 #endif
 
    return self;
@@ -229,12 +223,13 @@ void *glkitview_init(void);
    }
 
    [self adjustViewFrameForSafeArea];
+   [self.view bringSubviewToFront:keyboardController.view];
 }
 
 /* NOTE: This version runs on iOS6+. */
-- (NSUInteger)supportedInterfaceOrientations
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
-   return (NSUInteger)apple_frontend_settings.orientation_flags;
+   return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
 }
 
 /* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
@@ -267,6 +262,40 @@ void *glkitview_init(void);
 #endif
 
 #ifdef HAVE_COCOATOUCH
+
+-(void)setupEmulatorKeyboard {
+    keyboardController = [[EmulatorKeyboardController alloc] init];
+    [self addChildViewController:keyboardController];
+    [keyboardController didMoveToParentViewController:self];
+    keyboardController.view.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:keyboardController.view];
+    [[keyboardController.view.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor] setActive:YES];
+    [[keyboardController.view.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor] setActive:YES];
+    [[keyboardController.view.topAnchor constraintEqualToAnchor:self.view.topAnchor] setActive:YES];
+    [[keyboardController.view.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor] setActive:YES];
+    keyboardController.leftKeyboardModel.delegate = self;
+    keyboardController.rightKeyboardModel.delegate = self;
+}
+
+#pragma mark - UIViewController Lifecycle
+
+-(void)loadView {
+#if defined(HAVE_COCOA_METAL)
+   self.view       = [UIView new];
+#else
+   self.view       = (BRIDGE GLKView*)glkitview_init();
+#endif
+}
+
+-(void)viewDidLoad {
+    [super viewDidLoad];
+    UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
+    swipe.numberOfTouchesRequired = 4;
+    swipe.direction = UISwipeGestureRecognizerDirectionDown;
+    [self.view addGestureRecognizer:swipe];
+    [self setupEmulatorKeyboard];	
+}
+
 - (void)viewDidAppear:(BOOL)animated
 {
 #if TARGET_OS_IOS
@@ -311,6 +340,27 @@ void *glkitview_init(void);
     }];
 #endif
 }
+
+#pragma mark - EmulatorKeyboardKeyPressedDelegate
+-(void)keyDown:(id<KeyCoded>)key {
+    NSLog(@"key down: %li modifier: %i",(long)key.keyCode, keyboardController.modifierState);
+//    if (keyboardController.modifierState & shiftKey) {
+//        add_event_modifier(shiftKey);
+//    }
+    input_keyboard_event(true, (int)key.keyCode, 0, 0, RETRO_DEVICE_KEYBOARD);
+}
+
+-(void)keyUp:(id<KeyCoded>)key {
+//    if (key.keyCode == KEY_SPECIAL_DEBUGGER) {
+//        [self presentViewController:self.debugMemoryViewController animated:true completion:nil];
+//        return;
+//    }
+//    if (self.emuKeyboardController.modifierState & shiftKey) {
+//        add_event_modifier(0);
+//    }
+    input_keyboard_event(false, (int)key.keyCode, 0, 0, RETRO_DEVICE_KEYBOARD);
+}
+
 #endif
 
 @end
