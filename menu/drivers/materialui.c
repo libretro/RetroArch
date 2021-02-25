@@ -9797,6 +9797,10 @@ static void materialui_list_insert(
             node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
+         case MENU_SETTING_ACTION_CORE_OPTIONS_RESET:
+            node->icon_texture_index = MUI_TEXTURE_UNDO_SAVE_STATE;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            break;
          case FILE_TYPE_RPL_ENTRY:
          case MENU_SETTING_DROPDOWN_ITEM:
          case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:

@@ -5082,6 +5082,13 @@ static int action_ok_folder_specific_core_options_remove(const char *path,
    return 0;
 }
 
+static int action_ok_core_options_reset(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_options_reset();
+   return 0;
+}
+
 int action_ok_close_content(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int ret;
@@ -8425,6 +8432,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE:
             BIND_ACTION_OK(cbs, action_ok_folder_specific_core_options_remove);
+            break;
+         case MENU_SETTING_ACTION_CORE_OPTIONS_RESET:
+            BIND_ACTION_OK(cbs, action_ok_core_options_reset);
             break;
          case MENU_SETTING_ITEM_CORE_RESTORE_BACKUP:
             BIND_ACTION_OK(cbs, action_ok_core_restore_backup);

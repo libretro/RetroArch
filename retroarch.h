@@ -1995,6 +1995,7 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name);
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
+void core_options_reset(void);
 
 typedef enum apple_view_type
 {
