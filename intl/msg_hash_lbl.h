@@ -1287,6 +1287,10 @@ MSG_HASH(
    "core_option_override_info"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
+   "core_options_reset"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
    "game_specific_options_create"
    )

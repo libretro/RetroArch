@@ -6248,7 +6248,7 @@ MSG_HASH(
    "Save or remove option overrides for the current content."
    )
 
-/* Quick Menu > Options > Core Option Overrides */
+/* Quick Menu > Options > Manage Core Options */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
@@ -6269,6 +6269,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
    "Active Options File:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Reset Options"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Set all core options to default values."
    )
 
 /* - Legacy (unused) */
@@ -10675,6 +10683,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
    "Core options file removed successfully."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "All core options reset to default."
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,

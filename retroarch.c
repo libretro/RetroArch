@@ -39012,6 +39012,32 @@ error:
    return false;
 }
 
+void core_options_reset(void)
+{
+   struct rarch_state *p_rarch     = &rarch_st;
+   core_option_manager_t *coreopts = p_rarch->runloop_core_options;
+   size_t i;
+
+   /* If there are no core options, there
+    * is nothing to do */
+   if (!coreopts || (coreopts->size < 1))
+      return;
+
+   for (i = 0; i < coreopts->size; i++)
+      coreopts->opts[i].index = coreopts->opts[i].default_index;
+
+   coreopts->updated = true;
+
+#ifdef HAVE_CHEEVOS
+   rcheevos_validate_config_settings();
+#endif
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_CORE_OPTIONS_RESET),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
 void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {

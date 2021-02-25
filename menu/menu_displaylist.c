@@ -904,6 +904,8 @@ static unsigned menu_displaylist_parse_core_option_override_list(
       menu_displaylist_info_t *info)
 {
    unsigned count             = 0;
+   bool core_has_options      = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) &&
+         rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
    bool game_options_active   = rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL);
    bool folder_options_active = rarch_ctl(RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE, NULL);
 
@@ -912,8 +914,7 @@ static unsigned menu_displaylist_parse_core_option_override_list(
     * - Core is 'dummy'
     * - Core has no options
     * - No content has been loaded */
-   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) ||
-       !rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL) ||
+   if (!core_has_options ||
        string_is_empty(path_get(RARCH_PATH_CONTENT)))
       goto end;
 
@@ -961,8 +962,17 @@ static unsigned menu_displaylist_parse_core_option_override_list(
             MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE, 0, 0))
          count++;
 end:
+   /* Reset core options */
+   if (core_has_options)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS_RESET),
+            MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
+            MENU_SETTING_ACTION_CORE_OPTIONS_RESET, 0, 0))
+         count++;
+
    /* Fallback, in case we open this menu while running
-    * a content-less core */
+    * a core without options */
    if (count == 0)
       if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
