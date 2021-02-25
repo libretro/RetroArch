@@ -35554,7 +35554,7 @@ static void rarch_init_core_options_path(
          else if (!path_is_empty(RARCH_PATH_CONFIG))
             fill_pathname_resolve_relative(
                   global_options_path, path_get(RARCH_PATH_CONFIG),
-                  "retroarch-core-options.cfg", sizeof(global_options_path));
+                  FILE_PATH_CORE_OPTIONS_CONFIG, sizeof(global_options_path));
       }
 
       /* Allocate correct path/src_path strings */
@@ -38796,42 +38796,220 @@ static void set_gamepad_input_override(struct rarch_state *p_rarch,
 }
 #endif
 
-/* creates folder and core options stub file for subsequent runs */
-bool create_folder_and_core_options(void)
+/* Creates folder and core options stub file for subsequent runs */
+bool core_options_create_override(bool game_specific)
 {
-   char game_path[PATH_MAX_LENGTH];
-   config_file_t *conf             = NULL;
-   struct rarch_state *p_rarch     = &rarch_st;
+   char options_path[PATH_MAX_LENGTH];
+   config_file_t *conf         = NULL;
+   struct rarch_state *p_rarch = &rarch_st;
 
-   game_path[0] = '\0';
+   options_path[0] = '\0';
 
-   if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
+   /* Sanity check - cannot create a folder-specific
+    * override if a game-specific override is
+    * already active */
+   if (!game_specific && p_rarch->runloop_game_options_active)
+      goto error;
+
+   /* Get options file path (either game-specific or folder-specific) */
+   if (game_specific)
    {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      return false;
+      if (!retroarch_validate_game_options(options_path,
+            sizeof(options_path), true))
+         goto error;
    }
+   else
+      if (!retroarch_validate_folder_options(options_path,
+            sizeof(options_path), true))
+         goto error;
 
-   if (!(conf = config_file_new_from_path_to_string(game_path)))
+   /* Open config file */
+   if (!(conf = config_file_new_from_path_to_string(options_path)))
       if (!(conf = config_file_new_alloc()))
-         return false;
+         goto error;
 
-   if (config_file_write(conf, game_path, true))
+   /* Write config file */
+   core_option_manager_flush(conf, p_rarch->runloop_core_options);
+
+   if (config_file_write(conf, options_path, true))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
             1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-      path_set(RARCH_PATH_CORE_OPTIONS, game_path);
-      p_rarch->runloop_game_options_active   = true;
-      p_rarch->runloop_folder_options_active = false;
+      path_set(RARCH_PATH_CORE_OPTIONS, options_path);
+      p_rarch->runloop_game_options_active   = game_specific;
+      p_rarch->runloop_folder_options_active = !game_specific;
    }
+   else
+      goto error;
+
    config_file_free(conf);
+   return true;
+
+error:
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   if (conf)
+      config_file_free(conf);
+
+   return false;
+}
+
+bool core_options_remove_override(bool game_specific)
+{
+   char new_options_path[PATH_MAX_LENGTH];
+   struct rarch_state *p_rarch      = &rarch_st;
+   core_option_manager_t *coreopts  = p_rarch->runloop_core_options;
+   settings_t *settings             = p_rarch->configuration_settings;
+   bool per_core_options            = !settings->bools.global_core_options;
+   const char *path_core_options    = settings->paths.path_core_options;
+   const char *current_options_path = NULL;
+   config_file_t *conf              = NULL;
+   bool folder_options_active       = false;
+
+   new_options_path[0] = '\0';
+
+   /* Sanity check 1 - if there are no core options
+    * or no overrides are active, there is nothing to do */
+   if (!coreopts ||
+       (!p_rarch->runloop_game_options_active &&
+            !p_rarch->runloop_folder_options_active))
+      return true;
+
+   /* Sanity check 2 - can only remove an override
+    * if the specified type is currently active */
+   if (game_specific && !p_rarch->runloop_game_options_active)
+      goto error;
+
+   /* Get current options file path */
+   current_options_path = path_get(RARCH_PATH_CORE_OPTIONS);
+   if (string_is_empty(current_options_path))
+      goto error;
+
+   /* Remove current options file, if required */
+   if (path_is_valid(current_options_path))
+      filestream_delete(current_options_path);
+
+   /* Reload any existing 'parent' options file
+    * > If we have removed a game-specific config,
+    *   check whether a folder-specific config
+    *   exists */
+   if (game_specific &&
+       retroarch_validate_folder_options(new_options_path,
+         sizeof(new_options_path), false) &&
+       path_is_valid(new_options_path))
+      folder_options_active = true;
+
+   /* > If a folder-specific config does not exist,
+    *   or we removed it, check whether we have a
+    *   top-level config file */
+   if (!folder_options_active)
+   {
+      /* Try core-specific options, if enabled */
+      if (per_core_options)
+      {
+         const char *core_name = p_rarch->runloop_system.info.library_name;
+         per_core_options      = retroarch_validate_per_core_options(
+               new_options_path, sizeof(new_options_path), true,
+                     core_name, core_name);
+      }
+
+      /* ...otherwise use global options */
+      if (!per_core_options)
+      {
+         if (!string_is_empty(path_core_options))
+            strlcpy(new_options_path,
+                  path_core_options, sizeof(new_options_path));
+         else if (!path_is_empty(RARCH_PATH_CONFIG))
+            fill_pathname_resolve_relative(
+                  new_options_path, path_get(RARCH_PATH_CONFIG),
+                        FILE_PATH_CORE_OPTIONS_CONFIG, sizeof(new_options_path));
+      }
+   }
+
+   if (string_is_empty(new_options_path))
+      goto error;
+
+   /* > If we have a valid file, load it */
+   if (folder_options_active ||
+       path_is_valid(new_options_path))
+   {
+      size_t i, j;
+
+      if (!(conf = config_file_new_from_path_to_string(new_options_path)))
+         goto error;
+
+      for (i = 0; i < coreopts->size; i++)
+      {
+         struct core_option *option      = NULL;
+         struct config_entry_list *entry = NULL;
+
+         option = (struct core_option*)&coreopts->opts[i];
+         if (!option)
+            continue;
+
+         entry = config_get_entry(conf, option->key);
+         if (!entry || string_is_empty(entry->value))
+            continue;
+
+         /* Set current config value from file entry */
+         for (j = 0; j < option->vals->size; j++)
+         {
+            if (string_is_equal(option->vals->elems[j].data, entry->value))
+            {
+               option->index = j;
+               break;
+            }
+         }
+      }
+
+      coreopts->updated = true;
+      config_file_free(conf);
+
+#ifdef HAVE_CHEEVOS
+      rcheevos_validate_config_settings();
+#endif
+   }
+
+   /* Update runloop status */
+   if (folder_options_active)
+   {
+      path_set(RARCH_PATH_CORE_OPTIONS, new_options_path);
+      p_rarch->runloop_game_options_active   = false;
+      p_rarch->runloop_folder_options_active = true;
+   }
+   else
+   {
+      path_clear(RARCH_PATH_CORE_OPTIONS);
+      p_rarch->runloop_game_options_active   = false;
+      p_rarch->runloop_folder_options_active = false;
+
+      strlcpy(coreopts->conf_path, new_options_path,
+            sizeof(coreopts->conf_path));
+   }
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return true;
+
+error:
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_ERROR_REMOVING_CORE_OPTIONS_FILE),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   if (conf)
+      config_file_free(conf);
+
+   return false;
 }
 
 void menu_content_environment_get(int *argc, char *argv[],

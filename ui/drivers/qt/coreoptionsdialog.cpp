@@ -34,6 +34,7 @@ extern "C" {
 #include "../../../paths.h"
 #include "../../../file_path_special.h"
 #include "../../../core_option_manager.h"
+#include "../../../menu/menu_driver.h"
 
 #ifndef CXX_BUILD
 }
@@ -122,8 +123,32 @@ void CoreOptionsDialog::reload()
 
 void CoreOptionsDialog::onSaveGameSpecificOptions()
 {
-   if (!create_folder_and_core_options())
+#ifdef HAVE_MENU
+   bool refresh = false;
+#endif
+
+   if (!core_options_create_override(true))
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE));
+
+#ifdef HAVE_MENU
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+#endif
+}
+
+void CoreOptionsDialog::onSaveFolderSpecificOptions()
+{
+#ifdef HAVE_MENU
+   bool refresh = false;
+#endif
+
+   if (!core_options_create_override(false))
+      QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE));
+
+#ifdef HAVE_MENU
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+#endif
 }
 
 void CoreOptionsDialog::onCoreOptionComboBoxCurrentIndexChanged(int index)

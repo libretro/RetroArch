@@ -900,6 +900,80 @@ static unsigned menu_displaylist_parse_core_manager_list(
    return count;
 }
 
+static unsigned menu_displaylist_parse_core_option_override_list(
+      menu_displaylist_info_t *info)
+{
+   unsigned count             = 0;
+   bool game_options_active   = rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL);
+   bool folder_options_active = rarch_ctl(RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE, NULL);
+
+   /* Sanity check - cannot handle core option
+    * overrides if:
+    * - Core is 'dummy'
+    * - Core has no options
+    * - No content has been loaded */
+   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) ||
+       !rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL) ||
+       string_is_empty(path_get(RARCH_PATH_CONTENT)))
+      goto end;
+
+   /* Show currently active core options file */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO),
+         msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_INFO),
+         MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_INFO,
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+      count++;
+
+   /* Save core option overrides */
+   if (!game_options_active)
+   {
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE),
+            msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE),
+            MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+            MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_CREATE, 0, 0))
+         count++;
+
+      if (!folder_options_active)
+         if (menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE),
+               MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+               MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE, 0, 0))
+            count++;
+   }
+
+   /* Remove core option overrides */
+   if (game_options_active)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE),
+            msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE),
+            MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+            MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_REMOVE, 0, 0))
+         count++;
+
+   if (folder_options_active)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE),
+            msg_hash_to_str(MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE),
+            MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+            MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE, 0, 0))
+         count++;
+end:
+   /* Fallback, in case we open this menu while running
+    * a content-less core */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+            MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+            0, 0, 0))
+         count++;
+
+   return count;
+}
+
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    int controller;
@@ -2613,7 +2687,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
                MENU_ENUM_LABEL_CORE_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0))
+               MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0))
             count++;
       }
 
@@ -11104,28 +11178,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &num_opts);
 
                if (game_specific_options)
-               {
-                  if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
-                  {
-                     if (menu_entries_append_enum(info->list,
-                           msg_hash_to_str(
-                                 MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
-                           msg_hash_to_str(
-                                 MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
-                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
-                           MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
-                        count++;
-                  }
-                  else
-                     if (menu_entries_append_enum(info->list,
-                           msg_hash_to_str(
-                                 MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
-                           msg_hash_to_str(
-                                 MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
-                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
-                           MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
-                        count++;
-               }
+                  if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST),
+                        MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST,
+                        MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST, 0, 0))
+                     count++;
 
                if (num_opts != 0)
                {
@@ -11152,6 +11210,29 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
                      MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
                      MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+
+            if (selection >= count)
+            {
+               info->need_refresh          = true;
+               info->need_navigation_clear = true;
+            }
+            info->need_push                = true;
+         }
+         break;
+      case DISPLAYLIST_CORE_OPTION_OVERRIDE_LIST:
+         {
+            /* The number of items in the core option override
+             * list will vary depending upon whether game or
+             * content directory overrides are currently active.
+             * To prevent the menu selection from going out
+             * of bounds, we therefore have to check that the
+             * current selection index is less than the current
+             * number of menu entries - if not, we reset the
+             * navigation pointer */
+            size_t selection = menu_navigation_get_selection();
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            count            = menu_displaylist_parse_core_option_override_list(info);
 
             if (selection >= count)
             {
