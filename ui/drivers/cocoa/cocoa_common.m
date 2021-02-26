@@ -42,7 +42,7 @@ static CocoaView* g_instance;
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
 
-@interface CocoaView()<GCDWebUploaderDelegate, EmulatorKeyboardKeyPressedDelegate> {
+@interface CocoaView()<GCDWebUploaderDelegate, EmulatorKeyboardKeyPressedDelegate, UIGestureRecognizerDelegate> {
     EmulatorKeyboardController *keyboardController;
 }
 @end
@@ -146,6 +146,11 @@ void *glkitview_init(void);
     dispatch_async(dispatch_get_main_queue(), ^{
         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
     });
+}
+
+-(void) toggleCustomKeyboard
+{
+    [keyboardController.view setHidden:!keyboardController.view.isHidden];
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
@@ -275,6 +280,7 @@ void *glkitview_init(void);
     [[keyboardController.view.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor] setActive:YES];
     keyboardController.leftKeyboardModel.delegate = self;
     keyboardController.rightKeyboardModel.delegate = self;
+    [keyboardController.view setHidden:YES];
 }
 
 #pragma mark - UIViewController Lifecycle
@@ -291,10 +297,23 @@ void *glkitview_init(void);
     [super viewDidLoad];
     UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
     swipe.numberOfTouchesRequired = 4;
+    swipe.delegate = self;
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
-    [self setupEmulatorKeyboard];	
+#if TARGET_OS_IOS
+    [self setupEmulatorKeyboard];
+    UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboard)];
+    showKeyboardSwipe.numberOfTouchesRequired = 3;
+    showKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionUp;
+    showKeyboardSwipe.delegate = self;
+    [self.view addGestureRecognizer:showKeyboardSwipe];
+#endif
 }
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
+}
+
 
 - (void)viewDidAppear:(BOOL)animated
 {

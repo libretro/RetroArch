@@ -1384,7 +1384,7 @@
 					"-DHAVE_REWIND",
 					"-DHAVE_PATCH",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArchiOS;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
@@ -1567,7 +1567,7 @@
 					"-DHAVE_RWAV",
 					"-DHAVE_BTSTACK",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArchiOS;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";

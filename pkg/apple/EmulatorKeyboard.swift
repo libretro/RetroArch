@@ -68,6 +68,7 @@ class KeyboardButton: UIButton {
 protocol EmulatorKeyboardViewDelegate: class {
     func toggleAlternateKeys()
     func refreshModifierStates()
+    func updateTransparency(toAlpha alpha: Float)
 }
 
 class EmulatorKeyboardView: UIView {
@@ -262,7 +263,7 @@ class EmulatorKeyboardView: UIView {
                 spacer.heightAnchor.constraint(equalToConstant: 25.0).isActive = true
                 return spacer
             } else if let sliderKey = keyCoded as? SliderKey {
-                sliderKey.keyboardViewModel = self.viewModel
+                sliderKey.keyboardView = self
                 return sliderKey.createView()
             }
             return createKey(keyCoded)
@@ -333,7 +334,8 @@ class SliderKey: KeyCoded {
     let isModifier = false
     let keyImageName: String? = nil
     let keyImageNameHighlighted: String? = nil
-    weak var keyboardViewModel: EmulatorKeyboardViewModel?
+    weak var keyboardView: EmulatorKeyboardView?
+
     init(keySize: KeySize = .standard) {
         self.keySize = keySize
     }
@@ -346,7 +348,7 @@ class SliderKey: KeyCoded {
         return slider
     }
     @objc func adjustKeyboardAlpha(_ sender: UISlider) {
-        keyboardViewModel?.delegate?.updateTransparency(toAlpha: CGFloat(sender.value))
+      keyboardView?.delegate?.updateTransparency(toAlpha: sender.value)
     }
 }
 
