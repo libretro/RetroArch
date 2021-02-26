@@ -155,7 +155,6 @@ class EmulatorKeyboardView: UIView {
             label.text = sender.titleLabel?.text
             // hmm need to convert frame
             let converted = sender.convert(sender.bounds, to: self)
-            print("sender frame: \(sender.frame), bounds: \(sender.bounds), convertedBounds = \(converted)")
             var labelFrame = converted.offsetBy(dx: 0, dy: -60)
             labelFrame = CGRect(x: labelFrame.origin.x, y: labelFrame.origin.y, width: labelFrame.width * 2, height: labelFrame.height * 2)
             label.backgroundColor = .white

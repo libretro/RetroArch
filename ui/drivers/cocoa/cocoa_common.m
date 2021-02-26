@@ -42,9 +42,9 @@ static CocoaView* g_instance;
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
 
-@interface CocoaView()<GCDWebUploaderDelegate, EmulatorKeyboardKeyPressedDelegate, UIGestureRecognizerDelegate> {
-    EmulatorKeyboardController *keyboardController;
+@interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate> {
 }
+
 @end
 #endif
 
@@ -150,7 +150,7 @@ void *glkitview_init(void);
 
 -(void) toggleCustomKeyboard
 {
-    [keyboardController.view setHidden:!keyboardController.view.isHidden];
+    [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
@@ -228,7 +228,7 @@ void *glkitview_init(void);
    }
 
    [self adjustViewFrameForSafeArea];
-   [self.view bringSubviewToFront:keyboardController.view];
+   [self.view bringSubviewToFront:self.keyboardController.view];
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -267,21 +267,6 @@ void *glkitview_init(void);
 #endif
 
 #ifdef HAVE_COCOATOUCH
-
--(void)setupEmulatorKeyboard {
-    keyboardController = [[EmulatorKeyboardController alloc] init];
-    [self addChildViewController:keyboardController];
-    [keyboardController didMoveToParentViewController:self];
-    keyboardController.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addSubview:keyboardController.view];
-    [[keyboardController.view.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor] setActive:YES];
-    [[keyboardController.view.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor] setActive:YES];
-    [[keyboardController.view.topAnchor constraintEqualToAnchor:self.view.topAnchor] setActive:YES];
-    [[keyboardController.view.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor] setActive:YES];
-    keyboardController.leftKeyboardModel.delegate = self;
-    keyboardController.rightKeyboardModel.delegate = self;
-    [keyboardController.view setHidden:YES];
-}
 
 #pragma mark - UIViewController Lifecycle
 
@@ -358,26 +343,6 @@ void *glkitview_init(void);
     [self presentViewController:alert animated:YES completion:^{
     }];
 #endif
-}
-
-#pragma mark - EmulatorKeyboardKeyPressedDelegate
--(void)keyDown:(id<KeyCoded>)key {
-    NSLog(@"key down: %li modifier: %i",(long)key.keyCode, keyboardController.modifierState);
-//    if (keyboardController.modifierState & shiftKey) {
-//        add_event_modifier(shiftKey);
-//    }
-    input_keyboard_event(true, (int)key.keyCode, 0, 0, RETRO_DEVICE_KEYBOARD);
-}
-
--(void)keyUp:(id<KeyCoded>)key {
-//    if (key.keyCode == KEY_SPECIAL_DEBUGGER) {
-//        [self presentViewController:self.debugMemoryViewController animated:true completion:nil];
-//        return;
-//    }
-//    if (self.emuKeyboardController.modifierState & shiftKey) {
-//        add_event_modifier(0);
-//    }
-    input_keyboard_event(false, (int)key.keyCode, 0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
 #endif

@@ -42,10 +42,15 @@
 #endif
 
 #if TARGET_OS_IOS
+@class EmulatorKeyboardController;
+
 @interface CocoaView : UIViewController
 #elif TARGET_OS_TV
 @interface CocoaView : GCEventViewController
 #endif
+
+@property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
+
 + (CocoaView*)get;
 @end
 
