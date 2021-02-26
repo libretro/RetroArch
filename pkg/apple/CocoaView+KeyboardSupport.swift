@@ -8,20 +8,6 @@
 
 import Foundation
 
-extension CocoaView: EmulatorKeyboardKeyPressedDelegate {
-   func updateTransparency(toAlpha alpha: CGFloat) {
-      // todo
-   }
-   
-   func keyUp(_ key: KeyCoded) {
-      input_keyboard_event(false, UInt32(key.keyCode), 0, 0, UInt32(RETRO_DEVICE_KEYBOARD))
-   }
-   
-   func keyDown(_ key: KeyCoded) {
-      input_keyboard_event(true, UInt32(key.keyCode), 0, 0, UInt32(RETRO_DEVICE_KEYBOARD))
-   }
-}
-
 extension CocoaView {
    var leftKeyboardModel: EmulatorKeyboardViewModel {
       return EmulatorKeyboardViewModel(keys: [
@@ -51,7 +37,7 @@ extension CocoaView {
             EmulatorKeyboardKey(label: "b", code: Int(RETROK_b.rawValue)),
          ],
          [
-            EmulatorKeyboardKey(label: "SHIFT", code: Int(RETROK_LSHIFT.rawValue), keySize: .standard, isModifier: false, imageName: "shift", imageNameHighlighted: "shift.fill"),
+            EmulatorKeyboardKey(label: "SHIFT", code: Int(RETROK_LSHIFT.rawValue), keySize: .standard, isModifier: true, imageName: "shift", imageNameHighlighted: "shift.fill"),
             EmulatorKeyboardKey(label: "123", code: 9000, keySize: .standard, imageName: "textformat.123"),
             EmulatorKeyboardKey(label: "Alt", code: Int(RETROK_LALT.rawValue)),
             EmulatorKeyboardKey(label: "Space", code: Int(RETROK_SPACE.rawValue), keySize: .wide)
@@ -166,3 +152,14 @@ extension CocoaView {
       keyboardController.view.isHidden = true
    }
 }
+
+extension CocoaView: EmulatorKeyboardKeyPressedDelegate {
+   func keyUp(_ key: KeyCoded) {
+      input_keyboard_event(false, UInt32(key.keyCode), 0, 0, UInt32(RETRO_DEVICE_KEYBOARD))
+   }
+   
+   func keyDown(_ key: KeyCoded) {
+      input_keyboard_event(true, UInt32(key.keyCode), 0, 0, UInt32(RETRO_DEVICE_KEYBOARD))
+   }
+}
+

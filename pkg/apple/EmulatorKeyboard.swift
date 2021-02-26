@@ -57,7 +57,6 @@ class KeyboardButton: UIButton {
 @objc protocol EmulatorKeyboardKeyPressedDelegate: class {
     func keyDown(_ key: KeyCoded)
     func keyUp(_ key: KeyCoded)
-    func updateTransparency(toAlpha alpha: CGFloat)
 }
 
 @objc protocol EmulatorKeyboardModifierPressedDelegate: class {
@@ -414,7 +413,10 @@ struct KeyPosition {
 }
 
 @objc class EmulatorKeyboardController: UIViewController {
-    @objc lazy var leftKeyboardView: EmulatorKeyboardView = {
+   @objc let leftKeyboardModel: EmulatorKeyboardViewModel
+   @objc let rightKeyboardModel: EmulatorKeyboardViewModel
+
+   @objc lazy var leftKeyboardView: EmulatorKeyboardView = {
         let view = leftKeyboardModel.createView()
         view.delegate = self
         return view
@@ -429,9 +431,6 @@ struct KeyPosition {
     // Global states for all the keyboards
     // uses bitwise masks for the state of shift keys, control, open-apple keys, etc
     @objc var modifierState: Int16 = 0
-   
-   @objc let leftKeyboardModel: EmulatorKeyboardViewModel
-   @objc let rightKeyboardModel: EmulatorKeyboardViewModel
     
    init(leftKeyboardModel: EmulatorKeyboardViewModel, rightKeyboardModel: EmulatorKeyboardViewModel) {
       self.leftKeyboardModel = leftKeyboardModel
