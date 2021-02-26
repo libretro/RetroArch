@@ -35742,7 +35742,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_CORE_OPTIONS_LIST_GET:
          {
             core_option_manager_t **coreopts = (core_option_manager_t**)data;
-            if (!coreopts)
+            if (!coreopts || !p_rarch->runloop_core_options)
                return false;
             *coreopts = p_rarch->runloop_core_options;
          }
