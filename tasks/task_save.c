@@ -954,6 +954,11 @@ static void task_load_handler(retro_task_t *task)
          goto error;
    }
 
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      task_set_cancelled(task, true);
+#endif
+
    remaining          = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
    bytes_read         = intfstream_read(state->file,
          (uint8_t*)state->data + state->bytes_read, remaining);
@@ -1132,6 +1137,11 @@ static void content_load_state_cb(retro_task_t *task,
    struct sram_block *blocks   = NULL;
    settings_t *settings        = config_get_ptr();
    bool block_sram_overwrite   = settings->bools.block_sram_overwrite;
+
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      goto error;
+#endif
 
    RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
