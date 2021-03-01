@@ -73,12 +73,18 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define sysLwMutexCreate sys_lwmutex_create
 
 #define AUDIO_BLOCK_SAMPLES CELL_AUDIO_BLOCK_SAMPLES
-
+#define SYSMODULE_NET CELL_SYSMODULE_NET
 #define PS3_SYS_NO_TIMEOUT SYS_NO_TIMEOUT
 
 #define sys_lwmutex_attr_t sys_lwmutex_attribute_t 
 #define sys_lwcond_attr_t sys_lwcond_attribute_t 
 #define sys_sem_t sys_semaphore_t
+
+#define sysGetSystemTime sys_time_get_system_time
+#define sysModuleLoad cellSysmoduleLoadModule
+#define sysModuleUnload cellSysmoduleUnloadModule
+
+#define netInitialize sys_net_initialize_network
 
 #endif
 
