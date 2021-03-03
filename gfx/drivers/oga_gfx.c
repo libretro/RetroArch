@@ -452,6 +452,9 @@ static bool render_msg(oga_video_t* vid, const char* msg)
    int dest_y       = 0;
    int dest_stride;
 
+   if (msg[0] == '\0')
+      return false;
+
    if (strcmp(msg, vid->last_msg) == 0)
       return true;
 
@@ -567,7 +570,7 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
          return true;
    }
 
-   if (msg && msg[0] && vid->font)
+   if (msg && vid->font)
    {
         if (!render_msg(vid, msg))
             msg = NULL;
