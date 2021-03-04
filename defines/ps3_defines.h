@@ -276,8 +276,8 @@ extern int audioAddData(uint32_t portNum, float *data,
 #ifdef __PSL1GHT__
 #include <sys/thread.h>
 
-/* FIXME - not sure if this is correct */
-#define SYS_THREAD_CREATE_JOINABLE 0
+/* FIXME - not sure if this is correct -> FIXED! 1 and not 0 */
+#define SYS_THREAD_CREATE_JOINABLE THREAD_JOINABLE
 
 #else
 #include <sys/ppu_thread.h>
