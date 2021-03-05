@@ -12,8 +12,11 @@ extension CocoaView {
    var leftKeyboardModel: EmulatorKeyboardViewModel {
       return EmulatorKeyboardViewModel(keys: [
          [
-            EmulatorKeyboardKey(label: "esc", code: Int(RETROK_ESCAPE.rawValue)),
-            EmulatorKeyboardKey(label: "tab", code: Int(RETROK_TAB.rawValue))
+            EmulatorKeyboardKey(label: "1", code: Int(RETROK_1.rawValue)),
+            EmulatorKeyboardKey(label: "2", code: Int(RETROK_2.rawValue)),
+            EmulatorKeyboardKey(label: "3", code: Int(RETROK_3.rawValue)),
+            EmulatorKeyboardKey(label: "4", code: Int(RETROK_4.rawValue)),
+            EmulatorKeyboardKey(label: "5", code: Int(RETROK_5.rawValue)),
          ],
          [
             EmulatorKeyboardKey(label: "q", code: Int(RETROK_q.rawValue)),
@@ -38,21 +41,22 @@ extension CocoaView {
          ],
          [
             EmulatorKeyboardKey(label: "SHIFT", code: Int(RETROK_LSHIFT.rawValue), keySize: .standard, isModifier: true, imageName: "shift", imageNameHighlighted: "shift.fill"),
-            EmulatorKeyboardKey(label: "123", code: 9000, keySize: .standard, imageName: "textformat.123"),
-            EmulatorKeyboardKey(label: "Alt", code: Int(RETROK_LALT.rawValue)),
+            EmulatorKeyboardKey(label: "Fn", code: 9000, keySize: .standard, imageName: "fn"),
+            EmulatorKeyboardKey(label: "CTRL", code: Int(RETROK_LCTRL.rawValue), isModifier: true, imageName: "control"),
             EmulatorKeyboardKey(label: "Space", code: Int(RETROK_SPACE.rawValue), keySize: .wide)
          ]
       ],
       alternateKeys: [
          [
+            EmulatorKeyboardKey(label: "ESC", code: Int(RETROK_ESCAPE.rawValue), imageName: "escape"),
             SliderKey(keySize: .standard)
          ],
          [
-            EmulatorKeyboardKey(label: "1", code: Int(RETROK_1.rawValue)),
-            EmulatorKeyboardKey(label: "2", code: Int(RETROK_2.rawValue)),
-            EmulatorKeyboardKey(label: "3", code: Int(RETROK_3.rawValue)),
-            EmulatorKeyboardKey(label: "4", code: Int(RETROK_4.rawValue)),
-            EmulatorKeyboardKey(label: "5", code: Int(RETROK_5.rawValue)),
+            EmulatorKeyboardKey(label: "F1", code: Int(RETROK_F1.rawValue)),
+            EmulatorKeyboardKey(label: "F2", code: Int(RETROK_F2.rawValue)),
+            EmulatorKeyboardKey(label: "F3", code: Int(RETROK_F3.rawValue)),
+            EmulatorKeyboardKey(label: "F4", code: Int(RETROK_F4.rawValue)),
+            EmulatorKeyboardKey(label: "F5", code: Int(RETROK_F5.rawValue)),
          ],
          [
             EmulatorKeyboardKey(label: "-", code: Int(RETROK_MINUS.rawValue)),
@@ -69,7 +73,10 @@ extension CocoaView {
             EmulatorKeyboardKey(label: "!", code: Int(RETROK_EXCLAIM.rawValue)),
          ],
          [
-            EmulatorKeyboardKey(label: "ABC", code: 9000, keySize: .standard, imageName: "textformat.123")
+            EmulatorKeyboardKey(label: "SHIFT", code: Int(RETROK_LSHIFT.rawValue), keySize: .standard, isModifier: true, imageName: "shift", imageNameHighlighted: "shift.fill"),
+            EmulatorKeyboardKey(label: "Fn", code: 9000, keySize: .standard, imageName: "fn"),
+            EmulatorKeyboardKey(label: "CTRL", code: Int(RETROK_LCTRL.rawValue), isModifier: true, imageName: "control"),
+            EmulatorKeyboardKey(label: "Space", code: Int(RETROK_SPACE.rawValue), keySize: .wide)
          ]
       ])
    }
@@ -77,7 +84,11 @@ extension CocoaView {
    var rightKeyboardModel: EmulatorKeyboardViewModel {
       EmulatorKeyboardViewModel(keys: [
          [
-            
+            EmulatorKeyboardKey(label: "6", code: Int(RETROK_6.rawValue)),
+            EmulatorKeyboardKey(label: "7", code: Int(RETROK_7.rawValue)),
+            EmulatorKeyboardKey(label: "8", code: Int(RETROK_8.rawValue)),
+            EmulatorKeyboardKey(label: "9", code: Int(RETROK_9.rawValue)),
+            EmulatorKeyboardKey(label: "0", code: Int(RETROK_0.rawValue))
          ],
          [
             EmulatorKeyboardKey(label: "y", code: Int(RETROK_y.rawValue)),
@@ -98,38 +109,42 @@ extension CocoaView {
             EmulatorKeyboardKey(label: "m", code: Int(RETROK_m.rawValue)),
             EmulatorKeyboardKey(label: ",", code: Int(RETROK_COMMA.rawValue)),
             EmulatorKeyboardKey(label: ".", code: Int(RETROK_PERIOD.rawValue)),
-            EmulatorKeyboardKey(label: "BKSPC", code: Int(RETROK_BACKSPACE.rawValue))
+            EmulatorKeyboardKey(label: "BKSPC", code: Int(RETROK_BACKSPACE.rawValue), imageName: "delete.left", imageNameHighlighted: "delete.left.fill")
          ],
          [
-            EmulatorKeyboardKey(label: "ALT", code: Int(RETROK_RALT.rawValue)),
+            EmulatorKeyboardKey(label: "Alt", code: Int(RETROK_LALT.rawValue), isModifier: true, imageName: "alt"),
+            EmulatorKeyboardKey(label: "tab", code: Int(RETROK_TAB.rawValue), imageName: "arrow.right.to.line"),
             EmulatorKeyboardKey(label: "RETURN", code: Int(RETROK_RETURN.rawValue), keySize: .wide)
          ],
       ],
       alternateKeys: [
          [
-            EmulatorKeyboardKey(label: "6", code: Int(RETROK_6.rawValue)),
-            EmulatorKeyboardKey(label: "7", code: Int(RETROK_7.rawValue)),
-            EmulatorKeyboardKey(label: "8", code: Int(RETROK_8.rawValue)),
-            EmulatorKeyboardKey(label: "9", code: Int(RETROK_9.rawValue)),
-            EmulatorKeyboardKey(label: "0", code: Int(RETROK_0.rawValue))
+            EmulatorKeyboardKey(label: "F6", code: Int(RETROK_F6.rawValue)),
+            EmulatorKeyboardKey(label: "F7", code: Int(RETROK_F7.rawValue)),
+            EmulatorKeyboardKey(label: "F8", code: Int(RETROK_F8.rawValue)),
+            EmulatorKeyboardKey(label: "F9", code: Int(RETROK_F9.rawValue)),
+            EmulatorKeyboardKey(label: "F10", code: Int(RETROK_F10.rawValue)),
          ],
          [
-            EmulatorKeyboardKey(label: "PAGEUP", code: Int(RETROK_PAGEUP.rawValue)),
-            EmulatorKeyboardKey(label: "HOME", code: Int(RETROK_HOME.rawValue)),
-            EmulatorKeyboardKey(label: "⬆️", code: Int(RETROK_UP.rawValue)),
+            EmulatorKeyboardKey(label: "PAGEUP", code: Int(RETROK_PAGEUP.rawValue), imageName: "arrow.up.doc"),
+            EmulatorKeyboardKey(label: "HOME", code: Int(RETROK_HOME.rawValue), imageName: "house"),
+            EmulatorKeyboardKey(label: "INS", code: Int(RETROK_INSERT.rawValue), imageName: "text.insert"),
             EmulatorKeyboardKey(label: "END", code: Int(RETROK_END.rawValue)),
-            EmulatorKeyboardKey(label: "PAGEDWN", code: Int(RETROK_PAGEDOWN.rawValue)),
+            EmulatorKeyboardKey(label: "PAGEDWN", code: Int(RETROK_PAGEDOWN.rawValue), imageName: "arrow.down.doc"),
          ],
          [
+            EmulatorKeyboardKey(label: "F11", code: Int(RETROK_F11.rawValue)),
+            EmulatorKeyboardKey(label: "⬆️", code: Int(RETROK_UP.rawValue), imageName: "arrow.up"),
             SpacerKey(),
-            EmulatorKeyboardKey(label: "⬅️", code: Int(RETROK_LEFT.rawValue)),
-            EmulatorKeyboardKey(label: "⬇️", code: Int(RETROK_DOWN.rawValue)),
-            EmulatorKeyboardKey(label: "➡️", code: Int(RETROK_RIGHT.rawValue)),
-            SpacerKey()
+            SpacerKey(),
+            EmulatorKeyboardKey(label: "F12", code: Int(RETROK_F12.rawValue)),
          ],
          [
-            EmulatorKeyboardKey(label: "SPACE", code: Int(RETROK_SPACE.rawValue), keySize: .wide),
-            EmulatorKeyboardKey(label: "DEL", code: Int(RETROK_DELETE.rawValue)),
+            EmulatorKeyboardKey(label: "⬅️", code: Int(RETROK_LEFT.rawValue), imageName: "arrow.left"),
+            EmulatorKeyboardKey(label: "⬇️", code: Int(RETROK_DOWN.rawValue), imageName: "arrow.down"),
+            EmulatorKeyboardKey(label: "➡️", code: Int(RETROK_RIGHT.rawValue), imageName: "arrow.right"),
+            SpacerKey(),
+            EmulatorKeyboardKey(label: "DEL", code: Int(RETROK_DELETE.rawValue), imageName: "clear", imageNameHighlighted: "clear.fill"),
          ],
          [
             EmulatorKeyboardKey(label: "RETURN", code: Int(RETROK_RETURN.rawValue), keySize: .wide)
@@ -149,17 +164,68 @@ extension CocoaView {
       keyboardController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
       keyboardController.leftKeyboardModel.delegate = self
       keyboardController.rightKeyboardModel.delegate = self
+      keyboardController.leftKeyboardModel.modifierDelegate = self
+      keyboardController.rightKeyboardModel.modifierDelegate = self
       keyboardController.view.isHidden = true
+      keyboardModifierState = 0
    }
 }
 
 extension CocoaView: EmulatorKeyboardKeyPressedDelegate {
    func keyUp(_ key: KeyCoded) {
-      input_keyboard_event(false, UInt32(key.keyCode), 0, 0, UInt32(RETRO_DEVICE_KEYBOARD))
+      print("keyUp: code=\(key.keyCode) keyboardModifierState = \(keyboardModifierState)")
+      apple_direct_input_keyboard_event(false, UInt32(key.keyCode), 0, keyboardModifierState, UInt32(RETRO_DEVICE_KEYBOARD))
    }
-   
+
    func keyDown(_ key: KeyCoded) {
-      input_keyboard_event(true, UInt32(key.keyCode), 0, 0, UInt32(RETRO_DEVICE_KEYBOARD))
+      print("keyDown: code=\(key.keyCode) keyboardModifierState = \(keyboardModifierState)")
+      apple_direct_input_keyboard_event(true, UInt32(key.keyCode), 0, keyboardModifierState, UInt32(RETRO_DEVICE_KEYBOARD))
    }
 }
 
+extension CocoaView: EmulatorKeyboardModifierPressedDelegate {
+   func modifierPressedWithKey(_ key: KeyCoded, enable: Bool) {
+      switch UInt32(key.keyCode) {
+      case RETROK_LSHIFT.rawValue:
+         if enable {
+            keyboardModifierState |= RETROKMOD_SHIFT.rawValue
+            apple_direct_input_keyboard_event(true, UInt32(RETROK_LSHIFT.rawValue), 0, keyboardModifierState, UInt32(RETRO_DEVICE_KEYBOARD))
+         } else {
+            keyboardModifierState &= ~RETROKMOD_SHIFT.rawValue
+            apple_direct_input_keyboard_event(false, UInt32(RETROK_LSHIFT.rawValue), 0, keyboardModifierState, UInt32(RETRO_DEVICE_KEYBOARD))
+         }
+      case RETROK_LCTRL.rawValue:
+         if enable {
+            keyboardModifierState |= RETROKMOD_CTRL.rawValue
+            apple_direct_input_keyboard_event(true, UInt32(RETROK_LCTRL.rawValue), 0, keyboardModifierState, UInt32(RETRO_DEVICE_KEYBOARD))
+         } else {
+            keyboardModifierState &= ~RETROKMOD_CTRL.rawValue
+            apple_direct_input_keyboard_event(false, UInt32(RETROK_LCTRL.rawValue), 0, keyboardModifierState, UInt32(RETRO_DEVICE_KEYBOARD))
+         }
+      case RETROK_LALT.rawValue:
+         if enable {
+            keyboardModifierState |= RETROKMOD_ALT.rawValue
+            apple_direct_input_keyboard_event(true, UInt32(RETROK_LALT.rawValue), 0, keyboardModifierState, UInt32(RETRO_DEVICE_KEYBOARD))
+         } else {
+            keyboardModifierState &= ~RETROKMOD_ALT.rawValue
+            apple_direct_input_keyboard_event(false, UInt32(RETROK_LALT.rawValue), 0, keyboardModifierState, UInt32(RETRO_DEVICE_KEYBOARD))
+         }
+      default:
+         break
+      }
+   }
+   
+   func isModifierEnabled(key: KeyCoded) -> Bool {
+      switch UInt32(key.keyCode) {
+      case RETROK_LSHIFT.rawValue:
+         return (keyboardModifierState & RETROKMOD_SHIFT.rawValue) != 0
+      case RETROK_LCTRL.rawValue:
+         return (keyboardModifierState & RETROKMOD_CTRL.rawValue) != 0
+      case RETROK_LALT.rawValue:
+         return (keyboardModifierState & RETROKMOD_ALT.rawValue) != 0
+      default:
+         break
+      }
+      return false
+   }
+}

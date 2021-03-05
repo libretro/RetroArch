@@ -50,6 +50,7 @@
 #endif
 
 @property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
+@property(nonatomic,assign) unsigned int keyboardModifierState;
 
 + (CocoaView*)get;
 @end

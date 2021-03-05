@@ -287,6 +287,8 @@ void *glkitview_init(void);
     [self.view addGestureRecognizer:swipe];
 #if TARGET_OS_IOS
     [self setupEmulatorKeyboard];
+    self.keyboardController.leftKeyboardModel.delegate = self;
+    self.keyboardController.rightKeyboardModel.delegate = self;
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboard)];
     showKeyboardSwipe.numberOfTouchesRequired = 3;
     showKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionUp;

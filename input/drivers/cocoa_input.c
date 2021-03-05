@@ -41,6 +41,20 @@ float cocoa_screen_get_backing_scale_factor(void);
 #endif
 
 static bool apple_key_state[MAX_KEYS];
+
+// Send keyboard inputs directly using RETROK_* codes
+// Used by the iOS custom keyboard implementation
+void apple_direct_input_keyboard_event(bool down,
+      unsigned code, uint32_t character, uint32_t mod, unsigned device)
+{
+    int appleKey = rarch_keysym_lut[code];
+    apple_key_state[appleKey] = down;
+    input_keyboard_event(down,
+          code,
+          character, (enum retro_mod)mod, device);
+}
+
+
 #if TARGET_OS_IPHONE
 /* TODO/FIXME - static globals */
 static bool small_keyboard_active = false;
