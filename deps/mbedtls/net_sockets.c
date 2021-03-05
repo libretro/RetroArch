@@ -54,7 +54,7 @@
 #include <winsock2.h>
 #include <windows.h>
 
-#if defined(WIIU)
+#if !defined (__PSL1GHT__) && defined(__PS3__) || defined(WIIU)
 #define close(fd)               socketclose(fd)
 #elif defined(VITA)
 #define close(fd)               sceNetSocketClose(fd)
@@ -420,7 +420,7 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
  */
 int mbedtls_net_set_block( mbedtls_net_context *ctx )
 {
-#if defined(VITA) || defined(WIIU)
+#if defined(__PS3__) || defined(VITA) || defined(WIIU)
    int i = 0;
    setsockopt(ctx->fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
    return 1;
@@ -435,7 +435,7 @@ int mbedtls_net_set_block( mbedtls_net_context *ctx )
 
 int mbedtls_net_set_nonblock( mbedtls_net_context *ctx )
 {
-#if defined(VITA) || defined(WIIU)
+#if defined(__PS3__) || defined(VITA) || defined(WIIU)
    int i = 1;
    setsockopt(ctx->fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
    return 1;
@@ -524,7 +524,9 @@ int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
     tv.tv_sec  = timeout / 1000;
     tv.tv_usec = ( timeout % 1000 ) * 1000;
 
-#if defined(VITA)
+#if defined(__PS3__)
+    ret = socketselect(fd + 1, &read_fds, NULL, NULL, timeout == 0 ? NULL : &tv);
+#elif  defined(VITA)
    extern int retro_epoll_fd;
    SceNetEpollEvent ev = {0};
 
