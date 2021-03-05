@@ -728,6 +728,23 @@ build-static-retroarch-ctr:
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
+build-static-retroarch-ctr-legacy:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:ctr-legacy
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 10 min
+  dependencies: []
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.ctr -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
 build-static-retroarch-dummy-ctr:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: build
@@ -935,6 +952,7 @@ trigger_static-cores:
   - build-static-retroarch-ps2
   - build-static-retroarch-psp
   - build-static-retroarch-ctr
+  - build-static-retroarch-ctr-legacy
   - build-static-retroarch-wiiu
   - build-static-retroarch-wii
   - build-static-retroarch-ngc
@@ -943,4 +961,3 @@ trigger_static-cores:
   script:
     # Dummy for now
     - /bin/true
-
