@@ -22226,19 +22226,22 @@ static void input_driver_poll(void)
                   {
                      if (ret & (1 << k))
                      {
-                        bool valid_bind  = p_rarch->libretro_input_binds[i][k].valid;
-                        int16_t      val = valid_bind
-                           ? input_joypad_analog_button(
-                              p_rarch, settings,
-                              joypad_driver, &joypad_info[i], (unsigned)i,
-                              RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
-                              p_rarch->libretro_input_binds[i]) 
-                           : 0;
+                        bool valid_bind  = 
+                           p_rarch->libretro_input_binds[i][k].valid;
+
+                        if (valid_bind)
+                        {
+                           int16_t   val = 
+                              input_joypad_analog_button(
+                                    p_rarch, settings,
+                                    joypad_driver, &joypad_info[i], (unsigned)i,
+                                    RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
+                                    p_rarch->libretro_input_binds[i]);
+                           if (val)
+                              p_new_state->analog_buttons[k] = val;
+                        }
 
                         BIT256_SET_PTR(p_new_state, k);
-
-                        if (val)
-                           p_new_state->analog_buttons[k] = val;
                      }
                   }
 
@@ -22958,21 +22961,22 @@ static int16_t input_state(unsigned port, unsigned device,
          {
             if (id < RARCH_FIRST_CUSTOM_BIND)
             {
-               bool valid_bind = p_rarch->libretro_input_binds[port][id].valid;
-               if (sec_joypad)
-                  ret          = valid_bind
-                     ? input_joypad_analog_button(
-                        p_rarch, settings,
-                        sec_joypad, &joypad_info,
-                        port, idx, id, p_rarch->libretro_input_binds[port])
-                     : 0;
-               if (joypad && (ret == 0))
-                  ret          = valid_bind
-                     ? input_joypad_analog_button(
-                        p_rarch, settings,
-                        joypad, &joypad_info,
-                        port, idx, id, p_rarch->libretro_input_binds[port])
-                     : 0;
+               bool valid_bind    = 
+                  p_rarch->libretro_input_binds[port][id].valid;
+               if (valid_bind)
+               {
+                  if (sec_joypad)
+                     ret          = 
+                        input_joypad_analog_button(
+                              p_rarch, settings,
+                              sec_joypad, &joypad_info,
+                              port, idx, id, p_rarch->libretro_input_binds[port]);
+                  if (joypad && (ret == 0))
+                     ret          = input_joypad_analog_button(
+                           p_rarch, settings,
+                           joypad, &joypad_info,
+                           port, idx, id, p_rarch->libretro_input_binds[port]);
+               }
             }
          }
          else
