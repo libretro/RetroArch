@@ -2691,6 +2691,8 @@ static bool command_show_osd_msg(const char* arg);
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
 #endif
+static bool command_read_memory(const char *arg);
+static bool command_write_memory(const char *arg);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -2701,9 +2703,13 @@ static const struct cmd_action_map action_map[] = {
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
    { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
 #if defined(HAVE_CHEEVOS)
-   { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
-   { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
+   /* These functions use achievement addresses and only work if a game with achievements is
+    * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
+   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>" },
+   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ..." },
 #endif
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>" },
+   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
 };
 
 static const struct cmd_map map[] = {
