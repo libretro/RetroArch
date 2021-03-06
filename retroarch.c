@@ -9344,14 +9344,14 @@ static void dir_init_shader(struct rarch_state *p_rarch)
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
    const char *directory_video_shader             = settings->paths.directory_video_shader;
    const char *directory_menu_config              = settings->paths.directory_menu_config;
-   enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
-
 #if defined(HAVE_MENU)
-   last_shader_preset_type = menu_driver_get_last_shader_preset_type();
+   enum rarch_shader_type last_shader_preset_type = menu_driver_get_last_shader_preset_type();
    menu_driver_get_last_shader_preset_path(
          &last_shader_preset_dir, &last_shader_preset_file_name);
+#else
+   enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
 #endif
 
    /* Always free existing shader list */
@@ -9412,16 +9412,16 @@ static void dir_check_shader(struct rarch_state *p_rarch,
          &p_rarch->dir_shader_list;
    settings_t *settings                           = p_rarch->configuration_settings;
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
-   enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
    const char *set_shader_path                    = NULL;
    bool dir_list_initialised                      = false;
-
 #if defined(HAVE_MENU)
-   last_shader_preset_type = menu_driver_get_last_shader_preset_type();
+   enum rarch_shader_type last_shader_preset_type = menu_driver_get_last_shader_preset_type();
    menu_driver_get_last_shader_preset_path(
          &last_shader_preset_dir, &last_shader_preset_file_name);
+#else
+   enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
 #endif
 
    /* Check whether shader list needs to be
@@ -10341,24 +10341,16 @@ static uint8_t* command_memory_get_pointer(unsigned address, unsigned int* max_b
 {
    const rarch_system_info_t* system = runloop_get_system_info();
    if (!system || system->mmaps.num_descriptors == 0)
-   {
       strlcpy(reply_at, " -1 no memory map defined\n", len);
-   }
    else
    {
       const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&system->mmaps, address);
       if (!desc)
-      {
          strlcpy(reply_at, " -1 no descriptor for address\n", len);
-      }
       else if (!desc->core.ptr)
-      {
          strlcpy(reply_at, " -1 no data for descriptor\n", len);
-      }
       else if (for_write && (desc->core.flags & RETRO_MEMDESC_CONST))
-      {
          strlcpy(reply_at, " -1 descriptor data is readonly\n", len);
-      }
       else
       {
          const size_t offset = address - desc->core.start;
@@ -10373,6 +10365,7 @@ static uint8_t* command_memory_get_pointer(unsigned address, unsigned int* max_b
 
 static bool command_read_memory(const char *arg)
 {
+   unsigned i;
    char* reply                  = NULL;
    char* reply_at               = NULL;
    const uint8_t* data          = NULL;
@@ -10382,7 +10375,6 @@ static bool command_read_memory(const char *arg)
    unsigned int len             = 0;
    struct rarch_state *p_rarch  = &rarch_st;
    unsigned int max_bytes       = 0;
-   unsigned i;
 
    if (sscanf(arg, "%x %u", &address, &nbytes) != 2)
       return false;
@@ -10392,7 +10384,7 @@ static bool command_read_memory(const char *arg)
    reply      = (char*)malloc(alloc_size);
    reply_at   = reply + snprintf(reply, alloc_size - 1, "READ_CORE_MEMORY %x", address);
 
-   data = command_memory_get_pointer(address, &max_bytes, 0, reply_at, alloc_size - strlen(reply));
+   data       = command_memory_get_pointer(address, &max_bytes, 0, reply_at, alloc_size - strlen(reply));
 
    if (data)
    {
@@ -10406,9 +10398,7 @@ static bool command_read_memory(const char *arg)
       len                  = reply_at + 3 * nbytes + 1 - reply;
    }
    else
-   {
-      len = strlen(reply);
-   }
+      len                  = strlen(reply);
 
    command_reply(p_rarch, reply, len);
    free(reply);
@@ -10418,15 +10408,12 @@ static bool command_read_memory(const char *arg)
 static bool command_write_memory(const char *arg)
 {
    unsigned int address         = (unsigned int)strtoul(arg, (char**)&arg, 16);
-   uint8_t* data                = NULL;
    unsigned int max_bytes       = 0;
    struct rarch_state *p_rarch  = &rarch_st;
    char reply[128]              = "";
-   char* reply_at               = NULL;
+   char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
+   uint8_t *data                = command_memory_get_pointer(address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
 
-   reply_at = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
-
-   data = command_memory_get_pointer(address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
    if (data)
    {
       uint8_t* start = data;
@@ -10437,7 +10424,8 @@ static bool command_write_memory(const char *arg)
          data++;
       }
 
-      snprintf(reply_at, sizeof(reply) - strlen(reply) - 1, " %u\n", (unsigned)(data - start));
+      snprintf(reply_at, sizeof(reply) - strlen(reply) - 1,
+            " %u\n", (unsigned)(data - start));
 
 #ifdef HAVE_CHEEVOS
       if (rcheevos_hardcore_active())
@@ -10548,13 +10536,9 @@ static bool command_verify(const char *cmd)
 
 static bool command_network_send(const char *cmd_)
 {
-   bool ret            = false;
-   char *command       = NULL;
-   char *save          = NULL;
-   const char *cmd     = NULL;
-   const char *host    = NULL;
-   const char *port_   = NULL;
-   uint16_t port       = DEFAULT_NETWORK_CMD_PORT;
+   char *command        = NULL;
+   char *save           = NULL;
+   const char *cmd      = NULL;
 
    if (!network_init())
       return false;
@@ -10562,36 +10546,38 @@ static bool command_network_send(const char *cmd_)
    if (!(command = strdup(cmd_)))
       return false;
 
-   cmd = strtok_r(command, ";", &save);
+   cmd                  = strtok_r(command, ";", &save);
    if (cmd)
-      host = strtok_r(NULL, ";", &save);
-   if (host)
-      port_ = strtok_r(NULL, ";", &save);
-
-   if (!host)
    {
+      uint16_t port     = DEFAULT_NETWORK_CMD_PORT;
+      const char *port_ = NULL;
+      const char *host  = strtok_r(NULL, ";", &save);
+      if (host)
+         port_          = strtok_r(NULL, ";", &save);
+      else
+      {
 #ifdef _WIN32
-      host = "127.0.0.1";
+         host = "127.0.0.1";
 #else
-      host = "localhost";
+         host = "localhost";
 #endif
-   }
+      }
 
-   if (port_)
-      port = strtoul(port_, NULL, 0);
+      if (port_)
+         port = strtoul(port_, NULL, 0);
 
-   if (cmd)
-   {
       RARCH_LOG("%s: \"%s\" to %s:%hu\n",
             msg_hash_to_str(MSG_SENDING_COMMAND),
             cmd, host, (unsigned short)port);
 
-      ret = command_verify(cmd) && udp_send_packet(host, port, cmd);
+      if (command_verify(cmd) && udp_send_packet(host, port, cmd))
+      {
+         free(command);
+         return true;
+      }
    }
-   free(command);
 
-   if (ret)
-      return true;
+   free(command);
    return false;
 }
 #endif
