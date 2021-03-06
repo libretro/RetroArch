@@ -1726,6 +1726,57 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
 }
 #endif
 
+static void menu_input_set_pointer_visibility(
+      struct rarch_state *p_rarch,
+      menu_input_t *menu_input,
+      retro_time_t current_time)
+{
+   bool show_cursor                                = false;
+   static bool cursor_shown                        = false;
+   bool hide_cursor                                = false;
+   static bool cursor_hidden                       = false;
+   static retro_time_t end_time                    = 0;
+   menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
+
+   /* Ensure that mouse cursor is hidden when not in use */
+   if ((menu_input->pointer.type == MENU_POINTER_MOUSE) 
+         && pointer_hw_state->active)
+   {
+      if ((current_time > end_time) && !cursor_shown)
+         show_cursor = true;
+
+      end_time = current_time + MENU_INPUT_HIDE_CURSOR_DELAY;
+   }
+   else
+   {
+      if ((current_time > end_time) && !cursor_hidden)
+         hide_cursor = true;
+   }
+
+   if (show_cursor)
+   {
+      menu_ctx_environment_t menu_environ;
+      menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
+      menu_environ.data = NULL;
+
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      cursor_shown  = true;
+      cursor_hidden = false;
+   }
+
+   if (hide_cursor)
+   {
+      menu_ctx_environment_t menu_environ;
+      menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
+      menu_environ.data = NULL;
+
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      cursor_shown  = false;
+      cursor_hidden = true;
+   }
+}
+
+
 /**
  * menu_iterate:
  * @input                    : input sample for this frame
@@ -1739,7 +1790,7 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
  **/
 static int generic_menu_iterate(
       struct rarch_state *p_rarch,
-      void *data,
+      menu_handle_t *menu,
       void *userdata, enum menu_action action,
       retro_time_t current_time)
 {
@@ -1751,13 +1802,9 @@ static int generic_menu_iterate(
    unsigned file_type              = 0;
    int ret                         = 0;
    const char *label               = NULL;
-   menu_handle_t *menu             = (menu_handle_t*)data;
    struct menu_state *menu_st      = &p_rarch->menu_driver_state;
    gfx_display_t *p_disp           = &p_rarch->dispgfx;
    gfx_animation_t *p_anim         = &p_rarch->anim;
-
-   if (!menu)
-      return 0;
 
    menu_entries_get_last_stack(NULL, &label, &file_type, NULL, NULL);
 
@@ -2060,8 +2107,17 @@ static int generic_menu_iterate(
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
-      menu_input_post_iterate(p_rarch, &ret, action,
-            current_time);
+   {
+      menu_input_t     *menu_input  = &p_rarch->menu_input_state;
+      /* If pointer devices are disabled, just ensure mouse
+       * cursor is hidden */
+      if (menu_input->pointer.type == MENU_POINTER_DISABLED)
+         ret = 0;
+      else
+         ret = menu_input_post_iterate(p_rarch, action,
+               current_time);
+      menu_input_set_pointer_visibility(p_rarch, menu_input, current_time);
+   }
 
    if (ret)
       return -1;
@@ -3994,12 +4050,13 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
          return true;
    }
    else
-      if (generic_menu_iterate(
-               p_rarch,
-               p_rarch->menu_driver_data,
-               p_rarch->menu_userdata, iterate->action,
-               current_time) != -1)
-         return true;
+      if (p_rarch->menu_driver_data)
+         if (generic_menu_iterate(
+                  p_rarch,
+                  p_rarch->menu_driver_data,
+                  p_rarch->menu_userdata, iterate->action,
+                  current_time) != -1)
+            return true;
 
    return false;
 }
@@ -23817,56 +23874,6 @@ static void menu_input_reset(struct rarch_state *p_rarch)
    memset(pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 }
 
-static void menu_input_set_pointer_visibility(
-      struct rarch_state *p_rarch,
-      retro_time_t current_time)
-{
-   bool show_cursor                                = false;
-   static bool cursor_shown                        = false;
-   bool hide_cursor                                = false;
-   static bool cursor_hidden                       = false;
-   static retro_time_t end_time                    = 0;
-   menu_input_t *menu_input                        = &p_rarch->menu_input_state;
-   menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
-
-   /* Ensure that mouse cursor is hidden when not in use */
-   if ((menu_input->pointer.type == MENU_POINTER_MOUSE) 
-         && pointer_hw_state->active)
-   {
-      if ((current_time > end_time) && !cursor_shown)
-         show_cursor = true;
-
-      end_time = current_time + MENU_INPUT_HIDE_CURSOR_DELAY;
-   }
-   else
-   {
-      if ((current_time > end_time) && !cursor_hidden)
-         hide_cursor = true;
-   }
-
-   if (show_cursor)
-   {
-      menu_ctx_environment_t menu_environ;
-      menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
-      menu_environ.data = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-      cursor_shown  = true;
-      cursor_hidden = false;
-   }
-
-   if (hide_cursor)
-   {
-      menu_ctx_environment_t menu_environ;
-      menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
-      menu_environ.data = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-      cursor_shown  = false;
-      cursor_hidden = true;
-   }
-}
-
 static float menu_input_get_dpi(struct rarch_state *p_rarch)
 {
    static unsigned last_video_width  = 0;
@@ -24556,52 +24563,33 @@ static int menu_input_pointer_post_iterate(
    last_left_pressed   = pointer_hw_state->left_pressed;
    last_right_pressed  = pointer_hw_state->right_pressed;
 
-   menu_input_set_pointer_visibility(p_rarch, current_time);
-
    return ret;
 }
 
-static void menu_input_post_iterate(
+static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
-      int *ret, unsigned action,
+      unsigned action,
       retro_time_t current_time)
 {
    menu_input_t     *menu_input  = &p_rarch->menu_input_state;
-   struct menu_state *menu_st    = &p_rarch->menu_driver_state;
+   menu_entry_t entry;
+   struct menu_state *menu_st = &p_rarch->menu_driver_state;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   size_t selection           = menu_st->selection_ptr;
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
+      : NULL;
 
-   /* If pointer devices are disabled, just ensure mouse
-    * cursor is hidden */
-   if (menu_input->pointer.type == MENU_POINTER_DISABLED)
-   {
-      /* Note: We have to call menu_input_set_pointer_visibility()
-       * here, otherwise the cursor state gets muddled up when
-       * toggling mouse/touchscreen support...
-       * It's a very light function, however, so there should
-       * be no performance impact */
-      menu_input_set_pointer_visibility(p_rarch, current_time);
-      *ret = 0;
-   }
-   else
-   {
-      menu_entry_t entry;
-      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-      size_t selection           = menu_st->selection_ptr;
-      menu_file_list_cbs_t *cbs  = selection_buf ?
-         (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
-         : NULL;
-
-      MENU_ENTRY_INIT(entry);
-      /* Note: If menu_input_pointer_post_iterate() is
-       * modified, will have to verify that these
-       * parameters remain unused... */
-      entry.rich_label_enabled   = false;
-      entry.value_enabled        = false;
-      entry.sublabel_enabled     = false;
-      menu_entry_get(&entry, 0, selection, NULL, false);
-
-      *ret                       = menu_input_pointer_post_iterate(p_rarch,
-            current_time, cbs, &entry, action);
-   }
+   MENU_ENTRY_INIT(entry);
+   /* Note: If menu_input_pointer_post_iterate() is
+    * modified, will have to verify that these
+    * parameters remain unused... */
+   entry.rich_label_enabled   = false;
+   entry.value_enabled        = false;
+   entry.sublabel_enabled     = false;
+   menu_entry_get(&entry, 0, selection, NULL, false);
+   return menu_input_pointer_post_iterate(p_rarch,
+         current_time, cbs, &entry, action);
 }
 #endif
 

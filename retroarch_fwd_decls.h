@@ -183,9 +183,9 @@ static const char **input_keyboard_start_line(void *userdata,
 static void menu_driver_list_free(
       struct rarch_state *p_rarch,
       menu_ctx_list_t *list);
-static void menu_input_post_iterate(
+static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
-      int *ret, unsigned action,
+      unsigned action,
       retro_time_t current_time);
 static void menu_input_reset(struct rarch_state *p_rarch);
 #endif
