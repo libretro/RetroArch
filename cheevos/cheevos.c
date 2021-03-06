@@ -1584,7 +1584,14 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 
       /* deinit rewind */
       if (rewind_enable)
+      {
+#ifdef HAVE_THREADS
+         /* have to "schedule" this. CMD_EVENT_REWIND_DEINIT should only be called on the main thread */
+         rcheevos_locals.queued_command = CMD_EVENT_REWIND_DEINIT;
+#else
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+#endif
+      }
    }
    else
    {
@@ -1601,7 +1608,14 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 
       /* re-init rewind */
       if (rewind_enable)
+      {
+#ifdef HAVE_THREADS
+         /* have to "schedule" this. CMD_EVENT_REWIND_INIT should only be called on the main thread */
+         rcheevos_locals.queued_command = CMD_EVENT_REWIND_INIT;
+#else
          command_event(CMD_EVENT_REWIND_INIT, NULL);
+#endif
+      }
    }
 
    if (locals->loaded)
