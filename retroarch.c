@@ -22667,18 +22667,19 @@ static int16_t input_state_device(
                 * released again, the input state will be modulated by a
                 * periodic pulse defined by the configured duty cycle.
                 */
-               if (res && p_rarch->input_driver_turbo_btns.frame_enable[port])
-                  p_rarch->input_driver_turbo_btns.enable[port] |= (1 << id);
-               else if (!res)
-                  p_rarch->input_driver_turbo_btns.enable[port] &= ~(1 << id);
-
-               if (p_rarch->input_driver_turbo_btns.enable[port] & (1 << id))
+               if (res)
                {
-                  /* if turbo button is enabled for this key ID */
-                  res = res && ((p_rarch->input_driver_turbo_btns.count
-                           % settings->uints.input_turbo_period)
-                        < settings->uints.input_turbo_duty_cycle);
+                  if (p_rarch->input_driver_turbo_btns.frame_enable[port])
+                     p_rarch->input_driver_turbo_btns.enable[port] |= (1 << id);
+
+                  if (p_rarch->input_driver_turbo_btns.enable[port] & (1 << id))
+                     /* if turbo button is enabled for this key ID */
+                     res = ((p_rarch->input_driver_turbo_btns.count
+                              % settings->uints.input_turbo_period)
+                           < settings->uints.input_turbo_duty_cycle);
                }
+               else
+                  p_rarch->input_driver_turbo_btns.enable[port] &= ~(1 << id);
             }
          }
 
