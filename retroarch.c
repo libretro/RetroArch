@@ -22759,52 +22759,43 @@ static int16_t input_state_device(
             {
                if (input_remap_binds_enable)
                {
-                  if (id < RARCH_FIRST_META_KEY)
+                  bool bind_valid         = p_rarch->libretro_input_binds[port]
+                     && p_rarch->libretro_input_binds[port][id].valid;
+                  if (id < RARCH_FIRST_META_KEY && bind_valid)
                   {
-                     bool bind_valid         = p_rarch->libretro_input_binds[port]
-                        && p_rarch->libretro_input_binds[port][id].valid;
-
-                     if (bind_valid)
+                     if (idx < 2 && id < 2)
                      {
-                        if (idx < 2 && id < 2)
+                        unsigned offset = RARCH_FIRST_CUSTOM_BIND +
+                           (idx * 4) + (id * 2);
+
+                        if (     settings->uints.input_remap_ids
+                              [port][offset]   == offset
+                              || settings->uints.input_remap_ids
+                              [port][offset+1] == (offset+1)
+                           )
                         {
-                           unsigned offset = RARCH_FIRST_CUSTOM_BIND +
-                              (idx * 4) + (id * 2);
-
-                           /* First two conditionals -
-                            * Reset input state of a button when
-                            * the gamepad mapper is in action for that button */
-                           if (settings->uints.input_remap_ids
-                                 [port][offset]   != offset)
-                              res = 0;
-                           else if (settings->uints.input_remap_ids
-                                 [port][offset+1] != (offset+1))
-                              res = 0;
-                           else
-                           {
-                              res = ret;
+                           res = ret;
 #ifdef HAVE_OVERLAY
-                              if (port == 0)
+                           if (port == 0)
+                           {
+                              input_overlay_state_t *ol_state =
+                                 &p_rarch->overlay_ptr->overlay_state;
+                              if (     
+                                    p_rarch->overlay_ptr
+                                    && p_rarch->overlay_ptr->alive
+                                    && ol_state)
                               {
-                                 input_overlay_state_t *ol_state =
-                                    &p_rarch->overlay_ptr->overlay_state;
-                                 if (     
-                                       p_rarch->overlay_ptr
-                                       && p_rarch->overlay_ptr->alive
-                                       && ol_state)
-                                 {
-                                    unsigned                   base = 0;
+                                 unsigned                   base = 0;
 
-                                    if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                                       base = 2;
-                                    if (id == RETRO_DEVICE_ID_ANALOG_Y)
-                                       base += 1;
-                                    if (ol_state->analog[base])
-                                       res  |= ol_state->analog[base];
-                                 }
+                                 if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                                    base = 2;
+                                 if (id == RETRO_DEVICE_ID_ANALOG_Y)
+                                    base += 1;
+                                 if (ol_state->analog[base])
+                                    res  |= ol_state->analog[base];
                               }
-#endif
                            }
+#endif
                         }
                      }
                   }
