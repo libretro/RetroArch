@@ -2193,9 +2193,6 @@ int generic_menu_entry_action(
          break;
    }
 
-   cbs = selection_buf ? (menu_file_list_cbs_t*)
-      selection_buf->list[i].actiondata : NULL;
-
    if (cbs && cbs->action_refresh)
    {
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
@@ -2273,6 +2270,7 @@ int generic_menu_entry_action(
                speak_string, 10);
    }
 #endif
+
    if (p_rarch->menu_driver_state.pending_close_content)
    {
       menu_handle_t       *menu = menu_driver_get_ptr();
@@ -22027,14 +22025,6 @@ void set_connection_listener(pad_connection_listener_t *listener)
    p_rarch->pad_connection_listener = listener;
 }
 
-static void fire_connection_listener(
-      struct rarch_state *p_rarch,
-      unsigned port, input_device_driver_t *driver)
-{
-   if (p_rarch->pad_connection_listener)
-      p_rarch->pad_connection_listener->connected(port, driver);
-}
-
 /**
  * config_get_input_driver_options:
  *
@@ -25393,7 +25383,8 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
       return;
    }
 
-   fire_connection_listener(p_rarch, port, driver);
+   if (p_rarch->pad_connection_listener)
+      p_rarch->pad_connection_listener->connected(port, driver);
 
    input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
           port, 0, 0);
