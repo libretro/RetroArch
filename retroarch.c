@@ -22523,37 +22523,23 @@ static int16_t input_state_device(
    {
       case RETRO_DEVICE_JOYPAD:
 
-#ifdef HAVE_NETWORKGAMEPAD
-         if (p_rarch->input_driver_remote)
+         if (id < RARCH_FIRST_META_KEY)
          {
-            if (INPUT_REMOTE_KEY_PRESSED(id, port))
-            {
+#ifdef HAVE_NETWORKGAMEPAD
+            /* Don't process binds if input is coming from Remote RetroPad */
+            if (p_rarch->input_driver_remote && INPUT_REMOTE_KEY_PRESSED(id, port))
                res |= 1;
-               remote_input = true;
-            }
-         }
-#endif
-
-         if (id < RARCH_FIRST_META_KEY
-#ifdef HAVE_NETWORKGAMEPAD
-               /* Don't process binds if input is coming from Remote RetroPad */
-               && !remote_input
-#endif
-            )
-         {
-            if (input_remap_binds_enable &&
-                  id != settings->uints.input_remap_ids[port][id])
-               res = 0;
             else
+#endif
             {
                bool bind_valid = p_rarch->libretro_input_binds[port]
                   && p_rarch->libretro_input_binds[port][id].valid;
-
-               if (bind_valid)
+               if (!(input_remap_binds_enable &&
+                        id != settings->uints.input_remap_ids[port][id])
+                     && bind_valid)
                {
                   if (button_mask)
                   {
-                     res = 0;
                      if (ret & (1 << id))
                         res |= (1 << id);
                   }
@@ -22695,7 +22681,6 @@ static int16_t input_state_device(
             {
                if (button_mask)
                {
-                  res = 0;
                   if (ret & (1 << id))
                      res |= (1 << id);
                }
@@ -22713,9 +22698,9 @@ static int16_t input_state_device(
          if (id < RETROK_LAST)
          {
 #ifdef HAVE_OVERLAY
-            if (p_rarch->overlay_ptr)
+            if (port == 0)
             {
-               if (port == 0 && p_rarch->overlay_ptr->alive)
+               if (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive)
                {
                   input_overlay_state_t 
                      *ol_state          = &p_rarch->overlay_ptr->overlay_state;
@@ -22743,7 +22728,6 @@ static int16_t input_state_device(
             {
                if (button_mask)
                {
-                  res = 0;
                   if (ret & (1 << id))
                      res |= (1 << id);
                }
@@ -22757,106 +22741,98 @@ static int16_t input_state_device(
       case RETRO_DEVICE_ANALOG:
          {
 #ifdef HAVE_OVERLAY
-            int16_t res_overlay     = 0;
-            if (p_rarch->overlay_ptr && port == 0)
+            int16_t res_overlay             = 0;
+            input_overlay_state_t *ol_state =
+               &p_rarch->overlay_ptr->overlay_state;
+            if (     port == 0 
+                  && p_rarch->overlay_ptr
+                  && p_rarch->overlay_ptr->alive
+                  && ol_state)
             {
                unsigned                   base = 0;
-               input_overlay_state_t *ol_state =
-                  &p_rarch->overlay_ptr->overlay_state;
 
                if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                   base = 2;
                if (id == RETRO_DEVICE_ID_ANALOG_Y)
                   base += 1;
-               if (ol_state && ol_state->analog[base])
+               if (ol_state->analog[base])
                   res_overlay = ol_state->analog[base];
             }
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-            if (p_rarch->input_driver_remote)
             {
                input_remote_state_t *input_state  = &p_rarch->remote_st_ptr;
-
-               if (input_state)
+               if (p_rarch->input_driver_remote && input_state)
                {
-                  unsigned base = 0;
+                  unsigned base   = 0;
                   if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                     base = 2;
+                     base         = 2;
                   if (id == RETRO_DEVICE_ID_ANALOG_Y)
-                     base += 1;
+                     base        += 1;
                   if (input_state->analog[base][port])
                   {
-                     res = input_state->analog[base][port];
+                     res          = input_state->analog[base][port];
                      remote_input = true;
                   }
                }
             }
 #endif
-
-            if (id < RARCH_FIRST_META_KEY
-#ifdef HAVE_NETWORKGAMEPAD
-                  && !remote_input
-#endif
-                )
+            if (input_remap_binds_enable)
             {
-               bool bind_valid         = p_rarch->libretro_input_binds[port]
-                  && p_rarch->libretro_input_binds[port][id].valid;
-
-               if (bind_valid)
+               if (id < RARCH_FIRST_META_KEY
+#ifdef HAVE_NETWORKGAMEPAD
+                     && !remote_input
+#endif
+                  )
                {
-                  /* reset_state - used to reset input state of a button
-                   * when the gamepad mapper is in action for that button*/
-                  bool reset_state        = false;
-                  if (input_remap_binds_enable)
+                  bool bind_valid         = p_rarch->libretro_input_binds[port]
+                     && p_rarch->libretro_input_binds[port][id].valid;
+
+                  if (bind_valid)
                   {
                      if (idx < 2 && id < 2)
                      {
                         unsigned offset = RARCH_FIRST_CUSTOM_BIND +
                            (idx * 4) + (id * 2);
 
+                        /* First two conditionals -
+                         * Reset input state of a button when
+                         * the gamepad mapper is in action for that button */
                         if (settings->uints.input_remap_ids
                               [port][offset]   != offset)
-                           reset_state = true;
+                           res = 0;
                         else if (settings->uints.input_remap_ids
                               [port][offset+1] != (offset+1))
-                           reset_state = true;
+                           res = 0;
+                        else
+                        {
+#ifdef HAVE_OVERLAY
+                           res = ret | res_overlay;
+#else
+                           res = ret;
+#endif
+                        }
                      }
                   }
-
-                  if (!reset_state)
-                  {
-                     res = ret;
-
-#ifdef HAVE_OVERLAY
-                     if (  p_rarch->overlay_ptr        &&
-                           p_rarch->overlay_ptr->alive && port == 0)
-                        res |= res_overlay;
-#endif
-                  }
-                  else
-                     res = 0;
                }
-            }
 
-            if (input_remap_binds_enable && p_rarch->input_driver_mapper)
-            {
-               if (idx < 2 && id < 2)
+               if (p_rarch->input_driver_mapper)
                {
-                  int         val = 0;
-                  unsigned offset = 0 + (idx * 4) + (id * 2);
-                  int        val1 = p_rarch->input_driver_mapper->analog_value[port][offset];
-                  int        val2 = p_rarch->input_driver_mapper->analog_value[port][offset+1];
+                  if (idx < 2 && id < 2)
+                  {
+                     unsigned offset = 0 + (idx * 4) + (id * 2);
+                     int        val1  = p_rarch->input_driver_mapper->analog_value[port][offset];
+                     int        val2  = p_rarch->input_driver_mapper->analog_value[port][offset+1];
 
-                  if (val1)
-                     val          = val1;
-                  else if (val2)
-                     val          = val2;
-
-                  if (val1 || val2)
-                     res        |= val;
+                     if (val1)
+                        res          |= val1;
+                     else if (val2)
+                        res          |= val2;
+                  }
                }
             }
+
          }
          break;
 
