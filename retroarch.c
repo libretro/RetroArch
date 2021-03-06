@@ -10309,6 +10309,149 @@ static bool command_write_ram(const char *arg)
 }
 #endif
 
+static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address)
+{
+   const rarch_memory_descriptor_t* desc = mmap->descriptors;
+   const rarch_memory_descriptor_t* end = desc + mmap->num_descriptors;
+
+   for (; desc < end; desc++)
+   {
+      if (desc->core.select == 0)
+      {
+         /* if select is 0, attempt to explicitly match the address */
+         if (address >= desc->core.start && address < desc->core.start + desc->core.len)
+            return desc;
+      }
+      else
+      {
+         /* otherwise, attempt to match the address by matching the select bits */
+         if (((desc->core.start ^ address) & desc->core.select) == 0)
+         {
+            /* sanity check - make sure the descriptor is large enough to hold the target address */
+            if (address - desc->core.start < desc->core.len)
+               return desc;
+         }
+      }
+   }
+
+   return NULL;
+}
+
+static uint8_t* command_memory_get_pointer(unsigned address, unsigned int* max_bytes, int for_write, char* reply_at, size_t len)
+{
+   const rarch_system_info_t* system = runloop_get_system_info();
+   if (!system || system->mmaps.num_descriptors == 0)
+   {
+      strlcpy(reply_at, " -1 no memory map defined\n", len);
+   }
+   else
+   {
+      const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&system->mmaps, address);
+      if (!desc)
+      {
+         strlcpy(reply_at, " -1 no descriptor for address\n", len);
+      }
+      else if (!desc->core.ptr)
+      {
+         strlcpy(reply_at, " -1 no data for descriptor\n", len);
+      }
+      else if (for_write && (desc->core.flags & RETRO_MEMDESC_CONST))
+      {
+         strlcpy(reply_at, " -1 descriptor data is readonly\n", len);
+      }
+      else
+      {
+         const size_t offset = address - desc->core.start;
+         *max_bytes = (desc->core.len - offset);
+         return (uint8_t*)desc->core.ptr + desc->core.offset + offset;
+      }
+   }
+
+   *max_bytes = 0;
+   return NULL;
+}
+
+static bool command_read_memory(const char *arg)
+{
+   char* reply                  = NULL;
+   char* reply_at               = NULL;
+   const uint8_t* data          = NULL;
+   unsigned int nbytes          = 0;
+   unsigned int alloc_size      = 0;
+   unsigned int address         = -1;
+   unsigned int len             = 0;
+   struct rarch_state *p_rarch  = &rarch_st;
+   unsigned int max_bytes       = 0;
+   unsigned i;
+
+   if (sscanf(arg, "%x %u", &address, &nbytes) != 2)
+      return false;
+
+   /* Ensure large enough to return all requested bytes or an error message */
+   alloc_size = 64 + nbytes * 3;
+   reply      = (char*)malloc(alloc_size);
+   reply_at   = reply + snprintf(reply, alloc_size - 1, "READ_CORE_MEMORY %x", address);
+
+   data = command_memory_get_pointer(address, &max_bytes, 0, reply_at, alloc_size - strlen(reply));
+
+   if (data)
+   {
+      if (nbytes > max_bytes)
+          nbytes = max_bytes;
+
+      for (i = 0; i < nbytes; i++)
+         snprintf(reply_at + 3 * i, 4, " %02X", data[i]);
+
+      reply_at[3 * nbytes] = '\n';
+      len                  = reply_at + 3 * nbytes + 1 - reply;
+   }
+   else
+   {
+      len = strlen(reply);
+   }
+
+   command_reply(p_rarch, reply, len);
+   free(reply);
+   return true;
+}
+
+static bool command_write_memory(const char *arg)
+{
+   unsigned int address         = (unsigned int)strtoul(arg, (char**)&arg, 16);
+   uint8_t* data                = NULL;
+   unsigned int max_bytes       = 0;
+   struct rarch_state *p_rarch  = &rarch_st;
+   char reply[128]              = "";
+   char* reply_at               = NULL;
+
+   reply_at = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
+
+   data = command_memory_get_pointer(address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
+   if (data)
+   {
+      uint8_t* start = data;
+      while (*arg && max_bytes > 0)
+      {
+         --max_bytes;
+         *data = strtoul(arg, (char**)&arg, 16);
+         data++;
+      }
+
+      snprintf(reply_at, sizeof(reply) - strlen(reply) - 1, " %u\n", (unsigned)(data - start));
+
+#ifdef HAVE_CHEEVOS
+      if (rcheevos_hardcore_active())
+      {
+         RARCH_LOG("Achievements hardcore mode disabled by WRITE_CORE_MEMORY\n");
+         rcheevos_pause_hardcore();
+      }
+#endif
+   }
+
+   command_reply(p_rarch, reply, strlen(reply));
+   return true;
+}
+
 #ifdef HAVE_NETWORK_CMD
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
