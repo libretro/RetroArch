@@ -22734,27 +22734,21 @@ static int16_t input_state_device(
          break;
 
       case RETRO_DEVICE_ANALOG:
-#ifdef HAVE_NETWORKGAMEPAD
          {
-            bool remote_input             = false;
-            {
-               input_remote_state_t *input_state  = &p_rarch->remote_st_ptr;
-               if (p_rarch->input_driver_remote && input_state)
-               {
-                  unsigned base   = 0;
-                  if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                     base         = 2;
-                  if (id == RETRO_DEVICE_ID_ANALOG_Y)
-                     base        += 1;
-                  if (input_state->analog[base][port])
-                  {
-                     res          = input_state->analog[base][port];
-                     remote_input = true;
-                  }
-               }
-            }
+#if defined(HAVE_NETWORKGAMEPAD) || defined(HAVE_OVERLAY)
+#if defined(HAVE_NETWORKGAMEPAD)
+            input_remote_state_t *input_state  = &p_rarch->remote_st_ptr;
+#endif
+            unsigned base                      = (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
+            if (id == RETRO_DEVICE_ID_ANALOG_Y)
+               base                           += 1;
+#ifdef HAVE_NETWORKGAMEPAD
             /* Don't process binds if input is coming from Remote RetroPad */
-            if (!remote_input) 
+            if (p_rarch->input_driver_remote && input_state
+                  && input_state->analog[base][port])
+               res                             = input_state->analog[base][port];
+            else
+#endif
 #endif
             {
                if (input_remap_binds_enable)
@@ -22783,17 +22777,9 @@ static int16_t input_state_device(
                               if (     
                                     p_rarch->overlay_ptr
                                     && p_rarch->overlay_ptr->alive
-                                    && ol_state)
-                              {
-                                 unsigned                   base = 0;
-
-                                 if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                                    base = 2;
-                                 if (id == RETRO_DEVICE_ID_ANALOG_Y)
-                                    base += 1;
-                                 if (ol_state->analog[base])
-                                    res  |= ol_state->analog[base];
-                              }
+                                    && ol_state
+                                    && ol_state->analog[base])
+                                 res  |= ol_state->analog[base];
                            }
 #endif
                         }
@@ -22806,7 +22792,7 @@ static int16_t input_state_device(
             {
                if (idx < 2 && id < 2)
                {
-                  unsigned offset = 0 + (idx * 4) + (id * 2);
+                  unsigned offset  = 0 + (idx * 4) + (id * 2);
                   int        val1  = p_rarch->input_driver_mapper->analog_value[port][offset];
                   int        val2  = p_rarch->input_driver_mapper->analog_value[port][offset+1];
 
