@@ -22541,37 +22541,36 @@ static int16_t input_state_device(
 #endif
             )
          {
-            bool bind_valid = p_rarch->libretro_input_binds[port]
-               && p_rarch->libretro_input_binds[port][id].valid;
-
             if (input_remap_binds_enable &&
                   id != settings->uints.input_remap_ids[port][id])
                res = 0;
-            else if (bind_valid)
+            else
             {
-               if (button_mask)
+               bool bind_valid = p_rarch->libretro_input_binds[port]
+                  && p_rarch->libretro_input_binds[port][id].valid;
+
+               if (bind_valid)
                {
-                  res = 0;
-                  if (ret & (1 << id))
-                     res |= (1 << id);
-               }
-               else
-                  res = ret;
+                  if (button_mask)
+                  {
+                     res = 0;
+                     if (ret & (1 << id))
+                        res |= (1 << id);
+                  }
+                  else
+                     res = ret;
 
 #ifdef HAVE_OVERLAY
-               {
-                  int16_t res_overlay  = 0;
                   if (     p_rarch->overlay_ptr
+                        && p_rarch->overlay_ptr->alive
                         && port == 0
-                        && p_rarch->overlay_ptr->alive)
+                     )
                   {
                      if ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, id)))
-                        res_overlay |= 1;
-                     if (p_rarch->overlay_ptr->alive)
-                        res |= res_overlay;
+                        res |= 1;
                   }
-               }
 #endif
+               }
             }
          }
 
@@ -22711,26 +22710,25 @@ static int16_t input_state_device(
 
          res = ret;
 
-#ifdef HAVE_OVERLAY
-         if (p_rarch->overlay_ptr && port == 0)
+         if (id < RETROK_LAST)
          {
-            int16_t res_overlay  = 0;
-            if (id < RETROK_LAST)
+#ifdef HAVE_OVERLAY
+            if (p_rarch->overlay_ptr)
             {
-               input_overlay_state_t *ol_state = &p_rarch->overlay_ptr->overlay_state;
-               if (OVERLAY_GET_KEY(ol_state, id))
-                  res_overlay |= 1;
+               if (port == 0 && p_rarch->overlay_ptr->alive)
+               {
+                  input_overlay_state_t 
+                     *ol_state          = &p_rarch->overlay_ptr->overlay_state;
+
+                  if (OVERLAY_GET_KEY(ol_state, id))
+                     res               |= 1;
+               }
             }
-
-            if (p_rarch->overlay_ptr->alive)
-               res |= res_overlay;
-         }
 #endif
-
-         if (input_remap_binds_enable && p_rarch->input_driver_mapper)
-            if (id < RETROK_LAST)
+            if (input_remap_binds_enable && p_rarch->input_driver_mapper)
                if (MAPPER_GET_KEY(p_rarch->input_driver_mapper, id))
                   res |= 1;
+         }
 
          break;
 
