@@ -25133,23 +25133,30 @@ const input_device_driver_t *input_joypad_init_driver(
 
 bool input_key_pressed(int key, bool keyboard_pressed)
 {
-   rarch_joypad_info_t joypad_info;
-   struct rarch_state           
-      *p_rarch                = &rarch_st;
-   const input_device_driver_t
-      *joypad                 = (const input_device_driver_t*)p_rarch->joypad;
-   joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = input_autoconf_binds[0];
-   joypad_info.axis_threshold = p_rarch->input_driver_axis_threshold;
-
-   if((key < RARCH_BIND_LIST_END)
-         && keyboard_pressed)
-      return true;
-   return button_is_pressed(
-         joypad, &joypad_info,
-         input_config_binds[0],
-         joypad_info.joy_idx,
-         key);
+   /* If a keyboard key is pressed then immediately return
+    * true, otherwise call button_is_pressed to determine 
+    * if the input comes from another input device */
+   if (!(
+            (key < RARCH_BIND_LIST_END)
+            && keyboard_pressed
+        )
+      )
+   {
+      rarch_joypad_info_t joypad_info;
+      struct rarch_state           
+         *p_rarch                = &rarch_st;
+      const input_device_driver_t
+         *joypad                 = (const input_device_driver_t*)p_rarch->joypad;
+      joypad_info.joy_idx        = 0;
+      joypad_info.auto_binds     = input_autoconf_binds[0];
+      joypad_info.axis_threshold = p_rarch->input_driver_axis_threshold;
+      return button_is_pressed(
+            joypad, &joypad_info,
+            input_config_binds[0],
+            joypad_info.joy_idx,
+            key);
+   }
+   return true;
 }
 
 bool input_mouse_grabbed(void)
