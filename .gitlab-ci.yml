@@ -463,7 +463,7 @@ build-retroarch-osx-universal-metal:
     - macosx-packaging
   stage: build
   variables:
-    XCARCHIVE_PATH: /pkg/apple/build/RetroArch
+    XCARCHIVE_PATH: pkg/apple/build/RetroArch
   artifacts:
     paths:
     - RetroArch.zip
