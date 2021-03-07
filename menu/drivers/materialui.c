@@ -10256,7 +10256,7 @@ static void materialui_list_insert(
       }
    }
 
-   file_list_set_userdata(list, i, node);
+   list->list[i].userdata = node;
 }
 
 /* Clears the current menu list */

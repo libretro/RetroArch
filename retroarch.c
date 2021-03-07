@@ -3027,11 +3027,10 @@ void menu_entries_append(
    cbs->action_down                = NULL;
    cbs->action_get_value           = NULL;
 
-   file_list_set_actiondata(list, idx, cbs);
+   list->list[idx].actiondata      = cbs;
 
-   if (list)
-      menu_cbs_init(p_rarch->menu_driver_ctx,
-            list, cbs, path, label, type, idx);
+   menu_cbs_init(p_rarch->menu_driver_ctx,
+         list, cbs, path, label, type, idx);
 }
 
 bool menu_entries_append_enum(
@@ -3113,7 +3112,7 @@ bool menu_entries_append_enum(
    cbs->action_down                = NULL;
    cbs->action_get_value           = NULL;
 
-   file_list_set_actiondata(list, idx, cbs);
+   list->list[idx].actiondata      = cbs;
 
    if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
        && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
@@ -3201,7 +3200,7 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_down                = NULL;
    cbs->action_get_value           = NULL;
 
-   file_list_set_actiondata(list, idx, cbs);
+   list->list[idx].actiondata      = cbs;
 
    menu_cbs_init(p_rarch->menu_driver_ctx,
          list, cbs, path, label, type, idx);

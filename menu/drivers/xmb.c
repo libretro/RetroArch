@@ -685,7 +685,6 @@ static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
    {
       xmb_free_node((xmb_node_t*)file_list_get_userdata_at_offset(list, i));
 
-      /* file_list_set_userdata() doesn't accept NULL */
       list->list[i].userdata = NULL;
 
       if (actiondata)
@@ -1725,7 +1724,7 @@ static xmb_node_t *xmb_node_allocate_userdata(
          &xmb->horizontal_list, i);
    xmb_free_node(tmp);
 
-   file_list_set_userdata(&xmb->horizontal_list, i, node);
+   xmb->horizontal_list.list[i].userdata = node;
 
    return node;
 }
@@ -6346,7 +6345,7 @@ static void xmb_list_insert(void *userdata,
       node->zoom        = xmb->items_active_alpha;
    }
 
-   file_list_set_userdata(list, i, node);
+   list->list[i].userdata = node;
 }
 
 static void xmb_list_clear(file_list_t *list)
@@ -6390,13 +6389,13 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst,
       d->label = string_is_empty(d->label) ? NULL : strdup(d->label);
 
       if (src_udata)
-         file_list_set_userdata(dst, j, (void*)xmb_copy_node((const xmb_node_t*)src_udata));
+         dst->list[j].userdata = (void*)xmb_copy_node((const xmb_node_t*)src_udata);
 
       if (src_adata)
       {
          void *data = malloc(sizeof(menu_file_list_cbs_t));
          memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
-         file_list_set_actiondata(dst, j, data);
+         dst->list[j].actiondata = data;
       }
 
       ++j;

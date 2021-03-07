@@ -3373,7 +3373,7 @@ static void ozone_list_insert(void *userdata,
       node->fullpath = strdup(fullpath);
    }
 
-   file_list_set_userdata(list, i, node);
+   list->list[i].userdata = node;
 }
 
 static void ozone_list_deep_copy(const file_list_t *src, file_list_t *dst,
@@ -3402,13 +3402,13 @@ static void ozone_list_deep_copy(const file_list_t *src, file_list_t *dst,
       d->label = string_is_empty(d->label) ? NULL : strdup(d->label);
 
       if (src_udata)
-         file_list_set_userdata(dst, j, (void*)ozone_copy_node((const ozone_node_t*)src_udata));
+         dst->list[j].userdata = (void*)ozone_copy_node((const ozone_node_t*)src_udata);
 
       if (src_adata)
       {
          void *data = malloc(sizeof(menu_file_list_cbs_t));
          memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
-         file_list_set_actiondata(dst, j, data);
+         dst->list[j].actiondata = data;
       }
 
       ++j;
@@ -3767,7 +3767,6 @@ void ozone_free_list_nodes(file_list_t *list, bool actiondata)
    {
       ozone_free_node((ozone_node_t*)file_list_get_userdata_at_offset(list, i));
 
-      /* file_list_set_userdata() doesn't accept NULL */
       list->list[i].userdata = NULL;
 
       if (actiondata)
