@@ -2180,6 +2180,13 @@ int generic_menu_entry_action(
          break;
    }
 
+   /* TODO/FIXME - this is apparently needed right
+    * now to prevent certain crashes from happening
+    * when scrolling from left to right fast in XMB */
+   cbs = selection_buf ? (menu_file_list_cbs_t*)
+      selection_buf->list[i].actiondata : NULL;
+
+
    if (cbs && cbs->action_refresh)
    {
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
