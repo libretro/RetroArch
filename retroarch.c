@@ -5440,9 +5440,6 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
       goto clear;
    }
 
-   if (!shader)
-      goto end;
-
    /* Load stored Preset into menu on success.
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
