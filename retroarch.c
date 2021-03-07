@@ -4063,22 +4063,21 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
    }
 
    /* Get last recorded state */
-   state = get_last_powerstate(&percent);
+   state                       = get_last_powerstate(&percent);
 
    /* Populate gfx_display_ctx_powerstate_t */
    powerstate->battery_enabled = (state != FRONTEND_POWERSTATE_NONE) &&
                                  (state != FRONTEND_POWERSTATE_NO_SOURCE);
+   powerstate->percent         = 0;
+   powerstate->charging        = false;
 
    if (powerstate->battery_enabled)
    {
-      powerstate->charging = (state == FRONTEND_POWERSTATE_CHARGING);
-      powerstate->percent  = percent > 0 ? (unsigned)percent : 0;
+      if (state == FRONTEND_POWERSTATE_CHARGING)
+         powerstate->charging  = true;
+      if (percent > 0)
+         powerstate->percent   = (unsigned)percent;
       snprintf(powerstate->s, powerstate->len, "%u%%", powerstate->percent);
-   }
-   else
-   {
-      powerstate->charging = false;
-      powerstate->percent  = 0;
    }
 }
 
@@ -21343,6 +21342,7 @@ static void input_overlay_poll(
    for (i = 0; i < ol->active->size; i++)
    {
       float x_dist, y_dist;
+      unsigned int base         = 0;
       struct overlay_desc *desc = &ol->active->descs[i];
 
       if (!inside_hitbox(desc, x, y))
@@ -21368,17 +21368,15 @@ static void input_overlay_poll(
             if (desc->retro_key_idx < RETROK_LAST)
                OVERLAY_SET_KEY(out, desc->retro_key_idx);
             break;
+         case OVERLAY_TYPE_ANALOG_RIGHT:
+            base = 2;
+            /* fall-through */
          default:
             {
                float x_val           = x_dist / desc->range_x;
                float y_val           = y_dist / desc->range_y;
                float x_val_sat       = x_val / desc->analog_saturate_pct;
                float y_val_sat       = y_val / desc->analog_saturate_pct;
-
-               unsigned int base     =
-                  (desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
-                  ? 2 : 0;
-
                out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f)
                   * 32767.0f;
                out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f)
