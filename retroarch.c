@@ -1874,7 +1874,7 @@ static int generic_menu_iterate(
    p_rarch->menu_driver_is_binding = iterate_type == ITERATE_TYPE_BIND;
 
    if (     action != MENU_ACTION_NOOP
-         || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
+         || MENU_ENTRIES_NEEDS_REFRESH(menu_st)
          || GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp))
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
@@ -2285,7 +2285,7 @@ int generic_menu_entry_action(
 
    if (cbs && cbs->action_refresh)
    {
-      if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
+      if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
       {
          bool refresh            = false;
          struct menu_state  
@@ -2404,7 +2404,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    menu_file_list_cbs_t *cbs   = NULL;
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(stack_idx);
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, stack_idx);
    file_list_t *list           = (userdata) ? (file_list_t*)userdata : selection_buf;
    bool path_enabled           = entry->path_enabled;
 
@@ -3132,7 +3132,7 @@ void menu_entries_prepend(file_list_t *list,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
    menu_ctx_list_t list_info;
-   size_t idx;
+   size_t idx                      = 0;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    struct rarch_state   *p_rarch   = &rarch_st;
@@ -3142,8 +3142,6 @@ void menu_entries_prepend(file_list_t *list,
    file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
-
-   idx              = 0;
 
    list_info.fullpath    = NULL;
 
@@ -3296,11 +3294,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    switch (state)
    {
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
-         if (menu_st->entries_nonblocking_refresh)
-            return false;
-         if (!menu_st->entries_need_refresh)
-            return false;
-         break;
+         return MENU_ENTRIES_NEEDS_REFRESH(menu_st);
       case MENU_ENTRIES_CTL_SETTINGS_GET:
          {
             rarch_setting_t **settings  = (rarch_setting_t**)data;
