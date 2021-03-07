@@ -1393,11 +1393,7 @@ endif
 # Companion UI
 
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += ui/drivers/ui_win32.o \
-          ui/drivers/win32/ui_win32_window.o \
-          ui/drivers/win32/ui_win32_browser_window.o \
-          ui/drivers/win32/ui_win32_msg_window.o \
-          ui/drivers/win32/ui_win32_application.o
+   OBJ += ui/drivers/ui_win32.o
 endif
 
 # Video
