@@ -6462,7 +6462,7 @@ void discord_update(enum discord_presence presence)
       case DISCORD_PRESENCE_NETPLAY_HOSTING:
          {
             char join_secret[128];
-            struct netplay_room *room = netplay_get_host_room();
+            struct netplay_room *room = &p_rarch->netplay_host_room;
             bool host_method_is_mitm  = room->host_method == NETPLAY_HOST_METHOD_MITM;
             const char *srv_address   = host_method_is_mitm ? room->mitm_address : room->address;
             unsigned srv_port         = host_method_is_mitm ? room->mitm_port : room->port;
@@ -7161,7 +7161,7 @@ static void netplay_announce_cb(retro_task_t *task,
       unsigned i, ip_len, port_len;
       struct rarch_state *p_rarch    = &rarch_st;
       http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
-      struct netplay_room *host_room = netplay_get_host_room();
+      struct netplay_room *host_room = &p_rarch->netplay_host_room;
       struct string_list *lines      = NULL;
       char *mitm_ip                  = NULL;
       char *mitm_port                = NULL;
@@ -37739,7 +37739,9 @@ static enum runloop_state runloop_check_state(
 #endif
          {
 #ifdef HAVE_REWIND
-            if (state_manager_frame_is_reversed())
+            struct state_manager_rewind_state 
+               *rewind_st = &p_rarch->rewind_st;
+            if (rewind_st->frame_is_reversed)
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -38474,8 +38476,10 @@ bool core_set_default_callbacks(struct retro_callbacks *cbs)
 bool core_set_rewind_callbacks(void)
 {
    struct rarch_state *p_rarch  = &rarch_st;
+   struct state_manager_rewind_state 
+      *rewind_st                = &p_rarch->rewind_st;
 
-   if (state_manager_frame_is_reversed())
+   if (rewind_st->frame_is_reversed)
    {
       p_rarch->current_core.retro_set_audio_sample(audio_driver_sample_rewind);
       p_rarch->current_core.retro_set_audio_sample_batch(audio_driver_sample_batch_rewind);
