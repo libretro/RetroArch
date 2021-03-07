@@ -2871,15 +2871,6 @@ error:
    return false;
 }
 
-void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
-      bool checked)
-{
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[entry_idx].actiondata;
-
-   if (cbs)
-      cbs->checked = checked;
-}
-
 void menu_entries_append(
       file_list_t *list,
       const char *path,
