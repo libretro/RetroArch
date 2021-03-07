@@ -345,7 +345,7 @@ gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 }
 
 static int16_t input_state_wrap(
-      struct rarch_state *p_rarch,
+      input_driver_t *current_input,
       void *data,
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
@@ -357,7 +357,6 @@ static int16_t input_state_wrap(
       unsigned idx,
       unsigned id)
 {
-   input_driver_t *current_input = p_rarch->current_input;
    int16_t ret                   = 0;
 
    /* Do a bitwise OR to combine input states together */
@@ -843,7 +842,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
 }
 
 static int menu_input_key_bind_set_mode_common(
-      struct rarch_state *p_rarch,
+      struct menu_bind_state *binds,
       enum menu_input_binds_ctl_state state,
       rarch_setting_t  *setting)
 {
@@ -853,7 +852,6 @@ static int menu_input_key_bind_set_mode_common(
    unsigned         index_offset  = setting->index_offset;
    file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
    size_t selection               = menu_navigation_get_selection();
-   struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
 
    menu_displaylist_info_init(&info);
 
@@ -906,30 +904,25 @@ static int menu_input_key_bind_set_mode_common(
 }
 
 static void menu_input_key_bind_poll_bind_get_rested_axes(
-      struct rarch_state *p_rarch,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       struct menu_bind_state *state)
 {
    unsigned a;
-   const input_device_driver_t *joypad     = p_rarch->joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = p_rarch->sec_joypad;
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
    unsigned port                           = state->port;
 
-   if (!joypad)
-      return;
-
-   /* poll only the relevant port */
-   for (a = 0; a < MENU_MAX_AXES; a++)
+   if (joypad)
    {
-      if (AXIS_POS(a) != AXIS_NONE)
-         state->axis_state[port].rested_axes[a]  = 
-            joypad->axis(port, AXIS_POS(a));
-      if (AXIS_NEG(a) != AXIS_NONE)
-         state->axis_state[port].rested_axes[a] += 
-            joypad->axis(port, AXIS_NEG(a));
+      /* poll only the relevant port */
+      for (a = 0; a < MENU_MAX_AXES; a++)
+      {
+         if (AXIS_POS(a) != AXIS_NONE)
+            state->axis_state[port].rested_axes[a]  = 
+               joypad->axis(port, AXIS_POS(a));
+         if (AXIS_NEG(a) != AXIS_NONE)
+            state->axis_state[port].rested_axes[a] += 
+               joypad->axis(port, AXIS_NEG(a));
+      }
    }
 
    if (sec_joypad)
@@ -1013,7 +1006,7 @@ static void menu_input_key_bind_poll_bind_state(
       state->skip             |= 
          current_input->input_state(
                input_data,
-               p_rarch->joypad,
+               joypad,
                sec_joypad,
                &joypad_info,
                NULL,
@@ -1229,7 +1222,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 #endif
 
 static bool menu_input_key_bind_poll_find_trigger(
-      struct rarch_state *p_rarch,
+      unsigned max_users,
       struct menu_bind_state *state,
       struct menu_bind_state *new_state,
       struct retro_keybind * output)
@@ -1237,7 +1230,6 @@ static bool menu_input_key_bind_poll_find_trigger(
    if (state && new_state)
    {
       unsigned i;
-      unsigned max_users = p_rarch->input_driver_max_users;
 
       for (i = 0; i < max_users; i++)
       {
@@ -1252,14 +1244,14 @@ static bool menu_input_key_bind_poll_find_trigger(
 
 #ifdef ANDROID
 static bool menu_input_key_bind_poll_find_hold(
-      struct rarch_state *p_rarch,
+      unsigned max_users,
       struct menu_bind_state *new_state,
       struct retro_keybind * output)
 {
    if (new_state)
    {
       unsigned i;
-      unsigned max_users = p_rarch->input_driver_max_users;
+
       for (i = 0; i < max_users; i++)
       {
          if (menu_input_key_bind_poll_find_hold_pad(new_state, output, i))
@@ -1289,15 +1281,19 @@ bool menu_input_key_bind_set_mode(
 
    if (!setting || !menu)
       return false;
-   if (menu_input_key_bind_set_mode_common(p_rarch,
-            state, setting) == -1)
+   if (menu_input_key_bind_set_mode_common(binds, state, setting) == -1)
       return false;
 
    index_offset             = setting->index_offset;
    binds->port              = settings->uints.input_joypad_map[index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(
-         p_rarch,
+         p_rarch->joypad,
+#ifdef HAVE_MFI
+         p_rarch->sec_joypad,
+#else
+         NULL,
+#endif
          binds);
    menu_input_key_bind_poll_bind_state(p_rarch,
          binds, false);
@@ -1421,7 +1417,9 @@ static bool menu_input_key_bind_iterate(
        * or we'll potentially bind joystick and mouse, etc.*/
       new_binds.buffer                     = *(new_binds.output);
 
-      if (menu_input_key_bind_poll_find_hold(p_rarch, &new_binds, &new_binds.buffer))
+      if (menu_input_key_bind_poll_find_hold(
+               p_rarch->input_driver_max_users,
+               &new_binds, &new_binds.buffer))
       {
          uint64_t current_usec = cpu_features_get_time_usec();
          /* Inhibit timeout*/
@@ -1453,7 +1451,8 @@ static bool menu_input_key_bind_iterate(
       }
 #else
       if ((new_binds.skip && !_binds->skip) ||
-            menu_input_key_bind_poll_find_trigger(p_rarch,
+            menu_input_key_bind_poll_find_trigger(
+               p_rarch->input_driver_max_users,
                _binds, &new_binds, &(new_binds.buffer)))
          complete = true;
 #endif
@@ -22207,7 +22206,7 @@ static void input_driver_poll(void)
       if (p_rarch->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
          p_rarch->input_driver_turbo_btns.frame_enable[i] = 
             input_state_wrap(
-                  p_rarch,
+                  p_rarch->current_input,
                   p_rarch->current_input_data,
                   p_rarch->joypad,
                   sec_joypad,
@@ -22261,7 +22260,7 @@ static void input_driver_poll(void)
                {
                   unsigned k, j;
                   int16_t ret = input_state_wrap(
-                        p_rarch,
+                        p_rarch->current_input,
                         p_rarch->current_input_data,
                         p_rarch->joypad,
                         sec_joypad,
@@ -22932,7 +22931,7 @@ static int16_t input_state(unsigned port, unsigned device,
 
    device &= RETRO_DEVICE_MASK;
    ret     = input_state_wrap(
-         p_rarch,
+         p_rarch->current_input,
          p_rarch->current_input_data,
          p_rarch->joypad,
          sec_joypad,
@@ -24645,15 +24644,15 @@ static void input_keys_pressed(
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
       if (  input_state_wrap(
-            p_rarch,
-            p_rarch->current_input_data,
-            p_rarch->joypad,
-            sec_joypad,
-            joypad_info,
-            &binds[port], 
-            p_rarch->keyboard_mapping_blocked,
-            port, RETRO_DEVICE_JOYPAD, 0,
-            RARCH_ENABLE_HOTKEY))
+               p_rarch->current_input,
+               p_rarch->current_input_data,
+               p_rarch->joypad,
+               sec_joypad,
+               joypad_info,
+               &binds[port], 
+               p_rarch->keyboard_mapping_blocked,
+               port, RETRO_DEVICE_JOYPAD, 0,
+               RARCH_ENABLE_HOTKEY))
       {
          if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
             p_rarch->input_hotkey_block_counter++;
@@ -24681,7 +24680,7 @@ static void input_keys_pressed(
                focus_normal, focus_binds_auto))
       {
          if (input_state_wrap(
-                  p_rarch,
+                  p_rarch->current_input,
                   p_rarch->current_input_data,
                   p_rarch->joypad,
                   sec_joypad,
@@ -24709,7 +24708,7 @@ static void input_keys_pressed(
    else
    {
       int16_t ret = input_state_wrap(
-            p_rarch,
+            p_rarch->current_input,
             p_rarch->current_input_data,
             p_rarch->joypad,
             sec_joypad,
@@ -24749,7 +24748,7 @@ static void input_keys_pressed(
       {
          bool bit_pressed = binds[port][i].valid
             && input_state_wrap(
-                  p_rarch,
+                  p_rarch->current_input,
                   p_rarch->current_input_data,
                   p_rarch->joypad,
                   sec_joypad,
@@ -26172,12 +26171,10 @@ static void input_config_parse_mouse_button(
 }
 
 static void input_config_get_bind_string_joykey(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   settings_t  *settings       = 
-      p_rarch->configuration_settings;
    bool  label_show            = 
       settings->bools.input_descriptor_label_show;
 
@@ -26226,12 +26223,10 @@ static void input_config_get_bind_string_joykey(
 }
 
 static void input_config_get_bind_string_joyaxis(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   settings_t *settings             = 
-      p_rarch->configuration_settings;
    bool input_descriptor_label_show = 
       settings->bools.input_descriptor_label_show;
 
@@ -26270,15 +26265,17 @@ void input_config_get_bind_string(char *buf,
    *buf = '\0';
 
    if      (bind      && bind->joykey  != NO_BTN)
-      input_config_get_bind_string_joykey(p_rarch, buf, "", bind, size);
+      input_config_get_bind_string_joykey(
+            p_rarch->configuration_settings, buf, "", bind, size);
    else if (bind      && bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(p_rarch, buf, "", bind, size);
+      input_config_get_bind_string_joyaxis(
+            p_rarch->configuration_settings, buf, "", bind, size);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
-      input_config_get_bind_string_joykey(p_rarch, buf, "Auto: ",
-            auto_bind, size);
+      input_config_get_bind_string_joykey(
+            p_rarch->configuration_settings, buf, "Auto: ", auto_bind, size);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(p_rarch, buf, "Auto: ",
-            auto_bind, size);
+      input_config_get_bind_string_joyaxis(
+            p_rarch->configuration_settings, buf, "Auto: ", auto_bind, size);
 
    if (*buf)
       delim = 1;
