@@ -274,6 +274,8 @@
 /* Forward declarations */
 #include "retroarch_fwd_decls.h"
 
+/* GLOBAL POINTER GETTERS */
+
 #ifdef HAVE_NETWORKING
 struct netplay_room* netplay_get_host_room(void)
 {
@@ -342,6 +344,96 @@ gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    return &p_rarch->gfx_thumb_state;
+}
+
+#ifdef HAVE_MENU
+menu_handle_t *menu_driver_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return p_rarch->menu_driver_data;
+}
+
+size_t menu_navigation_get_selection(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   return menu_st->selection_ptr;
+}
+#endif
+
+struct retro_hw_render_callback *video_driver_get_hw_context(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+}
+
+struct retro_system_av_info *video_viewport_get_system_av_info(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return &p_rarch->video_driver_av_info;
+}
+
+gfx_display_t *disp_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->dispgfx;
+}
+
+#ifdef HAVE_GFX_WIDGETS
+void *dispwidget_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->dispwidget_st;
+}
+#endif
+
+settings_t *config_get_ptr(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->configuration_settings;
+}
+
+global_t *global_get_ptr(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return &p_rarch->g_extern;
+}
+
+#ifdef HAVE_THREADS
+/**
+ * video_thread_get_ptr:
+ * @drv                       : Found driver.
+ *
+ * Gets the underlying video driver associated with the
+ * threaded video wrapper. Sets @drv to the found
+ * video driver.
+ *
+ * Returns: Video driver data of the video driver associated
+ * with the threaded wrapper (if successful). If not successful,
+ * NULL.
+ **/
+static void *video_thread_get_ptr(struct rarch_state *p_rarch)
+{
+   void *data                  = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+   const thread_video_t *thr   = (const thread_video_t*)data;
+   if (thr)
+      return thr->driver_data;
+   return NULL;
+}
+#endif
+
+/**
+ * video_driver_get_ptr:
+ *
+ * Use this if you need the real video driver
+ * and driver data pointers.
+ *
+ * Returns: video driver's userdata.
+ **/
+void *video_driver_get_ptr(bool force_nonthreaded_data)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return VIDEO_DRIVER_GET_PTR_INTERNAL(force_nonthreaded_data);
 }
 
 static int16_t input_state_wrap(
@@ -2295,19 +2387,6 @@ int generic_menu_entry_action(
    }
 
    return ret;
-}
-
-menu_handle_t *menu_driver_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return p_rarch->menu_driver_data;
-}
-
-size_t menu_navigation_get_selection(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   return menu_st->selection_ptr;
 }
 
 void menu_navigation_set_selection(size_t val)
@@ -10061,82 +10140,6 @@ static char *strcpy_alloc(const char *src)
 }
 #endif
 #endif
-
-/* GLOBAL POINTER GETTERS */
-struct retro_hw_render_callback *video_driver_get_hw_context(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
-}
-
-struct retro_system_av_info *video_viewport_get_system_av_info(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return &p_rarch->video_driver_av_info;
-}
-
-gfx_display_t *disp_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->dispgfx;
-}
-
-#ifdef HAVE_GFX_WIDGETS
-void *dispwidget_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->dispwidget_st;
-}
-#endif
-
-settings_t *config_get_ptr(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->configuration_settings;
-}
-
-global_t *global_get_ptr(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return &p_rarch->g_extern;
-}
-
-#ifdef HAVE_THREADS
-/**
- * video_thread_get_ptr:
- * @drv                       : Found driver.
- *
- * Gets the underlying video driver associated with the
- * threaded video wrapper. Sets @drv to the found
- * video driver.
- *
- * Returns: Video driver data of the video driver associated
- * with the threaded wrapper (if successful). If not successful,
- * NULL.
- **/
-static void *video_thread_get_ptr(struct rarch_state *p_rarch)
-{
-   void *data                  = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
-   const thread_video_t *thr   = (const thread_video_t*)data;
-   if (thr)
-      return thr->driver_data;
-   return NULL;
-}
-#endif
-
-/**
- * video_driver_get_ptr:
- *
- * Use this if you need the real video driver
- * and driver data pointers.
- *
- * Returns: video driver's userdata.
- **/
-void *video_driver_get_ptr(bool force_nonthreaded_data)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return VIDEO_DRIVER_GET_PTR_INTERNAL(force_nonthreaded_data);
-}
 
 /* MESSAGE QUEUE */
 
