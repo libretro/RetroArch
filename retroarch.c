@@ -5441,10 +5441,7 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
    }
 
    if (!shader)
-   {
-      ret = false;
       goto end;
-   }
 
    /* Load stored Preset into menu on success.
     * Used when a preset is directly loaded.
@@ -5452,10 +5449,7 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
     * created from the menu itself. */
    if (  !shader ||
          !(video_shader_load_preset_into_shader(preset_path, shader)))
-   {
-      ret = false;
       goto end;
-   }
 
    RARCH_LOG("Menu shader set to: %s.\n", preset_path);
 
