@@ -322,6 +322,7 @@ static void config_file_get_realpath(char *s, size_t len,
       fill_pathname_resolve_relative(s, config_path,
             path, len);
 #else
+#if !defined(__PSL1GHT__) && !defined(__PS3__)
    if (*path == '~')
    {
       const char *home = getenv("HOME");
@@ -334,6 +335,7 @@ static void config_file_get_realpath(char *s, size_t len,
          strlcpy(s, path + 1, len);
    }
    else
+#endif
       if (!string_is_empty(config_path))
          fill_pathname_resolve_relative(s, config_path, path, len);
 #endif
