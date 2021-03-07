@@ -46,6 +46,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
+#include "ui_cocoa.h"
+
 /* TODO/FIXME - static global variables */
 static int waiting_argc;
 static char **waiting_argv;
