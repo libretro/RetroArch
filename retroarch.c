@@ -15019,7 +15019,7 @@ bool command_event(enum event_command cmd, void *data)
          else
          {
             bool paused = p_rarch->runloop_paused;
-            if (data!=NULL)
+            if (data)
                paused = *((bool*)data);
 
             if (p_rarch->ai_service_auto == 0 && !settings->bools.ai_service_pause)
@@ -16558,11 +16558,10 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 }
 
 static bool dynamic_verify_hw_context(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       enum retro_hw_context_type type,
       unsigned minor, unsigned major)
 {
-   settings_t   *settings      = p_rarch->configuration_settings;
    const char   *video_ident   = settings->arrays.video_driver;
    bool   driver_switch_enable = settings->bools.driver_switch_enable;
 
@@ -16783,13 +16782,12 @@ static bool rarch_clear_all_thread_waits(
 }
 
 static void runloop_core_msg_queue_push(
-      struct rarch_state *p_rarch,
+      struct retro_system_av_info *av_info,
       const struct retro_message_ext *msg)
 {
    double fps;
    unsigned duration_frames;
    enum message_queue_category category;
-   struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
 
    /* Assign category */
    switch (msg->level)
@@ -17221,7 +17219,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                      gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
                            msg->msg, msg->duration);
                   else
-                     runloop_core_msg_queue_push(p_rarch, msg);
+                     runloop_core_msg_queue_push(
+                           &p_rarch->video_driver_av_info, msg);
 
                   break;
 
@@ -17232,14 +17231,16 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                            msg->msg, msg->duration,
                            msg->priority, msg->progress);
                   else
-                     runloop_core_msg_queue_push(p_rarch, msg);
+                     runloop_core_msg_queue_push(
+                           &p_rarch->video_driver_av_info, msg);
 
                   break;
 #endif
                /* Handle standard (queued) notifications */
                case RETRO_MESSAGE_TYPE_NOTIFICATION:
                default:
-                  runloop_core_msg_queue_push(p_rarch, msg);
+                  runloop_core_msg_queue_push(
+                        &p_rarch->video_driver_av_info, msg);
                   break;
             }
          }
@@ -17595,7 +17596,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
          }
 
-         if (!dynamic_verify_hw_context(p_rarch,
+         if (!dynamic_verify_hw_context(p_rarch->configuration_settings,
                   cb->context_type, cb->version_minor, cb->version_major))
          {
             RARCH_ERR("[Environ]: SET_HW_RENDER: Dynamic verify HW context failed.\n");
@@ -18408,8 +18409,7 @@ static void libretro_get_environment_info(
    p_rarch->ignore_environment_cb = false;
 }
 
-static bool load_dynamic_core(
-      struct rarch_state *p_rarch,
+static dylib_t load_dynamic_core(
       const char *path, char *buf, size_t size)
 {
 #if defined(ANDROID)
@@ -18442,9 +18442,7 @@ static bool load_dynamic_core(
     * saved to content history, and a relative path would
     * break in that scenario. */
    path_resolve_realpath(buf, size, resolve_symlinks);
-   if ((p_rarch->lib_handle = dylib_load(path)))
-      return true;
-   return false;
+   return dylib_load(path);
 }
 
 static dylib_t libretro_get_system_info_lib(const char *path,
@@ -18618,12 +18616,11 @@ static bool init_libretro_symbols_custom(
                RARCH_LOG("[Core]: Loading dynamic libretro core from: \"%s\"\n",
                      path);
 
-               if (!load_dynamic_core(
-                        p_rarch,
+               if (!(p_rarch->lib_handle = load_dynamic_core(
                         path,
                         path_get_ptr(RARCH_PATH_CORE),
                         path_get_realsize(RARCH_PATH_CORE)
-                        ))
+                        )))
                {
                   RARCH_ERR("%s: \"%s\"\nError(s): %s\n",
                         msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
@@ -29959,10 +29956,9 @@ static void video_driver_set_viewport_config(struct rarch_state *p_rarch)
       aspectratio_lut[ASPECT_RATIO_CONFIG].value = video_aspect_ratio;
 }
 
-static void video_driver_set_viewport_square_pixel(struct rarch_state *p_rarch)
+static void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom)
 {
    unsigned len, highest, i, aspect_x, aspect_y;
-   struct retro_game_geometry *geom  = &p_rarch->video_driver_av_info.geometry;
    unsigned width                    = geom->base_width;
    unsigned height                   = geom->base_height;
    unsigned int rotation             = retroarch_get_rotation();
@@ -30026,7 +30022,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 #endif
 
    /* Update core-dependent aspect ratio values. */
-   video_driver_set_viewport_square_pixel(p_rarch);
+   video_driver_set_viewport_square_pixel(&p_rarch->video_driver_av_info.geometry);
    video_driver_set_viewport_core();
    video_driver_set_viewport_config(p_rarch);
 
@@ -30803,7 +30799,7 @@ void video_driver_set_aspect_ratio(void)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel(p_rarch);
+         video_driver_set_viewport_square_pixel(&p_rarch->video_driver_av_info.geometry);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -34994,7 +34990,13 @@ bool retroarch_main_init(int argc, char *argv[])
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
-      accessibility_startup_message(p_rarch);
+   {
+      /* State that the narrator is on, and also include the first menu
+         item we're on at startup. */
+      accessibility_speak_priority(p_rarch,
+            "RetroArch accessibility on.  Main Menu Load Core.",
+            10);
+   }
 #endif
 
    if (verbosity_is_enabled())
@@ -36953,8 +36955,9 @@ static enum runloop_state runloop_check_state(
 
             for (i = 0; i < MAX_USERS; i++)
             {
+               /* Set gamepad input override */
                if (p_rarch->ai_gamepad_state[i] == 2)
-                  set_gamepad_input_override(p_rarch, i, true);
+                  p_rarch->gamepad_input_override |= (1 << i);
                p_rarch->ai_gamepad_state[i] = 0;
             }
          }
@@ -38844,25 +38847,6 @@ static bool is_narrator_running(struct rarch_state *p_rarch)
    return true;
 }
 #endif
-
-static bool accessibility_startup_message(struct rarch_state *p_rarch)
-{
-   /* State that the narrator is on, and also include the first menu
-      item we're on at startup. */
-   accessibility_speak_priority(p_rarch,
-         "RetroArch accessibility on.  Main Menu Load Core.",
-         10);
-   return true;
-}
-
-static void set_gamepad_input_override(struct rarch_state *p_rarch,
-      unsigned i, bool val)
-{
-   if (val)
-      p_rarch->gamepad_input_override = p_rarch->gamepad_input_override | (1 << i);
-   else
-      p_rarch->gamepad_input_override = p_rarch->gamepad_input_override & ((1 << i) ^ (~0));
-}
 #endif
 
 /* Creates folder and core options stub file for subsequent runs */

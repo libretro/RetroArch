@@ -18,11 +18,6 @@ static void ui_companion_driver_toggle(
       struct rarch_state *p_rarch,
       bool force);
 
-#ifdef HAVE_ACCESSIBILITY
-static void set_gamepad_input_override(struct rarch_state *p_rarch,
-      unsigned i, bool val);
-#endif
-
 #ifdef HAVE_LIBNX
 void libnx_apply_overclock(void);
 #endif
@@ -30,7 +25,6 @@ void libnx_apply_overclock(void);
 #ifdef HAVE_TRANSLATE
 static bool is_narrator_running(struct rarch_state *p_rarch);
 #endif
-static bool accessibility_startup_message(struct rarch_state *p_rarch);
 #endif
 
 #ifdef HAVE_NETWORKING
