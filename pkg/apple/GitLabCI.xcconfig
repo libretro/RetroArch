@@ -1,0 +1,12 @@
+//
+//  GitLabCI.xcconfig
+//  RetroArch_Metal
+//
+//  Created by Yoshi Sugawara on 3/7/21.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+#include "Metal.xcconfig"
+DEVELOPMENT_TEAM=ZE9XE938Z2
