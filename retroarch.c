@@ -4762,7 +4762,7 @@ void menu_driver_set_last_start_content(const char *start_content_path)
             sizeof(menu->last_start_content.file_name));
 }
 
-const char *menu_driver_get_pending_selection()
+const char *menu_driver_get_pending_selection(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
