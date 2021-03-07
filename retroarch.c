@@ -2646,14 +2646,10 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
 static int menu_entries_elem_get_first_char(
       file_list_t *list, unsigned offset)
 {
-   int ret          = 0;
-   const char *path = NULL;
-
-   if (list)
-      if ((path = list->list[offset].alt
-         ? list->list[offset].alt
-         : list->list[offset].path))
-         ret = TOLOWER((int)*path);
+   const char *path =   list->list[offset].alt
+                      ? list->list[offset].alt
+                      : list->list[offset].path;
+   int ret          = path ? TOLOWER((int)*path) : 0;
 
    /* "Normalize" non-alphabetical entries so they
     * are lumped together for purposes of jumping. */
