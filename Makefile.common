@@ -487,11 +487,7 @@ endif
 
 ifeq ($(HAVE_QT), 1)
    OBJ += ui/drivers/ui_qt.o \
-          ui/drivers/qt/ui_qt_application.o \
-          ui/drivers/qt/ui_qt_window.o \
-          ui/drivers/qt/ui_qt_browser_window.o \
           ui/drivers/qt/ui_qt_load_core_window.o \
-          ui/drivers/qt/ui_qt_msg_window.o \
           ui/drivers/qt/gridview.o \
           ui/drivers/qt/coreoptionsdialog.o \
           ui/drivers/qt/filedropwidget.o \
