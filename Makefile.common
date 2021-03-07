@@ -2308,10 +2308,6 @@ ifeq ($(HAVE_COCOA_COMMON),1)
    DEFINES += -DHAVE_MAIN -DOSX
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
-          ui/drivers/cocoa/ui_cocoa_window.o \
-          ui/drivers/cocoa/ui_cocoa_browser_window.o \
-          ui/drivers/cocoa/ui_cocoa_msg_window.o \
-          ui/drivers/cocoa/ui_cocoa_application.o \
           ui/drivers/cocoa/cocoa_common.o
           
    ifeq ($(HAVE_OPENGL), 1)
