@@ -37682,78 +37682,78 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_CHEEVOS
    if (!rcheevos_hardcore_active())
 #endif
+   {
+      /* Check if rewind toggle was being held. */
+      {
 #ifdef HAVE_REWIND
-   {
-      char s[128];
-      bool rewinding = false;
-      unsigned t     = 0;
+         char s[128];
+         bool rewinding = false;
+         unsigned t     = 0;
 
-      s[0]           = '\0';
+         s[0]           = '\0';
 
-      rewinding      = state_manager_check_rewind(
-            &p_rarch->rewind_st,
-            BIT256_GET(current_bits, RARCH_REWIND),
-            settings->uints.rewind_granularity,
-            p_rarch->runloop_paused,
-            s, sizeof(s), &t);
-
-#if defined(HAVE_GFX_WIDGETS)
-      if (widgets_active)
-         p_rarch->gfx_widgets_rewinding = rewinding;
-      else
-#endif
-      {
-         if (rewinding)
-            runloop_msg_queue_push(s, 0, t, true, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-   }
-#endif
-
-   /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-#ifdef HAVE_CHEEVOS
-   if (!rcheevos_hardcore_active())
-#endif
-   {
-      static bool old_slowmotion_button_state      = false;
-      static bool old_slowmotion_hold_button_state = false;
-      bool new_slowmotion_button_state             = BIT256_GET(
-            current_bits, RARCH_SLOWMOTION_KEY);
-      bool new_slowmotion_hold_button_state        = BIT256_GET(
-            current_bits, RARCH_SLOWMOTION_HOLD_KEY);
-
-      if (new_slowmotion_button_state && !old_slowmotion_button_state)
-         p_rarch->runloop_slowmotion = !p_rarch->runloop_slowmotion;
-      else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
-         p_rarch->runloop_slowmotion = new_slowmotion_hold_button_state;
-
-      if (p_rarch->runloop_slowmotion)
-      {
-         if (settings->uints.video_black_frame_insertion)
-            if (!p_rarch->runloop_idle)
-               video_driver_cached_frame();
+         rewinding      = state_manager_check_rewind(
+               &p_rarch->rewind_st,
+               BIT256_GET(current_bits, RARCH_REWIND),
+               settings->uints.rewind_granularity,
+               p_rarch->runloop_paused,
+               s, sizeof(s), &t);
 
 #if defined(HAVE_GFX_WIDGETS)
-         if (!widgets_active)
+         if (widgets_active)
+            p_rarch->gfx_widgets_rewinding = rewinding;
+         else
 #endif
          {
-#ifdef HAVE_REWIND
-            struct state_manager_rewind_state 
-               *rewind_st = &p_rarch->rewind_st;
-            if (rewind_st->frame_is_reversed)
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL,
+            if (rewinding)
+               runloop_msg_queue_push(s, 0, t, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            else
-#endif
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
+#endif
       }
 
-      old_slowmotion_button_state                  = new_slowmotion_button_state;
-      old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;
+      {
+         /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+         static bool old_slowmotion_button_state      = false;
+         static bool old_slowmotion_hold_button_state = false;
+         bool new_slowmotion_button_state             = BIT256_GET(
+               current_bits, RARCH_SLOWMOTION_KEY);
+         bool new_slowmotion_hold_button_state        = BIT256_GET(
+               current_bits, RARCH_SLOWMOTION_HOLD_KEY);
+
+         if (new_slowmotion_button_state && !old_slowmotion_button_state)
+            p_rarch->runloop_slowmotion = !p_rarch->runloop_slowmotion;
+         else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
+            p_rarch->runloop_slowmotion = new_slowmotion_hold_button_state;
+
+         if (p_rarch->runloop_slowmotion)
+         {
+            if (settings->uints.video_black_frame_insertion)
+               if (!p_rarch->runloop_idle)
+                  video_driver_cached_frame();
+
+#if defined(HAVE_GFX_WIDGETS)
+            if (!widgets_active)
+#endif
+            {
+#ifdef HAVE_REWIND
+               struct state_manager_rewind_state 
+                  *rewind_st = &p_rarch->rewind_st;
+               if (rewind_st->frame_is_reversed)
+                  runloop_msg_queue_push(
+                        msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               else
+#endif
+                  runloop_msg_queue_push(
+                        msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+         }
+
+         old_slowmotion_button_state                  = new_slowmotion_button_state;
+         old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;
+      }
    }
 
    /* Check movie record toggle */
@@ -37777,7 +37777,6 @@ static enum runloop_state runloop_check_state(
          RARCH_CHEAT_INDEX_PLUS,  CMD_EVENT_CHEAT_INDEX_PLUS,
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
-
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (settings->bools.video_shader_watch_files)
