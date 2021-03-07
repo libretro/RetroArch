@@ -37485,35 +37485,30 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
-      bool pause_pressed, frameadvance_pressed, trig_frameadvance;
-
+      bool frameadvance_pressed     = false;
+      bool trig_frameadvance        = false;
+      bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
 #ifdef HAVE_CHEEVOS
       if (cheevos_hardcore_active)
       {
          static int unpaused_frames = 0;
 
-         /* frame advance is not allowed when achievement hardcore is active */
-         frameadvance_pressed = false;
-         trig_frameadvance    = false;
-
-         pause_pressed        = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
-
+         /* Frame advance is not allowed when achievement hardcore is active */
          if (!p_rarch->runloop_paused)
          {
-            /* limit pause to approximately three times per second (depending on core framerate) */
+            /* Limit pause to approximately three times per second (depending on core framerate) */
             if (unpaused_frames < 20)
             {
                ++unpaused_frames;
-               pause_pressed = false;
+               pause_pressed        = false;
             }
          }
          else
-            unpaused_frames = 0;
+            unpaused_frames         = 0;
       }
       else
 #endif
       {
-         pause_pressed        = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
          frameadvance_pressed = BIT256_GET(current_bits, RARCH_FRAMEADVANCE);
          trig_frameadvance    = frameadvance_pressed && !old_frameadvance;
 
