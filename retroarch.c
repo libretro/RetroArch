@@ -36777,6 +36777,9 @@ static enum runloop_state runloop_check_state(
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active                 = p_rarch->widgets_active;
 #endif
+#ifdef HAVE_CHEEVOS
+   bool cheevos_hardcore_active        = rcheevos_hardcore_active();
+#endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
    if (p_rarch->dispwidget_st.ai_service_overlay_state == 3)
@@ -37485,7 +37488,7 @@ static enum runloop_state runloop_check_state(
       bool pause_pressed, frameadvance_pressed, trig_frameadvance;
 
 #ifdef HAVE_CHEEVOS
-      if (rcheevos_hardcore_active())
+      if (cheevos_hardcore_active)
       {
          static int unpaused_frames = 0;
 
@@ -37680,7 +37683,7 @@ static enum runloop_state runloop_check_state(
    HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true, NULL);
 
 #ifdef HAVE_CHEEVOS
-   if (!rcheevos_hardcore_active())
+   if (!cheevos_hardcore_active)
 #endif
    {
       /* Check if rewind toggle was being held. */
