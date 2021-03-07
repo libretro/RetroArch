@@ -20038,15 +20038,6 @@ void streaming_set_state(bool state)
    p_rarch->streaming_enable = state;
 }
 
-static bool video_driver_gpu_record_init(struct rarch_state *p_rarch,
-      unsigned size)
-{
-   p_rarch->video_driver_record_gpu_buffer = (uint8_t*)malloc(size);
-   if (!p_rarch->video_driver_record_gpu_buffer)
-      return false;
-   return true;
-}
-
 static void video_driver_gpu_record_deinit(struct rarch_state *p_rarch)
 {
    if (p_rarch->video_driver_record_gpu_buffer)
@@ -20232,7 +20223,7 @@ static bool recording_init(
             vp.width, vp.height);
 
       gpu_size = vp.width * vp.height * 3;
-      if (!video_driver_gpu_record_init(p_rarch, gpu_size))
+      if (!(p_rarch->video_driver_record_gpu_buffer = (uint8_t*)malloc(gpu_size)))
          return false;
    }
    else
@@ -37502,9 +37493,10 @@ static enum runloop_state runloop_check_state(
 
          /* frame advance is not allowed when achievement hardcore is active */
          frameadvance_pressed = false;
-         trig_frameadvance = false;
+         trig_frameadvance    = false;
 
-         pause_pressed = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
+         pause_pressed        = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
+
          if (!p_rarch->runloop_paused)
          {
             /* limit pause to approximately three times per second (depending on core framerate) */
@@ -37515,19 +37507,17 @@ static enum runloop_state runloop_check_state(
             }
          }
          else
-         {
             unpaused_frames = 0;
-         }
       }
       else
 #endif
       {
-         pause_pressed = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
+         pause_pressed        = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
          frameadvance_pressed = BIT256_GET(current_bits, RARCH_FRAMEADVANCE);
-         trig_frameadvance = frameadvance_pressed && !old_frameadvance;
+         trig_frameadvance    = frameadvance_pressed && !old_frameadvance;
 
          /* FRAMEADVANCE will set us into pause mode. */
-         pause_pressed |= !p_rarch->runloop_paused
+         pause_pressed       |= !p_rarch->runloop_paused
             && trig_frameadvance;
       }
 
@@ -37793,7 +37783,7 @@ static enum runloop_state runloop_check_state(
    if (settings->bools.video_shader_watch_files)
    {
       static rarch_timer_t timer = {0};
-      static bool need_to_apply = false;
+      static bool need_to_apply  = false;
 
       if (video_shader_check_for_changes())
       {
