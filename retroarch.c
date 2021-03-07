@@ -2145,7 +2145,6 @@ static int generic_menu_iterate(
             /* Have to defer it so we let settings refresh. */
             if (p_rarch->dialog_st.pending_push)
             {
-               menu_dialog_t *p_dialog = &p_rarch->dialog_st;
                const char *label;
                menu_displaylist_info_t info;
 
@@ -24546,7 +24545,6 @@ static int menu_input_post_iterate(
       unsigned action,
       retro_time_t current_time)
 {
-   menu_input_t     *menu_input  = &p_rarch->menu_input_state;
    menu_entry_t entry;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
    menu_list_t *menu_list        = menu_st->entries.list;
