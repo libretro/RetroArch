@@ -1756,7 +1756,6 @@ void rcheevos_validate_config_settings(void)
          if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
          {
             int i;
-            const char *key               = NULL;
             const char *val               = NULL;
             const rc_disallowed_setting_t
                *disallowed_setting        = core_filter->disallowed_settings;
@@ -1764,9 +1763,8 @@ void rcheevos_validate_config_settings(void)
 
             for (; disallowed_setting->setting; ++disallowed_setting)
             {
-               size_t key_len;
-               key            = disallowed_setting->setting;
-               key_len        = strlen(key);
+               const char *key = disallowed_setting->setting;
+               size_t key_len  = strlen(key);
 
                if (key[key_len - 1] == '*')
                {
@@ -1775,13 +1773,13 @@ void rcheevos_validate_config_settings(void)
                      if (string_starts_with_size(
                               coreopts->opts[i].key, key, key_len - 1))
                      {
-                        const char* val =core_option_manager_get_val(coreopts, i);
+                        const char* val = core_option_manager_get_val(coreopts, i);
                         if (val)
                         {
                            if (rcheevos_match_value(
                                     val, disallowed_setting->value))
                            {
-                              key = coreopts->opts[i].key;
+                              key     = coreopts->opts[i].key;
                               allowed = 0;
                               break;
                            }
