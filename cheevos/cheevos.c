@@ -1572,7 +1572,7 @@ void rcheevos_leaderboards_enabled_changed(void)
    const bool leaderboards_enabled      = rcheevos_locals.leaderboards_enabled;
    const bool leaderboard_trackers      = rcheevos_locals.leaderboard_trackers;
 
-   rcheevos_locals.leaderboards_enabled = rcheevos_hardcore_active();
+   rcheevos_locals.leaderboards_enabled = rcheevos_locals.hardcore_active;
 
    if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "true"))
    {
@@ -1830,7 +1830,7 @@ void rcheevos_validate_config_settings(void)
    const rc_disallowed_core_settings_t 
       *core_filter                  = rc_disallowed_core_settings;
    struct retro_system_info* system = runloop_get_libretro_system_info();
-   if (!system->library_name || !rcheevos_hardcore_active())
+   if (!system->library_name || !rcheevos_locals.hardcore_active)
       return;
 
    while (core_filter->library_name)
@@ -2195,7 +2195,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 #endif
 
 #if HAVE_REWIND
-      if (!rcheevos_hardcore_active())
+      if (!rcheevos_locals.hardcore_active)
       {
          /* deactivate rewind while we activate the achievements */
          if (coro->settings->bools.rewind_enable)
@@ -2237,7 +2237,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       }
 
 #if HAVE_REWIND
-      if (!rcheevos_hardcore_active())
+      if (!rcheevos_locals.hardcore_active)
       {
          /* re-enable rewind. if rcheevos_locals.loaded is true, additional space will be allocated
           * for the achievement state data */
