@@ -1855,7 +1855,8 @@ static int generic_menu_iterate(
          break;
       case ITERATE_TYPE_INFO:
          {
-            file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+            menu_list_t *menu_list     = menu_st->entries.list;
+            file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
             size_t selection           = menu_st->selection_ptr;
             menu_file_list_cbs_t *cbs  = selection_buf ?
                (menu_file_list_cbs_t*)
@@ -2115,10 +2116,13 @@ static int generic_menu_iterate(
 int generic_menu_entry_action(
       void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
 {
-   int ret                     = 0;
-   struct rarch_state *p_rarch = &rarch_st;
-   file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs   = selection_buf ?
+   int ret                        = 0;
+   struct rarch_state *p_rarch    = &rarch_st;
+   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   ;
+   file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+   menu_file_list_cbs_t *cbs      = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
 
    switch (action)
@@ -2193,7 +2197,10 @@ int generic_menu_entry_action(
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
       {
          bool refresh            = false;
-         file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
+         struct menu_state  
+            *menu_st             = &p_rarch->menu_driver_state;
+         menu_list_t *menu_list  = menu_st->entries.list;
+         file_list_t *menu_stack = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
 
          cbs->action_refresh(selection_buf, menu_stack);
          menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
@@ -4089,11 +4096,18 @@ static enum menu_driver_id_type menu_driver_set_id(struct rarch_state *p_rarch)
    return MENU_DRIVER_ID_UNKNOWN;
 }
 
-static bool generic_menu_init_list(void *data)
+static bool generic_menu_init_list(struct menu_state *menu_st)
 {
    menu_displaylist_info_t info;
-   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
+   menu_list_t *menu_list       = menu_st->entries.list;
+   file_list_t *menu_stack      = NULL;
+   file_list_t *selection_buf   = NULL;
+
+   if (menu_list)
+   {
+      menu_stack                = MENU_LIST_GET(menu_list, (unsigned)0);
+      selection_buf             = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
+   }
 
    menu_displaylist_info_init(&info);
 
@@ -4155,7 +4169,7 @@ static bool menu_driver_init_internal(
          return false;
    }
    else
-      generic_menu_init_list(p_rarch->menu_driver_data);
+      generic_menu_init_list(&p_rarch->menu_driver_state);
 
    return true;
 }
@@ -9796,8 +9810,11 @@ static void menu_input_search_cb(void *userdata, const char *str)
     * first matching entry */
    else
    {
-      size_t idx                 = 0;
-      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+      size_t idx                     = 0;
+      struct rarch_state   *p_rarch  = &rarch_st;
+      struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+      menu_list_t *menu_list         = menu_st->entries.list;
+      file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
 
       if (!selection_buf)
          goto end;
@@ -24548,10 +24565,11 @@ static int menu_input_post_iterate(
 {
    menu_input_t     *menu_input  = &p_rarch->menu_input_state;
    menu_entry_t entry;
-   struct menu_state *menu_st = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_st->selection_ptr;
-   menu_file_list_cbs_t *cbs  = selection_buf ?
+   struct menu_state *menu_st    = &p_rarch->menu_driver_state;
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *selection_buf    = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+   size_t selection              = menu_st->selection_ptr;
+   menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
 
