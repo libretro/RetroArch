@@ -2042,13 +2042,14 @@ static int generic_menu_iterate(
       case ITERATE_TYPE_DEFAULT:
          {
             menu_entry_t entry;
-            size_t selection = menu_st->selection_ptr;
+            size_t selection       = menu_st->selection_ptr;
+            size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
             /* FIXME: Crappy hack, needed for mouse controls
              * to not be completely broken in case we press back.
              *
              * We need to fix this entire mess, mouse controls
              * should not rely on a hack like this in order to work. */
-            selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
+            selection = MAX(MIN(selection, (menu_list_size - 1)), 0);
 
             MENU_ENTRY_INIT(entry);
             /* NOTE: If menu_entry_action() is modified,
@@ -3286,7 +3287,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
                return false;
             if (list->size)
                menu_entries_build_scroll_indices(menu_st, list);
-            list_size                       = menu_entries_get_size();
+            list_size                       = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
 
             if (list_size)
             {
@@ -3319,7 +3320,11 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
                p_rarch->menu_driver_ctx->list_clear(list);
 
             for (i = 0; i < list->size; i++)
-               file_list_free_actiondata(list, i);
+            {
+               if (list->list[i].actiondata)
+                  free(list->list[i].actiondata);
+               list->list[i].actiondata = NULL;
+            }
 
             file_list_clear(list);
          }
@@ -5039,7 +5044,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             settings_t   *settings = p_rarch->configuration_settings;
             unsigned scroll_speed  = *((unsigned*)data);
-            size_t  menu_list_size = menu_entries_get_size();
+            size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
             bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
 
             if (menu_st->selection_ptr >= menu_list_size - 1
@@ -5073,7 +5078,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             size_t idx             = 0;
             settings_t   *settings = p_rarch->configuration_settings;
             unsigned scroll_speed  = *((unsigned*)data);
-            size_t  menu_list_size = menu_entries_get_size();
+            size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
             bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
 
             if (menu_st->selection_ptr == 0 && !wraparound_enable)
@@ -5097,7 +5102,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
-            size_t menu_list_size     = menu_entries_get_size();
+            size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
             size_t new_selection      = menu_list_size - 1;
 
             menu_st->selection_ptr    = new_selection;
@@ -5109,7 +5114,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
          {
             size_t i               = 0;
-            size_t  menu_list_size = menu_entries_get_size();
+            size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
 
             if (!menu_st->scroll.index_size)
                return false;
