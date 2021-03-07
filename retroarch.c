@@ -1351,9 +1351,6 @@ static bool menu_input_key_bind_iterate(
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
-   if (!bind)
-      return false;
-
    snprintf(bind->s, bind->len,
          "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
          input_config_bind_map_get_desc(
@@ -1528,13 +1525,12 @@ static bool menu_input_key_bind_iterate(
  * This function callback lets us render that text.
  */
 static void menu_cbs_init(
-      struct rarch_state *p_rarch,
+      const menu_ctx_driver_t *menu_driver_ctx,
       file_list_t *list,
       menu_file_list_cbs_t *cbs,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
-   menu_ctx_bind_t bind_info;
    const char *menu_label        = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
@@ -1618,19 +1614,13 @@ static void menu_cbs_init(
     * menu_cbs_sublabel.c, then map this callback to the entry. */
    menu_cbs_init_bind_sublabel(cbs, path, label, type, idx);
 
-   bind_info.cbs             = cbs;
-   bind_info.path            = path;
-   bind_info.label           = label;
-   bind_info.type            = type;
-   bind_info.idx             = idx;
-
-   if (p_rarch->menu_driver_ctx && p_rarch->menu_driver_ctx->bind_init)
-      p_rarch->menu_driver_ctx->bind_init(
-            bind_info.cbs,
-            bind_info.path,
-            bind_info.label,
-            bind_info.type,
-            bind_info.idx);
+   if (menu_driver_ctx && menu_driver_ctx->bind_init)
+      menu_driver_ctx->bind_init(
+            cbs,
+            path,
+            label,
+            type,
+            idx);
 }
 
 /* Pretty much a stub function. TODO/FIXME - Might as well remove this. */
@@ -2442,7 +2432,7 @@ int menu_entry_action(
 }
 
 static void menu_list_free_list(
-      struct rarch_state *p_rarch,
+      const menu_ctx_driver_t *menu_driver_ctx,
       file_list_t *list)
 {
    unsigned i;
@@ -2455,14 +2445,14 @@ static void menu_list_free_list(
       list_info.idx       = i;
       list_info.list_size = list->size;
 
-      menu_driver_list_free(p_rarch, &list_info);
+      menu_driver_list_free(menu_driver_ctx, &list_info);
    }
 
    file_list_free(list);
 }
 
 static void menu_list_free(
-      struct rarch_state *p_rarch,
+      const menu_ctx_driver_t *menu_driver_ctx,
       menu_list_t *menu_list)
 {
    if (!menu_list)
@@ -2477,7 +2467,7 @@ static void menu_list_free(
          if (!menu_list->menu_stack[i])
             continue;
 
-         menu_list_free_list(p_rarch,
+         menu_list_free_list(menu_driver_ctx,
                menu_list->menu_stack[i]);
          menu_list->menu_stack[i]    = NULL;
       }
@@ -2494,7 +2484,7 @@ static void menu_list_free(
          if (!menu_list->selection_buf[i])
             continue;
 
-         menu_list_free_list(p_rarch,
+         menu_list_free_list(menu_driver_ctx,
                menu_list->selection_buf[i]);
          menu_list->selection_buf[i] = NULL;
       }
@@ -2505,7 +2495,7 @@ static void menu_list_free(
    free(menu_list);
 }
 
-static menu_list_t *menu_list_new(struct rarch_state *p_rarch)
+static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
 {
    unsigned i;
    menu_list_t           *list = (menu_list_t*)malloc(sizeof(*list));
@@ -2549,7 +2539,7 @@ static menu_list_t *menu_list_new(struct rarch_state *p_rarch)
    return list;
 
 error:
-   menu_list_free(p_rarch, list);
+   menu_list_free(menu_driver_ctx, list);
    return NULL;
 }
 
@@ -2560,7 +2550,8 @@ static int menu_list_flush_stack_type(const char *needle, const char *label,
 }
 
 static bool menu_list_pop_stack(
-      struct rarch_state *p_rarch,
+      const menu_ctx_driver_t *menu_driver_ctx,
+      void *menu_userdata,
       menu_list_t *list,
       size_t idx,
       size_t *directory_ptr)
@@ -2575,20 +2566,22 @@ static bool menu_list_pop_stack(
       list_info.idx       = menu_list->size - 1;
       list_info.list_size = menu_list->size - 1;
 
-      menu_driver_list_free(p_rarch, &list_info);
+      menu_driver_list_free(menu_driver_ctx, &list_info);
    }
 
    file_list_pop(menu_list, directory_ptr);
-   if (  p_rarch->menu_driver_ctx &&
-         p_rarch->menu_driver_ctx->list_set_selection)
-      p_rarch->menu_driver_ctx->list_set_selection(p_rarch->menu_userdata,
+   if (  menu_driver_ctx &&
+         menu_driver_ctx->list_set_selection)
+      menu_driver_ctx->list_set_selection(menu_userdata,
             menu_list);
 
    return true;
 }
 
 static void menu_list_flush_stack(
-      struct rarch_state *p_rarch,
+      const menu_ctx_driver_t *menu_driver_ctx,
+      void *menu_userdata,
+      struct menu_state *menu_st,
       menu_list_t *list,
       size_t idx, const char *needle, unsigned final_type)
 {
@@ -2597,7 +2590,6 @@ static void menu_list_flush_stack(
    const char *label           = NULL;
    unsigned type               = 0;
    size_t entry_idx            = 0;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    file_list_t *menu_list      = MENU_LIST_GET(list, (unsigned)idx);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
@@ -2618,7 +2610,8 @@ static void menu_list_flush_stack(
       list_info.action         = 0;
       menu_driver_list_cache(&list_info);
 
-      menu_list_pop_stack(p_rarch,
+      menu_list_pop_stack(menu_driver_ctx,
+            menu_userdata,
             list, idx, &new_selection_ptr);
 
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
@@ -2674,10 +2667,9 @@ static int menu_entries_elem_get_first_char(
 }
 
 static void menu_navigation_add_scroll_index(
-      struct rarch_state *p_rarch,
+      struct menu_state *menu_st,
       size_t sel)
 {
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    menu_st->scroll.index_list[menu_st->scroll.index_size]   = sel;
 
    if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
@@ -2685,18 +2677,17 @@ static void menu_navigation_add_scroll_index(
 }
 
 static void menu_entries_build_scroll_indices(
-      struct rarch_state *p_rarch,
+      struct menu_state *menu_st,
       file_list_t *list)
 {
    int current;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    bool current_is_dir         = false;
    unsigned type               = 0;
    size_t i                    = 0;
 
    menu_st->scroll.index_size  = 0;
 
-   menu_navigation_add_scroll_index(p_rarch, 0);
+   menu_navigation_add_scroll_index(menu_st, 0);
 
    current                     = menu_entries_elem_get_first_char(list, 0);
    type                        = list->list[0].type;
@@ -2716,13 +2707,13 @@ static void menu_entries_build_scroll_indices(
          is_dir = true;
 
       if ((current_is_dir && !is_dir) || (first > current))
-         menu_navigation_add_scroll_index(p_rarch, i);
+         menu_navigation_add_scroll_index(menu_st, i);
 
       current        = first;
       current_is_dir = is_dir;
    }
 
-   menu_navigation_add_scroll_index(p_rarch, list->size - 1);
+   menu_navigation_add_scroll_index(menu_st, list->size - 1);
 }
 
 /**
@@ -2733,15 +2724,14 @@ static void menu_entries_build_scroll_indices(
  * Ensure it doesn't overflow.
  **/
 static bool menu_entries_refresh(
-      struct rarch_state *p_rarch,
+      struct menu_state *menu_st,
       file_list_t *list)
 {
    size_t list_size;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    size_t          selection   = menu_st->selection_ptr;
 
    if (list->size)
-      menu_entries_build_scroll_indices(p_rarch, list);
+      menu_entries_build_scroll_indices(menu_st, list);
 
    list_size                    = menu_entries_get_size();
 
@@ -2873,17 +2863,17 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    return MENU_LIST_GET_SELECTION(menu_list, (unsigned)idx);
 }
 
-static void menu_entries_list_deinit(struct rarch_state *p_rarch)
+static void menu_entries_list_deinit(
+      const menu_ctx_driver_t *menu_driver_ctx,
+      struct menu_state *menu_st)
 {
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    if (menu_st->entries.list)
-      menu_list_free(p_rarch, menu_st->entries.list);
+      menu_list_free(menu_driver_ctx, menu_st->entries.list);
    menu_st->entries.list          = NULL;
 }
 
-static void menu_entries_settings_deinit(struct rarch_state *p_rarch)
+static void menu_entries_settings_deinit(struct menu_state *menu_st)
 {
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_setting_free(menu_st->entries.list_settings);
    if (menu_st->entries.list_settings)
       free(menu_st->entries.list_settings);
@@ -2891,10 +2881,12 @@ static void menu_entries_settings_deinit(struct rarch_state *p_rarch)
 }
 
 
-static bool menu_entries_init(struct rarch_state *p_rarch)
+static bool menu_entries_init(
+      struct menu_state *menu_st,
+      const menu_ctx_driver_t *menu_driver_ctx
+      )
 {
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
-   if (!(menu_st->entries.list = (menu_list_t*)menu_list_new(p_rarch)))
+   if (!(menu_st->entries.list = (menu_list_t*)menu_list_new(menu_driver_ctx)))
       goto error;
 
    menu_setting_ctl(MENU_SETTING_CTL_NEW, &menu_st->entries.list_settings);
@@ -2905,8 +2897,8 @@ static bool menu_entries_init(struct rarch_state *p_rarch)
    return true;
 
 error:
-   menu_entries_settings_deinit(p_rarch);
-   menu_entries_list_deinit(p_rarch);
+   menu_entries_settings_deinit(menu_st);
+   menu_entries_list_deinit(menu_driver_ctx, menu_st);
 
    return false;
 }
@@ -3001,7 +2993,7 @@ void menu_entries_append(
    file_list_set_actiondata(list, idx, cbs);
 
    if (list)
-      menu_cbs_init(p_rarch,
+      menu_cbs_init(p_rarch->menu_driver_ctx,
             list, cbs, path, label, type, idx);
 }
 
@@ -3094,7 +3086,7 @@ bool menu_entries_append_enum(
       cbs->setting                 = menu_setting_find_enum(enum_idx);
 
    if (!string_is_equal(menu_ident, "null") && list)
-      menu_cbs_init(p_rarch,
+      menu_cbs_init(p_rarch->menu_driver_ctx,
             list, cbs, path, label, type, idx);
 
    return true;
@@ -3177,7 +3169,7 @@ void menu_entries_prepend(file_list_t *list,
    file_list_set_actiondata(list, idx, cbs);
 
    if (list)
-      menu_cbs_init(p_rarch,
+      menu_cbs_init(p_rarch->menu_driver_ctx,
             list, cbs, path, label, type, idx);
 }
 
@@ -3211,7 +3203,10 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type)
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (menu_list)
-      menu_list_flush_stack(p_rarch, 
+      menu_list_flush_stack(
+            p_rarch->menu_driver_ctx, 
+            p_rarch->menu_userdata,
+            menu_st,
             menu_list, 0, needle, final_type);
 }
 
@@ -3232,7 +3227,8 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
          list_info.action       = 0;
          menu_driver_list_cache(&list_info);
       }
-      menu_list_pop_stack(p_rarch, menu_list, idx, ptr);
+      menu_list_pop_stack(p_rarch->menu_driver_ctx,
+            p_rarch->menu_userdata, menu_list, idx, ptr);
 
       if (animate)
          menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
@@ -3320,8 +3316,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
       case MENU_ENTRIES_CTL_REFRESH:
          if (!data)
             return false;
-         return menu_entries_refresh(p_rarch,
-               (file_list_t*)data);
+         return menu_entries_refresh(menu_st, (file_list_t*)data);
       case MENU_ENTRIES_CTL_CLEAR:
          {
             unsigned i;
@@ -3356,21 +3351,16 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 }
 
 static void menu_display_common_image_upload(
-      struct rarch_state *p_rarch,
-      void *task_data,
+      const menu_ctx_driver_t *menu_driver_ctx,
+      void *menu_userdata,
+      struct texture_image *img,
       void *user_data,
       unsigned type)
 {
-   menu_ctx_load_image_t load_image_info;
-   struct texture_image      *img = (struct texture_image*)task_data;
-
-   load_image_info.data           = img;
-   load_image_info.type           = (enum menu_image_type)type;
-
-   if (     p_rarch->menu_driver_ctx 
-         && p_rarch->menu_driver_ctx->load_image)
-      p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
-            load_image_info.data, load_image_info.type);
+   if (     menu_driver_ctx 
+         && menu_driver_ctx->load_image)
+      menu_driver_ctx->load_image(menu_userdata,
+            img, (enum menu_image_type)type);
 
    image_texture_free(img);
    free(img);
@@ -3387,7 +3377,11 @@ void menu_display_handle_thumbnail_upload(
       void *user_data, const char *err)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
-   menu_display_common_image_upload(p_rarch, task_data, user_data,
+   menu_display_common_image_upload(
+         p_rarch->menu_driver_ctx,
+         p_rarch->menu_userdata,
+         (struct texture_image*)task_data,
+         user_data,
          MENU_IMAGE_THUMBNAIL);
 }
 
@@ -3397,7 +3391,11 @@ void menu_display_handle_left_thumbnail_upload(
       void *user_data, const char *err)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
-   menu_display_common_image_upload(p_rarch, task_data, user_data,
+   menu_display_common_image_upload(
+         p_rarch->menu_driver_ctx,
+         p_rarch->menu_userdata,
+         (struct texture_image*)task_data,
+         user_data,
          MENU_IMAGE_LEFT_THUMBNAIL);
 }
 #endif
@@ -3408,7 +3406,11 @@ void menu_display_handle_savestate_thumbnail_upload(
       void *user_data, const char *err)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
-   menu_display_common_image_upload(p_rarch, task_data, user_data,
+   menu_display_common_image_upload(
+         p_rarch->menu_driver_ctx,
+         p_rarch->menu_userdata,
+         (struct texture_image*)task_data,
+         user_data,
          MENU_IMAGE_SAVESTATE_THUMBNAIL);
 }
 
@@ -3421,7 +3423,11 @@ void menu_display_handle_wallpaper_upload(
       void *user_data, const char *err)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
-   menu_display_common_image_upload(p_rarch, task_data, user_data,
+   menu_display_common_image_upload(
+         p_rarch->menu_driver_ctx,
+         p_rarch->menu_userdata,
+         (struct texture_image*)task_data,
+         user_data,
          MENU_IMAGE_WALLPAPER);
 }
 
@@ -3495,7 +3501,7 @@ static bool menu_init(struct rarch_state *p_rarch)
     * initialised */
    menu_input_reset(p_rarch);
 
-   if (!menu_entries_init(p_rarch))
+   if (!menu_entries_init(&p_rarch->menu_driver_state, p_rarch->menu_driver_ctx))
       return false;
 
 #ifdef HAVE_CONFIGFILE
@@ -4307,12 +4313,12 @@ retro_time_t menu_driver_get_current_time(void)
 }
 
 static void menu_driver_list_free(
-      struct rarch_state *p_rarch,
+      const menu_ctx_driver_t *menu_driver_ctx,
       menu_ctx_list_t *list)
 {
-   if (p_rarch->menu_driver_ctx)
-      if (p_rarch->menu_driver_ctx->list_free)
-         p_rarch->menu_driver_ctx->list_free(
+   if (menu_driver_ctx)
+      if (menu_driver_ctx->list_free)
+         menu_driver_ctx->list_free(
                list->list, list->idx, list->list_size);
 
    if (list->list)
@@ -4891,8 +4897,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             gfx_animation_deinit(&p_rarch->anim);
             gfx_display_free();
 
-            menu_entries_settings_deinit(p_rarch);
-            menu_entries_list_deinit(p_rarch);
+            menu_entries_settings_deinit(menu_st);
+            menu_entries_list_deinit(p_rarch->menu_driver_ctx, menu_st);
 
             if (p_rarch->menu_driver_data->core_buf)
                free(p_rarch->menu_driver_data->core_buf);
@@ -6548,7 +6554,7 @@ static bool netplay_should_skip(netplay_t *netplay)
  * Returns: true (1) if successful, otherwise false (0).
  */
 static bool get_self_input_state(
-      struct rarch_state *p_rarch,
+      bool block_libretro_input,
       netplay_t *netplay)
 {
    unsigned i;
@@ -6596,7 +6602,7 @@ static bool get_self_input_state(
 
       /* First frame we always give zero input since relying on
        * input from first frame screws up when we use -F 0. */
-      if (     !p_rarch->input_driver_block_libretro_input 
+      if (     !block_libretro_input 
             &&  netplay->self_frame_count > 0)
       {
          uint32_t *state        = istate->data;
@@ -6718,14 +6724,15 @@ static bool init_netplay_deferred(
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool netplay_poll(
-      struct rarch_state *p_rarch,
+      bool block_libretro_input,
+      settings_t *settings,
       netplay_t *netplay)
 {
    int res;
    uint32_t client;
    size_t i;
 
-   if (!get_self_input_state(p_rarch, netplay))
+   if (!get_self_input_state(block_libretro_input, netplay))
       goto catastrophe;
 
    /* If we're not connected, we're done */
@@ -6764,7 +6771,6 @@ static bool netplay_poll(
       unsigned frames_ahead        = (netplay->run_frame_count > netplay->unread_frame_count) ?
          (netplay->run_frame_count - netplay->unread_frame_count) :
          0;
-      settings_t *settings         = p_rarch->configuration_settings;
       int input_latency_frames_min = settings->uints.netplay_input_latency_frames_min -
             (settings->bools.run_ahead_enabled ? settings->uints.run_ahead_frames : 0);
       int input_latency_frames_max = input_latency_frames_min + settings->uints.netplay_input_latency_frames_range;
@@ -6965,7 +6971,10 @@ void input_poll_net(void)
    if (!netplay_should_skip(netplay) && netplay && netplay->can_poll)
    {
       netplay->can_poll = false;
-      netplay_poll(p_rarch, netplay);
+      netplay_poll(
+            p_rarch->input_driver_block_libretro_input, 
+            p_rarch->configuration_settings,
+            netplay);
    }
 }
 
