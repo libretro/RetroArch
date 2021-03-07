@@ -2667,34 +2667,20 @@ static int menu_entries_elem_get_first_char(
    return ret;
 }
 
-static void menu_navigation_add_scroll_index(
-      struct menu_state *menu_st,
-      size_t sel)
-{
-   menu_st->scroll.index_list[menu_st->scroll.index_size]   = sel;
-
-   if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
-      menu_st->scroll.index_size++;
-}
-
 static void menu_entries_build_scroll_indices(
       struct menu_state *menu_st,
       file_list_t *list)
 {
-   int current;
-   bool current_is_dir         = false;
-   unsigned type               = 0;
-   size_t i                    = 0;
+   bool current_is_dir             = false;
+   size_t i                        = 0;
+   int current                     = menu_entries_elem_get_first_char(list, 0);
+   unsigned type                   = list->list[0].type;
 
-   menu_st->scroll.index_size  = 0;
-
-   menu_navigation_add_scroll_index(menu_st, 0);
-
-   current                     = menu_entries_elem_get_first_char(list, 0);
-   type                        = list->list[0].type;
+   menu_st->scroll.index_list[0]   = 0;
+   menu_st->scroll.index_size      = 1;
 
    if (type == FILE_TYPE_DIRECTORY)
-      current_is_dir = true;
+      current_is_dir               = true;
 
    for (i = 1; i < list->size; i++)
    {
@@ -2708,48 +2694,21 @@ static void menu_entries_build_scroll_indices(
          is_dir = true;
 
       if ((current_is_dir && !is_dir) || (first > current))
-         menu_navigation_add_scroll_index(menu_st, i);
+      {
+         /* Add scroll index */
+         menu_st->scroll.index_list[menu_st->scroll.index_size]   = i;
+         if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
+            menu_st->scroll.index_size++;
+      }
 
       current        = first;
       current_is_dir = is_dir;
    }
 
-   menu_navigation_add_scroll_index(menu_st, list->size - 1);
-}
-
-/**
- * Before a refresh, we could have deleted a
- * file on disk, causing selection_ptr to
- * suddendly be out of range.
- *
- * Ensure it doesn't overflow.
- **/
-static bool menu_entries_refresh(
-      struct menu_state *menu_st,
-      file_list_t *list)
-{
-   size_t list_size;
-   size_t          selection   = menu_st->selection_ptr;
-
-   if (list->size)
-      menu_entries_build_scroll_indices(menu_st, list);
-
-   list_size                    = menu_entries_get_size();
-
-   if ((selection >= list_size) && list_size)
-   {
-      size_t idx                = list_size - 1;
-      menu_st->selection_ptr    = idx;
-
-      menu_driver_navigation_set(true);
-   }
-   else if (!list_size)
-   {
-      bool pending_push = true;
-      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-   }
-
-   return true;
+   /* Add scroll index */
+   menu_st->scroll.index_list[menu_st->scroll.index_size]   = list->size - 1;
+   if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
+      menu_st->scroll.index_size++;
 }
 
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
@@ -3248,14 +3207,12 @@ size_t menu_entries_get_stack_size(size_t idx)
 
 size_t menu_entries_get_size(void)
 {
-   const file_list_t *list        = NULL;
    struct rarch_state   *p_rarch  = &rarch_st;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return 0;
-   list                           = MENU_LIST_GET_SELECTION(menu_list, 0);
-   return list->size;
+   return MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 }
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
@@ -3315,9 +3272,40 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          }
          break;
       case MENU_ENTRIES_CTL_REFRESH:
-         if (!data)
-            return false;
-         return menu_entries_refresh(menu_st, (file_list_t*)data);
+         /**
+          * Before a refresh, we could have deleted a
+          * file on disk, causing selection_ptr to
+          * suddendly be out of range.
+          *
+          * Ensure it doesn't overflow.
+          **/
+         {
+            size_t list_size;
+            file_list_t *list               = (file_list_t*)data;
+            if (!list)
+               return false;
+            if (list->size)
+               menu_entries_build_scroll_indices(menu_st, list);
+            list_size                       = menu_entries_get_size();
+
+            if (list_size)
+            {
+               size_t          selection    = menu_st->selection_ptr;
+               if (selection >= list_size)
+               {
+                  size_t idx                = list_size - 1;
+                  menu_st->selection_ptr    = idx;
+
+                  menu_driver_navigation_set(true);
+               }
+            }
+            else
+            {
+               bool pending_push = true;
+               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+            }
+         }
+         break;
       case MENU_ENTRIES_CTL_CLEAR:
          {
             unsigned i;
