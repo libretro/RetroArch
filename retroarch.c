@@ -746,27 +746,6 @@ bool menu_dialog_push_pending(bool push, enum menu_dialog_type type)
    return true;
 }
 
-static void menu_dialog_push(menu_dialog_t *p_dialog)
-{
-   const char *label;
-   menu_displaylist_info_t info;
-
-   if (!p_dialog->pending_push)
-      return;
-
-   menu_displaylist_info_init(&info);
-
-   info.list                 = menu_entries_get_menu_stack_ptr(0);
-   info.enum_idx             = MENU_ENUM_LABEL_HELP;
-
-   /* Set the label string, if it exists. */
-   label                     = msg_hash_to_str(MENU_ENUM_LABEL_HELP);
-   if (label)
-      info.label             = strdup(label);
-
-   menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
-}
-
 void menu_dialog_set_current_id(unsigned id)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -850,8 +829,11 @@ static int menu_input_key_bind_set_mode_common(
    unsigned bind_type             = 0;
    struct retro_keybind *keybind  = NULL;
    unsigned         index_offset  = setting->index_offset;
-   file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
-   size_t selection               = menu_navigation_get_selection();
+   struct rarch_state *p_rarch    = &rarch_st;
+   struct menu_state *menu_st     = &p_rarch->menu_driver_state;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+   size_t selection               = menu_st->selection_ptr;
 
    menu_displaylist_info_init(&info);
 
@@ -1847,7 +1829,7 @@ static int generic_menu_iterate(
             {
                size_t selection = menu_st->selection_ptr;
                menu_entries_pop_stack(&selection, 0, 0);
-               menu_navigation_set_selection(selection);
+               menu_st->selection_ptr      = selection;
             }
             else
                BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
@@ -2043,6 +2025,7 @@ static int generic_menu_iterate(
       case ITERATE_TYPE_DEFAULT:
          {
             menu_entry_t entry;
+            menu_list_t *menu_list = menu_st->entries.list;
             size_t selection       = menu_st->selection_ptr;
             size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
             /* FIXME: Crappy hack, needed for mouse controls
@@ -2068,7 +2051,24 @@ static int generic_menu_iterate(
             BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
             /* Have to defer it so we let settings refresh. */
-            menu_dialog_push(&p_rarch->dialog_st);
+            if (p_rarch->dialog_st.pending_push)
+            {
+               menu_dialog_t *p_dialog = &p_rarch->dialog_st;
+               const char *label;
+               menu_displaylist_info_t info;
+
+               menu_displaylist_info_init(&info);
+
+               info.list                 = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+               info.enum_idx             = MENU_ENUM_LABEL_HELP;
+
+               /* Set the label string, if it exists. */
+               label                     = msg_hash_to_str(MENU_ENUM_LABEL_HELP);
+               if (label)
+                  info.label             = strdup(label);
+
+               menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
+            }
          }
          break;
    }
@@ -2091,7 +2091,7 @@ static int generic_menu_iterate(
       size_t selection         = menu_st->selection_ptr;
       size_t new_selection_ptr = selection;
       menu_entries_pop_stack(&new_selection_ptr, 0, 0);
-      menu_navigation_set_selection(selection);
+      menu_st->selection_ptr   = selection;
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
@@ -2289,7 +2289,7 @@ int generic_menu_entry_action(
       command_event(CMD_EVENT_UNLOAD_CORE, NULL);
       menu_entries_flush_stack(menu_flush_to, 0);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
-      menu_navigation_set_selection(0);
+      menu_st->selection_ptr   = 0;
 
       p_rarch->menu_driver_state.pending_close_content = false;
    }
@@ -9787,9 +9787,11 @@ static void menu_input_search_cb(void *userdata, const char *str)
       if (menu_driver_search_push(str))
       {
          bool refresh = false;
+         struct rarch_state *p_rarch = &rarch_st;
+         struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
          /* Reset navigation pointer */
-         menu_navigation_set_selection(0);
+         menu_st->selection_ptr      = 0;
          menu_driver_navigation_set(false);
 
          /* Refresh menu */
@@ -9812,7 +9814,7 @@ static void menu_input_search_cb(void *userdata, const char *str)
 
       if (file_list_search(selection_buf, str, &idx))
       {
-         menu_navigation_set_selection(idx);
+         menu_st->selection_ptr      = idx;
          menu_driver_navigation_set(true);
       }
    }
@@ -23962,11 +23964,11 @@ static void menu_input_pointer_close_messagebox(struct rarch_state *p_rarch)
    /* Pop stack, if required */
    if (pop_stack)
    {
-      size_t selection     = menu_st->selection_ptr;
-      size_t new_selection = selection;
+      size_t selection            = menu_st->selection_ptr;
+      size_t new_selection        = selection;
 
       menu_entries_pop_stack(&new_selection, 0, 0);
-      menu_navigation_set_selection(selection);
+      menu_st->selection_ptr      = selection;
    }
 }
 
