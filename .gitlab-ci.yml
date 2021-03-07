@@ -457,6 +457,22 @@ build-retroarch-osx-arm64-metal:
     - tar -czf RetroArch.tar.gz RetroArch.app
     - rm -rf RetroArch.app
 
+# Mac OS Universal, Metal
+build-retroarch-osx-universal-metal:
+  tags:
+    - macosx
+  stage: build
+  variables:
+    XCARCHIVE_PATH=/pkg/apple/build/RetroArch
+  artifacts:
+    paths:
+    - RetroArch.zip
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - xcodebuild -project pkg/apple/RetroArch_Metal.xcodeproj -config Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/GitLabCI.xcconfig archive
+    - zip -qr RetroArch.zip ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.app
+
 build-retroarch-dingux-mips32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
   stage: build
