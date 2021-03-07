@@ -1659,12 +1659,11 @@ static enum action_iterate_type action_iterate_type(const char *label)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-static void get_current_menu_value(struct rarch_state *p_rarch,
+static void get_current_menu_value(struct menu_state *menu_st,
       char *s, size_t len)
 {
    menu_entry_t     entry;
    const char*      entry_label;
-   struct menu_state  *menu_st = &p_rarch->menu_driver_state;
 
    MENU_ENTRY_INIT(entry);
    entry.path_enabled          = false;
@@ -1681,12 +1680,11 @@ static void get_current_menu_value(struct rarch_state *p_rarch,
    strlcpy(s, entry_label, len);
 }
 
-static void get_current_menu_label(struct rarch_state *p_rarch,
+static void get_current_menu_label(struct menu_state *menu_st,
       char *s, size_t len)
 {
    menu_entry_t     entry;
    const char*      entry_label;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
    MENU_ENTRY_INIT(entry);
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
@@ -1699,11 +1697,10 @@ static void get_current_menu_label(struct rarch_state *p_rarch,
    strlcpy(s, entry_label, len);
 }
 
-static void get_current_menu_sublabel(struct rarch_state *p_rarch,
+static void get_current_menu_sublabel(struct menu_state *menu_st,
       char *s, size_t len)
 {
    menu_entry_t     entry;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
    MENU_ENTRY_INIT(entry);
    entry.path_enabled          = false;
@@ -1716,7 +1713,7 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
 #endif
 
 static void menu_input_set_pointer_visibility(
-      struct rarch_state *p_rarch,
+      menu_input_pointer_hw_state_t *pointer_hw_state,
       menu_input_t *menu_input,
       retro_time_t current_time)
 {
@@ -1725,7 +1722,6 @@ static void menu_input_set_pointer_visibility(
    bool hide_cursor                                = false;
    static bool cursor_hidden                       = false;
    static retro_time_t end_time                    = 0;
-   menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
 
    /* Ensure that mouse cursor is hidden when not in use */
    if ((menu_input->pointer.type == MENU_POINTER_MOUSE) 
@@ -1938,7 +1934,8 @@ static int generic_menu_iterate(
                               MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
                      char current_sublabel[255];
-                     get_current_menu_sublabel(p_rarch,
+                     get_current_menu_sublabel(
+                           &p_rarch->menu_driver_state,
                            current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
                         accessibility_speak_priority(p_rarch,
@@ -2105,7 +2102,8 @@ static int generic_menu_iterate(
       else
          ret = menu_input_post_iterate(p_rarch, action,
                current_time);
-      menu_input_set_pointer_visibility(p_rarch, menu_input, current_time);
+      menu_input_set_pointer_visibility(
+            &p_rarch->menu_input_pointer_hw_state, menu_input, current_time);
    }
 
    if (ret)
@@ -2206,7 +2204,7 @@ int generic_menu_entry_action(
 
       strlcpy(title_name, "", sizeof(title_name));
       strlcpy(current_label, "", sizeof(current_label));
-      get_current_menu_value(p_rarch, current_value, sizeof(current_value));
+      get_current_menu_value(&p_rarch->menu_driver_state, current_value, sizeof(current_value));
 
       switch (action)
       {
@@ -2224,7 +2222,7 @@ int generic_menu_entry_action(
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_CANCEL:
             menu_entries_get_title(title_name, sizeof(title_name));
-            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
+            get_current_menu_label(&p_rarch->menu_driver_state, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_UP:
          case MENU_ACTION_DOWN:
@@ -2233,7 +2231,7 @@ int generic_menu_entry_action(
          case MENU_ACTION_SELECT:
          case MENU_ACTION_SEARCH:
          case MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL:
-            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
+            get_current_menu_label(&p_rarch->menu_driver_state, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_SCAN:
          case MENU_ACTION_INFO:
@@ -2262,7 +2260,7 @@ int generic_menu_entry_action(
 
    if (p_rarch->menu_driver_state.pending_close_content)
    {
-      menu_handle_t       *menu = menu_driver_get_ptr();
+      menu_handle_t       *menu = p_rarch->menu_driver_data;
       const char *content_path  = path_get(RARCH_PATH_CONTENT);
       const char *menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
 
