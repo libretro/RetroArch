@@ -13709,7 +13709,11 @@ bool command_event(enum event_command cmd, void *data)
 
          core_reset();
 #ifdef HAVE_CHEEVOS
-         rcheevos_reset_game();
+#ifdef HAVE_GFX_WIDGETS
+         rcheevos_reset_game(p_rarch->widgets_active);
+#else
+         rcheevos_reset_game(false);
+#endif
 #endif
 #if HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);

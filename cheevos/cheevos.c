@@ -925,7 +925,7 @@ static rcheevos_racheevo_t* rcheevos_find_cheevo(unsigned id)
    return NULL;
 }
 
-static void rcheevos_award_achievement(rcheevos_locals_t *locals, rcheevos_racheevo_t* cheevo)
+static void rcheevos_award_achievement(rcheevos_locals_t *locals, rcheevos_racheevo_t* cheevo, bool widgets_ready)
 {
    char buffer[256] = "";
 
@@ -945,7 +945,6 @@ static void rcheevos_award_achievement(rcheevos_locals_t *locals, rcheevos_rache
    /* Show the OSD message. */
    {
 #if defined(HAVE_GFX_WIDGETS)
-      bool widgets_ready = gfx_widgets_ready();
       if (widgets_ready)
          gfx_widgets_push_achievement(cheevo->title, cheevo->badge);
       else
@@ -1031,7 +1030,7 @@ static rcheevos_ralboard_t* rcheevos_find_lboard(unsigned id)
 }
 
 static void rcheevos_lboard_submit(rcheevos_locals_t *locals,
-      rcheevos_ralboard_t* lboard, int value)
+      rcheevos_ralboard_t* lboard, int value, bool widgets_ready)
 {
    char buffer[256];
    char formatted_value[16];
@@ -1046,7 +1045,7 @@ static void rcheevos_lboard_submit(rcheevos_locals_t *locals,
 
 #if defined(HAVE_GFX_WIDGETS)
    /* Hide the tracker */
-   if (gfx_widgets_ready())
+   if (widgets_ready)
       gfx_widgets_set_leaderboard_display(lboard->id, NULL);
 #endif
 
@@ -1064,7 +1063,8 @@ static void rcheevos_lboard_submit(rcheevos_locals_t *locals,
    }
 }
 
-static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard)
+static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard,
+      bool widgets_ready)
 {
    char buffer[256];
    if (!lboard)
@@ -1073,7 +1073,7 @@ static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard)
    CHEEVOS_LOG(RCHEEVOS_TAG "Leaderboard %u canceled: %s\n", lboard->id, lboard->title);
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_ready())
+   if (widgets_ready)
       gfx_widgets_set_leaderboard_display(lboard->id, NULL);
 #endif
 
@@ -1085,7 +1085,8 @@ static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard)
    }
 }
 
-static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard, int value)
+static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard, int value,
+      bool widgets_ready)
 {
    char buffer[256];
    if (!lboard)
@@ -1094,7 +1095,7 @@ static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard, int value)
    CHEEVOS_LOG(RCHEEVOS_TAG "Leaderboard %u started: %s\n", lboard->id, lboard->title);
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_ready() && rcheevos_locals.leaderboard_trackers)
+   if (widgets_ready && rcheevos_locals.leaderboard_trackers)
    {
       rc_format_value(buffer, sizeof(buffer), value, lboard->format);
       gfx_widgets_set_leaderboard_display(lboard->id, buffer);
@@ -1114,12 +1115,13 @@ static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard, int value)
 }
 
 #if defined(HAVE_GFX_WIDGETS)
-static void rcheevos_lboard_updated(rcheevos_ralboard_t* lboard, int value)
+static void rcheevos_lboard_updated(rcheevos_ralboard_t* lboard, int value,
+      bool widgets_ready)
 {
    if (!lboard)
       return;
 
-   if (gfx_widgets_ready() && rcheevos_locals.leaderboard_trackers)
+   if (widgets_ready && rcheevos_locals.leaderboard_trackers)
    {
       char buffer[32];
       rc_format_value(buffer, sizeof(buffer), value, lboard->format);
@@ -1133,11 +1135,11 @@ const char* rcheevos_get_richpresence(void)
    return rc_runtime_get_richpresence(&rcheevos_locals.runtime);
 }
 
-void rcheevos_reset_game(void)
+void rcheevos_reset_game(bool widgets_ready)
 {
 #if defined(HAVE_GFX_WIDGETS)
    /* Hide any visible trackers */
-   if (gfx_widgets_ready())
+   if (widgets_ready)
    {
       rcheevos_ralboard_t* lboard = rcheevos_locals.patchdata.lboards;
       unsigned i;
@@ -1827,28 +1829,35 @@ void rcheevos_validate_config_settings(void)
 
 static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_event)
 {
+#if defined(HAVE_GFX_WIDGETS)
+   bool widgets_ready = gfx_widgets_ready();
+#else
+   bool widgets_ready = false;
+#endif
+
    switch (runtime_event->type)
    {
       case RC_RUNTIME_EVENT_ACHIEVEMENT_TRIGGERED:
-         rcheevos_award_achievement(&rcheevos_locals, rcheevos_find_cheevo(runtime_event->id));
+         rcheevos_award_achievement(&rcheevos_locals, rcheevos_find_cheevo(runtime_event->id), widgets_ready);
          break;
 
       case RC_RUNTIME_EVENT_LBOARD_STARTED:
-         rcheevos_lboard_started(rcheevos_find_lboard(runtime_event->id), runtime_event->value);
+         rcheevos_lboard_started(rcheevos_find_lboard(runtime_event->id), runtime_event->value, widgets_ready);
          break;
 
 #if defined(HAVE_GFX_WIDGETS)
       case RC_RUNTIME_EVENT_LBOARD_UPDATED:
-         rcheevos_lboard_updated(rcheevos_find_lboard(runtime_event->id), runtime_event->value);
+         rcheevos_lboard_updated(rcheevos_find_lboard(runtime_event->id), runtime_event->value, widgets_ready);
          break;
 #endif
 
       case RC_RUNTIME_EVENT_LBOARD_CANCELED:
-         rcheevos_lboard_canceled(rcheevos_find_lboard(runtime_event->id));
+         rcheevos_lboard_canceled(rcheevos_find_lboard(runtime_event->id),
+               widgets_ready);
          break;
 
       case RC_RUNTIME_EVENT_LBOARD_TRIGGERED:
-         rcheevos_lboard_submit(&rcheevos_locals, rcheevos_find_lboard(runtime_event->id), runtime_event->value);
+         rcheevos_lboard_submit(&rcheevos_locals, rcheevos_find_lboard(runtime_event->id), runtime_event->value, widgets_ready);
          break;
 
       default:
