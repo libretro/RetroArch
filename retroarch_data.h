@@ -2774,6 +2774,8 @@ static void *null_menu_init(void **userdata, bool video_is_threaded)
       return NULL;
    return menu;
 }
+static int null_menu_list_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx) { return 0; }
 
 static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_texture */
@@ -2805,7 +2807,7 @@ static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* list_get_size */
   NULL,  /* list_get_entry */
   NULL,  /* list_set_selection */
-  NULL,  /* bind_init */
+  null_menu_list_bind_init,
   NULL,  /* load_image */
   "null",
   NULL,  /* environ */

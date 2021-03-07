@@ -3047,7 +3047,6 @@ bool menu_entries_append_enum(
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
-   const char *menu_ident          = menu_driver_ident();
    struct rarch_state   *p_rarch   = &rarch_st;
 
    if (!list || !label)
@@ -3122,9 +3121,8 @@ bool menu_entries_append_enum(
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
       cbs->setting                 = menu_setting_find_enum(enum_idx);
 
-   if (!string_is_equal(menu_ident, "null") && list)
-      menu_cbs_init(p_rarch->menu_driver_ctx,
-            list, cbs, path, label, type, idx);
+   menu_cbs_init(p_rarch->menu_driver_ctx,
+         list, cbs, path, label, type, idx);
 
    return true;
 }
@@ -3205,9 +3203,8 @@ void menu_entries_prepend(file_list_t *list,
 
    file_list_set_actiondata(list, idx, cbs);
 
-   if (list)
-      menu_cbs_init(p_rarch->menu_driver_ctx,
-            list, cbs, path, label, type, idx);
+   menu_cbs_init(p_rarch->menu_driver_ctx,
+         list, cbs, path, label, type, idx);
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
