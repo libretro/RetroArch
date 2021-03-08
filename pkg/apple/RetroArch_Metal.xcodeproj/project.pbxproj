@@ -116,7 +116,6 @@
 		05366521213F8BE5007E7EA0 /* filedropwidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = filedropwidget.cpp; sourceTree = "<group>"; };
 		05366522213F8BE5007E7EA0 /* thumbnaildownload.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thumbnaildownload.cpp; sourceTree = "<group>"; };
 		05366523213F8BE5007E7EA0 /* playlist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = playlist.cpp; sourceTree = "<group>"; };
-		05366524213F8BE5007E7EA0 /* ui_qt_themes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui_qt_themes.h; sourceTree = "<group>"; };
 		05366525213F8BE5007E7EA0 /* shaderparamsdialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = shaderparamsdialog.h; sourceTree = "<group>"; };
 		05366526213F8BE5007E7EA0 /* flowlayout.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = flowlayout.cpp; sourceTree = "<group>"; };
 		05366527213F8BE5007E7EA0 /* viewoptionsdialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewoptionsdialog.cpp; sourceTree = "<group>"; };
@@ -629,7 +628,6 @@
 				05366512213F8BE5007E7EA0 /* thumbnailpackdownload.cpp */,
 				05366517213F8BE5007E7EA0 /* ui_qt_load_core_window.cpp */,
 				05366519213F8BE5007E7EA0 /* ui_qt_load_core_window.h */,
-				05366524213F8BE5007E7EA0 /* ui_qt_themes.h */,
 				0536652C213F8BE5007E7EA0 /* updateretroarch.cpp */,
 				05366527213F8BE5007E7EA0 /* viewoptionsdialog.cpp */,
 				05366515213F8BE5007E7EA0 /* viewoptionsdialog.h */,
