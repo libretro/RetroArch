@@ -48,6 +48,11 @@
 
 #include "ui_cocoa.h"
 
+typedef struct ui_application_cocoa
+{
+   void *empty;
+} ui_application_cocoa_t;
+
 /* TODO/FIXME - static global variables */
 static int waiting_argc;
 static char **waiting_argv;
