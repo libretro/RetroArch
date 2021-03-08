@@ -457,21 +457,34 @@ build-retroarch-osx-arm64-metal:
     - tar -czf RetroArch.tar.gz RetroArch.app
     - rm -rf RetroArch.app
 
-# Mac OS Universal, Metal
-build-retroarch-osx-universal-metal:
+.build-retroarch-macos-xcode:
+  # Metal/Universal x86_64 arm64 is default
   tags:
     - macosx-packaging
   stage: build
   variables:
-    XCARCHIVE_PATH: pkg/apple/build/RetroArch
+    XCARCHIVE_PATH: pkg/apple/build/RetroArchUniversal
+    XCPROJECT_NAME: RetroArch_Metal
+    XCCONFIG: GitLabCI.xcconfig
   artifacts:
     paths:
-    - RetroArch.zip
+    - ${XCPROJECT_NAME}.zip
     expire_in: 10 min
   dependencies: []
   script:
-    - xcodebuild -project pkg/apple/RetroArch_Metal.xcodeproj -config Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/GitLabCI.xcconfig archive
-    - zip -qr RetroArch.zip ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.app
+    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
+    - zip -qr ${XCPROJECT_NAME}.zip ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.app
+
+# Mac OS Universal, Metal
+build-retroarch-osx-universal-metal:
+  extends: .build-retroarch-macos-xcode
+
+build-retroarch-osx-opengl-x64:
+  extends: .build-retroarch-macos-xcode
+  variables:
+    XCARCHIVE_PATH: pkg/apple/build/RetroArchOpenGL
+    XCPROJECT_NAME: RetroArch
+    XCCONFIG: OpenGL_GitLabCI.xcconfig
 
 build-retroarch-dingux-mips32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
