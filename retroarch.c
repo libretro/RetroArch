@@ -22212,7 +22212,7 @@ static void input_driver_poll(void)
 #ifdef HAVE_MENU
    if (!p_rarch->menu_driver_alive)
 #endif
-   if (input_remap_binds_enable && p_rarch->input_driver_mapper)
+   if (input_remap_binds_enable)
    {
 #ifdef HAVE_OVERLAY
       input_overlay_t *overlay_pointer = (input_overlay_t*)p_rarch->overlay_ptr;
@@ -22558,41 +22558,45 @@ static int16_t input_state_device(
             else
 #endif
             {
-               bool bind_valid = p_rarch->libretro_input_binds[port]
-                  && p_rarch->libretro_input_binds[port][id].valid;
-               if (!(input_remap_binds_enable &&
-                        id != settings->uints.input_remap_ids[port][id])
-                     && bind_valid)
+               if (input_remap_binds_enable)
                {
-                  if (button_mask)
-                  {
-                     if (ret & (1 << id))
-                        res |= (1 << id);
-                  }
-                  else
-                     res = ret;
+                  bool bind_valid = p_rarch->libretro_input_binds[port]
+                     && p_rarch->libretro_input_binds[port][id].valid;
 
-#ifdef HAVE_OVERLAY
-                  if (     p_rarch->overlay_ptr
-                        && p_rarch->overlay_ptr->alive
-                        && port == 0
+                  if (!
+                        (      bind_valid
+                            && id != settings->uints.input_remap_ids[port][id]
+                        )
                      )
                   {
+                     if (button_mask)
+                     {
+                        if (ret & (1 << id))
+                           res |= (1 << id);
+                     }
+                     else
+                        res = ret;
+
+                  }
+
+                  if (BIT256_GET(p_rarch->input_driver_mapper->buttons[port], id))
+                     res = 1;
+               }
+
+#ifdef HAVE_OVERLAY
+               if (port == 0)
+               {
+                  if (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive)
                      if ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, id)))
                         res |= 1;
-                  }
-#endif
                }
+#endif
             }
          }
 
-         if (input_remap_binds_enable && p_rarch->input_driver_mapper)
-            if (BIT256_GET(p_rarch->input_driver_mapper->buttons[port], id))
-               res = 1;
-
          /* Don't allow turbo for D-pad. */
-         if ((id < RETRO_DEVICE_ID_JOYPAD_UP) ||
-             ((id > RETRO_DEVICE_ID_JOYPAD_RIGHT) &&
+         if (     (id  < RETRO_DEVICE_ID_JOYPAD_UP)    ||
+             (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT) &&
                   (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
          {
             /*
@@ -22716,7 +22720,7 @@ static int16_t input_state_device(
                }
             }
 #endif
-            if (input_remap_binds_enable && p_rarch->input_driver_mapper)
+            if (input_remap_binds_enable)
                if (MAPPER_GET_KEY(p_rarch->input_driver_mapper, id))
                   res |= 1;
          }
@@ -24843,29 +24847,11 @@ static void input_driver_deinit_command(struct rarch_state *p_rarch)
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-static void input_driver_deinit_remote(struct rarch_state *p_rarch)
-{
-   if (p_rarch->input_driver_remote)
-      input_remote_free(p_rarch->input_driver_remote,
-            p_rarch->input_driver_max_users);
-   p_rarch->input_driver_remote = NULL;
-}
-#endif
-
-static void input_driver_deinit_mapper(struct rarch_state *p_rarch)
-{
-   if (p_rarch->input_driver_mapper)
-      free(p_rarch->input_driver_mapper);
-   p_rarch->input_driver_mapper = NULL;
-}
-
-#ifdef HAVE_NETWORKGAMEPAD
-static void input_driver_init_remote(
+static input_remote_t *input_driver_init_remote(
       settings_t *settings,
       struct rarch_state *p_rarch)
 {
    unsigned network_remote_base_port = settings->uints.network_remote_base_port;
-
    input_remote_t *remote            = input_remote_new(
          settings,
          p_rarch,
@@ -24875,30 +24861,17 @@ static void input_driver_init_remote(
    if (!remote)
    {
       RARCH_ERR("Failed to initialize remote gamepad interface.\n");
-      return;
+      return NULL;
    }
 
-   p_rarch->input_driver_remote      = remote;
+   return remote;
 }
 #endif
 
-static bool input_driver_init_mapper(struct rarch_state *p_rarch)
+static input_mapper_t *input_driver_init_mapper(void)
 {
-   input_mapper_t *handle        = NULL;
-   settings_t *settings          = p_rarch->configuration_settings;
-   bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
-
-   if (!input_remap_binds_enable)
-      return false;
-
-   handle = (input_mapper_t*)calloc(1, sizeof(*p_rarch->input_driver_mapper));
-
-   if (!handle)
-      return false;
-
-   p_rarch->input_driver_mapper = handle;
-
-   return true;
+   input_mapper_t *handle        = (input_mapper_t*)calloc(1, sizeof(*handle));
+   return handle;
 }
 
 float *input_driver_get_float(enum input_action action)
@@ -35107,12 +35080,19 @@ bool retroarch_main_init(int argc, char *argv[])
    input_driver_init_command(p_rarch);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
-   input_driver_deinit_remote(p_rarch);
+   if (p_rarch->input_driver_remote)
+      input_remote_free(p_rarch->input_driver_remote,
+            p_rarch->input_driver_max_users);
+   p_rarch->input_driver_remote    = NULL;
    if (p_rarch->configuration_settings->bools.network_remote_enable)
-      input_driver_init_remote(p_rarch->configuration_settings, p_rarch);
+      p_rarch->input_driver_remote = input_driver_init_remote(
+            p_rarch->configuration_settings, p_rarch);
 #endif
-   input_driver_deinit_mapper(p_rarch);
-   input_driver_init_mapper(p_rarch);
+   if (p_rarch->input_driver_mapper)
+      free(p_rarch->input_driver_mapper);
+   p_rarch->input_driver_mapper = NULL;
+   if (p_rarch->configuration_settings->bools.input_remap_binds_enable)
+      p_rarch->input_driver_mapper = input_driver_init_mapper();
 #ifdef HAVE_REWIND
    command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
@@ -35699,9 +35679,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          input_driver_deinit_command(p_rarch);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
-         input_driver_deinit_remote(p_rarch);
+         if (p_rarch->input_driver_remote)
+            input_remote_free(p_rarch->input_driver_remote,
+                  p_rarch->input_driver_max_users);
+         p_rarch->input_driver_remote = NULL;
 #endif
-         input_driver_deinit_mapper(p_rarch);
+         if (p_rarch->input_driver_mapper)
+            free(p_rarch->input_driver_mapper);
+         p_rarch->input_driver_mapper = NULL;
 
 #ifdef HAVE_THREADS
          retroarch_autosave_deinit(p_rarch);
