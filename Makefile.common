@@ -487,7 +487,6 @@ endif
 
 ifeq ($(HAVE_QT), 1)
    OBJ += ui/drivers/ui_qt.o \
-          ui/drivers/qt/ui_qt_load_core_window.o \
           ui/drivers/qt/gridview.o \
           ui/drivers/qt/qt_dialogs.o \
           ui/drivers/qt/qt_widgets.o \

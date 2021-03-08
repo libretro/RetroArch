@@ -14,6 +14,47 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QApplication>
+#include <QAbstractEventDispatcher>
+#include <QtWidgets>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+#include <QtCore/QString>
+#include <QDesktopWidget>
+#include <QtGlobal>
+#include <QCloseEvent>
+#include <QResizeEvent>
+#include <QStyle>
+#include <QTimer>
+#include <QLabel>
+#include <QFileDialog>
+#include <QFileSystemModel>
+#include <QListWidgetItem>
+#include <QTableWidgetItem>
+#include <QHash>
+#include <QPushButton>
+#include <QToolButton>
+#include <QMenu>
+#include <QDockWidget>
+#include <QList>
+#include <QInputDialog>
+#include <QMimeData>
+#include <QProgressDialog>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QtConcurrentRun>
+#include <QtNetwork>
+
+#include "ui_qt.h"
+#include "qt/gridview.h"
+#include "qt/ui_qt_themes.h"
+#include "qt/ui_qt_load_core_window.h"
+#include "qt/coreinfodialog.h"
+#include "qt/playlistentrydialog.h"
+#include "qt/shaderparamsdialog.h"
+#include "qt/coreoptionsdialog.h"
+#include "qt/viewoptionsdialog.h"
+
 #ifndef CXX_BUILD
 extern "C" {
 #endif
@@ -22,6 +63,7 @@ extern "C" {
 #include <file/archive_file.h>
 #include <retro_timers.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #ifdef Q_OS_UNIX
 #include <locale.h>
@@ -40,9 +82,12 @@ extern "C" {
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../../core_info.h"
+#include "../../command.h"
 #include "../ui_companion_driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
+#include "../../frontend/frontend_driver.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -58,46 +103,6 @@ extern "C" {
 #ifndef CXX_BUILD
 }
 #endif
-
-#include "ui_qt.h"
-#include "qt/gridview.h"
-#include "qt/ui_qt_themes.h"
-#include "qt/ui_qt_load_core_window.h"
-#include "qt/coreinfodialog.h"
-#include "qt/playlistentrydialog.h"
-#include "qt/shaderparamsdialog.h"
-#include "qt/coreoptionsdialog.h"
-#include "qt/viewoptionsdialog.h"
-
-#include <QApplication>
-#include <QAbstractEventDispatcher>
-#include <QtWidgets>
-#include <QtWidgets/QFileDialog>
-#include <QtWidgets/QMessageBox>
-#include <QtCore/QString>
-#include <QDesktopWidget>
-#include <QtGlobal>
-#include <QCloseEvent>
-#include <QResizeEvent>
-#include <QStyle>
-#include <QTimer>
-#include <QLabel>
-#include <QFileSystemModel>
-#include <QListWidgetItem>
-#include <QTableWidgetItem>
-#include <QHash>
-#include <QPushButton>
-#include <QToolButton>
-#include <QMenu>
-#include <QDockWidget>
-#include <QList>
-#include <QInputDialog>
-#include <QMimeData>
-#include <QProgressDialog>
-#include <QDragEnterEvent>
-#include <QDropEvent>
-#include <QtConcurrentRun>
-#include <QtNetwork>
 
 #define INITIAL_WIDTH 1280
 #define INITIAL_HEIGHT 720
@@ -4557,4 +4562,266 @@ QStringList string_split_to_qt(QString str, char delim)
    }
 
    return list;
+}
+
+#define CORE_NAME_COLUMN    0
+#define CORE_VERSION_COLUMN 1
+
+LoadCoreTableWidget::LoadCoreTableWidget(QWidget *parent) :
+   QTableWidget(parent)
+{
+}
+
+void LoadCoreTableWidget::keyPressEvent(QKeyEvent *event)
+{
+   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+   {
+      event->accept();
+      emit enterPressed();
+   }
+   else
+      QTableWidget::keyPressEvent(event);
+}
+
+LoadCoreWindow::LoadCoreWindow(QWidget *parent) :
+   QMainWindow(parent)
+   ,m_layout()
+   ,m_table(new LoadCoreTableWidget())
+   ,m_statusLabel(new QLabel())
+{
+   QHBoxLayout             *hbox = new QHBoxLayout();
+   QPushButton *customCoreButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE));
+
+   connect(customCoreButton, SIGNAL(clicked()), this, SLOT(onLoadCustomCoreClicked()));
+   connect(m_table, SIGNAL(enterPressed()), this, SLOT(onCoreEnterPressed()));
+   connect(m_table, SIGNAL(cellDoubleClicked(int,int)), this, SLOT(onCellDoubleClicked(int,int)));
+
+   setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE));
+
+   setCentralWidget(new QWidget());
+
+   centralWidget()->setLayout(&m_layout);
+
+   hbox->addWidget(customCoreButton);
+   hbox->addItem(new QSpacerItem(width(),
+            20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+
+   m_layout.addWidget(m_table);
+   m_layout.addLayout(hbox);
+
+   statusBar()->addPermanentWidget(m_statusLabel);
+}
+
+void LoadCoreWindow::closeEvent(QCloseEvent *event)
+{
+   emit windowClosed();
+
+   QWidget::closeEvent(event);
+}
+
+void LoadCoreWindow::keyPressEvent(QKeyEvent *event)
+{
+   if (event->key() == Qt::Key_Escape)
+   {
+      event->accept();
+      close();
+   }
+   else
+      QMainWindow::keyPressEvent(event);
+}
+
+void LoadCoreWindow::setStatusLabel(QString label)
+{
+   m_statusLabel->setText(label);
+}
+
+void LoadCoreWindow::onCellDoubleClicked(int, int)
+{
+   onCoreEnterPressed();
+}
+
+void LoadCoreWindow::loadCore(const char *path)
+{
+   QProgressDialog progress(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE), QString(), 0, 0, this);
+   progress.setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE));
+   progress.setMinimumDuration(0);
+   progress.setValue(progress.minimum());
+   progress.show();
+
+   /* Because core loading will block, we need to go ahead and process pending events that would allow the progress dialog to fully show its contents before actually starting the core loading process. Must call processEvents() twice. */
+   qApp->processEvents();
+   qApp->processEvents();
+
+#ifdef HAVE_DYNAMIC
+   path_set(RARCH_PATH_CORE, path);
+
+   command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+   core_info_init_current_core();
+
+   if (!command_event(CMD_EVENT_LOAD_CORE, NULL))
+   {
+      QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE));
+      return;
+   }
+
+   setProperty("last_launch_with_index", -1);
+
+   emit coreLoaded();
+#endif
+}
+
+void LoadCoreWindow::onCoreEnterPressed()
+{
+   QByteArray pathArray;
+   const char               *pathData = NULL;
+   QTableWidgetItem *selectedCoreItem = 
+      m_table->item(m_table->currentRow(), CORE_NAME_COLUMN);
+   QVariantHash                  hash = selectedCoreItem->data(
+         Qt::UserRole).toHash();
+   QString                       path = hash["path"].toString();
+
+   pathArray.append(path);
+   pathData                           = pathArray.constData();
+
+   loadCore(pathData);
+}
+
+void LoadCoreWindow::onLoadCustomCoreClicked()
+{
+   QString path;
+   QByteArray pathArray;
+   char core_ext[255]            = {0};
+   char filters[PATH_MAX_LENGTH] = {0};
+   const char *pathData          = NULL;
+   settings_t *settings          = config_get_ptr();
+   const char *path_dir_libretro = settings->paths.directory_libretro;
+
+   frontend_driver_get_core_extension(core_ext, sizeof(core_ext));
+
+   strlcpy(filters, "Cores (*.", sizeof(filters));
+   strlcat(filters, core_ext, sizeof(filters));
+   strlcat(filters, ");;All Files (*.*)", sizeof(filters));
+
+   path                          = QFileDialog::getOpenFileName(
+         this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE),
+         path_dir_libretro, filters, NULL);
+
+   if (path.isEmpty())
+      return;
+
+   pathArray.append(path);
+   pathData                      = pathArray.constData();
+
+   loadCore(pathData);
+}
+
+void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
+{
+   int j;
+   unsigned i;
+   QStringList horizontal_header_labels;
+   core_info_list_t *cores = NULL;
+   QDesktopWidget *desktop = qApp->desktop();
+   QRect desktopRect       = desktop->availableGeometry();
+
+   horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
+   horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION);
+
+   core_info_get_list(&cores);
+
+   m_table->clear();
+   m_table->setColumnCount(0);
+   m_table->setRowCount(0);
+   m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+   m_table->setSelectionMode(QAbstractItemView::SingleSelection);
+   m_table->setSortingEnabled(false);
+   m_table->setColumnCount(2);
+   m_table->setHorizontalHeaderLabels(horizontal_header_labels);
+
+   if (cores)
+   {
+      m_table->setRowCount(cores->count);
+
+      for (i = 0; i < cores->count; i++)
+      {
+         QVariantHash hash;
+         core_info_t              *core = core_info_get(cores, i);
+         QTableWidgetItem    *name_item = NULL;
+         QTableWidgetItem *version_item = new QTableWidgetItem(core->display_version);
+         const char               *name = core->display_name;
+
+         if (string_is_empty(name))
+            name                        = path_basename(core->path);
+
+         name_item                      = new QTableWidgetItem(name);
+
+         hash["path"]                   = core->path;
+         hash["extensions"]             = string_split_to_qt(QString(core->supported_extensions), '|');
+
+         name_item->setData(Qt::UserRole, hash);
+         name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
+         version_item->setFlags(version_item->flags() & ~Qt::ItemIsEditable);
+
+         m_table->setItem(i, CORE_NAME_COLUMN, name_item);
+         m_table->setItem(i, CORE_VERSION_COLUMN, version_item);
+      }
+   }
+
+   if (!extensionFilters.isEmpty())
+   {
+      QVector<int> rowsToHide;
+
+      for (j = 0; j < m_table->rowCount(); j++)
+      {
+         int k;
+         QVariantHash hash;
+         QStringList extensions;
+         bool             found = false;
+         QTableWidgetItem *item = m_table->item(j, CORE_NAME_COLUMN);
+
+         if (!item)
+            continue;
+
+         hash       = item->data(Qt::UserRole).toHash();
+         extensions = hash["extensions"].toStringList();
+
+         if (!extensions.isEmpty())
+         {
+            for (k = 0; k < extensions.size(); k++)
+            {
+               QString ext = extensions.at(k).toLower();
+
+               if (extensionFilters.contains(ext, Qt::CaseInsensitive))
+               {
+                  found = true;
+                  break;
+               }
+            }
+
+            if (!found)
+               rowsToHide.append(j);
+         }
+      }
+
+      if (rowsToHide.size() != m_table->rowCount())
+      {
+         int i = 0;
+
+         for (i = 0; i < rowsToHide.count() && rowsToHide.count() > 0; i++)
+         {
+            const int &row = rowsToHide.at(i);
+            m_table->setRowHidden(row, true);
+         }
+      }
+   }
+
+   m_table->setSortingEnabled(true);
+   m_table->resizeColumnsToContents();
+   m_table->sortByColumn(0, Qt::AscendingOrder);
+   m_table->selectRow(0);
+   m_table->setAlternatingRowColors(true);
+
+   resize(qMin(desktopRect.width(), contentsMargins().left() + m_table->horizontalHeader()->length() + contentsMargins().right()), height());
 }

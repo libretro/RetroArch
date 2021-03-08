@@ -51,7 +51,6 @@ UI
 
 #include "../ui/drivers/ui_qt.cpp"
 
-#include "../ui/drivers/qt/ui_qt_load_core_window.cpp"
 #include "../ui/drivers/qt/gridview.cpp"
 #include "../ui/drivers/qt/qt_dialogs.cpp"
 #include "../ui/drivers/qt/qt_widgets.cpp"
