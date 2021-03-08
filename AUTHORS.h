@@ -93,7 +93,6 @@ ekipan
 Emmanuel Martin (daliaetnano)
 endrift
 erbridge
-esoptron
 Ethan Lee (flibitijibibo)
 Exvat
 Ezio-PS
@@ -214,6 +213,7 @@ Nathan S. (natinusala)
 NathanStrong-Tripwire
 nattycleopatra
 nayslayer
+Nephilim
 netux79
 nfnty
 nia (ensra)
