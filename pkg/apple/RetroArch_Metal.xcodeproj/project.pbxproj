@@ -102,7 +102,6 @@
 		05132C7021A74D7B00379846 /* ozone_display.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ozone_display.h; sourceTree = "<group>"; };
 		05269A6120ABF20500C29F1E /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		05366512213F8BE5007E7EA0 /* thumbnailpackdownload.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thumbnailpackdownload.cpp; sourceTree = "<group>"; };
-		05366513213F8BE5007E7EA0 /* ui_qt_application.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_application.cpp; sourceTree = "<group>"; };
 		05366514213F8BE5007E7EA0 /* coreoptionsdialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreoptionsdialog.h; sourceTree = "<group>"; };
 		05366515213F8BE5007E7EA0 /* viewoptionsdialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = viewoptionsdialog.h; sourceTree = "<group>"; };
 		05366516213F8BE5007E7EA0 /* filedropwidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filedropwidget.h; sourceTree = "<group>"; };
@@ -110,8 +109,6 @@
 		05366518213F8BE5007E7EA0 /* playlistentrydialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = playlistentrydialog.cpp; sourceTree = "<group>"; };
 		05366519213F8BE5007E7EA0 /* ui_qt_load_core_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui_qt_load_core_window.h; sourceTree = "<group>"; };
 		0536651A213F8BE5007E7EA0 /* shaderparamsdialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = shaderparamsdialog.cpp; sourceTree = "<group>"; };
-		0536651B213F8BE5007E7EA0 /* ui_qt_browser_window.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_browser_window.cpp; sourceTree = "<group>"; };
-		0536651C213F8BE5007E7EA0 /* ui_qt_msg_window.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_msg_window.cpp; sourceTree = "<group>"; };
 		0536651D213F8BE5007E7EA0 /* flowlayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = flowlayout.h; sourceTree = "<group>"; };
 		0536651E213F8BE5007E7EA0 /* playlistthumbnaildownload.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = playlistthumbnaildownload.cpp; sourceTree = "<group>"; };
 		0536651F213F8BE5007E7EA0 /* playlistentrydialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = playlistentrydialog.h; sourceTree = "<group>"; };
@@ -124,8 +121,6 @@
 		05366526213F8BE5007E7EA0 /* flowlayout.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = flowlayout.cpp; sourceTree = "<group>"; };
 		05366527213F8BE5007E7EA0 /* viewoptionsdialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewoptionsdialog.cpp; sourceTree = "<group>"; };
 		05366528213F8BE5007E7EA0 /* coreoptionsdialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreoptionsdialog.cpp; sourceTree = "<group>"; };
-		05366529213F8BE5007E7EA0 /* ui_qt_window.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui_qt_window.cpp; sourceTree = "<group>"; };
-		0536652A213F8BE5007E7EA0 /* invader_png.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = invader_png.h; sourceTree = "<group>"; };
 		0536652B213F8BE5007E7EA0 /* coreinfodialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = coreinfodialog.h; sourceTree = "<group>"; };
 		0536652C213F8BE5007E7EA0 /* updateretroarch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = updateretroarch.cpp; sourceTree = "<group>"; };
 		0538874D20DDD5C600769232 /* dxgi_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dxgi_common.c; sourceTree = "<group>"; };
@@ -624,7 +619,6 @@
 				05366516213F8BE5007E7EA0 /* filedropwidget.h */,
 				05366526213F8BE5007E7EA0 /* flowlayout.cpp */,
 				0536651D213F8BE5007E7EA0 /* flowlayout.h */,
-				0536652A213F8BE5007E7EA0 /* invader_png.h */,
 				05366523213F8BE5007E7EA0 /* playlist.cpp */,
 				05366518213F8BE5007E7EA0 /* playlistentrydialog.cpp */,
 				0536651F213F8BE5007E7EA0 /* playlistentrydialog.h */,
@@ -633,13 +627,9 @@
 				05366525213F8BE5007E7EA0 /* shaderparamsdialog.h */,
 				05366522213F8BE5007E7EA0 /* thumbnaildownload.cpp */,
 				05366512213F8BE5007E7EA0 /* thumbnailpackdownload.cpp */,
-				05366513213F8BE5007E7EA0 /* ui_qt_application.cpp */,
-				0536651B213F8BE5007E7EA0 /* ui_qt_browser_window.cpp */,
 				05366517213F8BE5007E7EA0 /* ui_qt_load_core_window.cpp */,
 				05366519213F8BE5007E7EA0 /* ui_qt_load_core_window.h */,
-				0536651C213F8BE5007E7EA0 /* ui_qt_msg_window.cpp */,
 				05366524213F8BE5007E7EA0 /* ui_qt_themes.h */,
-				05366529213F8BE5007E7EA0 /* ui_qt_window.cpp */,
 				0536652C213F8BE5007E7EA0 /* updateretroarch.cpp */,
 				05366527213F8BE5007E7EA0 /* viewoptionsdialog.cpp */,
 				05366515213F8BE5007E7EA0 /* viewoptionsdialog.h */,
