@@ -22696,26 +22696,6 @@ static int16_t input_state_device(
 
          break;
 
-      case RETRO_DEVICE_MOUSE:
-
-         if (id < RARCH_FIRST_META_KEY)
-         {
-            bool bind_valid = p_rarch->libretro_input_binds[port]
-               && p_rarch->libretro_input_binds[port][id].valid;
-
-            if (bind_valid)
-            {
-               if (button_mask)
-               {
-                  if (ret & (1 << id))
-                     res |= (1 << id);
-               }
-               else
-                  res = ret;
-            }
-         }
-
-         break;
 
       case RETRO_DEVICE_KEYBOARD:
 
@@ -22743,26 +22723,6 @@ static int16_t input_state_device(
 
          break;
 
-      case RETRO_DEVICE_LIGHTGUN:
-
-         if (id < RARCH_FIRST_META_KEY)
-         {
-            bool bind_valid = p_rarch->libretro_input_binds[port]
-               && p_rarch->libretro_input_binds[port][id].valid;
-
-            if (bind_valid)
-            {
-               if (button_mask)
-               {
-                  if (ret & (1 << id))
-                     res |= (1 << id);
-               }
-               else
-                  res = ret;
-            }
-         }
-
-         break;
 
       case RETRO_DEVICE_ANALOG:
          {
@@ -22836,6 +22796,8 @@ static int16_t input_state_device(
          }
          break;
 
+      case RETRO_DEVICE_MOUSE:
+      case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
 
          if (id < RARCH_FIRST_META_KEY)
@@ -22847,7 +22809,6 @@ static int16_t input_state_device(
             {
                if (button_mask)
                {
-                  res = 0;
                   if (ret & (1 << id))
                      res |= (1 << id);
                }
