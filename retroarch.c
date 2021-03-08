@@ -364,7 +364,7 @@ size_t menu_navigation_get_selection(void)
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+   return VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 }
 
 struct retro_system_av_info *video_viewport_get_system_av_info(void)
@@ -414,7 +414,7 @@ global_t *global_get_ptr(void)
  **/
 static void *video_thread_get_ptr(struct rarch_state *p_rarch)
 {
-   void *data                  = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+   void *data                  = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, true);
    const thread_video_t *thr   = (const thread_video_t*)data;
    if (thr)
       return thr->driver_data;
@@ -433,7 +433,7 @@ static void *video_thread_get_ptr(struct rarch_state *p_rarch)
 void *video_driver_get_ptr(bool force_nonthreaded_data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return VIDEO_DRIVER_GET_PTR_INTERNAL(force_nonthreaded_data);
+   return VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, force_nonthreaded_data);
 }
 
 static int16_t input_state_wrap(
@@ -10132,11 +10132,11 @@ static char *strcpy_alloc(const char *src)
 
 static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
 {
-   RUNLOOP_MSG_QUEUE_LOCK();
+   RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
 
    msg_queue_deinitialize(&p_rarch->runloop_msg_queue);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK();
+   RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch);
 #ifdef HAVE_THREADS
    slock_free(p_rarch->runloop_msg_queue_lock);
    p_rarch->runloop_msg_queue_lock = NULL;
@@ -13007,7 +13007,8 @@ static bool command_event_save_core_config(
 #endif
 
    if (!string_is_empty(msg))
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    p_rarch->runloop_overrides_active = overrides_active;
 
@@ -13203,7 +13204,8 @@ static bool command_event_main_state(
                MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
    if (push_msg)
-      runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 2, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    if (!string_is_empty(msg))
       RARCH_LOG("%s\n", msg);
@@ -14155,7 +14157,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event_runtime_log_deinit(p_rarch);
             content_reset_savestate_backups();
-            hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+            hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 #ifdef HAVE_CHEEVOS
             rcheevos_unload();
 #endif
@@ -17176,7 +17178,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                    *   _runloop_msg_queue_lock is already available
                    * We therefore just call runloop_msg_queue_lock()/
                    * runloop_msg_queue_unlock() in this case */
-                  RUNLOOP_MSG_QUEUE_LOCK();
+                  RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
 
                   /* If a message is already set, only overwrite
                    * it if the new message has the same or higher
@@ -17203,7 +17205,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                      }
                   }
 
-                  RUNLOOP_MSG_QUEUE_UNLOCK();
+                  RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch);
                   break;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -17573,7 +17575,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_hw_render_callback *cb =
             (struct retro_hw_render_callback*)data;
          struct retro_hw_render_callback *hwr =
-            VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+            VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 
          if (!cb)
          {
@@ -21551,7 +21553,7 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->size       = data->size;
    ol->active     = data->active;
    ol->iface      = iface;
-   ol->iface_data = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+   ol->iface_data = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, true);
 
    input_overlay_load_active(p_rarch, ol, data->overlay_opacity);
 
@@ -22550,7 +22552,8 @@ static int16_t input_state_device(
          {
 #ifdef HAVE_NETWORKGAMEPAD
             /* Don't process binds if input is coming from Remote RetroPad */
-            if (p_rarch->input_driver_remote && INPUT_REMOTE_KEY_PRESSED(id, port))
+            if (     p_rarch->input_driver_remote 
+                  && INPUT_REMOTE_KEY_PRESSED(p_rarch, id, port))
                res |= 1;
             else
 #endif
@@ -24548,9 +24551,9 @@ static INLINE bool input_keys_pressed_other_sources(
 
 #ifdef HAVE_NETWORKGAMEPAD
    /* Only process key presses related to game input if using Remote RetroPad */
-   if (i < RARCH_CUSTOM_BIND_LIST_END &&
-         p_rarch->input_driver_remote &&
-            INPUT_REMOTE_KEY_PRESSED(i, 0))
+   if (i < RARCH_CUSTOM_BIND_LIST_END 
+         && p_rarch->input_driver_remote 
+         && INPUT_REMOTE_KEY_PRESSED(p_rarch, i, 0))
       return true;
 #endif
 
@@ -28341,14 +28344,13 @@ void audio_driver_set_buffer_size(size_t bufsize)
 }
 
 static float audio_driver_monitor_adjust_system_rates(
-      struct rarch_state *p_rarch)
+      settings_t *settings,
+      struct retro_system_av_info *av_info)
 {
-   settings_t *settings                   = p_rarch->configuration_settings;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    const float target_video_sync_rate     =
       settings->floats.video_refresh_rate / settings->uints.video_swap_interval;
    float max_timing_skew                  = settings->floats.audio_max_timing_skew;
-   struct retro_system_av_info *av_info   = &p_rarch->video_driver_av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    float timing_skew                      =
@@ -29003,18 +29005,6 @@ bool audio_driver_disable_callback(void)
    return true;
 }
 
-/* Sets audio monitor rate to new value. */
-static void audio_driver_monitor_set_rate(struct rarch_state *p_rarch)
-{
-   settings_t *settings                 = p_rarch->configuration_settings;
-   unsigned audio_out_rate              = settings->uints.audio_out_rate;
-   double new_src_ratio                 = (double)audio_out_rate /
-      p_rarch->audio_driver_input;
-
-   p_rarch->audio_source_ratio_original = new_src_ratio;
-   p_rarch->audio_source_ratio_current  = new_src_ratio;
-}
-
 bool audio_driver_callback(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -29412,7 +29402,7 @@ const char *video_driver_get_ident(void)
 #ifdef HAVE_THREADS
    if (VIDEO_DRIVER_IS_THREADED_INTERNAL())
    {
-      const thread_video_t *thr   = (const thread_video_t*)VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+      const thread_video_t *thr   = (const thread_video_t*)VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, true);
       if (!thr || !thr->driver)
          return NULL;
       return thr->driver->ident;
@@ -29764,7 +29754,7 @@ static bool video_driver_pixel_converter_init(
       unsigned size)
 {
    struct retro_hw_render_callback *hwr =
-      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
    void *scalr_out                      = NULL;
    video_pixel_scaler_t          *scalr = NULL;
    struct scaler_ctx        *scalr_ctx  = NULL;
@@ -30850,7 +30840,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
    if (video_driver_is_hw_context())
    {
       struct retro_hw_render_callback *hwr =
-         VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+         VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
       int rdr_major                        = hwr->version_major;
       int rdr_minor                        = hwr->version_minor;
       const char *rdr_context_name         = hw_render_context_name(hwr->context_type, rdr_major, rdr_minor);
@@ -30973,7 +30963,7 @@ static void video_driver_reinit_context(struct rarch_state *p_rarch,
     * need to make sure to keep a copy */
    struct retro_hw_render_callback hwr_copy;
    struct retro_hw_render_callback *hwr =
-      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
    const struct retro_hw_render_context_negotiation_interface *iface =
       p_rarch->hw_render_context_negotiation;
    memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
@@ -30990,7 +30980,7 @@ void video_driver_reinit(int flags)
 {
    struct rarch_state          *p_rarch    = &rarch_st;
    struct retro_hw_render_callback *hwr    =
-      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 
    p_rarch->video_driver_cache_context     = (hwr->cache_context != false);
    p_rarch->video_driver_cache_context_ack = false;
@@ -31306,7 +31296,7 @@ static void video_driver_frame(const void *data, unsigned width,
        *   _runloop_msg_queue_lock is already available
        * We therefore just call runloop_msg_queue_lock()/
        * runloop_msg_queue_unlock() in this case */
-      RUNLOOP_MSG_QUEUE_LOCK();
+      RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
 
       /* Check whether duration timer has elapsed */
       runloop_core_status_msg.duration -= p_rarch->anim.delta_time;
@@ -31334,7 +31324,7 @@ static void video_driver_frame(const void *data, unsigned width,
                   sizeof(status_text));
       }
 
-      RUNLOOP_MSG_QUEUE_UNLOCK();
+      RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch);
    }
 
    /* Slightly messy code,
@@ -31402,12 +31392,12 @@ static void video_driver_frame(const void *data, unsigned width,
          msg_queue_entry_t msg_entry;
          bool msg_found = false;
 
-         RUNLOOP_MSG_QUEUE_LOCK();
+         RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
          msg_found                       = msg_queue_extract(
                &p_rarch->runloop_msg_queue, &msg_entry);
          p_rarch->runloop_msg_queue_size = msg_queue_size(
                &p_rarch->runloop_msg_queue);
-         RUNLOOP_MSG_QUEUE_UNLOCK();
+         RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch);
 
          if (msg_found)
             gfx_widgets_msg_queue_push(
@@ -31435,12 +31425,12 @@ static void video_driver_frame(const void *data, unsigned width,
 #endif
       {
          const char *msg                 = NULL;
-         RUNLOOP_MSG_QUEUE_LOCK();
+         RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
          msg                             = msg_queue_pull(&p_rarch->runloop_msg_queue);
          p_rarch->runloop_msg_queue_size = msg_queue_size(&p_rarch->runloop_msg_queue);
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-         RUNLOOP_MSG_QUEUE_UNLOCK();
+         RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch);
       }
    }
 
@@ -31769,7 +31759,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state = p_rarch->input_driver_nonblock_state;
    video_info->input_driver_grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
 
-   video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(false);
+   video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, false);
 
 #ifdef HAVE_THREADS
    VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
@@ -31845,7 +31835,7 @@ bool video_driver_translate_coord_viewport(
 bool video_driver_has_focus(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return VIDEO_HAS_FOCUS();
+   return VIDEO_HAS_FOCUS(p_rarch);
 }
 
 void video_driver_get_window_title(char *buf, unsigned len)
@@ -32247,7 +32237,7 @@ bool video_driver_cached_frame_has_valid_framebuffer(void)
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
    struct rarch_state              *p_rarch = &rarch_st;
-   void *video_driver                       = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
+   void *video_driver                       = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, true);
    const video_poke_interface_t *video_poke = p_rarch->video_driver_poke;
 
    shader->data = NULL;
@@ -32603,7 +32593,10 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch)
    if (info->sample_rate > 0.0)
    {
       p_rarch->audio_driver_input         =
-      audio_driver_monitor_adjust_system_rates(p_rarch);
+      audio_driver_monitor_adjust_system_rates(
+            p_rarch->configuration_settings,
+            &p_rarch->video_driver_av_info
+            );
       
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
             p_rarch->audio_driver_input);
@@ -32613,7 +32606,7 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch)
 
    video_driver_monitor_adjust_system_rates(p_rarch);
 
-   if (!VIDEO_DRIVER_GET_PTR_INTERNAL(false))
+   if (!VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, false))
       return;
 
    if (p_rarch->runloop_force_nonblock)
@@ -32655,7 +32648,7 @@ void driver_set_nonblock_state(void)
    bool runloop_force_nonblock = p_rarch->runloop_force_nonblock;
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_active && VIDEO_DRIVER_GET_PTR_INTERNAL(false))
+   if (video_driver_active && VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, false))
    {
       if (p_rarch->current_video->set_nonblock_state)
       {
@@ -32714,7 +32707,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    if (flags & DRIVER_VIDEO_MASK)
    {
       struct retro_hw_render_callback *hwr   =
-         VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
+         VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 
       p_rarch->video_driver_frame_time_count = 0;
 
@@ -33031,7 +33024,13 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          {
             float *hz = (float*)data;
             video_monitor_set_refresh_rate(*hz);
-            audio_driver_monitor_set_rate(p_rarch);
+
+            /* Sets audio monitor rate to new value. */
+            p_rarch->audio_source_ratio_original   =
+            p_rarch->audio_source_ratio_current    =
+            (double)p_rarch->configuration_settings->uints.audio_out_rate
+            / p_rarch->audio_driver_input;
+
             driver_adjust_system_rates(p_rarch);
          }
          break;
@@ -33072,11 +33071,9 @@ static void mylist_resize(my_list *list,
    int old_size;
    void *element    = NULL;
    if (new_size < 0)
-      new_size  = 0;
-   if (!list)
-      return;
-   new_capacity = new_size;
-   old_size     = list->size;
+      new_size      = 0;
+   new_capacity     = new_size;
+   old_size         = list->size;
 
    if (new_size == old_size)
       return;
@@ -33087,7 +33084,7 @@ static void mylist_resize(my_list *list,
          new_capacity = list->capacity * 2;
 
       /* try to realloc */
-      list->data = (void**)realloc(
+      list->data      = (void**)realloc(
             (void*)list->data, new_capacity * sizeof(void*));
 
       for (i = list->capacity; i < new_capacity; i++)
@@ -33124,13 +33121,9 @@ static void mylist_resize(my_list *list,
 
 static void *mylist_add_element(my_list *list)
 {
-   int old_size;
-
-   if (!list)
-      return NULL;
-
-   old_size = list->size;
-   mylist_resize(list, old_size + 1, true);
+   int old_size = list->size;
+   if (list)
+      mylist_resize(list, old_size + 1, true);
    return list->data[old_size];
 }
 
@@ -33249,14 +33242,16 @@ static void input_state_set_last(unsigned port, unsigned device,
       }
    }
 
-   element            = (input_list_element*)
-      mylist_add_element(p_rarch->input_state_list);
-   element->port      = port;
-   element->device    = device;
-   element->index     = index;
+   element               = NULL;
+   if (p_rarch->input_state_list)
+      element            = (input_list_element*)
+         mylist_add_element(p_rarch->input_state_list);
+   element->port         = port;
+   element->device       = device;
+   element->index        = index;
    if (id >= element->state_size)
       input_list_element_expand(element, id);
-   element->state[id] = value;
+   element->state[id]    = value;
 }
 
 static int16_t input_state_get_last(unsigned port,
@@ -33520,7 +33515,8 @@ static bool runahead_create(struct rarch_state *p_rarch)
 
    runahead_add_hooks(p_rarch);
    p_rarch->runahead_force_input_dirty = true;
-   mylist_resize(p_rarch->runahead_save_state_list, 1, true);
+   if (p_rarch->runahead_save_state_list)
+      mylist_resize(p_rarch->runahead_save_state_list, 1, true);
    return true;
 }
 
@@ -33677,7 +33673,7 @@ static void do_runahead(
 
          if (suspended_frame)
          {
-            RUNAHEAD_RESUME_VIDEO();
+            RUNAHEAD_RESUME_VIDEO(p_rarch);
             p_rarch->audio_suspended     = false;
          }
 
@@ -33714,7 +33710,7 @@ static void do_runahead(
       /* run main core with video suspended */
       p_rarch->video_driver_active     = false;
       core_run();
-      RUNAHEAD_RESUME_VIDEO();
+      RUNAHEAD_RESUME_VIDEO(p_rarch);
 
       if (     p_rarch->input_is_dirty 
             || p_rarch->runahead_force_input_dirty)
@@ -33738,15 +33734,15 @@ static void do_runahead(
             p_rarch->video_driver_active = false;
             p_rarch->audio_suspended     = true;
             p_rarch->hard_disable_audio  = true;
-            RUNAHEAD_RUN_SECONDARY();
+            RUNAHEAD_RUN_SECONDARY(p_rarch);
             p_rarch->hard_disable_audio  = false;
             p_rarch->audio_suspended     = false;
-            RUNAHEAD_RESUME_VIDEO();
+            RUNAHEAD_RESUME_VIDEO(p_rarch);
          }
       }
       p_rarch->audio_suspended           = true;
       p_rarch->hard_disable_audio        = true;
-      RUNAHEAD_RUN_SECONDARY();
+      RUNAHEAD_RUN_SECONDARY(p_rarch);
       p_rarch->hard_disable_audio        = false;
       p_rarch->audio_suspended           = false;
 #endif
@@ -35412,7 +35408,7 @@ static void runloop_task_msg_queue_push(
 
    if (widgets_active && task->title && !task->mute)
    {
-      RUNLOOP_MSG_QUEUE_LOCK();
+      RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
       ui_companion_driver_msg_queue_push(p_rarch, msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
@@ -35435,7 +35431,7 @@ static void runloop_task_msg_queue_push(
             false
 #endif
             );
-      RUNLOOP_MSG_QUEUE_UNLOCK();
+      RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch);
    }
    else
 #endif
@@ -36423,7 +36419,7 @@ void runloop_msg_queue_push(const char *msg,
    bool widgets_active         = p_rarch->widgets_active;
 #endif
 
-   RUNLOOP_MSG_QUEUE_LOCK();
+   RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
       accessibility_speak_priority(p_rarch, (char*) msg, 0);
@@ -36467,7 +36463,7 @@ void runloop_msg_queue_push(const char *msg,
          msg,
          prio, duration, flush);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK();
+   RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch);
 }
 
 void runloop_get_status(bool *is_paused, bool *is_idle,
@@ -36924,7 +36920,7 @@ static enum runloop_state runloop_check_state(
    is_alive    = p_rarch->current_video
       ? p_rarch->current_video->alive(p_rarch->video_driver_data)
       : true;
-   is_focused  = VIDEO_HAS_FOCUS();
+   is_focused  = VIDEO_HAS_FOCUS(p_rarch);
 
 #ifdef HAVE_MENU
    if (menu_driver_binding_state)
@@ -37128,7 +37124,7 @@ static enum runloop_state runloop_check_state(
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      RUNLOOP_MSG_QUEUE_LOCK();
+      RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
       gfx_widgets_iterate(
             &p_rarch->dispwidget_st,
             &p_rarch->dispgfx,
@@ -37138,7 +37134,7 @@ static enum runloop_state runloop_check_state(
             settings->paths.directory_assets,
             settings->paths.path_font,
             VIDEO_DRIVER_IS_THREADED_INTERNAL());
-      RUNLOOP_MSG_QUEUE_UNLOCK();
+      RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch);
    }
 #endif
 
