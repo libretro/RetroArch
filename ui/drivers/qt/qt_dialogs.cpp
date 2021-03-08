@@ -35,11 +35,6 @@
 #include "playlistentrydialog.h"
 #include "../ui_qt.h"
 
-#include "shaderparamsdialog.h"
-#include "options/options.h"
-#include "../ui_qt.h"
-#include "../../../menu/menu_entries.h"
-
 #ifndef CXX_BUILD
 extern "C" {
 #endif
@@ -54,8 +49,9 @@ extern "C" {
 #include <file/file_path.h>
 
 #ifdef HAVE_MENU
-#include "../../../menu/menu_shader.h"
 #include "../../../menu/menu_driver.h"
+#include "../../../menu/menu_entries.h"
+#include "../../../menu/menu_shader.h"
 #endif
 
 #include "../../../command.h"
@@ -71,9 +67,11 @@ extern "C" {
 }
 #endif
 
-#ifdef HAVE_MENU
-#include "options/options.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#include "shaderparamsdialog.h"
 #endif
+
+#include "options/options.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 /* https://support.microsoft.com/en-us/kb/980263 */
