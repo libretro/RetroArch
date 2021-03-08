@@ -25708,7 +25708,8 @@ void input_keyboard_event(bool down, unsigned code,
       }
 
 
-      (*key_event)(down, code, character, mod);
+      if (*key_event)
+         (*key_event)(down, code, character, mod);
    }
 }
 
