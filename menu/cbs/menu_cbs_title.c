@@ -553,6 +553,7 @@ DEFAULT_TITLE_MACRO(action_get_core_manager_list,               MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
 DEFAULT_TITLE_MACRO(action_get_core_options_list,               MENU_ENUM_LABEL_VALUE_CORE_OPTIONS)
+DEFAULT_TITLE_MACRO(action_get_core_option_override_list,       MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST)
 DEFAULT_TITLE_MACRO(action_get_quick_menu_list,                 MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_input_remapping_options_list,    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_shader_options_list,             MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS)
@@ -659,12 +660,12 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_disk_image_append,    MENU_ENUM_LABEL_
 DEFAULT_FILL_TITLE_MACRO(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_cheat_file_load_append, MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_remap_file_load,      MENU_ENUM_LABEL_VALUE_REMAP_FILE)
-DEFAULT_FILL_TITLE_MACRO(action_get_title_overlay,              MENU_ENUM_LABEL_VALUE_OVERLAY)
+DEFAULT_FILL_TITLE_MACRO(action_get_title_overlay,              MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_video_filter,         MENU_ENUM_LABEL_VALUE_VIDEO_FILTER)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_cheat_directory,      MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_core_directory,       MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_core_info_directory,  MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH)
-DEFAULT_FILL_TITLE_MACRO(action_get_title_audio_filter,         MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR)
+DEFAULT_FILL_TITLE_MACRO(action_get_title_audio_filter,         MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_video_shader_preset,  MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_configurations,       MENU_ENUM_LABEL_VALUE_CONFIG)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_content_database_directory,   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY)
@@ -702,7 +703,8 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_system_directory,       MENU_ENUM_LABE
 DEFAULT_FILL_TITLE_MACRO(action_get_title_assets_directory,       MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_extraction_directory,   MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_menu,                   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
-DEFAULT_FILL_TITLE_MACRO(action_get_title_font_path,              MENU_ENUM_LABEL_VALUE_XMB_FONT)
+DEFAULT_FILL_TITLE_MACRO(action_get_title_video_font_path,        MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH)
+DEFAULT_FILL_TITLE_MACRO(action_get_title_xmb_font,               MENU_ENUM_LABEL_VALUE_XMB_FONT)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_log_dir,                MENU_ENUM_LABEL_VALUE_LOG_DIR)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_manual_content_scan_dir, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR)
 
@@ -1106,6 +1108,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_add_content_list},
       {MENU_ENUM_LABEL_CORE_OPTIONS,
          action_get_core_options_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST,
+         action_get_core_option_override_list},
       {MENU_ENUM_LABEL_CONTENT_SETTINGS,
          action_get_quick_menu_list},
       {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
@@ -1167,9 +1171,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST,
          action_get_user_accounts_list},
       {MENU_ENUM_LABEL_VIDEO_FONT_PATH,
-         action_get_title_font_path},
+         action_get_title_video_font_path},
       {MENU_ENUM_LABEL_XMB_FONT,
-         action_get_title_font_path},
+         action_get_title_xmb_font},
       {MENU_ENUM_LABEL_VIDEO_FILTER,
          action_get_title_video_filter},
       {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
@@ -1426,6 +1430,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_OPTIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_options_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_core_option_override_list);
+            break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_history_list);
             break;
@@ -1567,8 +1574,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay);
             break;
          case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_font_path);
+            break;
          case MENU_ENUM_LABEL_XMB_FONT:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_xmb_font);
             break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter);

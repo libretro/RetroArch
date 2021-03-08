@@ -2521,6 +2521,10 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
       case RGUI_ASPECT_RATIO_3_2_CENTRE:
          wallpaper_key = "rgui_wallpaper_3_2";
          break;
+      case RGUI_ASPECT_RATIO_5_3:
+      case RGUI_ASPECT_RATIO_5_3_CENTRE:
+         wallpaper_key = "rgui_wallpaper_5_3";
+         break;
       default:
          /* 4:3 */
          wallpaper_key = "rgui_wallpaper";
@@ -5014,6 +5018,28 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
                   ( 4.0f / 3.0f)  * (float)rgui->frame_buf.height);
          }
          break;
+      case RGUI_ASPECT_RATIO_5_3:
+         if (rgui->frame_buf.height == 240)
+            rgui->frame_buf.width = 400;
+         else
+            rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                  (5.0f / 3.0f) * (float)rgui->frame_buf.height);
+         base_term_width = rgui->frame_buf.width;
+         break;
+      case RGUI_ASPECT_RATIO_5_3_CENTRE:
+         if (rgui->frame_buf.height == 240)
+         {
+            rgui->frame_buf.width = 400;
+            base_term_width       = 320;
+         }
+         else
+         {
+            rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                  (5.0f / 3.0f) * (float)rgui->frame_buf.height);
+            base_term_width       = RGUI_ROUND_FB_WIDTH(
+                  ( 4.0f / 3.0f)  * (float)rgui->frame_buf.height);
+         }
+         break;
       default:
          /* 4:3 */
          if (rgui->frame_buf.height == 240)
@@ -5086,6 +5112,20 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
             base_term_width = (base_term_width < RGUI_MIN_FB_WIDTH) ?
                   RGUI_MIN_FB_WIDTH : base_term_width;
             break;
+         case RGUI_ASPECT_RATIO_5_3:
+            rgui->frame_buf.height = (unsigned)(
+                  (5.0f / 3.0f) * (float)rgui->frame_buf.width);
+            base_term_width = rgui->frame_buf.width;
+            break;
+         case RGUI_ASPECT_RATIO_5_3_CENTRE:
+            rgui->frame_buf.height = (unsigned)(
+                  (5.0f / 3.0f) * (float)rgui->frame_buf.width);
+            base_term_width        = RGUI_ROUND_FB_WIDTH(
+                  ( 4.0f / 3.0f)  * (float)rgui->frame_buf.height);
+            base_term_width = (base_term_width < RGUI_MIN_FB_WIDTH) ?
+                  RGUI_MIN_FB_WIDTH : base_term_width;
+            break;
+
          default:
             /* 4:3 */
             rgui->frame_buf.height = (unsigned)(
@@ -5229,12 +5269,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->widgets_supported = gfx_widgets_ready();
 
    if (rgui->widgets_supported)
-   {
-      if (!gfx_display_init_first_driver(video_is_threaded))
-         goto error;
-
       gfx_display_init_white_texture(gfx_display_white_texture);
-   }
 #endif
 
    rgui->menu_title[0]    = '\0';
@@ -6148,6 +6183,11 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          case RGUI_ASPECT_RATIO_3_2_CENTRE:
             default_fb_width = 360;
             break;
+         case RGUI_ASPECT_RATIO_5_3:
+         case RGUI_ASPECT_RATIO_5_3_CENTRE:
+            default_fb_width = 400;
+            break;
+
          default:
             /* 4:3 */
             default_fb_width = 320;

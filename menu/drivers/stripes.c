@@ -440,7 +440,6 @@ static void stripes_free_list_nodes(file_list_t *list, bool actiondata)
    {
       stripes_free_node((stripes_node_t*)file_list_get_userdata_at_offset(list, i));
 
-      /* file_list_set_userdata() doesn't accept NULL */
       list->list[i].userdata = NULL;
 
       if (actiondata)
@@ -1359,7 +1358,7 @@ static stripes_node_t *stripes_node_allocate_userdata(
          &stripes->horizontal_list, i);
    stripes_free_node(tmp);
 
-   file_list_set_userdata(&stripes->horizontal_list, i, node);
+   stripes->horizontal_list.list[i].userdata = node;
 
    return node;
 }
@@ -2046,6 +2045,8 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
       case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return stripes->textures.list[STRIPES_TEXTURE_CORE_OPTIONS];
+      case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
+         return stripes->textures.list[STRIPES_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
          return stripes->textures.list[STRIPES_TEXTURE_ADD_FAVORITE];
@@ -3318,9 +3319,6 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
    if (!menu)
       goto error;
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
-      goto error;
-
    video_driver_get_size(&width, &height);
 
    stripes = (stripes_handle_t*)calloc(1, sizeof(stripes_handle_t));
@@ -3821,7 +3819,7 @@ static void stripes_list_insert(void *userdata,
       node->zoom        = stripes->items_active_alpha;
    }
 
-   file_list_set_userdata(list, i, node);
+   list->list[i].userdata = node;
 }
 
 static void stripes_list_clear(file_list_t *list)
@@ -3865,13 +3863,13 @@ static void stripes_list_deep_copy(const file_list_t *src, file_list_t *dst,
       d->label = string_is_empty(d->label) ? NULL : strdup(d->label);
 
       if (src_udata)
-         file_list_set_userdata(dst, j, (void*)stripes_copy_node((const stripes_node_t*)src_udata));
+         dst->list[j].userdata = (void*)stripes_copy_node((const stripes_node_t*)src_udata);
 
       if (src_adata)
       {
          void *data = malloc(sizeof(menu_file_list_cbs_t));
          memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
-         file_list_set_actiondata(dst, j, data);
+         dst->list[j].actiondata = data;
       }
 
       ++j;

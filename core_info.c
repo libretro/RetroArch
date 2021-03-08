@@ -1567,9 +1567,6 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
    strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION,
          sizeof(lock_file_path));
 
-   if (string_is_empty(lock_file_path))
-      return false;
-
    /* Check whether lock file exists */
    lock_file_exists = path_is_valid(lock_file_path);
 
@@ -1657,9 +1654,6 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
          sizeof(lock_file_path));
    strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION,
          sizeof(lock_file_path));
-
-   if (string_is_empty(lock_file_path))
-      return false;
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);

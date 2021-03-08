@@ -13,19 +13,10 @@ extern "C"
 #endif
 
 static void retroarch_fail(int error_code, const char *error);
-static void retroarch_core_options_intl_init(
-      struct rarch_state *p_rarch,
-      const struct
-      retro_core_options_intl *core_options_intl);
 static void ui_companion_driver_toggle(
       settings_t *settings,
       struct rarch_state *p_rarch,
       bool force);
-
-#ifdef HAVE_ACCESSIBILITY
-static void set_gamepad_input_override(struct rarch_state *p_rarch,
-      unsigned i, bool val);
-#endif
 
 #ifdef HAVE_LIBNX
 void libnx_apply_overclock(void);
@@ -34,7 +25,6 @@ void libnx_apply_overclock(void);
 #ifdef HAVE_TRANSLATE
 static bool is_narrator_running(struct rarch_state *p_rarch);
 #endif
-static bool accessibility_startup_message(struct rarch_state *p_rarch);
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -185,11 +175,11 @@ static const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb);
 
 static void menu_driver_list_free(
-      struct rarch_state *p_rarch,
+      const menu_ctx_driver_t *menu_driver_ctx,
       menu_ctx_list_t *list);
-static void menu_input_post_iterate(
+static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
-      int *ret, unsigned action,
+      unsigned action,
       retro_time_t current_time);
 static void menu_input_reset(struct rarch_state *p_rarch);
 #endif

@@ -195,9 +195,6 @@ bool menu_entries_append_enum(file_list_t *list,
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 
-void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
-      bool checked);
-
 /* Menu entry interface -
  *
  * This provides an abstraction of the currently displayed

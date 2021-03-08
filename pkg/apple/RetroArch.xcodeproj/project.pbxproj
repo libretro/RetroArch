@@ -90,6 +90,7 @@
 		84DD5EB71A89F1C7007336C1 /* retroarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = retroarch.icns; path = ../../media/retroarch.icns; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OSX/Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9254B2F825F5A94300A1E0DA /* OpenGL_GitLabCI.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenGL_GitLabCI.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -164,6 +165,7 @@
 		29B97314FDCFA39411CA2CEA /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				9254B2F825F5A94300A1E0DA /* OpenGL_GitLabCI.xcconfig */,
 				840222FA1A889EA2009AB261 /* Core */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
@@ -279,6 +281,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* RetroArch */;
@@ -433,6 +436,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -467,6 +471,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = x86_64;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				FRAMEWORK_SEARCH_PATHS = (
@@ -540,7 +545,7 @@
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
-               "-DHAVE_GFX_WIDGETS",
+					"-DHAVE_GFX_WIDGETS",
 					"-DOSX",
 					"-DHAVE_OPENGL",
 					"-DHAVE_CC_RESAMPLER",
@@ -625,7 +630,7 @@
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_CHEATS",
 					"-DHAVE_MENU",
-               "-DHAVE_GFX_WIDGETS",
+					"-DHAVE_GFX_WIDGETS",
 					"-DOSX",
 					"-DHAVE_OPENGL",
 					"-DHAVE_CC_RESAMPLER",

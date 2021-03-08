@@ -249,6 +249,10 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
       RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");
       goto error;
    }
+   else
+      /* This is required for fullscreen mailbox
+       * not to crash after refresh rate change */
+      vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval);
 
    gfx_ctx_w_vk_swap_interval(data, win32_vk_interval);
    return true;

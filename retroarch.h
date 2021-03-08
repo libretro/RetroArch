@@ -139,6 +139,7 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_MISSING_BIOS,
 
    RARCH_CTL_IS_GAME_OPTIONS_ACTIVE,
+   RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE,
 
    RARCH_CTL_IS_PAUSED,
    RARCH_CTL_SET_PAUSED,
@@ -1991,8 +1992,10 @@ void input_driver_init_joypads(void);
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name);
 
-/* creates folder and core options stub file for subsequent runs */
-bool create_folder_and_core_options(void);
+/* Creates folder and core options stub file for subsequent runs */
+bool core_options_create_override(bool game_specific);
+bool core_options_remove_override(bool game_specific);
+void core_options_reset(void);
 
 typedef enum apple_view_type
 {

@@ -116,7 +116,11 @@ struct SceNetInAddr inet_aton(const char *ip_addr);
 #include <netdb.h>
 #include <fcntl.h>
 
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+#include <netex/libnetctl.h>
+#else
 #include <signal.h>
+#endif
 
 #endif
 
@@ -143,6 +147,8 @@ static INLINE bool isagain(int bytes)
    if (WSAGetLastError() != WSAEWOULDBLOCK)
       return false;
    return true;
+#elif !defined(__PSL1GHT__) && defined(__PS3__) 
+   return (sys_net_errno == SYS_NET_EWOULDBLOCK) || (sys_net_errno == SYS_NET_EAGAIN);
 #elif defined(VITA)
    return (bytes<0 && (bytes == SCE_NET_ERROR_EAGAIN || bytes == SCE_NET_ERROR_EWOULDBLOCK));
 #elif defined(WIIU)

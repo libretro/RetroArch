@@ -1507,7 +1507,7 @@ static bool win32_monitor_set_fullscreen(
    devmode.dmFields           = DM_PELSWIDTH
       | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
 
-   RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
+   RARCH_LOG("[Video]: Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
 
    return win32_change_display_settings(dev_name, &devmode,

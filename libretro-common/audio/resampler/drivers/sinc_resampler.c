@@ -87,10 +87,12 @@ typedef struct rarch_sinc_resampler
    enum sinc_window window_type;
 } rarch_sinc_resampler_t;
 
-#if defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)
+#if (defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)) || defined(HAVE_NEON)
 #if TARGET_OS_IPHONE
 #else
+#ifndef WANT_NEON
 #define WANT_NEON
+#endif
 #endif
 #endif
 

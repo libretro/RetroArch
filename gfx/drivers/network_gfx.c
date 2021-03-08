@@ -115,7 +115,7 @@ static void *network_gfx_init(const video_info_t *video,
    strlcpy(network->address, xstr(NETWORK_VIDEO_HOST), sizeof(network->address));
    network->port = NETWORK_VIDEO_PORT;
 
-   RARCH_LOG("[network] Connecting to host %s:%d\n", network->address, network->port);
+   RARCH_LOG("[Network]: Connecting to host %s:%d\n", network->address, network->port);
 try_connect:
    fd = socket_init((void**)&addr, network->port, network->address, SOCKET_TYPE_STREAM);
 
@@ -145,15 +145,15 @@ try_connect:
 #endif
 
    if (network->fd > 0)
-      RARCH_LOG("[network]: Connected to host.\n");
+      RARCH_LOG("[Network]: Connected to host.\n");
    else
    {
-      RARCH_LOG("[network]: Could not connect to host, retrying...\n");
+      RARCH_LOG("[Network]: Could not connect to host, retrying...\n");
       retro_sleep(1000);
       goto try_connect;
    }
 
-   RARCH_LOG("[network]: Init complete.\n");
+   RARCH_LOG("[Network]: Init complete.\n");
 
    return network;
 

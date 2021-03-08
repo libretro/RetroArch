@@ -73,12 +73,18 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define sysLwMutexCreate sys_lwmutex_create
 
 #define AUDIO_BLOCK_SAMPLES CELL_AUDIO_BLOCK_SAMPLES
-
+#define SYSMODULE_NET CELL_SYSMODULE_NET
 #define PS3_SYS_NO_TIMEOUT SYS_NO_TIMEOUT
 
 #define sys_lwmutex_attr_t sys_lwmutex_attribute_t 
 #define sys_lwcond_attr_t sys_lwcond_attribute_t 
 #define sys_sem_t sys_semaphore_t
+
+#define sysGetSystemTime sys_time_get_system_time
+#define sysModuleLoad cellSysmoduleLoadModule
+#define sysModuleUnload cellSysmoduleUnloadModule
+
+#define netInitialize sys_net_initialize_network
 
 #endif
 
@@ -270,8 +276,8 @@ extern int audioAddData(uint32_t portNum, float *data,
 #ifdef __PSL1GHT__
 #include <sys/thread.h>
 
-/* FIXME - not sure if this is correct */
-#define SYS_THREAD_CREATE_JOINABLE 0
+/* FIXME - not sure if this is correct -> FIXED! 1 and not 0 */
+#define SYS_THREAD_CREATE_JOINABLE THREAD_JOINABLE
 
 #else
 #include <sys/ppu_thread.h>

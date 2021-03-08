@@ -7630,9 +7630,6 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
       return NULL;
    }
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
-      goto error;
-
    mui                                    = (materialui_handle_t*)
       calloc(1, sizeof(materialui_handle_t));
 
@@ -9728,6 +9725,14 @@ static void materialui_list_insert(
             node->icon_texture_index = MUI_TEXTURE_CORES;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
+         case MENU_SETTING_ACTION_CORE_OPTIONS:
+            node->icon_texture_index = MUI_TEXTURE_CORE_OPTIONS;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            break;
+         case MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST:
+            node->icon_texture_index = MUI_TEXTURE_SETTINGS;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
          case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:
             node->icon_texture_index = MUI_TEXTURE_IMAGE;
@@ -9777,15 +9782,23 @@ static void materialui_list_insert(
          case MENU_SETTING_ACTION_CORE_DELETE_BACKUP:
          case MENU_SETTING_ACTION_VIDEO_FILTER_REMOVE:
          case MENU_SETTING_ACTION_AUDIO_DSP_PLUGIN_REMOVE:
+         case MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_REMOVE:
+         case MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE:
             node->icon_texture_index = MUI_TEXTURE_REMOVE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_CREATE_BACKUP:
+         case MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_CREATE:
+         case MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE:
             node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case MENU_SETTING_ACTION_CORE_RESTORE_BACKUP:
             node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            break;
+         case MENU_SETTING_ACTION_CORE_OPTIONS_RESET:
+            node->icon_texture_index = MUI_TEXTURE_UNDO_SAVE_STATE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_RPL_ENTRY:
@@ -9892,11 +9905,6 @@ static void materialui_list_insert(
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT)))
             {
                node->icon_texture_index = MUI_TEXTURE_CLOSE;
-               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
-            }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS)))
-            {
-               node->icon_texture_index = MUI_TEXTURE_CORE_OPTIONS;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)))
@@ -10248,7 +10256,7 @@ static void materialui_list_insert(
       }
    }
 
-   file_list_set_userdata(list, i, node);
+   list->list[i].userdata = node;
 }
 
 /* Clears the current menu list */

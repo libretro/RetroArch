@@ -27,11 +27,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct ui_application_cocoa
-{
-   void *empty;
-} ui_application_cocoa_t;
-
 typedef struct ui_window_cocoa
 {
     void *data;

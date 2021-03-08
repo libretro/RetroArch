@@ -130,6 +130,45 @@ endif
 ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
    LIBS += -framework AppKit
+   ARCHFLAGS=
+   MINVERFLAGS=
+   ifeq ($(shell uname -p),arm)
+      MINVERFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
+   else ifeq ($(HAVE_METAL),1)
+      MINVERFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
+   else ifeq ($(shell uname -p),powerpc)
+      MINVERFLAGS = -mmacosx-version-min=10.5  # macOSX (PowerPC 32-bit)
+   else ifeq ($(shell uname -m),i386)
+      MINVERFLAGS = -mmacosx-version-min=10.6  # macOSX (OpenGL, x86 32bit)
+   else
+      MINVERFLAGS = -mmacosx-version-min=10.7 -stdlib=libc++ # macOSX (OpenGL, x86 64bit)
+   endif
+
+	# Build for a specific architecture when ARCH is defined as a switch
+   ifeq ($(ARCH),arm64)
+      MINVERFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
+      ARCHFLAGS    = -arch arm64
+   else ifeq ($(ARCH),x86_64)
+      ifeq ($(HAVE_METAL),1)
+         MINVERFLAGS  = -mmacosx-version-min=10.13 -stdlib=libc++
+      else
+         MINVERFLAGS  = -mmacosx-version-min=10.7  -stdlib=libc++
+      endif
+      ARCHFLAGS       = -arch x86_64
+   else ifeq ($(ARCH),x86)
+      MINVERFLAGS     = -mmacosx-version-min=10.6
+      ARCHFLAGS       = -arch x86
+   else ifeq ($(ARCH),ppc)
+      MINVERFLAGS     = -mmacosx-version-min=10.5
+      ARCHFLAGS       = -arch ppc
+   endif
+   ifeq ($(BUILDBOT),1)
+      ARCHFLAGS       = -target $(LIBRETRO_APPLE_PLATFORM) -isysroot $(LIBRETRO_APPLE_ISYSROOT)
+   endif
+   DEF_FLAGS += $(MINVERFLAGS) $(ARCHFLAGS)
+   LDFLAGS   += $(MINVERFLAGS) $(ARCHFLAGS)
 else
    OSX := 0
 endif
@@ -448,19 +487,11 @@ endif
 
 ifeq ($(HAVE_QT), 1)
    OBJ += ui/drivers/ui_qt.o \
-          ui/drivers/qt/ui_qt_application.o \
-          ui/drivers/qt/ui_qt_window.o \
-          ui/drivers/qt/ui_qt_browser_window.o \
           ui/drivers/qt/ui_qt_load_core_window.o \
-          ui/drivers/qt/ui_qt_msg_window.o \
           ui/drivers/qt/gridview.o \
-          ui/drivers/qt/coreoptionsdialog.o \
+          ui/drivers/qt/qt_dialogs.o \
           ui/drivers/qt/filedropwidget.o \
-          ui/drivers/qt/coreinfodialog.o \
-          ui/drivers/qt/playlistentrydialog.o \
-          ui/drivers/qt/viewoptionsdialog.o \
           ui/drivers/qt/qt_playlist.o \
-          ui/drivers/qt/updateretroarch.o \
           ui/drivers/qt/thumbnaildownload.o \
           ui/drivers/qt/thumbnailpackdownload.o \
           ui/drivers/qt/playlistthumbnaildownload.o
@@ -757,13 +788,16 @@ endif
 # Audio
 
 ifeq ($(HAVE_COREAUDIO), 1)
+   DEFINES += -DHAVE_COREAUDIO
    OBJ += audio/drivers/coreaudio.o
    HAVE_COREAUDIO_LIBS = 1
 endif
 
 ifeq ($(HAVE_COREAUDIO3), 1)
+   DEFINES += -DHAVE_COREAUDIO3
    OBJ += audio/drivers/coreaudio3.o
    HAVE_COREAUDIO_LIBS = 1
+   LIBS += -framework AudioToolBox -framework AVFoundation
 endif
 
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)
@@ -1352,11 +1386,7 @@ endif
 # Companion UI
 
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += ui/drivers/ui_win32.o \
-          ui/drivers/win32/ui_win32_window.o \
-          ui/drivers/win32/ui_win32_browser_window.o \
-          ui/drivers/win32/ui_win32_msg_window.o \
-          ui/drivers/win32/ui_win32_application.o
+   OBJ += ui/drivers/ui_win32.o
 endif
 
 # Video
@@ -2271,10 +2301,6 @@ ifeq ($(HAVE_COCOA_COMMON),1)
    DEFINES += -DHAVE_MAIN -DOSX
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
-          ui/drivers/cocoa/ui_cocoa_window.o \
-          ui/drivers/cocoa/ui_cocoa_browser_window.o \
-          ui/drivers/cocoa/ui_cocoa_msg_window.o \
-          ui/drivers/cocoa/ui_cocoa_application.o \
           ui/drivers/cocoa/cocoa_common.o
           
    ifeq ($(HAVE_OPENGL), 1)
@@ -2433,3 +2459,4 @@ ifeq ($(HAVE_ODROIDGO2), 1)
 endif
 
 ##################################
+

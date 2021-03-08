@@ -26,7 +26,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
-#include "cocoa/cocoa_defines.h"
+#include "../../defines/cocoa_defines.h"
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
 
@@ -46,9 +46,291 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
+#include "ui_cocoa.h"
+
+typedef struct ui_application_cocoa
+{
+   void *empty;
+} ui_application_cocoa_t;
+
 /* TODO/FIXME - static global variables */
 static int waiting_argc;
 static char **waiting_argv;
+
+#if defined(HAVE_COCOA)
+extern id apple_platform;
+#endif
+
+static void* ui_window_cocoa_init(void)
+{
+   return NULL;
+}
+
+static void ui_window_cocoa_destroy(void *data)
+{
+#if !defined(HAVE_COCOA_METAL)
+    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+    [[cocoa_view window] release];
+#endif
+}
+
+static void ui_window_cocoa_set_focused(void *data)
+{
+    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+    CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+    [[cocoa_view window] makeKeyAndOrderFront:nil];
+}
+
+static void ui_window_cocoa_set_visible(void *data,
+        bool set_visible)
+{
+    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+    CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+    if (set_visible)
+        [[cocoa_view window] makeKeyAndOrderFront:nil];
+    else
+        [[cocoa_view window] orderOut:nil];
+}
+
+static void ui_window_cocoa_set_title(void *data, char *buf)
+{
+   CocoaView *cocoa_view    = (BRIDGE CocoaView*)data;
+   const char* const text   = buf; /* < Can't access buffer directly in the block */
+   [[cocoa_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
+}
+
+static void ui_window_cocoa_set_droppable(void *data, bool droppable)
+{
+   ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+   CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+
+   if (droppable)
+   {
+#if defined(HAVE_COCOA_METAL)
+      [[cocoa_view window] registerForDraggedTypes:@[NSPasteboardTypeColor, NSPasteboardTypeFileURL]];
+#elif defined(HAVE_COCOA)
+      [[cocoa_view window] registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
+#endif
+   }
+   else
+   {
+      [[cocoa_view window] unregisterDraggedTypes];
+   }
+}
+
+static bool ui_window_cocoa_focused(void *data)
+{
+   ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+   CocoaView *cocoa_view    = (BRIDGE CocoaView*)cocoa->data;
+   return cocoa_view.window.isMainWindow;
+}
+
+static ui_window_t ui_window_cocoa = {
+   ui_window_cocoa_init,
+   ui_window_cocoa_destroy,
+   ui_window_cocoa_set_focused,
+   ui_window_cocoa_set_visible,
+   ui_window_cocoa_set_title,
+   ui_window_cocoa_set_droppable,
+   ui_window_cocoa_focused,
+   "cocoa"
+};
+
+static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
+{
+   NSOpenPanel *panel = [NSOpenPanel openPanel];
+
+   if (!string_is_empty(state->filters))
+   {
+#ifdef HAVE_COCOA_METAL
+      [panel setAllowedFileTypes:@[BOXSTRING(state->filters), BOXSTRING(state->filters_title)]];
+#else
+      NSArray *filetypes = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
+      [panel setAllowedFileTypes:filetypes];
+#endif
+   }
+
+#if defined(MAC_OS_X_VERSION_10_5)
+   [panel setMessage:BOXSTRING(state->title)];
+   if ([panel runModalForDirectory:BOXSTRING(state->startdir) file:nil] != 1)
+      return false;
+#else
+   panel.title                           = NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"));
+   panel.directoryURL                    = [NSURL fileURLWithPath:BOXSTRING(state->startdir)];
+   panel.canChooseDirectories            = NO;
+   panel.canChooseFiles                  = YES;
+   panel.allowsMultipleSelection         = NO;
+   panel.treatsFilePackagesAsDirectories = NO;
+
+   if ([panel runModal] != 1)
+       return false;
+#endif
+
+   NSURL *url           = (NSURL*)panel.URL;
+   const char *res_path = [url.path UTF8String];
+   state->result        = strdup(res_path);
+
+   return true;
+}
+
+static bool ui_browser_window_cocoa_save(ui_browser_window_state_t *state)
+{
+   return false;
+}
+
+static ui_browser_window_t ui_browser_window_cocoa = {
+   ui_browser_window_cocoa_open,
+   ui_browser_window_cocoa_save,
+   "cocoa"
+};
+
+static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_state *state, enum ui_msg_window_type type)
+{
+#if defined(HAVE_COCOA_METAL)
+   NSModalResponse response;
+   NSAlert *alert = [NSAlert new];
+#elif defined(HAVE_COCOA)
+   NSInteger response;
+   NSAlert* alert = [[NSAlert new] autorelease];
+#endif
+
+   if (!string_is_empty(state->title))
+      [alert setMessageText:BOXSTRING(state->title)];
+   [alert setInformativeText:BOXSTRING(state->text)];
+
+   switch (state->buttons)
+   {
+      case UI_MSG_WINDOW_OK:
+         [alert addButtonWithTitle:BOXSTRING("OK")];
+         break;
+      case UI_MSG_WINDOW_YESNO:
+         [alert addButtonWithTitle:BOXSTRING("Yes")];
+         [alert addButtonWithTitle:BOXSTRING("No")];
+         break;
+      case UI_MSG_WINDOW_OKCANCEL:
+         [alert addButtonWithTitle:BOXSTRING("OK")];
+         [alert addButtonWithTitle:BOXSTRING("Cancel")];
+         break;
+      case UI_MSG_WINDOW_YESNOCANCEL:
+         [alert addButtonWithTitle:BOXSTRING("Yes")];
+         [alert addButtonWithTitle:BOXSTRING("No")];
+         [alert addButtonWithTitle:BOXSTRING("Cancel")];
+         break;
+   }
+
+   switch (type)
+   {
+      case UI_MSG_WINDOW_TYPE_ERROR:
+         [alert setAlertStyle:NSAlertStyleCritical];
+         break;
+      case UI_MSG_WINDOW_TYPE_WARNING:
+         [alert setAlertStyle:NSAlertStyleWarning];
+         break;
+      case UI_MSG_WINDOW_TYPE_QUESTION:
+         [alert setAlertStyle:NSAlertStyleInformational];
+         break;
+      case UI_MSG_WINDOW_TYPE_INFORMATION:
+         [alert setAlertStyle:NSAlertStyleInformational];
+         break;
+   }
+
+#if defined(HAVE_COCOA_METAL)
+   [alert beginSheetModalForWindow:(BRIDGE NSWindow *)ui_companion_driver_get_main_window()
+                 completionHandler:^(NSModalResponse returnCode) {
+                    [[NSApplication sharedApplication] stopModalWithCode:returnCode];
+                 }];
+   response = [alert runModal];
+#elif defined(HAVE_COCOA)
+    [alert beginSheetModalForWindow:ui_companion_driver_get_main_window()
+                      modalDelegate:apple_platform
+                     didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
+                        contextInfo:nil];
+    response = [[NSApplication sharedApplication] runModalForWindow:[alert window]];
+#endif
+
+   switch (state->buttons)
+   {
+      case UI_MSG_WINDOW_OKCANCEL:
+         if (response == NSAlertSecondButtonReturn)
+            return UI_MSG_RESPONSE_CANCEL;
+         /* fall-through */
+      case UI_MSG_WINDOW_OK:
+         if (response == NSAlertFirstButtonReturn)
+            return UI_MSG_RESPONSE_OK;
+         break;
+      case UI_MSG_WINDOW_YESNOCANCEL:
+         if (response == NSAlertThirdButtonReturn)
+            return UI_MSG_RESPONSE_CANCEL;
+         /* fall-through */
+      case UI_MSG_WINDOW_YESNO:
+         if (response == NSAlertFirstButtonReturn)
+            return UI_MSG_RESPONSE_YES;
+         if (response == NSAlertSecondButtonReturn)
+            return UI_MSG_RESPONSE_NO;
+         break;
+   }
+
+   return UI_MSG_RESPONSE_NA;
+}
+
+static enum ui_msg_window_response ui_msg_window_cocoa_error(ui_msg_window_state *state)
+{
+   return ui_msg_window_cocoa_dialog(state, UI_MSG_WINDOW_TYPE_ERROR);
+}
+
+static enum ui_msg_window_response ui_msg_window_cocoa_information(ui_msg_window_state *state)
+{
+   return ui_msg_window_cocoa_dialog(state, UI_MSG_WINDOW_TYPE_INFORMATION);
+}
+
+static enum ui_msg_window_response ui_msg_window_cocoa_question(ui_msg_window_state *state)
+{
+   return ui_msg_window_cocoa_dialog(state, UI_MSG_WINDOW_TYPE_QUESTION);
+}
+
+static enum ui_msg_window_response ui_msg_window_cocoa_warning(ui_msg_window_state *state)
+{
+   return ui_msg_window_cocoa_dialog(state, UI_MSG_WINDOW_TYPE_WARNING);
+}
+
+static ui_msg_window_t ui_msg_window_cocoa = {
+   ui_msg_window_cocoa_error,
+   ui_msg_window_cocoa_information,
+   ui_msg_window_cocoa_question,
+   ui_msg_window_cocoa_warning,
+   "cocoa"
+};
+
+static void* ui_application_cocoa_initialize(void)
+{
+   return NULL;
+}
+
+static void ui_application_cocoa_process_events(void)
+{
+    for (;;)
+    {
+        NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+        if (!event)
+            break;
+#ifndef HAVE_COCOA_METAL
+        [event retain];
+#endif
+        [NSApp sendEvent: event];
+#ifndef HAVE_COCOA_METAL
+        [event retain];
+#endif
+    }
+}
+
+static ui_application_t ui_application_cocoa = {
+   ui_application_cocoa_initialize,
+   ui_application_cocoa_process_events,
+   NULL,
+   false,
+   "cocoa"
+};
 
 #if defined(HAVE_COCOA_METAL)
 @interface RAWindow : NSWindow

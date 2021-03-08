@@ -11,6 +11,7 @@ build-retroarch-windows-x64:
   stage: build
   variables:
     MEDIA_PATH: .media
+    STRIP_BIN:  1
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
@@ -22,6 +23,7 @@ build-retroarch-windows-x64:
   script:
     - "MOC=/usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/bin/moc ./configure --host=x86_64-w64-mingw32.shared"
     - "make -j$NUMPROC"
+    - if [ $STRIP_BIN -eq 1 ]; then strip --strip-unneeded retroarch.exe; fi
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
@@ -52,6 +54,7 @@ build-retroarch-windows-i686:
   stage: build
   variables:
     MEDIA_PATH: .media
+    STRIP_BIN:  1
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
@@ -63,6 +66,7 @@ build-retroarch-windows-i686:
   script:
     - "MOC=/usr/lib/mxe/usr/i686-w64-mingw32.shared/qt5/bin/moc ./configure --host=i686-w64-mingw32.shared"
     - "make -j$NUMPROC"
+    - if [ $STRIP_BIN -eq 1 ]; then strip --strip-unneeded retroarch.exe; fi
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
@@ -98,10 +102,11 @@ build-retroarch-windows-msvc10-x64:
     ARCH:           x86_64
     MSYS_BIN_DIR:   C:\msys64\usr\bin
     SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
+    RCEDIT_BIN_DIR: C:\Program Files\rcedit
     PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
   before_script:
     - $Env:HOME = "."
-    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
   artifacts:
     paths:
     - retroarch.exe
@@ -113,6 +118,7 @@ build-retroarch-windows-msvc10-x64:
     - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2010_x64'"
     - Invoke-Expression $Script:MakeCmd
     - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
     # Create .media subdirectories
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
@@ -139,10 +145,11 @@ build-retroarch-windows-msvc10-i686:
     ARCH:           x86
     MSYS_BIN_DIR:   C:\msys64\usr\bin
     SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
+    RCEDIT_BIN_DIR: C:\Program Files\rcedit
     PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
   before_script:
     - $Env:HOME = "."
-    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
   artifacts:
     paths:
     - retroarch.exe
@@ -154,6 +161,7 @@ build-retroarch-windows-msvc10-i686:
     - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2010_x86'"
     - Invoke-Expression $Script:MakeCmd
     - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
     # Create .media subdirectories
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
     - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
@@ -170,11 +178,56 @@ build-retroarch-windows-msvc10-i686:
     - copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
     - Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
 
+build-retroarch-windows-msvc05-i686:
+  tags:
+    - win10
+  stage: build
+  variables:
+    MEDIA_PATH:     .media
+    MSYSTEM:        MINGW32
+    ARCH:           x86
+    MSYS_BIN_DIR:   C:\msys64\usr\bin
+    SDK_BIN_DIR:    C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
+    RCEDIT_BIN_DIR: C:\Program Files\rcedit
+    PEDEPS_BIN_DIR: C:\Program Files\pedeps-0.1.9-win64\bin
+    VS80COMNTOOLS:  C:\Program Files (x86)\Microsoft Visual Studio 8\Common7\Tools\
+  before_script:
+    - $Env:HOME = "."
+    - $Env:Path += -join(";", "$Env:SDK_BIN_DIR", ";", "$Env:RCEDIT_BIN_DIR", ";", "$Env:PEDEPS_BIN_DIR")
+  artifacts:
+    paths:
+    - retroarch.exe
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    # Build RetroArch
+    - $Script:MakeCmd = "$Env:MSYS_BIN_DIR\env.exe $Env:MSYS_BIN_DIR\bash.exe -l -c 'make -f Makefile.griffin platform=windows_msvc2005_x86'"
+    - Invoke-Expression $Script:MakeCmd
+    - mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
+    - rcedit-x64.exe "retroarch.exe" --set-icon "media\retroarch.ico"
+    # Create .media subdirectories
+    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio" -ItemType Directory
+    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video" -ItemType Directory
+    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg" -ItemType Directory
+    - New-Item -Path "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist" -ItemType Directory
+    # Copy audio/video filters
+    - Get-ChildItem -Path "libretro-common/audio/dsp_filters/*" -Include *.dsp | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/audio"
+    - Get-ChildItem -Path "gfx/video_filters/*" -Include *.filt | Copy-Item -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/filters/video"
+    # Copy default config file
+    - Copy-Item -Path "retroarch.cfg" -Destination "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/pkg/retroarch.default.cfg"
+    # Copy dll dependencies
+    # (note that msvc05 build should not have any, but this
+    # may change in the future)
+    - copypedeps.exe -r retroarch.exe "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist"
+    - Remove-Item "$Env:MEDIA_PATH/$Env:CI_PROJECT_NAME/redist/retroarch.exe" -ErrorAction Ignore
+
 build-retroarch-linux-x64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-amd64-ubuntu:xenial-gcc9
   stage: build
   variables:
     MEDIA_PATH: .media
+    STRIP_BIN:  1
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
@@ -189,6 +242,7 @@ build-retroarch-linux-x64:
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt"
     - "./configure --prefix=/usr"
     - "make -j$NUMPROC"
+    - if [ $STRIP_BIN -eq 1 ]; then strip --strip-unneeded retroarch; fi
     - "make install DESTDIR=${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt prefix=/usr"
     - "rm -rf ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt/etc"
     - "cd ${MEDIA_PATH}/${CI_PROJECT_NAME}/ && tar -czf AppDirQt.tar.gz AppDirQt && rm -rf AppDirQt && cd -"
@@ -198,6 +252,7 @@ build-retroarch-linux-x64:
     - "make clean"
     - "./configure --disable-qt --prefix=/usr"
     - "make -j$NUMPROC"
+    - if [ $STRIP_BIN -eq 1 ]; then strip --strip-unneeded retroarch; fi
     - "make install DESTDIR=${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir prefix=/usr"
     - "rm -rf ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir/etc"
     - "cd ${MEDIA_PATH}/${CI_PROJECT_NAME}/ && tar -czf AppDir.tar.gz AppDir && rm -rf AppDir && cd -"
@@ -216,6 +271,7 @@ build-retroarch-linux-i686:
   stage: build
   variables:
     MEDIA_PATH: .media
+    STRIP_BIN:  1
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
@@ -229,6 +285,7 @@ build-retroarch-linux-i686:
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt"
     - "./configure --prefix=/usr"
     - "make -j$NUMPROC"
+    - if [ $STRIP_BIN -eq 1 ]; then strip --strip-unneeded retroarch; fi
     - "make install DESTDIR=${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt prefix=/usr"
     - "rm -rf ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDirQt/etc"
     - "cd ${MEDIA_PATH}/${CI_PROJECT_NAME}/ && tar -czf AppDirQt.tar.gz AppDirQt && rm -rf AppDirQt && cd -"
@@ -238,6 +295,7 @@ build-retroarch-linux-i686:
     - "make clean"
     - "./configure --disable-qt --prefix=/usr"
     - "make -j$NUMPROC"
+    - if [ $STRIP_BIN -eq 1 ]; then strip --strip-unneeded retroarch; fi
     - "make install DESTDIR=${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir prefix=/usr"
     - "rm -rf ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir/etc"
     - "cd ${MEDIA_PATH}/${CI_PROJECT_NAME}/ && tar -czf AppDir.tar.gz AppDir && rm -rf AppDir && cd -"
@@ -251,76 +309,189 @@ build-retroarch-linux-i686:
     - "cp -f gfx/video_filters/*.so ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
-# Mac OS x86: RetroArch Unsigned DMG
+# Mac OS x86_x64 (OpenGL, 10.7)
 build-retroarch-osx-x64:
   tags:
-    - macosx
+    - macosx-packaging
   stage: build
   before_script:
     - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
-    - export SHELL_ID=$$
-  after_script:
-    # We really do not want any garbage left over
-    - umount "wc$SHELL_ID" || echo "Not mounted, so not caring right now."
-    - rm -rvf "wc$SHELL_ID" empty.dmg
   artifacts:
     paths:
-    - RetroArch.dmg
+    - retroarch
+    - RetroArch.tar.gz
     expire_in: 10 min
   dependencies: []
   script:
-    # Normal RetroArch Build
-    - ./configure --enable-metal
+    # Build RetroArch
+    - ./configure --disable-al
     - make -j$NUMPROC
-
-    # Cleanup for DMG creation
+    # Build filters
+    - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
+    - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
+    # Create app directory
     - rm -rvf "RetroArch.app/"
-
-    # Initialize for DMG Creation
     - mkdir -vp "RetroArch.app/Contents/MacOS"
-
-    # Copy resources and compiled program over
+    - mkdir -vp "RetroArch.app/Contents/Resources/video_filters"
+    - mkdir -vp "RetroArch.app/Contents/Resources/audio_filters"
+    # Copy resources and compiled RetroArch binary
     - cp -Rv "pkg/apple/OSX/"* "RetroArch.app/Contents"
     - cp retroarch RetroArch.app/Contents/MacOS
     - cp media/retroarch.icns RetroArch.app/Contents/Resources/
-    - mv RetroArch.app/Contents/Info_Metal.plist RetroArch.app/Contents/Info.plist
-
+    - cp libretro-common/audio/dsp_filters/*.dylib RetroArch.app/Contents/Resources/audio_filters
+    - cp libretro-common/audio/dsp_filters/*.dsp RetroArch.app/Contents/Resources/audio_filters
+    - cp gfx/video_filters/*.dylib RetroArch.app/Contents/Resources/video_filters
+    - cp gfx/video_filters/*.filt RetroArch.app/Contents/Resources/video_filters
+    - rm -rvf RetroArch.app/Contents/Info_Metal.plist
+    - rm -rvf RetroArch.app/Contents/modules_ppc
+    - rm -rvf RetroArch.app/Contents/Resources/default.metallib
+    - rm -rvf RetroArch.app/Contents/Resources/en.lproj/MainMenu_Metal.nib
     # Update properties within the application properties
     - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
     - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch.app/Contents/Info.plist
     - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
-    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.13/' RetroArch.app/Contents/Info.plist
-
+    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.7/' RetroArch.app/Contents/Info.plist
     # TODO: It seems this messes with code signing, so delete it??
     - rm -rvf RetroArch.app/Contents/en.lproj
+    # Create archive for use in packaging pipeline
+    - rm -f RetroArch.tar.gz
+    - tar -czf RetroArch.tar.gz RetroArch.app
+    - rm -rf RetroArch.app
 
-    # Undo the state from a previous failure, if so
-    - umount "wc$SHELL_ID" || echo "Not mounted, so not caring right now."
-    - rm -rvf RetroArch.dmg "wc$SHELL_ID" empty.dmg
+# Mac OS x86_x64 (Metal, 10.13)
+build-retroarch-osx-x64-metal:
+  tags:
+    - macosx-packaging
+  stage: build
+  before_script:
+    - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
+  artifacts:
+    paths:
+    - retroarch
+    - RetroArch_Metal.tar.gz
+    expire_in: 10 min
+  dependencies: []
+  script:
+    # Build RetroArch
+    - ./configure --enable-metal --disable-al --enable-coreaudio3
+    - make -j$NUMPROC
+    # Build filters
+    - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
+    - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
+    # Create app directory
+    - rm -rvf "RetroArch_Metal.app/"
+    - mkdir -vp "RetroArch_Metal.app/Contents/MacOS"
+    - mkdir -vp "RetroArch_Metal.app/Contents/Resources/video_filters"
+    - mkdir -vp "RetroArch_Metal.app/Contents/Resources/audio_filters"
+    # Copy resources and compiled RetroArch binary
+    - cp -Rv "pkg/apple/OSX/"* "RetroArch_Metal.app/Contents"
+    - cp retroarch RetroArch_Metal.app/Contents/MacOS
+    - cp media/retroarch.icns RetroArch_Metal.app/Contents/Resources/
+    - mv RetroArch_Metal.app/Contents/Info_Metal.plist RetroArch_Metal.app/Contents/Info.plist
+    - cp libretro-common/audio/dsp_filters/*.dylib RetroArch_Metal.app/Contents/Resources/audio_filters
+    - cp libretro-common/audio/dsp_filters/*.dsp RetroArch_Metal.app/Contents/Resources/audio_filters
+    - cp gfx/video_filters/*.dylib RetroArch_Metal.app/Contents/Resources/video_filters
+    - cp gfx/video_filters/*.filt RetroArch_Metal.app/Contents/Resources/video_filters
+    - rm -rvf RetroArch_Metal.app/Contents/modules_ppc
+    - rm -rvf RetroArch_Metal.app/Contents/Resources/en.lproj/MainMenu.nib
+    # Update properties within the application properties
+    - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch_Metal.app/Contents/Info.plist
+    - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch_Metal.app/Contents/Info.plist
+    - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch_Metal.app/Contents/Info.plist
+    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.13/' RetroArch_Metal.app/Contents/Info.plist
+    # TODO: It seems this messes with code signing, so delete it??
+    - rm -rvf RetroArch_Metal.app/Contents/en.lproj
+    # Create archive for use in packaging pipeline
+    - rm -f RetroArch_Metal.tar.gz
+    - tar -czf RetroArch_Metal.tar.gz RetroArch_Metal.app
+    - rm -rf RetroArch_Metal.app
 
-    # Create template DMG
-    - mkdir -p template
-    - hdiutil create -fs HFSX -layout SPUD -size 200m empty.dmg -srcfolder template -format UDRW -volname RetroArch -quiet
-    - rmdir template
+# Mac OS AArch64 (Metal, 10.14)
+build-retroarch-osx-arm64-metal:
+  tags:
+    - macosx
+  variables:
+    LIBRETRO_APPLE_PLATFORM: arm64-apple-macos10.15
+    LIBRETRO_APPLE_ISYSROOT: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+  stage: build
+  before_script:
+    - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
+  artifacts:
+    paths:
+    - retroarch
+    - RetroArch.tar.gz
+    expire_in: 10 min
+  dependencies: []
+  script:
+    # Build RetroArch
+    - ./configure --enable-metal --disable-al --enable-coreaudio3
+    - make ARCH=arm64 BUILDBOT=1 -j$NUMPROC
+    # Build filters
+    - "cd libretro-common/audio/dsp_filters && make ARCH=arm64 BUILDBOT=1 -j$NUMPROC build=release && cd ../../.."
+    - "cd gfx/video_filters && make ARCH=arm64 BUILDBOT=1 -j$NUMPROC build=release && cd ../.."
+    # Create app directory
+    - rm -rvf "RetroArch.app/"
+    - mkdir -vp "RetroArch.app/Contents/MacOS"
+    - mkdir -vp "RetroArch.app/Contents/Resources/video_filters"
+    - mkdir -vp "RetroArch.app/Contents/Resources/audio_filters"
+    # Copy resources and compiled RetroArch binary
+    - cp -Rv "pkg/apple/OSX/"* "RetroArch.app/Contents"
+    - cp retroarch RetroArch.app/Contents/MacOS
+    - cp media/retroarch.icns RetroArch.app/Contents/Resources/
+    - mv RetroArch.app/Contents/Info_Metal.plist RetroArch.app/Contents/Info.plist
+    - cp libretro-common/audio/dsp_filters/*.dylib RetroArch.app/Contents/Resources/audio_filters
+    - cp libretro-common/audio/dsp_filters/*.dsp RetroArch.app/Contents/Resources/audio_filters
+    - cp gfx/video_filters/*.dylib RetroArch.app/Contents/Resources/video_filters
+    - cp gfx/video_filters/*.filt RetroArch.app/Contents/Resources/video_filters
+    - rm -rvf RetroArch.app/Contents/modules_ppc
+    - rm -rvf RetroArch.app/Contents/Resources/en.lproj/MainMenu.nib
+    # Update properties within the application properties
+    - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
+    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.15/' RetroArch.app/Contents/Info.plist
+    # TODO: It seems this messes with code signing, so delete it??
+    - rm -rvf RetroArch.app/Contents/en.lproj
+    # Create archive for use in packaging pipeline
+    - rm -f RetroArch.tar.gz
+    - tar -czf RetroArch.tar.gz RetroArch.app
+    - rm -rf RetroArch.app
 
-    # Package the DMG together
-    - mkdir -p "wc$SHELL_ID"
-    - hdiutil attach empty.dmg -noautoopen -quiet -mountpoint "wc$SHELL_ID"
-    - rm -rf "wc$SHELL_ID"/RetroArch.app
-    - ditto -rsrc RetroArch.app "wc$SHELL_ID"/RetroArch.app
-    - ln -s /Applications "wc$SHELL_ID"/Applications
-    - WC_DEV=`hdiutil info | grep "wc$SHELL_ID" | grep "Apple_HFS" | awk '{print $1}'` && hdiutil detach "$WC_DEV" -quiet -force
-    - hdiutil convert empty.dmg -quiet -format UDZO -imagekey zlib-level=9 -o RetroArch.dmg
+.build-retroarch-macos-xcode:
+  # Metal/Universal x86_64 arm64 is default
+  tags:
+    - macosx-packaging
+  stage: build
+  variables:
+    XCARCHIVE_PATH: pkg/apple/build/RetroArchUniversal
+    XCPROJECT_NAME: RetroArch_Metal
+    XCCONFIG: GitLabCI.xcconfig
+  artifacts:
+    paths:
+    - ${XCPROJECT_NAME}.zip
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
+    - zip -qr ${XCPROJECT_NAME}.zip ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.app
 
-    # Cleanup afterwards
-    - umount "wc$SHELL_ID" || echo "Not mounted, so not caring right now."
-    - rm -rvf "wc$SHELL_ID" empty.dmg
+# Mac OS Universal, Metal
+build-retroarch-osx-universal-metal:
+  extends: .build-retroarch-macos-xcode
+
+build-retroarch-osx-opengl-x64:
+  extends: .build-retroarch-macos-xcode
+  variables:
+    XCARCHIVE_PATH: pkg/apple/build/RetroArchOpenGL
+    XCPROJECT_NAME: RetroArch
+    XCCONFIG: OpenGL_GitLabCI.xcconfig
 
 build-retroarch-dingux-mips32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
   stage: build
   variables:
     MEDIA_PATH: .media
+    STRIP_BIN:  1
   before_script:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
@@ -586,6 +757,23 @@ build-static-retroarch-ctr:
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
+build-static-retroarch-ctr-legacy:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:ctr-legacy
+  stage: prepare-for-static-cores
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    -  retroarch-precompiled/
+    expire_in: 10 min
+  dependencies: []
+  script:
+    # Allow failure since we don't have a core
+    - "make -f Makefile.ctr -j$NUMPROC ||:"
+    - "mkdir .retroarch-precompiled"
+    - "cp -r ./* .retroarch-precompiled/"
+    - "mv .retroarch-precompiled/ retroarch-precompiled/"
+
 build-static-retroarch-dummy-ctr:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
   stage: build
@@ -793,6 +981,7 @@ trigger_static-cores:
   - build-static-retroarch-ps2
   - build-static-retroarch-psp
   - build-static-retroarch-ctr
+  - build-static-retroarch-ctr-legacy
   - build-static-retroarch-wiiu
   - build-static-retroarch-wii
   - build-static-retroarch-ngc

@@ -96,10 +96,10 @@ function setupFileSystem(backend)
 
    /* create an XmlHttpRequest filesystem for the bundled data */
    var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
-      (".index-xhr", "/assets/frontend/bundle/");
+      (".index-xhr", "assets/frontend/bundle/");
    /* create an XmlHttpRequest filesystem for core assets */
    var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
-      (".index-xhr", "/assets/cores/");
+      (".index-xhr", "assets/cores/");
 
    console.log("WEBPLAYER: initializing filesystem: " + backend);
    mfs.mount('/home/web_user/retroarch/userdata', afs);

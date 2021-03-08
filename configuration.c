@@ -2792,12 +2792,12 @@ static config_file_t *open_default_config_file(void)
       if (!saved)
       {
          /* WARN here to make sure user has a good chance of seeing it. */
-         RARCH_ERR("Failed to create new config file in: \"%s\".\n",
+         RARCH_ERR("[Config]: Failed to create new config file in: \"%s\".\n",
                conf_path);
          goto error;
       }
 
-      RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
+      RARCH_WARN("[Config]: Created new config file in: \"%s\".\n", conf_path);
    }
 #elif defined(OSX)
    if (!fill_pathname_application_data(application_data,
@@ -2843,7 +2843,7 @@ static config_file_t *open_default_config_file(void)
    {
       fill_pathname_join(conf_path, application_data,
             FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-      RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
+      RARCH_LOG("[Config]: Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
 
@@ -2852,7 +2852,7 @@ static config_file_t *open_default_config_file(void)
    {
       fill_pathname_join(conf_path, getenv("HOME"),
             "." FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-      RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
+      RARCH_LOG("[Config]: Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
 
@@ -2885,7 +2885,7 @@ static config_file_t *open_default_config_file(void)
 
          conf = config_file_new_from_path_to_string(skeleton_conf);
          if (conf)
-            RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
+            RARCH_WARN("[Config]: Using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
          else
             conf = config_file_new_alloc();
 
@@ -2900,12 +2900,12 @@ static config_file_t *open_default_config_file(void)
          if (!saved)
          {
             /* WARN here to make sure user has a good chance of seeing it. */
-            RARCH_ERR("Failed to create new config file in: \"%s\".\n",
+            RARCH_ERR("[Config]: Failed to create new config file in: \"%s\".\n",
                   conf_path);
             goto error;
          }
 
-         RARCH_WARN("Config: Created new config file in: \"%s\".\n",
+         RARCH_WARN("[Config]: Created new config file in: \"%s\".\n",
                conf_path);
       }
    }
@@ -3019,10 +3019,10 @@ static bool config_load_file(global_t *global,
       {
          bool result = config_append_file(conf, extra_path);
 
-         RARCH_LOG("Config: appending config \"%s\"\n", extra_path);
+         RARCH_LOG("[Config]: Appending config \"%s\".\n", extra_path);
 
          if (!result)
-            RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
+            RARCH_ERR("[Config]: Failed to append config \"%s\".\n", extra_path);
          extra_path = strtok_r(NULL, "|", &save);
       }
    }
@@ -3299,7 +3299,7 @@ static bool config_load_file(global_t *global,
          *settings->paths.directory_screenshot = '\0';
       else if (!path_is_directory(settings->paths.directory_screenshot))
       {
-         RARCH_WARN("screenshot_directory is not an existing directory, ignoring ...\n");
+         RARCH_WARN("[Config]: 'screenshot_directory' is not an existing directory, ignoring ...\n");
          *settings->paths.directory_screenshot = '\0';
       }
    }
@@ -3407,7 +3407,7 @@ static bool config_load_file(global_t *global,
          }
       }
       else
-         RARCH_WARN("savefile_directory is not a directory, ignoring ...\n");
+         RARCH_WARN("[Config]: 'savefile_directory' is not a directory, ignoring ...\n");
    }
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
@@ -3430,7 +3430,7 @@ static bool config_load_file(global_t *global,
          }
       }
       else
-         RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
+         RARCH_WARN("[Config]: 'savestate_directory' is not a directory, ignoring ...\n");
    }
 
    config_read_keybinds_conf(conf);
@@ -3579,7 +3579,7 @@ bool config_load_override(void *data)
       temp_path[0]    = '\0';
 
       RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
-            game_path);
+            content_path);
 
       if (should_append)
       {
@@ -3819,16 +3819,16 @@ static void config_parse_file(global_t *global)
 {
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
-      RARCH_LOG("[config] Loading default config.\n");
+      RARCH_LOG("[Config]: Loading default config.\n");
    }
 
    {
       const char *config_path = path_get(RARCH_PATH_CONFIG);
-      RARCH_LOG("[config] loading config from: %s.\n", config_path);
+      RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
 
       if (!config_load_file(global, config_path, config_get_ptr()))
       {
-         RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
+         RARCH_ERR("[Config]: Couldn't find config at path: \"%s\".\n",
                config_path);
       }
    }
@@ -4806,7 +4806,7 @@ void config_load_file_salamander(void)
 
    /* Read 'libretro_path' value and update
     * RARCH_PATH_CORE */
-   RARCH_LOG("[config] Loading salamander config from: \"%s\".\n",
+   RARCH_LOG("[Config]: Loading salamander config from: \"%s\".\n",
          config_path);
 
    if (config_get_path(config, "libretro_path",
@@ -4854,10 +4854,10 @@ void config_save_file_salamander(void)
 
 end:
    if (success)
-      RARCH_LOG("[config] Saving salamander config to: \"%s\".\n",
+      RARCH_LOG("[Config]: Saving salamander config to: \"%s\".\n",
             config_path);
    else
-      RARCH_ERR("[config] Failed to create new salamander config file in: \"%s\".\n",
+      RARCH_ERR("[Config]: Failed to create new salamander config file in: \"%s\".\n",
             config_path);
 
    if (config)

@@ -110,7 +110,6 @@ int32_t path_get_size(const char *path)
  **/
 bool path_mkdir(const char *dir)
 {
-   bool         sret  = false;
    bool norecurse     = false;
    char     *basedir  = NULL;
 
@@ -132,15 +131,9 @@ bool path_mkdir(const char *dir)
       return false;
    }
 
-   if (path_is_directory(basedir))
+   if (     path_is_directory(basedir)
+         || path_mkdir(basedir))
       norecurse = true;
-   else
-   {
-      sret      = path_mkdir(basedir);
-
-      if (sret)
-         norecurse = true;
-   }
 
    free(basedir);
 
@@ -151,9 +144,8 @@ bool path_mkdir(const char *dir)
       /* Don't treat this as an error. */
       if (ret == -2 && path_is_directory(dir))
          return true;
-
-      return (ret == 0);
+      else if (ret == 0)
+         return true;
    }
-
-   return sret;
+   return false;
 }

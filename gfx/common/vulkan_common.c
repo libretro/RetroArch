@@ -3004,7 +3004,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    for (i = 0; i < present_mode_count; i++)
    {
-      RARCH_LOG("[Vulkan]: Swapchain supports present mode: %u.\n",
+      RARCH_DBG("[Vulkan]: Swapchain supports present mode: %u.\n",
             present_modes[i]);
    }
 

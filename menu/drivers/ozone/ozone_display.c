@@ -611,8 +611,8 @@ void ozone_draw_messagebox(
          int width = font_driver_get_message_width(
                ozone->fonts.footer.font, msg, (unsigned)strlen(msg), 1);
 
-         longest_width = (width > longest_width) ?
-               width : longest_width;
+         if (width > longest_width)
+            longest_width = width;
       }
    }
 

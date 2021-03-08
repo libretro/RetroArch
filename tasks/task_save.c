@@ -46,6 +46,10 @@
 #include "../network/netplay/netplay.h"
 #endif
 
+#ifdef HAVE_CHEEVOS
+#include "../cheevos/cheevos.h"
+#endif
+
 #include "../content.h"
 #include "../core.h"
 #include "../file_path_special.h"
@@ -63,6 +67,11 @@
 #else
 #define SAVE_STATE_CHUNK 4096
 #endif
+
+#define RASTATE_VERSION 1
+#define RASTATE_MEM_BLOCK "MEM "
+#define RASTATE_CHEEVOS_BLOCK "ACHV"
+#define RASTATE_END_BLOCK "END "
 
 struct ram_type
 {
@@ -150,6 +159,15 @@ static struct autosave_st autosave_state;
 /* TODO/FIXME - global state - perhaps move outside this file */
 static bool save_state_in_background       = false;
 static struct string_list *task_save_files = NULL;
+
+typedef struct rastate_size_info
+{
+   size_t total_size;
+   size_t coremem_size;
+#ifdef HAVE_CHEEVOS
+   size_t cheevos_size;
+#endif
+} rastate_size_info_t;
 
 #ifdef HAVE_THREADS
 /**
@@ -404,7 +422,6 @@ void autosave_unlock(void)
 bool content_undo_load_state(void)
 {
    unsigned i;
-   retro_ctx_serialize_info_t serial_info;
    size_t temp_data_size;
    bool ret                  = false;
    unsigned num_blocks       = 0;
@@ -476,14 +493,11 @@ bool content_undo_load_state(void)
    temp_data_size         = undo_load_buf.size;
    memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
 
-   serial_info.data_const = temp_data;
-   serial_info.size       = temp_data_size;
-
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
    content_save_state("RAM", false, false);
 
-   ret                    = core_unserialize(&serial_info);
+   ret                    = content_deserialize_state(temp_data, temp_data_size);
 
    /* Clean up the temporary copy */
    free(temp_data);
@@ -575,13 +589,106 @@ static void task_save_handler_finished(retro_task_t *task,
    free(state);
 }
 
-static void *get_serialized_data(const char *path, size_t serial_size)
+static size_t content_align_size(size_t size)
+{
+   /* align to 8-byte boundary */
+   return ((size + 7) & ~7);
+}
+
+static bool content_get_rastate_size(rastate_size_info_t* size)
+{
+   retro_ctx_size_info_t info;
+
+   core_serialize_size(&info);
+   if (!info.size)
+      return false;
+
+   size->coremem_size = info.size;
+   /* 8-byte identifier, 8-byte block header, content, 8-byte terminator */
+   size->total_size = 8 + 8 + content_align_size(info.size) + 8;
+
+#ifdef HAVE_CHEEVOS
+   size->cheevos_size = rcheevos_get_serialize_size();
+   if (size->cheevos_size > 0)
+      size->total_size += 8 + content_align_size(size->cheevos_size); /* 8-byte block header + content */
+#endif
+
+   return true;
+}
+
+size_t content_get_serialized_size(void)
+{
+   rastate_size_info_t size;
+   if (!content_get_rastate_size(&size))
+      return 0;
+
+   return size.total_size;
+}
+
+static void content_write_block_header(unsigned char* output, const char* header, size_t size)
+{
+   memcpy(output, header, 4);
+   output[4] = ((size) & 0xFF);
+   output[5] = ((size >> 8) & 0xFF);
+   output[6] = ((size >> 16) & 0xFF);
+   output[7] = ((size >> 24) & 0xFF);
+}
+
+static bool content_write_serialized_state(void* buffer, rastate_size_info_t* size)
 {
    retro_ctx_serialize_info_t serial_info;
-   bool ret    = false;
-   void *data  = NULL;
+   unsigned char* output = (unsigned char*)buffer;
 
-   if (!serial_size)
+   /* 8-byte identifier "RASTATE1" where 1 is the version */
+   memcpy(output, "RASTATE", 7);
+   output[7] = RASTATE_VERSION;
+   output += 8;
+
+   /* important - write the unaligned size - some cores fail if they aren't passed the exact right size. */
+   content_write_block_header(output, RASTATE_MEM_BLOCK, size->coremem_size);
+   output += 8;
+
+   /* important - pass the unaligned size to the core. some fail if it isn't exactly what they're expecting. */
+   serial_info.size = size->coremem_size;
+   serial_info.data = (void*)output;
+   if (!core_serialize(&serial_info))
+      return false;
+
+   output += content_align_size(size->coremem_size);
+
+#ifdef HAVE_CHEEVOS
+   if (size->cheevos_size)
+   {
+      content_write_block_header(output, RASTATE_CHEEVOS_BLOCK, size->cheevos_size);
+
+      if (rcheevos_get_serialized_data(output + 8))
+         output += content_align_size(size->cheevos_size) + 8;
+   }
+#endif
+
+   content_write_block_header(output, RASTATE_END_BLOCK, 0);
+
+   return true;
+}
+
+bool content_serialize_state(void* buffer, size_t buffer_size)
+{
+   rastate_size_info_t size;
+   if (!content_get_rastate_size(&size))
+      return false;
+
+   if (size.total_size > buffer_size)
+      return false;
+
+   return content_write_serialized_state(buffer, &size);
+}
+
+static void *content_get_serialized_data(size_t* serial_size)
+{
+   void* data;
+
+   rastate_size_info_t size;
+   if (!content_get_rastate_size(&size))
       return NULL;
 
    /* Ensure buffer is initialised to zero
@@ -589,21 +696,17 @@ static void *get_serialized_data(const char *path, size_t serial_size)
     *   sizes when core requests a larger buffer
     *   than it needs (and leaves the excess
     *   as uninitialised garbage) */
-   data = calloc(serial_size, 1);
-
+   data = calloc(size.total_size, 1);
    if (!data)
       return NULL;
 
-   serial_info.data = data;
-   serial_info.size = serial_size;
-   ret              = core_serialize(&serial_info);
-
-   if (!ret)
+   if (!content_write_serialized_state(data, &size))
    {
       free(data);
       return NULL;
    }
 
+   *serial_size = size.total_size;
    return data;
 }
 
@@ -634,7 +737,11 @@ static void task_save_handler(retro_task_t *task)
    }
 
    if (!state->data)
-      state->data  = get_serialized_data(state->path, state->size);
+   {
+      size_t size;
+      state->data = content_get_serialized_data(&size);
+      state->size = (ssize_t)size;
+   }
 
    remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
 
@@ -847,6 +954,11 @@ static void task_load_handler(retro_task_t *task)
          goto error;
    }
 
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      task_set_cancelled(task, true);
+#endif
+
    remaining          = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
    bytes_read         = intfstream_read(state->file,
          (uint8_t*)state->data + state->bytes_read, remaining);
@@ -921,6 +1033,91 @@ error:
    task_load_handler_finished(task, state);
 }
 
+static bool content_load_rastate1(unsigned char* input, size_t size)
+{
+   unsigned char* stop = input + size;
+   unsigned char* marker;
+   bool seen_core = false;
+#ifdef HAVE_CHEEVOS
+   bool seen_cheevos = false;
+#endif
+
+   input += 8;
+   while (input < stop)
+   {
+      size_t block_size = (input[7] << 24 | input[6] << 16 | input[5] << 8 | input[4]);
+      marker = input;
+      input += 8;
+
+      if (memcmp(marker, RASTATE_MEM_BLOCK, 4) == 0)
+      {
+         retro_ctx_serialize_info_t serial_info;
+         serial_info.data_const = (void*)input;
+         serial_info.size = block_size;
+         if (!core_unserialize(&serial_info))
+            return false;
+
+         seen_core = true;
+      }
+#ifdef HAVE_CHEEVOS
+      else if (memcmp(marker, RASTATE_CHEEVOS_BLOCK, 4) == 0)
+      {
+         if (rcheevos_set_serialized_data((void*)input))
+            seen_cheevos = true;
+      }
+#endif
+      else if (memcmp(marker, RASTATE_END_BLOCK, 4) == 0)
+      {
+         break;
+      }
+
+      input += content_align_size(block_size);
+   }
+
+   if (!seen_core)
+      return false;
+
+#ifdef HAVE_CHEEVOS
+   if (!seen_cheevos)
+      rcheevos_set_serialized_data(NULL);
+#endif
+
+   return true;
+}
+
+bool content_deserialize_state(const void* serialized_data, size_t serialized_size)
+{
+   if (memcmp(serialized_data, "RASTATE", 7) != 0)
+   {
+      /* old format is just core data, load it directly */
+      retro_ctx_serialize_info_t serial_info;
+      serial_info.data_const = serialized_data;
+      serial_info.size = serialized_size;
+      if (!core_unserialize(&serial_info))
+         return false;
+
+#ifdef HAVE_CHEEVOS
+      rcheevos_set_serialized_data(NULL);
+#endif
+   }
+   else
+   {
+      unsigned char* input = (unsigned char*)serialized_data;
+      switch (input[7]) /* version */
+      {
+         case 1:
+            if (!content_load_rastate1(input, serialized_size))
+               return false;
+            break;
+
+         default:
+            return false;
+      }
+   }
+
+   return true;
+}
+
 /**
  * content_load_state_cb:
  * @path      : path that state will be loaded from.
@@ -931,7 +1128,6 @@ static void content_load_state_cb(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-   retro_ctx_serialize_info_t serial_info;
    unsigned i;
    bool ret;
    load_task_data_t *load_data = (load_task_data_t*)task_data;
@@ -941,6 +1137,11 @@ static void content_load_state_cb(retro_task_t *task,
    struct sram_block *blocks   = NULL;
    settings_t *settings        = config_get_ptr();
    bool block_sram_overwrite   = settings->bools.block_sram_overwrite;
+
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      goto error;
+#endif
 
    RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -1024,15 +1225,12 @@ static void content_load_state_cb(retro_task_t *task,
       }
    }
 
-   serial_info.data_const = buf;
-   serial_info.size       = size;
-
    /* Backup the current state so we can undo this load */
    content_save_state("RAM", false, false);
 
-   ret                    = core_unserialize(&serial_info);
+   ret = content_deserialize_state(buf, size);
 
-    /* Flush back. */
+   /* Flush back. */
    for (i = 0; i < num_blocks; i++)
    {
       if (blocks[i].data)
@@ -1266,15 +1464,17 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 {
    retro_ctx_size_info_t info;
    void *data  = NULL;
+   size_t serial_size;
 
    core_serialize_size(&info);
 
    if (info.size == 0)
       return false;
+   serial_size = info.size;
 
    if (!save_state_in_background)
    {
-      data = get_serialized_data(path, info.size);
+      data = content_get_serialized_data(&serial_size);
 
       if (!data)
       {
@@ -1287,7 +1487,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
       RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
             msg_hash_to_str(MSG_SAVING_STATE),
             path,
-            (unsigned)info.size,
+            (unsigned)serial_size,
             msg_hash_to_str(MSG_BYTES));
    }
 
@@ -1301,15 +1501,15 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
          RARCH_LOG("[State]: %s ...\n",
                msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
 
-         task_push_load_and_save_state(path, data, info.size, true, autosave);
+         task_push_load_and_save_state(path, data, serial_size, true, autosave);
       }
       else
-         task_push_save_state(path, data, info.size, autosave);
+         task_push_save_state(path, data, serial_size, autosave);
    }
    else
    {
       if (!data)
-         data = get_serialized_data(path, info.size);
+         data = content_get_serialized_data(&serial_size);
 
       if (!data)
       {
@@ -1328,16 +1528,16 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
          undo_load_buf.data = NULL;
       }
 
-      undo_load_buf.data = malloc(info.size);
+      undo_load_buf.data = malloc(serial_size);
       if (!undo_load_buf.data)
       {
          free(data);
          return false;
       }
 
-      memcpy(undo_load_buf.data, data, info.size);
+      memcpy(undo_load_buf.data, data, serial_size);
       free(data);
-      undo_load_buf.size = info.size;
+      undo_load_buf.size = serial_size;
       strlcpy(undo_load_buf.path, path, sizeof(undo_load_buf.path));
    }
 

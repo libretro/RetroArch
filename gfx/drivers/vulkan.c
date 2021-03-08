@@ -1345,7 +1345,7 @@ static void vulkan_set_nonblock_state(void *data, bool state,
    if (!vk)
       return;
 
-   RARCH_LOG("[Vulkan]: VSync => %s\n", state ? "off" : "on");
+   RARCH_LOG("[Vulkan]: VSync => %s\n", state ? "OFF" : "ON");
 
    if (!state)
       interval = swap_interval;

@@ -50,7 +50,7 @@
 #define MAX_GAMMA_SETTING 1
 #endif
 
-#if defined(XENON) || defined(_XBOX360)
+#if defined(XENON) || defined(_XBOX360) || defined(__PSL1GHT__) || defined(__PS3__)
 #define DEFAULT_ASPECT_RATIO 1.7778f
 #elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
 #define DEFAULT_ASPECT_RATIO 1.3333f
@@ -364,7 +364,7 @@
 /* 1:1 PAR */
 #define DEFAULT_ASPECT_RATIO_AUTO false
 
-#if defined(_XBOX360)
+#if defined(_XBOX360) || defined(__PS3__)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_16_9
 #elif defined(PSP) || defined(_3DS) || defined(HAVE_LIBNX) || defined(VITA)
 #define DEFAULT_ASPECT_RATIO_IDX ASPECT_RATIO_CORE
@@ -1281,7 +1281,7 @@ static const bool ui_companion_toggle = false;
 
 #define DEFAULT_UI_MENUBAR_ENABLE true
 
-#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) | defined(__PS3__)
+#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
 static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;

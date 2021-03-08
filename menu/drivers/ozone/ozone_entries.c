@@ -55,14 +55,11 @@ static void ozone_draw_entry_value(
       uint32_t alpha_uint32,
       menu_entry_t *entry)
 {
-   bool switch_is_on     = true;
-   bool do_draw_text     = false;
-   float scale_factor    = ozone->last_scale_factor;
+   bool switch_is_on                 = true;
+   bool do_draw_text                 = false;
+   float scale_factor                = ozone->last_scale_factor;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-
-   if (!entry->checked && string_is_empty(value))
-      return;
 
    /* check icon */
    if (entry->checked)
@@ -88,20 +85,16 @@ static void ozone_draw_entry_value(
          dispctx->blend_end(userdata);
       return;
    }
+   else if (string_is_empty(value))
+      return;
+      
 
    /* text value */
    if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
          (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
-   {
       switch_is_on = false;
-      do_draw_text = false;
-   }
    else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
-   {
-      switch_is_on = true;
-      do_draw_text = false;
-   }
+         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))) { }
    else
    {
       if (!string_is_empty(entry->value))

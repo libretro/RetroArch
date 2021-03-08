@@ -48,38 +48,6 @@
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 
-#if defined(_WIN32)
-#ifdef _MSC_VER
-#define setmode _setmode
-#endif
-#include <sys/stat.h>
-#ifdef _XBOX
-#include <xtl.h>
-#define INVALID_FILE_ATTRIBUTES -1
-#else
-#include <io.h>
-#include <fcntl.h>
-#include <direct.h>
-#include <windows.h>
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
-#endif
-#endif
-#elif defined(VITA)
-#define SCE_ERROR_ERRNO_EEXIST 0x80010011
-#include <psp2/io/fcntl.h>
-#include <psp2/io/dirent.h>
-#include <psp2/io/stat.h>
-#else
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
-
-#if defined(PSP)
-#include <pspkernel.h>
-#endif
-
 #ifdef _WIN32
 #include <direct.h>
 #else
@@ -212,15 +180,11 @@ char *path_remove_extension(char *path)
 bool path_is_compressed_file(const char* path)
 {
    const char *ext = path_get_extension(path);
-
-   if (string_is_empty(ext))
-      return false;
-
-   if (string_is_equal_noncase(ext, "zip") ||
-       string_is_equal_noncase(ext, "apk") ||
-       string_is_equal_noncase(ext, "7z"))
-      return true;
-
+   if (!string_is_empty(ext))
+      if (  string_is_equal_noncase(ext, "zip") ||
+            string_is_equal_noncase(ext, "apk") ||
+            string_is_equal_noncase(ext, "7z"))
+         return true;
    return false;
 }
 

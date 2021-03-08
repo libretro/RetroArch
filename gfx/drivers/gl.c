@@ -352,7 +352,7 @@ static bool gl2_recreate_fbo(
          == RARCH_GL_FRAMEBUFFER_COMPLETE)
       return true;
 
-   RARCH_WARN("Failed to reinitialize FBO texture.\n");
+   RARCH_WARN("[GL]: Failed to reinitialize FBO texture.\n");
    return false;
 }
 
@@ -1001,7 +1001,7 @@ static void gl2_renderchain_recompute_pass_sizes(
       }
 
       if (size_modified)
-         RARCH_WARN("FBO textures exceeded maximum size of GPU (%dx%d). Resizing to fit.\n", max_size, max_size);
+         RARCH_WARN("[GL]: FBO textures exceeded maximum size of GPU (%dx%d). Resizing to fit.\n", max_size, max_size);
 
       last_width      = fbo_rect->img_width;
       last_height     = fbo_rect->img_height;
@@ -2040,7 +2040,7 @@ static bool gl2_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
    if (type != parse_type)
    {
       if (!string_is_empty(shader_path))
-         RARCH_WARN("[GL] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
+         RARCH_WARN("[GL]: Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
             shader_path, video_shader_type_to_str(parse_type), video_shader_type_to_str(type));
 
       shader_path = NULL;
@@ -2515,7 +2515,7 @@ static void gl2_video_layout_fbo_init(gl_t *gl, unsigned width, unsigned height)
 
    if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) != 
          RARCH_GL_FRAMEBUFFER_COMPLETE)
-      RARCH_LOG("Unable to create FBO for video_layout\n");
+      RARCH_LOG("[GL]: Unable to create FBO for video_layout\n");
 
    gl2_bind_fb(0);
 }
@@ -3244,7 +3244,7 @@ static void gl2_set_nonblock_state(
    if (!gl)
       return;
 
-   RARCH_LOG("[GL]: VSync => %s\n", state ? "off" : "on");
+   RARCH_LOG("[GL]: VSync => %s\n", state ? "OFF" : "ON");
 
    gl2_context_bind_hw_render(gl, false);
 
@@ -3294,7 +3294,7 @@ static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const vi
    {
       video_driver_set_rgba();
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
-                 "32-bit path will require conversion.\n");
+                 "[GL]: 32-bit path will require conversion.\n");
    }
    /* TODO/FIXME - No extensions for float FBO currently. */
 #endif
@@ -3953,7 +3953,7 @@ static void *gl2_init(const video_info_t *video,
 
    if (!gl_check_error(&error_string))
    {
-      RARCH_ERR("%s\n", error_string);
+      RARCH_ERR("[GL]: %s\n", error_string);
       free(error_string);
       goto error;
    }

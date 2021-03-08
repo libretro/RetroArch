@@ -19,6 +19,12 @@ else
 CXX                   = $(TOOLCHAIN_DIR)/usr/bin/mipsel-gcw0-linux-uclibc-g++
 endif
 
+ifdef GCW0_STRIP
+STRIP                 = $(GCW0_STRIP)
+else
+STRIP                 = $(TOOLCHAIN_DIR)/usr/bin/mipsel-gcw0-linux-uclibc-strip
+endif
+
 GCW0_SDL_CONFIG      ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config
 GCW0_FREETYPE_CONFIG ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config
 GCW0_MK_SQUASH_FS    ?= $(TOOLCHAIN_DIR)/usr/bin/mksquashfs
@@ -212,6 +218,7 @@ opk: $(TARGET)
 	echo "$$DESKTOP_ENTRY" > default.gcw0.desktop
 	rm -f $(OPK_NAME)
 	cp media/ico_src/icon32.png retroarch.png
+	if [ $$STRIP_BIN -eq 1 ]; then $(STRIP) --strip-unneeded retroarch; fi
 	$(GCW0_MK_SQUASH_FS) retroarch default.gcw0.desktop retroarch.png $(OPK_NAME) -all-root -no-xattrs -noappend -no-exports
 	rm -f default.gcw0.desktop retroarch.png
 

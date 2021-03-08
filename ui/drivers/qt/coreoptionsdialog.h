@@ -26,6 +26,7 @@ private slots:
    void clearLayout();
    void buildLayout();
    void onSaveGameSpecificOptions();
+   void onSaveFolderSpecificOptions();
    void onCoreOptionComboBoxCurrentIndexChanged(int index);
    void onCoreOptionResetClicked();
    void onCoreOptionResetAllClicked();

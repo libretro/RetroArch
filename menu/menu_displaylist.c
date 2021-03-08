@@ -900,6 +900,90 @@ static unsigned menu_displaylist_parse_core_manager_list(
    return count;
 }
 
+static unsigned menu_displaylist_parse_core_option_override_list(
+      menu_displaylist_info_t *info)
+{
+   unsigned count             = 0;
+   bool core_has_options      = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) &&
+         rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
+   bool game_options_active   = rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL);
+   bool folder_options_active = rarch_ctl(RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE, NULL);
+
+   /* Sanity check - cannot handle core option
+    * overrides if:
+    * - Core is 'dummy'
+    * - Core has no options
+    * - No content has been loaded */
+   if (!core_has_options ||
+       string_is_empty(path_get(RARCH_PATH_CONTENT)))
+      goto end;
+
+   /* Show currently active core options file */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO),
+         msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_INFO),
+         MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_INFO,
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+      count++;
+
+   /* Save core option overrides */
+   if (!game_options_active)
+   {
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE),
+            msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE),
+            MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+            MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_CREATE, 0, 0))
+         count++;
+
+      if (!folder_options_active)
+         if (menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE),
+               MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+               MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE, 0, 0))
+            count++;
+   }
+
+   /* Remove core option overrides */
+   if (game_options_active)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE),
+            msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE),
+            MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+            MENU_SETTING_ACTION_GAME_SPECIFIC_CORE_OPTIONS_REMOVE, 0, 0))
+         count++;
+
+   if (folder_options_active)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE),
+            msg_hash_to_str(MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE),
+            MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+            MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE, 0, 0))
+         count++;
+end:
+   /* Reset core options */
+   if (core_has_options)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS_RESET),
+            MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
+            MENU_SETTING_ACTION_CORE_OPTIONS_RESET, 0, 0))
+         count++;
+
+   /* Fallback, in case we open this menu while running
+    * a core without options */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+            MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+            0, 0, 0))
+         count++;
+
+   return count;
+}
+
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    int controller;
@@ -2613,7 +2697,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
                MENU_ENUM_LABEL_CORE_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0))
+               MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0))
             count++;
       }
 
@@ -4115,7 +4199,9 @@ static int menu_displaylist_parse_input_device_type_list(menu_displaylist_info_t
           * mapped to this entry */
          if (current_device == devices[i])
          {
-            menu_entries_set_checked(info->list, menu_index, true);
+            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+            if (cbs)
+               cbs->checked = true;
             menu_navigation_set_selection(menu_index);
          }
 
@@ -4216,7 +4302,9 @@ static int menu_displaylist_parse_input_device_index_list(menu_displaylist_info_
           * mapped to this entry */
          if (i == map)
          {
-            menu_entries_set_checked(info->list, menu_index, true);
+            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+            if (cbs)
+               cbs->checked = true;
             menu_navigation_set_selection(menu_index);
             current_device = i;
          }
@@ -4229,7 +4317,9 @@ static int menu_displaylist_parse_input_device_index_list(menu_displaylist_info_
    /* Disabled is the last device, which is the first entry */
    if (current_device < 0)
    {
-      menu_entries_set_checked(info->list, 0, true);
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[0].actiondata;
+      if (cbs)
+         cbs->checked = true;
       menu_navigation_set_selection(0);
    }
 
@@ -4329,7 +4419,9 @@ static int menu_displaylist_parse_input_description_list(menu_displaylist_info_t
              * mapped to this entry */
             if (current_remap_idx == i)
             {
-               menu_entries_set_checked(info->list, menu_index, true);
+               menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+               if (cbs)
+                  cbs->checked = true;
                menu_navigation_set_selection(menu_index);
                current_input_mapped = true;
             }
@@ -4351,7 +4443,9 @@ static int menu_displaylist_parse_input_description_list(menu_displaylist_info_t
       /* Add checkmark if input is currently unmapped */
       if (!current_input_mapped)
       {
-         menu_entries_set_checked(info->list, menu_index, true);
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+         if (cbs)
+            cbs->checked = true;
          menu_navigation_set_selection(menu_index);
       }
 
@@ -4445,7 +4539,9 @@ static int menu_displaylist_parse_input_description_kbd_list(menu_displaylist_in
           * mapped to this entry */
          if (current_key_id == key_id)
          {
-            menu_entries_set_checked(info->list, menu_index, true);
+            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+            if (cbs)
+               cbs->checked = true;
             menu_navigation_set_selection(menu_index);
          }
 
@@ -4998,7 +5094,9 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
          /* Add checkmark if item is currently selected */
          if (current_thumbnail_mode == thumbnail_mode)
          {
-            menu_entries_set_checked(list, i, true);
+            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+            if (cbs)
+               cbs->checked = true;
             menu_navigation_set_selection(i);
          }
       }
@@ -6571,7 +6669,9 @@ unsigned menu_displaylist_build_list(
 
                   if (video_list[i].current)
                   {
-                     menu_entries_set_checked(list, i, true);
+                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked = true;
                      menu_navigation_set_selection(i);
                   }
                }
@@ -6609,7 +6709,9 @@ unsigned menu_displaylist_build_list(
                if (string_is_empty(current_core_name) ||
                      string_is_equal(current_core_name, "DETECT"))
                {
-                  menu_entries_set_checked(list, 0, true);
+                  menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[0].actiondata;
+                  if (cbs)
+                     cbs->checked = true;
                   menu_navigation_set_selection(0);
                }
 
@@ -6631,7 +6733,9 @@ unsigned menu_displaylist_build_list(
 
                      if (string_is_equal(current_core_name, core_info->display_name))
                      {
-                        menu_entries_set_checked(list, i + 1, true);
+                        menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i + 1].actiondata;
+                        if (cbs)
+                           cbs->checked = true;
                         menu_navigation_set_selection(i + 1);
                      }
                   }
@@ -6691,7 +6795,9 @@ unsigned menu_displaylist_build_list(
 
                   if (current_display_mode == display_mode)
                   {
-                     menu_entries_set_checked(list, i, true);
+                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked = true;
                      menu_navigation_set_selection(i);
                   }
                }
@@ -6749,7 +6855,9 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (current_sort_mode == sort_mode)
                   {
-                     menu_entries_set_checked(list, i, true);
+                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked = true;
                      menu_navigation_set_selection(i);
                   }
                }
@@ -6800,7 +6908,9 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (string_is_equal(current_system_name, system_name))
                   {
-                     menu_entries_set_checked(list, i, true);
+                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked = true;
                      menu_navigation_set_selection(i);
                   }
                }
@@ -6843,7 +6953,9 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (string_is_equal(current_core_name, core_name))
                   {
-                     menu_entries_set_checked(list, i, true);
+                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked = true;
                      menu_navigation_set_selection(i);
                   }
                }
@@ -6929,7 +7041,9 @@ unsigned menu_displaylist_build_list(
                      /* Check whether current disk is selected */
                      if (i == current_image)
                      {
-                        menu_entries_set_checked(list, i, true);
+                        menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                        if (cbs)
+                           cbs->checked = true;
                         menu_navigation_set_selection(i);
                      }
                   }
@@ -9526,7 +9640,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
-                     if (menu_entries_append_enum(list, descriptor, "",
+                     if (menu_entries_append_enum(list, descriptor, info->path,
                               MSG_UNKNOWN,
                               MENU_SETTINGS_INPUT_DESC_BEGIN +
                               (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0))
@@ -9570,7 +9684,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
-                     if (menu_entries_append_enum(list, descriptor, "",
+                     if (menu_entries_append_enum(list, descriptor, info->path,
                               MSG_UNKNOWN,
                               MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
                               (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0))
@@ -11104,28 +11218,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &num_opts);
 
                if (game_specific_options)
-               {
-                  if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
-                  {
-                     if (menu_entries_append_enum(info->list,
-                           msg_hash_to_str(
-                                 MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
-                           msg_hash_to_str(
-                                 MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
-                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
-                           MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
-                        count++;
-                  }
-                  else
-                     if (menu_entries_append_enum(info->list,
-                           msg_hash_to_str(
-                                 MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
-                           msg_hash_to_str(
-                                 MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
-                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
-                           MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0))
-                        count++;
-               }
+                  if (menu_entries_append_enum(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST),
+                        MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST,
+                        MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST, 0, 0))
+                     count++;
 
                if (num_opts != 0)
                {
@@ -11152,6 +11250,29 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
                      MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
                      MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
+
+            if (selection >= count)
+            {
+               info->need_refresh          = true;
+               info->need_navigation_clear = true;
+            }
+            info->need_push                = true;
+         }
+         break;
+      case DISPLAYLIST_CORE_OPTION_OVERRIDE_LIST:
+         {
+            /* The number of items in the core option override
+             * list will vary depending upon whether game or
+             * content directory overrides are currently active.
+             * To prevent the menu selection from going out
+             * of bounds, we therefore have to check that the
+             * current selection index is less than the current
+             * number of menu entries - if not, we reset the
+             * navigation pointer */
+            size_t selection = menu_navigation_get_selection();
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            count            = menu_displaylist_parse_core_option_override_list(info);
 
             if (selection >= count)
             {
@@ -12465,7 +12586,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (checked_found)
                         {
-                           menu_entries_set_checked(info->list, checked, true);
+                           menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                           if (cbs)
+                              cbs->checked = true;
                            menu_navigation_set_selection(checked);
                         }
                      }
@@ -12538,7 +12661,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 menu_entries_set_checked(info->list, checked, true);
+                                 menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                                 if (cbs)
+                                    cbs->checked = true;
                                  menu_navigation_set_selection(checked);
                               }
                            }
@@ -12617,7 +12742,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              menu_entries_set_checked(info->list, checked, true);
+                              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              if (cbs)
+                                 cbs->checked = true;
                               menu_navigation_set_selection(checked);
                            }
                         }
@@ -12692,7 +12819,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              menu_entries_set_checked(info->list, checked, true);
+                              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              if (cbs)
+                                 cbs->checked = true;
                               menu_navigation_set_selection(checked);
                            }
                         }
@@ -12768,7 +12897,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              menu_entries_set_checked(info->list, checked, true);
+                              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              if (cbs)
+                                 cbs->checked = true;
                               menu_navigation_set_selection(checked);
                            }
                         }
@@ -12805,7 +12936,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                if (i == pass_count)
                {
-                  menu_entries_set_checked(info->list, i, true);
+                  menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[i].actiondata;
+                  if (cbs)
+                     cbs->checked = true;
                   menu_navigation_set_selection(i);
                }
             }
@@ -12908,7 +13041,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      if (checked_found)
                      {
-                        menu_entries_set_checked(info->list, checked, true);
+                        menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                        if (cbs)
+                           cbs->checked = true;
                         menu_navigation_set_selection(checked);
                      }
                   }
@@ -12963,7 +13098,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              menu_entries_set_checked(info->list, checked, true);
+                              menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              if (cbs)
+                                 cbs->checked = true;
                               menu_navigation_set_selection(checked);
                            }
                         }
@@ -13042,7 +13179,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (checked_found)
                         {
-                           menu_entries_set_checked(info->list, checked, true);
+                           menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                           if (cbs)
+                              cbs->checked = true;
                            menu_navigation_set_selection(checked);
                         }
                      }
@@ -13117,7 +13256,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (checked_found)
                         {
-                           menu_entries_set_checked(info->list, checked, true);
+                           menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                           if (cbs)
+                              cbs->checked = true;
                            menu_navigation_set_selection(checked);
                         }
                      }
@@ -13193,7 +13334,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (checked_found)
                         {
-                           menu_entries_set_checked(info->list, checked, true);
+                           menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                           if (cbs)
+                              cbs->checked = true;
                            menu_navigation_set_selection(checked);
                         }
                      }

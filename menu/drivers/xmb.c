@@ -685,7 +685,6 @@ static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
    {
       xmb_free_node((xmb_node_t*)file_list_get_userdata_at_offset(list, i));
 
-      /* file_list_set_userdata() doesn't accept NULL */
       list->list[i].userdata = NULL;
 
       if (actiondata)
@@ -1725,7 +1724,7 @@ static xmb_node_t *xmb_node_allocate_userdata(
          &xmb->horizontal_list, i);
    xmb_free_node(tmp);
 
-   file_list_set_userdata(&xmb->horizontal_list, i, node);
+   xmb->horizontal_list.list[i].userdata = node;
 
    return node;
 }
@@ -2470,6 +2469,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
+      case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
+         return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
          return xmb->textures.list[XMB_TEXTURE_ADD_FAVORITE];
@@ -2497,6 +2498,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SAVE_STATE:
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
       case MENU_ENUM_LABEL_CORE_CREATE_BACKUP:
+      case MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE:
+      case MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
       case MENU_ENUM_LABEL_CONFIGURATIONS:
@@ -2693,7 +2696,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST:
       case MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE:
       case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE:
+      case MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE:
+      case MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE:
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
+      case MENU_ENUM_LABEL_CORE_OPTIONS_RESET:
+         return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_LOCK:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
@@ -5583,12 +5590,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (!menu)
       return NULL;
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
-   {
-      free(menu);
-      return NULL;
-   }
-
    video_driver_get_size(&width, &height);
 
    xmb = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
@@ -6344,7 +6345,7 @@ static void xmb_list_insert(void *userdata,
       node->zoom        = xmb->items_active_alpha;
    }
 
-   file_list_set_userdata(list, i, node);
+   list->list[i].userdata = node;
 }
 
 static void xmb_list_clear(file_list_t *list)
@@ -6388,13 +6389,13 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst,
       d->label = string_is_empty(d->label) ? NULL : strdup(d->label);
 
       if (src_udata)
-         file_list_set_userdata(dst, j, (void*)xmb_copy_node((const xmb_node_t*)src_udata));
+         dst->list[j].userdata = (void*)xmb_copy_node((const xmb_node_t*)src_udata);
 
       if (src_adata)
       {
          void *data = malloc(sizeof(menu_file_list_cbs_t));
          memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
-         file_list_set_actiondata(dst, j, data);
+         dst->list[j].actiondata = data;
       }
 
       ++j;

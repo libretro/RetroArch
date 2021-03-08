@@ -420,6 +420,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_GFX_WIDGETS         := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -428,6 +429,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    LD = link.exe
 
    PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
+   PLATCFLAGS += -DHAVE_GFX_WIDGETS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/bin"):$(PATH)
@@ -446,6 +448,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    endif
 else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_GDI                 := 1
+   HAVE_REWIND              := 1
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
@@ -459,6 +462,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
+   HAVE_OZONE               := 1
    HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
@@ -468,10 +472,17 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_DYLIB               := 1
    HAVE_DYNAMIC             := 1
    HAVE_GRIFFIN_CPP         := 1
+   HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
+   HAVE_OPENGL              := 1
+   HAVE_OPENGL1             := 1
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
+   HAVE_DSP_FILTER          := 1
+   HAVE_VIDEO_FILTER        := 1
+   HAVE_FILTERS_BUILTIN     := 1
+   HAVE_GFX_WIDGETS         := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -479,16 +490,32 @@ else ifeq ($(platform), windows_msvc2005_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE
-   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib msimg32.lib
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS -D__SSE__
+   PLATCFLAGS += -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_OZONE -DHAVE_GFX_WIDGETS -DHAVE_CC_RESAMPLER
+   PLATCFLAGS += -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_CDROM
+   PLATCFLAGS += -bigobj
+
+   LDFLAGS += -MANIFEST shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib msimg32.lib
 
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../IDE")
    INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/include")
    LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/lib")
 
+   WindowsSdkDir := $(shell reg query "HKLM\SOFTWARE\Microsoft\MicrosoftSDK\InstalledSDKs\8F9E5EF3-A9A5-491B-A889-C58EFFECE8B3" -v "Install Dir" | grep -o '[A-Z]:\\.*')
+
+   WindowsSDKIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include")
+   WindowsSDKAtlIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\atl")
+   WindowsSDKCrtIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\crt")
+   WindowsSDKGlIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\gl")
+   WindowsSDKMfcIncludeDir := $(shell cygpath -w "$(WindowsSdkDir)\Include\mfc")
+   WindowsSDKLibDir := $(shell cygpath -w "$(WindowsSdkDir)\Lib")
+
+   INCLUDE := $(INCLUDE);$(WindowsSDKIncludeDir);$(WindowsSDKAtlIncludeDir);$(WindowsSDKCrtIncludeDir);$(WindowsSDKGlIncludeDir);$(WindowsSDKMfcIncludeDir);libretro/msvc/msvc-2005
+   LIB := $(LIB);$(WindowsSDKLibDir)
+
    ifeq ($(HAVE_DIRECTX), 1)
-      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND -DHAVE_D3D -DHAVE_D3D8
       DXSDK_DIR := $(DXSDK_DIR:\=)
       export INCLUDE := $(INCLUDE);$(INETSDK)\Include;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc;gfx\include;deps;deps\stb
       export LIB := $(LIB);$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86
@@ -535,6 +562,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_DSP_FILTER          := 1
    HAVE_VIDEO_FILTER        := 1
    HAVE_FILTERS_BUILTIN     := 1
+   HAVE_GFX_WIDGETS         := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -547,6 +575,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    PLATCFLAGS += -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA
    PLATCFLAGS += -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_OZONE
    PLATCFLAGS += -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DWIN32 -DHAVE_CDROM
+   PLATCFLAGS += -DHAVE_GFX_WIDGETS
    PLATCFLAGS += -bigobj
 
    LDFLAGS += -MANIFEST shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib msimg32.lib

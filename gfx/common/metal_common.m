@@ -752,9 +752,7 @@ typedef struct MTLALIGN(16)
 - (void)setSize:(CGSize)size
 {
    if (CGSizeEqualToSize(_size, size))
-   {
       return;
-   }
 
    _size = size;
 
@@ -763,9 +761,9 @@ typedef struct MTLALIGN(16)
    if (_format != RPixelFormatBGRA8Unorm && _format != RPixelFormatBGRX8Unorm)
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
-                                                                                    width:(NSUInteger)size.width
-                                                                                   height:(NSUInteger)size.height
-                                                                                mipmapped:NO];
+                                 width:(NSUInteger)size.width
+                                 height:(NSUInteger)size.height
+                                 mipmapped:NO];
       _src = [_context.device newTextureWithDescriptor:td];
    }
 }
@@ -778,15 +776,13 @@ typedef struct MTLALIGN(16)
 - (void)setFrame:(CGRect)frame
 {
    if (CGRectEqualToRect(_frame, frame))
-   {
       return;
-   }
 
    _frame = frame;
 
    // update vertices
    CGPoint o = frame.origin;
-   CGSize s = frame.size;
+   CGSize  s = frame.size;
 
    CGFloat l = o.x;
    CGFloat t = o.y;
@@ -809,7 +805,8 @@ typedef struct MTLALIGN(16)
 
 - (void)_convertFormat
 {
-   if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+   if (   _format == RPixelFormatBGRA8Unorm
+       || _format == RPixelFormatBGRX8Unorm)
       return;
 
    if (!_srcDirty)
@@ -873,25 +870,21 @@ typedef struct MTLALIGN(16)
 {
    if (_shader && (_engine.frame.output_size.x != _viewport->width ||
                    _engine.frame.output_size.y != _viewport->height))
-   {
       resize_render_targets = YES;
-   }
 
    _engine.frame.viewport.originX = _viewport->x;
    _engine.frame.viewport.originY = _viewport->y;
-   _engine.frame.viewport.width = _viewport->width;
-   _engine.frame.viewport.height = _viewport->height;
-   _engine.frame.viewport.znear = 0.0f;
-   _engine.frame.viewport.zfar = 1.0f;
-   _engine.frame.output_size.x = _viewport->width;
-   _engine.frame.output_size.y = _viewport->height;
-   _engine.frame.output_size.z = 1.0f / _viewport->width;
-   _engine.frame.output_size.w = 1.0f / _viewport->height;
+   _engine.frame.viewport.width   = _viewport->width;
+   _engine.frame.viewport.height  = _viewport->height;
+   _engine.frame.viewport.znear   = 0.0f;
+   _engine.frame.viewport.zfar    = 1.0f;
+   _engine.frame.output_size.x    = _viewport->width;
+   _engine.frame.output_size.y    = _viewport->height;
+   _engine.frame.output_size.z    = 1.0f / _viewport->width;
+   _engine.frame.output_size.w    = 1.0f / _viewport->height;
 
    if (resize_render_targets)
-   {
       [self _updateRenderTargets];
-   }
 
    [self _updateHistory];
 
@@ -922,16 +915,15 @@ typedef struct MTLALIGN(16)
 
 - (void)_initHistory
 {
+   int i;
    MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
-                                                                                 width:(NSUInteger)_size.width
-                                                                                height:(NSUInteger)_size.height
-                                                                             mipmapped:false];
+                                                   width:(NSUInteger)_size.width
+                                                   height:(NSUInteger)_size.height
+                                                   mipmapped:false];
    td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
 
-   for (int i = 0; i < _shader->history_size + 1; i++)
-   {
+   for (i = 0; i < _shader->history_size + 1; i++)
       [self _initTexture:&_engine.frame.texture[i] withDescriptor:td];
-   }
    init_history = NO;
 }
 
@@ -948,15 +940,14 @@ typedef struct MTLALIGN(16)
 
 - (void)drawWithContext:(Context *)ctx
 {
+   unsigned i;
    _texture = _engine.frame.texture[0].view;
    [self _convertFormat];
 
    if (!_shader || _shader->passes == 0)
-   {
       return;
-   }
 
-   for (unsigned i = 0; i < _shader->passes; i++)
+   for (i = 0; i < _shader->passes; i++)
    {
       if (_shader->pass[i].feedback)
       {

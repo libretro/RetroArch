@@ -439,6 +439,14 @@ else ifeq ($(LIBRETRO), race)
 	APP_ICON             = pkg/ctr/assets/race.png
 	APP_BANNER           = pkg/ctr/assets/race_banner.png
 
+else ifeq ($(LIBRETRO), scummvm)
+	APP_TITLE            = ScummVM Libretro
+	APP_AUTHOR           = SCUMMVMdev
+	APP_PRODUCT_CODE     = RARCH-SCUMMVM
+	APP_UNIQUE_ID        = 0xBACC0
+	APP_ICON             = pkg/ctr/assets/scummvm.png
+	APP_BANNER           = pkg/ctr/assets/scummvm_banner.png
+
 else ifeq ($(LIBRETRO), smsplus)
 	APP_TITLE            = SMSplus
 	APP_PRODUCT_CODE     = RARCH-SMSPLUS

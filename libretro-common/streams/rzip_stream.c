@@ -559,7 +559,7 @@ int64_t rzipstream_read(rzipstream_t *stream, void *data, int64_t len)
    /* Process input data */
    while (data_len > 0)
    {
-      uint32_t read_size = 0;
+      int64_t read_size = 0;
 
       /* Check whether we have reached the end
        * of the file */
@@ -821,7 +821,7 @@ int64_t rzipstream_write(rzipstream_t *stream, const void *data, int64_t len)
    /* Process input data */
    while (data_len > 0)
    {
-      uint32_t cache_size = 0;
+      int64_t cache_size = 0;
 
       /* If input buffer is full, compress and write to disk */
       if (stream->in_buf_ptr >= stream->in_buf_size)

@@ -284,7 +284,8 @@
 
 #define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
 
-#define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
+#define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
+#define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!(menu_st->entries_nonblocking_refresh || !menu_st->entries_need_refresh))
 #endif
 
 #define CDN_URL "https://cdn.discordapp.com/avatars"
@@ -2070,7 +2071,7 @@ struct rarch_state
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
-   float audio_driver_input_data[AUDIO_CHUNK_SIZE_NONBLOCKING * 2];
+   float *audio_driver_input_data;
    float video_driver_core_hz;
    float video_driver_aspect_ratio;
 
@@ -2272,6 +2273,7 @@ struct rarch_state
    bool runloop_remaps_content_dir_active;
 #endif
    bool runloop_game_options_active;
+   bool runloop_folder_options_active;
    bool runloop_autosave;
 #ifdef HAVE_SCREENSHOTS
    bool runloop_max_frames_screenshot;
@@ -2690,6 +2692,8 @@ static bool command_show_osd_msg(const char* arg);
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
 #endif
+static bool command_read_memory(const char *arg);
+static bool command_write_memory(const char *arg);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -2700,9 +2704,13 @@ static const struct cmd_action_map action_map[] = {
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
    { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
 #if defined(HAVE_CHEEVOS)
-   { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
-   { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
+   /* These functions use achievement addresses and only work if a game with achievements is
+    * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
+   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>" },
+   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ..." },
 #endif
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>" },
+   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
 };
 
 static const struct cmd_map map[] = {
@@ -2767,6 +2775,8 @@ static void *null_menu_init(void **userdata, bool video_is_threaded)
       return NULL;
    return menu;
 }
+static int null_menu_list_bind_init(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx) { return 0; }
 
 static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_texture */
@@ -2798,7 +2808,7 @@ static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* list_get_size */
   NULL,  /* list_get_entry */
   NULL,  /* list_set_selection */
-  NULL,  /* bind_init */
+  null_menu_list_bind_init,
   NULL,  /* load_image */
   "null",
   NULL,  /* environ */

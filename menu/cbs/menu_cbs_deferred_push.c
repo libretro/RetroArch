@@ -133,6 +133,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_frontend_counters,              DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_core_cheat_options,             DISPLAYLIST_OPTIONS_CHEATS)
 GENERIC_DEFERRED_PUSH(deferred_push_core_input_remapping_options,   DISPLAYLIST_OPTIONS_REMAPPINGS)
 GENERIC_DEFERRED_PUSH(deferred_push_core_options,                   DISPLAYLIST_CORE_OPTIONS)
+GENERIC_DEFERRED_PUSH(deferred_push_core_option_override_list,      DISPLAYLIST_CORE_OPTION_OVERRIDE_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_disk_options,                   DISPLAYLIST_OPTIONS_DISK)
 GENERIC_DEFERRED_PUSH(deferred_push_browse_url_list,                DISPLAYLIST_BROWSE_URL_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_browse_url_start,               DISPLAYLIST_BROWSE_URL_START)
@@ -775,6 +776,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_CORE_LIST, deferred_push_core_list},
       {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, deferred_push_history_list},
       {MENU_ENUM_LABEL_CORE_OPTIONS, deferred_push_core_options},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST, deferred_push_core_option_override_list},
       {MENU_ENUM_LABEL_NETWORK_INFORMATION, deferred_push_network_information},
       {MENU_ENUM_LABEL_ONLINE_UPDATER, deferred_push_options},
       {MENU_ENUM_LABEL_HELP_LIST, deferred_push_help},
@@ -1129,6 +1131,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_CORE_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_options);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_option_override_list);
             break;
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);

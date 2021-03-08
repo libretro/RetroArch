@@ -1259,6 +1259,38 @@ MSG_HASH(
    "game_specific_options"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST,
+   "core_option_override_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST,
+   "deferred_core_option_override_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "game_specific_core_options_create"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "game_specific_core_options_remove"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "folder_specific_core_options_create"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "folder_specific_core_options_remove"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_INFO,
+   "core_option_override_info"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
+   "core_options_reset"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
    "game_specific_options_create"
    )
