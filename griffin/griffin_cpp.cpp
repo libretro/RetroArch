@@ -56,11 +56,8 @@ UI
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../ui/drivers/qt/shaderparamsdialog.cpp"
 #endif
-#include "../ui/drivers/qt/coreoptionsdialog.cpp"
+#include "../ui/drivers/qt/qt_dialogs.cpp"
 #include "../ui/drivers/qt/filedropwidget.cpp"
-#include "../ui/drivers/qt/coreinfodialog.cpp"
-#include "../ui/drivers/qt/playlistentrydialog.cpp"
-#include "../ui/drivers/qt/viewoptionsdialog.cpp"
 #include "../ui/drivers/qt/qt_playlist.cpp"
 #include "../ui/drivers/qt/thumbnaildownload.cpp"
 #include "../ui/drivers/qt/thumbnailpackdownload.cpp"
