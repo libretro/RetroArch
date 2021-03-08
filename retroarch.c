@@ -21956,7 +21956,6 @@ static void input_remote_free(input_remote_t *handle, unsigned max_users)
 
 static input_remote_t *input_remote_new(
       settings_t *settings,
-      struct rarch_state *p_rarch,
       uint16_t port, unsigned max_users)
 {
    unsigned user;
@@ -21981,11 +21980,9 @@ static input_remote_t *input_remote_new(
 }
 
 static void input_remote_parse_packet(
-      struct rarch_state *p_rarch,
+      input_remote_state_t *input_state,
       struct remote_message *msg, unsigned user)
 {
-   input_remote_state_t *input_state  = &p_rarch->remote_st_ptr;
-
    /* Parse message */
    switch (msg->device)
    {
@@ -22517,7 +22514,7 @@ static void input_driver_poll(void)
                   sizeof(msg), 0, NULL, NULL);
 
             if (ret == sizeof(msg))
-               input_remote_parse_packet(p_rarch, &msg, user);
+               input_remote_parse_packet(&p_rarch->remote_st_ptr, &msg, user);
             else if ((ret != -1) || ((errno != EAGAIN) && (errno != ENOENT)))
 #endif
             {
@@ -24849,22 +24846,13 @@ static void input_driver_deinit_command(struct rarch_state *p_rarch)
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_init_remote(
       settings_t *settings,
-      struct rarch_state *p_rarch)
+      unsigned num_active_users)
 {
    unsigned network_remote_base_port = settings->uints.network_remote_base_port;
-   input_remote_t *remote            = input_remote_new(
+   return input_remote_new(
          settings,
-         p_rarch,
          network_remote_base_port,
-         p_rarch->input_driver_max_users);
-
-   if (!remote)
-   {
-      RARCH_ERR("Failed to initialize remote gamepad interface.\n");
-      return NULL;
-   }
-
-   return remote;
+         num_active_users);
 }
 #endif
 
@@ -35082,7 +35070,8 @@ bool retroarch_main_init(int argc, char *argv[])
    p_rarch->input_driver_remote    = NULL;
    if (p_rarch->configuration_settings->bools.network_remote_enable)
       p_rarch->input_driver_remote = input_driver_init_remote(
-            p_rarch->configuration_settings, p_rarch);
+            p_rarch->configuration_settings,
+            p_rarch->input_driver_max_users);
 #endif
    if (p_rarch->input_driver_mapper)
       free(p_rarch->input_driver_mapper);
