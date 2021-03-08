@@ -246,29 +246,23 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
 
    switch (state->buttons)
    {
+      case UI_MSG_WINDOW_OKCANCEL:
+         if (response == NSAlertSecondButtonReturn)
+            return UI_MSG_RESPONSE_CANCEL;
+         /* fall-through */
       case UI_MSG_WINDOW_OK:
          if (response == NSAlertFirstButtonReturn)
             return UI_MSG_RESPONSE_OK;
          break;
-      case UI_MSG_WINDOW_OKCANCEL:
-         if (response == NSAlertFirstButtonReturn)
-            return UI_MSG_RESPONSE_OK;
-         if (response == NSAlertSecondButtonReturn)
+      case UI_MSG_WINDOW_YESNOCANCEL:
+         if (response == NSAlertThirdButtonReturn)
             return UI_MSG_RESPONSE_CANCEL;
-         break;
+         /* fall-through */
       case UI_MSG_WINDOW_YESNO:
          if (response == NSAlertFirstButtonReturn)
             return UI_MSG_RESPONSE_YES;
          if (response == NSAlertSecondButtonReturn)
             return UI_MSG_RESPONSE_NO;
-         break;
-      case UI_MSG_WINDOW_YESNOCANCEL:
-         if (response == NSAlertFirstButtonReturn)
-            return UI_MSG_RESPONSE_YES;
-         if (response == NSAlertSecondButtonReturn)
-            return UI_MSG_RESPONSE_NO;
-         if (response == NSAlertThirdButtonReturn)
-            return UI_MSG_RESPONSE_CANCEL;
          break;
    }
 
