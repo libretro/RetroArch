@@ -25691,9 +25691,7 @@ void input_keyboard_event(bool down, unsigned code,
    }
    else
    {
-      retro_keyboard_event_t *key_event = &p_rarch->runloop_key_event;
-
-      if ((code == RETROK_UNKNOWN) || !key_event)
+      if (code == RETROK_UNKNOWN)
          return;
 
       /* Block hotkey + RetroPad mapped keyboard key events,
@@ -25707,9 +25705,11 @@ void input_keyboard_event(bool down, unsigned code,
                return;
       }
 
-
-      if (*key_event)
-         (*key_event)(down, code, character, mod);
+      {
+         retro_keyboard_event_t *key_event = &p_rarch->runloop_key_event;
+         if (*key_event)
+            (*key_event)(down, code, character, mod);
+      }
    }
 }
 
