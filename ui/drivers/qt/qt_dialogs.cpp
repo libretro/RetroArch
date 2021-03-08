@@ -25,14 +25,9 @@
 #include <QColor>
 #include <QColorDialog>
 #include <QLabel>
-
-#ifdef HAVE_MENU
 #include <QBitmap>
 #include <QStackedLayout>
 #include <QScrollBar>
-
-#include "options/options.h"
-#endif
 
 #include "coreoptionsdialog.h"
 #include "viewoptionsdialog.h"
@@ -74,6 +69,10 @@ extern "C" {
 
 #ifndef CXX_BUILD
 }
+#endif
+
+#ifdef HAVE_MENU
+#include "options/options.h"
 #endif
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
