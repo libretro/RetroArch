@@ -786,15 +786,6 @@ static void x_grab_mouse(void *data, bool state)
       return;
 
    x11->mouse_grabbed = state;
-
-   if (state)
-   {
-      XGrabPointer(x11->display, x11->win, False,
-                   ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
-                   GrabModeAsync, GrabModeAsync, x11->win, None, CurrentTime);
-   }
-   else
-      XUngrabPointer(x11->display, CurrentTime);
 }
 
 static uint64_t x_input_get_capabilities(void *data)
