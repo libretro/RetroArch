@@ -25704,27 +25704,23 @@ void input_keyboard_event(bool down, unsigned code,
    else
    {
       retro_keyboard_event_t *key_event = &p_rarch->runloop_key_event;
-      bool block                        = false;
 
       if ((code == RETROK_UNKNOWN) || !key_event)
          return;
 
-      /* Block hotkey+RetroPad mapped keyboard key events,
+      /* Block hotkey + RetroPad mapped keyboard key events,
        * but not with game focus and from keyboard device type */
       if (!p_rarch->game_focus_state.enabled)
       {
          input_mapper_t *handle = p_rarch->input_driver_mapper;
-
-         block = BIT512_GET(p_rarch->keyboard_mapping_bits, code);
-         if (block && handle && MAPPER_GET_KEY(handle, code))
-            block = false;
+         if (BIT512_GET(
+                  p_rarch->keyboard_mapping_bits, code))
+            if (!(handle && MAPPER_GET_KEY(handle, code)))
+               return;
       }
 
-      if (block)
-         return;
 
-      if (*key_event)
-         (*key_event)(down, code, character, mod);
+      (*key_event)(down, code, character, mod);
    }
 }
 
