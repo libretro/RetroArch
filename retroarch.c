@@ -25350,25 +25350,23 @@ const hid_driver_t *input_hid_init_first(void)
 #endif
 
 static void osk_update_last_codepoint(
-      struct rarch_state *p_rarch,
+      unsigned *last_codepoint,
+      unsigned *last_codepoint_len,
       const char *word)
 {
-   const char *letter                    = word;
-   const char    *pos                    = letter;
+   const char *letter         = word;
+   const char    *pos         = letter;
 
    for (;;)
    {
-      unsigned codepoint                 = utf8_walk(&letter);
-      unsigned       len                 = (unsigned)(letter - pos);
-
+      unsigned codepoint      = utf8_walk(&letter);
       if (letter[0] == 0)
       {
-         p_rarch->osk_last_codepoint     = codepoint;
-         p_rarch->osk_last_codepoint_len = len;
+         *last_codepoint      = codepoint;
+         *last_codepoint_len  = (unsigned)(letter - pos);
          break;
       }
-
-      pos                                = letter;
+      pos                     = letter;
    }
 }
 
@@ -25400,8 +25398,8 @@ static bool input_keyboard_line_event(
       array[0] = c;
       array[1] = 0;
 
-      word     = array;
       ret      = true;
+      word     = array;
    }
    else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
    {
@@ -25454,7 +25452,10 @@ static bool input_keyboard_line_event(
          p_rarch->osk_last_codepoint_len = 0;
       }
       else
-         osk_update_last_codepoint(p_rarch, word);
+         osk_update_last_codepoint(
+               &p_rarch->osk_last_codepoint,
+               &p_rarch->osk_last_codepoint_len,
+               word);
    }
 
    return ret;
@@ -25469,7 +25470,7 @@ static void input_keyboard_line_append(
    unsigned len                = (unsigned)strlen(word);
    char *newbuf                = (char*)realloc(
          p_rarch->keyboard_line.buffer,
-         p_rarch->keyboard_line.size + len*2);
+         p_rarch->keyboard_line.size + len * 2);
 
    if (!newbuf)
       return;
@@ -25480,22 +25481,25 @@ static void input_keyboard_line_append(
 
    for (i = 0; i < len; i++)
    {
-      newbuf[p_rarch->keyboard_line.ptr] = word[i];
+      newbuf[p_rarch->keyboard_line.ptr]= word[i];
       p_rarch->keyboard_line.ptr++;
       p_rarch->keyboard_line.size++;
    }
 
-   newbuf[p_rarch->keyboard_line.size]      = '\0';
+   newbuf[p_rarch->keyboard_line.size]  = '\0';
 
-   p_rarch->keyboard_line.buffer            = newbuf;
+   p_rarch->keyboard_line.buffer        = newbuf;
 
    if (word[0] == 0)
    {
-      p_rarch->osk_last_codepoint     = 0;
-      p_rarch->osk_last_codepoint_len = 0;
+      p_rarch->osk_last_codepoint       = 0;
+      p_rarch->osk_last_codepoint_len   = 0;
    }
    else
-      osk_update_last_codepoint(p_rarch, word);
+      osk_update_last_codepoint(
+            &p_rarch->osk_last_codepoint,
+            &p_rarch->osk_last_codepoint_len,
+            word);
 }
 
 /**
