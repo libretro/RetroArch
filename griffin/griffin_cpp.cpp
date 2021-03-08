@@ -56,9 +56,7 @@ UI
 #include "../ui/drivers/qt/qt_dialogs.cpp"
 #include "../ui/drivers/qt/qt_widgets.cpp"
 #include "../ui/drivers/qt/qt_playlist.cpp"
-#include "../ui/drivers/qt/thumbnaildownload.cpp"
-#include "../ui/drivers/qt/thumbnailpackdownload.cpp"
-#include "../ui/drivers/qt/playlistthumbnaildownload.cpp"
+#include "../ui/drivers/qt/qt_downloads.cpp"
 #ifdef HAVE_MENU
 #include "../ui/drivers/qt/options/generic.cpp"
 #include "../ui/drivers/qt/options/video.cpp"

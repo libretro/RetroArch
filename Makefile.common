@@ -492,9 +492,7 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/qt_dialogs.o \
           ui/drivers/qt/qt_widgets.o \
           ui/drivers/qt/qt_playlist.o \
-          ui/drivers/qt/thumbnaildownload.o \
-          ui/drivers/qt/thumbnailpackdownload.o \
-          ui/drivers/qt/playlistthumbnaildownload.o
+          ui/drivers/qt/qt_downloads.o
     ifeq ($(HAVE_MENU), 1)
        OBJ += ui/drivers/qt/options/achievements.o \
               ui/drivers/qt/options/audio.o \
