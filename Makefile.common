@@ -495,9 +495,6 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/thumbnaildownload.o \
           ui/drivers/qt/thumbnailpackdownload.o \
           ui/drivers/qt/playlistthumbnaildownload.o
-    ifeq ($(HAVE_SHADERS_COMMON), 1)
-       OBJ += ui/drivers/qt/shaderparamsdialog.o
-    endif
     ifeq ($(HAVE_MENU), 1)
        OBJ += ui/drivers/qt/settingswidgets.o \
               ui/drivers/qt/options/achievements.o \
