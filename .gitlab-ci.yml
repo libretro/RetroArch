@@ -474,7 +474,7 @@ build-retroarch-osx-arm64-metal:
   script:
     - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
     - pushd ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/
-    - zip -qr RetroArch.zip RetroArch.app
+    - ditto -c -k --sequesterRsrc --keepParent RetroArch.app RetroArch.zip
     - popd
     - mv ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.zip ${XCPROJECT_NAME}.zip
 
