@@ -473,7 +473,10 @@ build-retroarch-osx-arm64-metal:
   dependencies: []
   script:
     - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
-    - zip -qr ${XCPROJECT_NAME}.zip ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.app
+    - pushd ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/
+    - zip -qr RetroArch.zip RetroArch.app
+    - popd
+    - mv ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.zip ${XCPROJECT_NAME}.zip
 
 # Mac OS Universal, Metal
 build-retroarch-osx-universal-metal:
