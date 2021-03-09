@@ -27,6 +27,8 @@
 
 #if defined(XENON)
 #include <time/time.h>
+#elif !defined(__PSL1GHT__) && defined(__PS3__)
+#include <sys/timer.h>
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
 #elif defined(WIIU)
@@ -91,6 +93,8 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #define retro_sleep(msec) (Sleep((msec)))
 #elif defined(XENON)
 #define retro_sleep(msec) (udelay(1000 * (msec)))
+#elif !defined(__PSL1GHT__) && defined(__PS3__)
+#define retro_sleep(msec) (sys_timer_usleep(1000 * (msec)))
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #define retro_sleep(msec) (usleep(1000 * (msec)))
 #elif defined(WIIU)
