@@ -517,6 +517,11 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define cellNetCtlTerm netCtlTerm
 
 #define CELL_NET_CTL_STATE_IPObtained NET_CTL_STATE_IPObtained
+#else
+#define netCtlInit cellNetCtlInit
+#define netCtlGetState cellNetCtlGetState
+#define netCtlTerm cellNetCtlTerm
+#define NET_CTL_STATE_IPObtained CELL_NET_CTL_STATE_IPObtained
 #endif
 
 /*============================================================
@@ -536,6 +541,9 @@ extern int audioAddData(uint32_t portNum, float *data,
 #include <netex/net.h>
 #include <np.h>
 #include <np/drm.h>
+
+#define netInitialize sys_net_initialize_network
+#define netFinalizeNetwork sys_net_finalize_network
 #endif
 #endif
 
@@ -599,6 +607,10 @@ extern int audioAddData(uint32_t portNum, float *data,
 
 #else
 #include <cell/sysmodule.h>
+
+#define sysModuleLoad cellSysmoduleLoadModule
+#define sysModuleUnload cellSysmoduleUnloadModule
+#define SYSMODULE_NET CELL_SYSMODULE_NET
 #endif
 #endif
 
