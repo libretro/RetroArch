@@ -89,11 +89,7 @@ static int deferred_push_database_manager_list_deferred(
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
 
-static int deferred_push_remappings_port(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_REMAPPINGS_PORT);
-}
-
+GENERIC_DEFERRED_PUSH(deferred_push_remappings_port,                DISPLAYLIST_OPTIONS_REMAPPINGS_PORT)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
