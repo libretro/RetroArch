@@ -31120,17 +31120,6 @@ struct video_viewport *video_viewport_get_custom(void)
    return &settings->video_viewport_custom;
 }
 
-unsigned video_pixel_get_alignment(unsigned pitch)
-{
-   if (pitch & 1)
-      return 1;
-   if (pitch & 2)
-      return 2;
-   if (pitch & 4)
-      return 4;
-   return 8;
-}
-
 /**
  * video_driver_frame:
  * @data                 : pointer to data of the video frame.
