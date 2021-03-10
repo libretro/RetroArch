@@ -913,6 +913,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
 }
 
 static int menu_input_key_bind_set_mode_common(
+      struct menu_state *menu_st,
       struct menu_bind_state *binds,
       enum menu_input_binds_ctl_state state,
       rarch_setting_t  *setting)
@@ -921,8 +922,6 @@ static int menu_input_key_bind_set_mode_common(
    unsigned bind_type             = 0;
    struct retro_keybind *keybind  = NULL;
    unsigned         index_offset  = setting->index_offset;
-   struct rarch_state *p_rarch    = &rarch_st;
-   struct menu_state *menu_st     = &p_rarch->menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
    size_t selection               = menu_st->selection_ptr;
@@ -1069,7 +1068,8 @@ static void menu_input_key_bind_poll_bind_state(
    /* poll mouse (on the relevant port) */
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
       state->state[port].mouse_buttons[b] =
-         input_mouse_button_raw(p_rarch, port, b);
+         input_mouse_button_raw(p_rarch,
+               p_rarch->configuration_settings, port, b);
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -1355,7 +1355,8 @@ bool menu_input_key_bind_set_mode(
 
    if (!setting || !menu)
       return false;
-   if (menu_input_key_bind_set_mode_common(binds, state, setting) == -1)
+   if (menu_input_key_bind_set_mode_common(&p_rarch->menu_driver_state,
+            binds, state, setting) == -1)
       return false;
 
    index_offset             = setting->index_offset;
@@ -9939,8 +9940,11 @@ bool menu_input_dialog_start_search(void)
 #endif
 
    p_rarch->menu_input_dialog_keyboard_buffer   =
-      input_keyboard_start_line(menu, p_rarch,
+      input_keyboard_start_line(menu,
+            &p_rarch->keyboard_line,
             menu_input_search_cb);
+   /* While reading keyboard line input, we have to block all hotkeys. */
+   p_rarch->keyboard_mapping_blocked= true;
 
    return true;
 }
@@ -9982,10 +9986,36 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 #endif
 
    p_rarch->menu_input_dialog_keyboard_buffer =
-      input_keyboard_start_line(menu, p_rarch, line->cb);
+      input_keyboard_start_line(menu,
+            &p_rarch->keyboard_line,
+            line->cb);
+   /* While reading keyboard line input, we have to block all hotkeys. */
+   p_rarch->keyboard_mapping_blocked= true;
 
    return true;
 }
+
+static void osk_update_last_codepoint(
+      unsigned *last_codepoint,
+      unsigned *last_codepoint_len,
+      const char *word)
+{
+   const char *letter         = word;
+   const char    *pos         = letter;
+
+   for (;;)
+   {
+      unsigned codepoint      = utf8_walk(&letter);
+      if (letter[0] == 0)
+      {
+         *last_codepoint      = codepoint;
+         *last_codepoint_len  = (unsigned)(letter - pos);
+         break;
+      }
+      pos                     = letter;
+   }
+}
+
 
 bool menu_input_dialog_get_display_kb(void)
 {
@@ -10044,7 +10074,17 @@ bool menu_input_dialog_get_display_kb(void)
                a list of "null-terminated characters") */
             char oldchar = buf[i+1];
             buf[i+1]     = '\0';
-            input_keyboard_line_append(p_rarch, &buf[i]);
+            input_keyboard_line_append(&p_rarch->keyboard_line, &buf[i]);
+            if (word[0] == 0)
+            {
+               p_rarch->osk_last_codepoint       = 0;
+               p_rarch->osk_last_codepoint_len   = 0;
+            }
+            else
+               osk_update_last_codepoint(
+                     &p_rarch->osk_last_codepoint,
+                     &p_rarch->osk_last_codepoint_len,
+                     word);
             buf[i+1]     = oldchar;
          }
       }
@@ -10067,26 +10107,6 @@ bool menu_driver_is_alive(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->menu_driver_alive;
-}
-#endif
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static void retroarch_set_runtime_shader_preset(
-      struct rarch_state *p_rarch,
-      const char *arg)
-{
-   if (!string_is_empty(arg))
-      strlcpy(p_rarch->runtime_shader_preset,
-            arg,
-            sizeof(p_rarch->runtime_shader_preset));
-   else
-      p_rarch->runtime_shader_preset[0] = '\0';
-}
-
-static void retroarch_unset_runtime_shader_preset(
-      struct rarch_state *p_rarch)
-{
-   p_rarch->runtime_shader_preset[0] = '\0';
 }
 #endif
 
@@ -10803,88 +10823,90 @@ bool retroarch_apply_shader(
    struct rarch_state  *p_rarch = &rarch_st;
    settings_t      *settings    = p_rarch->configuration_settings;
    const char      *core_name   = p_rarch->runloop_system.info.library_name;
-   bool ret                     = false;
    const char      *preset_file = NULL;
+#ifdef HAVE_MENU
+   struct video_shader *shader  = menu_shader_get();
+#endif
 
-   /* disallow loading shaders when no core is loaded */
+   /* Disallow loading shaders when no core is loaded */
    if (string_is_empty(core_name))
       return false;
 
    if (!string_is_empty(preset_path))
       preset_file = path_basename(preset_path);
 
-   /* TODO This loads the shader into the video driver
+   p_rarch->runtime_shader_preset[0] = '\0';
+
+   /* TODO/FIXME - This loads the shader into the video driver
     * But then we load the shader from disk twice more to put it in the menu
     * We need to reconfigure this at some point to only load it once */
    if (p_rarch->current_video->set_shader)
-      ret = p_rarch->current_video->set_shader(
-            p_rarch->video_driver_data, type, preset_path);
-
-   if (ret)
    {
-      configuration_set_bool(settings, settings->bools.video_shader_enable, true);
-      retroarch_set_runtime_shader_preset(p_rarch, preset_path);
-
-#ifdef HAVE_MENU
-      /* reflect in shader manager */
-      if (menu_shader_manager_set_preset(menu_shader_get(), type, preset_path, false))
-         if (!string_is_empty(preset_path))
-            menu_shader_get()->modified = false;
-#endif
-
-      if (message)
+      if ((p_rarch->current_video->set_shader(
+                  p_rarch->video_driver_data, type, preset_path)))
       {
-         /* Display message */
-         if (preset_file)
-            snprintf(msg, sizeof(msg),
-                  "%s: \"%s\"",
-                  msg_hash_to_str(MSG_SHADER),
-                  preset_file);
-         else
+         configuration_set_bool(settings, settings->bools.video_shader_enable, true);
+         if (!string_is_empty(preset_path))
          {
-            strlcpy(msg, msg_hash_to_str(MSG_SHADER), sizeof(msg));
-            strlcat(msg, ": ", sizeof(msg));
-            strlcat(msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), sizeof(msg));
-         }
-#ifdef HAVE_GFX_WIDGETS
-         if (p_rarch->widgets_active)
-            gfx_widget_set_generic_message(&p_rarch->dispwidget_st,
-						msg, 2000);
-         else
+            strlcpy(p_rarch->runtime_shader_preset, preset_path,
+                  sizeof(p_rarch->runtime_shader_preset));
+#ifdef HAVE_MENU
+            /* reflect in shader manager */
+            if (menu_shader_manager_set_preset(
+                     shader, type, preset_path, false))
+               shader->modified = false;
 #endif
-            runloop_msg_queue_push(msg, 1, 120, true, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
+         }
 
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_APPLYING_SHADER),
-            preset_path ? preset_path : "null");
+         if (message)
+         {
+            /* Display message */
+            if (preset_file)
+               snprintf(msg, sizeof(msg),
+                     "%s: \"%s\"",
+                     msg_hash_to_str(MSG_SHADER),
+                     preset_file);
+            else
+            {
+               strlcpy(msg, msg_hash_to_str(MSG_SHADER), sizeof(msg));
+               strlcat(msg, ": ", sizeof(msg));
+               strlcat(msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), sizeof(msg));
+            }
+#ifdef HAVE_GFX_WIDGETS
+            if (p_rarch->widgets_active)
+               gfx_widget_set_generic_message(&p_rarch->dispwidget_st,
+                     msg, 2000);
+            else
+#endif
+               runloop_msg_queue_push(msg, 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_APPLYING_SHADER),
+               preset_path ? preset_path : "null");
+
+         return true;
+      }
    }
-   else
-   {
-      retroarch_set_runtime_shader_preset(p_rarch, NULL);
 
 #ifdef HAVE_MENU
-      /* reflect in shader manager */
-      menu_shader_manager_set_preset(menu_shader_get(), type, NULL, false);
+   /* reflect in shader manager */
+   menu_shader_manager_set_preset(shader, type, NULL, false);
 #endif
 
-      /* Display error message */
-      fill_pathname_join_delim(msg,
-            msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
-            preset_file ? preset_file : "null",
-            ' ',
-            sizeof(msg));
+   /* Display error message */
+   fill_pathname_join_delim(msg,
+         msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
+         preset_file ? preset_file : "null",
+         ' ',
+         sizeof(msg));
 
-      runloop_msg_queue_push(
-            msg, 1, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-   }
-
-   return ret;
-#else
+   runloop_msg_queue_push(
+         msg, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+#endif
    return false;
-#endif
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -12280,7 +12302,7 @@ static void command_event_deinit_core(
       command_event_disable_overrides(p_rarch);
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   retroarch_unset_runtime_shader_preset(p_rarch);
+   p_rarch->runtime_shader_preset[0] = '\0';
 #endif
 
 #ifdef HAVE_CONFIGFILE
@@ -13769,7 +13791,7 @@ bool command_event(enum event_command cmd, void *data)
             }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            retroarch_unset_runtime_shader_preset(p_rarch);
+            p_rarch->runtime_shader_preset[0] = '\0';
 #endif
 
             video_driver_restore_cached(p_rarch, settings);
@@ -23423,7 +23445,19 @@ static void input_event_osk_append(
       else
          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
    else
-      input_keyboard_line_append(p_rarch, word);
+   {
+      input_keyboard_line_append(&p_rarch->keyboard_line, word);
+      if (word[0] == 0)
+      {
+         p_rarch->osk_last_codepoint       = 0;
+         p_rarch->osk_last_codepoint_len   = 0;
+      }
+      else
+         osk_update_last_codepoint(
+               &p_rarch->osk_last_codepoint,
+               &p_rarch->osk_last_codepoint_len,
+               word);
+   }
 }
 
 static void input_event_osk_iterate(
@@ -25223,10 +25257,10 @@ static int16_t input_joypad_analog_axis(
  **/
 static bool input_mouse_button_raw(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       unsigned port, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   settings_t              *settings = p_rarch->configuration_settings;
    input_driver_t *current_input     = p_rarch->current_input;
 #ifdef HAVE_MFI
    const input_device_driver_t 
@@ -25331,27 +25365,6 @@ const hid_driver_t *input_hid_init_first(void)
 }
 #endif
 
-static void osk_update_last_codepoint(
-      unsigned *last_codepoint,
-      unsigned *last_codepoint_len,
-      const char *word)
-{
-   const char *letter         = word;
-   const char    *pos         = letter;
-
-   for (;;)
-   {
-      unsigned codepoint      = utf8_walk(&letter);
-      if (letter[0] == 0)
-      {
-         *last_codepoint      = codepoint;
-         *last_codepoint_len  = (unsigned)(letter - pos);
-         break;
-      }
-      pos                     = letter;
-   }
-}
-
 /**
  * input_keyboard_line_event:
  * @state                    : Input keyboard line handle.
@@ -25444,44 +25457,35 @@ static bool input_keyboard_line_event(
 }
 
 #ifdef HAVE_MENU
-static void input_keyboard_line_append(
-      struct rarch_state *p_rarch,
+static bool input_keyboard_line_append(
+      struct input_keyboard_line *keyboard_line,
       const char *word)
 {
    unsigned i                  = 0;
    unsigned len                = (unsigned)strlen(word);
    char *newbuf                = (char*)realloc(
-         p_rarch->keyboard_line.buffer,
-         p_rarch->keyboard_line.size + len * 2);
+         keyboard_line->buffer,
+         keyboard_line->size + len * 2);
 
    if (!newbuf)
-      return;
+      return false;
 
-   memmove(newbuf + p_rarch->keyboard_line.ptr + len,
-         newbuf + p_rarch->keyboard_line.ptr,
-         p_rarch->keyboard_line.size - p_rarch->keyboard_line.ptr + len);
+   memmove(
+         newbuf + keyboard_line->ptr + len,
+         newbuf + keyboard_line->ptr,
+         keyboard_line->size - keyboard_line->ptr + len);
 
    for (i = 0; i < len; i++)
    {
-      newbuf[p_rarch->keyboard_line.ptr]= word[i];
-      p_rarch->keyboard_line.ptr++;
-      p_rarch->keyboard_line.size++;
+      newbuf[keyboard_line->ptr]= word[i];
+      keyboard_line->ptr++;
+      keyboard_line->size++;
    }
 
-   newbuf[p_rarch->keyboard_line.size]  = '\0';
+   newbuf[keyboard_line->size]  = '\0';
 
-   p_rarch->keyboard_line.buffer        = newbuf;
-
-   if (word[0] == 0)
-   {
-      p_rarch->osk_last_codepoint       = 0;
-      p_rarch->osk_last_codepoint_len   = 0;
-   }
-   else
-      osk_update_last_codepoint(
-            &p_rarch->osk_last_codepoint,
-            &p_rarch->osk_last_codepoint_len,
-            word);
+   keyboard_line->buffer        = newbuf;
+   return true;
 }
 
 /**
@@ -25497,21 +25501,19 @@ static void input_keyboard_line_append(
  *
  * Returns: underlying buffer of the keyboard line.
  **/
-static const char **input_keyboard_start_line(void *userdata,
-      struct rarch_state *p_rarch,
+static const char **input_keyboard_start_line(
+      void *userdata,
+      struct input_keyboard_line *keyboard_line,
       input_keyboard_line_complete_t cb)
 {
-   p_rarch->keyboard_line.buffer    = NULL;
-   p_rarch->keyboard_line.ptr       = 0;
-   p_rarch->keyboard_line.size      = 0;
-   p_rarch->keyboard_line.cb        = cb;
-   p_rarch->keyboard_line.userdata  = userdata;
-   p_rarch->keyboard_line.enabled   = true;
+   keyboard_line->buffer    = NULL;
+   keyboard_line->ptr       = 0;
+   keyboard_line->size      = 0;
+   keyboard_line->cb        = cb;
+   keyboard_line->userdata  = userdata;
+   keyboard_line->enabled   = true;
 
-   /* While reading keyboard line input, we have to block all hotkeys. */
-   p_rarch->keyboard_mapping_blocked= true;
-
-   return (const char**)&p_rarch->keyboard_line.buffer;
+   return (const char**)&keyboard_line->buffer;
 }
 #endif
 
@@ -35971,7 +35973,10 @@ static bool retroarch_load_shader_preset_internal(
       /* Shader preset exists, load it. */
       RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
             shader_path);
-      retroarch_set_runtime_shader_preset(p_rarch, shader_path);
+      strlcpy(
+            p_rarch->runtime_shader_preset,
+            shader_path,
+            sizeof(p_rarch->runtime_shader_preset));
       return true;
    }
 
@@ -36365,7 +36370,7 @@ bool retroarch_main_quit(void)
          command_event_disable_overrides(p_rarch);
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      retroarch_unset_runtime_shader_preset(p_rarch);
+      p_rarch->runtime_shader_preset[0] = '\0';
 #endif
 
 #ifdef HAVE_CONFIGFILE

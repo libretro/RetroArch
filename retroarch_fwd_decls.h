@@ -166,12 +166,14 @@ static bool accessibility_speak_priority(
 #ifdef HAVE_MENU
 static bool input_mouse_button_raw(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       unsigned port, unsigned id);
-static void input_keyboard_line_append(
-      struct rarch_state *p_rarch,
+static bool input_keyboard_line_append(
+      struct input_keyboard_line *keyboard_line,
       const char *word);
-static const char **input_keyboard_start_line(void *userdata,
-      struct rarch_state *p_rarch,
+static const char **input_keyboard_start_line(
+      void *userdata,
+      struct input_keyboard_line *keyboard_line,
       input_keyboard_line_complete_t cb);
 
 static void menu_driver_list_free(
