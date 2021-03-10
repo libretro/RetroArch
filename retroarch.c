@@ -29665,22 +29665,23 @@ static void video_driver_monitor_compute_fps_statistics(void)
 }
 
 static void video_driver_pixel_converter_free(
-      struct rarch_state *p_rarch)
+      video_pixel_scaler_t *scalr)
 {
-   if (p_rarch->video_driver_scaler_ptr->scaler)
+   if (!scalr)
+      return;
+
+   if (scalr->scaler)
    {
-      scaler_ctx_gen_reset(p_rarch->video_driver_scaler_ptr->scaler);
-      free(p_rarch->video_driver_scaler_ptr->scaler);
+      scaler_ctx_gen_reset(scalr->scaler);
+      free(scalr->scaler);
    }
-   if (p_rarch->video_driver_scaler_ptr->scaler_out)
-      free(p_rarch->video_driver_scaler_ptr->scaler_out);
+   if (scalr->scaler_out)
+      free(scalr->scaler_out);
 
-   p_rarch->video_driver_scaler_ptr->scaler     = NULL;
-   p_rarch->video_driver_scaler_ptr->scaler_out = NULL;
+   scalr->scaler     = NULL;
+   scalr->scaler_out = NULL;
 
-   free(p_rarch->video_driver_scaler_ptr);
-
-   p_rarch->video_driver_scaler_ptr             = NULL;
+   free(scalr);
 }
 
 static void video_driver_free_hw_context(struct rarch_state *p_rarch)
@@ -29735,8 +29736,9 @@ static void video_driver_free_internal(void)
          && p_rarch->current_video->free)
       p_rarch->current_video->free(p_rarch->video_driver_data);
 
-   if (p_rarch && p_rarch->video_driver_scaler_ptr)
-      video_driver_pixel_converter_free(p_rarch);
+   if (p_rarch->video_driver_scaler_ptr)
+      video_driver_pixel_converter_free(p_rarch->video_driver_scaler_ptr);
+   p_rarch->video_driver_scaler_ptr = NULL;
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
@@ -29750,73 +29752,59 @@ static void video_driver_free_internal(void)
    video_driver_monitor_compute_fps_statistics();
 }
 
-static bool video_driver_pixel_converter_init(
-      struct rarch_state *p_rarch,
+static video_pixel_scaler_t *video_driver_pixel_converter_init(
+      const enum retro_pixel_format video_driver_pix_fmt,
+      struct retro_hw_render_callback *hwr,
       unsigned size)
 {
-   struct retro_hw_render_callback *hwr =
-      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
    void *scalr_out                      = NULL;
    video_pixel_scaler_t          *scalr = NULL;
    struct scaler_ctx        *scalr_ctx  = NULL;
-   const enum retro_pixel_format
-      video_driver_pix_fmt              = p_rarch->video_driver_pix_fmt;
 
    /* If pixel format is not 0RGB1555, we don't need to do
     * any internal pixel conversion. */
    if (video_driver_pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
-      return true;
+      return NULL;
 
    /* No need to perform pixel conversion for HW rendering contexts. */
    if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
-      return true;
+      return NULL;
 
    RARCH_WARN("[Video]: 0RGB1555 pixel format is deprecated,"
          " and will be slower. For 15/16-bit, RGB565"
          " format is preferred.\n");
 
-   scalr = (video_pixel_scaler_t*)malloc(sizeof(*scalr));
-
-   if (!scalr)
+   if (!(scalr = (video_pixel_scaler_t*)malloc(sizeof(*scalr))))
       goto error;
 
    scalr->scaler                            = NULL;
    scalr->scaler_out                        = NULL;
 
-   p_rarch->video_driver_scaler_ptr         = scalr;
-
-   scalr_ctx = (struct scaler_ctx*)calloc(1, sizeof(*scalr_ctx));
-
-   if (!scalr_ctx)
+   if (!(scalr_ctx = (struct scaler_ctx*)calloc(1, sizeof(*scalr_ctx))))
       goto error;
 
-   p_rarch->video_driver_scaler_ptr->scaler              = scalr_ctx;
-   p_rarch->video_driver_scaler_ptr->scaler->scaler_type = SCALER_TYPE_POINT;
-   p_rarch->video_driver_scaler_ptr->scaler->in_fmt      = SCALER_FMT_0RGB1555;
-
-   /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
-   p_rarch->video_driver_scaler_ptr->scaler->out_fmt     = SCALER_FMT_RGB565;
+   scalr->scaler                            = scalr_ctx;
+   scalr->scaler->scaler_type               = SCALER_TYPE_POINT;
+   scalr->scaler->in_fmt                    = SCALER_FMT_0RGB1555;
+   /* TODO/FIXME: Pick either ARGB8888 or RGB565 depending on driver. */
+   scalr->scaler->out_fmt                   = SCALER_FMT_RGB565;
 
    if (!scaler_ctx_gen_filter(scalr_ctx))
       goto error;
 
-   scalr_out = calloc(sizeof(uint16_t), size * size);
-
-   if (!scalr_out)
+   if (!(scalr_out = calloc(sizeof(uint16_t), size * size)))
       goto error;
 
-   p_rarch->video_driver_scaler_ptr->scaler_out          = scalr_out;
+   scalr->scaler_out                        = scalr_out;
 
-   return true;
+   return scalr;
 
 error:
-   if (p_rarch && p_rarch->video_driver_scaler_ptr)
-      video_driver_pixel_converter_free(p_rarch);
+   video_driver_pixel_converter_free(scalr);
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
-
-   return false;
+   return NULL;
 }
 
 static void video_driver_set_viewport_config(struct retro_game_geometry *geom,
@@ -29979,12 +29967,10 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_display_userdata_set(0);
    video_driver_window_set(0);
 
-   if (!video_driver_pixel_converter_init(p_rarch,
-            RARCH_SCALE_BASE * scale))
-   {
-      RARCH_ERR("[Video]: Failed to initialize pixel converter.\n");
-      goto error;
-   }
+   p_rarch->video_driver_scaler_ptr  = video_driver_pixel_converter_init(
+         p_rarch->video_driver_pix_fmt,
+         VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch),
+         RARCH_SCALE_BASE * scale);
 
    video.width                       = width;
    video.height                      = height;
