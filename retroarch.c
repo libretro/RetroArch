@@ -1609,9 +1609,11 @@ static void menu_cbs_init(
 {
    const char *menu_label         = NULL;
    file_list_t *menu_list         = MENU_LIST_GET(menu_st->entries.list, 0);
+#ifdef DEBUG_LOG
    menu_file_list_cbs_t *menu_cbs = (menu_file_list_cbs_t*)
       menu_list->list[list->size - 1].actiondata;
    enum msg_hash_enums enum_idx   = menu_cbs ? menu_cbs->enum_idx : MSG_UNKNOWN;
+#endif
 
    file_list_get_last(menu_list,
          NULL, &menu_label, NULL, NULL);
@@ -10083,12 +10085,15 @@ bool menu_input_dialog_get_display_kb(void)
             input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
          else
          {
+            const char *word = &buf[i];
             /* input_keyboard_line_append expects a null-terminated
                string, so just make one (yes, the touch keyboard is
                a list of "null-terminated characters") */
-            char oldchar = buf[i+1];
-            buf[i+1]     = '\0';
-            input_keyboard_line_append(&p_rarch->keyboard_line, &buf[i]);
+            char oldchar     = buf[i+1];
+            buf[i+1]         = '\0';
+
+            input_keyboard_line_append(&p_rarch->keyboard_line, word);
+
             if (word[0] == 0)
             {
                p_rarch->osk_last_codepoint       = 0;
