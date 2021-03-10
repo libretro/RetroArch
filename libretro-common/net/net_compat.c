@@ -228,7 +228,7 @@ int getaddrinfo_retro(const char *node, const char *service,
 
       in_addr->sin_family = host->h_addrtype;
 
-#if defined(AF_INET6) || defined(VITA)
+#if defined(AF_INET6) && !defined(__PS3__) || defined(VITA)
       /* TODO/FIXME - In case we ever want to support IPv6 */
       in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
 #else
@@ -286,6 +286,29 @@ bool network_init(void)
       network_deinit();
       return false;
    }
+#elif defined(__PSL1GHT__) || defined(__PS3__) 
+   int timeout_count = 10;
+
+   sysModuleLoad(SYSMODULE_NET);
+   netInitialize();
+
+   if (netCtlInit() < 0)
+      return false;
+
+   for (;;)
+   {
+      int state;
+      if (netCtlGetState(&state) < 0)
+         return false;
+
+      if (state == NET_CTL_STATE_IPObtained)
+         break;
+
+      retro_sleep(500);
+      timeout_count--;
+      if (timeout_count < 0)
+         return 0;
+   }
 #elif defined(VITA)
    SceNetInitParam initparam;
 
@@ -333,6 +356,10 @@ void network_deinit(void)
 {
 #if defined(_WIN32)
    WSACleanup();
+#elif defined(__PSL1GHT__) || defined(__PS3__)
+   netCtlTerm();
+   netFinalizeNetwork();
+   sysModuleUnload(SYSMODULE_NET);
 #elif defined(VITA)
    sceNetCtlTerm();
    sceNetTerm();
