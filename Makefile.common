@@ -493,8 +493,7 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/qt_playlist.o \
           ui/drivers/qt/qt_downloads.o
     ifeq ($(HAVE_MENU), 1)
-       OBJ += ui/drivers/qt/options/nongeneric.o \
-              ui/drivers/qt/options/generic.o
+       OBJ += ui/drivers/qt/qt_options.o
     endif
 
    MOC_HEADERS += ui/drivers/ui_qt.h \
@@ -510,7 +509,7 @@ ifeq ($(HAVE_QT), 1)
    endif
    ifeq ($(HAVE_MENU), 1)
       MOC_HEADERS += ui/drivers/qt/settingswidgets.h \
-                     ui/drivers/qt/options/options.h
+                     ui/drivers/qt/qt_options.h
    endif
 
    DEFINES += -DHAVE_MAIN

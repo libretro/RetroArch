@@ -6,7 +6,7 @@
 #include <QScrollArea>
 #include <QDebug>
 
-#include "../settingswidgets.h"
+#include "settingswidgets.h"
 
 class MainWindow;
 class ViewOptionsWidget;

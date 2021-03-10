@@ -37,6 +37,6 @@
     <CustomBuild Include="..\..\..\ui\drivers\qt\coreinfodialog.h" />
     <CustomBuild Include="..\..\..\ui\drivers\qt\filedropwidget.h" />
     <CustomBuild Include="..\..\..\ui\drivers\qt\settingswidgets.h" />
-    <CustomBuild Include="..\..\..\ui\drivers\qt\options\options.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\qt_options.h" />
   </ItemGroup>
 </Project>

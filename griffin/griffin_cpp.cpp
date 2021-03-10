@@ -57,9 +57,8 @@ UI
 #include "../ui/drivers/qt/qt_playlist.cpp"
 #include "../ui/drivers/qt/qt_downloads.cpp"
 #ifdef HAVE_MENU
-#include "../ui/drivers/qt/options/generic.cpp"
-#include "../ui/drivers/qt/options/nongeneric.cpp"
-#include "../ui/drivers/qt/options/moc_options.cpp"
+#include "../ui/drivers/qt/qt_options.cpp"
+#include "../ui/drivers/qt/moc_options.cpp"
 #include "../ui/drivers/qt/moc_settingswidgets.cpp"
 #endif
 #include "../ui/drivers/moc_ui_qt.cpp"

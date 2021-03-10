@@ -71,7 +71,7 @@ extern "C" {
 #include "shaderparamsdialog.h"
 #endif
 
-#include "options/options.h"
+#include "qt_options.h"
 
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
 /* https://support.microsoft.com/en-us/kb/980263 */

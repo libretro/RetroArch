@@ -2510,7 +2510,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">true</ExcludedFromBuild>
     </CustomBuild>
-    <CustomBuild Include="..\..\..\ui\drivers\qt\options\options.h">
+    <CustomBuild Include="..\..\..\ui\drivers\qt\qt_options.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">false</ExcludedFromBuild>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">moc.exe "%(FullPath)" &gt; "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
