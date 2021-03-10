@@ -29901,9 +29901,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 #endif
 
    /* Update core-dependent aspect ratio values. */
-   video_driver_set_viewport_square_pixel(&p_rarch->video_driver_av_info.geometry);
+   video_driver_set_viewport_square_pixel(geom);
    video_driver_set_viewport_core();
-   video_driver_set_viewport_config(&p_rarch->video_driver_av_info.geometry, p_rarch->configuration_settings);
+   video_driver_set_viewport_config(geom, settings);
 
    /* Update CUSTOM viewport. */
    custom_vp = video_viewport_get_custom();
