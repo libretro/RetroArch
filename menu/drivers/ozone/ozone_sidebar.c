@@ -936,8 +936,8 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* If the playlist icon doesn't exist return default */
 
          if (!path_is_valid(texturepath))
-               fill_pathname_join_concat(texturepath, icons_path, "default",
-               ".png", sizeof(texturepath));
+            fill_pathname_join_concat(texturepath, icons_path, "default",
+                  ".png", sizeof(texturepath));
 
          ti.width         = 0;
          ti.height        = 0;
@@ -984,9 +984,11 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          }
 
          /* Console name */
-         menu_entries_get_at_offset(
-            &ozone->horizontal_list, i,
-            NULL, NULL, NULL, NULL, &console_name);
+         file_list_get_at_offset(
+               &ozone->horizontal_list, i, NULL, NULL, NULL, NULL);
+         console_name = ozone->horizontal_list.list[i].alt
+            ? ozone->horizontal_list.list[i].alt
+            : ozone->horizontal_list.list[i].path;
 
          if (node->console_name)
             free(node->console_name);
@@ -994,8 +996,10 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Note: console_name will *always* be valid here,
           * but provide a fallback to prevent NULL pointer
           * dereferencing in case of unknown errors... */
-         node->console_name = strdup(
-               console_name ? console_name : path);
+         if (console_name)
+            node->console_name = strdup(console_name);
+         else
+            node->console_name = strdup(path);
       }
    }
 }

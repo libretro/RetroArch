@@ -1513,10 +1513,10 @@ static void stripes_set_title(stripes_handle_t *stripes)
    else
    {
       const char *path = NULL;
-      menu_entries_get_at_offset(
+      file_list_get_at_offset(
             &stripes->horizontal_list,
             stripes->categories_selection_ptr - (stripes->system_tab_end + 1),
-            &path, NULL, NULL, NULL, NULL);
+            &path, NULL, NULL, NULL);
 
       if (!path)
          return;

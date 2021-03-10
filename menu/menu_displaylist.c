@@ -3463,9 +3463,7 @@ static unsigned menu_displaylist_parse_cores(
          unsigned type                      = 0;
          const char *path                   = NULL;
 
-         menu_entries_get_at_offset(info->list,
-               i, &path, NULL, &type, NULL,
-               NULL);
+         file_list_get_at_offset(info->list, i, &path, NULL, &type, NULL);
 
          if (type == FILE_TYPE_CORE)
          {

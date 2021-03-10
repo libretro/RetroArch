@@ -1950,8 +1950,7 @@ static int generic_menu_iterate(
                         const char *path                       = NULL;
 
                         /* Get core path */
-                        menu_entries_get_at_offset(selection_buf, selection,
-                              &path, NULL, NULL, NULL, NULL);
+                        file_list_get_at_offset(selection_buf, selection, &path, NULL, NULL, NULL);
 
                         /* Search for specified core */
                         if (core_list && path &&
@@ -1974,8 +1973,7 @@ static int generic_menu_iterate(
                         core_info_ctx_find_t core_info;
 
                         /* Get core path */
-                        menu_entries_get_at_offset(selection_buf, selection,
-                              &path, NULL, NULL, NULL, NULL);
+                        file_list_get_at_offset(selection_buf, selection, &path, NULL, NULL, NULL);
 
                         /* Search for specified core */
                         core_info.inf  = NULL;
@@ -2030,8 +2028,7 @@ static int generic_menu_iterate(
                unsigned type = 0;
                enum msg_hash_enums enum_idx = MSG_UNKNOWN;
                size_t selection             = menu_st->selection_ptr;
-               menu_entries_get_at_offset(selection_buf, selection,
-                     NULL, NULL, &type, NULL, NULL);
+               file_list_get_at_offset(selection_buf, selection, NULL, NULL, &type, NULL);
 
                switch (type)
                {
@@ -2712,17 +2709,6 @@ static void menu_list_flush_stack(
       file_list_get_last(menu_list,
             &path, &label, &type, &entry_idx);
    }
-}
-
-void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
-      const char **path, const char **label, unsigned *file_type,
-      size_t *entry_idx, const char **alt)
-{
-   file_list_get_at_offset(list, idx, path, label, file_type, entry_idx);
-   if (list && alt)
-      *alt = list->list[idx].alt
-         ? list->list[idx].alt
-         : list->list[idx].path;
 }
 
 /**

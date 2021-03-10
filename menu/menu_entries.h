@@ -179,10 +179,6 @@ size_t menu_entries_get_stack_size(size_t idx);
 
 size_t menu_entries_get_size(void);
 
-void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
-      const char **path, const char **label, unsigned *file_type,
-      size_t *entry_idx, const char **alt);
-
 void menu_entries_prepend(file_list_t *list,
       const char *path, const char *label,
       enum msg_hash_enums enum_idx,

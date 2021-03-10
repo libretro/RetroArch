@@ -1881,10 +1881,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
    {
       const char *path = NULL;
 
-      menu_entries_get_at_offset(
-            &xmb->horizontal_list,
+      file_list_get_at_offset(&xmb->horizontal_list,
             xmb->categories_selection_ptr - (xmb->system_tab_end + 1),
-            &path, NULL, NULL, NULL, NULL);
+            &path, NULL, NULL, NULL);
 
       if (!path)
          return;
