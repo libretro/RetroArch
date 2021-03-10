@@ -186,6 +186,10 @@ static int menu_input_post_iterate(
 static void menu_input_reset(struct rarch_state *p_rarch);
 #endif
 
+static bool retroarch_apply_shader(
+      enum rarch_shader_type type, const char *preset_path,
+      bool message);
+
 static void video_driver_restore_cached(struct rarch_state *p_rarch,
       settings_t *settings);
 

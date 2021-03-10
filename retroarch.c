@@ -10814,7 +10814,7 @@ error:
 }
 #endif
 
-bool retroarch_apply_shader(
+static bool retroarch_apply_shader(
       enum rarch_shader_type type,
       const char *preset_path, bool message)
 {
@@ -10932,9 +10932,7 @@ static bool command_set_shader(const char *arg)
       }
    }
 
-   if (retroarch_apply_shader(type, arg, true))
-      return true;
-   return false;
+   return retroarch_apply_shader(type, arg, true);
 }
 #endif
 
