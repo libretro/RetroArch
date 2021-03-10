@@ -3460,10 +3460,8 @@ static unsigned menu_displaylist_parse_cores(
 
       for (i = 0; i < list_size; i++)
       {
-         unsigned type                      = 0;
-         const char *path                   = NULL;
-
-         file_list_get_at_offset(info->list, i, &path, NULL, &type, NULL);
+         const char *path                   = info->list->list[i].path;
+         unsigned type                      = info->list->list[i].type;
 
          if (type == FILE_TYPE_CORE)
          {

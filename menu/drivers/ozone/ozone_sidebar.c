@@ -813,15 +813,11 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
 
    for (i = 0; i < list_size; i++)
    {
-      const char *playlist_file = NULL;
-      char *console_name        = NULL;
       char playlist_file_noext[255];
+      char *console_name        = NULL;
+      const char *playlist_file = ozone->horizontal_list.list[i].path;
 
       playlist_file_noext[0] = '\0';
-
-      /* Get playlist file name */
-      file_list_get_at_offset(&ozone->horizontal_list, i,
-            &playlist_file, NULL, NULL, NULL);
 
       if (!playlist_file)
       {
@@ -907,16 +903,10 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             continue;
       }
 
-      file_list_get_at_offset(&ozone->horizontal_list, i,
-            &path, NULL, NULL, NULL);
-
-      if (!path)
+      if (!(path = ozone->horizontal_list.list[i].path))
          continue;
-
-      if (!string_ends_with_size(path, ".lpl",
+      if (string_ends_with_size(path, ".lpl",
                strlen(path), STRLEN_CONST(".lpl")))
-         continue;
-
       {
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
@@ -984,8 +974,6 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          }
 
          /* Console name */
-         file_list_get_at_offset(
-               &ozone->horizontal_list, i, NULL, NULL, NULL, NULL);
          console_name = ozone->horizontal_list.list[i].alt
             ? ozone->horizontal_list.list[i].alt
             : ozone->horizontal_list.list[i].path;
@@ -1017,15 +1005,14 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
       if (!node)
          continue;
 
-      file_list_get_at_offset(&ozone->horizontal_list, i,
-            &path, NULL, NULL, NULL);
-
-      if (!path || !string_ends_with_size(path, ".lpl",
-               strlen(path), STRLEN_CONST(".lpl")))
+      if (!(path = ozone->horizontal_list.list[i].path))
          continue;
-
-      video_driver_texture_unload(&node->icon);
-      video_driver_texture_unload(&node->content_icon);
+      if (string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
+      {
+         video_driver_texture_unload(&node->icon);
+         video_driver_texture_unload(&node->content_icon);
+      }
    }
 }
 

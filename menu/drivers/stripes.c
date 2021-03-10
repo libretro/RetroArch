@@ -1512,12 +1512,8 @@ static void stripes_set_title(stripes_handle_t *stripes)
    }
    else
    {
-      const char *path = NULL;
-      file_list_get_at_offset(
-            &stripes->horizontal_list,
-            stripes->categories_selection_ptr - (stripes->system_tab_end + 1),
-            &path, NULL, NULL, NULL);
-
+      const char *path = stripes->horizontal_list.list[
+            stripes->categories_selection_ptr - (stripes->system_tab_end + 1)].path;
       if (!path)
          return;
 
@@ -1747,15 +1743,15 @@ static void stripes_context_destroy_horizontal_list(stripes_handle_t *stripes)
       if (!node)
          continue;
 
-      file_list_get_at_offset(&stripes->horizontal_list, i,
-            &path, NULL, NULL, NULL);
-
-      if (!path || !string_ends_with_size(path, ".lpl",
-               strlen(path), STRLEN_CONST(".lpl")))
+      if (!(path = stripes->horizontal_list.list[i].path))
          continue;
 
-      video_driver_texture_unload(&node->icon);
-      video_driver_texture_unload(&node->content_icon);
+      if (string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
+      {
+         video_driver_texture_unload(&node->icon);
+         video_driver_texture_unload(&node->content_icon);
+      }
    }
 }
 
@@ -1836,23 +1832,17 @@ static void stripes_context_reset_horizontal_list(
    for (i = 0; i < list_size; i++)
    {
       const char *path                          = NULL;
-      stripes_node_t *node                          =
+      stripes_node_t *node                      =
          stripes_get_userdata_from_horizontal_list(stripes, i);
 
       if (!node)
-      {
-         node = stripes_node_allocate_userdata(stripes, i);
-         if (!node)
+         if (!(node = stripes_node_allocate_userdata(stripes, i)))
             continue;
-      }
 
-      file_list_get_at_offset(&stripes->horizontal_list, i,
-            &path, NULL, NULL, NULL);
-
-      if (!path || !string_ends_with_size(path, ".lpl",
-               strlen(path), STRLEN_CONST(".lpl")))
+      if (!(path = stripes->horizontal_list.list[i].path))
          continue;
-
+      if (string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
       {
          struct texture_image ti;
          char sysname[256];
