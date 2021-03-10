@@ -1600,16 +1600,21 @@ static bool menu_input_key_bind_iterate(
  * This function callback lets us render that text.
  */
 static void menu_cbs_init(
+      struct menu_state *menu_st,
       const menu_ctx_driver_t *menu_driver_ctx,
       file_list_t *list,
       menu_file_list_cbs_t *cbs,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
-   const char *menu_label        = NULL;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+   const char *menu_label         = NULL;
+   file_list_t *menu_list         = MENU_LIST_GET(menu_st->entries.list, 0);
+   menu_file_list_cbs_t *menu_cbs = (menu_file_list_cbs_t*)
+      menu_list->list[list->size - 1].actiondata;
+   enum msg_hash_enums enum_idx   = menu_cbs ? menu_cbs->enum_idx : MSG_UNKNOWN;
 
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
+   file_list_get_last(menu_list,
+         NULL, &menu_label, NULL, NULL);
 
    if (!label || !menu_label)
       return;
@@ -1859,8 +1864,9 @@ static int generic_menu_iterate(
    struct menu_state *menu_st      = &p_rarch->menu_driver_state;
    gfx_display_t *p_disp           = &p_rarch->dispgfx;
    gfx_animation_t *p_anim         = &p_rarch->anim;
+   file_list_t *list               = MENU_LIST_GET(menu_st->entries.list, 0);
 
-   menu_entries_get_last_stack(NULL, &label, &file_type, NULL, NULL);
+   file_list_get_last(list, NULL, &label, &file_type, NULL);
 
    menu->menu_state_msg[0]         = '\0';
 
@@ -2421,7 +2427,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       entry->enum_idx               = cbs->enum_idx;
       entry->checked                = cbs->checked;
 
-      menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+            NULL, &label, NULL, NULL);
 
       if (entry->rich_label_enabled && cbs->action_label)
       {
@@ -2813,7 +2820,8 @@ int menu_entries_get_title(char *s, size_t len)
          strlcpy(s, cbs->action_title_cache, len);
          return 0;
       }
-      menu_entries_get_last_stack(&path, &label, &menu_type, NULL, NULL);
+      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+            &path, &label, &menu_type, NULL);
       ret = cbs->action_get_title(path, label, menu_type, s, len);
       if (ret == 1)
          strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
@@ -2941,12 +2949,13 @@ void menu_entries_append(
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    struct rarch_state   *p_rarch   = &rarch_st;
+   struct menu_state    *menu_st   = &p_rarch->menu_driver_state;
    if (!list || !label)
       return;
 
    file_list_append(list, path, label, type, directory_ptr, entry_idx);
-
-   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
 
    idx                = list->size - 1;
 
@@ -3008,7 +3017,8 @@ void menu_entries_append(
 
    list->list[idx].actiondata      = cbs;
 
-   menu_cbs_init(p_rarch->menu_driver_ctx,
+   menu_cbs_init(&p_rarch->menu_driver_state,
+         p_rarch->menu_driver_ctx,
          list, cbs, path, label, type, idx);
 }
 
@@ -3026,13 +3036,15 @@ bool menu_entries_append_enum(
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    struct rarch_state   *p_rarch   = &rarch_st;
+   struct menu_state    *menu_st   = &p_rarch->menu_driver_state;
 
    if (!list || !label)
       return false;
 
    file_list_append(list, path, label, type, directory_ptr, entry_idx);
 
-   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
 
    idx                   = list->size - 1;
 
@@ -3099,7 +3111,8 @@ bool menu_entries_append_enum(
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
       cbs->setting                 = menu_setting_find_enum(enum_idx);
 
-   menu_cbs_init(p_rarch->menu_driver_ctx,
+   menu_cbs_init(&p_rarch->menu_driver_state,
+         p_rarch->menu_driver_ctx,
          list, cbs, path, label, type, idx);
 
    return true;
@@ -3115,12 +3128,13 @@ void menu_entries_prepend(file_list_t *list,
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    struct rarch_state   *p_rarch   = &rarch_st;
+   struct menu_state    *menu_st   = &p_rarch->menu_driver_state;
    if (!list || !label)
       return;
 
    file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
-
-   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
 
    list_info.fullpath    = NULL;
 
@@ -3179,7 +3193,8 @@ void menu_entries_prepend(file_list_t *list,
 
    list->list[idx].actiondata      = cbs;
 
-   menu_cbs_init(p_rarch->menu_driver_ctx,
+   menu_cbs_init(&p_rarch->menu_driver_state,
+         p_rarch->menu_driver_ctx,
          list, cbs, path, label, type, idx);
 }
 
@@ -9814,8 +9829,10 @@ bool gfx_widgets_ready(void)
 #ifdef HAVE_MENU
 static void menu_input_search_cb(void *userdata, const char *str)
 {
-   const char *label = NULL;
-   unsigned type     = MENU_SETTINGS_NONE;
+   const char *label           = NULL;
+   unsigned type               = MENU_SETTINGS_NONE;
+   struct rarch_state *p_rarch = &rarch_st;
+   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
    if (string_is_empty(str))
       goto end;
@@ -9823,9 +9840,8 @@ static void menu_input_search_cb(void *userdata, const char *str)
    /* Determine whether we are currently
     * viewing a menu list with 'search
     * filter' support */
-   menu_entries_get_last_stack(NULL,
-         &label, &type,
-         NULL, NULL);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         NULL, &label, &type, NULL);
 
    if (menu_driver_search_filter_enabled(label, type))
    {
@@ -9833,8 +9849,6 @@ static void menu_input_search_cb(void *userdata, const char *str)
       if (menu_driver_search_push(str))
       {
          bool refresh = false;
-         struct rarch_state *p_rarch = &rarch_st;
-         struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
          /* Reset navigation pointer */
          menu_st->selection_ptr      = 0;
@@ -23888,27 +23902,11 @@ static float menu_input_get_dpi(struct rarch_state *p_rarch)
    return dpi;
 }
 
-/* Used to close an active message box (help or info)
- * TODO/FIXME: The way that message boxes are handled
- * is complete garbage. generic_menu_iterate() and
- * message boxes in general need a total rewrite.
- * I consider this current 'close_messagebox' a hack,
- * but at least it prevents undefined/dangerous
- * behaviour... */
-static void menu_input_pointer_close_messagebox(struct rarch_state *p_rarch)
+static bool menu_should_pop_stack(const char *label)
 {
-   const char *label            = NULL;
-   bool pop_stack               = false;
-   struct menu_state *menu_st   = &p_rarch->menu_driver_state;
-
-   /* Determine whether this is a help or info
-    * message box */
-   menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
-
    /* > Info box */
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN)))
-      pop_stack = true;
-
+      return true;
    /* > Help box */
    if (string_starts_with_size(label, "help", STRLEN_CONST("help")))
       if (
@@ -23921,13 +23919,31 @@ static void menu_input_pointer_close_messagebox(struct rarch_state *p_rarch)
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO))
             || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
-         pop_stack = true;
+         return true;
    if (
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
-      pop_stack = true;
+      return true;
+   return false;
+}
+
+/* Used to close an active message box (help or info)
+ * TODO/FIXME: The way that message boxes are handled
+ * is complete garbage. generic_menu_iterate() and
+ * message boxes in general need a total rewrite.
+ * I consider this current 'close_messagebox' a hack,
+ * but at least it prevents undefined/dangerous
+ * behaviour... */
+static void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
+{
+   const char *label            = NULL;
+
+   /* Determine whether this is a help or info
+    * message box */
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         NULL, &label, NULL, NULL);
 
    /* Pop stack, if required */
-   if (pop_stack)
+   if (menu_should_pop_stack(label))
    {
       size_t selection            = menu_st->selection_ptr;
       size_t new_selection        = selection;
@@ -24300,7 +24316,8 @@ static int menu_input_pointer_post_iterate(
           * > If a message box is shown, any kind of pointer
           *   gesture should close it */
          else if (messagebox_active)
-            menu_input_pointer_close_messagebox(p_rarch);
+            menu_input_pointer_close_messagebox(
+                  &p_rarch->menu_driver_state);
          /* Normal menu input */
          else
          {
@@ -24427,7 +24444,7 @@ static int menu_input_pointer_post_iterate(
    {
       /* If currently showing a message box, close it */
       if (messagebox_active)
-         menu_input_pointer_close_messagebox(p_rarch);
+         menu_input_pointer_close_messagebox(&p_rarch->menu_driver_state);
       /* ...otherwise, invoke standard MENU_ACTION_CANCEL
        * action */
       else
