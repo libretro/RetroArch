@@ -1469,11 +1469,8 @@ static int action_bind_sublabel_core_backup_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   const char *crc = NULL;
-
    /* crc is entered as 'alt' text */
-   file_list_get_at_offset(list, i, NULL, NULL, NULL, NULL);
-   crc = list->list[i].alt
+   const char *crc = list->list[i].alt
       ? list->list[i].alt
       : list->list[i].path;
 

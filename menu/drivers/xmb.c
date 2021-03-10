@@ -1879,11 +1879,8 @@ static void xmb_set_title(xmb_handle_t *xmb)
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    else
    {
-      const char *path = NULL;
-
-      file_list_get_at_offset(&xmb->horizontal_list,
-            xmb->categories_selection_ptr - (xmb->system_tab_end + 1),
-            &path, NULL, NULL, NULL);
+      const char *path = xmb->horizontal_list.list[
+            xmb->categories_selection_ptr - (xmb->system_tab_end + 1)].path;
 
       if (!path)
          return;
@@ -2093,16 +2090,14 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
 
       if (!node)
          continue;
-
-      file_list_get_at_offset(&xmb->horizontal_list, i,
-            &path, NULL, NULL, NULL);
-
-      if (!path || !string_ends_with_size(path, ".lpl",
-               strlen(path), STRLEN_CONST(".lpl")))
+      if (!(path = xmb->horizontal_list.list[i].path))
          continue;
-
-      video_driver_texture_unload(&node->icon);
-      video_driver_texture_unload(&node->content_icon);
+      if (string_ends_with_size(path, ".lpl",
+               strlen(path), STRLEN_CONST(".lpl")))
+      {
+         video_driver_texture_unload(&node->icon);
+         video_driver_texture_unload(&node->content_icon);
+      }
    }
 }
 
@@ -2185,16 +2180,10 @@ static void xmb_context_reset_horizontal_list(
          xmb_get_userdata_from_horizontal_list(xmb, i);
 
       if (!node)
-      {
-         node = xmb_node_allocate_userdata(xmb, i);
-         if (!node)
+         if (!(node = xmb_node_allocate_userdata(xmb, i)))
             continue;
-      }
 
-      file_list_get_at_offset(&xmb->horizontal_list, i,
-            &path, NULL, NULL, NULL);
-
-      if (!path)
+      if (!(path = xmb->horizontal_list.list[i].path))
          continue;
 
       if (string_ends_with_size(path, ".lpl",

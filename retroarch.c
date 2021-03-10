@@ -1939,17 +1939,20 @@ static int generic_menu_iterate(
 #ifdef HAVE_NETWORKING
                   case MENU_ENUM_LABEL_CORE_UPDATER_ENTRY:
                      {
-                        core_updater_list_t *core_list         = core_updater_list_get_cached();
+                        core_updater_list_t *core_list         = 
+                           core_updater_list_get_cached();
                         const core_updater_list_entry_t *entry = NULL;
-                        const char *path                       = NULL;
-
-                        /* Get core path */
-                        file_list_get_at_offset(selection_buf, selection, &path, NULL, NULL, NULL);
+                        const char *path                       = 
+                           selection_buf->list[selection].path;
 
                         /* Search for specified core */
-                        if (core_list && path &&
-                              core_updater_list_get_filename(core_list, path, &entry) &&
-                              !string_is_empty(entry->description))
+                        if (
+                                 core_list 
+                              && path 
+                              && core_updater_list_get_filename(core_list,
+                                 path, &entry) 
+                              && !string_is_empty(entry->description)
+                           )
                            strlcpy(menu->menu_state_msg, entry->description,
                                  sizeof(menu->menu_state_msg));
                         else
@@ -1963,20 +1966,17 @@ static int generic_menu_iterate(
 #endif
                   case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
                      {
-                        const char *path = NULL;
                         core_info_ctx_find_t core_info;
-
-                        /* Get core path */
-                        file_list_get_at_offset(selection_buf, selection, &path, NULL, NULL, NULL);
-
+                        const char *path = selection_buf->list[selection].path;
                         /* Search for specified core */
-                        core_info.inf  = NULL;
-                        core_info.path = path;
+                        core_info.inf    = NULL;
+                        core_info.path   = path;
 
-                        if (path &&
-                              core_info_find(&core_info) &&
-                              !string_is_empty(core_info.inf->description))
-                           strlcpy(menu->menu_state_msg, core_info.inf->description,
+                        if (     path 
+                              && core_info_find(&core_info)
+                              && !string_is_empty(core_info.inf->description))
+                           strlcpy(menu->menu_state_msg,
+                                 core_info.inf->description,
                                  sizeof(menu->menu_state_msg));
                         else
                            strlcpy(menu->menu_state_msg,
@@ -2019,10 +2019,9 @@ static int generic_menu_iterate(
             }
             else
             {
-               unsigned type = 0;
                enum msg_hash_enums enum_idx = MSG_UNKNOWN;
                size_t selection             = menu_st->selection_ptr;
-               file_list_get_at_offset(selection_buf, selection, NULL, NULL, &type, NULL);
+               unsigned type                = selection_buf->list[selection].type;
 
                switch (type)
                {
