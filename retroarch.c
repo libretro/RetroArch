@@ -29798,16 +29798,13 @@ error:
    return false;
 }
 
-static void video_driver_set_viewport_config(struct rarch_state *p_rarch)
+static void video_driver_set_viewport_config(struct retro_game_geometry *geom,
+      settings_t *settings)
 {
-   settings_t       *settings     = p_rarch->configuration_settings;
    float       video_aspect_ratio = settings->floats.video_aspect_ratio;
 
    if (video_aspect_ratio < 0.0f)
    {
-      struct retro_game_geometry *geom =
-         &p_rarch->video_driver_av_info.geometry;
-
       if (geom->aspect_ratio > 0.0f &&
             settings->bools.video_aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
@@ -29897,7 +29894,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    /* Update core-dependent aspect ratio values. */
    video_driver_set_viewport_square_pixel(&p_rarch->video_driver_av_info.geometry);
    video_driver_set_viewport_core();
-   video_driver_set_viewport_config(p_rarch);
+   video_driver_set_viewport_config(&p_rarch->video_driver_av_info.geometry, p_rarch->configuration_settings);
 
    /* Update CUSTOM viewport. */
    custom_vp = video_viewport_get_custom();
@@ -30680,7 +30677,7 @@ void video_driver_set_aspect_ratio(void)
          break;
 
       case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config(p_rarch);
+         video_driver_set_viewport_config(&p_rarch->video_driver_av_info.geometry, settings);
          break;
 
       default:
