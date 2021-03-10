@@ -1791,9 +1791,7 @@ static void menu_input_set_pointer_visibility(
       menu_input_t *menu_input,
       retro_time_t current_time)
 {
-   bool show_cursor                                = false;
    static bool cursor_shown                        = false;
-   bool hide_cursor                                = false;
    static bool cursor_hidden                       = false;
    static retro_time_t end_time                    = 0;
 
@@ -1801,37 +1799,33 @@ static void menu_input_set_pointer_visibility(
    if ((menu_input->pointer.type == MENU_POINTER_MOUSE) 
          && pointer_hw_state->active)
    {
+      /* Show cursor */
       if ((current_time > end_time) && !cursor_shown)
-         show_cursor = true;
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
+         menu_environ.data = NULL;
+
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+         cursor_shown  = true;
+         cursor_hidden = false;
+      }
 
       end_time = current_time + MENU_INPUT_HIDE_CURSOR_DELAY;
    }
    else
    {
+      /* Hide cursor */
       if ((current_time > end_time) && !cursor_hidden)
-         hide_cursor = true;
-   }
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
+         menu_environ.data = NULL;
 
-   if (show_cursor)
-   {
-      menu_ctx_environment_t menu_environ;
-      menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
-      menu_environ.data = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-      cursor_shown  = true;
-      cursor_hidden = false;
-   }
-
-   if (hide_cursor)
-   {
-      menu_ctx_environment_t menu_environ;
-      menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
-      menu_environ.data = NULL;
-
-      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-      cursor_shown  = false;
-      cursor_hidden = true;
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+         cursor_shown  = false;
+         cursor_hidden = true;
+      }
    }
 }
 
