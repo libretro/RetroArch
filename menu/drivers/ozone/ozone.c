@@ -78,8 +78,6 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
          size_t selection      = menu_navigation_get_selection();
          size_t list_size      = menu_entries_get_size();
          file_list_t *list     = menu_entries_get_selection_buf_ptr(0);
-         bool playlist_valid   = false;
-         size_t playlist_index = selection;
 
          /* Get playlist index corresponding
           * to the selected entry */
@@ -87,12 +85,13 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
              (selection < list_size) &&
              (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
          {
-            playlist_valid = true;
-            playlist_index = list->list[selection].entry_idx;
+            size_t playlist_index = list->list[selection].entry_idx;
+            gfx_thumbnail_set_content_playlist(ozone->thumbnail_path_data,
+                  playlist_get_cached(), playlist_index);
          }
-
-         gfx_thumbnail_set_content_playlist(ozone->thumbnail_path_data,
-               playlist_valid ? playlist_get_cached() : NULL, playlist_index);
+         else
+            gfx_thumbnail_set_content_playlist(ozone->thumbnail_path_data,
+                  NULL, selection);
       }
    }
    else if (ozone->is_db_manager_list)
@@ -354,7 +353,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
    horizontal_list_size       = (unsigned)ozone->horizontal_list.size;
 
-   ozone->messagebox_state    = false || menu_input_dialog_get_display_kb();
+   ozone->messagebox_state    = menu_input_dialog_get_display_kb();
    selection_buf              = menu_entries_get_selection_buf_ptr(0);
    tag                        = (uintptr_t)selection_buf;
    selection                  = menu_navigation_get_selection();
@@ -3518,8 +3517,8 @@ static void ozone_messagebox(void *data, const char *message)
       ozone->pending_message = NULL;
    }
 
-   ozone->pending_message = strdup(message);
-   ozone->messagebox_state = true || menu_input_dialog_get_display_kb();
+   ozone->pending_message        = strdup(message);
+   ozone->messagebox_state       = true;
    ozone->should_draw_messagebox = true;
 }
 

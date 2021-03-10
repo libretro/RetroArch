@@ -951,6 +951,7 @@ static void xmb_render_messagebox_internal(
    struct string_list list  = {0};
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   bool input_dialog_display_kb      = false;
 
    wrapped_message[0]       = '\0';
 
@@ -982,14 +983,15 @@ static void xmb_render_messagebox_internal(
       return;
    }
 
-   line_height      = xmb->font->size * 1.2;
+   input_dialog_display_kb = menu_input_dialog_get_display_kb();
+   line_height             = xmb->font->size * 1.2;
 
-   y_position       = video_height / 2;
-   if (menu_input_dialog_get_display_kb())
-      y_position    = video_height / 4;
+   y_position              = video_height / 2;
+   if (input_dialog_display_kb)
+      y_position           = video_height / 4;
 
-   x                = video_width  / 2;
-   y                = y_position - (list.size-1) * line_height / 2;
+   x                       = video_width  / 2;
+   y                       = y_position - (list.size-1) * line_height / 2;
 
    /* find the longest line width */
    for (i = 0; i < list.size; i++)
@@ -1035,7 +1037,7 @@ static void xmb_render_messagebox_internal(
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
-   if (menu_input_dialog_get_display_kb())
+   if (input_dialog_display_kb)
       gfx_display_draw_keyboard(
             userdata,
             video_width,
@@ -4667,6 +4669,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    float menu_wallpaper_opacity            = video_info->menu_wallpaper_opacity;
    gfx_display_t            *p_disp        = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx       = p_disp->dispctx;
+   bool input_dialog_display_kb            = menu_input_dialog_get_display_kb();
 
    if (!xmb)
       return;
@@ -5265,7 +5268,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb_color_theme,
          settings, selection);
 
-   if (menu_input_dialog_get_display_kb())
+   if (input_dialog_display_kb)
    {
       const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
