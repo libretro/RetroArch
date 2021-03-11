@@ -24,6 +24,7 @@ static int deferred_push_content_list(void *data, void *userdata,
       const char *path,
       const char *label, unsigned type)
 {
+   menu_displaylist_ctx_entry_t entry;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    /* Must clear any existing menu search terms
@@ -35,7 +36,12 @@ static int deferred_push_content_list(void *data, void *userdata,
    menu_driver_search_clear();
 
    menu_navigation_set_selection(0);
-   return action_refresh_default((file_list_t*)data, selection_buf);
+
+   entry.list  = (file_list_t*)data;
+   entry.stack = selection_buf;
+   if (!menu_displaylist_push(&entry))
+      return -1;
+   return 0;
 }
 
 int menu_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,

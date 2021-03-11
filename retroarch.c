@@ -1677,10 +1677,6 @@ static void menu_cbs_init(
    menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
 
    /* It will try to find a corresponding callback function inside
-    * menu_cbs_refresh.c, then map this callback to the entry. */
-   menu_cbs_init_bind_refresh(cbs, path, label, type, idx);
-
-   /* It will try to find a corresponding callback function inside
     * menu_cbs_get_string_representation.c, then map this callback to the entry. */
    menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx);
 
@@ -2280,20 +2276,20 @@ int generic_menu_entry_action(
    cbs = selection_buf ? (menu_file_list_cbs_t*)
       selection_buf->list[i].actiondata : NULL;
 
-
-   if (cbs && cbs->action_refresh)
+   if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
    {
-      if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
-      {
-         bool refresh            = false;
-         struct menu_state  
-            *menu_st             = &p_rarch->menu_driver_state;
-         menu_list_t *menu_list  = menu_st->entries.list;
-         file_list_t *menu_stack = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+      menu_displaylist_ctx_entry_t entry;
+      bool refresh            = false;
+      struct menu_state  
+         *menu_st             = &p_rarch->menu_driver_state;
+      menu_list_t *menu_list  = menu_st->entries.list;
+      file_list_t *menu_stack = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
 
-         cbs->action_refresh(selection_buf, menu_stack);
-         menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-      }
+      entry.list  = selection_buf;
+      entry.stack = menu_stack;
+
+      menu_displaylist_push(&entry);
+      menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
    }
 
 #ifdef HAVE_ACCESSIBILITY
@@ -3010,7 +3006,6 @@ void menu_entries_append(
    cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
-   cbs->action_refresh             = NULL;
    cbs->action_up                  = NULL;
    cbs->action_label               = NULL;
    cbs->action_sublabel            = NULL;
@@ -3098,7 +3093,6 @@ bool menu_entries_append_enum(
    cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
-   cbs->action_refresh             = NULL;
    cbs->action_up                  = NULL;
    cbs->action_label               = NULL;
    cbs->action_sublabel            = NULL;
@@ -3186,7 +3180,6 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
-   cbs->action_refresh             = NULL;
    cbs->action_up                  = NULL;
    cbs->action_label               = NULL;
    cbs->action_sublabel            = NULL;

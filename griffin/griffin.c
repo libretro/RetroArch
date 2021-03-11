@@ -1380,7 +1380,6 @@ MENU
 #include "../menu/cbs/menu_cbs_select.c"
 #include "../menu/cbs/menu_cbs_start.c"
 #include "../menu/cbs/menu_cbs_info.c"
-#include "../menu/cbs/menu_cbs_refresh.c"
 #include "../menu/cbs/menu_cbs_left.c"
 #include "../menu/cbs/menu_cbs_right.c"
 #include "../menu/cbs/menu_cbs_title.c"
