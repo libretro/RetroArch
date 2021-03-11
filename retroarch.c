@@ -2685,16 +2685,15 @@ static void menu_list_flush_stack(
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
-      menu_ctx_list_t list_info;
       bool refresh             = false;
       size_t new_selection_ptr = menu_st->selection_ptr;
       bool wont_pop_stack      = (MENU_LIST_GET_STACK_SIZE(list, idx) <= 1);
       if (wont_pop_stack)
          break;
 
-      list_info.type           = MENU_LIST_PLAIN;
-      list_info.action         = 0;
-      menu_driver_list_cache(&list_info);
+      if (menu_driver_ctx->list_cache)
+         menu_driver_ctx->list_cache(menu_userdata,
+               MENU_LIST_PLAIN, 0);
 
       menu_list_pop_stack(menu_driver_ctx,
             menu_userdata,
@@ -3232,22 +3231,23 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type)
 
 void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
-   menu_list_t *menu_list         = menu_st->entries.list;
-   bool wont_pop_stack            = (MENU_LIST_GET_STACK_SIZE(menu_list, idx) <= 1);
+   struct rarch_state   *p_rarch            = &rarch_st;
+   const menu_ctx_driver_t *menu_driver_ctx = p_rarch->menu_driver_ctx;
+   struct menu_state    *menu_st            = &p_rarch->menu_driver_state;
+   menu_list_t *menu_list                   = menu_st->entries.list;
+   if (!menu_list)
+      return;
 
-   if (menu_list && !wont_pop_stack)
+   if (MENU_LIST_GET_STACK_SIZE(menu_list, idx) > 1)
    {
       bool refresh             = false;
       if (animate)
       {
-         menu_ctx_list_t list_info;
-         list_info.type         = MENU_LIST_PLAIN;
-         list_info.action       = 0;
-         menu_driver_list_cache(&list_info);
+         if (menu_driver_ctx->list_cache)
+            menu_driver_ctx->list_cache(p_rarch->menu_userdata,
+                  MENU_LIST_PLAIN, 0);
       }
-      menu_list_pop_stack(p_rarch->menu_driver_ctx,
+      menu_list_pop_stack(menu_driver_ctx,
             p_rarch->menu_userdata, menu_list, idx, ptr);
 
       if (animate)
