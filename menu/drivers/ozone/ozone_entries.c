@@ -479,52 +479,50 @@ void ozone_draw_entries(
       bool is_playlist)
 {
    uint32_t alpha_uint32;
-   size_t i, y, entries_end;
-   float sidebar_offset, bottom_boundary, invert, alpha_anim;
-   unsigned video_info_height, video_info_width, entry_width, button_height;
-   settings_t    *settings = config_get_ptr();
-   bool menu_show_sublabels= settings->bools.menu_show_sublabels;
-   bool use_smooth_ticker  = settings->bools.menu_ticker_smooth;
+   size_t i;
+   float bottom_boundary;
+   unsigned video_info_height, video_info_width;
+   settings_t    *settings           = config_get_ptr();
+   bool menu_show_sublabels          = settings->bools.menu_show_sublabels;
+   bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
    enum gfx_animation_ticker_type 
-      menu_ticker_type     = (enum gfx_animation_ticker_type)
+      menu_ticker_type               = (enum gfx_animation_ticker_type)
       settings->uints.menu_ticker_type;
-   bool old_list           = selection_buf == &ozone->selection_buf_old;
-   int x_offset            = 0;
-   size_t selection_y      = 0; /* 0 means no selection (we assume that no entry has y = 0) */
-   size_t old_selection_y  = 0;
-   int entry_padding       = ozone_get_entries_padding(ozone, old_list);
-   float scale_factor      = ozone->last_scale_factor;
+   bool old_list                     = selection_buf == &ozone->selection_buf_old;
+   int x_offset                      = 0;
+   size_t selection_y                = 0; /* 0 means no selection (we assume that no entry has y = 0) */
+   size_t old_selection_y            = 0;
+   int entry_padding                 = ozone_get_entries_padding(ozone, old_list);
+   float scale_factor                = ozone->last_scale_factor;
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    gfx_animation_t          *p_anim  = anim_get_ptr();
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
-
-   entries_end    = selection_buf ? selection_buf->size : 0;
-   y              = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.entry_padding_vertical;
-   sidebar_offset = ozone->sidebar_offset;
-   entry_width    = video_width - (unsigned) ozone->dimensions_sidebar_width - ozone->sidebar_offset - entry_padding * 2 - ozone->animations.thumbnail_bar_position;
-   button_height  = ozone->dimensions.entry_height; /* height of the button (entry minus sublabel) */
+   size_t entries_end                = selection_buf ? selection_buf->size : 0;
+   size_t y                          = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.entry_padding_vertical;
+   float sidebar_offset              = ozone->sidebar_offset;
+   unsigned entry_width              = video_width - (unsigned) ozone->dimensions_sidebar_width - ozone->sidebar_offset - entry_padding * 2 - ozone->animations.thumbnail_bar_position;
+   unsigned button_height            = ozone->dimensions.entry_height; /* height of the button (entry minus sublabel) */
+   float invert                      = (ozone->fade_direction) ? -1 : 1;
+   float alpha_anim                  = old_list ? alpha : 1.0f - alpha;
 
    video_driver_get_size(&video_info_width, &video_info_height);
 
-   bottom_boundary = video_info_height - ozone->dimensions.header_height - ozone->dimensions.footer_height;
-   invert          = (ozone->fade_direction) ? -1 : 1;
-   alpha_anim      = old_list ? alpha : 1.0f - alpha;
+   bottom_boundary                   = video_info_height - ozone->dimensions.header_height - ozone->dimensions.footer_height;
 
    if (old_list)
-      alpha = 1.0f - alpha;
-
-   if (alpha != 1.0f)
    {
-      if (old_list)
+      alpha = 1.0f - alpha;
+      if (alpha != 1.0f)
          x_offset += invert * -(alpha_anim * 120 * scale_factor); /* left */
-      else
-         x_offset += invert * (alpha_anim * 120 * scale_factor);  /* right */
+   }
+   else
+   {
+      if (alpha != 1.0f)
+         x_offset += invert *  (alpha_anim * 120 * scale_factor);  /* right */
    }
 
-   x_offset     += (int) sidebar_offset;
-   alpha_uint32  = (uint32_t)(alpha*255.0f);
+   x_offset       += (int)sidebar_offset;
+   alpha_uint32    = (uint32_t)(alpha * 255.0f);
 
    /* Borders layer */
    for (i = 0; i < entries_end; i++)

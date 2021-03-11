@@ -3937,7 +3937,7 @@ static void rgui_render(void *data,
       ticker_spacer               = RGUI_TICKER_SPACER;
    int bottom                     = 0;
    unsigned ticker_x_offset       = 0;
-   size_t entries_end             = menu_entries_get_size();
+   size_t entries_end             = 0;
    bool msg_force                 = false;
    bool fb_size_changed           = false;
    settings_t *settings           = config_get_ptr();
@@ -4032,8 +4032,10 @@ static void rgui_render(void *data,
 
    rgui->force_redraw        = false;
 
+   entries_end               = menu_entries_get_size();
+
    /* Get offset of bottommost entry */
-   bottom = (int)(entries_end - rgui->term_layout.height);
+   bottom                    = (int)(entries_end - rgui->term_layout.height);
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
    if (old_start > (unsigned)bottom)
