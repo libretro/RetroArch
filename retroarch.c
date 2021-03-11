@@ -2408,9 +2408,13 @@ int generic_menu_entry_action(
 {
    int ret                        = 0;
    struct rarch_state *p_rarch    = &rarch_st;
+   const menu_ctx_driver_t 
+      *menu_driver_ctx            = p_rarch->menu_driver_ctx;
+   settings_t   *settings         = p_rarch->configuration_settings;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+   file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
    size_t selection_buf_size      = selection_buf ? selection_buf->size : 0;
    menu_file_list_cbs_t *cbs      = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
@@ -2420,24 +2424,104 @@ int generic_menu_entry_action(
       case MENU_ACTION_UP:
          if (selection_buf_size > 0)
          {
-            size_t scroll_accel   = menu_st->scroll.acceleration;
-            unsigned scroll_speed = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-            menu_driver_ctl(MENU_NAVIGATION_CTL_DECREMENT, &scroll_speed);
+            size_t scroll_accel    = menu_st->scroll.acceleration;
+            unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
+            if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
+            {
+               size_t idx             = 0;
+               if (menu_st->selection_ptr >= scroll_speed)
+                  idx = menu_st->selection_ptr - scroll_speed;
+               else
+               {
+                  idx  = selection_buf_size - 1;
+                  if (!wraparound_enable)
+                     idx = 0;
+               }
+
+               menu_st->selection_ptr = idx;
+               menu_driver_navigation_set(true);
+
+               if (menu_driver_ctx->navigation_decrement)
+                  menu_driver_ctx->navigation_decrement(p_rarch->menu_userdata);
+            }
          }
          break;
       case MENU_ACTION_DOWN:
          if (selection_buf_size > 0)
          {
-            size_t scroll_accel   = menu_st->scroll.acceleration;
-            unsigned scroll_speed = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-            menu_driver_ctl(MENU_NAVIGATION_CTL_INCREMENT, &scroll_speed);
+            size_t scroll_accel    = menu_st->scroll.acceleration;
+            unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
+
+            if (!(menu_st->selection_ptr >= selection_buf_size - 1
+                  && !wraparound_enable))
+            {
+               if ((menu_st->selection_ptr + scroll_speed) < selection_buf_size)
+               {
+                  size_t idx  = menu_st->selection_ptr + scroll_speed;
+
+                  menu_st->selection_ptr = idx;
+                  menu_driver_navigation_set(true);
+               }
+               else
+               {
+                  if (wraparound_enable)
+                  {
+                     bool pending_push = false;
+                     menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+                  }
+                  else if (selection_buf_size > 0)
+                     menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
+               }
+
+               if (menu_driver_ctx->navigation_increment)
+                  menu_driver_ctx->navigation_increment(p_rarch->menu_userdata);
+            }
          }
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_driver_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, NULL);
+         if (
+                  menu_st->scroll.index_size
+               && menu_st->selection_ptr != 0
+            )
+         {
+            size_t i   = menu_st->scroll.index_size - 1;
+
+            while (i 
+                  && menu_st->scroll.index_list[i - 1] 
+                  >= menu_st->selection_ptr)
+               i--;
+
+            if (i > 0)
+               menu_st->selection_ptr = menu_st->scroll.index_list[i - 1];
+
+            if (menu_driver_ctx->navigation_descend_alphabet)
+               menu_driver_ctx->navigation_descend_alphabet(
+                     p_rarch->menu_userdata, &menu_st->selection_ptr);
+         }
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_driver_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, NULL);
+         if (menu_st->scroll.index_size)
+         {
+            if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
+               menu_st->selection_ptr = selection_buf_size - 1;
+            else
+            {
+               size_t i               = 0;
+               while (i < menu_st->scroll.index_size - 1
+                     && menu_st->scroll.index_list[i + 1] <= menu_st->selection_ptr)
+                  i++;
+               menu_st->selection_ptr = menu_st->scroll.index_list[i + 1];
+
+               if (menu_st->selection_ptr >= selection_buf_size)
+                  menu_st->selection_ptr = selection_buf_size - 1;
+            }
+
+            if (menu_driver_ctx->navigation_ascend_alphabet)
+               menu_driver_ctx->navigation_ascend_alphabet(
+                     p_rarch->menu_userdata, &menu_st->selection_ptr);
+         }
          break;
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
@@ -2487,7 +2571,6 @@ int generic_menu_entry_action(
    {
       menu_displaylist_ctx_entry_t entry;
       bool refresh            = false;
-      file_list_t *menu_stack = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
 
       entry.list              = selection_buf;
       entry.stack             = menu_stack;
@@ -5316,66 +5399,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          break;
-      case MENU_NAVIGATION_CTL_INCREMENT:
-         {
-            settings_t   *settings = p_rarch->configuration_settings;
-            unsigned scroll_speed  = *((unsigned*)data);
-            size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
-            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
-
-            if (menu_st->selection_ptr >= menu_list_size - 1
-                  && !wraparound_enable)
-               return false;
-
-            if ((menu_st->selection_ptr + scroll_speed) < menu_list_size)
-            {
-               size_t idx  = menu_st->selection_ptr + scroll_speed;
-
-               menu_st->selection_ptr = idx;
-               menu_driver_navigation_set(true);
-            }
-            else
-            {
-               if (wraparound_enable)
-               {
-                  bool pending_push = false;
-                  menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-               }
-               else if (menu_list_size > 0)
-                  menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
-            }
-
-            if (p_rarch->menu_driver_ctx->navigation_increment)
-               p_rarch->menu_driver_ctx->navigation_increment(p_rarch->menu_userdata);
-         }
-         break;
-      case MENU_NAVIGATION_CTL_DECREMENT:
-         {
-            size_t idx             = 0;
-            settings_t   *settings = p_rarch->configuration_settings;
-            unsigned scroll_speed  = *((unsigned*)data);
-            size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
-            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
-
-            if (menu_st->selection_ptr == 0 && !wraparound_enable)
-               return false;
-
-            if (menu_st->selection_ptr >= scroll_speed)
-               idx = menu_st->selection_ptr - scroll_speed;
-            else
-            {
-               idx  = menu_list_size - 1;
-               if (!wraparound_enable)
-                  idx = 0;
-            }
-
-            menu_st->selection_ptr = idx;
-            menu_driver_navigation_set(true);
-
-            if (p_rarch->menu_driver_ctx->navigation_decrement)
-               p_rarch->menu_driver_ctx->navigation_decrement(p_rarch->menu_userdata);
-         }
-         break;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
             size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
@@ -5385,55 +5408,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (p_rarch->menu_driver_ctx->navigation_set_last)
                p_rarch->menu_driver_ctx->navigation_set_last(p_rarch->menu_userdata);
-         }
-         break;
-      case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
-         {
-            size_t i               = 0;
-            size_t menu_list_size  = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
-
-            if (!menu_st->scroll.index_size)
-               return false;
-
-            if (menu_st->selection_ptr == menu_st->scroll.index_list[menu_st->scroll.index_size - 1])
-               menu_st->selection_ptr = menu_list_size - 1;
-            else
-            {
-               while (i < menu_st->scroll.index_size - 1
-                     && menu_st->scroll.index_list[i + 1] <= menu_st->selection_ptr)
-                  i++;
-               menu_st->selection_ptr = menu_st->scroll.index_list[i + 1];
-
-               if (menu_st->selection_ptr >= menu_list_size)
-                  menu_st->selection_ptr = menu_list_size - 1;
-            }
-
-            if (p_rarch->menu_driver_ctx->navigation_ascend_alphabet)
-               p_rarch->menu_driver_ctx->navigation_ascend_alphabet(
-                     p_rarch->menu_userdata, &menu_st->selection_ptr);
-         }
-         break;
-      case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
-         {
-            size_t i        = 0;
-
-            if (!menu_st->scroll.index_size)
-               return false;
-
-            if (menu_st->selection_ptr == 0)
-               return false;
-
-            i   = menu_st->scroll.index_size - 1;
-
-            while (i && menu_st->scroll.index_list[i - 1] >= menu_st->selection_ptr)
-               i--;
-
-            if (i > 0)
-               menu_st->selection_ptr = menu_st->scroll.index_list[i - 1];
-
-            if (p_rarch->menu_driver_ctx->navigation_descend_alphabet)
-               p_rarch->menu_driver_ctx->navigation_descend_alphabet(
-                     p_rarch->menu_userdata, &menu_st->selection_ptr);
          }
          break;
       case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
