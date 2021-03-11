@@ -127,7 +127,7 @@ typedef struct switch_input
    int32_t simulated_click_start_time[2]; /* initiation time of last simulated left or right click (zero if no click) */
 
    /* sensor handles */
-   uint32_t sixaxis_handles[DEFAULT_MAX_PADS][4];
+   HidSixAxisSensorHandle sixaxis_handles[DEFAULT_MAX_PADS][4];
    unsigned sixaxis_handles_count[DEFAULT_MAX_PADS];
 #else
    void *empty;
@@ -221,28 +221,28 @@ static void switch_input_poll(void *data)
    /* update physical mouse buttons only when they change
     * this allows the physical mouse and touch mouse to coexist */
    mouse_current_report = hidMouseButtonsHeld();
-   if ((mouse_current_report & MOUSE_LEFT) 
-         != (sw->mouse_previous_report & MOUSE_LEFT))
+   if ((mouse_current_report & HidMouseButton_Left)
+         != (sw->mouse_previous_report & HidMouseButton_Left))
    {
-      if (mouse_current_report & MOUSE_LEFT)
+      if (mouse_current_report & HidMouseButton_Left)
          sw->mouse_button_left = true;
       else
          sw->mouse_button_left = false;
    }
 
-   if ((mouse_current_report & MOUSE_RIGHT) 
-         != (sw->mouse_previous_report & MOUSE_RIGHT))
+   if ((mouse_current_report & HidMouseButton_Right)
+         != (sw->mouse_previous_report & HidMouseButton_Right))
    {
-      if (mouse_current_report & MOUSE_RIGHT)
+      if (mouse_current_report & HidMouseButton_Right)
          sw->mouse_button_right = true;
       else
          sw->mouse_button_right = false;
    }
 
-   if ((mouse_current_report & MOUSE_MIDDLE) 
-         != (sw->mouse_previous_report & MOUSE_MIDDLE))
+   if ((mouse_current_report & HidMouseButton_Middle)
+         != (sw->mouse_previous_report & HidMouseButton_Middle))
    {
-      if (mouse_current_report & MOUSE_MIDDLE)
+      if (mouse_current_report & HidMouseButton_Middle)
          sw->mouse_button_middle = true;
       else
          sw->mouse_button_middle = false;
@@ -863,13 +863,13 @@ static bool switch_input_set_sensor_state(void *data, unsigned port,
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
          if(port < DEFAULT_MAX_PADS && sw->sixaxis_handles_count[port] == 0)
          {
-            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][0], 2, port, TYPE_JOYCON_PAIR);
+            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][0], 2, port, HidNpadStyleTag_NpadJoyDual);
 
-            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][2], 1, port, TYPE_PROCONTROLLER);
+            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][2], 1, port, HidNpadStyleTag_NpadFullKey);
 
             if(port == 0)
             {
-               hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][3], 1, CONTROLLER_HANDHELD, TYPE_HANDHELD);
+               hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][3], 1, HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld);
                handles_count = 4;
             }
             else

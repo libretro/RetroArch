@@ -26,8 +26,8 @@ extern uint64_t lifecycle_state;
 static uint16_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 #ifdef HAVE_LIBNX
-static u32 vibration_handles[DEFAULT_MAX_PADS][2];
-static u32 vibration_handleheld[2];
+static HidVibrationDeviceHandle vibration_handles[DEFAULT_MAX_PADS][2];
+static HidVibrationDeviceHandle vibration_handleheld[2];
 static HidVibrationValue vibration_values[DEFAULT_MAX_PADS][2];
 static HidVibrationValue vibration_stop;
 static int previous_handheld                         = -1; 
@@ -69,14 +69,14 @@ static void *switch_joypad_init(void *data)
       switch_joypad_autodetect_add(i);
       hidInitializeVibrationDevices(
             vibration_handles[i], 2, i,
-            TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+            HidNpadStyleTag_NpadHandheld | HidNpadStyleTag_NpadJoyDual);
       memcpy(&vibration_values[i][0],
             &vibration_stop, sizeof(HidVibrationValue));
       memcpy(&vibration_values[i][1],
             &vibration_stop, sizeof(HidVibrationValue));
    }
    hidInitializeVibrationDevices(vibration_handleheld,
-         2, CONTROLLER_HANDHELD, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+         2, HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld | HidNpadStyleTag_NpadJoyDual);
 #else
    hid_init();
    switch_joypad_autodetect_add(0);
@@ -237,7 +237,7 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeSingleByDefault(i);
                hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-               hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+               hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
             } 
             else if (!input_split_joycon)
             {
@@ -265,7 +265,7 @@ static void switch_joypad_poll(void)
          {
             hidSetNpadJoyAssignmentModeSingleByDefault(i);
             hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-            hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+            hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
          }
       }
    }
@@ -282,11 +282,11 @@ static void switch_joypad_poll(void)
 
          for (id_0 = 0; id_0 < MAX_USERS; id_0++)
          {
-            if (hidGetControllerType(id_0) & TYPE_JOYCON_LEFT)
+            if (hidGetNpadStyleSet(id_0) & HidNpadStyleTag_NpadJoyLeft)
             {
                for (id_1 = last_right_id - 1; id_1 >= 0; id_1--)
                {
-                  if (hidGetControllerType(id_1) & TYPE_JOYCON_RIGHT)
+                  if (hidGetNpadStyleSet(id_1) & HidNpadStyleTag_NpadJoyRight)
                   {
                      /* prevent missing player numbers */
                      last_right_id = id_1;
@@ -312,7 +312,7 @@ static void switch_joypad_poll(void)
          {
             hidSetNpadJoyAssignmentModeSingleByDefault(i);
             hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-            hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+            hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
          } 
          else if (!input_split_joycon
                && previous_split_joycon_setting[i])
@@ -391,7 +391,7 @@ static void switch_joypad_poll(void)
 bool switch_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect type, uint16_t strength)
 {
-   u32* handle;
+   HidVibrationDeviceHandle* handle;
    float amp;
 
    if (pad >= DEFAULT_MAX_PADS || !vibration_handles[pad])
