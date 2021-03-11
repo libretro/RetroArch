@@ -1921,8 +1921,7 @@ static int generic_menu_iterate(
             file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
             size_t selection           = menu_st->selection_ptr;
             menu_file_list_cbs_t *cbs  = selection_buf ?
-               (menu_file_list_cbs_t*)
-               file_list_get_actiondata_at_offset(selection_buf, selection)
+               (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
                : NULL;
 
             if (cbs && cbs->enum_idx != MSG_UNKNOWN)
@@ -2357,9 +2356,6 @@ static bool menu_driver_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    file_list_t *list              = MENU_LIST_GET(menu_st->entries.list, 0);
    menu_file_list_cbs_t *cbs      = (menu_file_list_cbs_t*)
       list->list[list->size - 1].actiondata;
-
-   if (!entry)
-      return false;
 
    menu_displaylist_info_init(&info);
 
