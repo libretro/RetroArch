@@ -2187,6 +2187,220 @@ static int generic_menu_iterate(
    return 0;
 }
 
+static bool menu_driver_displaylist_push_internal(
+      const char *label,
+      menu_displaylist_ctx_entry_t *entry,
+      menu_displaylist_info_t *info)
+{
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
+         return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
+         return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
+         return true;
+   }
+#ifdef HAVE_CHEATS
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST, info))
+         return true;
+   }
+#endif
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
+   {
+      filebrowser_clear_type();
+      info->type = 42;
+
+      if (!string_is_empty(info->exts))
+         free(info->exts);
+      if (!string_is_empty(info->label))
+         free(info->label);
+
+      info->exts  = strdup("lpl");
+      info->label = strdup(
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info);
+      return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
+   {
+      filebrowser_clear_type();
+      info->type = 42;
+
+      if (!string_is_empty(info->exts))
+         free(info->exts);
+      if (!string_is_empty(info->label))
+         free(info->label);
+
+      info->exts  = strdup("lpl");
+      info->label = strdup(
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info);
+      return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
+   {
+      filebrowser_clear_type();
+      info->type = 42;
+
+      if (!string_is_empty(info->exts))
+         free(info->exts);
+      if (!string_is_empty(info->label))
+         free(info->label);
+
+      info->exts  = strdup("lpl");
+      info->label = strdup(
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+#if 0
+#ifdef HAVE_SCREENSHOTS
+      if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
+               msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
+               MENU_ENUM_LABEL_TAKE_SCREENSHOT,
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      else
+         info->need_push_no_playlist_entries = true;
+#endif
+#endif
+      menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info);
+      return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   {
+      struct rarch_state *p_rarch = &rarch_st;
+      settings_t *settings        = p_rarch->configuration_settings;
+      const char *dir_playlist    = settings->paths.directory_playlist;
+
+      filebrowser_clear_type();
+      info->type                  = 42;
+
+      if (!string_is_empty(info->exts))
+         free(info->exts);
+      if (!string_is_empty(info->label))
+         free(info->label);
+
+      info->exts  = strdup("lpl");
+      info->label = strdup(
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
+
+      if (string_is_empty(dir_playlist))
+      {
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         info->need_refresh                  = true;
+         info->need_push_no_playlist_entries = true;
+         info->need_push                     = true;
+
+         return true;
+      }
+
+      if (!string_is_empty(info->path))
+         free(info->path);
+
+      info->path = strdup(dir_playlist);
+
+      if (menu_displaylist_ctl(
+               DISPLAYLIST_DATABASE_PLAYLISTS, info))
+         return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
+         return true;
+   }
+#if defined(HAVE_LIBRETRODB)
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info))
+         return true;
+   }
+#endif
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info))
+         return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
+         return true;
+   }
+
+   return false;
+}
+
+static bool menu_driver_displaylist_push(menu_displaylist_ctx_entry_t *entry)
+{
+   menu_displaylist_info_t info;
+   menu_file_list_cbs_t *cbs      = NULL;
+   const char *path               = NULL;
+   const char *label              = NULL;
+   unsigned type                  = 0;
+   bool ret                       = false;
+   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
+
+   if (!entry)
+      return false;
+
+   menu_displaylist_info_init(&info);
+
+   menu_entries_get_last_stack(&path, &label, &type, &enum_idx, NULL);
+
+   info.list      = entry->list;
+   info.menu_list = entry->stack;
+   info.type      = type;
+   info.enum_idx  = enum_idx;
+
+   if (!string_is_empty(path))
+      info.path  = strdup(path);
+
+   if (!string_is_empty(label))
+      info.label = strdup(label);
+
+   if (!info.list)
+      goto error;
+
+   if (menu_driver_displaylist_push_internal(label, entry, &info))
+   {
+      ret = menu_displaylist_process(&info);
+      goto end;
+   }
+
+   cbs = menu_entries_get_last_stack_actiondata();
+
+   if (cbs && cbs->action_deferred_push)
+   {
+      if (cbs->action_deferred_push(&info) != 0)
+         goto error;
+   }
+
+   ret = true;
+
+end:
+   menu_displaylist_info_free(&info);
+
+   return ret;
+
+error:
+   menu_displaylist_info_free(&info);
+   return false;
+}
+
 int generic_menu_entry_action(
       void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
 {
@@ -2284,7 +2498,7 @@ int generic_menu_entry_action(
       entry.list  = selection_buf;
       entry.stack = menu_stack;
 
-      menu_displaylist_push(&entry);
+      menu_driver_displaylist_push(&entry);
       menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
    }
 
@@ -4120,7 +4334,7 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
 
    entry.list                  = list;
    entry.stack                 = selection_buf;
-   if (!menu_displaylist_push(&entry))
+   if (!menu_driver_displaylist_push(&entry))
       return -1;
    return 0;
 }
