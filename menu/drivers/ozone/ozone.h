@@ -425,4 +425,7 @@ void ozone_start_cursor_wiggle(ozone_handle_t* ozone, enum menu_action direction
  */
 void ozone_apply_cursor_wiggle_offset(ozone_handle_t* ozone, int* x, size_t* y);
 
+void ozone_list_cache(void *data,
+      enum menu_list_type type, unsigned action);
+
 #endif

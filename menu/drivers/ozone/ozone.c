@@ -3416,7 +3416,7 @@ static void ozone_list_deep_copy(const file_list_t *src, file_list_t *dst,
    dst->size = j;
 }
 
-static void ozone_list_cache(void *data,
+void ozone_list_cache(void *data,
       enum menu_list_type type, unsigned action)
 {
    size_t y, entries_end;

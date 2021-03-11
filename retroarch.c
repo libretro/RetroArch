@@ -2685,16 +2685,15 @@ static void menu_list_flush_stack(
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
-      menu_ctx_list_t list_info;
       bool refresh             = false;
       size_t new_selection_ptr = menu_st->selection_ptr;
       bool wont_pop_stack      = (MENU_LIST_GET_STACK_SIZE(list, idx) <= 1);
       if (wont_pop_stack)
          break;
 
-      list_info.type           = MENU_LIST_PLAIN;
-      list_info.action         = 0;
-      menu_driver_list_cache(&list_info);
+      if (menu_driver_ctx->list_cache)
+         menu_driver_ctx->list_cache(menu_userdata,
+               MENU_LIST_PLAIN, 0);
 
       menu_list_pop_stack(menu_driver_ctx,
             menu_userdata,
@@ -3232,22 +3231,23 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type)
 
 void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
-   menu_list_t *menu_list         = menu_st->entries.list;
-   bool wont_pop_stack            = (MENU_LIST_GET_STACK_SIZE(menu_list, idx) <= 1);
+   struct rarch_state   *p_rarch            = &rarch_st;
+   const menu_ctx_driver_t *menu_driver_ctx = p_rarch->menu_driver_ctx;
+   struct menu_state    *menu_st            = &p_rarch->menu_driver_state;
+   menu_list_t *menu_list                   = menu_st->entries.list;
+   if (!menu_list)
+      return;
 
-   if (menu_list && !wont_pop_stack)
+   if (MENU_LIST_GET_STACK_SIZE(menu_list, idx) > 1)
    {
       bool refresh             = false;
       if (animate)
       {
-         menu_ctx_list_t list_info;
-         list_info.type         = MENU_LIST_PLAIN;
-         list_info.action       = 0;
-         menu_driver_list_cache(&list_info);
+         if (menu_driver_ctx->list_cache)
+            menu_driver_ctx->list_cache(p_rarch->menu_userdata,
+                  MENU_LIST_PLAIN, 0);
       }
-      menu_list_pop_stack(p_rarch->menu_driver_ctx,
+      menu_list_pop_stack(menu_driver_ctx,
             p_rarch->menu_userdata, menu_list, idx, ptr);
 
       if (animate)
@@ -3507,14 +3507,14 @@ static void bundle_decompressed(retro_task_t *task,
    settings_t        *settings = p_rarch->configuration_settings;
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
-   if (dec && !err)
-      command_event(CMD_EVENT_REINIT, NULL);
-
    if (err)
       RARCH_ERR("%s", err);
 
    if (dec)
    {
+      if (!err)
+         command_event(CMD_EVENT_REINIT, NULL);
+
       /* delete bundle? */
       free(dec->source_file);
       free(dec);
@@ -3600,8 +3600,6 @@ static bool menu_init(struct rarch_state *p_rarch)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
 #endif
-
-   gfx_display_init();
 
    return true;
 }
@@ -4123,10 +4121,8 @@ bool menu_driver_list_cache(menu_ctx_list_t *list)
    return true;
 }
 
-static enum menu_driver_id_type menu_driver_set_id(struct rarch_state *p_rarch)
+static enum menu_driver_id_type menu_driver_set_id(const char *driver_name)
 {
-   const char *driver_name = p_rarch->menu_driver_ctx->ident;
-
    if (!string_is_empty(driver_name))
    {
       if (string_is_equal(driver_name, "rgui"))
@@ -4179,32 +4175,37 @@ static bool generic_menu_init_list(struct menu_state *menu_st)
 }
 
 static bool menu_driver_init_internal(
+      gfx_display_t *p_disp,
       struct rarch_state *p_rarch,
       settings_t *settings,
       bool video_is_threaded)
 {
-   gfx_display_t         *p_disp              = &p_rarch->dispgfx;
-
-   /* ID must be set first, since it is required for
-    * the proper determination of pixel/dpi scaling
-    * parameters (and some menu drivers fetch the
-    * current pixel/dpi scale during 'menu_driver_ctx->init()') */
-   if (p_rarch->menu_driver_ctx && p_rarch->menu_driver_ctx->ident)
-      p_disp->menu_driver_id                  = menu_driver_set_id(p_rarch);
-   else
-      p_disp->menu_driver_id                  = MENU_DRIVER_ID_UNKNOWN;
-
-   if (p_rarch->menu_driver_ctx->init)
+   if (p_rarch->menu_driver_ctx)
    {
-      p_rarch->menu_driver_data               = (menu_handle_t*)
-         p_rarch->menu_driver_ctx->init(&p_rarch->menu_userdata,
-               video_is_threaded);
-      p_rarch->menu_driver_data->userdata     = p_rarch->menu_userdata;
-      p_rarch->menu_driver_data->driver_ctx   = p_rarch->menu_driver_ctx;
+      const char *ident = p_rarch->menu_driver_ctx->ident;
+      /* ID must be set first, since it is required for
+       * the proper determination of pixel/dpi scaling
+       * parameters (and some menu drivers fetch the
+       * current pixel/dpi scale during 'menu_driver_ctx->init()') */
+      if (ident)
+         p_disp->menu_driver_id                  = menu_driver_set_id(ident);
+      else
+         p_disp->menu_driver_id                  = MENU_DRIVER_ID_UNKNOWN;
+
+      if (p_rarch->menu_driver_ctx->init)
+      {
+         p_rarch->menu_driver_data               = (menu_handle_t*)
+            p_rarch->menu_driver_ctx->init(&p_rarch->menu_userdata,
+                  video_is_threaded);
+         p_rarch->menu_driver_data->userdata     = p_rarch->menu_userdata;
+         p_rarch->menu_driver_data->driver_ctx   = p_rarch->menu_driver_ctx;
+      }
    }
 
    if (!p_rarch->menu_driver_data || !menu_init(p_rarch))
       return false;
+
+   gfx_display_init();
 
    /* TODO/FIXME - can we get rid of this? Is this needed? */
    configuration_set_string(settings,
@@ -4230,7 +4231,9 @@ bool menu_driver_init(bool video_is_threaded)
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 
    if (  p_rarch->menu_driver_data ||
-         menu_driver_init_internal(p_rarch,
+         menu_driver_init_internal(
+            &p_rarch->dispgfx,
+            p_rarch,
             p_rarch->configuration_settings,
             video_is_threaded))
    {
