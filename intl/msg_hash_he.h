@@ -48,12 +48,12 @@ MSG_HASH(
    "טעינת תוכן"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "הצג תפריט שולחן עבודה"
+   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   "ייבוא תוכן"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "בטל מצב קיוסק"
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "הצג תפריט שולחן עבודה"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -204,11 +204,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "מאפייני מעבד"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "ארכיטקטורת מעבד:"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "ליבות מעבד:"
    )
@@ -234,6 +234,18 @@ MSG_HASH(
 
 /* Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+   "וידאו"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   "שמע"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   "קלט"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "סייר קבצים"
@@ -336,6 +348,10 @@ MSG_HASH(
 
 /* Settings > Video */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "סינכרון"
+   )
 #if defined(DINGUX)
 #endif
 
@@ -402,16 +418,8 @@ MSG_HASH(
    "השתק"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "השתק/הפעל שמע."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    "השתק מערבל שמע (מיקסר)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   "השתק/הפעל מערבל שמע (מיקסר)."
    )
 
 /* Settings > Audio > Output */
@@ -430,9 +438,17 @@ MSG_HASH(
 
 /* Settings > Audio > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   "סינכרון"
+   )
 
 /* Settings > Audio > MIDI */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   "קלט"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
    "עוצמת שמע"
@@ -451,11 +467,19 @@ MSG_HASH(
 
 /* Settings > Audio > Menu Sounds */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   "מערבל שמע (מיקסר)"
+   )
 
 /* Settings > Input */
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   "מקשי קיצור"
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -465,8 +489,12 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-/* Settings > Input > Hotkey Binds */
+/* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "יציאה"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
    "אתחל את המשחק"
@@ -479,8 +507,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "שלח נתוני ניפוי תקלות"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "שירות תרגום"
+   )
 
-/* Settings > Input > Port # Binds */
+/* Settings > Input > Port # Controls */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
@@ -536,10 +568,22 @@ MSG_HASH(
 /* Settings > User Interface */
 
 
-/* Settings > User Interface > Views */
+/* Settings > User Interface > Menu Item Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   "תפריט מהיר"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   "הגדרות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "תפריט ראשי"
+   )
 
-/* Settings > User Interface > Views > Quick Menu */
+/* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
 /* Settings > User Interface > Views > Settings */
@@ -558,6 +602,10 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   "הישגים"
+   )
 
 /* Settings > Network */
 
@@ -567,6 +615,10 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "היסטוריה"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -594,6 +646,14 @@ MSG_HASH(
 
 /* Settings > Directory */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   "הורדות"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   "סייר קבצים"
+   )
 
 /* Music */
 
@@ -606,19 +666,27 @@ MSG_HASH(
 /* Netplay > Host */
 
 
-/* Import content */
+/* Import Content */
 
 
-/* Import content > Scan File */
+/* Import Content > Scan File */
 
 
-/* Import content > Manual Scan */
+/* Import Content > Manual Scan */
 
 
 /* Explore tab */
 
 /* Playlist > Playlist Item */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   "הסר"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INFORMATION,
+   "מידע נוסף"
+   )
 
 /* Playlist Item > Set Core Association */
 
@@ -628,9 +696,22 @@ MSG_HASH(
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   "שמור צילום מסך"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   "הישגים"
+   )
 
 /* Quick Menu > Options */
 
+
+/* Quick Menu > Options > Manage Core Options */
+
+
+/* - Legacy (unused) */
 
 /* Quick Menu > Controls */
 
@@ -658,6 +739,10 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+   "הסר"
+   )
 
 /* Quick Menu > Shaders > Save */
 
@@ -712,12 +797,48 @@ MSG_HASH(
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "הגדרות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   "&עזרה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   "סייר קבצים"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   "מידע נוסף"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   "הסר"
+   )
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   "היסטוריה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "משתמש"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP,
+   "עזרה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+   "שלח נתוני ניפוי תקלות"
+   )
 
 /* Unused (Needs Confirmation) */
 
@@ -736,6 +857,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
    "רשת אלחוטית"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   "אתחול RetroArch"
    )
 
 #ifdef HAVE_LAKKA_SWITCH
