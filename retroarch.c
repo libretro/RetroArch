@@ -1657,14 +1657,6 @@ static void menu_cbs_init(
    menu_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
 
    /* It will try to find a corresponding callback function inside
-    * menu_cbs_up.c, then map this callback to the entry. */
-   menu_cbs_init_bind_up(cbs, path, label, type, idx);
-
-   /* It will try to find a corresponding callback function inside
-    * menu_cbs_down.c, then map this callback to the entry. */
-   menu_cbs_init_bind_down(cbs, path, label, type, idx);
-
-   /* It will try to find a corresponding callback function inside
     * menu_cbs_left.c, then map this callback to the entry. */
    menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label);
 
@@ -2213,12 +2205,20 @@ int generic_menu_entry_action(
    switch (action)
    {
       case MENU_ACTION_UP:
-         if (cbs && cbs->action_up)
-            ret = cbs->action_up(entry->type, entry->label);
+         if (MENU_LIST_GET_SELECTION(menu_list, 0)->size > 0)
+         {
+            size_t scroll_accel   = menu_st->scroll.acceleration;
+            unsigned scroll_speed = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+            menu_driver_ctl(MENU_NAVIGATION_CTL_DECREMENT, &scroll_speed);
+         }
          break;
       case MENU_ACTION_DOWN:
-         if (cbs && cbs->action_down)
-            ret = cbs->action_down(entry->type, entry->label);
+         if (MENU_LIST_GET_SELECTION(menu_list, 0)->size > 0)
+         {
+            size_t scroll_accel   = menu_st->scroll.acceleration;
+            unsigned scroll_speed = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+            menu_driver_ctl(MENU_NAVIGATION_CTL_INCREMENT, &scroll_speed);
+         }
          break;
       case MENU_ACTION_SCROLL_UP:
          menu_driver_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, NULL);
@@ -3005,10 +3005,8 @@ void menu_entries_append(
    cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
-   cbs->action_up                  = NULL;
    cbs->action_label               = NULL;
    cbs->action_sublabel            = NULL;
-   cbs->action_down                = NULL;
    cbs->action_get_value           = NULL;
 
    list->list[idx].actiondata      = cbs;
@@ -3092,10 +3090,8 @@ bool menu_entries_append_enum(
    cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
-   cbs->action_up                  = NULL;
    cbs->action_label               = NULL;
    cbs->action_sublabel            = NULL;
-   cbs->action_down                = NULL;
    cbs->action_get_value           = NULL;
 
    list->list[idx].actiondata      = cbs;
@@ -3179,10 +3175,8 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
-   cbs->action_up                  = NULL;
    cbs->action_label               = NULL;
    cbs->action_sublabel            = NULL;
-   cbs->action_down                = NULL;
    cbs->action_get_value           = NULL;
 
    list->list[idx].actiondata      = cbs;
@@ -23610,9 +23604,7 @@ static unsigned menu_event(
          set_scroll           = true;
          first_held           = false;
          p_trigger_input->data[0] |= p_input->data[0] & input_repeat;
-
-         menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
-               &new_scroll_accel);
+         new_scroll_accel     = menu_st->scroll.acceleration;
 
          if (menu_scroll_fast)
             new_scroll_accel = MIN(new_scroll_accel + 1, 64);

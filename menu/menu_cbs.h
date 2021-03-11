@@ -272,12 +272,6 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
-int menu_cbs_init_bind_up(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
-
-int menu_cbs_init_bind_down(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
-
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 

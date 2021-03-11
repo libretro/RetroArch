@@ -1040,8 +1040,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_label.o \
           menu/cbs/menu_cbs_sublabel.o \
           menu/cbs/menu_cbs_title.o \
-          menu/cbs/menu_cbs_up.o \
-          menu/cbs/menu_cbs_down.o \
           menu/cbs/menu_cbs_contentlist_switch.o \
           menu/menu_displaylist.o
 endif
