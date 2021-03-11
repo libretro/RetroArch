@@ -1676,8 +1676,6 @@ void video_monitor_set_refresh_rate(float hz);
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
-unsigned video_pixel_get_alignment(unsigned pitch);
-
 void crt_switch_driver_reinit(void);
 
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \

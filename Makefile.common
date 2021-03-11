@@ -1032,7 +1032,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_select.o \
           menu/cbs/menu_cbs_start.o \
           menu/cbs/menu_cbs_info.o \
-          menu/cbs/menu_cbs_refresh.o \
           menu/cbs/menu_cbs_left.o \
           menu/cbs/menu_cbs_right.o \
           menu/cbs/menu_cbs_deferred_push.o \

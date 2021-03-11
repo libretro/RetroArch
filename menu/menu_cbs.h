@@ -221,8 +221,6 @@ int action_cb_push_dropdown_item_resolution(const char *path,
 int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx);
 
-int action_refresh_default(file_list_t *list, file_list_t *menu_list);
-
 int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
 int shader_action_preset_parameter_right(unsigned type, const char *label, bool wraparound);
 
@@ -264,9 +262,6 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
 int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *menu_label);
-
-int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
