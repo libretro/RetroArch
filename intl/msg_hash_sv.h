@@ -83,7 +83,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    "Dumpa skiva"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Dumpa den fysiska media skivan till intern lagring. Den kommer att sparas som en avbildningsfil."
    )
@@ -106,18 +106,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Visa skrivbordsmeny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "Öppnar den traditionella skrivbordsmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Inaktivera Kiosk-läge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Inaktiverar kiosk-läge. (Omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -194,11 +182,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    "Installera eller återställ en kärna från mappen 'Downloads' (nedladdningar)."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    "Starta videoprocessor"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    "Starta fjärrstyrd RetroPad"
    )
@@ -359,16 +347,8 @@ MSG_HASH(
    "Nätverksinformation"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Visa nätverksgränssnitt och tillhörande IP-adresser."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    "Systeminformation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "Visa information som är specifik för enheten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -508,11 +488,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Processorfunktioner"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arkitektur:"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Processorkärnor:"
    )
@@ -528,7 +508,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    "Frontend-OS"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
    "RetroRating-nivå"
    )
@@ -819,14 +799,6 @@ MSG_HASH(
    "Edge Magazine-nummer"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Releasedatum månad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Releasedatum år"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "BBFC-klassificering"
    )
@@ -959,10 +931,6 @@ MSG_HASH(
    "Inmatning"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "Ändra inställningar för handkontroller, tangentbord och mus."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    "Latens"
    )
@@ -1005,10 +973,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Filhanterare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Ändra inställningar för filhanteraren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1077,10 +1041,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    "Nätverk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Konfigurera server- och nätverksinställningar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1245,40 +1205,20 @@ MSG_HASH(
    "Stäng av skärmsläckare"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   "Förhindrar systemets skärmsläckare från att bli aktiv."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Trådad bildrendering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Förbättrar prestanda på bekostnad av latens och hackig videouppspelning. Använd bara om det är enda sättet att uppnå full hastighet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Infoga svart bildruta"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Infogar en svart bildruta mellan de vanliga bildrutorna. Användbart för vissa skärmar med hög uppdateringsfrekvens för att undvika ghosting."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU-screenshot"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Skärmdump från GPUn, om det är tillgängligt."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilinjär filtrering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Lägger till en liten oskärpa till bilden för att mjuka upp de hårda kanterna mellan pixlar. Detta har mycket liten inverkan på prestanda."
    )
 #if defined(DINGUX)
 #endif
@@ -1287,16 +1227,8 @@ MSG_HASH(
    "Autoshader-fördröjning"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Fördröjning (i ms) innan automatisk inladdning av shaders. Kan avhjälpa grafikproblem när du använder program för skärminspelning."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Videofilter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Applicerar ett CPU-drivet videofilter.\nOBS: Kan innebära en stor prestandakostnad. Vissa videofilter kanske bara fungerar för kärnor som använder 16- eller 32-bits färgdjup."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
@@ -1349,10 +1281,6 @@ MSG_HASH(
    "Skärmindex"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   "Väljer vilken skärm som ska användas."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Bildrotation"
    )
@@ -1377,10 +1305,6 @@ MSG_HASH(
    "Vertikal uppdateringsfrekvens"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Din skärms vertikala uppdateringsfrekvens. Används för att beräkna en lämplig frekvens för inkommande ljud.\nOBS: Detta kommer att ignoreras om 'Trådad bildrendering' är aktiverat."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Estimerad uppdateringsfrekvens"
    )
@@ -1400,10 +1324,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "Tvångs-avaktivera sRGB FBO"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   "Tvinga sRGB FBO-stödet att vara inaktivt. Vissa Intel OpenGL-drivrutiner i Windows har bildproblem när sRGB FBO-stödet är aktivt. Denna inställning kan avhjälpa detta."
-   )
 
 /* Settings > Video > Fullscreen Mode */
 
@@ -1412,12 +1332,12 @@ MSG_HASH(
    "Starta i helskärmsläge"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   "Fönster-helskärmsläge"
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Starta i helskärm. Kan ändras medan programmet körs. Om ett annat val anges via parameter när RetroArch körs så prioriteras det valet."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   "Om helskärmsläge är valt, föredra att använda ett helskärmsfönster."
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   "Fönster-helskärmsläge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -1452,16 +1372,8 @@ MSG_HASH(
    "Anpassad bildproportion (X-position)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Anpassad offset för visningsytans X-position. Dessa ignoreras om \"Integer-skalning\" är aktiverat."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Anpassad bildproportion (Y-position)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Anpassad offset för visningsytans Y-position. Dessa ignoreras om \"Integer-skalning\" är aktiverat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -1479,48 +1391,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Anpassad offset för visningsytans höjd, som används om bildproportionerna är inställda på 'Anpassade bildproportioner'."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Beskär overscan (Ladda om)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   "Klipper bort några pixlar runt skärmens kant, som vanligen lämnas tomma av utvecklare och som ibland också innehåller skräppixlar. (Kräver omstart)"
-   )
 
 /* Settings > Video > Synchronization */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   "Vertikal synkronisering (Vsync)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   "Synkroniserar bildsignalen från grafikkortet till bildskärmens uppdateringsfrekvens. Rekommenderas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   "Swap-intervall för vertikal synkronisering (Vsync)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Använder ett anpassat intervall för Vsync. Använd detta för att i praktiken halvera skärmens uppdateringsfrekvens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-   "Adaptiv Vsync"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "Vsync är aktiverat tills prestandan blir för dålig för att nå optimal uppdateringsfrekvens. Kan minimera hackande bild när prestandan är dålig, och vara mer energieffektivt."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Bildrutefördröjning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Minskar latens på bekostnad av högre risk för hackande bild. Lägger till en fördröjning efter Vsync (i ms)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -1533,10 +1409,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
    "Hård synkronisering av GPU-synkroniseringsbildrutor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Anger hur många bildrutor CPUn kör i förväg jämfört med GPUn när \"Hård GPU-synkronisering\" är aktiverat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -1586,16 +1458,8 @@ MSG_HASH(
    "Ljudlöst läge"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "Aktivera/deaktivera ljudlöst läge."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    "Ljudlöst läge för mixern"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   "Aktivera/deaktivera ljudlöst läge för mixern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
@@ -1648,15 +1512,31 @@ MSG_HASH(
 
 /* Settings > Audio > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   "Ljud"
+   )
 
 /* Settings > Audio > Resampler */
 
 
 /* Settings > Audio > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   "Synkronisering"
+   )
 
 /* Settings > Audio > MIDI */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   "Inmatning"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "Bild"
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
@@ -1685,14 +1565,18 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-/* Settings > Input > Hotkey Binds */
+/* Settings > Input > Hotkeys */
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Spola tillbaka nuvarande innehåll medan knappen trycks ned. Observera att \"Stöd för tillbakaspolning\" måste aktiveras."
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Avsluta RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "AI-tjänst"
    )
 
-/* Settings > Input > Port # Binds */
+/* Settings > Input > Port # Controls */
 
 
 /* Settings > Latency */
@@ -1756,10 +1640,22 @@ MSG_HASH(
 /* Settings > User Interface */
 
 
-/* Settings > User Interface > Views */
+/* Settings > User Interface > Menu Item Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   "Snabbmeny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   "Inställningar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Huvudmeny"
+   )
 
-/* Settings > User Interface > Views > Quick Menu */
+/* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
 /* Settings > User Interface > Views > Settings */
@@ -1778,6 +1674,10 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   "Prestationer"
+   )
 
 /* Settings > Network */
 
@@ -1787,6 +1687,14 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "Historik"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   "Kärna:"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -1814,6 +1722,18 @@ MSG_HASH(
 
 /* Settings > Directory */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   "Nedladdningar"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   "Filhanterare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "Spellistor"
+   )
 
 /* Music */
 
@@ -1826,14 +1746,18 @@ MSG_HASH(
 /* Netplay > Host */
 
 
-/* Import content */
+/* Import Content */
 
 
-/* Import content > Scan File */
+/* Import Content > Scan File */
 
 
-/* Import content > Manual Scan */
+/* Import Content > Manual Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Systemets namn"
+   )
 
 /* Explore tab */
 
@@ -1845,12 +1769,25 @@ MSG_HASH(
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   "Kärna"
+   )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   "Prestationer"
+   )
 
 /* Quick Menu > Options */
 
+
+/* Quick Menu > Options > Manage Core Options */
+
+
+/* - Legacy (unused) */
 
 /* Quick Menu > Controls */
 
@@ -1936,12 +1873,56 @@ MSG_HASH(
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFO,
+   "Information"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "Inställningar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   "&Hjälp"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   "Ladda in kärna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   "Spellistor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   "Filhanterare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE,
+   "Kärna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+   "Kärna:"
+   )
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   "Historik"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "Användare"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP,
+   "Hjälp"
+   )
 
 /* Unused (Needs Confirmation) */
 
@@ -1952,6 +1933,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
    "OpenGL/Direct3D render-to-texture-stöd (multipass shaders)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
+   "Information"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+   "Avsluta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+   "Scrolla uppåt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+   "Visa/dölj tangentbord"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+   "Visa/dölj meny"
    )
 
 /* Discord Status */
@@ -1973,6 +1974,10 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   "Starta om RetroArch"
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif

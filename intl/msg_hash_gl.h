@@ -87,7 +87,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    "Facer unha copia do disco"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
    "Copia o disco de medios físico ó almacenamento interno. Gardarase como un arquivo de imaxe."
    )
@@ -110,18 +110,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Amosar o menú do escritorio"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "Abre a vista de escritorio tradicional."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desactivar modo quiosco"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Desactiva o modo quiosco. (Precisa de se reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -206,11 +194,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    "Instala ou restaura un núcleo dende o directorio de Descargas."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    "Iniciar o procesador de vídeo"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    "Iniciar RetroPad remoto"
    )
@@ -375,16 +363,8 @@ MSG_HASH(
    "Información da rede"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Amosar a(s) interface(s) de rede e IPs asociadas."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    "Información do sistema"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "Mostra información específica do dispositivo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -532,11 +512,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "Características da CPU"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arquitectura da CPU:"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Núcleos da CPU:"
    )
@@ -552,7 +532,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    "Sistema operativo da interface"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
    "Nivel RetroRating"
    )
@@ -875,6 +855,10 @@ MSG_HASH(
    "Cambiar os controladores empregados polo sistema."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   "Entrada"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    "Latencia"
    )
@@ -917,10 +901,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    "Rede"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Cambia as configuracións do servidor e da rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1005,9 +985,17 @@ MSG_HASH(
 
 /* Settings > Audio > MIDI */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   "Entrada"
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   "Borrar"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -1025,14 +1013,22 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-/* Settings > Input > Hotkey Binds */
+/* Settings > Input > Hotkeys */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Confirmar peche"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Pechar RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   "Servizo de intelixencia artificial"
+   )
 
-/* Settings > Input > Port # Binds */
+/* Settings > Input > Port # Controls */
 
 
 /* Settings > Latency */
@@ -1096,10 +1092,22 @@ MSG_HASH(
    "Compatibilidade con rato"
    )
 
-/* Settings > User Interface > Views */
+/* Settings > User Interface > Menu Item Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   "Menú rápido"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   "Configuración"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Menú principal"
+   )
 
-/* Settings > User Interface > Views > Quick Menu */
+/* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
 /* Settings > User Interface > Views > Settings */
@@ -1118,6 +1126,10 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   "Logros"
+   )
 
 /* Settings > Network */
 
@@ -1127,6 +1139,14 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "Historial"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   "Núcleo:"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -1154,6 +1174,14 @@ MSG_HASH(
 
 /* Settings > Directory */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   "Descargas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "Listaxes de reprodución"
+   )
 
 /* Music */
 
@@ -1166,31 +1194,56 @@ MSG_HASH(
 /* Netplay > Host */
 
 
-/* Import content */
+/* Import Content */
 
 
-/* Import content > Scan File */
+/* Import Content > Scan File */
 
 
-/* Import content > Manual Scan */
+/* Import Content > Manual Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Nome do sistema"
+   )
 
 /* Explore tab */
 
 /* Playlist > Playlist Item */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   "Borrar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INFORMATION,
+   "Información"
+   )
 
 /* Playlist Item > Set Core Association */
 
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   "Núcleo"
+   )
 
 /* Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   "Logros"
+   )
 
 /* Quick Menu > Options */
 
+
+/* Quick Menu > Options > Manage Core Options */
+
+
+/* - Legacy (unused) */
 
 /* Quick Menu > Controls */
 
@@ -1200,6 +1253,10 @@ MSG_HASH(
 
 /* Quick Menu > Cheats */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
+   "Aplicar os cambios"
+   )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
@@ -1327,18 +1384,74 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD,
+   "Nórdico"
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
 
 /* MaterialUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD,
+   "Nórdico"
+   )
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFO,
+   "Información"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "Configuración"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   "&Axuda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   "Cargar un núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   "Listaxes de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE,
+   "Núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   "Información"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+   "Núcleo:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   "Borrar"
+   )
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   "Historial"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "Usuario"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "Iniciar"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
@@ -1346,12 +1459,32 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
    "Compatibilidade con gravación"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+   "Xogo en liña"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP,
+   "Axuda"
+   )
 
 /* Unused (Needs Confirmation) */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
    "Compatibilidade con Slang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
+   "Información"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+   "Saír"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+   "Desprazar cara a arriba"
    )
 
 /* Discord Status */
@@ -1369,6 +1502,10 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   "Reiniciar RetroArch"
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif

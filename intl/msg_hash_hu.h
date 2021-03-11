@@ -37,6 +37,10 @@ MSG_HASH(
    "Videók"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "Felfedezés"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Tartalom importálása"
    )
@@ -46,6 +50,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    "Gyorsmenü"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   "Az össze releváns játékon belüli beállítás gyors elérése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -68,24 +76,64 @@ MSG_HASH(
    "Lemez betöltése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Fizikai adathordozó betöltése. Először válaszd ki a lemezzel használni kívánt magot (Mag betöltése)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "Lemezkép mentése"
+   )
+MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "A fizikai adathordozó tartalmának mentése képfájlként a belső tárhelyre."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Lejátszási listák"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   "Az adatbázisban szereplő beolvasott tartalmak itt jelennek meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "Tartalom importálása"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Lejátszási listák létrehozása és frissítése tartalom beolvasásával."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Asztali menü mutatása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "A hagyományos asztali menü megnyitása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Kioszk mód kikapcsolása (újraindítás szükséges)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Az összes konfigurációs beállítás megjelenítése."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "Online frissítő"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   "Kiegészítők, komponensek és egyéb tartalom letöltése a RetroArch-hoz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
    "Beálítások"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS,
+   "A program konfigurálása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -100,8 +148,16 @@ MSG_HASH(
    "Konfigurációs fájl"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   "Konfigurációs fájlok kezelése és létrehozása."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
    "Segítség"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_LIST,
+   "Tudj meg többet a program működéséről."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
@@ -125,6 +181,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    "Core letöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "Mag telepítése vagy visszaállítása"
    )
 
 /* Main Menu > Load Content */
@@ -231,10 +291,6 @@ MSG_HASH(
    "Hálózat"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Szerver specifikus beállítások konfigurálása."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
    "Lejátszási listák"
    )
@@ -313,10 +369,14 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 
-/* Settings > Input > Hotkey Binds */
+/* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Kilépés a RetroArch-ból"
+   )
 
-/* Settings > Input > Port # Binds */
+/* Settings > Input > Port # Controls */
 
 
 /* Settings > Latency */
@@ -368,10 +428,22 @@ MSG_HASH(
 /* Settings > User Interface */
 
 
-/* Settings > User Interface > Views */
+/* Settings > User Interface > Menu Item Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   "Gyorsmenü"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   "Beálítások"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   "Főmenü"
+   )
 
-/* Settings > User Interface > Views > Quick Menu */
+/* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
 /* Settings > User Interface > Views > Settings */
@@ -399,6 +471,10 @@ MSG_HASH(
 
 /* Settings > Playlists */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   "Elözmény"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -426,6 +502,18 @@ MSG_HASH(
 
 /* Settings > Directory */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   "Letöltések"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   "Fájlkezelő"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "Lejátszási listák"
+   )
 
 /* Music */
 
@@ -438,19 +526,23 @@ MSG_HASH(
 /* Netplay > Host */
 
 
-/* Import content */
+/* Import Content */
 
 
-/* Import content > Scan File */
+/* Import Content > Scan File */
 
 
-/* Import content > Manual Scan */
+/* Import Content > Manual Scan */
 
 
 /* Explore tab */
 
 /* Playlist > Playlist Item */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INFORMATION,
+   "Információ"
+   )
 
 /* Playlist Item > Set Core Association */
 
@@ -463,6 +555,11 @@ MSG_HASH(
 
 /* Quick Menu > Options */
 
+
+/* Quick Menu > Options > Manage Core Options */
+
+
+/* - Legacy (unused) */
 
 /* Quick Menu > Controls */
 
@@ -544,12 +641,48 @@ MSG_HASH(
 
 /* Qt (Desktop Menu) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   "Beálítások"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   "&Segítség"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   "Core betöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   "Lejátszási listák"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   "Fájlkezelő"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   "Információ"
+   )
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   "Elözmény"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USER,
+   "Felhasználó"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP,
+   "Segítség"
+   )
 
 /* Unused (Needs Confirmation) */
 
@@ -565,6 +698,10 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   "RetroArch újraindítása"
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 #endif
