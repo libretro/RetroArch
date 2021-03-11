@@ -111,7 +111,7 @@ static void on_applet_hook(AppletHookType hook, void *param)
       case AppletHookType_OnFocusState:
          focus_state = appletGetFocusState();
          RARCH_LOG("Got AppletHook OnFocusState - new focus state is %d\n", focus_state);
-         platform_switch_has_focus = focus_state == AppletFocusState_Focused;
+         platform_switch_has_focus = focus_state == AppletFocusState_InFocus;
 
          if (!platform_switch_has_focus)
          {
@@ -133,11 +133,6 @@ static void on_applet_hook(AppletHookType hook, void *param)
 
          /* Performance mode */
       case AppletHookType_OnPerformanceMode:
-         {
-            /* 0 == Handheld, 1 == Docked
-             * Since CPU doesn't change we just re-apply */
-            u32 performance_mode = appletGetPerformanceMode();
-         }
          libnx_apply_overclock();
          break;
 
