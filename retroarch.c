@@ -3205,20 +3205,10 @@ static bool menu_entries_init(
       )
 {
    if (!(menu_st->entries.list = (menu_list_t*)menu_list_new(menu_driver_ctx)))
-      goto error;
-
-   menu_setting_ctl(MENU_SETTING_CTL_NEW, &menu_st->entries.list_settings);
-
-   if (!menu_st->entries.list_settings)
-      goto error;
-
+      return false;
+   if (!(menu_st->entries.list_settings = menu_setting_new()))
+      return false;
    return true;
-
-error:
-   menu_entries_settings_deinit(menu_st);
-   menu_entries_list_deinit(menu_driver_ctx, menu_st);
-
-   return false;
 }
 
 void menu_entries_append(
@@ -3816,9 +3806,14 @@ static void bundle_decompressed(retro_task_t *task,
  *
  * Returns: menu handle on success, otherwise NULL.
  **/
-static bool menu_init(struct rarch_state *p_rarch)
+static bool menu_init(
+      struct menu_state *menu_st,
+      const menu_ctx_driver_t *menu_driver_ctx,
+      menu_input_t *menu_input,
+      menu_input_pointer_hw_state_t *pointer_hw_state,
+      settings_t *settings
+      )
 {
-   settings_t        *settings = p_rarch->configuration_settings;
 #ifdef HAVE_CONFIGFILE
    bool menu_show_start_screen = settings->bools.menu_show_start_screen;
    bool config_save_on_exit    = settings->bools.config_save_on_exit;
@@ -3826,10 +3821,14 @@ static bool menu_init(struct rarch_state *p_rarch)
 
    /* Ensure that menu pointer input is correctly
     * initialised */
-   menu_input_reset(p_rarch);
+   menu_input_reset(menu_input, pointer_hw_state);
 
-   if (!menu_entries_init(&p_rarch->menu_driver_state, p_rarch->menu_driver_ctx))
+   if (!menu_entries_init(menu_st, menu_driver_ctx))
+   {
+      menu_entries_settings_deinit(menu_st);
+      menu_entries_list_deinit(menu_driver_ctx, menu_st);
       return false;
+   }
 
 #ifdef HAVE_CONFIGFILE
    if (menu_show_start_screen)
@@ -4508,7 +4507,12 @@ static bool menu_driver_init_internal(
       }
    }
 
-   if (!p_rarch->menu_driver_data || !menu_init(p_rarch))
+   if (!p_rarch->menu_driver_data || !menu_init(
+            &p_rarch->menu_driver_state,
+            p_rarch->menu_driver_ctx,
+            &p_rarch->menu_input_state,
+            &p_rarch->menu_input_pointer_hw_state,
+            settings))
       return false;
 
    gfx_display_init();
@@ -5225,7 +5229,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                menu_st->scroll.index_list[i] = 0;
 
-            menu_input_reset(p_rarch);
+            menu_input_reset(
+                  &p_rarch->menu_input_state,
+                  &p_rarch->menu_input_pointer_hw_state
+                  );
 
             if (     p_rarch->menu_driver_ctx 
                   && p_rarch->menu_driver_ctx->free)
@@ -24014,11 +24021,11 @@ void menu_input_set_pointer_y_accel(float y_accel)
    menu_input->pointer.y_accel    = y_accel;
 }
 
-static void menu_input_reset(struct rarch_state *p_rarch)
+static void menu_input_reset(
+      menu_input_t *menu_input,
+      menu_input_pointer_hw_state_t *pointer_hw_state
+      )
 {
-   menu_input_t *menu_input                        = &p_rarch->menu_input_state;
-   menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
-
    memset(menu_input, 0, sizeof(menu_input_t));
    memset(pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 }

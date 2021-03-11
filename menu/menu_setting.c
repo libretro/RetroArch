@@ -19408,7 +19408,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
-static rarch_setting_t *menu_setting_new(void)
+rarch_setting_t *menu_setting_new(void)
 {
    rarch_setting_t* list           = NULL;
    rarch_setting_info_t *list_info = (rarch_setting_info_t*)
@@ -19428,75 +19428,6 @@ static rarch_setting_t *menu_setting_new(void)
    list_info        = NULL;
 
    return list;
-}
-
-bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
-{
-   uint64_t flags;
-
-   switch (state)
-   {
-      case MENU_SETTING_CTL_IS_OF_PATH_TYPE:
-         {
-            bool cbs_bound           = false;
-            rarch_setting_t *setting = (rarch_setting_t*)data;
-
-            if (!setting)
-               return false;
-
-            flags                    = setting->flags;
-
-            if (setting->type != ST_ACTION)
-               return false;
-
-            if (!setting->change_handler)
-               return false;
-
-            cbs_bound = (setting->action_right != NULL);
-            cbs_bound = cbs_bound || setting->action_left;
-            cbs_bound = cbs_bound || setting->action_select;
-
-            if (!cbs_bound)
-               return false;
-
-            if (!(flags & SD_FLAG_BROWSER_ACTION))
-               return false;
-         }
-         break;
-      case MENU_SETTING_CTL_NEW:
-         {
-            rarch_setting_t **setting = (rarch_setting_t**)data;
-            if (!setting)
-               return false;
-            *setting = menu_setting_new();
-         }
-         break;
-      case MENU_SETTING_CTL_ACTION_RIGHT:
-         {
-            rarch_setting_t *setting = (rarch_setting_t*)data;
-            if (!setting)
-               return false;
-
-            if (setting->action_right)
-            {
-               int ret = setting->action_right(setting, 0, false);
-               menu_driver_ctl(
-                     RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-               menu_driver_ctl(
-                     RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
-               if (ret == -1)
-                  return false;
-            }
-            else
-               return false;
-         }
-         break;
-      case MENU_SETTING_CTL_NONE:
-      default:
-         break;
-   }
-
-   return true;
 }
 
 void video_driver_menu_settings(void **list_data, void *list_info_data,

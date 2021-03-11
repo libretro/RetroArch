@@ -29,14 +29,6 @@
 
 RETRO_BEGIN_DECLS
 
-enum menu_setting_ctl_state
-{
-   MENU_SETTING_CTL_NONE = 0,
-   MENU_SETTING_CTL_NEW,
-   MENU_SETTING_CTL_IS_OF_PATH_TYPE,
-   MENU_SETTING_CTL_ACTION_RIGHT
-};
-
 enum setting_list_flags
 {
    SL_FLAG_MAIN_MENU                                =  (1 << 0),
@@ -98,10 +90,18 @@ enum setting_type menu_setting_get_browser_selection_type(
 
 void setting_generic_handle_change(rarch_setting_t *setting);
 
-void menu_setting_free(rarch_setting_t *setting);
+/**
+ * menu_setting_new:
+ * @mask               : Bitmask of settings to include.
+ *
+ * Request a list of settings based on @mask.
+ *
+ * Returns: settings list composed of all requested
+ * settings on success, otherwise NULL.
+ **/
+rarch_setting_t *menu_setting_new(void);
 
-bool menu_setting_ctl(
-      enum menu_setting_ctl_state state, void *data);
+void menu_setting_free(rarch_setting_t *setting);
 
 RETRO_END_DECLS
 
