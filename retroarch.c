@@ -1653,10 +1653,6 @@ static void menu_cbs_init(
    menu_cbs_init_bind_info(cbs, path, label, type, idx);
 
    /* It will try to find a corresponding callback function inside
-    * menu_cbs_bind_content_list_switch.c, then map this callback to the entry. */
-   menu_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
-
-   /* It will try to find a corresponding callback function inside
     * menu_cbs_left.c, then map this callback to the entry. */
    menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label);
 
@@ -3002,7 +2998,6 @@ void menu_entries_append(
    cbs->action_scan                = NULL;
    cbs->action_start               = NULL;
    cbs->action_info                = NULL;
-   cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
    cbs->action_label               = NULL;
@@ -3087,7 +3082,6 @@ bool menu_entries_append_enum(
    cbs->action_scan                = NULL;
    cbs->action_start               = NULL;
    cbs->action_info                = NULL;
-   cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
    cbs->action_label               = NULL;
@@ -3172,7 +3166,6 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_scan                = NULL;
    cbs->action_start               = NULL;
    cbs->action_info                = NULL;
-   cbs->action_content_list_switch = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
    cbs->action_label               = NULL;
@@ -4104,6 +4097,37 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
    return false;
 }
 
+int menu_driver_deferred_push_content_list(
+      void *data, void *userdata,
+      const char *path,
+      const char *label, unsigned type)
+{
+   menu_displaylist_ctx_entry_t entry;
+   struct rarch_state   *p_rarch  = &rarch_st;
+   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   menu_handle_t *menu_data       = p_rarch->menu_driver_data;
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
+
+   /* Must clear any existing menu search terms
+    * when switching 'tabs', since doing so
+    * bypasses standard backwards navigation
+    * (i.e. 'cancel' actions would normally
+    * pop the search stack - this will not
+    * happen if we jump to a new list directly) */
+   if (menu_data->search_terms)
+      string_list_free(menu_data->search_terms);
+   menu_data->search_terms     = NULL;
+
+   menu_st->selection_ptr      = 0; 
+
+   entry.list                  = (file_list_t*)data;
+   entry.stack                 = selection_buf;
+   if (!menu_displaylist_push(&entry))
+      return -1;
+   return 0;
+}
+
 bool menu_driver_list_cache(menu_ctx_list_t *list)
 {
    struct rarch_state       *p_rarch = &rarch_st;
@@ -4491,20 +4515,6 @@ free_list:
    return true;
 }
 
-void menu_driver_search_clear(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-
-   if (!menu)
-      return;
-
-   if (menu->search_terms)
-      string_list_free(menu->search_terms);
-
-   menu->search_terms = NULL;
-}
-
 struct string_list *menu_driver_search_get_terms(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -4844,6 +4854,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    gfx_display_t         *p_disp  = &p_rarch->dispgfx;
+   menu_handle_t *menu_data       = p_rarch->menu_driver_data;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
 
    switch (state)
@@ -4956,7 +4967,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                free(p_rarch->menu_driver_data->core_buf);
             p_rarch->menu_driver_data->core_buf  = NULL;
 
-            menu_driver_search_clear();
+            if (menu_data->search_terms)
+               string_list_free(menu_data->search_terms);
+            menu_data->search_terms              = NULL;
 
             menu_st->entries_need_refresh        = false;
             menu_st->entries_nonblocking_refresh = false;

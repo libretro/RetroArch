@@ -8477,24 +8477,18 @@ static int materialui_switch_tabs(
       file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
       file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
       size_t selection           = menu_navigation_get_selection();
-      menu_file_list_cbs_t *cbs  = selection_buf ?
-            (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(
-                  selection_buf, selection) : NULL;
       bool stack_flushed         = false;
       int ret                    = 0;
 
       /* Sanity check */
-      if (!selection_buf || !menu_stack || !cbs)
-         return -1;
-
-      if (!cbs->action_content_list_switch)
+      if (!selection_buf || !menu_stack)
          return -1;
 
       /* Perform pre-switch operations */
       stack_flushed = materialui_preswitch_tabs(mui, target_tab);
 
       /* Perform switch */
-      ret = cbs->action_content_list_switch(
+      ret = menu_driver_deferred_push_content_list(
             selection_buf, menu_stack, "", "", 0);
 
       /* Note: If materialui_preswitch_tabs() flushes

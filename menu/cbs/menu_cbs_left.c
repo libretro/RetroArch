@@ -232,20 +232,14 @@ static int action_left_goto_tab(void)
    menu_ctx_list_t list_info;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
-   menu_file_list_cbs_t *cbs  = selection_buf ? (menu_file_list_cbs_t*)
-      selection_buf->list[selection].actiondata : NULL;
 
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_LEFT;
 
    menu_driver_list_cache(&list_info);
 
-   if (cbs && cbs->action_content_list_switch)
-      return cbs->action_content_list_switch(selection_buf, menu_stack,
-            "", "", 0);
-
-   return 0;
+   return menu_driver_deferred_push_content_list(selection_buf, menu_stack,
+         "", "", 0);
 }
 
 static int action_left_mainmenu(unsigned type, const char *label,
