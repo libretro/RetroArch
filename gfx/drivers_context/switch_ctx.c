@@ -54,7 +54,7 @@ static void switch_ctx_get_video_size(void *data,
             *width = 1280;
             *height = 720;
             break;
-         case AppletOperationMode_Docked:
+         case AppletOperationMode_Console:
             *width = 1920;
             *height = 1080;
             break;
@@ -279,7 +279,7 @@ bool switch_ctx_get_metrics(void *data,
           * the hardware - these hard-coded values are a kludge */
          switch (appletGetOperationMode())
          {
-            case AppletOperationMode_Docked:
+            case AppletOperationMode_Console:
                /* Docked mode
                 * > Resolution:  1920x1080
                 * > Screen Size: 39 inch
