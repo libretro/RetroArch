@@ -1615,8 +1615,8 @@ static void menu_cbs_init(
    enum msg_hash_enums enum_idx   = menu_cbs ? menu_cbs->enum_idx : MSG_UNKNOWN;
 #endif
 
-   file_list_get_last(menu_list,
-         NULL, &menu_label, NULL, NULL);
+   if (menu_list && menu_list->size)
+      file_list_get_at_offset(menu_list, menu_list->size - 1, NULL, &menu_label, NULL, NULL);
 
    if (!label || !menu_label)
       return;
@@ -1852,7 +1852,8 @@ static int generic_menu_iterate(
    gfx_animation_t *p_anim         = &p_rarch->anim;
    file_list_t *list               = MENU_LIST_GET(menu_st->entries.list, 0);
 
-   file_list_get_last(list, NULL, &label, &file_type, NULL);
+   if (list && list->size)
+      file_list_get_at_offset(list, list->size - 1, NULL, &label, &file_type, NULL);
 
    menu->menu_state_msg[0]         = '\0';
 
@@ -2362,8 +2363,8 @@ static bool menu_driver_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 
    menu_displaylist_info_init(&info);
 
-   file_list_get_last(list,
-         &path, &label, &type, NULL);
+   if (list && list->size)
+      file_list_get_at_offset(list, list->size - 1, &path, &label, &type, NULL);
 
    if (cbs)
       enum_idx    = cbs->enum_idx;
@@ -2894,8 +2895,9 @@ static void menu_list_flush_stack(
    file_list_t *menu_list      = MENU_LIST_GET(list, (unsigned)idx);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   file_list_get_last(menu_list,
-         &path, &label, &type, &entry_idx);
+
+   if (menu_list && menu_list->size)
+      file_list_get_at_offset(menu_list, menu_list->size - 1, &path, &label, &type, &entry_idx);
 
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
@@ -2919,8 +2921,8 @@ static void menu_list_flush_stack(
       menu_st->selection_ptr   = new_selection_ptr;
       menu_list                = MENU_LIST_GET(list, (unsigned)idx);
 
-      file_list_get_last(menu_list,
-            &path, &label, &type, &entry_idx);
+      if (menu_list && menu_list->size)
+         file_list_get_at_offset(menu_list, menu_list->size - 1, &path, &label, &type, &entry_idx);
    }
 }
 
@@ -3250,7 +3252,6 @@ bool menu_entries_append_enum(
       return false;
 
    file_list_append(list, path, label, type, directory_ptr, entry_idx);
-
    file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
          &menu_path, NULL, NULL, NULL);
 
@@ -3409,8 +3410,8 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 
    list                           = MENU_LIST_GET(menu_st->entries.list, 0);
 
-   file_list_get_last(list,
-         path, label, file_type, entry_idx);
+   if (list && list->size)
+      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
 
    if (enum_idx)
    {
