@@ -4339,52 +4339,17 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
 }
 
 /* Iterate the menu driver for one frame. */
-bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
+static bool menu_driver_iterate(
+      struct rarch_state *p_rarch,
+      enum menu_action action,
       retro_time_t current_time)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
-
-   /* Get current time */
-   menu_st->current_time_us       = current_time;
-
-   if (menu_st->pending_quick_menu)
-   {
-      /* If the user had requested that the Quick Menu
-       * be spawned during the previous frame, do this now
-       * and exit the function to go to the next frame.
-       */
-
-      menu_st->pending_quick_menu = false;
-      menu_entries_flush_stack(NULL, MENU_SETTINGS);
-      gfx_display_set_msg_force(true);
-
-      generic_action_ok_displaylist_push("", NULL,
-            "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
-
-      menu_st->selection_ptr = 0;
-
-      return true;
-   }
-
-   if (     p_rarch->menu_driver_ctx          
-         && p_rarch->menu_driver_ctx->iterate)
-   {
-      if (p_rarch->menu_driver_ctx->iterate(
-               p_rarch->menu_driver_data,
-               p_rarch->menu_userdata, iterate->action) != -1)
-         return true;
-   }
-   else
-      if (p_rarch->menu_driver_data)
-         if (generic_menu_iterate(
-                  p_rarch,
-                  p_rarch->menu_driver_data,
-                  p_rarch->menu_userdata, iterate->action,
-                  current_time) != -1)
-            return true;
-
-   return false;
+   return (p_rarch->menu_driver_data && 
+         generic_menu_iterate(
+            p_rarch,
+            p_rarch->menu_driver_data,
+            p_rarch->menu_userdata, action,
+            current_time) != -1);
 }
 
 int menu_driver_deferred_push_content_list(file_list_t *list)
@@ -37305,10 +37270,10 @@ static enum runloop_state runloop_check_state(
    if (menu_is_alive)
    {
       enum menu_action action;
-      menu_ctx_iterate_t iter;
       static input_bits_t old_input = {{0}};
       static enum menu_action
          old_action                 = MENU_ACTION_CANCEL;
+      struct menu_state    *menu_st = &p_rarch->menu_driver_state;
       bool focused                  = false;
       input_bits_t trigger_input    = current_bits;
       global_t *global              = &p_rarch->g_extern;
@@ -37323,8 +37288,6 @@ static enum runloop_state runloop_check_state(
       focused                   = pause_nonactive ? is_focused : true;
       focused                   = focused &&
          !p_rarch->main_ui_companion_is_on_foreground;
-
-      iter.action               = action;
 
       if (global)
       {
@@ -37367,7 +37330,27 @@ static enum runloop_state runloop_check_state(
          }
       }
 
-      if (!menu_driver_iterate(&iter, current_time))
+      /* Get current time */
+      menu_st->current_time_us       = current_time;
+
+      /* Iterate the menu driver for one frame. */
+
+      if (menu_st->pending_quick_menu)
+      {
+         /* If the user had requested that the Quick Menu
+          * be spawned during the previous frame, do this now
+          * and exit the function to go to the next frame.
+          */
+         menu_entries_flush_stack(NULL, MENU_SETTINGS);
+         gfx_display_set_msg_force(true);
+
+         generic_action_ok_displaylist_push("", NULL,
+               "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
+
+         menu_st->selection_ptr      = 0;
+         menu_st->pending_quick_menu = false;
+      }
+      else if (!menu_driver_iterate(p_rarch, action, current_time))
       {
          if (p_rarch->rarch_error_on_init)
          {

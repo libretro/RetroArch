@@ -6374,7 +6374,6 @@ static int rgui_menu_entry_action(
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_set_message,
-   NULL, /* iterate */
    rgui_render,
    rgui_frame,
    rgui_init,

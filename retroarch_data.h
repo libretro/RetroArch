@@ -2766,8 +2766,6 @@ static const struct cmd_map map[] = {
 #endif
 
 #ifdef HAVE_MENU
-static int null_menu_iterate(void *data, void *userdata,
-      enum menu_action action) { return 1; }
 static void *null_menu_init(void **userdata, bool video_is_threaded)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -2781,7 +2779,6 @@ static int null_menu_list_bind_init(menu_file_list_cbs_t *cbs,
 static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_texture */
   NULL,  /* render_messagebox */
-  null_menu_iterate,
   NULL,  /* render */
   NULL,  /* frame */
   null_menu_init,

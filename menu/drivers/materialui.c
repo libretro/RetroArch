@@ -10349,7 +10349,6 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    materialui_get_message,
-   NULL, /* iterate */
    materialui_render,
    materialui_frame,
    materialui_init,

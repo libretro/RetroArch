@@ -4157,7 +4157,6 @@ void ozone_apply_cursor_wiggle_offset(ozone_handle_t* ozone, int* x, size_t* y)
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
    ozone_messagebox,
-   NULL, /* iterate */
    ozone_render,
    ozone_frame,
    ozone_init,

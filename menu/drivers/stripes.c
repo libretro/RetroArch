@@ -4390,7 +4390,6 @@ static int stripes_pointer_up(void *userdata,
 menu_ctx_driver_t menu_ctx_stripes = {
    NULL,
    stripes_messagebox,
-   NULL, /* iterate */
    stripes_render,
    stripes_frame,
    stripes_init,
