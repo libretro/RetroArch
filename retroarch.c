@@ -2189,7 +2189,6 @@ static int generic_menu_iterate(
 
 static bool menu_driver_displaylist_push_internal(
       const char *label,
-      menu_displaylist_ctx_entry_t *entry,
       menu_displaylist_info_t *info)
 {
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
@@ -2347,19 +2346,27 @@ static bool menu_driver_displaylist_push_internal(
 static bool menu_driver_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 {
    menu_displaylist_info_t info;
-   menu_file_list_cbs_t *cbs      = NULL;
    const char *path               = NULL;
    const char *label              = NULL;
    unsigned type                  = 0;
    bool ret                       = false;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
+   struct rarch_state   *p_rarch  = &rarch_st;
+   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   file_list_t *list              = MENU_LIST_GET(menu_st->entries.list, 0);
+   menu_file_list_cbs_t *cbs      = (menu_file_list_cbs_t*)
+      list->list[list->size - 1].actiondata;
 
    if (!entry)
       return false;
 
    menu_displaylist_info_init(&info);
 
-   menu_entries_get_last_stack(&path, &label, &type, &enum_idx, NULL);
+   file_list_get_last(list,
+         &path, &label, &type, NULL);
+
+   if (cbs)
+      enum_idx    = cbs->enum_idx;
 
    info.list      = entry->list;
    info.menu_list = entry->stack;
@@ -2375,19 +2382,17 @@ static bool menu_driver_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    if (!info.list)
       goto error;
 
-   if (menu_driver_displaylist_push_internal(label, entry, &info))
+   if (menu_driver_displaylist_push_internal(label, &info))
    {
       ret = menu_displaylist_process(&info);
       goto end;
    }
 
-   cbs = menu_entries_get_last_stack_actiondata();
+   cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
 
    if (cbs && cbs->action_deferred_push)
-   {
       if (cbs->action_deferred_push(&info) != 0)
          goto error;
-   }
 
    ret = true;
 
