@@ -2411,13 +2411,14 @@ int generic_menu_entry_action(
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+   size_t selection_buf_size      = selection_buf ? selection_buf->size : 0;
    menu_file_list_cbs_t *cbs      = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
 
    switch (action)
    {
       case MENU_ACTION_UP:
-         if (MENU_LIST_GET_SELECTION(menu_list, 0)->size > 0)
+         if (selection_buf_size > 0)
          {
             size_t scroll_accel   = menu_st->scroll.acceleration;
             unsigned scroll_speed = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
@@ -2425,7 +2426,7 @@ int generic_menu_entry_action(
          }
          break;
       case MENU_ACTION_DOWN:
-         if (MENU_LIST_GET_SELECTION(menu_list, 0)->size > 0)
+         if (selection_buf_size > 0)
          {
             size_t scroll_accel   = menu_st->scroll.acceleration;
             unsigned scroll_speed = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
@@ -2486,13 +2487,10 @@ int generic_menu_entry_action(
    {
       menu_displaylist_ctx_entry_t entry;
       bool refresh            = false;
-      struct menu_state  
-         *menu_st             = &p_rarch->menu_driver_state;
-      menu_list_t *menu_list  = menu_st->entries.list;
       file_list_t *menu_stack = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
 
-      entry.list  = selection_buf;
-      entry.stack = menu_stack;
+      entry.list              = selection_buf;
+      entry.stack             = menu_stack;
 
       menu_driver_displaylist_push(&entry);
       menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
