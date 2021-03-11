@@ -231,15 +231,13 @@ static int action_left_goto_tab(void)
 {
    menu_ctx_list_t list_info;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_LEFT;
 
    menu_driver_list_cache(&list_info);
 
-   return menu_driver_deferred_push_content_list(selection_buf, menu_stack,
-         "", "", 0);
+   return menu_driver_deferred_push_content_list(selection_buf);
 }
 
 static int action_left_mainmenu(unsigned type, const char *label,

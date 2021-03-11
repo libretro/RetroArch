@@ -4097,10 +4097,7 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
    return false;
 }
 
-int menu_driver_deferred_push_content_list(
-      void *data, void *userdata,
-      const char *path,
-      const char *label, unsigned type)
+int menu_driver_deferred_push_content_list(file_list_t *list)
 {
    menu_displaylist_ctx_entry_t entry;
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -4121,7 +4118,7 @@ int menu_driver_deferred_push_content_list(
 
    menu_st->selection_ptr      = 0; 
 
-   entry.list                  = (file_list_t*)data;
+   entry.list                  = list;
    entry.stack                 = selection_buf;
    if (!menu_displaylist_push(&entry))
       return -1;

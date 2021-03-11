@@ -752,7 +752,6 @@ void ozone_change_tab(ozone_handle_t *ozone,
 {
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
    size_t stack_size          = menu_stack->size;
 
    if (menu_stack->list[stack_size - 1].label)
@@ -767,7 +766,7 @@ void ozone_change_tab(ozone_handle_t *ozone,
    ozone_list_cache(ozone, MENU_LIST_HORIZONTAL,
          MENU_ACTION_LEFT);
 
-   menu_driver_deferred_push_content_list(selection_buf, menu_stack, "", "", 0);
+   menu_driver_deferred_push_content_list(selection_buf);
 }
 
 void ozone_init_horizontal_list(ozone_handle_t *ozone)

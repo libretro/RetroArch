@@ -477,10 +477,7 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info);
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
       retro_time_t current_time);
 
-int menu_driver_deferred_push_content_list(
-      void *data, void *userdata,
-      const char *path,
-      const char *label, unsigned type);
+int menu_driver_deferred_push_content_list(file_list_t *list);
 
 bool menu_driver_list_cache(menu_ctx_list_t *list);
 
