@@ -59,8 +59,7 @@ typedef struct menu_dialog menu_dialog_t;
 
 RETRO_BEGIN_DECLS
 
-bool menu_dialog_push_pending(
-      bool push, enum menu_dialog_type type);
+bool menu_dialog_push_pending(enum menu_dialog_type type);
 
 void menu_dialog_unset_pending_push(void);
 

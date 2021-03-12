@@ -820,20 +820,12 @@ void menu_dialog_unset_pending_push(void)
    p_dialog->pending_push  = false;
 }
 
-bool menu_dialog_push_pending(bool push, enum menu_dialog_type type)
+bool menu_dialog_push_pending(enum menu_dialog_type type)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    menu_dialog_t        *p_dialog = &p_rarch->dialog_st;
-#ifdef IOS
-   /* TODO/FIXME - see comment in menu_init -
-    * we should make this more generic so that
-    * this platform-specific ifdef is no longer needed */
-   if (type == MENU_DIALOG_HELP_EXTRACT)
-      if (!p_dialog->pending_push)
-         return false;
-#endif
-   p_dialog->pending_push = push;
-   p_dialog->current_type = type;
+   p_dialog->current_type         = type;
+   p_dialog->pending_push         = true;
 
    return true;
 }
@@ -3839,7 +3831,7 @@ static bool menu_init(
        * again after the first startup, so we save to config
        * file immediately. */
 
-      menu_dialog_push_pending(true, MENU_DIALOG_WELCOME);
+      menu_dialog_push_pending(MENU_DIALOG_WELCOME);
 
       configuration_set_bool(settings,
             settings->bools.menu_show_start_screen, false);
@@ -3855,7 +3847,7 @@ static bool menu_init(
             != settings->uints.bundle_assets_extract_last_version)
       )
    {
-      if (menu_dialog_push_pending(true, MENU_DIALOG_HELP_EXTRACT))
+      if (menu_dialog_push_pending(MENU_DIALOG_HELP_EXTRACT))
       {
 #ifdef HAVE_COMPRESSION
          task_push_decompress(

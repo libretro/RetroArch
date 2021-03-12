@@ -823,8 +823,8 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_HELP:
          info_label             = label;
-         menu_dialog_push_pending(true, (enum menu_dialog_type)type);
          dl_type                = DISPLAYLIST_HELP;
+         menu_dialog_push_pending((enum menu_dialog_type)type);
          break;
       case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
