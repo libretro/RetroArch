@@ -4338,20 +4338,6 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
    }
 }
 
-/* Iterate the menu driver for one frame. */
-static bool menu_driver_iterate(
-      struct rarch_state *p_rarch,
-      enum menu_action action,
-      retro_time_t current_time)
-{
-   return (p_rarch->menu_driver_data && 
-         generic_menu_iterate(
-            p_rarch,
-            p_rarch->menu_driver_data,
-            p_rarch->menu_userdata, action,
-            current_time) != -1);
-}
-
 int menu_driver_deferred_push_content_list(file_list_t *list)
 {
    menu_displaylist_ctx_entry_t entry;
@@ -36731,47 +36717,6 @@ static bool input_driver_toggle_button_combo(
 
    return false;
 }
-
-/* Display the libretro core's framebuffer onscreen. */
-static bool menu_display_libretro(
-      struct rarch_state *p_rarch,
-      bool libretro_running,
-      retro_time_t current_time)
-{
-   bool runloop_idle           = p_rarch->runloop_idle;
-
-   if (  p_rarch->video_driver_poke &&
-         p_rarch->video_driver_poke->set_texture_enable)
-      p_rarch->video_driver_poke->set_texture_enable(
-            p_rarch->video_driver_data,
-            true, false);
-
-   if (libretro_running)
-   {
-      if (!p_rarch->input_driver_block_libretro_input)
-         p_rarch->input_driver_block_libretro_input = true;
-
-      core_run();
-      p_rarch->libretro_core_runtime_usec        +=
-         rarch_core_runtime_tick(p_rarch, current_time);
-      p_rarch->input_driver_block_libretro_input  = false;
-
-      return false;
-   }
-
-   if (runloop_idle)
-   {
-#ifdef HAVE_DISCORD
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
-
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-#endif
-      return false;
-   }
-
-   return true;
-}
 #endif
 
 static void update_savestate_slot(int state_slot)
@@ -36842,7 +36787,6 @@ static enum runloop_state runloop_check_state(
    if (!aptMainLoop())
       return RUNLOOP_STATE_QUIT;
 #endif
-
 
    BIT256_CLEAR_ALL_PTR(&current_bits);
 
@@ -37063,12 +37007,17 @@ static enum runloop_state runloop_check_state(
 #else
       ;
 #endif
-      HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE,
+      HOTKEY_CHECK(
+            RARCH_FULLSCREEN_TOGGLE_KEY,
+            CMD_EVENT_FULLSCREEN_TOGGLE,
             fullscreen_toggled, NULL);
    }
 
    /* Check mouse grab toggle */
-   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
+   HOTKEY_CHECK(
+         RARCH_GRAB_MOUSE_TOGGLE,
+         CMD_EVENT_GRAB_MOUSE_TOGGLE,
+         true, NULL);
 
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)
@@ -37102,7 +37051,8 @@ static enum runloop_state runloop_check_state(
       }
 
       /* Check next overlay */
-      HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
+      HOTKEY_CHECK(RARCH_OVERLAY_NEXT,
+            CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
 
       /* Ensure overlay is restored after displaying osk */
       if (p_rarch->input_driver_keyboard_linefeed_enable)
@@ -37350,7 +37300,13 @@ static enum runloop_state runloop_check_state(
          menu_st->selection_ptr      = 0;
          menu_st->pending_quick_menu = false;
       }
-      else if (!menu_driver_iterate(p_rarch, action, current_time))
+      /* Iterate the menu driver for one frame. */
+      else if ( 
+            generic_menu_iterate(
+               p_rarch,
+               p_rarch->menu_driver_data,
+               p_rarch->menu_userdata, action,
+               current_time) == -1)
       {
          if (p_rarch->rarch_error_on_init)
          {
@@ -37404,10 +37360,31 @@ static enum runloop_state runloop_check_state(
                         p_rarch->runloop_idle);
             }
 
-            if (p_rarch->menu_driver_alive && !p_rarch->runloop_idle)
-               if (menu_display_libretro(p_rarch,
-                        libretro_running, current_time))
+            /* Display the libretro core's framebuffer onscreen. */
+            if (      p_rarch->menu_driver_alive 
+                  && !p_rarch->runloop_idle)
+            {
+               bool runloop_idle           = p_rarch->runloop_idle;
+
+               if (  p_rarch->video_driver_poke &&
+                     p_rarch->video_driver_poke->set_texture_enable)
+                  p_rarch->video_driver_poke->set_texture_enable(
+                        p_rarch->video_driver_data,
+                        true, false);
+
+               if (libretro_running)
+               {
+                  if (!p_rarch->input_driver_block_libretro_input)
+                     p_rarch->input_driver_block_libretro_input = true;
+
+                  core_run();
+                  p_rarch->libretro_core_runtime_usec        +=
+                     rarch_core_runtime_tick(p_rarch, current_time);
+                  p_rarch->input_driver_block_libretro_input  = false;
+               }
+               else
                   video_driver_cached_frame();
+            }
 
             if (menu->driver_ctx->set_texture)
                menu->driver_ctx->set_texture(menu->userdata);
