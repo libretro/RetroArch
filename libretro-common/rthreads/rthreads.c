@@ -861,6 +861,13 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    mach_port_deallocate(mach_task_self(), cclock);
    now.tv_sec = mts.tv_sec;
    now.tv_nsec = mts.tv_nsec;
+#elif !defined(__PSL1GHT__) && defined(__PS3__)
+   sys_time_sec_t s;
+   sys_time_nsec_t n;
+
+   sys_time_get_current_time(&s, &n);
+   now.tv_sec  = s;
+   now.tv_nsec = n;
 #elif defined(PS2)
    int tickms = ps2_clock();
    now.tv_sec = tickms/1000;
