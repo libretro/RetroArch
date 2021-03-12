@@ -3790,6 +3790,7 @@ ozone_node_t *ozone_alloc_node(void)
    node->content_icon   = 0;
    node->fullpath       = NULL;
    node->sublabel_lines = 0;
+   node->wrap           = false;
 
    return node;
 }
