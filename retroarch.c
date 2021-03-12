@@ -820,14 +820,12 @@ void menu_dialog_unset_pending_push(void)
    p_dialog->pending_push  = false;
 }
 
-bool menu_dialog_push_pending(enum menu_dialog_type type)
+void menu_dialog_push_pending(enum menu_dialog_type type)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    menu_dialog_t        *p_dialog = &p_rarch->dialog_st;
    p_dialog->current_type         = type;
    p_dialog->pending_push         = true;
-
-   return true;
 }
 
 void menu_dialog_set_current_id(unsigned id)
@@ -836,16 +834,6 @@ void menu_dialog_set_current_id(unsigned id)
    menu_dialog_t        *p_dialog = &p_rarch->dialog_st;
 
    p_dialog->current_id    = id;
-}
-
-static void menu_dialog_reset(menu_dialog_t *p_dialog)
-{
-   if (!p_dialog)
-      return;
-
-   p_dialog->pending_push  = false;
-   p_dialog->current_id    = 0;
-   p_dialog->current_type  = MENU_DIALOG_NONE;
 }
 
 void input_keyboard_mapping_bits(unsigned mode, unsigned key)
@@ -3802,6 +3790,7 @@ static void bundle_decompressed(retro_task_t *task,
  **/
 static bool menu_init(
       struct menu_state *menu_st,
+      menu_dialog_t        *p_dialog,
       const menu_ctx_driver_t *menu_driver_ctx,
       menu_input_t *menu_input,
       menu_input_pointer_hw_state_t *pointer_hw_state,
@@ -3830,8 +3819,7 @@ static bool menu_init(
       /* We don't want the welcome dialog screen to show up
        * again after the first startup, so we save to config
        * file immediately. */
-
-      menu_dialog_push_pending(MENU_DIALOG_WELCOME);
+      p_dialog->current_type         = MENU_DIALOG_WELCOME;
 
       configuration_set_bool(settings,
             settings->bools.menu_show_start_screen, false);
@@ -3840,6 +3828,7 @@ static bool menu_init(
    }
 #endif
 
+#ifdef HAVE_COMPRESSION
    if (      settings->bools.bundle_assets_extract_enable
          && !string_is_empty(settings->arrays.bundle_assets_src)
          && !string_is_empty(settings->arrays.bundle_assets_dst)
@@ -3847,24 +3836,22 @@ static bool menu_init(
             != settings->uints.bundle_assets_extract_last_version)
       )
    {
-      if (menu_dialog_push_pending(MENU_DIALOG_HELP_EXTRACT))
-      {
-#ifdef HAVE_COMPRESSION
-         task_push_decompress(
-               settings->arrays.bundle_assets_src,
-               settings->arrays.bundle_assets_dst,
-               NULL,
-               settings->arrays.bundle_assets_dst_subdir,
-               NULL,
-               bundle_decompressed,
-               NULL,
-               NULL,
-               false);
-         /* Support only 1 version - setting this would prevent the assets from being extracted every time */
-         configuration_set_int(settings, settings->uints.bundle_assets_extract_last_version, 1);
-#endif
-      }
+      p_dialog->current_type         = MENU_DIALOG_HELP_EXTRACT;
+      task_push_decompress(
+            settings->arrays.bundle_assets_src,
+            settings->arrays.bundle_assets_dst,
+            NULL,
+            settings->arrays.bundle_assets_dst_subdir,
+            NULL,
+            bundle_decompressed,
+            NULL,
+            NULL,
+            false);
+      /* Support only 1 version - setting this would prevent the assets from being extracted every time */
+      configuration_set_int(settings,
+            settings->uints.bundle_assets_extract_last_version, 1);
    }
+#endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    menu_shader_manager_init();
@@ -4466,6 +4453,7 @@ static bool menu_driver_init_internal(
 
    if (!p_rarch->menu_driver_data || !menu_init(
             &p_rarch->menu_driver_state,
+            &p_rarch->dialog_st,
             p_rarch->menu_driver_ctx,
             &p_rarch->menu_input_state,
             &p_rarch->menu_input_pointer_hw_state,
@@ -5230,7 +5218,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
             rarch_favorites_deinit();
 
-            menu_dialog_reset(&p_rarch->dialog_st);
+            p_rarch->dialog_st.pending_push  = false;
+            p_rarch->dialog_st.current_id    = 0;
+            p_rarch->dialog_st.current_type  = MENU_DIALOG_NONE;
 
             free(p_rarch->menu_driver_data);
          }
