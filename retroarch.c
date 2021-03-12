@@ -3849,12 +3849,8 @@ static bool menu_init(
    if (      settings->bools.bundle_assets_extract_enable
          && !string_is_empty(settings->arrays.bundle_assets_src)
          && !string_is_empty(settings->arrays.bundle_assets_dst)
-#ifndef IOS
-         /* TODO/FIXME - we should make this more generic so that
-          * this platform-specific ifdef is no longer needed */
          && (settings->uints.bundle_assets_extract_version_current
             != settings->uints.bundle_assets_extract_last_version)
-#endif
       )
    {
       if (menu_dialog_push_pending(true, MENU_DIALOG_HELP_EXTRACT))
@@ -3870,6 +3866,8 @@ static bool menu_init(
                NULL,
                NULL,
                false);
+         /* Support only 1 version - setting this would prevent the assets from being extracted every time */
+         configuration_set_int(settings, settings->uints.bundle_assets_extract_last_version, 1);
 #endif
       }
    }
