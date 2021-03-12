@@ -2445,7 +2445,7 @@ void config_set_defaults(void *data)
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
    *settings->paths.path_cheat_settings    = '\0';
-#if !defined(IOS) && !defined(OSX)
+#if !defined(__APPLE__)
    *settings->arrays.bundle_assets_src = '\0';
    *settings->arrays.bundle_assets_dst = '\0';
    *settings->arrays.bundle_assets_dst_subdir = '\0';

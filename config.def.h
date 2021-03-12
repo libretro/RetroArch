@@ -72,7 +72,7 @@
  * we need to extract to a user-writable directory on first boot.
  *
  * Examples include: Android, iOS/OSX) */
-#if defined(ANDROID) || defined(IOS) || defined(OSX)
+#if defined(ANDROID) || defined(__APPLE__)
 #define DEFAULT_BUNDLE_ASSETS_EXTRACT_ENABLE true
 #else
 #define DEFAULT_BUNDLE_ASSETS_EXTRACT_ENABLE false
