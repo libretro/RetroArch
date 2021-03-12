@@ -30,7 +30,7 @@ C_CONVERTER_C = \
 			 $(LIBRETRODB_DIR)/bintree.c \
 			 $(LIBRETRODB_DIR)/query.c \
 			 $(LIBRETRODB_DIR)/c_converter.c \
-			 $(LIBRETRO_COMM_DIR)/hash/rhash.c \
+			 $(LIBRETRO_COMM_DIR)/hash/lrc_hash.c \
 			 $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \
 			 $(LIBRETRO_COMMON_C)
 
