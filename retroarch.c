@@ -1858,8 +1858,7 @@ static int generic_menu_iterate(
    menu->menu_state_msg[0]         = '\0';
 
    iterate_type                    = action_iterate_type(label);
-
-   p_rarch->menu_driver_is_binding = iterate_type == ITERATE_TYPE_BIND;
+   p_rarch->menu_driver_is_binding = false;
 
    if (     action != MENU_ACTION_NOOP
          || MENU_ENTRIES_NEEDS_REFRESH(menu_st)
@@ -1867,6 +1866,7 @@ static int generic_menu_iterate(
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    }
+
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
@@ -1900,6 +1900,8 @@ static int generic_menu_iterate(
       case ITERATE_TYPE_BIND:
          {
             menu_input_ctx_bind_t bind;
+
+            p_rarch->menu_driver_is_binding = true;
 
             bind.s   = menu->menu_state_msg;
             bind.len = sizeof(menu->menu_state_msg);
