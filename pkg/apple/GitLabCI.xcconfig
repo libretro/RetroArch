@@ -10,4 +10,3 @@
 
 #include "Metal.xcconfig"
 DEVELOPMENT_TEAM=UK699V5ZS8
-CODE_SIGN_IDENTITY="Developer ID Application"
