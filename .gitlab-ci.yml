@@ -337,6 +337,15 @@ build-retroarch-linux-i686:
 # Mac OS Universal, Metal
 build-retroarch-osx-universal-metal:
   extends: .build-retroarch-macos-xcode
+  
+# MacOSX PowerPC (10.5)
+build-retroarch-osx-ppc:
+  extends: .build-retroarch-macos-xcode
+  tags:
+    - macosx-legacy
+  variables:
+    XCARCHIVE_PATH: pkg/apple/build/RetroArchPPC
+    XCPROJECT_NAME: RetroArch_PPC
 
 build-retroarch-osx-opengl-x64:
   extends: .build-retroarch-macos-xcode
