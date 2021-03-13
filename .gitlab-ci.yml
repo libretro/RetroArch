@@ -346,6 +346,15 @@ build-retroarch-osx-ppc:
   variables:
     XCARCHIVE_PATH: pkg/apple/build/RetroArchPPC
     XCPROJECT_NAME: RetroArch_PPC
+  script:
+    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -configuration Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
+    - pushd ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/
+    - ditto -c -k --sequesterRsrc --keepParent RetroArch.app RetroArch.zip
+    - popd
+    - mv ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.zip ${XCPROJECT_NAME}.zip
+    - mkdir .retroarch-repo
+    - "cp -r ./* .retroarch-repo"
+    - "mv .retroarch-repo/ retroarch-repo/"
 
 build-retroarch-osx-opengl-x64:
   extends: .build-retroarch-macos-xcode
