@@ -347,7 +347,7 @@ build-retroarch-osx-ppc:
     XCARCHIVE_PATH: pkg/apple/build/RetroArchPPC
     XCPROJECT_NAME: RetroArch_PPC
   script:
-    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -configuration Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
+    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -configuration Release -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
     - pushd ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/
     - ditto -c -k --sequesterRsrc --keepParent RetroArch.app RetroArch.zip
     - popd
