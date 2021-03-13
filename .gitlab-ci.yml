@@ -337,24 +337,6 @@ build-retroarch-linux-i686:
 # Mac OS Universal, Metal
 build-retroarch-osx-universal-metal:
   extends: .build-retroarch-macos-xcode
-  
-# MacOSX PowerPC (10.5)
-build-retroarch-osx-ppc:
-  extends: .build-retroarch-macos-xcode
-  tags:
-    - macosx-legacy
-  variables:
-    XCARCHIVE_PATH: pkg/apple/build/RetroArchPPC
-    XCPROJECT_NAME: RetroArch_PPC
-  script:
-    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -configuration Release -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
-    - pushd ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/
-    - ditto -c -k --sequesterRsrc --keepParent RetroArch.app RetroArch.zip
-    - popd
-    - mv ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.zip ${XCPROJECT_NAME}.zip
-    - mkdir .retroarch-repo
-    - "cp -r ./* .retroarch-repo"
-    - "mv .retroarch-repo/ retroarch-repo/"
 
 build-retroarch-osx-opengl-x64:
   extends: .build-retroarch-macos-xcode
