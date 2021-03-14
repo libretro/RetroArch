@@ -166,7 +166,7 @@ static void CFSearchPathForDirectoriesInDomains(unsigned flags,
 static void CFTemporaryDirectory(char *s, size_t len)
 {
 #if __has_feature(objc_arc)
-   CFStringRef path = (__bridge_retained CFStringRef)NSTemporaryDirectory();
+   CFStringRef path = (__bridge CFStringRef)NSTemporaryDirectory();
 #else
    CFStringRef path = (CFStringRef)NSTemporaryDirectory();
 #endif
@@ -737,6 +737,8 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
       return FRONTEND_ARCH_X86;
    if (string_is_equal(buffer.machine, "Power Macintosh"))
       return FRONTEND_ARCH_PPC;
+   if (string_is_equal(buffer.machine, "arm64"))
+      return FRONTEND_ARCH_ARMV8;
 
    return FRONTEND_ARCH_NONE;
 #else
