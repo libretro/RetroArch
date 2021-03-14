@@ -311,6 +311,8 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
    *major = (int)version.majorVersion;
    *minor = (int)version.minorVersion;
 #else
+    /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
+    /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
    if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
    {
       typedef struct
@@ -319,7 +321,12 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
          NSInteger minorVersion;
          NSInteger patchVersion;
       } NSMyOSVersion;
-      NSMyOSVersion version = ((NSMyOSVersion(*)(id, SEL))objc_msgSend_stret)([NSProcessInfo processInfo], @selector(operatingSystemVersion));
+       NSMyOSVersion version;
+       NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
+       NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
+       invoke.selector = @selector(operatingSystemVersion);
+       [invoke invokeWithTarget:[NSProcessInfo processInfo]];
+       [invoke getReturnValue:&version];
       *major = (int)version.majorVersion;
       *minor = (int)version.minorVersion;
    }
