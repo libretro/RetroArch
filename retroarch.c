@@ -22317,31 +22317,31 @@ static void input_driver_poll(void)
 
    p_rarch->input_driver_turbo_btns.count++;
 
-   for (i = 0; i < max_users; i++)
-      p_rarch->input_driver_turbo_btns.frame_enable[i] = 0;
-
    if (p_rarch->input_driver_block_libretro_input)
+   {
+      for (i = 0; i < max_users; i++)
+         p_rarch->input_driver_turbo_btns.frame_enable[i] = 0;
       return;
+   }
 
    for (i = 0; i < max_users; i++)
    {
       joypad_info[i].axis_threshold              = p_rarch->input_driver_axis_threshold;
       joypad_info[i].joy_idx                     = settings->uints.input_joypad_map[i];
       joypad_info[i].auto_binds                  = input_autoconf_binds[joypad_info[i].joy_idx];
-      if (p_rarch->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
-         p_rarch->input_driver_turbo_btns.frame_enable[i] = 
-            input_state_wrap(
-                  p_rarch->current_input,
-                  p_rarch->current_input_data,
-                  p_rarch->joypad,
-                  sec_joypad,
-                  &joypad_info[i],
-                  p_rarch->libretro_input_binds,
-                  p_rarch->keyboard_mapping_blocked,
-                  (unsigned)i,
-                  RETRO_DEVICE_JOYPAD,
-                  0,
-                  RARCH_TURBO_ENABLE);
+      p_rarch->input_driver_turbo_btns.frame_enable[i] = p_rarch->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid ?
+         input_state_wrap(
+               p_rarch->current_input,
+               p_rarch->current_input_data,
+               p_rarch->joypad,
+               sec_joypad,
+               &joypad_info[i],
+               p_rarch->libretro_input_binds,
+               p_rarch->keyboard_mapping_blocked,
+               (unsigned)i,
+               RETRO_DEVICE_JOYPAD,
+               0,
+               RARCH_TURBO_ENABLE) : 0;
    }
 
 #ifdef HAVE_OVERLAY
