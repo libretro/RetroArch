@@ -485,7 +485,7 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO)
+#if defined(GEKKO) || !defined(__PSL1GHT__) && !defined(__PS3__)
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
 
@@ -498,7 +498,7 @@ static int action_start_video_resolution(
 
       msg[0] = '\0';
 
-#if defined(_WIN32)
+#if defined(_WIN32) || !defined(__PSL1GHT__) && !defined(__PS3__)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
       video_driver_set_video_mode(width, height, true);
