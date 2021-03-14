@@ -8278,12 +8278,6 @@ static void log_counters(
    }
 }
 
-static void rarch_perf_log(struct rarch_state *p_rarch)
-{
-   RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
-   log_counters(p_rarch->perf_counters_rarch, p_rarch->perf_ptr_rarch);
-}
-
 static void retro_perf_log(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -8337,14 +8331,6 @@ static void performance_counter_register(struct retro_perf_counter *perf)
 
    p_rarch->perf_counters_libretro[p_rarch->perf_ptr_libretro++] = perf;
    perf->registered = true;
-}
-
-static void performance_counters_clear(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->perf_ptr_libretro  = 0;
-   memset(p_rarch->perf_counters_libretro, 0,
-         sizeof(p_rarch->perf_counters_libretro));
 }
 
 struct string_list *dir_list_new_special(const char *input_dir,
@@ -15432,7 +15418,10 @@ void main_exit(void *args)
    rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
    if (p_rarch->runloop_perfcnt_enable)
-      rarch_perf_log(p_rarch);
+   {
+      RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
+      log_counters(p_rarch->perf_counters_rarch, p_rarch->perf_ptr_rarch);
+   }
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
@@ -18906,7 +18895,9 @@ static void uninit_libretro_symbols(
    p_rarch->location_driver_active    = false;
 
    /* Performance counters no longer valid. */
-   performance_counters_clear();
+   p_rarch->perf_ptr_libretro  = 0;
+   memset(p_rarch->perf_counters_libretro, 0,
+         sizeof(p_rarch->perf_counters_libretro));
 }
 
 #if defined(HAVE_RUNAHEAD)
