@@ -23157,13 +23157,13 @@ static int16_t input_joypad_axis(
 
 static void menu_input_driver_toggle(
       struct rarch_state *p_rarch,
+      menu_input_t *menu_input,
+      settings_t *settings,
       bool on)
 {
-   menu_input_t *menu_input     = &p_rarch->menu_input_state;
 #ifdef HAVE_OVERLAY
    if (on)
    {
-      settings_t *settings      = p_rarch->configuration_settings;
       bool overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
       bool input_overlay_enable = settings->bools.input_overlay_enable;
       /* If an overlay was displayed before the toggle
@@ -25016,12 +25016,6 @@ static input_remote_t *input_driver_init_remote(
          num_active_users);
 }
 #endif
-
-static input_mapper_t *input_driver_init_mapper(void)
-{
-   input_mapper_t *handle        = (input_mapper_t*)calloc(1, sizeof(*handle));
-   return handle;
-}
 
 float *input_driver_get_float(enum input_action action)
 {
@@ -35169,7 +35163,7 @@ bool retroarch_main_init(int argc, char *argv[])
       free(p_rarch->input_driver_mapper);
    p_rarch->input_driver_mapper = NULL;
    if (p_rarch->configuration_settings->bools.input_remap_binds_enable)
-      p_rarch->input_driver_mapper = input_driver_init_mapper();
+      p_rarch->input_driver_mapper = (input_mapper_t*)calloc(1, sizeof(*p_rarch->input_driver_mapper));
 #ifdef HAVE_REWIND
    command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
@@ -35254,6 +35248,9 @@ static void menu_input_key_event(bool down, unsigned keycode,
 static void menu_driver_toggle(
       struct rarch_state *p_rarch,
       menu_handle_t *menu,
+      settings_t *settings,
+      retro_keyboard_event_t *key_event,
+      retro_keyboard_event_t *frontend_key_event,
       bool on)
 {
    /* TODO/FIXME - retroarch_main_quit calls menu_driver_toggle -
@@ -35261,9 +35258,6 @@ static void menu_driver_toggle(
     * on OSX - for now we work around this by checking if the settings
     * struct is NULL
     */
-   retro_keyboard_event_t *key_event          = &p_rarch->runloop_key_event;
-   retro_keyboard_event_t *frontend_key_event = &p_rarch->runloop_frontend_key_event;
-   settings_t                 *settings       = p_rarch->configuration_settings;
    bool pause_libretro                        = settings ?
       settings->bools.menu_pause_libretro : false;
 #ifdef HAVE_AUDIOMIXER
@@ -35282,7 +35276,8 @@ static void menu_driver_toggle(
    /* Apply any required menu pointer input inhibits
     * (i.e. prevent phantom input when using an overlay
     * to toggle the menu on) */
-   menu_input_driver_toggle(p_rarch, on);
+   menu_input_driver_toggle(p_rarch,
+         &p_rarch->menu_input_state, settings, on);
 
    if (p_rarch->menu_driver_alive)
    {
@@ -35368,7 +35363,10 @@ void retroarch_menu_running(void)
 #ifdef HAVE_MENU
    menu_handle_t *menu             = p_rarch->menu_driver_data;
    if (menu)
-      menu_driver_toggle(p_rarch, menu, true);
+      menu_driver_toggle(p_rarch, menu, settings,
+            &p_rarch->runloop_key_event,
+            &p_rarch->runloop_frontend_key_event,
+            true);
 
    /* Prevent stray input (for a single frame) */
    p_rarch->input_driver_flushing_input = 1;
@@ -35404,7 +35402,10 @@ void retroarch_menu_running_finished(bool quit)
 #ifdef HAVE_MENU
    menu_handle_t *menu                  = p_rarch->menu_driver_data;
    if (menu)
-      menu_driver_toggle(p_rarch, menu, false);
+      menu_driver_toggle(p_rarch, menu, settings, 
+            &p_rarch->runloop_key_event,
+            &p_rarch->runloop_frontend_key_event,
+            false);
 
    /* Prevent stray input
     * (for a single frame) */
