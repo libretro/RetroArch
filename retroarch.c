@@ -436,86 +436,6 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
    return VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, force_nonthreaded_data);
 }
 
-static int16_t input_state_joypad(
-      input_driver_t *current_input,
-      void *data,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
-{
-   if (binds[port][id].valid)
-   {
-      if (button_is_pressed(
-               joypad,
-               joypad_info, binds[port], port, id))
-         return 1;
-#ifdef HAVE_MFI
-      else if (sec_joypad &&
-            button_is_pressed(
-               sec_joypad,
-               joypad_info, binds[port], port, id))
-         return 1;
-#endif
-   }
-
-   if (current_input->input_state)
-      return current_input->input_state(
-            data,
-            joypad,
-            sec_joypad,
-            joypad_info,
-            binds,
-            keyboard_mapping_blocked,
-            port,
-            device,
-            idx,
-            id);
-   return 0;
-}
-
-static int16_t input_state_joypad_mask(
-      input_driver_t *current_input,
-      void *data,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
-{
-   /* Do a bitwise OR to combine input states together */
-   int16_t ret                = joypad->state(
-         joypad_info, binds[port], port);
-#ifdef HAVE_MFI
-   if (sec_joypad)
-      ret                    |= sec_joypad->state(
-            joypad_info, binds[port], port);
-#endif
-
-   if (current_input->input_state)
-      ret |= current_input->input_state(
-            data,
-            joypad,
-            sec_joypad,
-            joypad_info,
-            binds,
-            keyboard_mapping_blocked,
-            port,
-            device,
-            idx,
-            id);
-   return ret;
-}
-
 static int16_t input_state_wrap(
       input_driver_t *current_input,
       void *data,
@@ -22410,7 +22330,7 @@ static void input_driver_poll(void)
       joypad_info[i].auto_binds                  = input_autoconf_binds[joypad_info[i].joy_idx];
       if (p_rarch->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
          p_rarch->input_driver_turbo_btns.frame_enable[i] = 
-            input_state_joypad(
+            input_state_wrap(
                   p_rarch->current_input,
                   p_rarch->current_input_data,
                   p_rarch->joypad,
@@ -22464,7 +22384,7 @@ static void input_driver_poll(void)
                if (joypad_driver)
                {
                   unsigned k, j;
-                  int16_t ret = input_state_joypad_mask(
+                  int16_t ret = input_state_wrap(
                         p_rarch->current_input,
                         p_rarch->current_input_data,
                         p_rarch->joypad,
@@ -24827,7 +24747,7 @@ static void input_keys_pressed(
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
-      if (  input_state_joypad(
+      if (  input_state_wrap(
                p_rarch->current_input,
                p_rarch->current_input_data,
                p_rarch->joypad,
@@ -24863,7 +24783,7 @@ static void input_keys_pressed(
       if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(
                focus_normal, focus_binds_auto))
       {
-         if (input_state_joypad(
+         if (input_state_wrap(
                   p_rarch->current_input,
                   p_rarch->current_input_data,
                   p_rarch->joypad,
@@ -24891,7 +24811,7 @@ static void input_keys_pressed(
    }
    else
    {
-      int16_t ret = input_state_joypad_mask(
+      int16_t ret = input_state_wrap(
             p_rarch->current_input,
             p_rarch->current_input_data,
             p_rarch->joypad,
@@ -24931,7 +24851,7 @@ static void input_keys_pressed(
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
       {
          bool bit_pressed = binds[port][i].valid
-            && input_state_joypad(
+            && input_state_wrap(
                   p_rarch->current_input,
                   p_rarch->current_input_data,
                   p_rarch->joypad,
