@@ -147,8 +147,6 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
-bool core_set_default_callbacks(struct retro_callbacks *cbs);
-
 #ifdef HAVE_REWIND
 bool core_set_rewind_callbacks(void);
 #endif

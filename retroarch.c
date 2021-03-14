@@ -15467,7 +15467,7 @@ void main_exit(void *args)
 
    frontend_driver_shutdown(false);
 
-   retroarch_deinit_drivers(p_rarch);
+   retroarch_deinit_drivers(p_rarch, &p_rarch->retro_ctx);
    ui_companion_driver_free();
    frontend_driver_free();
 
@@ -15525,7 +15525,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    p_rarch->configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
-   retroarch_deinit_drivers(p_rarch);
+   retroarch_deinit_drivers(p_rarch, &p_rarch->retro_ctx);
    rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
 
@@ -29832,9 +29832,8 @@ static void video_driver_free_hw_context(struct rarch_state *p_rarch)
    p_rarch->hw_render_context_negotiation = NULL;
 }
 
-static void video_driver_free_internal(void)
+static void video_driver_free_internal(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_THREADS
    bool        is_threaded     = VIDEO_DRIVER_IS_THREADED_INTERNAL();
 #endif
@@ -33036,7 +33035,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
 
    if (flags & DRIVERS_VIDEO_INPUT)
    {
-      video_driver_free_internal();
+      video_driver_free_internal(p_rarch);
       VIDEO_DRIVER_LOCK_FREE();
       p_rarch->video_driver_data = NULL;
       video_driver_set_cached_frame_ptr(NULL);
@@ -33058,10 +33057,8 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
       midi_driver_free(p_rarch);
 }
 
-static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
+static void retroarch_deinit_drivers(struct rarch_state *p_rarch, struct retro_callbacks *cbs)
 {
-   struct retro_callbacks *cbs = &p_rarch->retro_ctx;
-
 #if defined(HAVE_GFX_WIDGETS)
    /* Tear down display widgets no matter what
     * in case the handle is lost in the threaded
@@ -34161,6 +34158,7 @@ static void retroarch_print_help(const char *arg0)
  **/
 static void retroarch_parse_input_and_config(
       struct rarch_state *p_rarch,
+      global_t *global,
       int argc, char *argv[])
 {
    unsigned i;
@@ -34170,9 +34168,8 @@ static void retroarch_parse_input_and_config(
    bool                 cli_active = false;
    bool               cli_core_set = false;
    bool            cli_content_set = false;
-   global_t                *global = &p_rarch->g_extern;
 
-   const struct option opts[] = {
+   const struct option opts[]      = {
 #ifdef HAVE_DYNAMIC
       { "libretro",           1, NULL, 'L' },
 #endif
@@ -34992,7 +34989,7 @@ bool retroarch_main_init(int argc, char *argv[])
    /* Have to initialise non-file logging once at the start... */
    retro_main_log_file_init(NULL, false);
 
-   retroarch_parse_input_and_config(p_rarch, argc, argv);
+   retroarch_parse_input_and_config(p_rarch, &p_rarch->g_extern, argc, argv);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
@@ -38491,7 +38488,7 @@ static bool core_init_libretro_cbs(
  *
  * Binds the libretro callbacks to default callback functions.
  **/
-bool core_set_default_callbacks(struct retro_callbacks *cbs)
+static bool core_set_default_callbacks(struct retro_callbacks *cbs)
 {
    retro_input_state_t state_cb = core_input_state_poll_return_cb();
 
@@ -38503,6 +38500,8 @@ bool core_set_default_callbacks(struct retro_callbacks *cbs)
 
    return true;
 }
+
+
 
 #ifdef HAVE_REWIND
 /**

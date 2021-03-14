@@ -31,7 +31,8 @@ static bool is_narrator_running(struct rarch_state *p_rarch);
 static void deinit_netplay(struct rarch_state *p_rarch);
 #endif
 
-static void retroarch_deinit_drivers(struct rarch_state *p_rarch);
+static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
+      struct retro_callbacks *cbs);
 
 static bool midi_driver_read(uint8_t *byte);
 static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
@@ -199,5 +200,7 @@ static void video_driver_restore_cached(struct rarch_state *p_rarch,
 static const void *find_driver_nonempty(
       const char *label, int i,
       char *s, size_t len);
+
+static bool core_set_default_callbacks(struct retro_callbacks *cbs);
 
 #endif
