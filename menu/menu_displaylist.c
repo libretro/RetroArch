@@ -4340,7 +4340,7 @@ static int menu_displaylist_parse_input_description_list(menu_displaylist_info_t
    unsigned user_idx;
    unsigned btn_idx;
    unsigned current_remap_idx;
-   size_t i;
+   size_t i, j;
    char entry_label[21];
 
    entry_label[0] = '\0';
@@ -4372,9 +4372,12 @@ static int menu_displaylist_parse_input_description_list(menu_displaylist_info_t
          "%u", info->type);
 
    /* Loop over core input definitions */
-   for (i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+   for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
    {
-      const char *input_desc_btn = system->input_desc_btn[user_idx][i];
+      const char *input_desc_btn;
+
+      i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
+      input_desc_btn = system->input_desc_btn[user_idx][i];
 
       /* Check whether an input is defined for
        * this button */
@@ -9380,14 +9383,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 
             {
-               unsigned retro_id;
+               unsigned retro_id, j;
                unsigned device  = settings->uints.input_libretro_device[p];
                device &= RETRO_DEVICE_MASK;
 
                if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
                {
-                  for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
+                  for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
                   {
+                     retro_id = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
+
                      char desc_label[400];
                      char descriptor[300];
                      const struct retro_keybind *keybind   =
@@ -9423,14 +9428,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (menu_entries_append_enum(list, descriptor, info->path,
                               MSG_UNKNOWN,
                               MENU_SETTINGS_INPUT_DESC_BEGIN +
-                              (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0))
+                              (p * (RARCH_FIRST_CUSTOM_BIND + 8)) + retro_id, 0, 0))
                         count++;
                   }
                }
                else if (device == RETRO_DEVICE_KEYBOARD)
                {
-                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                  for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
                   {
+                     retro_id = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
+
                      char desc_label[400];
                      char descriptor[300];
                      const struct retro_keybind *keybind   =

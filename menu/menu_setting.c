@@ -7826,7 +7826,7 @@ static bool setting_append_list_input_player_options(
     */
    static char buffer[MAX_USERS][13+2+1];
    static char group_lbl[MAX_USERS][255];
-   unsigned i;
+   unsigned i, j;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
@@ -8084,8 +8084,10 @@ static bool setting_append_list_input_player_options(
 #endif
    }
 
-   for (i = 0; i < RARCH_BIND_LIST_END; i ++)
+   for (j = 0; j < RARCH_BIND_LIST_END; j++)
    {
+      i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
+
       char label[255];
       char name[255];
 

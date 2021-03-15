@@ -135,7 +135,7 @@ static int action_left_input_desc(unsigned type, const char *label,
 {
    rarch_system_info_t *system           = runloop_get_system_info();
    settings_t *settings                  = config_get_ptr();
-   unsigned btn_idx, user_idx, remap_idx;
+   unsigned btn_idx, user_idx, remap_idx, bind_idx;
 
    if (!settings || !system)
       return 0;
@@ -146,9 +146,25 @@ static int action_left_input_desc(unsigned type, const char *label,
    if (settings->uints.input_remap_ids[user_idx][btn_idx] == RARCH_UNMAPPED)
       settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
 
-   if (settings->uints.input_remap_ids[user_idx][btn_idx] > 0)
-      settings->uints.input_remap_ids[user_idx][btn_idx]--;
-   else if (settings->uints.input_remap_ids[user_idx][btn_idx] == 0)
+   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+   for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
+   {
+      if (input_config_bind_order[bind_idx] == remap_idx)
+         break;
+   }
+
+   if (bind_idx > 0)
+   {
+      if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
+         settings->uints.input_remap_ids[user_idx][btn_idx]--;
+      else
+      {
+         bind_idx--;
+         bind_idx = input_config_bind_order[bind_idx];
+         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
+      }
+   }
+   else if (bind_idx == 0)
       settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
    else
       settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
