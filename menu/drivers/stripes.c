@@ -4415,7 +4415,7 @@ static int stripes_pointer_up(void *userdata,
                         entry, selection, MENU_ACTION_SELECT);
 
                menu_navigation_set_selection(ptr);
-               menu_driver_navigation_set(false);
+               stripes_navigation_set(stripes, false);
             }
          }
          break;

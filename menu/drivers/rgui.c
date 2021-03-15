@@ -6014,7 +6014,7 @@ static int rgui_pointer_up(void *data,
                   /* Otherwise, just move the current selection to the
                    * 'pointer' value */
                   menu_navigation_set_selection(ptr);
-                  menu_driver_navigation_set(false);
+                  rgui_navigation_set(rgui, false);
                }
             }
          }

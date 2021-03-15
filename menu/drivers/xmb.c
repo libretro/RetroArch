@@ -7043,7 +7043,7 @@ static int xmb_pointer_up(void *userdata,
 
             /* ...otherwise navigate to the current pointer item */
             menu_navigation_set_selection(ptr);
-            menu_driver_navigation_set(false);
+            xmb_navigation_set(xmb, false);
          }
          break;
       case MENU_INPUT_GESTURE_LONG_PRESS:
@@ -7091,7 +7091,7 @@ static int xmb_pointer_up(void *userdata,
             if (last < end)
             {
                menu_navigation_set_selection((size_t)last);
-               menu_driver_navigation_set(true);
+               xmb_navigation_set(xmb, true);
             }
             else
                menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST, NULL);
@@ -7141,7 +7141,7 @@ static int xmb_pointer_up(void *userdata,
             if (new_idx > 0)
             {
                menu_navigation_set_selection(new_idx);
-               menu_driver_navigation_set(true);
+               xmb_navigation_set(xmb, true);
             }
             else
             {
