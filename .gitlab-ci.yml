@@ -362,6 +362,9 @@ build-retroarch-linux-i686:
 build-retroarch-osx-universal-metal:
   extends: .build-retroarch-macos-xcode
 
+build-retroarch-osx-ppc:
+  extends: .build-retroarch-macos-ppc
+
 build-retroarch-osx-opengl-x64:
   extends: .build-retroarch-macos-xcode
   variables:
