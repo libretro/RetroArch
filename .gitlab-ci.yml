@@ -361,10 +361,10 @@ build-retroarch-ios-arm64:
     - "cp -r ./* .retroarch-repo"
     - "mv .retroarch-repo/ retroarch-repo/"
 
-#build-retroarch-tvos-arm64:
-  #extends: build-retroarch-ios-arm64
-  #variables:
-    #XCSCHEME: "RetroArch tvOS Release"
+build-retroarch-tvos-arm64:
+  extends: build-retroarch-ios-arm64
+  variables:
+    XCSCHEME: "RetroArch tvOS Release"
 
 build-retroarch-dingux-mips32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
