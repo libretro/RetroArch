@@ -2325,7 +2325,8 @@ static bool menu_driver_displaylist_push_internal(
    return false;
 }
 
-static bool menu_driver_displaylist_push(menu_displaylist_ctx_entry_t *entry)
+static bool menu_driver_displaylist_push(
+      file_list_t *entry_list, file_list_t *entry_stack)
 {
    menu_displaylist_info_t info;
    const char *path               = NULL;
@@ -2347,8 +2348,8 @@ static bool menu_driver_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    if (cbs)
       enum_idx    = cbs->enum_idx;
 
-   info.list      = entry->list;
-   info.menu_list = entry->stack;
+   info.list      = entry_list;
+   info.menu_list = entry_stack;
    info.type      = type;
    info.enum_idx  = enum_idx;
 
@@ -2551,13 +2552,8 @@ int generic_menu_entry_action(
 
    if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
    {
-      menu_displaylist_ctx_entry_t entry;
       bool refresh            = false;
-
-      entry.list              = selection_buf;
-      entry.stack             = menu_stack;
-
-      menu_driver_displaylist_push(&entry);
+      menu_driver_displaylist_push(selection_buf, menu_stack);
       menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
    }
 
@@ -4333,7 +4329,6 @@ static bool menu_driver_iterate(
 
 int menu_driver_deferred_push_content_list(file_list_t *list)
 {
-   menu_displaylist_ctx_entry_t entry;
    struct rarch_state   *p_rarch  = &rarch_st;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_handle_t *menu_data       = p_rarch->menu_driver_data;
@@ -4352,9 +4347,7 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
 
    menu_st->selection_ptr      = 0; 
 
-   entry.list                  = list;
-   entry.stack                 = selection_buf;
-   if (!menu_driver_displaylist_push(&entry))
+   if (!menu_driver_displaylist_push(list, selection_buf))
       return -1;
    return 0;
 }

@@ -304,22 +304,6 @@ typedef struct menu_displaylist_info
    bool need_navigation_clear;
 } menu_displaylist_info_t;
 
-typedef struct menu_displaylist_ctx_parse_entry
-{
-   const char *info_label;
-   void *data;
-   menu_displaylist_info_t *info;
-   enum msg_hash_enums enum_idx;
-   enum menu_displaylist_parse_type parse_type;
-   bool add_empty_entry;
-} menu_displaylist_ctx_parse_entry_t;
-
-typedef struct menu_displaylist_ctx_entry
-{
-   file_list_t *stack;
-   file_list_t *list;
-} menu_displaylist_ctx_entry_t;
-
 #define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
 
 #define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
