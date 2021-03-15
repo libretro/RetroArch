@@ -6661,7 +6661,6 @@ static int xmb_list_push(void *data, void *userdata,
 {
    int ret                         = -1;
    core_info_list_t *list          = NULL;
-   menu_handle_t *menu             = (menu_handle_t*)data;
    settings_t *settings            = config_get_ptr();
    bool menu_show_load_core        = settings->bools.menu_show_load_core;
    bool menu_show_load_content     = settings->bools.menu_show_load_content;

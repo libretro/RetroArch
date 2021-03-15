@@ -4123,7 +4123,6 @@ static int stripes_list_push(void *data, void *userdata,
    int ret                = -1;
    int i                  = 0;
    core_info_list_t *list = NULL;
-   menu_handle_t *menu    = (menu_handle_t*)data;
 
    switch (type)
    {

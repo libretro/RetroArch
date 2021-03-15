@@ -8835,10 +8835,9 @@ static int materialui_list_push(void *data, void *userdata,
 {
    int ret                  = -1;
    core_info_list_t *list   = NULL;
-   menu_handle_t *menu      = (menu_handle_t*)data;
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
 
-   if (!menu || !mui)
+   if (!mui)
       return ret;
 
    switch (type)
