@@ -2259,23 +2259,25 @@ int menu_displaylist_parse_settings_enum(
       ST_NONE,                   /* PARSE_SUB_GROUP           */
       ST_SIZE,                   /* PARSE_ONLY_SIZE           */
    };
+   uint64_t flags;
    enum setting_type precond   = precond_lut[parse_type];
    size_t             count    = 0;
-   settings_t *settings        = config_get_ptr();
-   bool show_advanced_settings = settings->bools.menu_show_advanced_settings;
 
    if (!setting)
       return -1;
 
-   if (!show_advanced_settings)
-   {
-      uint64_t flags = setting->flags;
-      if (flags & SD_FLAG_ADVANCED)
-         goto end;
+   flags                       = setting->flags;
+
 #ifdef HAVE_LAKKA
-      if (flags & SD_FLAG_LAKKA_ADVANCED)
-         goto end;
+   if (flags & (SD_FLAG_ADVANCED | SD_FLAG_LAKKA_ADVANCED))
+#else
+   if (flags & (SD_FLAG_ADVANCED))
 #endif
+   {
+      settings_t *settings        = config_get_ptr();
+      bool show_advanced_settings = settings->bools.menu_show_advanced_settings;
+      if (!show_advanced_settings)
+         goto end;
    }
 
    for (;;)
