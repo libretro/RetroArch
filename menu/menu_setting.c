@@ -43,6 +43,10 @@
 #include "../config.def.h"
 #include "../config.def.keybinds.h"
 
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
 #endif
@@ -7381,9 +7385,15 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE:
          if (*setting->value.target.boolean)
          {
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+            cellSysutilEnableBgmPlayback();
+#endif
          }
          else
          {
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+            cellSysutilDisableBgmPlayback();
+#endif
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
@@ -10649,7 +10659,7 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-#if defined(GEKKO)
+#if defined(GEKKO) || !defined(__PSL1GHT__) && defined(__PS3__)
             if (true)
 #else
             if (!string_is_equal(video_display_server_get_ident(), "null"))
@@ -19446,6 +19456,22 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    (void)subgroup_info;
    (void)global;
 
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+   CONFIG_BOOL(
+         list, list_info,
+         &global->console.screen.pal60_enable,
+         MENU_ENUM_LABEL_PAL60_ENABLE,
+         MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+         false,
+         MENU_ENUM_LABEL_VALUE_OFF,
+         MENU_ENUM_LABEL_VALUE_ON,
+         group_info,
+         subgroup_info,
+         parent_group,
+         general_write_handler,
+         general_read_handler,
+         SD_FLAG_NONE);
+#endif
 #if defined(GEKKO) || defined(_XBOX360)
    CONFIG_UINT(
          list, list_info,
