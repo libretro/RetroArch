@@ -324,7 +324,7 @@ build-retroarch-linux-i686:
     expire_in: 10 min
   dependencies: []
   script:
-    - xcodebuild -project pkg/apple/RetroArch_PPC.xcodeproj -configuration Release -target RetroArch
+    - xcodebuild -project pkg/apple/RetroArch_PPC.xcodeproj -configuration Release -target RetroArch_PPC
     - pushd ${XCARCHIVE_PATH}
     - ditto -c -k --sequesterRsrc --keepParent RetroArch.app RetroArch.zip
     - popd
