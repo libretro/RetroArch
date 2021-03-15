@@ -320,6 +320,10 @@ typedef struct menu_displaylist_ctx_entry
    file_list_t *list;
 } menu_displaylist_ctx_entry_t;
 
+#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
+
+#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
+
 bool menu_displaylist_process(menu_displaylist_info_t *info);
 
 void menu_displaylist_info_free(menu_displaylist_info_t *info);
@@ -329,8 +333,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
-
-bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry);
 
 #ifdef HAVE_NETWORKING
 unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
@@ -347,6 +349,15 @@ enum filebrowser_enums filebrowser_get_type(void);
 void filebrowser_clear_type(void);
 
 void filebrowser_set_type(enum filebrowser_enums type);
+
+int menu_displaylist_parse_settings_enum(
+      file_list_t *info_list,
+      enum menu_displaylist_parse_type parse_type,
+      bool add_empty_entry,
+      rarch_setting_t *setting,
+      unsigned entry_type,
+      bool is_enum
+      );
 
 RETRO_END_DECLS
 

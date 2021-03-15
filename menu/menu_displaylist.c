@@ -108,10 +108,6 @@
 #include "../manual_content_scan.h"
 #include "../core_backup.h"
 
-#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
-
-#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
-
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "
@@ -2235,7 +2231,7 @@ error:
 }
 #endif
 
-static int menu_displaylist_parse_settings_internal_enum(
+int menu_displaylist_parse_settings_enum(
       file_list_t *info_list,
       enum menu_displaylist_parse_type parse_type,
       bool add_empty_entry,
@@ -4795,17 +4791,6 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->list                     = NULL;
    info->menu_list                = NULL;
    info->setting                  = NULL;
-}
-
-bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry)
-{
-   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
-            entry->info->list,
-            entry->enum_idx,
-            entry->parse_type,
-            entry->add_empty_entry) == -1)
-      return false;
-   return true;
 }
 
 typedef struct menu_displaylist_build_info {
