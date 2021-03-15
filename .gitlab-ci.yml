@@ -308,6 +308,30 @@ build-retroarch-linux-i686:
     - "cd gfx/video_filters && make -j$NUMPROC build=release && make -j$NUMPROC build=release strip && cd -"
     - "cp -f gfx/video_filters/*.so ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    
+.build-retroarch-macos-ppc:
+  # PowerPC 32-bit
+  tags:
+    - macosx-legacy
+  stage: build
+  variables:
+    XCARCHIVE_PATH: pkg/apple/build/Release
+    XCPROJECT_NAME: RetroArch
+  artifacts:
+    paths:
+    - ${XCPROJECT_NAME}.zip
+    - retroarch-repo/
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - xcodebuild -project pkg/apple/RetroArch_PPC.xcodeproj -configuration Release -target RetroArch
+    - pushd ${XCARCHIVE_PATH}
+    - ditto -c -k --sequesterRsrc --keepParent RetroArch.app RetroArch.zip
+    - popd
+    - mv ${XCARCHIVE_PATH}/RetroArch.zip ${XCPROJECT_NAME}.zip
+    - mkdir .retroarch-repo
+    - "cp -r ./* .retroarch-repo"
+    - "mv .retroarch-repo/ retroarch-repo/"
 
 .build-retroarch-macos-xcode:
   # Metal/Universal x86_64 arm64 is default
