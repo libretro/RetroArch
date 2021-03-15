@@ -300,7 +300,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         }
 
         apple_gamecontroller_joypad_register(controller.gamepad);
-        mfi_joypad_autodetect_add(controller.playerIndex);
+        mfi_joypad_autodetect_add((unsigned)controller.playerIndex);
     }
 }
 

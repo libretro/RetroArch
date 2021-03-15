@@ -186,9 +186,9 @@
          memcpy(dst, src, glyph->width);
       }
 
+#if !defined(HAVE_COCOATOUCH)
       NSUInteger offset = glyph->atlas_offset_y;
       NSUInteger len = glyph->height * _stride;
-#if !defined(HAVE_COCOATOUCH)
       [_buffer didModifyRange:NSMakeRange(offset, len)];
 #endif
 
