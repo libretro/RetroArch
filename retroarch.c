@@ -22877,77 +22877,70 @@ static int16_t input_state_device(
          {
 #if defined(HAVE_NETWORKGAMEPAD) || defined(HAVE_OVERLAY)
 #ifdef HAVE_NETWORKGAMEPAD
-            bool remote_input       = false;
+            input_remote_state_t 
+               *input_state         = &p_rarch->remote_st_ptr;
+
 #endif
             unsigned base           = (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                ? 2 : 0;
             if (id == RETRO_DEVICE_ID_ANALOG_Y)
                base += 1;
 #ifdef HAVE_NETWORKGAMEPAD
-            if (p_rarch->input_driver_remote)
+            if (p_rarch->input_driver_remote
+                  && input_state && input_state->analog[base][port])
+               res          = input_state->analog[base][port];
+            else
+#endif
+#endif
             {
-               input_remote_state_t *input_state  = &p_rarch->remote_st_ptr;
-
-               if (input_state && input_state->analog[base][port])
+               if (id < RARCH_FIRST_META_KEY)
                {
-                  res          = input_state->analog[base][port];
-                  remote_input = true;
-               }
-            }
-#endif
-#endif
+                  bool bind_valid         = p_rarch->libretro_input_binds[port]
+                     && p_rarch->libretro_input_binds[port][id].valid;
 
-            if (id < RARCH_FIRST_META_KEY
-#ifdef HAVE_NETWORKGAMEPAD
-                  && !remote_input
-#endif
-               )
-            {
-               bool bind_valid         = p_rarch->libretro_input_binds[port]
-                  && p_rarch->libretro_input_binds[port][id].valid;
-
-               if (bind_valid)
-               {
-                  /* reset_state - used to reset input state of a button
-                   * when the gamepad mapper is in action for that button*/
-                  bool reset_state        = false;
-                  if (input_remap_binds_enable)
+                  if (bind_valid)
                   {
-                     if (idx < 2 && id < 2)
+                     /* reset_state - used to reset input state of a button
+                      * when the gamepad mapper is in action for that button*/
+                     bool reset_state        = false;
+                     if (input_remap_binds_enable)
                      {
-                        unsigned offset = RARCH_FIRST_CUSTOM_BIND +
-                           (idx * 4) + (id * 2);
+                        if (idx < 2 && id < 2)
+                        {
+                           unsigned offset = RARCH_FIRST_CUSTOM_BIND +
+                              (idx * 4) + (id * 2);
 
-                        if (settings->uints.input_remap_ids
-                              [port][offset]   != offset)
-                           reset_state = true;
-                        else if (settings->uints.input_remap_ids
-                              [port][offset+1] != (offset+1))
-                           reset_state = true;
+                           if (settings->uints.input_remap_ids
+                                 [port][offset]   != offset)
+                              reset_state = true;
+                           else if (settings->uints.input_remap_ids
+                                 [port][offset+1] != (offset+1))
+                              reset_state = true;
+                        }
                      }
-                  }
 
-                  if (reset_state)
-                     res = 0;
-                  else
-                  {
-                     res = ret;
+                     if (reset_state)
+                        res = 0;
+                     else
+                     {
+                        res = ret;
 
 #ifdef HAVE_OVERLAY
-                     if (  p_rarch->overlay_ptr        &&
-                           p_rarch->overlay_ptr->alive && port == 0)
-                     {
-                        input_overlay_state_t *ol_state =
-                           &p_rarch->overlay_ptr->overlay_state;
-                        if (ol_state->analog[base])
-                           res |= ol_state->analog[base];
-                     }
+                        if (  p_rarch->overlay_ptr        &&
+                              p_rarch->overlay_ptr->alive && port == 0)
+                        {
+                           input_overlay_state_t *ol_state =
+                              &p_rarch->overlay_ptr->overlay_state;
+                           if (ol_state->analog[base])
+                              res |= ol_state->analog[base];
+                        }
 #endif
+                     }
                   }
                }
             }
 
-            if (input_remap_binds_enable && p_rarch->input_driver_mapper)
+            if (input_remap_binds_enable)
             {
                if (idx < 2 && id < 2)
                {
