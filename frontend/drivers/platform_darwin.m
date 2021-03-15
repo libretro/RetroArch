@@ -499,7 +499,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
              assets_zip_path);
        configuration_set_string(settings,
              settings->arrays.bundle_assets_dst,
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS || TARGET_OS_TV
              home_dir_buf
 #else
              application_data
