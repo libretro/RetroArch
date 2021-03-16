@@ -8950,7 +8950,7 @@ static int materialui_list_push(void *data, void *userdata,
             {
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                      info->list,
-                     MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,
+                     MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                      PARSE_ACTION,
                      false);
             }
