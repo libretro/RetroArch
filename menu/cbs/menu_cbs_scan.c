@@ -170,6 +170,8 @@ static int action_scan_input_desc(const char *path,
       inp_desc_user        = atoi(label);
       /* Skip 'Device Type' and 'Analog to Digital Type' */
       key                  = (unsigned)(idx - 2);
+      /* Select the reorderer bind */
+      key                  = input_config_bind_order[key];
 
       if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
             && type <= MENU_SETTINGS_INPUT_DESC_END)
