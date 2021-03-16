@@ -211,6 +211,17 @@ task_finished:
    free(http);
 }
 
+static void task_http_transfer_cleanup(retro_task_t *task)
+{
+   http_transfer_data_t* data = task_get_data(task);
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+}
+
 static bool task_http_finder(retro_task_t *task, void *user_data)
 {
    http_handle_t *http = NULL;
@@ -305,6 +316,7 @@ static void* task_push_http_transfer_generic(
    t->mute                 = mute;
    t->callback             = cb;
    t->progress_cb          = http_transfer_progress_cb;
+   t->cleanup              = task_http_transfer_cleanup;
    t->user_data            = user_data;
    t->progress             = -1;
 

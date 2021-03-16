@@ -234,9 +234,12 @@ static void cb_http_task_core_updater_get_list(
    if (!list_handle)
       goto finish;
 
+   task_set_data(task, NULL); /* going to pass ownership to list_handle */
+
    list_handle->http_data          = data;
    list_handle->http_task_complete = true;
    list_handle->http_task_success  = success;
+
 
 finish:
 
@@ -258,6 +261,7 @@ static void free_core_updater_list_handle(
 
    if (list_handle->http_data)
    {
+      /* since we took onwership, we have to destroy it ourself */
       if (list_handle->http_data->data)
          free(list_handle->http_data->data);
 
@@ -643,13 +647,6 @@ finish:
    if (!string_is_empty(err))
       RARCH_ERR("[core updater] Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
 
    if (transf)
       free(transf);
