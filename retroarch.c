@@ -6386,13 +6386,6 @@ finish:
    if (err)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
 
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
    if (user_data)
       free(user_data);
 }
@@ -7291,10 +7284,7 @@ static void netplay_announce_cb(retro_task_t *task,
       char *host_string              = NULL;
 
       if (data->len == 0)
-      {
-         free(task_data);
          return;
-      }
 
       buf = (char*)calloc(1, data->len + 1);
 
@@ -7306,7 +7296,6 @@ static void netplay_announce_cb(retro_task_t *task,
       {
          string_list_free(lines);
          free(buf);
-         free(task_data);
          return;
       }
 
@@ -7433,7 +7422,7 @@ static void netplay_announce_cb(retro_task_t *task,
 
       string_list_free(lines);
       free(buf);
-      free(task_data);
+
       if (mitm_ip)
          free(mitm_ip);
       if (mitm_port)
@@ -11637,12 +11626,6 @@ finish:
    if (error)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), error);
 
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
    if (user_data)
       free(user_data);
 

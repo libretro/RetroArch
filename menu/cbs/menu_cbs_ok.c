@@ -4408,13 +4408,6 @@ finish:
             subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
    }
 
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
    if (user_data)
       free(user_data);
 }
@@ -4452,13 +4445,6 @@ static void cb_net_generic(retro_task_t *task,
 finish:
    refresh = true;
    menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
 
    if (!err && 
          !string_ends_with_size(state->path,
@@ -4769,13 +4755,6 @@ finish:
    else if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
       discord_avatar_set_ready(true);
 #endif
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
 
    if (transf)
       free(transf);
@@ -5903,16 +5882,8 @@ finish:
    if (err)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
 
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
    if (user_data)
       free(user_data);
-
 }
 
 #ifndef RARCH_CONSOLE
