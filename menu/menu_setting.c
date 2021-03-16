@@ -8086,10 +8086,10 @@ static bool setting_append_list_input_player_options(
 
    for (j = 0; j < RARCH_BIND_LIST_END; j++)
    {
-      i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
-
       char label[255];
       char name[255];
+
+      i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
 
       if (input_config_bind_map_get_meta(i))
          continue;
