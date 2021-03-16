@@ -9391,13 +9391,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
                   {
-                     retro_id = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
-
                      char desc_label[400];
                      char descriptor[300];
-                     const struct retro_keybind *keybind   =
+                     const struct retro_keybind *keybind;
+                     const struct retro_keybind *auto_bind;
+
+                     retro_id                              = 
+                        (j < RARCH_ANALOG_BIND_LIST_END) 
+                        ? input_config_bind_order[j] 
+                        : j;
+                     keybind                               = 
                         &input_config_binds[p][retro_id];
-                     const struct retro_keybind *auto_bind =
+                     auto_bind                             = 
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(p, retro_id);
 
@@ -9436,13 +9441,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
                   {
-                     retro_id = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
-
                      char desc_label[400];
                      char descriptor[300];
-                     const struct retro_keybind *keybind   =
+                     const struct retro_keybind *keybind;
+                     const struct retro_keybind *auto_bind;
+
+                     retro_id                              = 
+                        (j < RARCH_ANALOG_BIND_LIST_END) 
+                        ? input_config_bind_order[j] 
+                        : j;
+                     keybind                               =
                         &input_config_binds[p][retro_id];
-                     const struct retro_keybind *auto_bind =
+                     auto_bind                             =
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(p, retro_id);
 
