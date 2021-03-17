@@ -757,7 +757,11 @@ static void task_save_handler(retro_task_t *task)
 
    if (task_get_cancelled(task) || written != remaining)
    {
+#if defined(__PSL1GHT__) || defined(__PS3__)
+      char *err = (char*)malloc(8192 * sizeof(char));
+#else
       char err[8192];
+#endif
 
       err[0] = '\0';
 
@@ -778,6 +782,9 @@ static void task_save_handler(retro_task_t *task)
 
       task_set_error(task, strdup(err));
       task_save_handler_finished(task, state);
+#if defined(__PSL1GHT__) || defined(__PS3__)
+      free(err);
+#endif
       return;
    }
 
@@ -995,7 +1002,11 @@ static void task_load_handler(retro_task_t *task)
 
    if (state->bytes_read == state->size)
    {
+#if defined(__PSL1GHT__) || defined(__PS3__)
+      char *msg = (char*)malloc(8192 * sizeof(char));
+#else
       char msg[8192];
+#endif
 
       msg[0]            = '\0';
 
@@ -1023,7 +1034,9 @@ static void task_load_handler(retro_task_t *task)
          task_set_title(task, strdup(msg));
 
       task_load_handler_finished(task, state);
-
+#if defined(__PSL1GHT__) || defined(__PS3__)
+      free(msg);
+#endif
       return;
    }
 
