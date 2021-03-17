@@ -757,12 +757,7 @@ static void task_save_handler(retro_task_t *task)
 
    if (task_get_cancelled(task) || written != remaining)
    {
-#if defined(__PSL1GHT__) || defined(__PS3__)
       char *err = (char*)malloc(8192 * sizeof(char));
-#else
-      char err[8192];
-#endif
-
       err[0] = '\0';
 
       if (state->undo_save)
@@ -781,10 +776,8 @@ static void task_save_handler(retro_task_t *task)
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), state->path);
 
       task_set_error(task, strdup(err));
-      task_save_handler_finished(task, state);
-#if defined(__PSL1GHT__) || defined(__PS3__)
       free(err);
-#endif
+      task_save_handler_finished(task, state);
       return;
    }
 
@@ -1002,41 +995,37 @@ static void task_load_handler(retro_task_t *task)
 
    if (state->bytes_read == state->size)
    {
-#if defined(__PSL1GHT__) || defined(__PS3__)
-      char *msg = (char*)malloc(8192 * sizeof(char));
-#else
-      char msg[8192];
-#endif
-
-      msg[0]            = '\0';
-
       task_free_title(task);
 
-      if (state->autoload)
-         snprintf(msg, sizeof(msg),
-               "%s \"%s\" %s.",
-               msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-               state->path,
-               msg_hash_to_str(MSG_SUCCEEDED));
-      else
-      {
-         if (state->state_slot < 0)
-            strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO),
-                 sizeof(msg));
-         else
-            snprintf(msg, sizeof(msg),
-                  msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
-                  state->state_slot);
-
-      }
-
       if (!task_get_mute(task))
+      {
+         char *msg         = (char*)malloc(8192 * sizeof(char));
+
+         msg[0]            = '\0';
+
+         if (state->autoload)
+            snprintf(msg, sizeof(msg),
+                  "%s \"%s\" %s.",
+                  msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+                  state->path,
+                  msg_hash_to_str(MSG_SUCCEEDED));
+         else
+         {
+            if (state->state_slot < 0)
+               strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO),
+                     sizeof(msg));
+            else
+               snprintf(msg, sizeof(msg),
+                     msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
+                     state->state_slot);
+         }
+
          task_set_title(task, strdup(msg));
 
+         free(msg);
+      }
+
       task_load_handler_finished(task, state);
-#if defined(__PSL1GHT__) || defined(__PS3__)
-      free(msg);
-#endif
       return;
    }
 
