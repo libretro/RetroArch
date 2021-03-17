@@ -758,7 +758,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
    &vita_ctx,
 #endif
 #if !defined(__PSL1GHT__) && defined(__PS3__)
-   &gfx_ctx_videocore,
+   &gfx_ctx_ps3,
 #endif
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
