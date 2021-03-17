@@ -941,17 +941,17 @@ static void task_load_handler(retro_task_t *task)
 #endif
 
       if (!state->file)
-         goto error;
+         goto end;
 
       state->size = intfstream_get_size(state->file);
 
       if (state->size < 0)
-         goto error;
+         goto end;
 
       state->data = malloc(state->size + 1);
 
       if (!state->data)
-         goto error;
+         goto end;
    }
 
 #ifdef HAVE_CHEEVOS
@@ -1025,13 +1025,12 @@ static void task_load_handler(retro_task_t *task)
          free(msg);
       }
 
-      task_load_handler_finished(task, state);
-      return;
+      goto end;
    }
 
    return;
 
-error:
+end:
    task_load_handler_finished(task, state);
 }
 
