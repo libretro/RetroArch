@@ -5102,42 +5102,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_entries_flush_stack(NULL, MENU_SETTINGS);
          menu_st->pending_quick_menu = true;
          break;
-      case RARCH_MENU_CTL_FIND_DRIVER:
-         {
-            settings_t *settings = p_rarch->configuration_settings;
-            int i                = (int)driver_find_index(
-                  "menu_driver",
-                  settings->arrays.menu_driver);
-
-            if (i >= 0)
-               p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
-                  menu_ctx_drivers[i];
-            else
-            {
-               if (verbosity_is_enabled())
-               {
-                  unsigned d;
-                  RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
-                        settings->arrays.menu_driver);
-                  RARCH_LOG_OUTPUT("Available menu drivers are:\n");
-                  for (d = 0; menu_ctx_drivers[d]; d++)
-                  {
-                     if (menu_ctx_drivers[d])
-                     {
-                        RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
-                     }
-                  }
-                  RARCH_WARN("Going to default to first menu driver...\n");
-               }
-
-               p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
-                  menu_ctx_drivers[0];
-
-               if (!p_rarch->menu_driver_ctx)
-                  return false;
-            }
-         }
-         break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_st->prevent_populate = true;
          break;
@@ -34949,6 +34913,47 @@ static void retroarch_validate_cpu_features(void)
 #endif
 }
 
+#ifdef HAVE_MENU
+static bool find_menu_driver(
+      struct rarch_state *p_rarch,
+      settings_t *settings)
+{
+   int i                = (int)driver_find_index(
+         "menu_driver",
+         settings->arrays.menu_driver);
+
+   if (i >= 0)
+      p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
+         menu_ctx_drivers[i];
+   else
+   {
+      if (verbosity_is_enabled())
+      {
+         unsigned d;
+         RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
+               settings->arrays.menu_driver);
+         RARCH_LOG_OUTPUT("Available menu drivers are:\n");
+         for (d = 0; menu_ctx_drivers[d]; d++)
+         {
+            if (menu_ctx_drivers[d])
+            {
+               RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
+            }
+         }
+         RARCH_WARN("Going to default to first menu driver...\n");
+      }
+
+      p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
+         menu_ctx_drivers[0];
+
+      if (!p_rarch->menu_driver_ctx)
+         return false;
+   }
+
+   return true;
+}
+#endif
+
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
@@ -35114,7 +35119,7 @@ bool retroarch_main_init(int argc, char *argv[])
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
    find_location_driver(p_rarch);
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL);
+   find_menu_driver(p_rarch, p_rarch->configuration_settings);
 #endif
 
    /* Attempt to initialize core */

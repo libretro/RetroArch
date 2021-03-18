@@ -1587,6 +1587,8 @@ struct menu_list
    size_t selection_buf_size;
 };
 
+typedef struct menu_list menu_list_t;
+
 struct menu_state
 {
    /* Timers */

@@ -72,8 +72,6 @@ enum menu_entry_type
 };
 
 
-typedef struct menu_list menu_list_t;
-
 typedef struct menu_ctx_list
 {
    const char  *path;
