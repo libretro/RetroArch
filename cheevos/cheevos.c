@@ -718,14 +718,6 @@ static void rcheevos_async_task_callback(
       CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s\n", request->failure_message,
             request->id, error);
    }
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-
-      free(data);
-   }
 }
 
 static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
