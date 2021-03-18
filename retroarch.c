@@ -25815,14 +25815,23 @@ void input_keyboard_event(bool down, unsigned code,
          return;
 
       /* Block hotkey + RetroPad mapped keyboard key events,
-       * but not with game focus and from keyboard device type */
-      if (!p_rarch->game_focus_state.enabled)
+       * but not with game focus, and from keyboard device type,
+       * and with 'enable_hotkey' modifier set and unpressed */
+      if (!p_rarch->game_focus_state.enabled &&
+            BIT512_GET(p_rarch->keyboard_mapping_bits, code))
       {
-         input_mapper_t *handle = p_rarch->input_driver_mapper;
-         if (BIT512_GET(
-                  p_rarch->keyboard_mapping_bits, code))
-            if (!(handle && MAPPER_GET_KEY(handle, code)))
-               return;
+         input_mapper_t *handle      = p_rarch->input_driver_mapper;
+         struct retro_keybind hotkey = input_config_binds[0][RARCH_ENABLE_HOTKEY];
+         bool hotkey_pressed         =
+               (p_rarch->input_hotkey_block_counter > 0) || (hotkey.key == code);
+
+         if (!(handle && MAPPER_GET_KEY(handle, code)) &&
+               !(!hotkey_pressed && (
+                  hotkey.key     != RETROK_UNKNOWN ||
+                  hotkey.joykey  != NO_BTN ||
+                  hotkey.joyaxis != AXIS_NONE
+               )))
+            return;
       }
 
       {
@@ -25889,6 +25898,9 @@ static void input_config_parse_key(
    key[0] = '\0';
 
    fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
+
+   /* Clear old mapping bit */
+   input_keyboard_mapping_bits(0, bind->key);
 
    if (
             (entry = config_get_entry(conf, key))
