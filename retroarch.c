@@ -28441,17 +28441,22 @@ static float audio_driver_monitor_adjust_system_rates(
       struct retro_system_av_info *av_info)
 {
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
-   const float target_video_sync_rate     =
-      settings->floats.video_refresh_rate / settings->uints.video_swap_interval;
-   float max_timing_skew                  = settings->floats.audio_max_timing_skew;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
-   float timing_skew                      =
-      fabs(1.0f - info->fps / target_video_sync_rate);
    float ret                              = info->sample_rate;
 
-   if (timing_skew <= max_timing_skew && !vrr_runloop_enable)
-      ret        *= target_video_sync_rate / info->fps;
+   if (!vrr_runloop_enable)
+   {
+      const float target_video_sync_rate     =
+           settings->floats.video_refresh_rate 
+         / settings->uints.video_swap_interval;
+      float max_timing_skew                  = 
+         settings->floats.audio_max_timing_skew;
+      float timing_skew                      =
+         fabs(1.0f - info->fps / target_video_sync_rate);
+      if (timing_skew <= max_timing_skew && !vrr_runloop_enable)
+         ret        *= target_video_sync_rate / info->fps;
+   }
    return ret;
 }
 
@@ -30561,7 +30566,6 @@ void video_driver_cached_frame(void)
 static void video_driver_monitor_adjust_system_rates(
       struct rarch_state *p_rarch)
 {
-   float timing_skew                      = 0.0f;
    settings_t *settings                   = p_rarch->configuration_settings;
    const struct retro_system_timing *info = (const struct retro_system_timing*)
       &p_rarch->video_driver_av_info.timing;
@@ -30577,11 +30581,11 @@ static void video_driver_monitor_adjust_system_rates(
 
    if (p_rarch->video_driver_crt_switching_active)
       timing_skew_hz                       = p_rarch->video_driver_core_hz;
-   timing_skew                             = fabs(
-         1.0f - info->fps / timing_skew_hz);
 
    if (!vrr_runloop_enable)
    {
+      float timing_skew                    = fabs(
+            1.0f - info->fps / timing_skew_hz);
       /* We don't want to adjust pitch too much. If we have extreme cases,
        * just don't readjust at all. */
       if (timing_skew <= audio_max_timing_skew)
