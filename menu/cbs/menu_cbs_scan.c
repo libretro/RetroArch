@@ -171,7 +171,8 @@ static int action_scan_input_desc(const char *path,
       /* Skip 'Device Type' and 'Analog to Digital Type' */
       key                  = (unsigned)(idx - 2);
       /* Select the reorderer bind */
-      key                  = input_config_bind_order[key];
+      key                  =
+            (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
 
       if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
             && type <= MENU_SETTINGS_INPUT_DESC_END)
@@ -191,6 +192,9 @@ static int action_scan_input_desc(const char *path,
       /* This hardcoded value may cause issues if any entries are added on
          top of the input binds */
       key                = (unsigned)(idx - 7);
+      /* Select the reorderer bind */
+      key                =
+            (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;
    }
    else
       key = input_config_translate_str_to_bind_id(label);
