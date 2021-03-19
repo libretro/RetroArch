@@ -36152,7 +36152,6 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
    const char *dirs[3]                = {0};
    size_t i                           = 0;
 
-   bool ret                           = false;
    char content_dir_name[PATH_MAX_LENGTH];
    char config_file_directory[PATH_MAX_LENGTH];
    char old_presets_directory[PATH_MAX_LENGTH];
@@ -36185,61 +36184,28 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
    {
       if (string_is_empty(dirs[i]))
          continue;
-
-#ifdef DEBUG
-      RARCH_LOG("[Shaders]: preset directory: %s\n", dirs[i]);
-#endif
-
-      ret = retroarch_load_shader_preset_internal(p_rarch,
+      /* Game-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(p_rarch,
             dirs[i], core_name,
-            game_name);
-
-      if (ret)
-      {
-#ifdef DEBUG
-         RARCH_LOG("[Shaders]: game-specific shader preset found.\n");
-#endif
-         break;
-      }
-
-      ret = retroarch_load_shader_preset_internal(p_rarch,
+            game_name))
+         return true;
+      /* Folder-specifici shader preset found? */
+      if (retroarch_load_shader_preset_internal(p_rarch,
             dirs[i], core_name,
-            content_dir_name);
-
-      if (ret)
-      {
-#ifdef DEBUG
-         RARCH_LOG("[Shaders]: folder-specific shader preset found.\n");
-#endif
-         break;
-      }
-
-      ret = retroarch_load_shader_preset_internal(p_rarch,
+            content_dir_name))
+         return true;
+      /* Core-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(p_rarch,
             dirs[i], core_name,
-            core_name);
-
-      if (ret)
-      {
-#ifdef DEBUG
-         RARCH_LOG("[Shaders]: core-specific shader preset found.\n");
-#endif
-         break;
-      }
-
-      ret = retroarch_load_shader_preset_internal(p_rarch,
+            core_name))
+         return true;
+      /* Global shader preset found? */
+      if (retroarch_load_shader_preset_internal(p_rarch,
             dirs[i], NULL,
-            "global");
-
-      if (ret)
-      {
-#ifdef DEBUG
-         RARCH_LOG("[Shaders]: global shader preset found.\n");
-#endif
-         break;
-      }
+            "global"))
+         return true;
    }
-
-   return ret;
+   return false;
 }
 #endif
 
