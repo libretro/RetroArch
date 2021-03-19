@@ -28440,23 +28440,18 @@ static float audio_driver_monitor_adjust_system_rates(
       settings_t *settings,
       struct retro_system_av_info *av_info)
 {
-   bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    float ret                              = info->sample_rate;
-
-   if (!vrr_runloop_enable)
-   {
-      const float target_video_sync_rate     =
-           settings->floats.video_refresh_rate 
-         / settings->uints.video_swap_interval;
-      float max_timing_skew                  = 
-         settings->floats.audio_max_timing_skew;
-      float timing_skew                      =
-         fabs(1.0f - info->fps / target_video_sync_rate);
-      if (timing_skew <= max_timing_skew && !vrr_runloop_enable)
-         ret        *= target_video_sync_rate / info->fps;
-   }
+   const float target_video_sync_rate     =
+      settings->floats.video_refresh_rate 
+      / settings->uints.video_swap_interval;
+   float max_timing_skew                  = 
+      settings->floats.audio_max_timing_skew;
+   float timing_skew                      =
+      fabs(1.0f - info->fps / target_video_sync_rate);
+   if (timing_skew <= max_timing_skew)
+      ret        *= target_video_sync_rate / info->fps;
    return ret;
 }
 
@@ -32660,11 +32655,14 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch)
    
    if (info->sample_rate > 0.0)
    {
-      p_rarch->audio_driver_input         =
-      audio_driver_monitor_adjust_system_rates(
-            p_rarch->configuration_settings,
-            &p_rarch->video_driver_av_info
-            );
+      bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
+      const struct retro_system_timing *info =
+         (const struct retro_system_timing*)&av_info->timing;
+      if (vrr_runloop_enable)
+         p_rarch->audio_driver_input = info->sample_rate;
+      else
+         p_rarch->audio_driver_input = 
+            audio_driver_monitor_adjust_system_rates(settings, av_info);
       
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
             p_rarch->audio_driver_input);
