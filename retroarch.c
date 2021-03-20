@@ -435,6 +435,12 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
    return VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, force_nonthreaded_data);
 }
 
+void *video_driver_get_data(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->video_driver_data;
+}
+
 static int16_t input_state_wrap(
       input_driver_t *current_input,
       void *data,

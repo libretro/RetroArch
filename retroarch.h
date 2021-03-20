@@ -1585,6 +1585,8 @@ const char* config_get_video_driver_options(void);
  **/
 void *video_driver_get_ptr(bool force_nonthreaded_data);
 
+void *video_driver_get_data(void);
+
 bool video_driver_set_rotation(unsigned rotation);
 
 bool video_driver_set_video_mode(unsigned width,
