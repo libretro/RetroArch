@@ -23274,12 +23274,12 @@ static void menu_input_get_mouse_hw_state(
       /* RGUI uses a framebuffer texture + custom viewports,
        * which means we have to convert from screen space to
        * menu space... */
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
       struct video_viewport vp = {0};
-
+      gfx_display_t *p_disp    = &p_rarch->dispgfx;
       /* Read display/framebuffer info */
-      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      unsigned fb_width        = p_disp->framebuf_width;
+      unsigned fb_height       = p_disp->framebuf_height;
+
       video_driver_get_viewport_info(&vp);
 
       /* Adjust X pos */
@@ -23368,6 +23368,7 @@ static void menu_input_get_touchscreen_hw_state(
    const input_device_driver_t 
       *sec_joypad                               = NULL;
 #endif
+   gfx_display_t *p_disp    = &p_rarch->dispgfx;
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
@@ -23402,7 +23403,8 @@ static void menu_input_get_touchscreen_hw_state(
     * menu drivers like RGUI. Touchscreen input as a whole should
     * NOT be dependent on this
     */
-   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   fb_width                   = p_disp->framebuf_width;
+   fb_height                  = p_disp->framebuf_height;
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -23963,14 +23965,11 @@ static float menu_input_get_dpi(struct rarch_state *p_rarch)
             menu->driver_ctx
          && menu->driver_ctx->set_texture;
 
+      /* Read framebuffer info? */
       if (menu_has_fb)
       {
-         size_t fb_pitch;
-         unsigned fb_width, fb_height;
-
-         /* Read framebuffer info */
-         gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-
+         gfx_display_t *p_disp      = &p_rarch->dispgfx;
+         unsigned fb_height         = p_disp->framebuf_height;
          /* Rationale for current 'DPI' determination method:
           * - Divide screen height by DPI, to get number of vertical
           *   '1 inch' squares

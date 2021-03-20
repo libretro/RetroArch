@@ -1628,10 +1628,9 @@ static void rgui_init_particle_effect(rgui_t *rgui)
    }
 }
 
-static void rgui_render_particle_effect(rgui_t *rgui)
+static void rgui_render_particle_effect(rgui_t *rgui,
+      unsigned fb_width, unsigned fb_height)
 {
-   size_t fb_pitch;
-   unsigned fb_width, fb_height;
    size_t i;
    /* Give speed factor a long, awkward name to minimise
     * risk of clashing with specific particle effect
@@ -1647,8 +1646,6 @@ static void rgui_render_particle_effect(rgui_t *rgui)
       return;
    
    frame_buf_data = rgui->frame_buf.data;
-   
-   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
    
    /* Adjust global animation speed */
    /* > Apply user configured speed multiplier */
@@ -2219,17 +2216,15 @@ static bool rgui_load_image(void *userdata, void *data, enum menu_image_type typ
    return true;
 }
 
-static void rgui_render_background(rgui_t *rgui)
+static void rgui_render_background(rgui_t *rgui,
+      unsigned fb_width, unsigned fb_height,
+      size_t fb_pitch)
 {
-   size_t fb_pitch;
-   unsigned fb_width, fb_height;
    frame_buf_t *frame_buf      = &rgui->frame_buf;
    frame_buf_t *background_buf = &rgui->background_buf;
 
    if (frame_buf->data && background_buf->data)
    {
-      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-
       /* Sanity check */
       if ((fb_width != frame_buf->width) || (fb_height != frame_buf->height) || (fb_pitch != frame_buf->width << 1))
          return;
@@ -2239,15 +2234,14 @@ static void rgui_render_background(rgui_t *rgui)
    }
 }
 
-static void rgui_render_fs_thumbnail(rgui_t *rgui)
+static void rgui_render_fs_thumbnail(rgui_t *rgui,
+      unsigned fb_width, unsigned fb_height, size_t fb_pitch)
 {
    uint16_t *frame_buf_data    = rgui->frame_buf.data;
    uint16_t *fs_thumbnail_data = rgui->fs_thumbnail.data;
    
    if (rgui->fs_thumbnail.is_valid && frame_buf_data && fs_thumbnail_data)
    {
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
       unsigned y;
       unsigned fb_x_offset, fb_y_offset;
       unsigned thumb_x_offset, thumb_y_offset;
@@ -2256,8 +2250,6 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui)
       unsigned fs_thumbnail_height = rgui->fs_thumbnail.height;
       uint16_t *src                = NULL;
       uint16_t *dst                = NULL;
-
-      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
       /* Ensure that thumbnail is centred
        * > Have to perform some stupid tests here because we
@@ -2344,7 +2336,10 @@ static unsigned INLINE rgui_get_mini_thumbnail_fullwidth(rgui_t *rgui)
    return width >= left_width ? width : left_width;
 }
 
-static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enum gfx_thumbnail_id thumbnail_id)
+static void rgui_render_mini_thumbnail(
+      rgui_t *rgui, thumbnail_t *thumbnail, enum gfx_thumbnail_id thumbnail_id,
+      unsigned fb_width, unsigned fb_height,
+      size_t fb_pitch)
 {
    settings_t *settings     = config_get_ptr();
    uint16_t *frame_buf_data = rgui->frame_buf.data;
@@ -2354,19 +2349,13 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
 
    if (thumbnail->is_valid && frame_buf_data && thumbnail->data)
    {
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
-      unsigned term_width, term_height;
       unsigned y;
       unsigned fb_x_offset, fb_y_offset;
       unsigned thumbnail_fullwidth = rgui_get_mini_thumbnail_fullwidth(rgui);
-      uint16_t *src = NULL;
-      uint16_t *dst = NULL;
-
-      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-
-      term_width  = rgui->term_layout.width * rgui->font_width_stride;
-      term_height = rgui->term_layout.height * rgui->font_height_stride;
+      uint16_t *src                = NULL;
+      uint16_t *dst                = NULL;
+      unsigned term_width          = rgui->term_layout.width * rgui->font_width_stride;
+      unsigned term_height         = rgui->term_layout.height * rgui->font_height_stride;
 
       /* Sanity check (this can never, ever happen, so just return
        * instead of trying to crop the thumbnail image...) */
@@ -2632,19 +2621,15 @@ end:
    conf = NULL;
 }
 
-static void rgui_cache_background(rgui_t *rgui)
+static void rgui_cache_background(rgui_t *rgui,
+      unsigned fb_width, unsigned fb_height, size_t fb_pitch)
 {
-   size_t fb_pitch;
-   unsigned fb_width, fb_height;
    frame_buf_t *background_buf = &rgui->background_buf;
 
    /* Only regenerate the background if we are *not*
     * currently showing a wallpaper image */
    if (rgui->show_wallpaper)
       return;
-
-   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-
    /* Sanity check */
    if ((fb_width  != background_buf->width)      ||
        (fb_height != background_buf->height)     ||
@@ -3391,11 +3376,11 @@ static void rgui_set_message(void *data, const char *message)
    rgui->force_redraw = true;
 }
 
-static void rgui_render_messagebox(rgui_t *rgui, const char *message)
+static void rgui_render_messagebox(rgui_t *rgui, const char *message,
+      unsigned fb_width, unsigned fb_height)
 {
    int x, y;
-   size_t i, fb_pitch;
-   unsigned fb_width, fb_height;
+   size_t i;
    unsigned width           = 0;
    unsigned glyphs_width    = 0;
    unsigned height          = 0;
@@ -3421,9 +3406,6 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       string_list_deinitialize(&list);
       return;
    }
-
-   gfx_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
 
    for (i = 0; i < list.size; i++)
    {
@@ -3509,21 +3491,6 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
    string_list_deinitialize(&list);
 }
 
-static void rgui_blit_cursor(rgui_t *rgui)
-{
-   size_t fb_pitch;
-   unsigned fb_width, fb_height;
-
-   gfx_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
-
-   if (rgui->frame_buf.data)
-   {
-      rgui_color_rect(rgui->frame_buf.data, fb_width, fb_height, rgui->pointer.x, rgui->pointer.y - 5, 1, 11, rgui->colors.normal_color);
-      rgui_color_rect(rgui->frame_buf.data, fb_width, fb_height, rgui->pointer.x - 5, rgui->pointer.y, 11, 1, rgui->colors.normal_color);
-   }
-}
-
 static int rgui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
 {
@@ -3588,10 +3555,9 @@ static void rgui_render_osk(
       rgui_t *rgui,
       gfx_animation_ctx_ticker_t *ticker,
       gfx_animation_ctx_ticker_smooth_t *ticker_smooth,
-      bool use_smooth_ticker)
+      bool use_smooth_ticker,
+      unsigned fb_width, unsigned fb_height)
 {
-   size_t fb_pitch;
-   unsigned fb_width, fb_height;
    size_t key_index;
    
    unsigned input_label_max_length;
@@ -3619,9 +3585,6 @@ static void rgui_render_osk(
    /* Sanity check 1 */
    if (!frame_buf_data || osk_ptr < 0 || osk_ptr >= 44 || !osk_grid[0])
       return;
-   
-   /* Get dimensions/layout */
-   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
    
    key_text_offset_x      = 8;
    key_text_offset_y      = 6;
@@ -3654,7 +3617,7 @@ static void rgui_render_osk(
       msg[0] = '\0';
       
       snprintf(msg, sizeof(msg), "%s\n%s", input_label, input_str);
-      rgui_render_messagebox(rgui, msg);
+      rgui_render_messagebox(rgui, msg, fb_width, fb_height);
       
       return;
    }
@@ -4013,7 +3976,7 @@ static void rgui_render(void *data,
 
    if (rgui->bg_modified || fb_size_changed)
    {
-      rgui_cache_background(rgui);
+      rgui_cache_background(rgui, fb_width, fb_height, fb_pitch);
 
       /* Reinitialise particle effect, if required */
       if (fb_size_changed && 
@@ -4094,11 +4057,11 @@ static void rgui_render(void *data,
    }
 
    /* Render background */
-   rgui_render_background(rgui);
+   rgui_render_background(rgui, fb_width, fb_height, fb_pitch);
 
    /* Render particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
-      rgui_render_particle_effect(rgui);
+      rgui_render_particle_effect(rgui, fb_width, fb_height);
 
    /* We use a single ticker for all text animations,
     * with the following configuration: */
@@ -4121,7 +4084,8 @@ static void rgui_render(void *data,
    /* Note: On-screen keyboard takes precedence over
     * normal menu thumbnail/text list display modes */
    if (current_display_cb)
-      rgui_render_osk(rgui, &ticker, &ticker_smooth, use_smooth_ticker);
+      rgui_render_osk(rgui, &ticker, &ticker_smooth, use_smooth_ticker,
+            fb_width, fb_height);
    else if (show_fs_thumbnail)
    {
       /* If fullscreen thumbnails are enabled and we are viewing a playlist,
@@ -4137,7 +4101,7 @@ static void rgui_render(void *data,
       thumbnail_title_buf[0] = '\0';
 
       /* Draw thumbnail */
-      rgui_render_fs_thumbnail(rgui);
+      rgui_render_fs_thumbnail(rgui, fb_width, fb_height, fb_pitch);
 
       /* Get thumbnail title */
       if (gfx_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title))
@@ -4560,10 +4524,12 @@ static void rgui_render(void *data,
       if (show_mini_thumbnails)
       {
          if (show_thumbnail)
-            rgui_render_mini_thumbnail(rgui, &rgui->mini_thumbnail, GFX_THUMBNAIL_RIGHT);
+            rgui_render_mini_thumbnail(rgui, &rgui->mini_thumbnail, GFX_THUMBNAIL_RIGHT,
+                  fb_width, fb_height, fb_pitch);
          
          if (show_left_thumbnail)
-            rgui_render_mini_thumbnail(rgui, &rgui->mini_left_thumbnail, GFX_THUMBNAIL_LEFT);
+            rgui_render_mini_thumbnail(rgui, &rgui->mini_left_thumbnail, GFX_THUMBNAIL_LEFT,
+                  fb_width, fb_height, fb_pitch);
       }
 
       /* Print menu sublabel/core name (if required) */
@@ -4663,7 +4629,7 @@ static void rgui_render(void *data,
 
    if (!string_is_empty(rgui->msgbox))
    {
-      rgui_render_messagebox(rgui, rgui->msgbox);
+      rgui_render_messagebox(rgui, rgui->msgbox, fb_width, fb_height);
       rgui->msgbox[0]    = '\0';
       rgui->force_redraw = true;
    }
@@ -4673,8 +4639,12 @@ static void rgui_render(void *data,
       bool cursor_visible   = video_fullscreen 
          && menu_mouse_enable;
 
-      if (cursor_visible)
-         rgui_blit_cursor(rgui);
+      /* Blit cursor */
+      if (cursor_visible && rgui->frame_buf.data)
+      {
+         rgui_color_rect(rgui->frame_buf.data, fb_width, fb_height, rgui->pointer.x, rgui->pointer.y - 5, 1, 11, rgui->colors.normal_color);
+         rgui_color_rect(rgui->frame_buf.data, fb_width, fb_height, rgui->pointer.x - 5, rgui->pointer.y, 11, 1, rgui->colors.normal_color);
+      }
    }
 }
 
