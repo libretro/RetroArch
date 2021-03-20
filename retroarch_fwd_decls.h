@@ -184,10 +184,6 @@ static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
       unsigned action,
       retro_time_t current_time);
-static void menu_input_reset(
-      menu_input_t *menu_input,
-      menu_input_pointer_hw_state_t *pointer_hw_state
-      );
 #endif
 
 static bool retroarch_apply_shader(
