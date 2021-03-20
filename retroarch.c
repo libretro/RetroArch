@@ -25951,48 +25951,40 @@ unsigned input_config_translate_str_to_bind_id(const char *str)
    return RARCH_BIND_LIST_END;
 }
 
-static void parse_hat(struct retro_keybind *bind, const char *str)
+static uint16_t input_config_parse_hat(const char *dir)
 {
-   uint16_t hat_dir = 0;
-   char        *dir = NULL;
-   uint16_t     hat = strtoul(str, &dir, 0);
-
-   if (!dir)
-   {
-      RARCH_WARN("[Input]: Found invalid hat in config!\n");
-      return;
-   }
-
    if (     dir[0] == 'u'
          && dir[1] == 'p'
          && dir[2] == '\0'
       )
-      hat_dir = HAT_UP_MASK;
-   else if (     dir[0] == 'd'
-              && dir[1] == 'o'
-              && dir[2] == 'w'
-              && dir[3] == 'n'
-              && dir[4] == '\0'
-      )
-      hat_dir = HAT_DOWN_MASK;
-   else if (     dir[0] == 'l'
-              && dir[1] == 'e'
-              && dir[2] == 'f'
-              && dir[3] == 't'
-              && dir[4] == '\0'
-      )
-      hat_dir = HAT_LEFT_MASK;
-   else if (     dir[0] == 'r'
-              && dir[1] == 'i'
-              && dir[2] == 'g'
-              && dir[3] == 'h'
-              && dir[4] == 't'
-              && dir[5] == '\0'
-      )
-      hat_dir = HAT_RIGHT_MASK;
+      return HAT_UP_MASK;
+   else if (     
+            dir[0] == 'd'
+         && dir[1] == 'o'
+         && dir[2] == 'w'
+         && dir[3] == 'n'
+         && dir[4] == '\0'
+         )
+      return HAT_DOWN_MASK;
+   else if (     
+            dir[0] == 'l'
+         && dir[1] == 'e'
+         && dir[2] == 'f'
+         && dir[3] == 't'
+         && dir[4] == '\0'
+         )
+      return HAT_LEFT_MASK;
+   else if (     
+            dir[0] == 'r'
+         && dir[1] == 'i'
+         && dir[2] == 'g'
+         && dir[3] == 'h'
+         && dir[4] == 't'
+         && dir[5] == '\0'
+         )
+      return HAT_RIGHT_MASK;
 
-   if (hat_dir)
-      bind->joykey = HAT_MAP(hat, hat_dir);
+   return 0;
 }
 
 static void input_config_parse_joy_button(
@@ -26028,8 +26020,15 @@ static void input_config_parse_joy_button(
          if (*btn == 'h')
          {
             const char *str = btn + 1;
+            /* Parse hat? */
             if (str && ISDIGIT((int)*str))
-               parse_hat(bind, str);
+            {
+               char        *dir = NULL;
+               uint16_t     hat = strtoul(str, &dir, 0);
+               uint16_t hat_dir = dir ? input_config_parse_hat(dir) : 0;
+               if (hat_dir)
+                  bind->joykey = HAT_MAP(hat, hat_dir);
+            }
          }
          else
             bind->joykey = strtoull(tmp, NULL, 0);
