@@ -1325,19 +1325,25 @@ static void frontend_unix_get_lakka_version(char *s,
 
 static void frontend_unix_set_screen_brightness(int value)
 {
-   int brightness  = 0;
+   char *buffer = NULL;
    char svalue[16] = {0};
-#if defined(HAVE_LAKKA_SWITCH)
-   /* Values from 0 to 100 */
-   brightness      = value;
-#elif defined(HAVE_ODROIDGO2)
-   /* GOA screen PWM value does not linearly relate to perceived brightness */
-   brightness      = (pow(1.0369f, value) - 1) * 7;
-#endif
+   unsigned int max_brightness = 100;
+   #if !defined(HAVE_LAKKA_SWITCH)
+   filestream_read_file("/sys/devices/platform/backlight/backlight/backlight/max_brightness",
+                        &buffer, NULL);
+   if (buffer)
+   {
+      sscanf(buffer, "%u", &max_brightness);
+      free(buffer);
+   }
+   #endif
 
-   snprintf(svalue, sizeof(svalue), "%d\n", brightness);
+   /* Calculate the brightness */
+   value = (value * max_brightness) / 100;
+
+   snprintf(svalue, sizeof(svalue), "%d\n", value);
    filestream_write_file("/sys/class/backlight/backlight/brightness",
-         svalue, strlen(svalue));
+                         svalue, strlen(svalue));
 }
 
 #endif
