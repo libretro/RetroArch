@@ -414,8 +414,7 @@ global_t *global_get_ptr(void)
  **/
 static void *video_thread_get_ptr(struct rarch_state *p_rarch)
 {
-   void *data                  = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, true);
-   const thread_video_t *thr   = (const thread_video_t*)data;
+   const thread_video_t *thr   = (const thread_video_t*)p_rarch->video_driver_data;
    if (thr)
       return thr->driver_data;
    return NULL;
@@ -21646,7 +21645,7 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->size       = data->size;
    ol->active     = data->active;
    ol->iface      = iface;
-   ol->iface_data = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, true);
+   ol->iface_data = p_rarch->video_driver_data;
 
    input_overlay_load_active(p_rarch, ol, data->overlay_opacity);
 
@@ -32287,7 +32286,7 @@ bool video_driver_cached_frame_has_valid_framebuffer(void)
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
    struct rarch_state              *p_rarch = &rarch_st;
-   void *video_driver                       = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, true);
+   void *video_driver                       = p_rarch->video_driver_data;
    const video_poke_interface_t *video_poke = p_rarch->video_driver_poke;
 
    shader->data = NULL;
