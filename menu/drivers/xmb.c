@@ -897,6 +897,7 @@ static void xmb_draw_icon(
 static void xmb_draw_text(
       bool xmb_shadows_enable,
       xmb_handle_t *xmb,
+      settings_t *settings,
       const char *str, float x,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align,
@@ -904,7 +905,6 @@ static void xmb_draw_text(
 {
    uint32_t color;
    uint8_t a8;
-   settings_t *settings;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -915,7 +915,6 @@ static void xmb_draw_text(
    if (a8 == 0)
       return;
 
-   settings           = config_get_ptr();
    color              = FONT_COLOR_RGBA(
          settings->uints.menu_font_color_red,
          settings->uints.menu_font_color_green,
@@ -939,6 +938,7 @@ static void xmb_messagebox(void *data, const char *message)
 
 static void xmb_render_messagebox_internal(
       void *userdata,
+      gfx_display_t *p_disp,
       unsigned video_width,
       unsigned video_height,
       xmb_handle_t *xmb, const char *message)
@@ -949,7 +949,6 @@ static void xmb_render_messagebox_internal(
    float line_height        = 0;
    int usable_width         = 0;
    struct string_list list  = {0};
-   gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    bool input_dialog_display_kb      = false;
 
@@ -3328,7 +3327,8 @@ static int xmb_draw_item(
          label_offset = - xmb->margins_label_top;
 
          /* Draw sublabel */
-         xmb_draw_text(xmb_shadows_enable, xmb, entry_sublabel,
+         xmb_draw_text(xmb_shadows_enable, xmb, settings,
+               entry_sublabel,
                sublabel_x, ticker_y_offset + sublabel_y,
                1, node->label_alpha, TEXT_ALIGN_LEFT,
                width, height, xmb->font2);
@@ -3338,14 +3338,16 @@ static int xmb_draw_item(
          {
             if (!string_is_empty(entry_sublabel_top_fade) &&
                 ticker_top_fade_alpha > 0.0f)
-               xmb_draw_text(xmb_shadows_enable, xmb, entry_sublabel_top_fade,
+               xmb_draw_text(xmb_shadows_enable, xmb, settings,
+                     entry_sublabel_top_fade,
                      sublabel_x, ticker_top_fade_y_offset + sublabel_y,
                      1, ticker_top_fade_alpha * node->label_alpha, TEXT_ALIGN_LEFT,
                      width, height, xmb->font2);
 
             if (!string_is_empty(entry_sublabel_bottom_fade) &&
                 ticker_bottom_fade_alpha > 0.0f)
-               xmb_draw_text(xmb_shadows_enable, xmb, entry_sublabel_bottom_fade,
+               xmb_draw_text(xmb_shadows_enable, xmb, settings,
+                     entry_sublabel_bottom_fade,
                      sublabel_x, ticker_bottom_fade_y_offset + sublabel_y,
                      1, ticker_bottom_fade_alpha * node->label_alpha, TEXT_ALIGN_LEFT,
                      width, height, xmb->font2);
@@ -3353,7 +3355,7 @@ static int xmb_draw_item(
       }
    }
 
-   xmb_draw_text(xmb_shadows_enable, xmb, tmp,
+   xmb_draw_text(xmb_shadows_enable, xmb, settings, tmp,
          (float)ticker_x_offset + node->x + xmb->margins_screen_left +
          xmb->icon_spacing_horizontal + xmb->margins_label_left,
          xmb->margins_screen_top + node->y + label_offset,
@@ -3385,7 +3387,7 @@ static int xmb_draw_item(
    }
 
    if (do_draw_text)
-      xmb_draw_text(xmb_shadows_enable, xmb, tmp,
+      xmb_draw_text(xmb_shadows_enable, xmb, settings, tmp,
             (float)ticker_x_offset + node->x +
             + xmb->margins_screen_left
             + xmb->icon_spacing_horizontal
@@ -3476,6 +3478,7 @@ static int xmb_draw_item(
 
 static void xmb_draw_items(
       void *userdata,
+      gfx_display_t *p_disp,
       unsigned video_width,
       unsigned video_height,
       bool xmb_shadows_enable,
@@ -3488,9 +3491,8 @@ static void xmb_draw_items(
    unsigned first, last;
    math_matrix_4x4 mymat;
    gfx_display_ctx_rotate_draw_t rotate_draw;
-   xmb_node_t *core_node       = NULL;
-   size_t end                  = 0;
-   gfx_display_t            *p_disp  = disp_get_ptr();
+   xmb_node_t *core_node             = NULL;
+   size_t end                        = 0;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!list || !list->size || !xmb)
@@ -4037,6 +4039,7 @@ static bool xmb_shader_pipeline_active(unsigned menu_shader_pipeline)
  
 static void xmb_draw_bg(
       void *userdata,
+      gfx_display_t *p_disp,
       unsigned video_width,
       unsigned video_height,
       unsigned menu_shader_pipeline,
@@ -4049,7 +4052,6 @@ static void xmb_draw_bg(
       float *coord_white)
 {
    gfx_display_ctx_draw_t draw;
-   gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    draw.x                    = 0;
@@ -4176,6 +4178,7 @@ static void xmb_draw_bg(
 
 static void xmb_draw_dark_layer(
       xmb_handle_t *xmb,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned width,
       unsigned height)
@@ -4188,7 +4191,6 @@ static void xmb_draw_dark_layer(
       0, 0, 0, 1,
       0, 0, 0, 1,
    };
-   gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    gfx_display_set_alpha(black, MIN(xmb->alpha, 0.75));
@@ -4725,6 +4727,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    xmb_draw_bg(
          userdata,
+         p_disp,
          video_width,
          video_height,
          menu_shader_pipeline,
@@ -4757,7 +4760,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Title text */
-   xmb_draw_text(xmb_shadows_enable, xmb,
+   xmb_draw_text(xmb_shadows_enable, xmb, settings,
          title_truncated, xmb->margins_title_left,
          xmb->margins_title_top,
          1, 1, TEXT_ALIGN_LEFT,
@@ -4766,7 +4769,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (menu_core_enable)
    {
       menu_entries_get_core_title(title_msg, sizeof(title_msg));
-      xmb_draw_text(xmb_shadows_enable, xmb, title_msg, xmb->margins_title_left,
+      xmb_draw_text(xmb_shadows_enable, xmb, settings,
+            title_msg, xmb->margins_title_left,
             video_height - xmb->margins_title_bottom, 1, 1, TEXT_ALIGN_LEFT,
             video_width, video_height, xmb->font);
    }
@@ -5042,7 +5046,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             font_driver_get_message_width(
                   xmb->font, msg, (unsigned)strlen(msg), 1);
 
-         xmb_draw_text(xmb_shadows_enable, xmb, msg,
+         xmb_draw_text(xmb_shadows_enable, xmb, settings, msg,
                video_width - xmb->margins_title_left - x_pos,
                xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
                video_width, video_height, xmb->font);
@@ -5099,7 +5103,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       if (percent_width)
          x_pos = percent_width + (xmb->icon_size / 2.5);
 
-      xmb_draw_text(xmb_shadows_enable, xmb, timedate,
+      xmb_draw_text(xmb_shadows_enable, xmb, settings, timedate,
             video_width - xmb->margins_title_left - xmb->icon_size / 4 - x_pos,
             xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
             video_width, video_height, xmb->font);
@@ -5229,6 +5233,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Vertical icons */
    xmb_draw_items(
          userdata,
+         p_disp,
          video_width,
          video_height,
          xmb_shadows_enable,
@@ -5246,6 +5251,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    xmb_draw_items(
          userdata,
+         p_disp,
          video_width,
          video_height,
          xmb_shadows_enable,
@@ -5292,8 +5298,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      xmb_draw_dark_layer(xmb, userdata, video_width, video_height);
-      xmb_render_messagebox_internal(userdata, video_width, video_height,
+      xmb_draw_dark_layer(xmb, p_disp,
+            userdata, video_width, video_height);
+      xmb_render_messagebox_internal(userdata, p_disp,
+            video_width, video_height,
             xmb, msg);
    }
 

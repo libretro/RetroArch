@@ -2302,6 +2302,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
 
 static void materialui_draw_icon(
       void *userdata,
+      gfx_display_t *p_disp,
       unsigned video_width,
       unsigned video_height,
       unsigned icon_size,
@@ -2314,7 +2315,6 @@ static void materialui_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (dispctx && dispctx->blend_begin)
@@ -2360,6 +2360,8 @@ static void materialui_draw_icon(
 static void materialui_draw_thumbnail(
       materialui_handle_t *mui,
       gfx_thumbnail_t *thumbnail,
+      settings_t *settings,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -2418,7 +2420,7 @@ static void materialui_draw_thumbnail(
                   mui->colors.missing_thumbnail_icon, alpha);
 
             materialui_draw_icon(
-                  userdata,
+                  userdata, p_disp,
                   video_width,
                   video_height,
                   (unsigned)icon_size,
@@ -2436,8 +2438,6 @@ static void materialui_draw_thumbnail(
           *   we draw nothing if thumbnail status is unknown,
           *   or we are waiting for a thumbnail to load) */
          {
-            settings_t *settings = config_get_ptr();
-
             /* Background */
             if (settings &&
                   settings->bools.menu_materialui_thumbnail_background_enable)
@@ -3756,6 +3756,7 @@ enum materialui_entry_value_type materialui_get_entry_value_type(
 static void materialui_render_switch_icon(
       materialui_handle_t *mui,
       materialui_node_t *node,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -3776,7 +3777,7 @@ static void materialui_render_switch_icon(
    /* Draw background */
    if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
       materialui_draw_icon(
-            userdata,
+            userdata, p_disp,
             video_width,
             video_height,
             mui->icon_size,
@@ -3790,7 +3791,7 @@ static void materialui_render_switch_icon(
    /* Draw switch */
    if (mui->textures.list[switch_texture_index])
       materialui_draw_icon(
-            userdata,
+            userdata, p_disp,
             video_width,
             video_height,
             mui->icon_size,
@@ -3831,6 +3832,7 @@ static void materialui_render_menu_entry_default(
    int value_icon_y                                  = 0;
    uintptr_t icon_texture                            = 0;
    bool draw_text_outside                            = (x_offset != 0);
+   gfx_display_t *p_disp                             = disp_get_ptr();
 
    /* Initial ticker configuration
     * > Note: ticker is only used for labels/values,
@@ -3901,7 +3903,7 @@ static void materialui_render_menu_entry_default(
    if (icon_texture)
    {
       materialui_draw_icon(
-            userdata,
+            userdata, p_disp,
             video_width,
             video_height,
             mui->icon_size,
@@ -4049,14 +4051,14 @@ static void materialui_render_menu_entry_default(
          break;
       case MUI_ENTRY_VALUE_SWITCH_ON:
          {
-            materialui_render_switch_icon(mui, node, userdata,
+            materialui_render_switch_icon(mui, node, p_disp, userdata,
                   video_width, video_height, value_icon_y, x_offset, true);
             entry_value_width = mui->icon_size;
          }
          break;
       case MUI_ENTRY_VALUE_SWITCH_OFF:
          {
-            materialui_render_switch_icon(mui, node, userdata,
+            materialui_render_switch_icon(mui, node, p_disp, userdata,
                   video_width, video_height, value_icon_y, x_offset, false);
             entry_value_width = mui->icon_size;
          }
@@ -4066,7 +4068,7 @@ static void materialui_render_menu_entry_default(
             /* Draw checkmark */
             if (mui->textures.list[MUI_TEXTURE_CHECKMARK])
                materialui_draw_icon(
-                     userdata,
+                     userdata, p_disp,
                      video_width,
                      video_height,
                      mui->icon_size,
@@ -4152,6 +4154,7 @@ static void materialui_render_menu_entry_playlist_list(
       unsigned header_height,
       int x_offset)
 {
+   bool draw_divider;
    const char *entry_label    = NULL;
    int entry_x                = x_offset + node->x;
    int entry_y                = header_height - mui->scroll_y + node->y;
@@ -4160,7 +4163,8 @@ static void materialui_render_menu_entry_playlist_list(
    int usable_width           = (int)node->entry_width - (int)(mui->margin * 2);
    int label_y                = 0;
    bool draw_text_outside     = (x_offset != 0);
-   bool draw_divider;
+   settings_t *settings       = config_get_ptr();
+   gfx_display_t *p_disp      = disp_get_ptr();
 
    /* Initial ticker configuration
     * > Note: ticker is only used for labels,
@@ -4218,6 +4222,8 @@ static void materialui_render_menu_entry_playlist_list(
       materialui_draw_thumbnail(
             mui,
             &node->thumbnails.primary,
+            settings,
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -4234,6 +4240,8 @@ static void materialui_render_menu_entry_playlist_list(
          materialui_draw_thumbnail(
                mui,
                &node->thumbnails.secondary,
+               settings,
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -4394,6 +4402,8 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    bool draw_divider       = (usable_width > 0) &&
                ((divider_y + (mui->entry_divider_width * 2)) <
                      (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
+   gfx_display_t *p_disp   = disp_get_ptr();
+   settings_t *settings    = config_get_ptr();
 
    /* Initial ticker configuration
     * > Note: ticker is only used for labels */
@@ -4419,6 +4429,8 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    materialui_draw_thumbnail(
          mui,
          &node->thumbnails.primary,
+         settings,
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -4430,6 +4442,8 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    materialui_draw_thumbnail(
          mui,
          &node->thumbnails.secondary,
+         settings,
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -4659,6 +4673,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
    float thumbnail_x          = background_x + (float)mui->margin +
          (mui->landscape_optimization.enabled ? mui->entry_divider_width : 0);
    float thumbnail_y          = background_y + (float)mui->margin;
+   gfx_display_t *p_disp      = disp_get_ptr();
+   settings_t *settings       = config_get_ptr();
 
    /* Sanity check */
    if ((background_width <= 0) ||
@@ -4734,6 +4750,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       materialui_draw_thumbnail(
             mui,
             primary_thumbnail,
+            settings,
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -4745,6 +4763,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       materialui_draw_thumbnail(
             mui,
             secondary_thumbnail,
+            settings,
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -5290,11 +5310,12 @@ static void materialui_render_entry_touch_feedback(
 
 static void materialui_render_header(
       materialui_handle_t *mui,
+      settings_t *settings,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width, unsigned video_height)
 {
    char menu_title_buf[255];
-   settings_t *settings                  = config_get_ptr();
    size_t menu_title_margin              = 0;
    int usable_sys_bar_width              = (int)video_width - (int)mui->nav_bar_layout_width;
    int usable_title_bar_width            = usable_sys_bar_width;
@@ -5424,7 +5445,7 @@ static void materialui_render_header(
             }
 
             materialui_draw_icon(
-                  userdata,
+                  userdata, p_disp,
                   video_width,
                   video_height,
                   mui->sys_bar_icon_size,
@@ -5563,7 +5584,7 @@ static void materialui_render_header(
       menu_title_margin = mui->icon_size;
 
       materialui_draw_icon(
-            userdata,
+            userdata, p_disp,
             video_width,
             video_height,
             mui->icon_size,
@@ -5581,7 +5602,7 @@ static void materialui_render_header(
    if (show_search_icon)
    {
       materialui_draw_icon(
-            userdata,
+            userdata, p_disp,
             video_width,
             video_height,
             mui->icon_size,
@@ -5601,7 +5622,7 @@ static void materialui_render_header(
       if (show_switch_view_icon)
       {
          materialui_draw_icon(
-               userdata,
+               userdata, p_disp,
                video_width,
                video_height,
                mui->icon_size,
@@ -5704,6 +5725,7 @@ static void materialui_render_header(
  * things get incredibly messy and inefficient... */
 static void materialui_render_nav_bar_bottom(
       materialui_handle_t *mui,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width, unsigned video_height)
 {
@@ -5751,7 +5773,7 @@ static void materialui_render_nav_bar_bottom(
 
    /* > Back - left hand side */
    materialui_draw_icon(
-         userdata,
+         userdata, p_disp,
          video_width,
          video_height,
          mui->icon_size,
@@ -5765,7 +5787,7 @@ static void materialui_render_nav_bar_bottom(
 
    /* > Resume - right hand side */
    materialui_draw_icon(
-         userdata,
+         userdata, p_disp,
          video_width,
          video_height,
          mui->icon_size,
@@ -5786,7 +5808,7 @@ static void materialui_render_nav_bar_bottom(
 
       /* Draw icon */
       materialui_draw_icon(
-            userdata,
+            userdata, p_disp,
             video_width,
             video_height,
             mui->icon_size,
@@ -5814,6 +5836,7 @@ static void materialui_render_nav_bar_bottom(
 
 static void materialui_render_nav_bar_right(
       materialui_handle_t *mui,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height)
@@ -5862,7 +5885,7 @@ static void materialui_render_nav_bar_right(
 
    /* > Back - bottom */
    materialui_draw_icon(
-         userdata,
+         userdata, p_disp,
          video_width,
          video_height,
          mui->icon_size,
@@ -5876,7 +5899,7 @@ static void materialui_render_nav_bar_right(
 
    /* > Resume - top */
    materialui_draw_icon(
-         userdata,
+         userdata, p_disp,
          video_width,
          video_height,
          mui->icon_size,
@@ -5897,7 +5920,7 @@ static void materialui_render_nav_bar_right(
 
       /* Draw icon */
       materialui_draw_icon(
-            userdata,
+            userdata, p_disp,
             video_width,
             video_height,
             mui->icon_size,
@@ -5925,6 +5948,7 @@ static void materialui_render_nav_bar_right(
 
 static void materialui_render_nav_bar(
       materialui_handle_t *mui,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height)
@@ -5933,7 +5957,7 @@ static void materialui_render_nav_bar(
    {
       case MUI_NAV_BAR_LOCATION_RIGHT:
          materialui_render_nav_bar_right(
-            mui, userdata, video_width, video_height);
+            mui, p_disp, userdata, video_width, video_height);
          break;
       case MUI_NAV_BAR_LOCATION_HIDDEN:
          /* Draw nothing */
@@ -5942,7 +5966,7 @@ static void materialui_render_nav_bar(
       case MUI_NAV_BAR_LOCATION_BOTTOM:
       default:
          materialui_render_nav_bar_bottom(
-            mui, userdata, video_width, video_height);
+            mui, p_disp, userdata, video_width, video_height);
          break;
    }
 }
@@ -6702,11 +6726,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_width, video_height, header_height, selection);
 
    /* Draw title + system bar */
-   materialui_render_header(mui, userdata,
+   materialui_render_header(mui, settings, p_disp, userdata,
          video_width, video_height);
 
    /* Draw navigation bar */
-   materialui_render_nav_bar(mui, userdata, 
+   materialui_render_nav_bar(mui, p_disp, userdata, 
          video_width, video_height);
 
    /* Flush second layer of text

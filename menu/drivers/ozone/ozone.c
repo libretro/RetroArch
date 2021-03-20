@@ -2099,7 +2099,10 @@ static void ozone_render(void *data,
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
-static void ozone_draw_header(ozone_handle_t *ozone,
+static void ozone_draw_header(
+      ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -2120,8 +2123,6 @@ static void ozone_draw_header(ozone_handle_t *ozone,
    unsigned seperator_margin = 30 * scale_factor;
    enum gfx_animation_ticker_type
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_animation_t          *p_anim  = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    float *col                        = ozone->theme->entries_icon;
 
@@ -2326,7 +2327,10 @@ static void ozone_draw_header(ozone_handle_t *ozone,
    }
 }
 
-static void ozone_draw_footer(ozone_handle_t *ozone,
+static void ozone_draw_footer(
+      ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -2380,10 +2384,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
          ozone->footer_labels.fullscreen_thumbs.width - icon_size - (2.0f * icon_padding);
    float metadata_toggle_x   = fullscreen_thumbs_x -
          ozone->footer_labels.metadata_toggle.width - icon_size - (2.0f * icon_padding);
-   gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    float *col                        = ozone->theme_dynamic.entries_icon;
-   gfx_animation_t          *p_anim  = anim_get_ptr();
 
    /* Separator */
    gfx_display_draw_quad(
@@ -2837,6 +2839,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool battery_level_enable              = video_info->battery_level_enable;
    bool timedate_enable                   = video_info->timedate_enable;
    gfx_display_t            *p_disp       = disp_get_ptr();
+   gfx_animation_t *p_anim                = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
 
 #if 0
@@ -2924,13 +2927,14 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          );
 
    /* Header, footer */
-   ozone_draw_header(ozone,
+   ozone_draw_header(ozone, p_disp, p_anim,
          userdata,
          video_width,
          video_height,
          battery_level_enable,
          timedate_enable);
    ozone_draw_footer(ozone,
+         p_disp, p_anim,
          userdata,
          video_width,
          video_height,
