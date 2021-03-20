@@ -3805,7 +3805,8 @@ static bool menu_init(
 
    /* Ensure that menu pointer input is correctly
     * initialised */
-   menu_input_reset(menu_input, pointer_hw_state);
+   memset(menu_input, 0, sizeof(menu_input_t));
+   memset(pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 
    if (!menu_entries_init(menu_st, menu_driver_ctx))
    {
@@ -5140,10 +5141,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                menu_st->scroll.index_list[i] = 0;
 
-            menu_input_reset(
-                  &p_rarch->menu_input_state,
-                  &p_rarch->menu_input_pointer_hw_state
-                  );
+            memset(&p_rarch->menu_input_state, 0, sizeof(menu_input_t));
+            memset(&p_rarch->menu_input_pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 
             if (     p_rarch->menu_driver_ctx 
                   && p_rarch->menu_driver_ctx->free)
@@ -23915,15 +23914,6 @@ void menu_input_set_pointer_y_accel(float y_accel)
    menu_input_t    *menu_input    = &p_rarch->menu_input_state;
 
    menu_input->pointer.y_accel    = y_accel;
-}
-
-static void menu_input_reset(
-      menu_input_t *menu_input,
-      menu_input_pointer_hw_state_t *pointer_hw_state
-      )
-{
-   memset(menu_input, 0, sizeof(menu_input_t));
-   memset(pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 }
 
 static float menu_input_get_dpi(struct rarch_state *p_rarch)
