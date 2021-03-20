@@ -26368,7 +26368,7 @@ unsigned input_config_get_device_count(void)
 /* Adds an index to devices with the same name,
  * so they can be uniquely identified in the
  * frontend */
-static void input_config_reindex_device_names(void)
+static void input_config_reindex_device_names(struct rarch_state *p_rarch)
 {
    unsigned i;
    unsigned j;
@@ -26376,7 +26376,7 @@ static void input_config_reindex_device_names(void)
 
    /* Reset device name indices */
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
-      input_config_set_device_name_index(i, 0);
+      p_rarch->input_device_info[i].name_index       = 0;
 
    /* Scan device names */
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
@@ -26411,12 +26411,12 @@ static void input_config_reindex_device_names(void)
             /* If this is the first match, set a starting
              * index for the current device selection */
             if (input_config_get_device_name_index(i) == 0)
-               input_config_set_device_name_index(i, name_index++);
+               p_rarch->input_device_info[i].name_index       = name_index++;
 
             /* Set name index for the next device
              * (will keep incrementing as more matches
              *  are found) */
-            input_config_set_device_name_index(j, name_index++);
+            p_rarch->input_device_info[j].name_index          = name_index++;
          }
       }
    }
@@ -26516,7 +26516,7 @@ void input_config_set_device_name(unsigned port, const char *name)
    strlcpy(p_rarch->input_device_info[port].name, name,
          sizeof(p_rarch->input_device_info[port].name));
 
-   input_config_reindex_device_names();
+   input_config_reindex_device_names(p_rarch);
 }
 
 void input_config_set_device_display_name(unsigned port, const char *name)
@@ -26590,7 +26590,7 @@ void input_config_clear_device_name(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
    p_rarch->input_device_info[port].name[0] = '\0';
-   input_config_reindex_device_names();
+   input_config_reindex_device_names(p_rarch);
 }
 
 void input_config_clear_device_display_name(unsigned port)
@@ -26701,15 +26701,15 @@ void input_config_reset(void)
        * here, since this will re-index devices each time
        * (not required - we are setting all 'name indices'
        * to zero manually) */
-      p_rarch->input_device_info[i].name[0] = '\0';
-      input_config_clear_device_display_name(i);
-      input_config_clear_device_config_path(i);
-      input_config_clear_device_config_name(i);
-      input_config_clear_device_joypad_driver(i);
-      input_config_set_device_vid(i, 0);
-      input_config_set_device_pid(i, 0);
-      input_config_set_device_autoconfigured(i, false);
-      input_config_set_device_name_index(i, 0);
+      p_rarch->input_device_info[i].name[0]          = '\0';
+      p_rarch->input_device_info[i].display_name[0]  = '\0';
+      p_rarch->input_device_info[i].config_path[0]   = '\0';
+      p_rarch->input_device_info[i].config_name[0]   = '\0';
+      p_rarch->input_device_info[i].joypad_driver[0] = '\0';
+      p_rarch->input_device_info[i].vid              = 0;
+      p_rarch->input_device_info[i].pid              = 0;
+      p_rarch->input_device_info[i].autoconfigured   = false;
+      p_rarch->input_device_info[i].name_index       = 0;
 
       input_config_reset_autoconfig_binds(i);
 
