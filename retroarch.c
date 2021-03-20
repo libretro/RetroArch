@@ -23046,12 +23046,9 @@ static int16_t input_state(unsigned port, unsigned device,
             (id == RETRO_DEVICE_ID_JOYPAD_MASK))
       {
          unsigned i;
-
-         {
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               if (input_state_device(p_rarch, ret, port, device, idx, i, true))
-                  result |= (1 << i);
-         }
+         for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (input_state_device(p_rarch, ret, port, device, idx, i, true))
+               result |= (1 << i);
       }
       else
          result = input_state_device(p_rarch, ret, port, device, idx, id, false);
@@ -26386,8 +26383,9 @@ static void input_config_reindex_device_names(struct rarch_state *p_rarch)
       /* If current device name is empty, or a non-zero
        * name index has already been assigned, continue
        * to the next device */
-      if (string_is_empty(device_name) ||
-          (input_config_get_device_name_index(i) != 0))
+      if (
+               string_is_empty(device_name)
+            || p_rarch->input_device_info[i].name_index != 0)
          continue;
 
       /* > Uniquely named devices have a name index
@@ -26410,7 +26408,7 @@ static void input_config_reindex_device_names(struct rarch_state *p_rarch)
          {
             /* If this is the first match, set a starting
              * index for the current device selection */
-            if (input_config_get_device_name_index(i) == 0)
+            if (p_rarch->input_device_info[i].name_index == 0)
                p_rarch->input_device_info[i].name_index       = name_index++;
 
             /* Set name index for the next device
