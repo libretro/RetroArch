@@ -362,18 +362,9 @@
 		05A8C73C20DB72F100FF7857 /* vulkan_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vulkan_common.c; sourceTree = "<group>"; };
 		05A8C74420DB72F100FF7857 /* metal_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_common.h; sourceTree = "<group>"; };
 		05A8C74820DB72F100FF7857 /* metal_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_common.h; sourceTree = "<group>"; };
-		05A8C74920DB72F100FF7857 /* TexturedView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TexturedView.h; sourceTree = "<group>"; };
-		05A8C74B20DB72F100FF7857 /* Context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Context.h; sourceTree = "<group>"; };
-		05A8C74C20DB72F100FF7857 /* RendererCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RendererCommon.h; sourceTree = "<group>"; };
 		05A8C74E20DB72F100FF7857 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
-		05A8C74F20DB72F100FF7857 /* View.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = View.h; sourceTree = "<group>"; };
-		05A8C75020DB72F100FF7857 /* Filter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Filter.m; sourceTree = "<group>"; };
-		05A8C75120DB72F100FF7857 /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
-		05A8C75320DB72F100FF7857 /* Context.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Context.m; sourceTree = "<group>"; };
-		05A8C75420DB72F100FF7857 /* RendererCommon.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RendererCommon.m; sourceTree = "<group>"; };
-		05A8C75620DB72F100FF7857 /* TexturedView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TexturedView.m; sourceTree = "<group>"; };
-		05A8C75720DB72F100FF7857 /* Filter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Filter.h; sourceTree = "<group>"; };
-		05A8C75820DB72F100FF7857 /* View.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = View.m; sourceTree = "<group>"; };
+		05A8C75120DB72F100FF7857 /* metal_shader_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_shader_types.h; sourceTree = "<group>"; };
+		05A8C75420DB72F100FF7857 /* metal_renderer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = metal_renderer.m; sourceTree = "<group>"; };
 		05A8C75D20DB72F100FF7857 /* gl_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_common.c; sourceTree = "<group>"; };
 		05A8C75E20DB72F100FF7857 /* d3d_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d_common.c; sourceTree = "<group>"; };
 		05A8C76320DB72F100FF7857 /* d3d10_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = d3d10_common.h; sourceTree = "<group>"; };
@@ -529,10 +520,8 @@
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9254B2E625F5516A00A1E0DA /* GitLabCI.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = GitLabCI.xcconfig; sourceTree = "<group>"; };
 		9254B33025FA0BA300A1E0DA /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = assets.zip; path = OSX/assets.zip; sourceTree = "<group>"; };
-		A902040DE66D42F9EE47BFE3 /* MenuDisplay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MenuDisplay.h; sourceTree = "<group>"; };
 		A90205FD4D5979BD8B7E4DD6 /* Info_Metal.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.info; name = Info_Metal.plist; path = OSX/Info_Metal.plist; sourceTree = "<group>"; };
 		A902065A41AEBECE594908C7 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu_Metal.xib; sourceTree = "<group>"; };
-		A902070F2C43F222FD56A95A /* MenuDisplay.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MenuDisplay.m; sourceTree = "<group>"; };
 		A90207489289602F593626D5 /* QTConfig.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = QTConfig.xcconfig; sourceTree = "<group>"; };
 		A90208A05A895029CEC32C14 /* ui_cocoa_msg_window_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_msg_window_metal.m; sourceTree = "<group>"; };
 		A9020AF14B9A73364C6CDDA5 /* cocoa_common_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_common_metal.m; sourceTree = "<group>"; };
@@ -1111,22 +1100,11 @@
 		05A8C74520DB72F100FF7857 /* metal */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C74B20DB72F100FF7857 /* Context.h */,
-				05A8C75320DB72F100FF7857 /* Context.m */,
-				05A8C75720DB72F100FF7857 /* Filter.h */,
-				05A8C75020DB72F100FF7857 /* Filter.m */,
 				05A8C74820DB72F100FF7857 /* metal_common.h */,
-				A902040DE66D42F9EE47BFE3 /* MenuDisplay.h */,
-				A902070F2C43F222FD56A95A /* MenuDisplay.m */,
-				05A8C74C20DB72F100FF7857 /* RendererCommon.h */,
-				05A8C75420DB72F100FF7857 /* RendererCommon.m */,
+				05A8C75420DB72F100FF7857 /* metal_renderer.m */,
 				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
 				05770B9820E805160013DABC /* menu_pipeline.metal */,
-				05A8C75120DB72F100FF7857 /* ShaderTypes.h */,
-				05A8C74920DB72F100FF7857 /* TexturedView.h */,
-				05A8C75620DB72F100FF7857 /* TexturedView.m */,
-				05A8C74F20DB72F100FF7857 /* View.h */,
-				05A8C75820DB72F100FF7857 /* View.m */,
+				05A8C75120DB72F100FF7857 /* metal_shader_types.h */,
 			);
 			path = metal;
 			sourceTree = "<group>";

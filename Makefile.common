@@ -1524,16 +1524,12 @@ ifeq ($(HAVE_METAL), 1)
    LIBS += -framework Metal -framework MetalKit
    # Metal code relies on ARC (Automatic Reference Counting), enable it
    DEF_FLAGS += -fobjc-arc
-   OBJ += gfx/common/metal/Context.o \
-			 gfx/common/metal/Filter.o \
-			 gfx/common/metal/RendererCommon.o \
-			 gfx/common/metal/View.o \
-			 gfx/common/metal/TexturedView.o \
-			 gfx/common/metal/MenuDisplay.o \
-			 gfx/common/metal_common.o \
-			 gfx/drivers/metal.o \
-			 gfx/drivers_font/metal_raster_font.o \
-			 gfx/drivers_display/gfx_display_metal.o
+   OBJ += \
+	  gfx/common/metal/metal_renderer.o \
+	  gfx/common/metal_common.o \
+	  gfx/drivers/metal.o \
+	  gfx/drivers_font/metal_raster_font.o \
+	  gfx/drivers_display/gfx_display_metal.o
 endif
 
 ifeq ($(HAVE_EGL), 1)

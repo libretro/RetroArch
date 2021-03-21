@@ -1,19 +1,133 @@
-//
-//  Context.m
-//  MetalRenderer
-//
-//  Created by Stuart Carnie on 6/9/18.
-//  Copyright © 2018 Stuart Carnie. All rights reserved.
-//
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2018      - Stuart Carnie
+ *  copyright (c) 2011-2021 - Daniel De Matteis
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <retro_assert.h>
 
-#import "Context.h"
-#import "Filter.h"
+#import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
-#import "../metal_common.h"
 
+#import "metal_common.h"
+#import "metal_shader_types.h"
+
+#ifdef HAVE_MENU
+#include "../../../menu/menu_driver.h"
+#endif
+
+#import "../metal_common.h"
 #include "../../verbosity.h"
+
+/*
+ * COMMON
+ */
+
+NSUInteger RPixelFormatToBPP(RPixelFormat format)
+{
+   switch (format)
+   {
+      case RPixelFormatBGRA8Unorm:
+      case RPixelFormatBGRX8Unorm:
+         return 4;
+
+      case RPixelFormatB5G6R5Unorm:
+      case RPixelFormatBGRA4Unorm:
+         return 2;
+
+      default:
+         RARCH_ERR("[Metal]: unknown RPixel format: %d\n", format);
+         return 4;
+   }
+}
+
+static NSString *RPixelStrings[RPixelFormatCount];
+
+NSString *NSStringFromRPixelFormat(RPixelFormat format)
+{
+   static dispatch_once_t onceToken;
+   dispatch_once(&onceToken, ^{
+
+#define STRING(literal) RPixelStrings[literal] = @#literal
+      STRING(RPixelFormatInvalid);
+      STRING(RPixelFormatB5G6R5Unorm);
+      STRING(RPixelFormatBGRA4Unorm);
+      STRING(RPixelFormatBGRA8Unorm);
+      STRING(RPixelFormatBGRX8Unorm);
+#undef STRING
+
+   });
+
+   if (format >= RPixelFormatCount)
+   {
+      format = RPixelFormatInvalid;
+   }
+
+   return RPixelStrings[format];
+}
+
+matrix_float4x4 make_matrix_float4x4(const float *v)
+{
+   simd_float4 P = simd_make_float4(v[0], v[1], v[2], v[3]);
+   v += 4;
+   simd_float4 Q = simd_make_float4(v[0], v[1], v[2], v[3]);
+   v += 4;
+   simd_float4 R = simd_make_float4(v[0], v[1], v[2], v[3]);
+   v += 4;
+   simd_float4 S = simd_make_float4(v[0], v[1], v[2], v[3]);
+
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
+}
+
+matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
+{
+   float near = 0;
+   float far = 1;
+
+   float sx = 2 / (right - left);
+   float sy = 2 / (top - bottom);
+   float sz = 1 / (far - near);
+   float tx = (right + left) / (left - right);
+   float ty = (top + bottom) / (bottom - top);
+   float tz = near / (far - near);
+
+   simd_float4 P = simd_make_float4(sx, 0, 0, 0);
+   simd_float4 Q = simd_make_float4(0, sy, 0, 0);
+   simd_float4 R = simd_make_float4(0, 0, sz, 0);
+   simd_float4 S = simd_make_float4(tx, ty, tz, 1);
+
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
+}
+
+matrix_float4x4 matrix_rotate_z(float rot)
+{
+   float cz, sz;
+   __sincosf(rot, &sz, &cz);
+
+   simd_float4 P = simd_make_float4(cz, -sz, 0, 0);
+   simd_float4 Q = simd_make_float4(sz,  cz, 0, 0);
+   simd_float4 R = simd_make_float4( 0,   0, 1, 0);
+   simd_float4 S = simd_make_float4( 0,   0, 0, 1);
+
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
+}
+
+/*
+ * CONTEXT
+ */
 
 @interface BufferNode : NSObject
 @property (nonatomic, readonly) id<MTLBuffer> src;
@@ -821,6 +935,490 @@ static const NSUInteger kConstantAlignment = 4;
       return YES;
    }
    return NO;
+}
+
+@end
+
+/*
+ * FILTER 
+ */
+
+@interface Filter()
+- (instancetype)initWithKernel:(id<MTLComputePipelineState>)kernel sampler:(id<MTLSamplerState>)sampler;
+@end
+
+@implementation Filter
+{
+   id<MTLComputePipelineState> _kernel;
+}
+
++ (instancetype)newFilterWithFunctionName:(NSString *)name device:(id<MTLDevice>)device library:(id<MTLLibrary>)library error:(NSError **)error
+{
+   id<MTLFunction> function = [library newFunctionWithName:name];
+   id<MTLComputePipelineState> kernel = [device newComputePipelineStateWithFunction:function error:error];
+   if (*error != nil)
+   {
+      return nil;
+   }
+
+   MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
+   sd.minFilter = MTLSamplerMinMagFilterNearest;
+   sd.magFilter = MTLSamplerMinMagFilterNearest;
+   sd.sAddressMode = MTLSamplerAddressModeClampToEdge;
+   sd.tAddressMode = MTLSamplerAddressModeClampToEdge;
+   sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
+   id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:sd];
+
+   return [[Filter alloc] initWithKernel:kernel sampler:sampler];
+}
+
+- (instancetype)initWithKernel:(id<MTLComputePipelineState>)kernel sampler:(id<MTLSamplerState>)sampler
+{
+   if (self = [super init])
+   {
+      _kernel = kernel;
+      _sampler = sampler;
+   }
+   return self;
+}
+
+- (void)apply:(id<MTLCommandBuffer>)cb in:(id<MTLTexture>)tin out:(id<MTLTexture>)tout
+{
+   id<MTLComputeCommandEncoder> ce = [cb computeCommandEncoder];
+   ce.label = @"filter kernel";
+
+   [ce setComputePipelineState:_kernel];
+
+   [ce setTexture:tin atIndex:0];
+   [ce setTexture:tout atIndex:1];
+
+   [self.delegate configure:ce];
+
+   MTLSize size = MTLSizeMake(16, 16, 1);
+   MTLSize count = MTLSizeMake((tin.width + size.width + 1) / size.width, (tin.height + size.height + 1) / size.height,
+                               1);
+
+   [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
+
+   [ce endEncoding];
+}
+
+- (void)apply:(id<MTLCommandBuffer>)cb inBuf:(id<MTLBuffer>)tin outTex:(id<MTLTexture>)tout
+{
+   id<MTLComputeCommandEncoder> ce = [cb computeCommandEncoder];
+   ce.label = @"filter kernel";
+ 
+   [ce setComputePipelineState:_kernel];
+
+   [ce setBuffer:tin offset:0 atIndex:0];
+   [ce setTexture:tout atIndex:0];
+
+   [self.delegate configure:ce];
+
+   MTLSize size = MTLSizeMake(32, 1, 1);
+   MTLSize count = MTLSizeMake((tin.length + 00) / 32, 1, 1);
+
+   [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
+
+   [ce endEncoding];
+}
+
+@end
+
+#ifdef HAVE_MENU
+@implementation MenuDisplay
+{
+   Context *_context;
+   MTLClearColor _clearColor;
+   MTLScissorRect _scissorRect;
+   BOOL _useScissorRect;
+   Uniforms _uniforms;
+   bool _clearNextRender;
+}
+
+- (instancetype)initWithContext:(Context *)context
+{
+   if (self = [super init])
+   {
+      _context                   = context;
+      _clearColor                = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
+      _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
+      _useScissorRect            = NO;
+   }
+   return self;
+}
+
++ (const float *)defaultVertices
+{
+   static float dummy[8] = {
+      0.0f, 0.0f,
+      1.0f, 0.0f,
+      0.0f, 1.0f,
+      1.0f, 1.0f,
+   };
+   return &dummy[0];
+}
+
++ (const float *)defaultTexCoords
+{
+   static float dummy[8] = {
+      0.0f, 1.0f,
+      1.0f, 1.0f,
+      0.0f, 0.0f,
+      1.0f, 0.0f,
+   };
+   return &dummy[0];
+}
+
++ (const float *)defaultColor
+{
+   static float dummy[16] = {
+      1.0f, 0.0f, 1.0f, 1.0f,
+      1.0f, 0.0f, 1.0f, 1.0f,
+      1.0f, 0.0f, 1.0f, 1.0f,
+      1.0f, 0.0f, 1.0f, 1.0f,
+   };
+   return &dummy[0];
+}
+
+- (void)setClearColor:(MTLClearColor)clearColor
+{
+   _clearColor      = clearColor;
+   _clearNextRender = YES;
+}
+
+- (MTLClearColor)clearColor
+{
+   return _clearColor;
+}
+
+- (void)setScissorRect:(MTLScissorRect)rect
+{
+   _scissorRect = rect;
+   _useScissorRect = YES;
+}
+
+- (void)clearScissorRect
+{
+   _useScissorRect = NO;
+   [_context resetScissorRect];
+}
+
+- (MTLPrimitiveType)_toPrimitiveType:(enum gfx_display_prim_type)prim
+{
+   switch (prim)
+   {
+      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
+         return MTLPrimitiveTypeTriangleStrip;
+      case GFX_DISPLAY_PRIM_TRIANGLES:
+      default:
+         /* Unexpected primitive type, defaulting to triangle */
+         break;
+   }
+
+   return MTLPrimitiveTypeTriangle;
+}
+
+- (void)drawPipeline:(gfx_display_ctx_draw_t *)draw
+{
+   static struct video_coords blank_coords;
+
+   draw->x = 0;
+   draw->y = 0;
+   draw->matrix_data = NULL;
+
+   _uniforms.outputSize = simd_make_float2(_context.viewport->full_width, _context.viewport->full_height);
+
+   draw->backend_data = &_uniforms;
+   draw->backend_data_size = sizeof(_uniforms);
+
+   switch (draw->pipeline_id)
+   {
+      /* ribbon */
+      default:
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      {
+         gfx_display_t *p_disp   = disp_get_ptr();
+         video_coord_array_t *ca = &p_disp->dispca;
+         draw->coords            = (struct video_coords *)&ca->coords;
+         break;
+      }
+
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
+      {
+         draw->coords          = &blank_coords;
+         blank_coords.vertices = 4;
+         draw->prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+         break;
+      }
+   }
+
+   _uniforms.time += 0.01;
+}
+
+- (void)draw:(gfx_display_ctx_draw_t *)draw
+{
+   unsigned i;
+   BufferRange range;
+   NSUInteger vertex_count;
+   SpriteVertex *pv;
+   const float *vertex    = draw->coords->vertex ?: MenuDisplay.defaultVertices;
+   const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;
+   const float *color     = draw->coords->color ?: MenuDisplay.defaultColor;
+   NSUInteger needed      = draw->coords->vertices * sizeof(SpriteVertex);
+   if (![_context allocRange:&range length:needed])
+      return;
+
+   vertex_count           = draw->coords->vertices;
+   pv                     = (SpriteVertex *)range.data;
+
+   for (i = 0; i < draw->coords->vertices; i++, pv++)
+   {
+      pv->position = simd_make_float2(vertex[0], 1.0f - vertex[1]);
+      vertex += 2;
+
+      pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
+      tex_coord += 2;
+
+      pv->color = simd_make_float4(color[0], color[1], color[2], color[3]);
+      color += 4;
+   }
+
+   id<MTLRenderCommandEncoder> rce = _context.rce;
+   if (_clearNextRender)
+   {
+      [_context resetRenderViewport:kFullscreenViewport];
+      [_context drawQuadX:0
+                        y:0
+                        w:1
+                        h:1
+                        r:(float)_clearColor.red
+                        g:(float)_clearColor.green
+                        b:(float)_clearColor.blue
+                        a:(float)_clearColor.alpha
+      ];
+      _clearNextRender = NO;
+   }
+
+   MTLViewport vp = {
+      .originX = draw->x,
+      .originY = _context.viewport->full_height - draw->y - draw->height,
+      .width   = draw->width,
+      .height  = draw->height,
+      .znear   = 0,
+      .zfar    = 1,
+   };
+   [rce setViewport:vp];
+
+   if (_useScissorRect)
+      [rce setScissorRect:_scissorRect];
+
+   switch (draw->pipeline_id)
+   {
+#if HAVE_SHADERPIPELINE
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
+         [rce setRenderPipelineState:[_context getStockShader:draw->pipeline_id blend:_blend]];
+         [rce setVertexBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
+         [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
+         [rce setFragmentBytes:draw->backend_data length:draw->backend_data_size atIndex:BufferIndexUniforms];
+         [rce drawPrimitives:[self _toPrimitiveType:draw->prim_type] vertexStart:0 vertexCount:vertex_count];
+         return;
+#endif
+      default:
+         break;
+   }
+
+   Texture *tex = (__bridge Texture *)(void *)draw->texture;
+   if (tex == nil)
+      return;
+
+   [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
+
+   Uniforms uniforms = {
+      .projectionMatrix = draw->matrix_data ? make_matrix_float4x4((const float *)draw->matrix_data)
+                                            : _uniforms.projectionMatrix
+   };
+   [rce setVertexBytes:&uniforms length:sizeof(uniforms) atIndex:BufferIndexUniforms];
+   [rce setVertexBuffer:range.buffer offset:range.offset atIndex:BufferIndexPositions];
+   [rce setFragmentTexture:tex.texture atIndex:TextureIndexColor];
+   [rce setFragmentSamplerState:tex.sampler atIndex:SamplerIndexDraw];
+   [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:vertex_count];
+}
+@end
+#endif
+
+@implementation ViewDescriptor
+
+- (instancetype)init
+{
+   self = [super init];
+   if (self)
+   {
+      _format = RPixelFormatBGRA8Unorm;
+   }
+   return self;
+}
+
+- (NSString *)debugDescription
+{
+#if defined(HAVE_COCOATOUCH)
+    NSString *sizeDesc = [NSString stringWithFormat:@"width: %f, height: %f",_size.width,_size.height];
+#else
+    NSString *sizeDesc = NSStringFromSize(_size);
+#endif
+   return [NSString stringWithFormat:@"( format = %@, frame = %@ )",
+                                     NSStringFromRPixelFormat(_format),
+                                     sizeDesc];
+}
+
+@end
+
+@implementation TexturedView
+{
+   Context *_context;
+   id<MTLTexture> _texture; // optimal render texture
+   Vertex _v[4];
+   CGSize _size; // size of view in pixels
+   CGRect _frame;
+   NSUInteger _bpp;
+
+   id<MTLTexture> _src;    // source texture
+   bool _srcDirty;
+}
+
+- (instancetype)initWithDescriptor:(ViewDescriptor *)d context:(Context *)c
+{
+   self = [super init];
+   if (self)
+   {
+      _format = d.format;
+      _bpp = RPixelFormatToBPP(_format);
+      _filter = d.filter;
+      _context = c;
+      _visible = YES;
+      if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+      {
+         _drawState = ViewDrawStateEncoder;
+      }
+      else
+      {
+         _drawState = ViewDrawStateAll;
+      }
+      self.size = d.size;
+      self.frame = CGRectMake(0, 0, 1, 1);
+   }
+   return self;
+}
+
+- (void)setSize:(CGSize)size
+{
+   if (CGSizeEqualToSize(_size, size))
+   {
+      return;
+   }
+
+   _size = size;
+
+   {
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                                                                    width:(NSUInteger)size.width
+                                                                                   height:(NSUInteger)size.height
+                                                                                mipmapped:NO];
+      td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+      _texture = [_context.device newTextureWithDescriptor:td];
+   }
+
+   if (_format != RPixelFormatBGRA8Unorm && _format != RPixelFormatBGRX8Unorm)
+   {
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
+                                                                                    width:(NSUInteger)size.width
+                                                                                   height:(NSUInteger)size.height
+                                                                                mipmapped:NO];
+      _src = [_context.device newTextureWithDescriptor:td];
+   }
+}
+
+- (CGSize)size
+{
+   return _size;
+}
+
+- (void)setFrame:(CGRect)frame
+{
+   if (CGRectEqualToRect(_frame, frame))
+   {
+      return;
+   }
+
+   _frame = frame;
+
+   float l = (float)CGRectGetMinX(frame);
+   float t = (float)CGRectGetMinY(frame);
+   float r = (float)CGRectGetMaxX(frame);
+   float b = (float)CGRectGetMaxY(frame);
+
+   Vertex v[4] = {
+      {simd_make_float3(l, b, 0), simd_make_float2(0, 1)},
+      {simd_make_float3(r, b, 0), simd_make_float2(1, 1)},
+      {simd_make_float3(l, t, 0), simd_make_float2(0, 0)},
+      {simd_make_float3(r, t, 0), simd_make_float2(1, 0)},
+   };
+   memcpy(_v, v, sizeof(_v));
+}
+
+- (CGRect)frame
+{
+   return _frame;
+}
+
+- (void)_convertFormat
+{
+   if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+      return;
+
+   if (!_srcDirty)
+      return;
+
+   [_context convertFormat:_format from:_src to:_texture];
+   _srcDirty = NO;
+}
+
+- (void)drawWithContext:(Context *)ctx
+{
+   [self _convertFormat];
+}
+
+- (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
+{
+   [rce setVertexBytes:&_v length:sizeof(_v) atIndex:BufferIndexPositions];
+   [rce setFragmentTexture:_texture atIndex:TextureIndexColor];
+   [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+}
+
+- (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
+{
+   if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+   {
+      [_texture replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
+                  mipmapLevel:0 withBytes:src
+                  bytesPerRow:(NSUInteger)(4 * pitch)];
+   }
+   else
+   {
+      [_src replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
+              mipmapLevel:0 withBytes:src
+              bytesPerRow:(NSUInteger)(pitch)];
+      _srcDirty = YES;
+   }
 }
 
 @end

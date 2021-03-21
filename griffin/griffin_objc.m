@@ -58,12 +58,7 @@
 #endif
 
 #ifdef HAVE_METAL
-#import "../gfx/common/metal/Context.m"
-#import "../gfx/common/metal/Filter.m"
-#import "../gfx/common/metal/RendererCommon.m"
-#import "../gfx/common/metal/View.m"
-#import "../gfx/common/metal/TexturedView.m"
-#import "../gfx/common/metal/MenuDisplay.m"
+#import "../gfx/common/metal/metal_renderer.m"
 #import "../gfx/common/metal_common.m"
 #import "../gfx/drivers/metal.m"
 #import "../gfx/drivers_display/gfx_display_metal.m"
