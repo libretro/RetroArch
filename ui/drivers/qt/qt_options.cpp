@@ -46,29 +46,28 @@ AchievementsPage::AchievementsPage(QObject *parent) :
 
 QWidget *AchievementsPage::widget()
 {
+   unsigned i;
    QWidget               *widget     = new QWidget;
    QVBoxLayout           *layout     = new QVBoxLayout;
    enum msg_hash_enums check_setting = MENU_ENUM_LABEL_CHEEVOS_ENABLE;
    CheckableSettingsGroup *group     = new CheckableSettingsGroup(check_setting);
+   settings_t *settings              = config_get_ptr();
+   file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
+   menu_displaylist_build_list(list, settings,
+         DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST, true);
 
+   for (i = 0; i < list->size; i++)
    {
-      unsigned i;
-      file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST, true);
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
 
-      for (i = 0; i < list->size; i++)
-      {
-         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-            file_list_get_actiondata_at_offset(list, i);
+      if (cbs->enum_idx == check_setting)
+         continue;
 
-         if (cbs->enum_idx == check_setting)
-            continue;
-
-         group->add(cbs->enum_idx);
-      }
-
-      file_list_free(list);
+      group->add(cbs->enum_idx);
    }
+
+   file_list_free(list);
 
    layout->addWidget(group);
 
@@ -193,27 +192,27 @@ InputPage::InputPage(QObject *parent) :
 
 QWidget *InputPage::widget()
 {
-   QWidget *widget    = new QWidget;
-   FormLayout *layout = new FormLayout;
+   unsigned i;
+   QWidget *widget       = new QWidget;
+   FormLayout *layout    = new FormLayout;
+   settings_t *settings  = config_get_ptr();
+   file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
 
+   menu_displaylist_build_list(list, settings,
+         DISPLAYLIST_INPUT_SETTINGS_LIST, true);
+
+   for (i = 0; i < list->size; i++)
    {
-      unsigned i;
-      file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_INPUT_SETTINGS_LIST, true);
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
 
-      for (i = 0; i < list->size; i++)
-      {
-         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-            file_list_get_actiondata_at_offset(list, i);
+      if (cbs->enum_idx == MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS)
+         break;
 
-         if (cbs->enum_idx == MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS)
-            break;
-
-         layout->add(cbs->enum_idx);
-      }
-
-      file_list_free(list);
+      layout->add(cbs->enum_idx);
    }
+
+   file_list_free(list);
 
    widget->setLayout(layout);
 
@@ -232,9 +231,11 @@ QWidget *HotkeyBindsPage::widget()
    QWidget *widget         = new QWidget;
    QHBoxLayout *layout     = new QHBoxLayout;
    FormLayout *mainLayout  = new FormLayout;
+   settings_t *settings    = config_get_ptr();
    file_list_t *list       = (file_list_t*)calloc(1, sizeof(*list));
 
-   menu_displaylist_build_list(list, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST, true);
+   menu_displaylist_build_list(list, settings,
+         DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST, true);
 
    for (i = 0; i < list->size; i++)
    {
@@ -909,6 +910,7 @@ ViewsPage::ViewsPage(QObject *parent) :
 
 QWidget *ViewsPage::widget()
 {
+   unsigned i;
    QWidget           * widget = new QWidget();
    QHBoxLayout *mainLayout    = new QHBoxLayout;
    FormLayout *leftLayout     = new FormLayout;
@@ -920,21 +922,26 @@ QWidget *ViewsPage::widget()
    SettingsGroup *tabs        = new SettingsGroup("Tabs");
    SettingsGroup *status      = new SettingsGroup("Status");
    SettingsGroup *startScreen = new SettingsGroup("StartScreen");
+   settings_t *_settings      = config_get_ptr();
+   unsigned tabs_begin        = 0;
+   unsigned status_begin      = 0;
+   file_list_t *list          = (file_list_t*)calloc(1, sizeof(*list));
 
    {
-      unsigned i;
-      unsigned tabs_begin   = 0;
-      unsigned status_begin = 0;
-      file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST, true);
-      rarch_setting_t *kioskMode = menu_setting_find_enum(MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE);
+      rarch_setting_t *kiosk_mode = NULL;
+      menu_displaylist_build_list(list, _settings,
+            DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST, true);
+      kiosk_mode                  = menu_setting_find_enum(
+            MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE);
 
       for (i = 0; i < list->size; i++)
       {
          menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
             file_list_get_actiondata_at_offset(list, i);
 
-         if (cbs->enum_idx == (kioskMode ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS : MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE))
+         if (cbs->enum_idx == (kiosk_mode 
+                  ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS 
+                  : MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE))
          {
             tabs_begin = i;
             break;
@@ -974,7 +981,8 @@ QWidget *ViewsPage::widget()
    {
       unsigned i;
       file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST, true);
+      menu_displaylist_build_list(list, _settings,
+            DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST, true);
 
       for (i = 0; i < list->size; i++)
       {
@@ -1033,9 +1041,10 @@ QWidget *AppearancePage::widget()
    QWidget            * widget = new QWidget;
    FormLayout          *layout = new FormLayout;
    file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   settings_t *settings        = config_get_ptr();
 
    menu_displaylist_build_list(
-         list, DISPLAYLIST_MENU_SETTINGS_LIST, true);
+         list, settings, DISPLAYLIST_MENU_SETTINGS_LIST, true);
 
    /* TODO/FIXME - we haven't yet figured out how to 
     * put a radio button setting next to another radio 

@@ -5181,6 +5181,7 @@ static unsigned menu_displaylist_populate_subsystem(
 
 unsigned menu_displaylist_build_list(
       file_list_t *list,
+      settings_t *settings,
       enum menu_displaylist_ctl_state type,
       bool include_everything)
 {
@@ -5191,7 +5192,6 @@ unsigned menu_displaylist_build_list(
    {
       case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
          {
-            settings_t *settings                         = config_get_ptr();
             const struct retro_subsystem_info* subsystem = subsystem_data;
             rarch_system_info_t *sys_info                =
                runloop_get_system_info();
@@ -5208,7 +5208,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
          {
-            settings_t *settings         = config_get_ptr();
             bool playlist_show_sublabels = settings->bools.playlist_show_sublabels;
             bool history_list_enable     = settings->bools.history_list_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -5272,7 +5271,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          {
-            settings_t *settings         = config_get_ptr();
             const char *input_driver_id  = settings->arrays.input_driver;
             const char *joypad_driver_id = settings->arrays.input_joypad_driver;
 
@@ -5353,7 +5351,6 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SHADER_PRESET_REMOVE:
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            settings_t      *settings     = config_get_ptr();
             const char *dir_video_shader  = settings->paths.directory_video_shader;
             const char *dir_menu_config   = settings->paths.directory_menu_config;
             if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL,
@@ -5440,11 +5437,8 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
-         {
-            settings_t *settings = config_get_ptr();
-            count = menu_displaylist_parse_load_content_settings(list,
-                  settings, false);
-         }
+         count = menu_displaylist_parse_load_content_settings(list,
+               settings, false);
 
          if (count == 0)
             if (menu_entries_append_enum(list,
@@ -5502,7 +5496,6 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:
 #ifdef HAVE_BLUETOOTH
          {
-            settings_t      *settings     = config_get_ptr();
             if (!string_is_equal(settings->arrays.bluetooth_driver, "null"))
             {
                struct string_list *device_list = string_list_new();
@@ -5530,9 +5523,8 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
          {
-            settings_t *settings      = config_get_ptr();
             bool wifi_enabled = settings->bools.wifi_enabled;
-            bool connected = driver_wifi_connection_info(NULL);
+            bool connected    = driver_wifi_connection_info(NULL);
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_WIFI_ENABLED,              PARSE_ONLY_BOOL, true},
@@ -5567,28 +5559,25 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_WIFI_NETWORKS_LIST:
 #ifdef HAVE_NETWORKING
+         if (!string_is_equal(settings->arrays.wifi_driver, "null"))
          {
-            settings_t      *settings     = config_get_ptr();
-            if (!string_is_equal(settings->arrays.wifi_driver, "null"))
-            {
-               wifi_network_scan_t *scan = driver_wifi_get_ssids();
+            wifi_network_scan_t *scan = driver_wifi_get_ssids();
 
-               /* Temporary hack: scan periodically, until we have a submenu */
-               if (!scan || time(NULL) > scan->scan_time + 30)
-                  task_push_wifi_scan(wifi_scan_callback);
-               else
+            /* Temporary hack: scan periodically, until we have a submenu */
+            if (!scan || time(NULL) > scan->scan_time + 30)
+               task_push_wifi_scan(wifi_scan_callback);
+            else
+            {
+               unsigned i;
+               for (i = 0; i < RBUF_LEN(scan->net_list); i++)
                {
-                  unsigned i;
-                  for (i = 0; i < RBUF_LEN(scan->net_list); i++)
-                  {
-                     const char *ssid = scan->net_list[i].ssid;
-                     if (menu_entries_append_enum(list,
-                              string_is_empty(ssid) ? msg_hash_to_str(MSG_WIFI_EMPTY_SSID) : ssid,
-                              msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-                              MENU_ENUM_LABEL_CONNECT_WIFI,
-                              MENU_WIFI, 0, 0))
-                        count++;
-                  }
+                  const char *ssid = scan->net_list[i].ssid;
+                  if (menu_entries_append_enum(list,
+                           string_is_empty(ssid) ? msg_hash_to_str(MSG_WIFI_EMPTY_SSID) : ssid,
+                           msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+                           MENU_ENUM_LABEL_CONNECT_WIFI,
+                           MENU_WIFI, 0, 0))
+                     count++;
                }
             }
          }
@@ -5641,15 +5630,13 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
                   PARSE_ONLY_STRING_OPTIONS, false) == 0)
             count++;
+
+         if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
          {
-            settings_t *settings      = config_get_ptr();
-            if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
-            {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-            }
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
          }
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
@@ -5757,27 +5744,22 @@ unsigned menu_displaylist_build_list(
             count++;
 
 #ifdef HAVE_DSP_FILTER
-         {
-            settings_t *settings = config_get_ptr();
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
+                  PARSE_ONLY_PATH, false) == 0)
+            count++;
 
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
-                     PARSE_ONLY_PATH, false) == 0)
-               count++;
-
-            if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
-               if (menu_entries_append_enum(list,
+         if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
+            if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE),
                      msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE),
                      MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_REMOVE,
                      MENU_SETTING_ACTION_AUDIO_DSP_PLUGIN_REMOVE, 0, 0))
-                  count++;
-         }
+               count++;
 #endif
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          {
-            settings_t *settings      = config_get_ptr();
             gfx_ctx_flags_t flags;
 
             if (video_display_server_get_flags(&flags))
@@ -5947,7 +5929,6 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
          {
-            settings_t      *settings        = config_get_ptr();
             const char *dir_menu_content     = settings->paths.directory_menu_content;
             bool menu_content_show_favorites = settings->bools.menu_content_show_favorites;
 
@@ -6020,7 +6001,6 @@ unsigned menu_displaylist_build_list(
          }
 
          {
-            settings_t *settings             = config_get_ptr();
             bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
             if (menu_content_show_playlists)
                if (menu_entries_append_enum(list,
@@ -6215,7 +6195,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST:
          {
-            settings_t      *settings      = config_get_ptr();
             bool accessibility_enable      = settings->bools.accessibility_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,                                             PARSE_ONLY_BOOL, true  },
@@ -6249,7 +6228,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
          {
-            settings_t      *settings      = config_get_ptr();
             bool ai_service_enable         = settings->bools.ai_service_enable;
 
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -6659,7 +6637,6 @@ unsigned menu_displaylist_build_list(
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
          /* Get system name list */
          {
-            settings_t *settings              = config_get_ptr();
             bool show_hidden_files            = settings->bools.show_hidden_files;
 #ifdef HAVE_LIBRETRODB
             const char *path_content_database = settings->paths.path_content_database;
@@ -6876,7 +6853,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
          {
-            settings_t      *settings      = config_get_ptr();
             bool netplay_allow_slaves      = settings->bools.netplay_allow_slaves;
             bool netplay_use_mitm_server   = settings->bools.netplay_use_mitm_server;
             bool network_cmd_enable        = settings->bools.network_cmd_enable;
@@ -7192,7 +7168,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          {
-            settings_t      *settings      = config_get_ptr();
             unsigned streaming_mode        = settings->uints.streaming_mode;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,   true},
@@ -7248,7 +7223,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
          {
-            settings_t *settings      = config_get_ptr();
             bool cheevos_enable       = settings->bools.cheevos_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_CHEEVOS_ENABLE,                                        PARSE_ONLY_BOOL,   true  },
@@ -7299,7 +7273,6 @@ unsigned menu_displaylist_build_list(
          break;         
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
-            settings_t *settings      = config_get_ptr();
             bool kiosk_mode_enable    = settings->bools.kiosk_mode_enable;
             bool desktop_menu_enable  = settings->bools.desktop_menu_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -7499,7 +7472,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          {
-            settings_t *settings      = config_get_ptr();
             bool video_vsync          = settings->bools.video_vsync;
             bool video_hard_sync      = settings->bools.video_hard_sync;
 
@@ -7553,8 +7525,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          {
-            settings_t *settings      = config_get_ptr();
-
 #if defined(DINGUX)
             if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
             {
@@ -7779,7 +7749,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
          {
-            settings_t      *settings     = config_get_ptr();
             bool input_overlay_enable     = settings->bools.input_overlay_enable;
             bool input_overlay_auto_scale = settings->bools.input_overlay_auto_scale;
 
@@ -7860,7 +7829,6 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_VIDEO_LAYOUT
       case DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
          {
-            settings_t *settings      = config_get_ptr();
             bool video_layout_enable  = settings->bools.video_layout_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE,                   PARSE_ONLY_BOOL,  true },
@@ -7897,7 +7865,6 @@ unsigned menu_displaylist_build_list(
 #endif
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
          {
-            settings_t      *settings     = config_get_ptr();
             bool video_hard_sync          = settings->bools.video_hard_sync;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
@@ -7935,7 +7902,6 @@ unsigned menu_displaylist_build_list(
             }
 
             {
-               settings_t      *settings     = config_get_ptr();
                bool runahead_enabled         = settings->bools.run_ahead_enabled;
                if (runahead_enabled)
                {
@@ -7969,7 +7935,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
          {
-            settings_t *settings          = config_get_ptr();
             bool video_font_enable        = settings->bools.video_font_enable;
             bool video_msg_bgcolor_enable = settings->bools.video_msg_bgcolor_enable;
 #ifdef HAVE_GFX_WIDGETS
@@ -8068,7 +8033,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST:
          {
-            settings_t *settings              = config_get_ptr();
             bool video_font_enable            = settings->bools.video_font_enable;
             bool video_fps_show               = settings->bools.video_fps_show;
             bool video_memory_show            = settings->bools.video_memory_show;
@@ -8201,7 +8165,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
          {
-            settings_t *settings      = config_get_ptr();
             bool savestate_auto_index = settings->bools.savestate_auto_index;
 
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -8251,7 +8214,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_SETTINGS_ALL:
          {
-            settings_t      *settings     = config_get_ptr();
 #ifdef HAVE_TRANSLATE
             bool settings_show_ai_service = settings->bools.settings_show_ai_service;
 #endif
@@ -8715,7 +8677,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
          {
-            settings_t      *settings     = config_get_ptr();
             bool log_to_file              = settings->bools.log_to_file;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_LOG_VERBOSITY,         PARSE_ONLY_BOOL, true},
@@ -8776,7 +8737,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
          {
-            settings_t      *settings     = config_get_ptr();
             bool rewind_enable            = settings->bools.rewind_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_REWIND_ENABLE,           PARSE_ONLY_BOOL, true},
@@ -8836,7 +8796,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_MENU_SETTINGS_LIST:
          {
-            settings_t      *settings                  = config_get_ptr();
             bool menu_horizontal_animation             = settings->bools.menu_horizontal_animation;
             bool menu_materialui_icons_enable          = settings->bools.menu_materialui_icons_enable;
             bool menu_materialui_show_nav_bar          = settings->bools.menu_materialui_show_nav_bar;
@@ -11229,7 +11188,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             settings_t *settings = config_get_ptr();
-         count                   = menu_displaylist_parse_input_description_list(info, settings);
+            count                = menu_displaylist_parse_input_description_list(info, settings);
          }
          info->need_refresh = true;
          info->need_push    = true;
@@ -11340,7 +11299,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
       case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_build_list(info->list, type, false);
+         {
+            settings_t *settings = config_get_ptr();
+            count = menu_displaylist_build_list(info->list, settings, type, false);
+         }
 
          if (count == 0)
          {

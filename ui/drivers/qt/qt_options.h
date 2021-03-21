@@ -8,6 +8,8 @@
 
 #include "settingswidgets.h"
 
+#include "../../../configuration.h"
+
 class MainWindow;
 class ViewOptionsWidget;
 
@@ -560,8 +562,9 @@ static inline QWidget *create_widget(enum menu_displaylist_ctl_state name)
    QWidget             *widget = new QWidget;
    FormLayout          *layout = new FormLayout;
    file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   settings_t *settings        = config_get_ptr();
 
-   menu_displaylist_build_list(list, name, true);
+   menu_displaylist_build_list(list, settings, name, true);
 
    for (i = 0; i < list->size; i++)
    {
