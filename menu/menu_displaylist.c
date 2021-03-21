@@ -279,8 +279,10 @@ static void filebrowser_parse(
       for (i = 0; i < list_size; i++)
       {
          char label[64];
-         bool is_dir                   = false;
-         enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+         enum msg_hash_enums 
+            enum_idx                   = MSG_UNKNOWN;
+         enum rarch_content_type 
+            path_type                  = RARCH_CONTENT_NONE;
          enum msg_file_type file_type  = FILE_TYPE_NONE;
          const char *path              = str_list.elems[i].data;
 
@@ -290,7 +292,17 @@ static void filebrowser_parse(
          {
             case RARCH_DIRECTORY:
                file_type = FILE_TYPE_DIRECTORY;
-               break;
+
+               /* Need to preserve slash first time. */
+               if (!string_is_empty(path) && !path_is_compressed)
+                  path = path_basename(path);
+
+               dirs_count++;
+               items_found++;
+               menu_entries_append_enum(info->list, path, label,
+                     MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
+                     file_type, 0, 0);
+               continue;
             case RARCH_COMPRESSED_ARCHIVE:
                file_type = FILE_TYPE_CARCHIVE;
                break;
@@ -318,61 +330,49 @@ static void filebrowser_parse(
                break;
          }
 
-         is_dir = (file_type == FILE_TYPE_DIRECTORY);
-
-         if (!is_dir)
-            if (
-                  (filebrowser_types == FILEBROWSER_SELECT_DIR) ||
-                  (filebrowser_types == FILEBROWSER_SCAN_DIR)   ||
-                  (filebrowser_types == FILEBROWSER_MANUAL_SCAN_DIR)
-               )
-               continue;
+         if (
+               (filebrowser_types == FILEBROWSER_SELECT_DIR) ||
+               (filebrowser_types == FILEBROWSER_SCAN_DIR)   ||
+               (filebrowser_types == FILEBROWSER_MANUAL_SCAN_DIR)
+            )
+            continue;
 
          /* Need to preserve slash first time. */
-
          if (!string_is_empty(path) && !path_is_compressed)
             path = path_basename(path);
 
-         if (is_dir)
-         {
-            if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
-               file_type = FILE_TYPE_DIRECTORY;
-         }
-         else
-         {
-            enum rarch_content_type path_type = path_is_media_type(path);
+         path_type                         = path_is_media_type(path);
 
-            if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
-               file_type = FILE_TYPE_PLAYLIST_COLLECTION;
+         if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
+            file_type = FILE_TYPE_PLAYLIST_COLLECTION;
 
-            if (path_type == RARCH_CONTENT_MUSIC)
-               file_type = FILE_TYPE_MUSIC;
-            else if (
-                  builtin_mediaplayer_enable ||
-                  builtin_imageviewer_enable)
+         if (path_type == RARCH_CONTENT_MUSIC)
+            file_type = FILE_TYPE_MUSIC;
+         else if (
+               builtin_mediaplayer_enable ||
+               builtin_imageviewer_enable)
+         {
+            switch (path_type)
             {
-               switch (path_type)
-               {
-                  case RARCH_CONTENT_MOVIE:
+               case RARCH_CONTENT_MOVIE:
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-                     if (builtin_mediaplayer_enable)
-                        file_type = FILE_TYPE_MOVIE;
+                  if (builtin_mediaplayer_enable)
+                     file_type = FILE_TYPE_MOVIE;
 #endif
-                     break;
-                  case RARCH_CONTENT_IMAGE:
+                  break;
+               case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
-                     if (builtin_imageviewer_enable
-                           && type != DISPLAYLIST_IMAGES)
-                        file_type = FILE_TYPE_IMAGEVIEWER;
-                     else
-                        file_type = FILE_TYPE_IMAGE;
+                  if (builtin_imageviewer_enable
+                        && type != DISPLAYLIST_IMAGES)
+                     file_type = FILE_TYPE_IMAGEVIEWER;
+                  else
+                     file_type = FILE_TYPE_IMAGE;
 #endif
-                     if (filebrowser_types == FILEBROWSER_SELECT_IMAGE)
-                        file_type = FILE_TYPE_IMAGE;
-                     break;
-                  default:
-                     break;
-               }
+                  if (filebrowser_types == FILEBROWSER_SELECT_IMAGE)
+                     file_type = FILE_TYPE_IMAGE;
+                  break;
+               default:
+                  break;
             }
          }
 
