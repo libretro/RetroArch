@@ -172,57 +172,64 @@ static void filebrowser_parse(
    unsigned dirs_count                  = 0;
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
-   const char *path                     = info ? info->path : NULL;
+   const char *path                     = info->path;
    bool path_is_compressed              = !string_is_empty(path)
       ? path_is_compressed_file(path) : false;
-   rarch_system_info_t *system          = runloop_get_system_info();
 
-   /* Core fully loaded, use the subsystem data */
-   if (system->subsystem.data)
-      subsystem = system->subsystem.data + content_get_subsystem();
-   /* Core not loaded completely, use the data we peeked on load core */
-   else
-      subsystem = subsystem_data + content_get_subsystem();
+   if (path_is_compressed)
+   {
+      if (filebrowser_types == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
+      {
+         rarch_system_info_t *system          = runloop_get_system_info();
+         /* Core fully loaded, use the subsystem data */
+         if (system->subsystem.data)
+            subsystem = system->subsystem.data + content_get_subsystem();
+         /* Core not loaded completely, use the data we peeked on load core */
+         else
+            subsystem = subsystem_data + content_get_subsystem();
 
-
-   if (info)
+         if (subsystem && subsystem_current_count > 0)
+            ret = file_archive_get_file_list_noalloc(&str_list,
+                  path,
+                  subsystem->roms[
+                  content_get_subsystem_rom_id()].valid_extensions);
+      }
+      else
+         ret = file_archive_get_file_list_noalloc(&str_list,
+               path, info->exts);
+   }
+   else if (!string_is_empty(path))
    {
       if (info->type_default == FILE_TYPE_SHADER_PRESET ||
-               info->type_default == FILE_TYPE_SHADER)
+            info->type_default == FILE_TYPE_SHADER)
          filter_ext = true;
 
       if (string_is_equal(info->label,
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
          filter_ext = false;
-   }
 
-   if (info && path_is_compressed)
-   {
-      if (filebrowser_types != FILEBROWSER_SELECT_FILE_SUBSYSTEM)
-         ret = file_archive_get_file_list_noalloc(&str_list,
-               path, info->exts);
-      else if (subsystem && subsystem_current_count > 0)
-         ret = file_archive_get_file_list_noalloc(&str_list,
-               path,
-               subsystem->roms[
-               content_get_subsystem_rom_id()].valid_extensions);
-   }
-   else if (!string_is_empty(path))
-   {
       if (filebrowser_types == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
+         rarch_system_info_t *system          = runloop_get_system_info();
+         /* Core fully loaded, use the subsystem data */
+         if (system->subsystem.data)
+            subsystem = system->subsystem.data + content_get_subsystem();
+         /* Core not loaded completely, use the data we peeked on load core */
+         else
+            subsystem = subsystem_data + content_get_subsystem();
+
          if (subsystem && subsystem_current_count > 0 && content_get_subsystem_rom_id() < subsystem->num_roms)
             ret = dir_list_initialize(&str_list,
                   path,
-                  (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
+                  filter_ext ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, show_hidden_files, true, false);
       }
-      else if (info && ((info->type_default == FILE_TYPE_MANUAL_SCAN_DAT) || (info->type_default == FILE_TYPE_SIDELOAD_CORE)))
+      else if ((info->type_default == FILE_TYPE_MANUAL_SCAN_DAT) || (info->type_default == FILE_TYPE_SIDELOAD_CORE))
          ret = dir_list_initialize(&str_list, path,
                info->exts, true, show_hidden_files, false, false);
       else
          ret = dir_list_initialize(&str_list, path,
-               (filter_ext && info) ? info->exts : NULL,
+               filter_ext ? info->exts : NULL,
                true, show_hidden_files, true, false);
    }
 
@@ -230,29 +237,26 @@ static void filebrowser_parse(
    {
       case FILEBROWSER_SCAN_DIR:
 #ifdef HAVE_LIBRETRODB
-         if (info)
-            menu_entries_prepend(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
-                  MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
-                  FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
+         menu_entries_prepend(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
+               MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
+               FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
 #endif
          break;
       case FILEBROWSER_MANUAL_SCAN_DIR:
-         if (info)
-            menu_entries_prepend(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
-                  MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
-                  FILE_TYPE_MANUAL_SCAN_DIRECTORY, 0 ,0);
+         menu_entries_prepend(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
+               MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
+               FILE_TYPE_MANUAL_SCAN_DIRECTORY, 0 ,0);
          break;
       case FILEBROWSER_SELECT_DIR:
-         if (info)
-            menu_entries_prepend(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
-                  MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
-                  FILE_TYPE_USE_DIRECTORY, 0 ,0);
+         menu_entries_prepend(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
+               msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
+               MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
+               FILE_TYPE_USE_DIRECTORY, 0 ,0);
          break;
       default:
          break;
@@ -264,9 +268,8 @@ static void filebrowser_parse(
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
 
-      if (info)
-         menu_entries_append_enum(info->list, str, "",
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
+      menu_entries_append_enum(info->list, str, "",
+            MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
       goto end;
    }
 
@@ -397,10 +400,6 @@ static void filebrowser_parse(
                enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER;
                files_count++;
                break;
-            case FILE_TYPE_DIRECTORY:
-               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
-               dirs_count++;
-               break;
             default:
                break;
          }
@@ -424,7 +423,7 @@ static void filebrowser_parse(
    }
 
 end:
-   if (info && !path_is_compressed)
+   if (!path_is_compressed)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
             path,
