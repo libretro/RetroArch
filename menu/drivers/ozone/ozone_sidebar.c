@@ -160,6 +160,7 @@ void ozone_draw_sidebar(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
+      settings_t *settings,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -176,7 +177,6 @@ void ozone_draw_sidebar(
    static const char* const
       ticker_spacer                  = OZONE_TICKER_SPACER;
    unsigned ticker_x_offset          = 0;
-   settings_t *settings              = config_get_ptr();
    uint32_t text_alpha               = ozone->animations.sidebar_text_alpha 
       * 255.0f;
    bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
@@ -490,7 +490,8 @@ console_iterate:
             video_width, video_height);
 }
 
-void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)
+void ozone_go_to_sidebar(ozone_handle_t *ozone, settings_t *settings,
+      uintptr_t tag)
 {
    struct gfx_animation_ctx_entry entry;
 
@@ -511,10 +512,12 @@ void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)
 
    gfx_animation_push(&entry);
 
-   ozone_sidebar_update_collapse(ozone, true);
+   ozone_sidebar_update_collapse(ozone, settings, true);
 }
 
-void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
+void ozone_leave_sidebar(ozone_handle_t *ozone,
+      settings_t *settings,
+      uintptr_t tag)
 {
    struct gfx_animation_ctx_entry entry;
 
@@ -540,7 +543,7 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
 
    gfx_animation_push(&entry);
 
-   ozone_sidebar_update_collapse(ozone, true);
+   ozone_sidebar_update_collapse(ozone, settings, true);
 }
 
 unsigned ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone)
@@ -557,11 +560,13 @@ unsigned ozone_get_sidebar_height(ozone_handle_t *ozone)
          (ozone->horizontal_list.size > 0 ? ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px : 0);
 }
 
-void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
+void ozone_sidebar_update_collapse(
+      ozone_handle_t *ozone,
+      settings_t *settings,
+      bool allow_animation)
 {
    /* Collapse sidebar if needed */
    struct gfx_animation_ctx_entry entry;
-   settings_t *settings      = config_get_ptr();
    bool is_playlist          = ozone_is_playlist(ozone, false);
    uintptr_t tag             = (uintptr_t)&ozone->sidebar_collapsed;
    bool collapse_sidebar     = settings->bools.ozone_collapse_sidebar;
@@ -685,9 +690,11 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
       ozone_change_tab(ozone, ozone_system_tabs_idx[ozone->tabs[new_selection]], ozone_system_tabs_type[ozone->tabs[new_selection]]);
 }
 
-void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height)
+void ozone_refresh_sidebars(
+      ozone_handle_t *ozone,
+      settings_t *settings,
+      unsigned video_height)
 {
-   settings_t *settings                 = config_get_ptr();
    uintptr_t collapsed_tag              = (uintptr_t)&ozone->sidebar_collapsed;
    uintptr_t offset_tag                 = (uintptr_t)&ozone->sidebar_offset;
    uintptr_t thumbnail_tag              = (uintptr_t)&ozone->show_thumbnail_bar;
@@ -771,12 +778,12 @@ void ozone_change_tab(ozone_handle_t *ozone,
    menu_driver_deferred_push_content_list(selection_buf);
 }
 
-void ozone_init_horizontal_list(ozone_handle_t *ozone)
+void ozone_init_horizontal_list(ozone_handle_t *ozone,
+      settings_t *settings)
 {
    menu_displaylist_info_t info;
    size_t list_size;
    size_t i;
-   settings_t *settings              = config_get_ptr();
    const char *dir_playlist          = settings->paths.directory_playlist;
    bool menu_content_show_playlists  = settings->bools.menu_content_show_playlists;
    bool ozone_truncate_playlist_name = settings->bools.ozone_truncate_playlist_name;
@@ -863,7 +870,8 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
       file_list_sort_on_alt(&ozone->horizontal_list);
 }
 
-void ozone_refresh_horizontal_list(ozone_handle_t *ozone)
+void ozone_refresh_horizontal_list(ozone_handle_t *ozone,
+      settings_t *settings)
 {
    ozone_context_destroy_horizontal_list(ozone);
    ozone_free_list_nodes(&ozone->horizontal_list, false);
@@ -872,7 +880,7 @@ void ozone_refresh_horizontal_list(ozone_handle_t *ozone)
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
    file_list_initialize(&ozone->horizontal_list);
-   ozone_init_horizontal_list(ozone);
+   ozone_init_horizontal_list(ozone, settings);
 
    ozone_context_reset_horizontal_list(ozone);
 }

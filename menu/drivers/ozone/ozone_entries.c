@@ -325,6 +325,7 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
 
 void ozone_compute_entries_position(
       ozone_handle_t *ozone,
+      settings_t *settings,
       size_t entries_end)
 {
    /* Compute entries height and adjust scrolling if needed */
@@ -334,7 +335,6 @@ void ozone_compute_entries_position(
    file_list_t *selection_buf    = NULL;
    int entry_padding             = ozone_get_entries_padding(ozone, false);
    float scale_factor            = ozone->last_scale_factor;
-   settings_t          *settings = config_get_ptr();
    bool menu_show_sublabels      = settings->bools.menu_show_sublabels;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
@@ -478,6 +478,7 @@ void ozone_draw_entries(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
+      settings_t *settings,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -492,7 +493,6 @@ void ozone_draw_entries(
    size_t i;
    float bottom_boundary;
    unsigned video_info_height, video_info_width;
-   settings_t    *settings           = config_get_ptr();
    bool menu_show_sublabels          = settings->bools.menu_show_sublabels;
    bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
    enum gfx_animation_ticker_type 
@@ -921,6 +921,7 @@ void ozone_draw_thumbnail_bar(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
+      settings_t *settings,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -1144,7 +1145,6 @@ void ozone_draw_thumbnail_bar(
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
       static const char* const ticker_spacer = OZONE_TICKER_SPACER;
       unsigned ticker_x_offset               = 0;
-      settings_t *settings                   = config_get_ptr();
       bool scroll_content_metadata           = settings->bools.ozone_scroll_content_metadata;
       bool use_smooth_ticker                 = settings->bools.menu_ticker_smooth;
       enum gfx_animation_ticker_type 

@@ -3032,6 +3032,7 @@ static int xmb_draw_item(
       gfx_display_t   *p_disp,
       gfx_animation_t *p_anim,
       gfx_display_ctx_driver_t *dispctx,
+      settings_t *settings,
       unsigned video_width,
       unsigned video_height,
       bool xmb_shadows_enable,
@@ -3059,7 +3060,6 @@ static int xmb_draw_item(
    bool do_draw_text                   = false;
    unsigned ticker_limit               = 35 * scale_mod[0];
    unsigned line_ticker_width          = 45 * scale_mod[3];
-   settings_t *settings                = config_get_ptr();
    xmb_node_t *   node                 = (xmb_node_t*)list->list[i].userdata;
    bool use_smooth_ticker              = settings->bools.menu_ticker_smooth;
    enum gfx_animation_ticker_type
@@ -3480,6 +3480,7 @@ static void xmb_draw_items(
       void *userdata,
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
+      settings_t *settings,
       unsigned video_width,
       unsigned video_height,
       bool xmb_shadows_enable,
@@ -3542,6 +3543,7 @@ static void xmb_draw_items(
             p_disp,
             p_anim,
             dispctx,
+            settings,
             video_width,
             video_height,
             xmb_shadows_enable,
@@ -5238,6 +5240,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          userdata,
          p_disp,
          p_anim,
+         settings,
          video_width,
          video_height,
          xmb_shadows_enable,
@@ -5257,6 +5260,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          userdata,
          p_disp,
          p_anim,
+         settings,
          video_width,
          video_height,
          xmb_shadows_enable,

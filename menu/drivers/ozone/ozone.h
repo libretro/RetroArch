@@ -30,6 +30,8 @@ typedef struct ozone_handle ozone_handle_t;
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
 
+#include "../../configuration.h"
+
 #define ANIMATION_PUSH_ENTRY_DURATION  166
 #define ANIMATION_CURSOR_DURATION      133
 #define ANIMATION_CURSOR_PULSE         500
@@ -327,6 +329,7 @@ void ozone_draw_entries(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
+      settings_t *settings,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -341,6 +344,7 @@ void ozone_draw_sidebar(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
+      settings_t *settings,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -358,13 +362,19 @@ unsigned ozone_get_sidebar_height(ozone_handle_t *ozone);
 
 unsigned ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone);
 
-void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag);
+void ozone_leave_sidebar(ozone_handle_t *ozone,
+      settings_t *settings,
+      uintptr_t tag);
 
-void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag);
+void ozone_go_to_sidebar(ozone_handle_t *ozone,
+      settings_t *settings,
+      uintptr_t tag);
 
-void ozone_refresh_horizontal_list(ozone_handle_t *ozone);
+void ozone_refresh_horizontal_list(ozone_handle_t *ozone,
+      settings_t *settings);
 
-void ozone_init_horizontal_list(ozone_handle_t *ozone);
+void ozone_init_horizontal_list(ozone_handle_t *ozone,
+      settings_t *settings);
 
 void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone);
 
@@ -378,13 +388,22 @@ void ozone_free_list_nodes(file_list_t *list, bool actiondata);
 
 bool ozone_is_playlist(ozone_handle_t *ozone, bool depth);
 
-void ozone_compute_entries_position(ozone_handle_t *ozone, size_t entries_end);
+void ozone_compute_entries_position(
+      ozone_handle_t *ozone,
+      settings_t *settings,
+      size_t entries_end);
 
 void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
 
-void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation);
+void ozone_sidebar_update_collapse(
+      ozone_handle_t *ozone,
+      settings_t *settings,
+      bool allow_animation);
 
-void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height);
+void ozone_refresh_sidebars(
+      ozone_handle_t *ozone,
+      settings_t *settings,
+      unsigned video_height);
 
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation);
 
@@ -392,6 +411,7 @@ void ozone_draw_thumbnail_bar(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
+      settings_t *settings,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
