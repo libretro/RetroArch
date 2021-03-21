@@ -1286,7 +1286,7 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
    }
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1334,7 +1334,7 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
    }
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {

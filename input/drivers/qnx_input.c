@@ -500,7 +500,7 @@ static void qnx_process_touch_event(
                vp.full_height              = 0;
 
 #if 0
-               gl_t *gl = (gl_t*)video_driver_get_ptr(false);
+               gl_t *gl = (gl_t*)video_driver_get_ptr();
 
                /*During a move, we can go ~30 pixel into the
                 * bezel which gives negative numbers or

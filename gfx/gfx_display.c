@@ -629,7 +629,7 @@ font_data_t *gfx_display_font_file(
       font_size = 2.0f;
 
    if (!dispctx->font_init_first((void**)&font_data,
-            video_driver_get_ptr(false),
+            video_driver_get_ptr(),
             fontpath, font_size, is_threaded))
       return NULL;
 

@@ -429,10 +429,10 @@ static void *video_thread_get_ptr(struct rarch_state *p_rarch)
  *
  * Returns: video driver's userdata.
  **/
-void *video_driver_get_ptr(bool force_nonthreaded_data)
+void *video_driver_get_ptr(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, force_nonthreaded_data);
+   return VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
 }
 
 void *video_driver_get_data(void)
@@ -29495,7 +29495,7 @@ const char *video_driver_get_ident(void)
 #ifdef HAVE_THREADS
    if (VIDEO_DRIVER_IS_THREADED_INTERNAL())
    {
-      const thread_video_t *thr   = (const thread_video_t*)VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, true);
+      const thread_video_t *thr   = (const thread_video_t*)p_rarch->video_driver_data;
       if (!thr || !thr->driver)
          return NULL;
       return thr->driver->ident;
@@ -31822,7 +31822,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state = p_rarch->input_driver_nonblock_state;
    video_info->input_driver_grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
 
-   video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, false);
+   video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
 
 #ifdef HAVE_THREADS
    VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
@@ -32672,7 +32672,7 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch)
 
    video_driver_monitor_adjust_system_rates(p_rarch);
 
-   if (!VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, false))
+   if (!VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
       return;
 
    if (p_rarch->runloop_force_nonblock)
@@ -32714,7 +32714,7 @@ void driver_set_nonblock_state(void)
    bool runloop_force_nonblock = p_rarch->runloop_force_nonblock;
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_active && VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch, false))
+   if (video_driver_active && VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
    {
       if (p_rarch->current_video->set_nonblock_state)
       {

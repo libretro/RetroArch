@@ -287,7 +287,7 @@ static void sdl2_grab_mouse(void *data, bool state)
       return;
 
    /* First member of sdl2_video_t is the window */
-   SDL_SetWindowGrab(((struct temp*)video_driver_get_ptr(false))->w,
+   SDL_SetWindowGrab(((struct temp*)video_driver_get_ptr())->w,
          state ? SDL_TRUE : SDL_FALSE);
 }
 #endif

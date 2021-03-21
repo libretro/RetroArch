@@ -1583,7 +1583,7 @@ const char* config_get_video_driver_options(void);
  *
  * Returns: video driver's userdata.
  **/
-void *video_driver_get_ptr(bool force_nonthreaded_data);
+void *video_driver_get_ptr(void);
 
 void *video_driver_get_data(void);
 
