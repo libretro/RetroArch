@@ -901,12 +901,12 @@ static int menu_input_key_bind_set_mode_common(
       struct menu_state *menu_st,
       struct menu_bind_state *binds,
       enum menu_input_binds_ctl_state state,
-      rarch_setting_t  *setting)
+      rarch_setting_t  *setting,
+      settings_t *settings)
 {
    menu_displaylist_info_t info;
    unsigned bind_type             = 0;
    struct retro_keybind *keybind  = NULL;
-   settings_t *settings           = config_get_ptr();
    unsigned         index_offset  = setting->index_offset;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
@@ -1342,7 +1342,7 @@ bool menu_input_key_bind_set_mode(
    if (!setting || !menu)
       return false;
    if (menu_input_key_bind_set_mode_common(&p_rarch->menu_driver_state,
-            binds, state, setting) == -1)
+            binds, state, setting, settings) == -1)
       return false;
 
    index_offset             = setting->index_offset;
@@ -4347,8 +4347,8 @@ static bool menu_driver_iterate(
 
 int menu_driver_deferred_push_content_list(file_list_t *list)
 {
-   settings_t *settings           = config_get_ptr();
    struct rarch_state   *p_rarch  = &rarch_st;
+   settings_t *settings           = p_rarch->configuration_settings;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_handle_t *menu_data       = p_rarch->menu_driver_data;
    menu_list_t *menu_list         = menu_st->entries.list;
