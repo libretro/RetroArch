@@ -25896,16 +25896,14 @@ static const char *input_config_get_prefix(unsigned user, bool meta)
       "input_player15",
       "input_player16",
    };
-   const char *prefix = bind_user_prefix[user];
-
-   if (user == 0)
-      return meta ? "input" : prefix;
-
-   if (!meta)
-      return prefix;
-
-   /* Don't bother with meta bind for anyone else than first user. */
-   return NULL;
+   if (meta)
+   {
+      if (user == 0)
+         return "input";
+      /* Don't bother with meta bind for anyone else than first user. */
+      return NULL;
+   }
+   return bind_user_prefix[user];
 }
 
 /**
