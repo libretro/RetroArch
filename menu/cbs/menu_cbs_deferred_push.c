@@ -50,7 +50,8 @@ enum
 #define GENERIC_DEFERRED_PUSH(name, type) \
 static int (name)(menu_displaylist_info_t *info) \
 { \
-   return deferred_push_dlist(info, type); \
+   settings_t *settings = config_get_ptr(); \
+   return deferred_push_dlist(info, type, settings); \
 }
 
 #define GENERIC_DEFERRED_CURSOR_MANAGER(name, type) \
@@ -67,9 +68,10 @@ static int (name)(menu_displaylist_info_t *info) \
 
 static int deferred_push_dlist(
       menu_displaylist_info_t *info,
-      enum menu_displaylist_ctl_state state)
+      enum menu_displaylist_ctl_state state,
+      settings_t *settings)
 {
-   if (!menu_displaylist_ctl(state, info))
+   if (!menu_displaylist_ctl(state, info, settings))
       return menu_cbs_exit();
    menu_displaylist_process(info);
    return 0;
@@ -78,6 +80,7 @@ static int deferred_push_dlist(
 static int deferred_push_database_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
+   settings_t *settings = config_get_ptr();
    if (!string_is_empty(info->path_b))
       free(info->path_b);
    if (!string_is_empty(info->path_c))
@@ -86,7 +89,7 @@ static int deferred_push_database_manager_list_deferred(
    info->path_b    = strdup(info->path);
    info->path_c    = NULL;
 
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
 }
 
 GENERIC_DEFERRED_PUSH(deferred_push_remappings_port,                DISPLAYLIST_OPTIONS_REMAPPINGS_PORT)
@@ -306,7 +309,7 @@ static int deferred_push_cursor_manager_list_deferred(
    info->path_c    = strdup(query_entry->value);
    info->path      = strdup(rdb_path);
 
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -317,6 +320,7 @@ static int deferred_push_cursor_manager_list_generic(
    int ret                       = -1;
    const char *path              = info->path;
    struct string_list str_list   = {0};
+   settings_t *settings          = config_get_ptr();
    
    if (!path)
       goto end;
@@ -343,7 +347,7 @@ static int deferred_push_cursor_manager_list_generic(
    info->path_b = strdup(str_list.elems[0].data);
    info->path_c = strdup(query);
 
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
 
 end:
    string_list_deinitialize(&str_list);
@@ -612,7 +616,7 @@ static int general_push(menu_displaylist_info_t *info,
       info->exts = strdup(newstring2);
    }
 
-   return deferred_push_dlist(info, state);
+   return deferred_push_dlist(info, state, settings);
 }
 
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)

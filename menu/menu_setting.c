@@ -6518,6 +6518,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          if (action == MENU_ACTION_OK)
          {
             menu_displaylist_info_t  info;
+            settings_t *settings          = config_get_ptr();
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
             const char      *name         = setting->name;
             size_t selection              = menu_navigation_get_selection();
@@ -6530,7 +6531,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             info.directory_ptr            = selection;
             info.list                     = menu_stack;
 
-            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
+            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, settings))
                menu_displaylist_process(&info);
 
             menu_displaylist_info_free(&info);
@@ -7191,7 +7192,7 @@ static void general_write_handler(rarch_setting_t *setting)
                   msg_hash_to_str(MENU_ENUM_LABEL_HELP));
             info.list                    = menu_stack;
 
-            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
+            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, settings))
                menu_displaylist_process(&info);
             menu_displaylist_info_free(&info);
             setting_set_with_string_representation(setting, "false");

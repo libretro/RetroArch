@@ -2119,7 +2119,8 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 
    if (menu_content_show_playlists && !string_is_empty(info.path))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
+      if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info,
+               settings))
       {
          size_t i;
          for (i = 0; i < xmb->horizontal_list.size; i++)
@@ -6656,8 +6657,9 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
 static int xmb_deferred_push_content_actions(menu_displaylist_info_t *info)
 {
+   settings_t *settings = config_get_ptr();
    if (!menu_displaylist_ctl(
-            DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
+            DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info, settings))
       return -1;
    menu_displaylist_process(info);
    menu_displaylist_info_free(info);
@@ -6981,6 +6983,7 @@ static bool xmb_menu_init_list(void *data)
 {
    menu_displaylist_info_t info;
 
+   settings_t *settings         = config_get_ptr();
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
@@ -6999,7 +7002,7 @@ static bool xmb_menu_init_list(void *data)
 
    info.list  = selection_buf;
 
-   if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
+   if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info, settings))
       goto error;
 
    info.need_push = true;

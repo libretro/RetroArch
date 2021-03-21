@@ -1176,7 +1176,8 @@ SKIP_ENTRY:;
          strlcpy(menu->deferred_path,
                pl_entry->path, sizeof(menu->deferred_path));
          info.list                     = list;
-         menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, &info);
+         menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, &info,
+               config_get_ptr());
          break;
       }
    }

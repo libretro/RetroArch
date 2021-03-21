@@ -801,7 +801,8 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone,
 
    if (menu_content_show_playlists && !string_is_empty(info.path))
    {
-      if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
+      if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL,
+               &info, settings))
          menu_displaylist_process(&info);
    }
 

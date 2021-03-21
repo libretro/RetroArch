@@ -3415,6 +3415,7 @@ static bool ozone_menu_init_list(void *data)
 {
    menu_displaylist_info_t info;
 
+   settings_t *settings         = config_get_ptr();
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
@@ -3433,7 +3434,7 @@ static bool ozone_menu_init_list(void *data)
 
    info.list  = selection_buf;
 
-   if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
+   if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info, settings))
       goto error;
 
    info.need_push = true;
@@ -3649,8 +3650,9 @@ static void ozone_messagebox(void *data, const char *message)
 
 static int ozone_deferred_push_content_actions(menu_displaylist_info_t *info)
 {
+   settings_t *settings         = config_get_ptr();
    if (!menu_displaylist_ctl(
-            DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
+            DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info, settings))
       return -1;
    menu_displaylist_process(info);
    menu_displaylist_info_free(info);
