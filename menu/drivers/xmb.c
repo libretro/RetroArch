@@ -3029,7 +3029,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
 static int xmb_draw_item(
       void *userdata,
-      gfx_display_t            *p_disp,
+      gfx_display_t   *p_disp,
+      gfx_animation_t *p_anim,
       gfx_display_ctx_driver_t *dispctx,
       unsigned video_width,
       unsigned video_height,
@@ -3067,7 +3068,6 @@ static int xmb_draw_item(
       settings->uints.menu_xmb_thumbnail_scale_factor;
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
-   gfx_animation_t *p_anim             = anim_get_ptr();
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -3479,6 +3479,7 @@ static int xmb_draw_item(
 static void xmb_draw_items(
       void *userdata,
       gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       unsigned video_width,
       unsigned video_height,
       bool xmb_shadows_enable,
@@ -3539,6 +3540,7 @@ static void xmb_draw_items(
       if (xmb_draw_item(
             userdata,
             p_disp,
+            p_anim,
             dispctx,
             video_width,
             video_height,
@@ -4225,6 +4227,7 @@ static void xmb_draw_dark_layer(
 
 static void xmb_draw_fullscreen_thumbnails(
       xmb_handle_t *xmb,
+      gfx_animation_t *p_anim,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -4285,7 +4288,6 @@ static void xmb_draw_fullscreen_thumbnails(
       bool menu_ticker_smooth           = settings->bools.menu_ticker_smooth;
       enum gfx_animation_ticker_type 
          menu_ticker_type               = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-      gfx_animation_t *p_anim           = anim_get_ptr();
 
       /* Sanity check: Return immediately if this is
        * a menu without thumbnails and we are not currently
@@ -4674,6 +4676,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned menu_shader_pipeline           = video_info->menu_shader_pipeline;
    float menu_wallpaper_opacity            = video_info->menu_wallpaper_opacity;
    gfx_display_t            *p_disp        = disp_get_ptr();
+   gfx_animation_t          *p_anim        = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx       = p_disp->dispctx;
    bool input_dialog_display_kb            = menu_input_dialog_get_display_kb();
 
@@ -5234,6 +5237,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    xmb_draw_items(
          userdata,
          p_disp,
+         p_anim,
          video_width,
          video_height,
          xmb_shadows_enable,
@@ -5252,6 +5256,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    xmb_draw_items(
          userdata,
          p_disp,
+         p_anim,
          video_width,
          video_height,
          xmb_shadows_enable,
@@ -5271,6 +5276,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Draw fullscreen thumbnails, if required */
    xmb_draw_fullscreen_thumbnails(
          xmb,
+         p_anim,
          userdata,
          video_width,
          video_height,

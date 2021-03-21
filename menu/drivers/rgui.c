@@ -1628,15 +1628,17 @@ static void rgui_init_particle_effect(rgui_t *rgui)
    }
 }
 
-static void rgui_render_particle_effect(rgui_t *rgui,
-      unsigned fb_width, unsigned fb_height)
+static void rgui_render_particle_effect(
+      rgui_t *rgui,
+      gfx_animation_t *p_anim,
+      unsigned fb_width,
+      unsigned fb_height)
 {
    size_t i;
    /* Give speed factor a long, awkward name to minimise
     * risk of clashing with specific particle effect
     * implementation variables... */
    float global_speed_factor   = 1.0f;
-   gfx_animation_t *p_anim     = anim_get_ptr();
    settings_t        *settings = config_get_ptr();
    float particle_effect_speed = settings ? settings->floats.menu_rgui_particle_effect_speed : 0.0f;
    uint16_t *frame_buf_data    = NULL;
@@ -4061,7 +4063,7 @@ static void rgui_render(void *data,
 
    /* Render particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
-      rgui_render_particle_effect(rgui, fb_width, fb_height);
+      rgui_render_particle_effect(rgui, p_anim, fb_width, fb_height);
 
    /* We use a single ticker for all text animations,
     * with the following configuration: */
@@ -5940,8 +5942,6 @@ static int rgui_pointer_up(void *data,
       menu_entry_t *entry, unsigned action)
 {
    rgui_t *rgui           = (rgui_t*)data;
-   gfx_display_t *p_disp  = disp_get_ptr();
-   unsigned header_height = p_disp->header_height;
    size_t selection       = menu_navigation_get_selection();
 
    if (!rgui)
@@ -5957,6 +5957,8 @@ static int rgui_pointer_up(void *data,
                rgui->show_fs_thumbnail &&
                rgui->entry_has_thumbnail &&
                (rgui->fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
+            gfx_display_t *p_disp  = disp_get_ptr();
+            unsigned header_height = p_disp->header_height;
 
             /* Normal pointer input */
             if (show_fs_thumbnail)
