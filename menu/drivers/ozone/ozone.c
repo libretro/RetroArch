@@ -1747,7 +1747,7 @@ static void ozone_render(void *data,
 
    if (ozone->need_compute)
    {
-      ozone_compute_entries_position(ozone);
+      ozone_compute_entries_position(ozone, entries_end);
       ozone->need_compute = false;
    }
 
@@ -2194,38 +2194,46 @@ static void ozone_draw_header(
          false);
 
    /* Icon */
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (dispctx->draw)
+      {
 #if 0
-   if (discord_avatar_is_ready())
-      ozone_draw_icon(
-            userdata,
-            video_width,
-            video_height,
-            logo_icon_size,
-            logo_icon_size,
-            ozone->textures[OZONE_TEXTURE_DISCORD_OWN_AVATAR],
-            47 * scale_factor,
-            14 * scale_factor, /* Where does this come from...? */
-            video_width,
-            video_height,
-            0, 1, col);
-   else
+         if (discord_avatar_is_ready())
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  logo_icon_size,
+                  logo_icon_size,
+                  ozone->textures[OZONE_TEXTURE_DISCORD_OWN_AVATAR],
+                  47 * scale_factor,
+                  14 * scale_factor, /* Where does this come from...? */
+                  video_width,
+                  video_height,
+                  0, 1, col);
+         else
 #endif
-      ozone_draw_icon(
-            userdata,
-            video_width,
-            video_height,
-            logo_icon_size,
-            logo_icon_size,
-            ozone->textures[OZONE_TEXTURE_RETROARCH],
-            47 * scale_factor,
-            (ozone->dimensions.header_height - logo_icon_size) / 2,
-            video_width,
-            video_height,
-            0, 1, col);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  logo_icon_size,
+                  logo_icon_size,
+                  ozone->textures[OZONE_TEXTURE_RETROARCH],
+                  47 * scale_factor,
+                  (ozone->dimensions.header_height - logo_icon_size) / 2,
+                  video_width,
+                  video_height,
+                  0, 1, col);
+      }
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 
    /* Battery */
    if (battery_level_enable)
@@ -2259,22 +2267,27 @@ static void ozone_draw_header(
                1.0f,
                false);
 
-         if (dispctx && dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-         ozone_draw_icon(
-               userdata,
-               video_width,
-               video_height,
-               status_icon_size,
-               status_icon_size,
-               ozone->icons_textures[powerstate.charging? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING : (powerstate.percent > 80)? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_FULL : (powerstate.percent > 60)? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_80 : (powerstate.percent > 40)? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_60 : (powerstate.percent > 20)? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_40 : OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_20],
-               video_width - (60 + 56) * scale_factor,
-               0,
-               video_width,
-               video_height,
-               0, 1, col);
-         if (dispctx && dispctx->blend_end)
-            dispctx->blend_end(userdata);
+         if (dispctx)
+         {
+            if (dispctx->blend_begin)
+               dispctx->blend_begin(userdata);
+            if (dispctx->draw)
+               ozone_draw_icon(
+                     p_disp,
+                     userdata,
+                     video_width,
+                     video_height,
+                     status_icon_size,
+                     status_icon_size,
+                     ozone->icons_textures[powerstate.charging? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_CHARGING : (powerstate.percent > 80)? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_FULL : (powerstate.percent > 60)? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_80 : (powerstate.percent > 40)? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_60 : (powerstate.percent > 20)? OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_40 : OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_20],
+                     video_width - (60 + 56) * scale_factor,
+                     0,
+                     video_width,
+                     video_height,
+                     0, 1, col);
+            if (dispctx->blend_end)
+               dispctx->blend_end(userdata);
+         }
       }
    }
 
@@ -2308,22 +2321,27 @@ static void ozone_draw_header(
             1.0f,
             false);
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      ozone_draw_icon(
-            userdata,
-            video_width,
-            video_height,
-            status_icon_size,
-            status_icon_size,
-            ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOCK],
-            video_width - (60 + 56) * scale_factor - timedate_offset,
-            0,
-            video_width,
-            video_height,
-            0, 1, col);
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      if (dispctx)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  status_icon_size,
+                  status_icon_size,
+                  ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOCK],
+                  video_width - (60 + 56) * scale_factor - timedate_offset,
+                  0,
+                  video_width,
+                  video_height,
+                  0, 1, col);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
    }
 }
 
@@ -2403,84 +2421,95 @@ static void ozone_draw_footer(
    /* Buttons */
 
    /* Draw icons */
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   gfx_display_set_alpha(ozone->theme_dynamic.entries_icon, 1.0f);
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      gfx_display_set_alpha(ozone->theme_dynamic.entries_icon, 1.0f);
 
-   /* > ok */
-   ozone_draw_icon(
-         userdata,
-         video_width,
-         video_height,
-         icon_size,
-         icon_size,
-         input_menu_swap_ok_cancel_buttons ?
+      if (dispctx->draw)
+      {
+         /* > ok */
+         ozone_draw_icon(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               icon_size,
+               icon_size,
+               input_menu_swap_ok_cancel_buttons ?
                ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D] :
                ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R],
-         ok_x,
-         icon_y,
-         video_width,
-         video_height,
-         0, 1, col);
+               ok_x,
+               icon_y,
+               video_width,
+               video_height,
+               0, 1, col);
 
-   /* > back */
-   ozone_draw_icon(
-         userdata,
-         video_width,
-         video_height,
-         icon_size,
-         icon_size,
-         input_menu_swap_ok_cancel_buttons ?
+         /* > back */
+         ozone_draw_icon(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               icon_size,
+               icon_size,
+               input_menu_swap_ok_cancel_buttons ?
                ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R] :
                ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D],
-         back_x,
-         icon_y,
-         video_width,video_height,
-         0, 1, col);
+               back_x,
+               icon_y,
+               video_width,video_height,
+               0, 1, col);
 
-   /* > search */
-   ozone_draw_icon(
-         userdata,
-         video_width,
-         video_height,
-         icon_size,
-         icon_size,
-         ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U],
-         search_x,
-         icon_y,
-         video_width,video_height,
-         0, 1, col);
+         /* > search */
+         ozone_draw_icon(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               icon_size,
+               icon_size,
+               ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U],
+               search_x,
+               icon_y,
+               video_width,video_height,
+               0, 1, col);
 
-   /* > fullscreen_thumbs */
-   if (fullscreen_thumbnails_available)
-      ozone_draw_icon(
-            userdata,
-            video_width,
-            video_height,
-            icon_size,
-            icon_size,
-            ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START],
-            fullscreen_thumbs_x,
-            icon_y,
-            video_width,video_height,
-            0, 1, col);
+         /* > fullscreen_thumbs */
+         if (fullscreen_thumbnails_available)
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  icon_size,
+                  icon_size,
+                  ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START],
+                  fullscreen_thumbs_x,
+                  icon_y,
+                  video_width,video_height,
+                  0, 1, col);
 
-   /* > metadata_toggle */
-   if (metadata_override_available)
-      ozone_draw_icon(
-            userdata,
-            video_width,
-            video_height,
-            icon_size,
-            icon_size,
-            ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT],
-            metadata_toggle_x,
-            icon_y,
-            video_width,video_height,
-            0, 1, col);
+         /* > metadata_toggle */
+         if (metadata_override_available)
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  icon_size,
+                  icon_size,
+                  ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT],
+                  metadata_toggle_x,
+                  icon_y,
+                  video_width,video_height,
+                  0, 1, col);
+      }
 
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 
    /* Draw labels */
 
@@ -2644,24 +2673,29 @@ static void ozone_draw_footer(
    }
    else
    {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      ozone_draw_icon(
-            userdata,
-            video_width,
-            video_height,
-            69 * scale_factor,
-            30 * scale_factor,
-            ozone->theme->textures[OZONE_THEME_TEXTURE_SWITCH],
-            footer_margin,
-            video_height - ozone->dimensions.footer_height / 2 - 15 * scale_factor,
-            video_width,
-            video_height,
-            0,
-            1,
-            ozone->pure_white);
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      if (dispctx)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  69 * scale_factor,
+                  30 * scale_factor,
+                  ozone->theme->textures[OZONE_THEME_TEXTURE_SWITCH],
+                  footer_margin,
+                  video_height - ozone->dimensions.footer_height / 2 - 15 * scale_factor,
+                  video_width,
+                  video_height,
+                  0,
+                  1,
+                  ozone->pure_white);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
    }
 }
 
@@ -2942,12 +2976,16 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          settings);
 
    /* Sidebar */
-   ozone_draw_sidebar(ozone,
-         userdata,
-         video_width,
-         video_height,
-         libretro_running,
-         menu_framebuffer_opacity);
+   if (ozone->draw_sidebar)
+      ozone_draw_sidebar(
+            ozone,
+            p_disp,
+            p_anim,
+            userdata,
+            video_width,
+            video_height,
+            libretro_running,
+            menu_framebuffer_opacity);
 
    /* Menu entries */
    gfx_display_scissor_begin(userdata,
@@ -2962,6 +3000,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Current list */
    ozone_draw_entries(
          ozone,
+         p_disp,
+         p_anim,
          userdata,
          video_width,
          video_height,
@@ -2977,6 +3017,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (ozone->draw_old_list)
       ozone_draw_entries(
             ozone,
+            p_disp,
+            p_anim,
             userdata,
             video_width,
             video_height,
@@ -2991,6 +3033,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Thumbnail bar */
    if (ozone->show_thumbnail_bar)
       ozone_draw_thumbnail_bar(ozone,
+            p_disp,
+            p_anim,
             userdata,
             video_width,
             video_height,
@@ -3074,7 +3118,9 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
                label, str);
       }
       else
-         ozone_draw_messagebox(ozone,
+         ozone_draw_messagebox(
+               ozone,
+               p_disp,
                userdata,
                video_width,
                video_height,

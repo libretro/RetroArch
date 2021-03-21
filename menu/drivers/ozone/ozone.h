@@ -25,6 +25,8 @@ typedef struct ozone_handle ozone_handle_t;
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 
+#include "../../gfx/gfx_animation.h"
+#include "../../gfx/gfx_display.h"
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
 
@@ -323,6 +325,8 @@ typedef struct ozone_node
 
 void ozone_draw_entries(
       ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -335,6 +339,8 @@ void ozone_draw_entries(
 
 void ozone_draw_sidebar(
       ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -372,7 +378,7 @@ void ozone_free_list_nodes(file_list_t *list, bool actiondata);
 
 bool ozone_is_playlist(ozone_handle_t *ozone, bool depth);
 
-void ozone_compute_entries_position(ozone_handle_t *ozone);
+void ozone_compute_entries_position(ozone_handle_t *ozone, size_t entries_end);
 
 void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
 
@@ -384,6 +390,8 @@ void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist,
 
 void ozone_draw_thumbnail_bar(
       ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       void *userdata,
       unsigned video_width,
       unsigned video_height,

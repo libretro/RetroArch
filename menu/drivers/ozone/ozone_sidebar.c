@@ -158,6 +158,8 @@ static float ozone_sidebar_get_scroll_y(
 
 void ozone_draw_sidebar(
       ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -185,12 +187,7 @@ void ozone_draw_sidebar(
    unsigned selection_y              = 0;
    unsigned selection_old_y          = 0;
    unsigned horizontal_list_size     = 0;
-   gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   gfx_animation_t          *p_anim  = anim_get_ptr();
-
-   if (!ozone->draw_sidebar)
-      return;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -289,7 +286,9 @@ void ozone_draw_sidebar(
 
    /* Cursor */
    if (ozone->cursor_in_sidebar)
-      ozone_draw_cursor(ozone,
+      ozone_draw_cursor(
+            ozone,
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -302,6 +301,7 @@ void ozone_draw_sidebar(
    if (ozone->cursor_in_sidebar_old)
       ozone_draw_cursor(
             ozone,
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -331,6 +331,7 @@ void ozone_draw_sidebar(
 
       /* Icon */
       ozone_draw_icon(
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -412,6 +413,7 @@ void ozone_draw_sidebar(
 
          /* Icon */
          ozone_draw_icon(
+               p_disp,
                userdata,
                video_width,
                video_height,

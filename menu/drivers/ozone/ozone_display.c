@@ -83,6 +83,7 @@ static void ozone_cursor_animation_cb(void *userdata)
 
 static void ozone_draw_cursor_slice(
       ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -95,9 +96,10 @@ static void ozone_draw_cursor_slice(
    int slice_y           = (int)y + 8 * scale_factor;
    unsigned slice_new_w  = width + (24 + 1) * scale_factor;
    unsigned slice_new_h  = height + 20 * scale_factor;
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   static float last_alpha           = 0.0f;
+   gfx_display_ctx_driver_t 
+      *dispctx           = p_disp->dispctx;
+   static float 
+      last_alpha         = 0.0f;
 
    if (alpha != last_alpha)
    {
@@ -253,6 +255,7 @@ void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 
 void ozone_draw_cursor(
       ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -269,7 +272,9 @@ void ozone_draw_cursor(
 
    /* Draw the cursor */
    if (ozone->has_all_assets)
-      ozone_draw_cursor_slice(ozone, userdata,
+      ozone_draw_cursor_slice(ozone, 
+            p_disp,
+            userdata,
             video_width, video_height,
             new_x, width, height, new_y, alpha);
    else
@@ -281,6 +286,7 @@ void ozone_draw_cursor(
 }
 
 void ozone_draw_icon(
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -296,8 +302,6 @@ void ozone_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   gfx_display_t            
-      *p_disp               = disp_get_ptr();
    gfx_display_ctx_driver_t 
       *dispctx              = p_disp->dispctx;
 
@@ -329,8 +333,7 @@ void ozone_draw_icon(
    draw.pipeline_id     = 0;
 
    if (draw.height > 0 && draw.width > 0)
-      if (dispctx && dispctx->draw)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+      dispctx->draw(&draw, userdata, video_width, video_height);
 }
 
 void ozone_draw_backdrop(
@@ -548,6 +551,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
 
 void ozone_draw_messagebox(
       ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -561,14 +565,13 @@ void ozone_draw_messagebox(
    float scale_factor       = 0.0f;
    unsigned width           = video_width;
    unsigned height          = video_height;
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_display_ctx_driver_t 
+      *dispctx              = p_disp->dispctx;
 
    wrapped_message[0]       = '\0';
 
    /* Sanity check */
    if (string_is_empty(message) ||
-       !ozone ||
        !ozone->fonts.footer.font)
       return;
 
