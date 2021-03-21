@@ -52,13 +52,12 @@ typedef NS_ENUM(NSUInteger, RPixelFormat)
    RPixelFormatB5G6R5Unorm,
 
    RPixelFormatBGRA8Unorm,
-   RPixelFormatBGRX8Unorm, // RetroArch XRGB
+   RPixelFormatBGRX8Unorm, /* RetroArch XRGB */
 
    RPixelFormatCount,
 };
 
 extern NSUInteger RPixelFormatToBPP(RPixelFormat format);
-extern NSString *NSStringFromRPixelFormat(RPixelFormat format);
 
 typedef NS_ENUM(NSUInteger, RTextureFilter)
 {

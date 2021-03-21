@@ -33,6 +33,8 @@
  * COMMON
  */
 
+static NSString *RPixelStrings[RPixelFormatCount];
+
 NSUInteger RPixelFormatToBPP(RPixelFormat format)
 {
    switch (format)
@@ -51,9 +53,7 @@ NSUInteger RPixelFormatToBPP(RPixelFormat format)
    }
 }
 
-static NSString *RPixelStrings[RPixelFormatCount];
-
-NSString *NSStringFromRPixelFormat(RPixelFormat format)
+static NSString *NSStringFromRPixelFormat(RPixelFormat format)
 {
    static dispatch_once_t onceToken;
    dispatch_once(&onceToken, ^{
