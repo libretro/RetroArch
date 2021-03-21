@@ -26730,14 +26730,20 @@ void config_read_keybinds_conf(void *data)
 
       for (j = 0; input_config_bind_map_get_valid(j); j++)
       {
+         const struct input_bind_map *keybind =
+            (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
          struct retro_keybind *bind = &input_config_binds[i][j];
-         const char *prefix         = input_config_get_prefix(i, input_config_bind_map_get_meta(j));
-         const char *btn            = input_config_bind_map_get_base(j);
+         bool meta                  = false;
+         const char *prefix         = NULL;
+         const char *btn            = NULL;
 
-         if (!bind || !bind->valid)
+         if (!bind || !bind->valid || !keybind)
             continue;
-         if (!input_config_bind_map_get_valid(j))
+         if (!keybind->valid)
             continue;
+         meta                       = keybind->meta;
+         btn                        = keybind->base;
+         prefix                     = input_config_get_prefix(i, meta);
          if (!btn || !prefix)
             continue;
 
@@ -26751,9 +26757,9 @@ void config_read_keybinds_conf(void *data)
 
 void input_config_set_autoconfig_binds(unsigned port, void *data)
 {
+   unsigned i;
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds = NULL;
-   unsigned i;
 
    if ((port >= MAX_USERS) || !config)
       return;
@@ -26762,10 +26768,14 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      input_config_parse_joy_button(config, "input",
-            input_config_bind_map_get_base(i), &binds[i]);
-      input_config_parse_joy_axis  (config, "input",
-            input_config_bind_map_get_base(i), &binds[i]);
+      const struct input_bind_map *keybind =
+         (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      if (keybind)
+      {
+         const char *base = keybind->base;
+         input_config_parse_joy_button(config, "input", base, &binds[i]);
+         input_config_parse_joy_axis  (config, "input", base, &binds[i]);
+      }
    }
 }
 
@@ -26785,15 +26795,18 @@ void input_config_save_keybinds_user(void *data, unsigned user)
    {
       char key[64];
       char btn[64];
-      const char *prefix               = input_config_get_prefix(user,
-            input_config_bind_map_get_meta(i));
-      const struct retro_keybind *bind = &input_config_binds[user][i];
-      const char                 *base = input_config_bind_map_get_base(i);
+      const struct input_bind_map *keybind =
+         (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      bool meta                            = keybind ? keybind->meta : false;
+      const char *prefix                   = input_config_get_prefix(user, meta);
+      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const char                 *base     = NULL;
 
-      if (!prefix || !bind->valid)
+      if (!prefix || !bind->valid || !keybind)
          continue;
 
-      key[0] = btn[0]  = '\0';
+      base                                 = keybind->base;
+      key[0] = btn[0]                      = '\0';
 
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
