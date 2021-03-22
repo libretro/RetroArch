@@ -643,27 +643,26 @@ static int database_info_list_iterate_end_no_match(
       if (archive_list && archive_list->size > 0)
       {
          unsigned i;
+         size_t path_len  = strlen(path);
 
          for (i = 0; i < archive_list->size; i++)
          {
-            char new_path[PATH_MAX_LENGTH];
-            size_t path_len  = strlen(path);
-
-            new_path[0] = '\0';
-
-            strlcpy(new_path, path, sizeof(new_path));
-
             if (path_len + strlen(archive_list->elems[i].data)
                      + 1 < PATH_MAX_LENGTH)
             {
+               char new_path[PATH_MAX_LENGTH];
+               new_path[0] = '\0';
+               strlcpy(new_path, path, sizeof(new_path));
                new_path[path_len] = '#';
                strlcpy(new_path + path_len + 1,
-                  archive_list->elems[i].data,
-                  sizeof(new_path) - path_len);
+                     archive_list->elems[i].data,
+                     sizeof(new_path) - path_len);
+               string_list_append(db->list, new_path,
+                     archive_list->elems[i].attr);
             }
-
-            string_list_append(db->list, new_path,
-               archive_list->elems[i].attr);
+            else
+               string_list_append(db->list, path,
+                     archive_list->elems[i].attr);
          }
 
          string_list_free(archive_list);
