@@ -367,8 +367,11 @@ static void *sdl2_gfx_init(const video_info_t *video,
 {
    int i;
    unsigned flags;
-   sdl2_video_t *vid    = NULL;
-   settings_t *settings = config_get_ptr();
+   sdl2_video_t *vid        = NULL;
+   settings_t *settings     = config_get_ptr();
+#if defined(HAVE_X11) || defined(HAVE_WAYLAND)
+   const char *video_driver = NULL;
+#endif
 
 #ifdef HAVE_X11
    XInitThreads();
@@ -444,7 +447,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
    sdl2_set_handles(vid->window, RARCH_DISPLAY_OSX);
 #else
 #if defined(HAVE_X11) || defined(HAVE_WAYLAND)
-   const char *video_driver = SDL_GetCurrentVideoDriver();
+   video_driver = SDL_GetCurrentVideoDriver();
 #endif
 #ifdef HAVE_X11
    if (strcmp(video_driver, "x11") == 0)
