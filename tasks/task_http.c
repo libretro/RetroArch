@@ -226,7 +226,7 @@ task_finished:
 
 static void task_http_transfer_cleanup(retro_task_t *task)
 {
-   http_transfer_data_t* data = task_get_data(task);
+   http_transfer_data_t* data = (http_transfer_data_t*)task_get_data(task);
    if (data)
    {
       if (data->data)
