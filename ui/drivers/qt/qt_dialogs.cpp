@@ -645,8 +645,9 @@ void ViewOptionsDialog::addCategory(OptionsCategory *category)
 void ViewOptionsDialog::repaintIcons()
 {
    unsigned i;
+   size_t list_size = (size_t)m_categoryList.size();
 
-   for (i = 0; i < m_categoryList.size(); i++)
+   for (i = 0; i < list_size; i++)
       m_optionsList->item(i)->setIcon(getIcon(m_categoryList.at(i)));
 }
 #else
@@ -676,12 +677,13 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
 
 void ViewOptionsDialog::showDialog()
 {
-#ifndef HAVE_MENU
-   m_viewOptionsWidget->loadViewOptions();
-#else
+#ifdef HAVE_MENU
    unsigned i;
-   for (i = 0; i < m_categoryList.size(); i++)
+   size_t list_size = (size_t)m_categoryList.size();
+   for (i = 0; i < list_size; i++)
       m_categoryList.at(i)->load();
+#else
+   m_viewOptionsWidget->loadViewOptions();
 #endif
    show();
    activateWindow();
@@ -695,8 +697,9 @@ void ViewOptionsDialog::hideDialog()
 void ViewOptionsDialog::onRejected()
 {
 #ifdef HAVE_MENU
-   int i;
-   for (i = 0; i < m_categoryList.size(); i++)
+   unsigned i;
+   size_t list_size = (size_t)m_categoryList.size();
+   for (i = 0; i < list_size; i++)
       m_categoryList.at(i)->apply();
 #endif
 }

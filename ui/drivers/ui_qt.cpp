@@ -3793,8 +3793,9 @@ void MainWindow::initContentTableWidget()
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
       QStringList playlists;
+      size_t list_size = (size_t)m_playlistFiles.count();
 
-      for (i = 0; i < m_playlistFiles.count(); i++)
+      for (i = 0; i < list_size; i++)
       {
          const QString &playlist = m_playlistFiles.at(i);
          playlists.append(playlistDir.absoluteFilePath(playlist));
