@@ -1381,7 +1381,6 @@
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
-				SUPPORTS_MACCATALYST = YES;
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
@@ -1559,7 +1558,6 @@
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
-				SUPPORTS_MACCATALYST = YES;
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;

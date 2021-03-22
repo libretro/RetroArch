@@ -566,7 +566,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
 				PRODUCT_NAME = "RetroArch iOS9";
 				PROVISIONING_PROFILE = "";
-				SUPPORTS_MACCATALYST = YES;
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
@@ -736,7 +735,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
 				PRODUCT_NAME = "RetroArch iOS9";
 				PROVISIONING_PROFILE = "";
-				SUPPORTS_MACCATALYST = YES;
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
