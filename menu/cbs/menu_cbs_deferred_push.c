@@ -274,11 +274,14 @@ static int deferred_push_cursor_manager_list_deferred(
    
    if (!(conf = config_file_new_from_path_to_string(path)))
       return -1;
+   
+   query_entry                    = config_get_entry(conf, "query");
+   rdb_entry                      = config_get_entry(conf, "rdb");
 
    if (     
-            !(query_entry  = config_get_entry(conf, "query"))
+            !query_entry
          ||  (string_is_empty(query_entry->value))
-         || !(rdb_entry    = config_get_entry(conf, "rdb"))
+         || !rdb_entry
          ||  (string_is_empty(rdb_entry->value))
       )
    {
@@ -286,15 +289,14 @@ static int deferred_push_cursor_manager_list_deferred(
       return -1;
    }
 
-   config_file_free(conf);
-
    rdb_path[0] = '\0';
 
    settings = config_get_ptr();
+   
    fill_pathname_join(rdb_path,
          settings->paths.path_content_database,
          rdb_entry->value, sizeof(rdb_path));
-
+   
    if (!string_is_empty(info->path_b))
       free(info->path_b);
 
@@ -308,6 +310,8 @@ static int deferred_push_cursor_manager_list_deferred(
 
    info->path_c    = strdup(query_entry->value);
    info->path      = strdup(rdb_path);
+   
+   config_file_free(conf);
 
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
 }
