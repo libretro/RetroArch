@@ -284,8 +284,8 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
                 * from the current alpha value to 1.0) */
                unsigned fade_duration = (unsigned)(((1.0f - state->alpha) *
                      (float)LIBRETRO_MESSAGE_FADE_DURATION) + 0.5f);
-               fade_duration = (fade_duration > LIBRETRO_MESSAGE_FADE_DURATION) ?
-                     LIBRETRO_MESSAGE_FADE_DURATION : fade_duration;
+               if (fade_duration > LIBRETRO_MESSAGE_FADE_DURATION)
+                  fade_duration       = LIBRETRO_MESSAGE_FADE_DURATION;
 
                /* > If current and final alpha values are the
                 *   same, or fade duration is zero, skip

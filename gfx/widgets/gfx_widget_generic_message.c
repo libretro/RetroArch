@@ -177,23 +177,25 @@ void gfx_widget_set_generic_message(void *data,
    state->message_duration = duration;
 
    /* Get background width */
-   text_width      = font_driver_get_message_width(
+   text_width         = font_driver_get_message_width(
          font_msg_queue->font, state->message,
          (unsigned)strlen(state->message), 1.0f);
-   text_width      = (text_width < 0) ?
-         0 : text_width;
-   state->bg_width = (state->text_padding * 2) + (unsigned)text_width;
+   if (text_width < 0)
+      text_width      = 0;
+   state->bg_width    = (state->text_padding * 2) + (unsigned)text_width;
 
-   state->bg_width = (state->bg_width < state->bg_min_width) ?
-         state->bg_min_width : state->bg_width;
-   state->bg_width = (state->bg_width > last_video_width) ?
-         last_video_width : state->bg_width;
+   if (state->bg_width < state->bg_min_width)
+      state->bg_width = state->bg_min_width;
+   if (state->bg_width > last_video_width)
+      state->bg_width = last_video_width;
 
    /* Update x draw positions */
-   state->bg_x     = ((float)last_video_width - (float)state->bg_width) * 0.5f;
-   state->text_x   = ((float)last_video_width - (float)text_width) * 0.5f;
-   state->text_x   = (state->text_x < (float)state->text_padding) ?
-         (float)state->text_padding : state->text_x;
+   state->bg_x        = ((float)last_video_width 
+         - (float)state->bg_width) * 0.5f;
+   state->text_x      = ((float)last_video_width 
+         - (float)text_width) * 0.5f;
+   if (state->text_x < (float)state->text_padding)
+      state->text_x   = (float)state->text_padding;
 
    /* If a 'slide in' animation is already in
     * progress, no further action is required;
@@ -254,15 +256,15 @@ static void gfx_widget_generic_message_layout(
     *   of a 4:3 region at the centre of the screen,
     *   minus padding (it may expand if the text is
     *   too long to fit within these bounds) */
-   widget_margin       = (float)last_video_width -
+   widget_margin          = (float)last_video_width -
          (base_aspect * (float)last_video_height);
-   widget_margin       = (widget_margin < 0.0f) ?
-         0.0f : widget_margin;
+   if (widget_margin < 0.0f)
+      widget_margin       = 0.0f;
 
-   state->bg_min_width = last_video_width - (unsigned)widget_margin -
+   state->bg_min_width    = last_video_width - (unsigned)widget_margin -
          ((widget_padding + state->frame_width) * 2);
-   state->bg_min_width = (state->bg_min_width > last_video_width) ?
-         last_video_width : state->bg_min_width;
+   if (state->bg_min_width > last_video_width)
+      state->bg_min_width = last_video_width;
 
    /* Set background width */
    state->bg_width     = state->text_padding * 2;
@@ -272,16 +274,16 @@ static void gfx_widget_generic_message_layout(
       text_width       = font_driver_get_message_width(
             font_msg_queue->font, state->message,
             (unsigned)strlen(state->message), 1.0f);
-      text_width       = (text_width < 0) ?
-            0 : text_width;
+      if (text_width < 0)
+         text_width       = 0;
 
       state->bg_width += (unsigned)text_width;
    }
 
-   state->bg_width     = (state->bg_width < state->bg_min_width) ?
-         state->bg_min_width : state->bg_width;
-   state->bg_width     = (state->bg_width > last_video_width) ?
-         last_video_width : state->bg_width;
+   if (state->bg_width < state->bg_min_width)
+      state->bg_width     = state->bg_min_width;
+   if (state->bg_width > last_video_width)
+      state->bg_width     = last_video_width;
 
    /* Set background height */
    state->bg_height    = font_msg_queue->line_height * 2;
@@ -297,13 +299,16 @@ static void gfx_widget_generic_message_layout(
     *   fit within the bounds of the window, in
     *   which case we shift it to the right such
     *   that the start of the string can be seen */
-   state->text_x       = ((float)last_video_width - (float)text_width) * 0.5f;
-   state->text_x       = (state->text_x < (float)state->text_padding) ?
-         (float)state->text_padding : state->text_x;
-   state->text_y_start = state->bg_y_start + ((float)state->bg_height * 0.5f) +
-         (float)font_msg_queue->line_centre_offset;
-   state->text_y_end   = state->bg_y_end + ((float)state->bg_height * 0.5f) +
-         (float)font_msg_queue->line_centre_offset;
+   state->text_x          = ((float)last_video_width 
+         - (float)text_width) * 0.5f;
+   if (state->text_x < (float)state->text_padding)
+      state->text_x       = (float)state->text_padding;
+   state->text_y_start    = state->bg_y_start + 
+      ((float)state->bg_height * 0.5f) +
+      (float)font_msg_queue->line_centre_offset;
+   state->text_y_end      = state->bg_y_end + 
+      ((float)state->bg_height * 0.5f) +
+      (float)font_msg_queue->line_centre_offset;
 }
 
 /* Widget iterate() */
@@ -351,8 +356,8 @@ static void gfx_widget_generic_message_iterate(void *user_data,
                 * from the current alpha value to 1.0) */
                unsigned fade_duration = (unsigned)(((1.0f - state->alpha) *
                      (float)GENERIC_MESSAGE_FADE_DURATION) + 0.5f);
-               fade_duration = (fade_duration > GENERIC_MESSAGE_FADE_DURATION) ?
-                     GENERIC_MESSAGE_FADE_DURATION : fade_duration;
+               if (fade_duration > GENERIC_MESSAGE_FADE_DURATION)
+                  fade_duration = GENERIC_MESSAGE_FADE_DURATION;
 
                /* > If current and final alpha values are the
                 *   same, or fade duration is zero, skip
