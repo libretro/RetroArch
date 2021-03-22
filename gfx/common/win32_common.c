@@ -1567,7 +1567,7 @@ void win32_clip_window(bool state)
    if (state && main_window.hwnd)
    {
       PWINDOWINFO info;
-      info = malloc(sizeof(*info));
+      info         = (PWINDOWINFO)malloc(sizeof(*info));
       info->cbSize = sizeof(PWINDOWINFO);
 
       if (GetWindowInfo(main_window.hwnd, info))
