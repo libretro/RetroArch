@@ -627,7 +627,8 @@ static int task_database_iterate_playlist(
 static int database_info_list_iterate_end_no_match(
       database_info_handle_t *db,
       database_state_handle_t *db_state,
-      const char *path)
+      const char *path,
+      bool path_contains_compressed_file)
 {
    /* Reached end of database list,
     * CRC match probably didn't succeed. */
@@ -635,7 +636,7 @@ static int database_info_list_iterate_end_no_match(
    /* If this was a compressed file and no match in the database
     * list was found then expand the search list to include the
     * archive's contents. */
-   if (path_is_compressed_file(path) && !path_contains_compressed_file(path))
+   if (!path_contains_compressed_file && path_is_compressed_file(path))
    {
       struct string_list *archive_list =
          file_archive_get_file_list(path, NULL);
@@ -858,11 +859,13 @@ static int task_database_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db,
       const char *name,
-      const char *archive_entry)
+      const char *archive_entry,
+      bool path_contains_compressed_file)
 {
    if (!db_state->list ||
          (unsigned)db_state->list_index == (unsigned)db_state->list->size)
-      return database_info_list_iterate_end_no_match(db, db_state, name);
+      return database_info_list_iterate_end_no_match(db, db_state, name,
+            path_contains_compressed_file);
 
    /* Archive did not contain a CRC for this entry, 
     * or the file is empty. */
@@ -891,7 +894,7 @@ static int task_database_iterate_crc_lookup(
                db_state->list->elems[db_state->list_index].data, name))
             return database_info_list_iterate_next(db_state);
 
-         if (!path_contains_compressed_file(name))
+         if (!path_contains_compressed_file)
          {
             if (core_info_database_match_archive_member(
                   db_state->list->elems[db_state->list_index].data))
@@ -1011,13 +1014,16 @@ static int task_database_iterate_playlist_lutro(
 static int task_database_iterate_serial_lookup(
       db_handle_t *_db,
       database_state_handle_t *db_state,
-      database_info_handle_t *db, const char *name)
+      database_info_handle_t *db, const char *name,
+      bool path_contains_compressed_file
+      )
 {
    if (
          !db_state->list ||
          (unsigned)db_state->list_index == (unsigned)db_state->list->size
       )
-      return database_info_list_iterate_end_no_match(db, db_state, name);
+      return database_info_list_iterate_end_no_match(db, db_state, name,
+            path_contains_compressed_file);
 
    if (db_state->entry_index == 0)
    {
@@ -1077,7 +1083,8 @@ static int task_database_iterate(
       db_handle_t *_db,
       const char *name,
       database_state_handle_t *db_state,
-      database_info_handle_t *db)
+      database_info_handle_t *db,
+      bool path_contains_compressed_file)
 {
    switch (db->type)
    {
@@ -1086,16 +1093,19 @@ static int task_database_iterate(
       case DATABASE_TYPE_ITERATE_ARCHIVE:
 #ifdef HAVE_COMPRESSION
          return task_database_iterate_crc_lookup(
-               _db, db_state, db, name, db_state->archive_name);
+               _db, db_state, db, name, db_state->archive_name,
+               path_contains_compressed_file);
 #else
          return 1;
 #endif
       case DATABASE_TYPE_ITERATE_LUTRO:
          return task_database_iterate_playlist_lutro(_db, db_state, db, name);
       case DATABASE_TYPE_SERIAL_LOOKUP:
-         return task_database_iterate_serial_lookup(_db, db_state, db, name);
+         return task_database_iterate_serial_lookup(_db, db_state, db, name,
+               path_contains_compressed_file);
       case DATABASE_TYPE_CRC_LOOKUP:
-         return task_database_iterate_crc_lookup(_db, db_state, db, name, NULL);
+         return task_database_iterate_crc_lookup(_db, db_state, db, name, NULL,
+               path_contains_compressed_file);
       case DATABASE_TYPE_NONE:
       default:
          break;
@@ -1219,16 +1229,19 @@ static void task_database_handler(retro_task_t *task)
          break;
       case DATABASE_STATUS_ITERATE:
          {
-            const char *name     = database_info_get_current_element_name(
-                  dbinfo);
-            if (name == NULL)
+            bool path_contains_compressed_file = false;
+            const char *name                   = 
+               database_info_get_current_element_name(dbinfo);
+            if (!name)
                goto task_finished;
 
-            if (dbinfo->type == DATABASE_TYPE_ITERATE)
-               if (path_contains_compressed_file(name))
+            path_contains_compressed_file      = path_contains_compressed_file(name);
+            if (path_contains_compressed_file)
+               if (dbinfo->type == DATABASE_TYPE_ITERATE)
                   dbinfo->type   = DATABASE_TYPE_ITERATE_ARCHIVE;
 
-            if (task_database_iterate(db, name, dbstate, dbinfo) == 0)
+            if (task_database_iterate(db, name, dbstate, dbinfo,
+                     path_contains_compressed_file) == 0)
             {
                dbinfo->status    = DATABASE_STATUS_ITERATE_NEXT;
                dbinfo->type      = DATABASE_TYPE_ITERATE;
