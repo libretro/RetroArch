@@ -366,7 +366,7 @@ build-retroarch-ios9:
   variables:
     XCPROJECT_NAME: RetroArch_iOS9
     XCCONFIG: GitLabCI.xcconfig
-    XCSCHEME: "RetroArch iOS9"
+    XCSCHEME: "RetroArchiOS9"
   artifacts:
     paths:
     - retroarch-repo/

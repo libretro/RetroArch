@@ -85,7 +85,7 @@
 		040A5A4722953F3300BD075F /* GCDWebUploader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebUploader.h; sourceTree = "<group>"; };
 		040A5A4822953F3300BD075F /* GCDWebUploader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebUploader.m; sourceTree = "<group>"; };
 		04306A8624A2C600002CAEFE /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
-		0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch iOS9.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FDA2A911BE1AFA800F2B5DA /* RetroArchiOS9.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArchiOS9.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch_iOS9-Info.plist"; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = "../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S"; sourceTree = SOURCE_ROOT; };
@@ -115,7 +115,7 @@
 		96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		96AFAF4516C1E00A009DE44C /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
 		96AFAF4616C1E00A009DE44C /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
-		D42013DA260825EE00A1DEFD /* RetroArch iOS9.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "RetroArch iOS9.entitlements"; sourceTree = "<group>"; };
+		D42013DA260825EE00A1DEFD /* RetroArchiOS9.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "RetroArchiOS9.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -246,7 +246,7 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
-				D42013DA260825EE00A1DEFD /* RetroArch iOS9.entitlements */,
+				D42013DA260825EE00A1DEFD /* RetroArchiOS9.entitlements */,
 				507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */,
 				83D632D719ECFCC4009E3161 /* Assets */,
 				50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */,
@@ -266,7 +266,7 @@
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */,
+				0FDA2A911BE1AFA800F2B5DA /* RetroArchiOS9.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -354,9 +354,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		0FDA2A701BE1AFA800F2B5DA /* RetroArch iOS9 */ = {
+		0FDA2A701BE1AFA800F2B5DA /* RetroArchiOS9 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0FDA2A8E1BE1AFA800F2B5DA /* Build configuration list for PBXNativeTarget "RetroArch iOS9" */;
+			buildConfigurationList = 0FDA2A8E1BE1AFA800F2B5DA /* Build configuration list for PBXNativeTarget "RetroArchiOS9" */;
 			buildPhases = (
 				0FDA2A711BE1AFA800F2B5DA /* Sources */,
 				0FDA2A771BE1AFA800F2B5DA /* Frameworks */,
@@ -367,9 +367,9 @@
 			);
 			dependencies = (
 			);
-			name = "RetroArch iOS9";
+			name = RetroArchiOS9;
 			productName = RetroArch;
-			productReference = 0FDA2A911BE1AFA800F2B5DA /* RetroArch iOS9.app */;
+			productReference = 0FDA2A911BE1AFA800F2B5DA /* RetroArchiOS9.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -394,7 +394,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0FDA2A701BE1AFA800F2B5DA /* RetroArch iOS9 */,
+				0FDA2A701BE1AFA800F2B5DA /* RetroArchiOS9 */,
 			);
 		};
 /* End PBXProject section */
@@ -478,7 +478,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
-				CODE_SIGN_ENTITLEMENTS = "RetroArch iOS9.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "RetroArchiOS9.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
@@ -564,7 +564,7 @@
 					"-DHAVE_KEYMAPPER",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
-				PRODUCT_NAME = "RetroArch iOS9";
+				PRODUCT_NAME = "RetroArchiOS9";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -579,7 +579,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_CXX_LIBRARY = "libstdc++";
-				CODE_SIGN_ENTITLEMENTS = "RetroArch iOS9.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "RetroArchiOS9.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
@@ -733,7 +733,7 @@
 					"-DHAVE_KEYMAPPER",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch9;
-				PRODUCT_NAME = "RetroArch iOS9";
+				PRODUCT_NAME = "RetroArchiOS9";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -918,7 +918,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0FDA2A8E1BE1AFA800F2B5DA /* Build configuration list for PBXNativeTarget "RetroArch iOS9" */ = {
+		0FDA2A8E1BE1AFA800F2B5DA /* Build configuration list for PBXNativeTarget "RetroArchiOS9" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0FDA2A8F1BE1AFA800F2B5DA /* Debug */,
