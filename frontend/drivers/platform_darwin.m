@@ -44,6 +44,7 @@
 #include <sys/sysctl.h>
 #elif defined(IOS)
 #include <UIKit/UIDevice.h>
+#include <sys/sysctl.h>
 #endif
 
 #include <boolean.h>
@@ -730,14 +731,24 @@ end:
    return ret;
 }
 
+#ifndef OSX
+#ifndef CPU_ARCH_ABI64
+#define CPU_ARCH_ABI64          0x01000000
+#endif
+
+#ifndef CPU_TYPE_ARM64
+#define CPU_TYPE_ARM64          (CPU_TYPE_ARM | CPU_ARCH_ABI64)
+#endif
+#endif
+
 static enum frontend_architecture frontend_darwin_get_arch(void)
 {
-   struct utsname buffer;
-
-   if (uname(&buffer) != 0)
-      return FRONTEND_ARCH_NONE;
-
 #ifdef OSX
+    struct utsname buffer;
+
+    if (uname(&buffer) != 0)
+       return FRONTEND_ARCH_NONE;
+    
    if (string_is_equal(buffer.machine, "x86_64"))
       return FRONTEND_ARCH_X86_64;
    if (string_is_equal(buffer.machine, "x86"))
@@ -746,12 +757,22 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
       return FRONTEND_ARCH_PPC;
    if (string_is_equal(buffer.machine, "arm64"))
       return FRONTEND_ARCH_ARMV8;
-
-   return FRONTEND_ARCH_NONE;
 #else
-   /* TODO/FIXME - make this more flexible */
-   return FRONTEND_ARCH_ARMV7;
+   cpu_type_t type;
+   size_t size = sizeof(type);
+
+   sysctlbyname("hw.cputype", &type, &size, NULL, 0);
+    
+   if (type == CPU_TYPE_X86_64)
+      return FRONTEND_ARCH_X86_64;
+   else if (type == CPU_TYPE_X86)
+      return FRONTEND_ARCH_X86;
+   else if (type == CPU_TYPE_ARM64)
+      return FRONTEND_ARCH_ARMV8;
+   else if (type == CPU_TYPE_ARM)
+      return FRONTEND_ARCH_ARMV7;
 #endif
+    return FRONTEND_ARCH_NONE;
 }
 
 static int frontend_darwin_parse_drive_list(void *data, bool load_content)
