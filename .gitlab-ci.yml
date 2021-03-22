@@ -345,6 +345,22 @@ build-retroarch-osx-opengl-x64:
     XCPROJECT_NAME: RetroArch
     XCCONFIG: OpenGL_GitLabCI.xcconfig
 
+build-retroarch-ios9:
+  extends: .build-retroarch-macos-xcode
+  variables:
+    XCPROJECT_NAME: RetroArch_iOS9
+    XCCONFIG: GitLabCI.xcconfig
+    XCSCHEME: "RetroArch iOS Release"
+  artifacts:
+    paths:
+    - retroarch-repo/
+    expire_in: 10 min
+  script:
+    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme "${XCSCHEME}" -xcconfig pkg/apple/iOS/GitLabCI.xcconfig build
+    - mkdir .retroarch-repo
+    - "cp -r ./* .retroarch-repo"
+    - "mv .retroarch-repo/ retroarch-repo/"
+
 build-retroarch-ios-arm64:
   extends: .build-retroarch-macos-xcode
   variables:
