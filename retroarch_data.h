@@ -1883,7 +1883,6 @@ struct rarch_state
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *input_driver_remote;
 #endif
-   input_mapper_t *input_driver_mapper;
    input_driver_t *current_input;
    void *current_input_data;
 
@@ -2135,6 +2134,7 @@ struct rarch_state
 #endif
 #endif
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
+   input_mapper_t input_driver_mapper;          /* uint32_t alignment */
 
 
 #ifdef HAVE_BSV_MOVIE

@@ -22325,7 +22325,7 @@ static void input_driver_poll(void)
       input_overlay_t *overlay_pointer = (input_overlay_t*)p_rarch->overlay_ptr;
       bool poll_overlay                = (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive);
 #endif
-      input_mapper_t *handle           = p_rarch->input_driver_mapper;
+      input_mapper_t *handle           = &p_rarch->input_driver_mapper;
       const input_device_driver_t *joypad_driver 
                                        = p_rarch->joypad;
 
@@ -22651,6 +22651,7 @@ static int16_t input_state_device(
    int16_t res                   = 0;
    settings_t *settings          = p_rarch->configuration_settings;
    bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
+   input_mapper_t *handle        = &p_rarch->input_driver_mapper;
 
    switch (device)
    {
@@ -22687,7 +22688,7 @@ static int16_t input_state_device(
 
                   }
 
-                  if (BIT256_GET(p_rarch->input_driver_mapper->buttons[port], id))
+                  if (BIT256_GET(handle->buttons[port], id))
                      res = 1;
                }
 
@@ -22829,7 +22830,7 @@ static int16_t input_state_device(
             }
 #endif
             if (input_remap_binds_enable)
-               if (MAPPER_GET_KEY(p_rarch->input_driver_mapper, id))
+               if (MAPPER_GET_KEY(handle, id))
                   res |= 1;
          }
 
@@ -22908,8 +22909,8 @@ static int16_t input_state_device(
                if (idx < 2 && id < 2)
                {
                   unsigned offset = 0 + (idx * 4) + (id * 2);
-                  int        val1 = p_rarch->input_driver_mapper->analog_value[port][offset];
-                  int        val2 = p_rarch->input_driver_mapper->analog_value[port][offset+1];
+                  int        val1 = handle->analog_value[port][offset];
+                  int        val2 = handle->analog_value[port][offset+1];
 
                   if (val1)
                      res          |= val1;
@@ -25784,12 +25785,12 @@ void input_keyboard_event(bool down, unsigned code,
       if (!p_rarch->game_focus_state.enabled &&
             BIT512_GET(p_rarch->keyboard_mapping_bits, code))
       {
-         input_mapper_t *handle      = p_rarch->input_driver_mapper;
+         input_mapper_t *handle      = &p_rarch->input_driver_mapper;
          struct retro_keybind hotkey = input_config_binds[0][RARCH_ENABLE_HOTKEY];
          bool hotkey_pressed         =
                (p_rarch->input_hotkey_block_counter > 0) || (hotkey.key == code);
 
-         if (!(handle && MAPPER_GET_KEY(handle, code)) &&
+         if (!(MAPPER_GET_KEY(handle, code)) &&
                !(!hotkey_pressed && (
                   hotkey.key     != RETROK_UNKNOWN ||
                   hotkey.joykey  != NO_BTN ||
@@ -34967,6 +34968,27 @@ static bool find_menu_driver(
 }
 #endif
 
+static void input_mapper_reset(input_mapper_t *handle)
+{
+   unsigned i;
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned j;
+      for (j = 0; j < 8; j++)
+      {
+         handle->analog_value[i][j]           = 0;
+         handle->buttons[i].data[j]           = 0;
+         handle->buttons[i].analogs[j]        = 0;
+         handle->buttons[i].analog_buttons[j] = 0;
+      }
+   }
+   for (i = 0; i < RETROK_LAST; i++)
+      handle->key_button[i]         = 0;
+   for (i = 0; i < (RETROK_LAST / 32 + 1); i++)
+      handle->keys[i]               = 0;
+}
+
+
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
@@ -35186,11 +35208,7 @@ bool retroarch_main_init(int argc, char *argv[])
             p_rarch->configuration_settings,
             p_rarch->input_driver_max_users);
 #endif
-   if (p_rarch->input_driver_mapper)
-      free(p_rarch->input_driver_mapper);
-   p_rarch->input_driver_mapper = NULL;
-   if (p_rarch->configuration_settings->bools.input_remap_binds_enable)
-      p_rarch->input_driver_mapper = (input_mapper_t*)calloc(1, sizeof(*p_rarch->input_driver_mapper));
+   input_mapper_reset(&p_rarch->input_driver_mapper);
 #ifdef HAVE_REWIND
    command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
@@ -35789,9 +35807,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                   p_rarch->input_driver_max_users);
          p_rarch->input_driver_remote = NULL;
 #endif
-         if (p_rarch->input_driver_mapper)
-            free(p_rarch->input_driver_mapper);
-         p_rarch->input_driver_mapper = NULL;
+         input_mapper_reset(&p_rarch->input_driver_mapper);
 
 #ifdef HAVE_THREADS
          retroarch_autosave_deinit(p_rarch);
