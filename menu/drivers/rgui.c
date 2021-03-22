@@ -1532,7 +1532,6 @@ static void rgui_init_particle_effect(rgui_t *rgui,
    size_t i;
    unsigned fb_width  = p_disp->framebuf_width;
    unsigned fb_height = p_disp->framebuf_height;
-   size_t   fb_pitch  = p_disp->framebuf_pitch;
    
    switch (rgui->particle_effect)
    {
