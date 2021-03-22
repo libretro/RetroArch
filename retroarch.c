@@ -29114,7 +29114,11 @@ bool audio_driver_callback(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
+#ifdef HAVE_MENU
    bool core_paused            = p_rarch->runloop_paused || (settings->bools.menu_pause_libretro && p_rarch->menu_driver_alive);
+#else
+   bool core_paused            = p_rarch->runloop_paused;
+#endif
 
    if (!p_rarch->audio_callback.callback)
       return false;
