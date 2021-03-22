@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 46;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -22,8 +22,8 @@
 		9204BE1C1D319EF300BD49DB /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		9204BE1D1D319EF300BD49DB /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
 		9204BE1E1D319EF300BD49DB /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
-		9204BE1F1D319EF300BD49DB /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
-		9204BE201D319EF300BD49DB /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
+		9204BE1F1D319EF300BD49DB /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; platformFilter = ios; };
+		9204BE201D319EF300BD49DB /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; platformFilter = ios; };
 		9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		9204BE261D319EF300BD49DB /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
 		9210C2F224B3A19100E6FE7C /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9210C2F024B3A19100E6FE7C /* MetalKit.framework */; };
@@ -344,6 +344,7 @@
 		96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		96AFAE2F16C1D4EA009DE44C /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
 		96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
+		D444AE412608261300E00363 /* RetroArch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArch.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -972,6 +973,7 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				D444AE412608261300E00363 /* RetroArch.entitlements */,
 				96AFAE9C16C1D976009DE44C /* Main Entry Core */,
 				92B9EAE024E04F8800E6CFB2 /* Sources */,
 				9222F2082315DAD50097C0FD /* Launch Screen.storyboard */,
@@ -1273,6 +1275,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
@@ -1378,6 +1381,7 @@
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
+				SUPPORTS_MACCATALYST = YES;
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
@@ -1391,6 +1395,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
+				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
@@ -1554,6 +1559,7 @@
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
+				SUPPORTS_MACCATALYST = YES;
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
 				WRAPPER_EXTENSION = app;
@@ -1619,7 +1625,10 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.9.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -1756,7 +1765,10 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.9.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
