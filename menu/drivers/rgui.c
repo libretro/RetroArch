@@ -1526,17 +1526,13 @@ static bool INLINE rgui_draw_particle(
    return (x_end > x_start) && (y_end > y_start);
 }
 
-static void rgui_init_particle_effect(rgui_t *rgui)
+static void rgui_init_particle_effect(rgui_t *rgui,
+      gfx_display_t *p_disp)
 {
-   size_t fb_pitch;
-   unsigned fb_width, fb_height;
    size_t i;
-   
-   /* Sanity check */
-   if (!rgui)
-      return;
-   
-   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   unsigned fb_width  = p_disp->framebuf_width;
+   unsigned fb_height = p_disp->framebuf_height;
+   size_t   fb_pitch  = p_disp->framebuf_pitch;
    
    switch (rgui->particle_effect)
    {
@@ -3496,18 +3492,8 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message,
 static int rgui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
 {
-   /* This is a lazy copy/paste from rgui_render_osk(),
-    * but it will do for now... */
-   rgui_t *rgui = (rgui_t*)data;
-   size_t fb_pitch, key_index;
-   unsigned fb_width, fb_height;
-
+   size_t key_index;
    unsigned osk_x, osk_y;
-   unsigned key_text_offset_x  = 8;
-   unsigned key_text_offset_y  = 6;
-   unsigned ptr_offset_x       = 2;
-   unsigned ptr_offset_y       = 2;
-   unsigned keyboard_offset_x  = 10;
    unsigned key_width;
    unsigned key_height;
    unsigned ptr_width;
@@ -3517,9 +3503,20 @@ static int rgui_osk_ptr_at_pos(void *data, int x, int y,
    unsigned keyboard_offset_y;
    unsigned osk_width;
    unsigned osk_height;
+   unsigned fb_width, fb_height;
+   unsigned key_text_offset_x  = 8;
+   unsigned key_text_offset_y  = 6;
+   unsigned ptr_offset_x       = 2;
+   unsigned ptr_offset_y       = 2;
+   unsigned keyboard_offset_x  = 10;
+   /* This is a lazy copy/paste from rgui_render_osk(),
+    * but it will do for now... */
+   rgui_t *rgui                = (rgui_t*)data;
+   gfx_display_t *p_disp       = NULL;
 
    if (!rgui)
       return -1;
+   p_disp                      = disp_get_ptr();
 
    key_width                   = rgui->font_width  + (key_text_offset_x * 2);
    key_height                  = rgui->font_height + (key_text_offset_y * 2);
@@ -3532,7 +3529,8 @@ static int rgui_osk_ptr_at_pos(void *data, int x, int y,
    osk_height                  = keyboard_offset_y + keyboard_height + 10;
 
    /* Get dimensions/layout */
-   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   fb_width                    = p_disp->framebuf_width;
+   fb_height                   = p_disp->framebuf_height;
 
    osk_x                  = (fb_width  - osk_width)  / 2;
    osk_y                  = (fb_height - osk_height) / 2;
@@ -3885,7 +3883,8 @@ static enum rgui_entry_value_type rgui_get_entry_value_type(
 /* Need to forward declare this for the Wii build
  * (I'm not going to reorder the functions and mess
  * up the git diff for a single platform...) */
-static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update);
+static bool rgui_set_aspect_ratio(rgui_t *rgui, gfx_display_t *p_disp,
+      bool delay_update);
 #endif
 
 static void rgui_render(void *data,
@@ -3945,7 +3944,7 @@ static void rgui_render(void *data,
 
    if (!rgui->force_redraw)
    {
-      msg_force = gfx_display_get_msg_force();
+      msg_force = p_disp->msg_force;
 
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
             && !msg_force)
@@ -3958,9 +3957,9 @@ static void rgui_render(void *data,
    }
 
    display_kb = current_display_cb;
-
-   gfx_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
+   fb_width   = p_disp->framebuf_width;
+   fb_height  = p_disp->framebuf_height;
+   fb_pitch   = p_disp->framebuf_pitch;
 
    /* If the framebuffer changed size, or the background config has
     * changed, recache the background buffer */
@@ -3973,7 +3972,7 @@ static void rgui_render(void *data,
     * must be regenerated - easiest way is to just call
     * rgui_set_aspect_ratio() */
    if (fb_size_changed)
-      rgui_set_aspect_ratio(rgui, false);
+      rgui_set_aspect_ratio(rgui, p_disp, false);
 #endif
 
    if (rgui->bg_modified || fb_size_changed)
@@ -3983,7 +3982,7 @@ static void rgui_render(void *data,
       /* Reinitialise particle effect, if required */
       if (fb_size_changed && 
             (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE))
-         rgui_init_particle_effect(rgui);
+         rgui_init_particle_effect(rgui, p_disp);
 
       rgui->last_width  = fb_width;
       rgui->last_height = fb_height;
@@ -4738,9 +4737,9 @@ static void rgui_set_video_config(rgui_t *rgui,
 
 /* Note: This function is only called when aspect ratio
  * lock is enabled */
-static void rgui_update_menu_viewport(rgui_t *rgui)
+static void rgui_update_menu_viewport(rgui_t *rgui,
+      gfx_display_t    *p_disp)
 {
-   size_t fb_pitch;
    struct video_viewport vp;
    unsigned fb_width, fb_height;
 #if !defined(GEKKO)
@@ -4756,7 +4755,9 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
       return;
 #endif
    
-   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   fb_width                   = p_disp->framebuf_width;
+   fb_height                  = p_disp->framebuf_height;
+
    video_driver_get_viewport_info(&vp);
    
    /* Could do this once in rgui_init(), but seems cleaner to
@@ -4862,13 +4863,13 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
    rgui->menu_video_settings.viewport.y = (vp.full_height - rgui->menu_video_settings.viewport.height) / 2;
 }
 
-static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
+static bool rgui_set_aspect_ratio(rgui_t *rgui,
+      gfx_display_t    *p_disp,
+      bool delay_update)
 {
    unsigned base_term_width;
    unsigned mini_thumbnail_term_width;
 #if defined(GEKKO)
-   size_t fb_pitch;
-   unsigned fb_width, fb_height;
    /* Note: Maximum Wii frame buffer width is 424, not
     * the usual 426, since the last two bits of the
     * width value must be zero... */
@@ -4906,8 +4907,7 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
    /* Since Wii graphics driver can change frame buffer
     * dimensions at will, have to read currently set
     * values */
-   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-   rgui->frame_buf.height = fb_height;
+   rgui->frame_buf.height = p_disp->framebuf_height;
 #elif defined(DINGUX)
    /* Dingux devices use a fixed framebuffer size
     * of 320x240 */
@@ -5182,7 +5182,7 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
    if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
        !rgui->ignore_resize_events)
    {
-      rgui_update_menu_viewport(rgui);
+      rgui_update_menu_viewport(rgui, p_disp);
       rgui_set_video_config(rgui, &rgui->menu_video_settings, delay_update);
    }
    
@@ -5270,7 +5270,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * - Configures variable 'menu display' settings */
    rgui->menu_aspect_ratio_lock = aspect_ratio_lock;
    rgui->aspect_update_pending  = false;
-   if (!rgui_set_aspect_ratio(rgui, false))
+   if (!rgui_set_aspect_ratio(rgui, p_disp, false))
       goto error;
 
    /* Fixed 'menu display' settings */
@@ -5296,7 +5296,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    /* Initialise particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
-      rgui_init_particle_effect(rgui);
+      rgui_init_particle_effect(rgui, p_disp);
 
    /* Set initial 'blit_line/symbol' functions */
    rgui_set_blit_functions(
@@ -5373,7 +5373,6 @@ static void rgui_free(void *data)
 
 static void rgui_set_texture(void *data)
 {
-   size_t fb_pitch;
    unsigned fb_width, fb_height;
    settings_t            *settings = config_get_ptr();
    gfx_display_t          *p_disp  = disp_get_ptr();
@@ -5388,8 +5387,8 @@ static void rgui_set_texture(void *data)
    if (!rgui || !p_disp->framebuf_dirty)
       return;
 
-   gfx_display_get_fb_size(&fb_width, &fb_height,
-         &fb_pitch);
+   fb_width               = p_disp->framebuf_width;
+   fb_height              = p_disp->framebuf_height;
 
    p_disp->framebuf_dirty = false;
 
@@ -5832,6 +5831,9 @@ static void rgui_populate_entries(void *data,
    settings_t       *settings = config_get_ptr();
    unsigned aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
 #endif
+#ifdef HAVE_LANGEXTRA
+   gfx_display_t *p_disp  = disp_get_ptr();
+#endif
    
    if (!rgui)
       return;
@@ -5853,7 +5855,7 @@ static void rgui_populate_entries(void *data,
       /* Need to recalculate terminal dimensions
        * > easiest method is to call
        *   rgui_set_aspect_ratio() */
-      rgui_set_aspect_ratio(rgui, true);
+      rgui_set_aspect_ratio(rgui, p_disp, true);
    }
 #endif
    
@@ -6021,6 +6023,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    bool border_filler_enable           = settings->bools.menu_rgui_border_filler_enable;
    unsigned video_width                = video_info->width;
    unsigned video_height               = video_info->height;
+   gfx_display_t *p_disp               = disp_get_ptr();
 
    if (bg_filler_thickness_enable != rgui->bg_thickness)
    {
@@ -6060,7 +6063,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       rgui->particle_effect = settings->uints.menu_rgui_particle_effect;
 
       if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
-         rgui_init_particle_effect(rgui);
+         rgui_init_particle_effect(rgui, p_disp);
 
       rgui->force_redraw = true;
    }
@@ -6105,7 +6108,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
        * no longer makes sense to ignore resize events */
       rgui->ignore_resize_events = false;
 
-      rgui_set_aspect_ratio(rgui, true);
+      rgui_set_aspect_ratio(rgui, p_disp, true);
    }
 
    /* > Check for changes in aspect ratio lock setting */
@@ -6122,7 +6125,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
           * events should be monitored again */
          rgui->ignore_resize_events = false;
 
-         rgui_update_menu_viewport(rgui);
+         rgui_update_menu_viewport(rgui, p_disp);
          rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
       }
    }
@@ -6172,14 +6175,14 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
           (rgui->window_width < default_fb_width) ||
           (video_height < 240) ||
           (rgui->window_height < 240))
-         rgui_set_aspect_ratio(rgui, true);
+         rgui_set_aspect_ratio(rgui, p_disp, true);
 #endif
 
       /* If aspect ratio is locked, have to update viewport */
       if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
           !rgui->ignore_resize_events)
       {
-         rgui_update_menu_viewport(rgui);
+         rgui_update_menu_viewport(rgui, p_disp);
          rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
       }
 
@@ -6218,6 +6221,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
 {
    rgui_t               *rgui = (rgui_t*)userdata;
    settings_t       *settings = config_get_ptr();
+   gfx_display_t    *p_disp   = disp_get_ptr();
 #if defined(DINGUX)
    unsigned aspect_ratio_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
@@ -6239,7 +6243,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
          rgui_get_video_config(&rgui->content_video_settings);
          
          /* Update menu viewport */
-         rgui_update_menu_viewport(rgui);
+         rgui_update_menu_viewport(rgui, p_disp);
          
          /* Apply menu video settings */
          rgui_set_video_config(rgui, &rgui->menu_video_settings, false);

@@ -1338,12 +1338,6 @@ void gfx_display_set_framebuffer_pitch(size_t pitch)
    p_disp->framebuf_pitch = pitch;
 }
 
-bool gfx_display_get_msg_force(void)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   return p_disp->msg_force;
-}
-
 void gfx_display_set_msg_force(bool state)
 {
    gfx_display_t *p_disp   = disp_get_ptr();
