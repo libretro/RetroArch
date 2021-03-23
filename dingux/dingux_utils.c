@@ -18,6 +18,10 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 
+#if defined(DINGUX_BETA)
+#include <stdlib.h>
+#endif
+
 #include "dingux_utils.h"
 
 #define DINGUX_ALLOW_DOWNSCALING_FILE     "/sys/devices/platform/jz-lcd.0/allow_downscaling"
@@ -27,10 +31,16 @@
 #define DINGUX_SHARPNESS_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/sharpness_downscaling"
 #define DINGUX_BATTERY_CAPACITY_FILE      "/sys/class/power_supply/battery/capacity"
 
+#define DINGUX_SCALING_MODE_ENVAR         "SDL_VIDEO_KMSDRM_SCALING_MODE"
+#define DINGUX_SCALING_SHARPNESS_ENVAR    "SDL_VIDEO_KMSDRM_SCALING_SHARPNESS"
+
 /* Enables/disables downscaling when using
  * the IPU hardware scaler */
 bool dingux_ipu_set_downscaling_enable(bool enable)
 {
+#if defined(DINGUX_BETA)
+   return true;
+#else
    const char *path       = DINGUX_ALLOW_DOWNSCALING_FILE;
    const char *enable_str = enable ? "1" : "0";
 
@@ -41,40 +51,60 @@ bool dingux_ipu_set_downscaling_enable(bool enable)
    /* Write enable state to file */
    return filestream_write_file(
          path, enable_str, 1);
+#endif
 }
 
-/* Enables/disables aspect ratio correction
- * (1:1 PAR) when using the IPU hardware
- * scaler (disabling this will stretch the
- * image to the full screen dimensions) */
-bool dingux_ipu_set_aspect_ratio_enable(bool enable)
+/* Sets the video scaling mode when using the
+ * IPU hardware scaler
+ * - keep_aspect: When 'true', aspect ratio correction
+ *   (1:1 PAR) is applied. When 'false', image is
+ *   stretched to full screen dimensions
+ * - integer_scale: When 'true', enables integer
+ *   scaling. This implicitly sets keep_aspect to
+ *   'true' (since integer scaling is by definition
+ *   1:1 PAR)
+ * Note: OpenDingux stock firmware allows keep_aspect
+ * and integer_scale to be set independently, hence
+ * separate boolean values. OpenDingux beta properly
+ * groups the settings into a single scaling type
+ * parameter. When supporting both firmwares, it would
+ * be cleaner to refactor this function to accept one
+ * enum rather than 2 booleans - but this would break
+ * users' existing configs, so we maintain the old
+ * format... */
+bool dingux_ipu_set_scaling_mode(bool keep_aspect, bool integer_scale)
 {
-   const char *path       = DINGUX_KEEP_ASPECT_RATIO_FILE;
-   const char *enable_str = enable ? "1" : "0";
+#if defined(DINGUX_BETA)
+   const char *scaling_str = "0";
 
-   /* Check whether file exists */
-   if (!path_is_valid(path))
-      return false;
+   /* integer_scale takes priority */
+   if (integer_scale)
+      scaling_str = "2";
+   else if (keep_aspect)
+      scaling_str = "1";
 
-   /* Write enable state to file */
-   return filestream_write_file(
-         path, enable_str, 1);
-}
+   return (setenv(DINGUX_SCALING_MODE_ENVAR, scaling_str, 1) == 0);
+#else
+   const char *keep_aspect_path   = DINGUX_KEEP_ASPECT_RATIO_FILE;
+   const char *keep_aspect_str    = keep_aspect ? "1" : "0";
+   bool keep_aspect_success       = false;
 
-/* Enables/disables integer scaling when
- * using the IPU hardware scaler */
-bool dingux_ipu_set_integer_scaling_enable(bool enable)
-{
-   const char *path       = DINGUX_INTEGER_SCALING_FILE;
-   const char *enable_str = enable ? "1" : "0";
+   const char *integer_scale_path = DINGUX_INTEGER_SCALING_FILE;
+   const char *integer_scale_str  = integer_scale ? "1" : "0";
+   bool integer_scale_success     = false;
 
-   /* Check whether file exists */
-   if (!path_is_valid(path))
-      return false;
+   /* Set keep_aspect */
+   if (path_is_valid(keep_aspect_path))
+      keep_aspect_success = filestream_write_file(
+         keep_aspect_path, keep_aspect_str, 1);
 
-   /* Write enable state to file */
-   return filestream_write_file(
-         path, enable_str, 1);
+   /* Set integer_scale */
+   if (path_is_valid(integer_scale_path))
+      integer_scale_success = filestream_write_file(
+         integer_scale_path, integer_scale_str, 1);
+
+   return (keep_aspect_success && integer_scale_success);
+#endif
 }
 
 /* Sets the image filtering method when
@@ -88,11 +118,13 @@ bool dingux_ipu_set_filter_type(enum dingux_ipu_filter_type filter_type)
     *                    factor of -0.25..-4.0 internally)
     * Default bicubic sharpness factor is
     * (-0.125 * 8) = -1.0 */
+#if !defined(DINGUX_BETA)
    const char *upscaling_path   = DINGUX_SHARPNESS_UPSCALING_FILE;
    const char *downscaling_path = DINGUX_SHARPNESS_DOWNSCALING_FILE;
-   const char *sharpness_str    = "8";
    bool upscaling_success       = false;
    bool downscaling_success     = false;
+#endif
+   const char *sharpness_str    = "8";
 
    /* Check filter type */
    switch (filter_type)
@@ -109,21 +141,35 @@ bool dingux_ipu_set_filter_type(enum dingux_ipu_filter_type filter_type)
          break;
    }
 
+#if defined(DINGUX_BETA)
+   return (setenv(DINGUX_SCALING_SHARPNESS_ENVAR, sharpness_str, 1) == 0);
+#else
    /* Set upscaling sharpness */
    if (path_is_valid(upscaling_path))
       upscaling_success = filestream_write_file(
          upscaling_path, sharpness_str, 1);
-   else
-      upscaling_success = false;
 
    /* Set downscaling sharpness */
    if (path_is_valid(downscaling_path))
       downscaling_success = filestream_write_file(
          downscaling_path, sharpness_str, 1);
-   else
-      downscaling_success = false;
 
    return (upscaling_success && downscaling_success);
+#endif
+}
+
+/* Resets the IPU hardware scaler to the
+ * default configuration */
+bool dingux_ipu_reset(void)
+{
+#if defined(DINGUX_BETA)
+   unsetenv(DINGUX_SCALING_MODE_ENVAR);
+   unsetenv(DINGUX_SCALING_SHARPNESS_ENVAR);
+   return true;
+#else
+   return dingux_ipu_set_scaling_mode(true, false) &&
+          dingux_ipu_set_filter_type(DINGUX_IPU_FILTER_BICUBIC);
+#endif
 }
 
 /* Fetches internal battery level */

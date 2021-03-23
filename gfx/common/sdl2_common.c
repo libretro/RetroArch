@@ -25,7 +25,6 @@
 #include "sdl2_common.h"
 #include "../../retroarch.h"
 
-#ifdef HAVE_SDL2
 #include "SDL.h"
 #include "SDL_syswm.h"
 
@@ -77,5 +76,3 @@ void sdl2_set_handles(void *data, enum rarch_display_type display_type)
          break;
    }
 }
-
-#endif

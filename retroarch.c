@@ -269,6 +269,10 @@
 #include "input/input_osk_utf8_pages.h"
 #endif
 
+#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+#include "SDL.h"
+#endif
+
 /* RetroArch global state / macros */
 #include "retroarch_data.h"
 /* Forward declarations */
@@ -15337,6 +15341,21 @@ static void global_free(struct rarch_state *p_rarch)
    retroarch_override_setting_free_state();
 }
 
+#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+static void sdl_exit(void)
+{
+   /* Quit any SDL subsystems, then quit
+    * SDL itself */
+   uint32_t sdl_subsystem_flags = SDL_WasInit(0);
+
+   if (sdl_subsystem_flags != 0)
+   {
+      SDL_QuitSubSystem(sdl_subsystem_flags);
+      SDL_Quit();
+   }
+}
+#endif
+
 /**
  * main_exit:
  *
@@ -15421,6 +15440,10 @@ void main_exit(void *args)
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CoUninitialize();
+#endif
+
+#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
+   sdl_exit();
 #endif
 }
 

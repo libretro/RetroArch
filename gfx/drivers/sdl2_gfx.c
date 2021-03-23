@@ -35,52 +35,13 @@
 
 #include "SDL.h"
 #include "SDL_syswm.h"
-
-#ifdef HAVE_SDL2
 #include "../common/sdl2_common.h"
-#endif
 
 #include "../font_driver.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-
-typedef struct sdl2_tex
-{
-   SDL_Texture *tex;
-
-   unsigned w;
-   unsigned h;
-   size_t pitch;
-   bool active;
-   bool rgb32;
-} sdl2_tex_t;
-
-typedef struct _sdl2_video
-{
-   bool gl;
-   bool quitting;
-   bool should_resize;
-
-   uint8_t font_r;
-   uint8_t font_g;
-   uint8_t font_b;
-
-   double rotation;
-
-   struct video_viewport vp;
-   video_info_t video;
-   sdl2_tex_t frame;
-   sdl2_tex_t menu;
-   sdl2_tex_t font;
-
-   SDL_Window *window;
-   SDL_Renderer *renderer;
-
-   void *font_data;
-   const font_renderer_driver_t *font_driver;
-} sdl2_video_t;
 
 static void sdl2_gfx_free(void *data);
 
@@ -358,7 +319,12 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
       target->h = height;
       target->pitch = pitch;
       target->rgb32 = rgb32;
-      target->active = true;
+
+      /* If target is menu, do not override 'active'
+       * state (this should only be set by
+       * sdl2_poke_texture_enable()) */
+      if (!menu)
+         target->active = true;
    }
 }
 
@@ -367,23 +333,28 @@ static void *sdl2_gfx_init(const video_info_t *video,
 {
    int i;
    unsigned flags;
-   sdl2_video_t *vid        = NULL;
-   settings_t *settings     = config_get_ptr();
+   sdl2_video_t *vid            = NULL;
+   uint32_t sdl_subsystem_flags = SDL_WasInit(0);
+   settings_t *settings         = config_get_ptr();
 #if defined(HAVE_X11) || defined(HAVE_WAYLAND)
-   const char *video_driver = NULL;
+   const char *video_driver     = NULL;
 #endif
 
 #ifdef HAVE_X11
    XInitThreads();
 #endif
 
-   if (SDL_WasInit(0) == 0)
+   /* Initialise graphics subsystem, if required */
+   if (sdl_subsystem_flags == 0)
    {
       if (SDL_Init(SDL_INIT_VIDEO) < 0)
          return NULL;
    }
-   else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-      return NULL;
+   else if ((sdl_subsystem_flags & SDL_INIT_VIDEO) == 0)
+   {
+      if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+         return NULL;
+   }
 
    vid = (sdl2_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
@@ -602,8 +573,6 @@ static void sdl2_gfx_free(void *data)
 
    if (vid->window)
       SDL_DestroyWindow(vid->window);
-
-   SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
    if (vid->font_data)
       vid->font_driver->free(vid->font_data);

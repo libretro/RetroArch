@@ -31,6 +31,10 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+#ifdef HAVE_SDL2
+#include "../../gfx/common/sdl2_common.h"
+#endif
+
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -278,17 +282,17 @@ static void sdl_input_free(void *data)
 #ifdef HAVE_SDL2
 static void sdl2_grab_mouse(void *data, bool state)
 {
-   struct temp
-   {
-      SDL_Window *w;
-   };
+   sdl2_video_t *video_ptr = NULL;
 
    if (string_is_not_equal(video_driver_get_ident(), "sdl2"))
       return;
 
-   /* First member of sdl2_video_t is the window */
-   SDL_SetWindowGrab(((struct temp*)video_driver_get_ptr())->w,
-         state ? SDL_TRUE : SDL_FALSE);
+   video_ptr = (sdl2_video_t*)video_driver_get_ptr();
+
+   if (!video_ptr)
+      return;
+
+   SDL_SetWindowGrab(video_ptr->window, state ? SDL_TRUE : SDL_FALSE);
 }
 #endif
 

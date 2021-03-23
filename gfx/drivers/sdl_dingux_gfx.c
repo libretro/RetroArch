@@ -307,19 +307,18 @@ static void sdl_dingux_gfx_free(void *data)
    if (!vid)
       return;
 
-   SDL_QuitSubSystem(SDL_INIT_VIDEO);
-
    /* It is good manners to leave IPU scaling
     * parameters in the default state when
     * shutting down */
-   if (!vid->keep_aspect)
-      dingux_ipu_set_aspect_ratio_enable(true);
-
-   if (vid->integer_scaling)
-      dingux_ipu_set_integer_scaling_enable(false);
+#if defined(DINGUX_BETA)
+   dingux_ipu_reset();
+#else
+   if (!vid->keep_aspect || vid->integer_scaling)
+      dingux_ipu_set_scaling_mode(true, false);
 
    if (vid->filter_type != DINGUX_IPU_FILTER_BICUBIC)
       dingux_ipu_set_filter_type(DINGUX_IPU_FILTER_BICUBIC);
+#endif
 
    if (vid->osd_font)
       bitmapfont_free_lut(vid->osd_font);
@@ -343,7 +342,6 @@ static void sdl_dingux_input_driver_init(
    if (string_is_empty(input_driver_name))
       return;
 
-#if defined(HAVE_SDL_DINGUX)
    if (string_is_equal(input_driver_name, "sdl_dingux"))
    {
       *input_data = input_driver_init_wrap(&input_sdl_dingux,
@@ -354,7 +352,6 @@ static void sdl_dingux_input_driver_init(
 
       return;
    }
-#endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
    if (string_is_equal(input_driver_name, "sdl"))
@@ -400,6 +397,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    sdl_dingux_video_t *vid                     = NULL;
+   uint32_t sdl_subsystem_flags                = SDL_WasInit(0);
    settings_t *settings                        = config_get_ptr();
    bool ipu_keep_aspect                        = settings->bools.video_dingux_ipu_keep_aspect;
    bool ipu_integer_scaling                    = settings->bools.video_scale_integer;
@@ -411,22 +409,25 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
          (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
-   dingux_ipu_set_downscaling_enable(true);
-   dingux_ipu_set_aspect_ratio_enable(ipu_keep_aspect);
-   dingux_ipu_set_integer_scaling_enable(ipu_integer_scaling);
-   dingux_ipu_set_filter_type(ipu_filter_type);
-
-   if (SDL_WasInit(0) == 0)
+   /* Initialise graphics subsystem, if required */
+   if (sdl_subsystem_flags == 0)
    {
       if (SDL_Init(SDL_INIT_VIDEO) < 0)
          return NULL;
    }
-   else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-      return NULL;
+   else if ((sdl_subsystem_flags & SDL_INIT_VIDEO) == 0)
+   {
+      if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+         return NULL;
+   }
 
    vid = (sdl_dingux_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
       return NULL;
+
+   dingux_ipu_set_downscaling_enable(true);
+   dingux_ipu_set_scaling_mode(ipu_keep_aspect, ipu_integer_scaling);
+   dingux_ipu_set_filter_type(ipu_filter_type);
 
    vid->screen = SDL_SetVideoMode(
          SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT,
@@ -506,13 +507,17 @@ static void sdl_dingux_set_output(
       /* We must have a valid SDL surface
        * > Use known good fallback display mode
        *   (i.e. menu resolution)
-       * > We do not check for success here, because
-       *   this cannot fail - and if it did, there is
-       *   nothing we can do about it anyway... */
+       * > Other than logging a message, we do not
+       *   handle errors here, because this cannot
+       *   fail - and if it did, there is nothing
+       *   we can do about it anyway... */
       vid->screen = SDL_SetVideoMode(
             SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT,
             rgb32 ? 32 : 16,
             surface_flags);
+
+      if (unlikely(!vid->screen))
+         RARCH_ERR("[SDL1]: Critical - Failed to init fallback SDL surface: %s\n", SDL_GetError());
 
       vid->frame_padding = 0;
       vid->mode_valid    = false;
@@ -618,7 +623,7 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
 {
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 
-   if (unlikely(!frame))
+   if (unlikely(!vid || !frame))
       return true;
 
    /* If fast forward is currently active, we may
@@ -723,10 +728,11 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
 static void sdl_dingux_set_texture_enable(void *data, bool state, bool full_screen)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
-   (void)full_screen;
 
-   if (vid->menu_active != state)
-      vid->menu_active = state;
+   if (unlikely(!vid))
+      return;
+
+   vid->menu_active = state;
 }
 
 static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb32,
@@ -735,6 +741,7 @@ static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
 
    if (unlikely(
+         !vid ||
          rgb32 ||
          (width > SDL_DINGUX_MENU_WIDTH) ||
          (height > SDL_DINGUX_MENU_HEIGHT)))
@@ -808,6 +815,9 @@ static bool sdl_dingux_gfx_alive(void *data)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
 
+   if (unlikely(!vid))
+      return false;
+
    sdl_dingux_gfx_check_window(vid);
    return !vid->quitting;
 }
@@ -830,6 +840,9 @@ static bool sdl_dingux_gfx_has_windowed(void *data)
 static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+
+   if (unlikely(!vid))
+      return;
 
    vp->x      = 0;
    vp->y      = 0;
@@ -866,17 +879,12 @@ static void sdl_dingux_apply_state_changes(void *data)
    if (!vid || !settings)
       return;
 
-   /* Update 'keep aspect ratio' state, if required */
-   if (vid->keep_aspect != ipu_keep_aspect)
+   /* Update IPU scaling mode, if required */
+   if ((vid->keep_aspect != ipu_keep_aspect) ||
+       (vid->integer_scaling != ipu_integer_scaling))
    {
-      dingux_ipu_set_aspect_ratio_enable(ipu_keep_aspect);
-      vid->keep_aspect = ipu_keep_aspect;
-   }
-
-   /* Update integer scaling state, if required */
-   if (vid->integer_scaling != ipu_integer_scaling)
-   {
-      dingux_ipu_set_integer_scaling_enable(ipu_integer_scaling);
+      dingux_ipu_set_scaling_mode(ipu_keep_aspect, ipu_integer_scaling);
+      vid->keep_aspect     = ipu_keep_aspect;
       vid->integer_scaling = ipu_integer_scaling;
    }
 }
