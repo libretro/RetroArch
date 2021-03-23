@@ -1099,7 +1099,7 @@ static const uint16_t network_remote_base_port = 55400;
  * a new one) */
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
 
-#if defined(ANDROID) || defined(IOS)
+#if defined(ANDROID) || defined(__APPLE__)
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
 #else
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
