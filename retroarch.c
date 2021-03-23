@@ -10684,10 +10684,10 @@ static bool command_verify(const char *cmd)
 
    RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
    RARCH_ERR("\tValid commands:\n");
-   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(map); i++)
       RARCH_ERR("\t\t%s\n", map[i].str);
 
-   for (i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(action_map); i++)
       RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
 
    return false;
@@ -11226,7 +11226,8 @@ static void handle_translation_cb(
       {
          int i;
          json_current_key = -1;
-         for (i = 0; i != (sizeof(keys)/sizeof(keys[0])); i++)
+
+         for (i = 0; i < ARRAY_SIZE(keys); i++)
          {
             if (string_is_equal(str, keys[i]))
             {
@@ -12047,20 +12048,20 @@ static bool run_translation_service(
    {
       static const char* state_labels[] = { "b", "y", "select", "start", "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3" };
       int i;
-      for (i = 0; i != (sizeof(state_labels)/sizeof(state_labels[0])); i++)
+      for (i = 0; i < ARRAY_SIZE(state_labels); i++)
       {
          rjsonwriter_add_comma(jsonwriter);
          rjsonwriter_add_space(jsonwriter);
          rjsonwriter_add_string(jsonwriter, state_labels[i]);
          rjsonwriter_add_colon(jsonwriter);
          rjsonwriter_add_space(jsonwriter);
-         rjsonwriter_add_unsigned(jsonwriter,
 #ifdef HAVE_ACCESSIBILITY
+         rjsonwriter_add_unsigned(jsonwriter,
                (p_rarch->ai_gamepad_state[i] ? 1 : 0)
-#else
-               0
-#endif
                );
+#else
+         rjsonwriter_add_unsigned(jsonwriter, 0);
+#endif
       }
    }
    rjsonwriter_add_space(jsonwriter);
@@ -22746,7 +22747,7 @@ static int16_t input_state_device(
                         RETRO_DEVICE_ID_JOYPAD_R3};
                      p_rarch->input_driver_turbo_btns.enable[port] = 1 << button_map[
                         MIN(
-                              sizeof(button_map)/sizeof(button_map[0])-1,
+                              ARRAY_SIZE(button_map) - 1,
                               settings->uints.input_turbo_default_button)];
                   }
                   p_rarch->input_driver_turbo_btns.mode1_enable[port] ^= 1;
