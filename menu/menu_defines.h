@@ -401,13 +401,6 @@ enum quit_on_close_content_type
    QUIT_ON_CLOSE_CONTENT_LAST
 };
 
-enum input_auto_game_focus_type
-{
-   AUTO_GAME_FOCUS_OFF = 0,
-   AUTO_GAME_FOCUS_ON,
-   AUTO_GAME_FOCUS_DETECT,
-   AUTO_GAME_FOCUS_LAST
-};
 
 RETRO_END_DECLS
 

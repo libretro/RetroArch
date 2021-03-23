@@ -17,6 +17,14 @@
 #ifndef __INPUT_TYPES__H
 #define __INPUT_TYPES__H
 
+enum input_auto_game_focus_type
+{
+   AUTO_GAME_FOCUS_OFF = 0,
+   AUTO_GAME_FOCUS_ON,
+   AUTO_GAME_FOCUS_DETECT,
+   AUTO_GAME_FOCUS_LAST
+};
+
 typedef struct rarch_joypad_driver input_device_driver_t;
 typedef struct input_keyboard_line input_keyboard_line_t;
 typedef struct rarch_joypad_info rarch_joypad_info_t;
