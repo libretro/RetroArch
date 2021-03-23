@@ -1586,10 +1586,10 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
 #ifdef HAVE_COMPRESSION
       if (path_is_compressed_file(default_info_dir))
       {
-         size_t len = strlen(default_info_dir);
+         size_t _len = strlen(default_info_dir);
          /* In case of a compressed archive, we have to join with a hash */
          /* We are going to write at the position of dir: */
-         def_info->s[len] = '#';
+         def_info->s[_len] = '#';
       }
 #endif
    }

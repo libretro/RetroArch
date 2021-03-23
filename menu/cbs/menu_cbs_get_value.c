@@ -569,9 +569,9 @@ static void menu_action_setting_disp_set_label_input_desc(
    {
       if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
          strlcpy(s, descriptor, len);
-      else if (!string_is_empty(descriptor) && remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx % 2 == 0)
+      else if (!string_is_empty(descriptor) && remap_idx % 2 == 0)
          snprintf(s, len, "%s %c", descriptor, '+');
-      else if (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx % 2 != 0)
+      else if (remap_idx % 2 != 0)
          snprintf(s, len, "%s %c", descriptor, '-');
    }
 

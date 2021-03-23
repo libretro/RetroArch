@@ -3851,7 +3851,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      if (n >= PATH_MAX_LENGTH)
          n = 0;
       (void)n;
       if (menu_entries_append_enum(info->list, tmp,
@@ -3874,7 +3874,7 @@ static unsigned menu_displaylist_parse_content_information(
       
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      if (n >= PATH_MAX_LENGTH)
          n = 0;
       (void)n;
       
@@ -3899,7 +3899,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      if (n >= PATH_MAX_LENGTH)
          n = 0;
       (void)n;
       
@@ -3971,7 +3971,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       /* Silence gcc compiler warning
       * (getting so sick of these...) */
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      if (n >= PATH_MAX_LENGTH)
          n = 0;
       (void)n;
       
@@ -4009,7 +4009,7 @@ static unsigned menu_displaylist_parse_content_information(
 
          /* Silence gcc compiler warning
          * (getting so sick of these...) */
-         if ((n < 0) || (n >= PATH_MAX_LENGTH))
+         if (n >= PATH_MAX_LENGTH)
             n = 0;
          (void)n;
          

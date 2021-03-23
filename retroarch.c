@@ -2274,7 +2274,6 @@ static bool menu_driver_displaylist_push_internal(
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
       struct rarch_state *p_rarch = &rarch_st;
-      settings_t *settings        = p_rarch->configuration_settings;
       const char *dir_playlist    = settings->paths.directory_playlist;
 
       filebrowser_clear_type();
@@ -2465,7 +2464,7 @@ int generic_menu_entry_action(
                      bool pending_push = false;
                      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
                   }
-                  else if (selection_buf_size > 0)
+                  else
                      menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
                }
 
@@ -2738,11 +2737,11 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          {
             if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
             {
-               size_t i;
+               size_t j;
                size_t size = strlcpy(entry->password_value, entry->value,
                      sizeof(entry->password_value));
-               for (i = 0; i < size; i++)
-                  entry->password_value[i] = '*';
+               for (j = 0; j < size; j++)
+                  entry->password_value[j] = '*';
             }
          }
       }
@@ -12351,24 +12350,7 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
 
       pad.device     = device;
       pad.port       = i;
-
-      switch (device)
-      {
-         case RETRO_DEVICE_JOYPAD:
-            /* Ideally these checks shouldn't be required but if we always
-             * call core_set_controller_port_device input won't work on
-             * cores that don't set port information properly */
-            if (ports_size != 0)
-               core_set_controller_port_device(&pad);
-            break;
-         case RETRO_DEVICE_NONE:
-         default:
-            /* Some cores do not properly range check port argument.
-             * This is broken behavior of course, but avoid breaking
-             * cores needlessly. */
-            core_set_controller_port_device(&pad);
-            break;
-      }
+      core_set_controller_port_device(&pad);
    }
 }
 
@@ -17709,7 +17691,18 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
-         if (!gl_set_core_context(cb->context_type)) { }
+         /* TODO/FIXME - should check first if an OpenGL
+          * driver is running */
+         if (cb->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+         {
+            /* Ensure that the rest of the frontend knows 
+             * we have a core context */
+            gfx_ctx_flags_t flags;
+            flags.flags = 0;
+            BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+            video_context_driver_set_flags(&flags);
+         }
 #endif
 
          cb->get_current_framebuffer = video_driver_get_current_framebuffer;

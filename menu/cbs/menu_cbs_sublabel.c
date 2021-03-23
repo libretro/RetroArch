@@ -1398,7 +1398,7 @@ static int action_bind_sublabel_playlist_entry(
        * playlist, so we can add both in one go */
       n = strlcat(tmp, entry->last_played_str, sizeof(tmp));
 
-      if ((n < 0) || (n >= 64))
+      if (n >= 64)
          n = 0; /* Silence GCC warnings... */
       (void)n;
       if (!string_is_empty(tmp))

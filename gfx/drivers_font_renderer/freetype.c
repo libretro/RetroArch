@@ -259,7 +259,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       FcPattern *found     = NULL;
       FcConfig* config     = FcInitLoadConfigAndFonts();
       FcResult result      = FcResultNoMatch;
-      FcChar8* font_path   = NULL;
+      FcChar8 *_font_path  = NULL;
       int face_index       = 0;
       /* select Sans fonts */
       FcPattern* pattern   = FcNameParse((const FcChar8*)"Sans");
@@ -286,13 +286,13 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       /* uh-oh, for some reason, we can't find any font */
       if (result != FcResultMatch)
          goto error;
-      if (FcPatternGetString(found, FC_FILE, 0, &font_path) != FcResultMatch)
+      if (FcPatternGetString(found, FC_FILE, 0, &_font_path) != FcResultMatch)
          goto error;
       if (FcPatternGetInteger(found, FC_INDEX, 0, &face_index) != FcResultMatch)
          goto error;
 
       /* Initialize font renderer */
-      err = FT_New_Face(handle->lib, (const char*)font_path,
+      err = FT_New_Face(handle->lib, (const char*)_font_path,
             face_index, &handle->face);
 
       /* free up fontconfig internal structures */

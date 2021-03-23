@@ -1129,7 +1129,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
       n = strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER), len);
    }
 
-   if ((n < 0) || (n >= 64))
+   if (n >= 64)
       n = 0; /* Silence GCC warnings... */
    (void)n;
 }
