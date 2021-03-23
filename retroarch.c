@@ -607,6 +607,23 @@ static bool driver_find_next(const char *label, char *s, size_t len)
    return false;
 }
 
+void input_keyboard_mapping_bits(unsigned mode, unsigned key)
+{
+   struct rarch_state *p_rarch    = &rarch_st;
+   switch (mode)
+   {
+      case 0:
+         BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, key);
+         break;
+      case 1:
+         BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, key);
+         break;
+      default:
+         break;
+   }
+}
+
+
 #ifdef HAVE_MENU
 static int menu_dialog_iterate(
       menu_dialog_t *p_dialog,
@@ -841,22 +858,6 @@ void menu_dialog_set_current_id(unsigned id)
    p_dialog->current_id    = id;
 }
 
-void input_keyboard_mapping_bits(unsigned mode, unsigned key)
-{
-   struct rarch_state *p_rarch    = &rarch_st;
-   switch (mode)
-   {
-      case 0:
-         BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, key);
-         break;
-      case 1:
-         BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, key);
-         break;
-      default:
-         break;
-   }
-}
-
 static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
 {
@@ -868,13 +869,13 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
    /* Clear old mapping bit */
-   input_keyboard_mapping_bits(0, binds->buffer.key);
+   BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, binds->buffer.key);
 
    /* store key in bind */
    binds->buffer.key = (enum retro_key)code;
 
    /* Store new mapping bit */
-   input_keyboard_mapping_bits(1, binds->buffer.key);
+   BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, binds->buffer.key);
 
    /* write out the bind */
    *(binds->output)  = binds->buffer;
@@ -9919,6 +9920,29 @@ bool gfx_widgets_ready(void)
 #endif
 }
 
+static void osk_update_last_codepoint(
+      unsigned *last_codepoint,
+      unsigned *last_codepoint_len,
+      const char *word)
+{
+   const char *letter         = word;
+   const char    *pos         = letter;
+
+   for (;;)
+   {
+      unsigned codepoint      = utf8_walk(&letter);
+      if (letter[0] == 0)
+      {
+         *last_codepoint      = codepoint;
+         *last_codepoint_len  = (unsigned)(letter - pos);
+         break;
+      }
+      pos                     = letter;
+   }
+}
+
+
+
 #ifdef HAVE_MENU
 static void menu_input_search_cb(void *userdata, const char *str)
 {
@@ -10101,28 +10125,6 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    return true;
 }
-
-static void osk_update_last_codepoint(
-      unsigned *last_codepoint,
-      unsigned *last_codepoint_len,
-      const char *word)
-{
-   const char *letter         = word;
-   const char    *pos         = letter;
-
-   for (;;)
-   {
-      unsigned codepoint      = utf8_walk(&letter);
-      if (letter[0] == 0)
-      {
-         *last_codepoint      = codepoint;
-         *last_codepoint_len  = (unsigned)(letter - pos);
-         break;
-      }
-      pos                     = letter;
-   }
-}
-
 
 bool menu_input_dialog_get_display_kb(void)
 {
@@ -25853,28 +25855,25 @@ uint8_t input_config_bind_map_get_retro_key(unsigned i)
 }
 
 static void input_config_parse_key(
+      char *s,
+      struct rarch_state *p_rarch,
       config_file_t *conf,
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
-   char key[64];
    struct config_entry_list *entry = NULL;
 
-   key[0] = '\0';
-
-   fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
-
    /* Clear old mapping bit */
-   input_keyboard_mapping_bits(0, bind->key);
+   BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, bind->key);
 
    if (
-            (entry = config_get_entry(conf, key))
+            (entry = config_get_entry(conf, s))
          && (!string_is_empty(entry->value))
       )
       bind->key = input_config_translate_str_to_rk(entry->value);
 
    /* Store mapping bit */
-   input_keyboard_mapping_bits(1, bind->key);
+   BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, bind->key);
 }
 
 static const char *input_config_get_prefix(unsigned user, bool meta)
@@ -25987,22 +25986,20 @@ static uint16_t input_config_parse_hat(const char *dir)
 }
 
 static void input_config_parse_joy_button(
+      char *s,
       config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
-   char str[256];
    char tmp[64];
    char key[64];
    char key_label[64];
    struct config_entry_list *tmp_a         = NULL;
 
-   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
+   tmp[0] = key[0] = key_label[0] = '\0';
 
-   fill_pathname_join_delim(str, prefix, btn,
-         '_', sizeof(str));
-   fill_pathname_join_delim(key, str,
+   fill_pathname_join_delim(key, s,
          "btn", '_', sizeof(key));
-   fill_pathname_join_delim(key_label, str,
+   fill_pathname_join_delim(key_label, s,
          "btn_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
@@ -26046,22 +26043,20 @@ static void input_config_parse_joy_button(
 }
 
 static void input_config_parse_joy_axis(
+      char *s,
       config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
-   char str[256];
    char       tmp[64];
    char       key[64];
    char key_label[64];
    struct config_entry_list *tmp_a         = NULL;
 
-   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
+   tmp[0] = key[0] = key_label[0] = '\0';
 
-   fill_pathname_join_delim(str, prefix, axis,
-         '_', sizeof(str));
-   fill_pathname_join_delim(key, str,
+   fill_pathname_join_delim(key, s,
          "axis", '_', sizeof(key));
-   fill_pathname_join_delim(key_label, str,
+   fill_pathname_join_delim(key_label, s,
          "axis_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
@@ -26097,20 +26092,17 @@ static void input_config_parse_joy_axis(
 }
 
 static void input_config_parse_mouse_button(
+      char *s,
       config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
    int val;
-   char str[256];
    char tmp[64];
    char key[64];
 
-   str[0] = tmp[0] = key[0] = '\0';
+   tmp[0] = key[0] = '\0';
 
-   fill_pathname_join_delim(str, prefix, btn,
-         '_', sizeof(str));
-   fill_pathname_join_delim(key, str,
-         "mbtn", '_', sizeof(key));
+   fill_pathname_join_delim(key, s, "mbtn", '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -26720,7 +26712,8 @@ void input_config_reset(void)
 void config_read_keybinds_conf(void *data)
 {
    unsigned i;
-   config_file_t *conf = (config_file_t*)data;
+   config_file_t         *conf = (config_file_t*)data;
+   struct rarch_state *p_rarch = &rarch_st;
 
    if (!conf)
       return;
@@ -26731,6 +26724,7 @@ void config_read_keybinds_conf(void *data)
 
       for (j = 0; input_config_bind_map_get_valid(j); j++)
       {
+         char str[256];
          const struct input_bind_map *keybind =
             (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
          struct retro_keybind *bind = &input_config_binds[i][j];
@@ -26748,10 +26742,14 @@ void config_read_keybinds_conf(void *data)
          if (!btn || !prefix)
             continue;
 
-         input_config_parse_key(conf, prefix, btn, bind);
-         input_config_parse_joy_button(conf, prefix, btn, bind);
-         input_config_parse_joy_axis(conf, prefix, btn, bind);
-         input_config_parse_mouse_button(conf, prefix, btn, bind);
+         str[0]                     = '\0';
+
+         fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
+
+         input_config_parse_key         (str, p_rarch, conf, prefix, btn, bind);
+         input_config_parse_joy_button  (str, conf, prefix, btn, bind);
+         input_config_parse_joy_axis    (str, conf, prefix, btn, bind);
+         input_config_parse_mouse_button(str, conf, prefix, btn, bind);
       }
    }
 }
@@ -26773,9 +26771,14 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       if (keybind)
       {
+         char str[256];
          const char *base = keybind->base;
-         input_config_parse_joy_button(config, "input", base, &binds[i]);
-         input_config_parse_joy_axis  (config, "input", base, &binds[i]);
+         str[0]                     = '\0';
+
+         fill_pathname_join_delim(str, "input", base,  '_', sizeof(str));
+
+         input_config_parse_joy_button(str, config, "input", base, &binds[i]);
+         input_config_parse_joy_axis  (str, config, "input", base, &binds[i]);
       }
    }
 }
