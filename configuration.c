@@ -2372,7 +2372,6 @@ void config_set_defaults(void *data)
 
    configuration_set_string(settings,
          settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
-
    configuration_set_string(settings,
          settings->paths.network_buildbot_assets_url,
          DEFAULT_BUILDBOT_ASSETS_SERVER_URL);
@@ -3305,6 +3304,20 @@ static bool config_load_file(global_t *global,
          *settings->paths.directory_screenshot = '\0';
       }
    }
+   
+#if defined(__APPLE__) && defined(OSX)
+#if defined(__aarch64__)
+   /* Wrong architecture, set it back to arm64 */
+   if (string_is_equal(settings->paths.network_buildbot_url, "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"))
+       configuration_set_string(settings,
+             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
+#elif defined(__x86_64__)
+   /* Wrong architecture, set it back to x86_64 */
+   if (string_is_equal(settings->paths.network_buildbot_url, "http://buildbot.libretro.com/nightly/apple/osx/arm64/latest/"))
+       configuration_set_string(settings,
+             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
+#endif
+#endif
 
    if (string_is_equal(settings->paths.path_menu_wallpaper, "default"))
       *settings->paths.path_menu_wallpaper = '\0';
