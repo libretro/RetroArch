@@ -25854,28 +25854,6 @@ uint8_t input_config_bind_map_get_retro_key(unsigned i)
    return keybind->retro_key;
 }
 
-static void input_config_parse_key(
-      char *s,
-      struct rarch_state *p_rarch,
-      config_file_t *conf,
-      const char *prefix, const char *btn,
-      struct retro_keybind *bind)
-{
-   struct config_entry_list *entry = NULL;
-
-   /* Clear old mapping bit */
-   BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, bind->key);
-
-   if (
-            (entry = config_get_entry(conf, s))
-         && (!string_is_empty(entry->value))
-      )
-      bind->key = input_config_translate_str_to_rk(entry->value);
-
-   /* Store mapping bit */
-   BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, bind->key);
-}
-
 static const char *input_config_get_prefix(unsigned user, bool meta)
 {
    static const char *bind_user_prefix[MAX_USERS] = {
@@ -26731,6 +26709,9 @@ void config_read_keybinds_conf(void *data)
          bool meta                  = false;
          const char *prefix         = NULL;
          const char *btn            = NULL;
+         struct config_entry_list 
+            *entry                  = NULL;
+         
 
          if (!bind || !bind->valid || !keybind)
             continue;
@@ -26746,7 +26727,16 @@ void config_read_keybinds_conf(void *data)
 
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
 
-         input_config_parse_key         (str, p_rarch, conf, prefix, btn, bind);
+         /* Clear old mapping bit */
+         BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, bind->key);
+
+         entry                      = config_get_entry(conf, str);
+         if (entry && !string_is_empty(entry->value))
+            bind->key               = input_config_translate_str_to_rk(
+                  entry->value);
+         /* Store mapping bit */
+         BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, bind->key);
+
          input_config_parse_joy_button  (str, conf, prefix, btn, bind);
          input_config_parse_joy_axis    (str, conf, prefix, btn, bind);
          input_config_parse_mouse_button(str, conf, prefix, btn, bind);
