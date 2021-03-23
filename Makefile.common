@@ -1372,11 +1372,10 @@ OBJ += gfx/drivers_context/gfx_null_ctx.o
 
 ifeq ($(HAVE_KMS), 1)
    HAVE_AND_WILL_USE_DRM = 1
+   OBJ += gfx/drivers_context/drm_ctx.o
 
 ifeq ($(HAVE_ODROIDGO2), 1)
    OBJ += gfx/drivers_context/drm_go2_ctx.o
-else
-   OBJ += gfx/drivers_context/drm_ctx.o
 endif
    DEF_FLAGS += $(GBM_CFLAGS) $(DRM_CFLAGS)
    LIBS += $(GBM_LIBS) $(DRM_LIBS)
