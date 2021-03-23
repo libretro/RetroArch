@@ -1477,6 +1477,17 @@ static void gl1_gfx_set_viewport_wrapper(void *data, unsigned viewport_width,
 }
 
 #ifdef HAVE_OVERLAY
+static unsigned gl1_get_alignment(unsigned pitch)
+{
+   if (pitch & 1)
+      return 1;
+   if (pitch & 2)
+      return 2;
+   if (pitch & 4)
+      return 4;
+   return 8;
+}
+
 static bool gl1_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
@@ -1517,7 +1528,7 @@ static bool gl1_overlay_load(void *data,
 
    for (i = 0; i < num_images; i++)
    {
-      unsigned alignment = video_pixel_get_alignment(images[i].width
+      unsigned alignment = gl1_get_alignment(images[i].width
             * sizeof(uint32_t));
 
       gl1_load_texture_data(gl->overlay_tex[i],

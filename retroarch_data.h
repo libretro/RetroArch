@@ -157,25 +157,25 @@
 #endif
 
 #ifdef HAVE_THREADS
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) ((VIDEO_DRIVER_IS_THREADED_INTERNAL() && !force) ? video_thread_get_ptr(p_rarch) : p_rarch->video_driver_data)
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch) ((VIDEO_DRIVER_IS_THREADED_INTERNAL()) ? video_thread_get_ptr(p_rarch) : p_rarch->video_driver_data)
 #else
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) (p_rarch->video_driver_data)
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch) (p_rarch->video_driver_data)
 #endif
 
-#define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL() (&p_rarch->hw_render)
+#define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch) (&p_rarch->hw_render)
 
 #ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK() slock_lock(p_rarch->runloop_msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK() slock_unlock(p_rarch->runloop_msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_LOCK(p_rarch) slock_lock(p_rarch->runloop_msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch) slock_unlock(p_rarch->runloop_msg_queue_lock)
 #else
-#define RUNLOOP_MSG_QUEUE_LOCK()
-#define RUNLOOP_MSG_QUEUE_UNLOCK()
+#define RUNLOOP_MSG_QUEUE_LOCK(p_rarch)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch)
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF() || (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
+#define BSV_MOVIE_IS_EOF(p_rarch) || (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
 #else
-#define BSV_MOVIE_IS_EOF()
+#define BSV_MOVIE_IS_EOF(p_rarch)
 #endif
 
 /* Time to exit out of the main loop?
@@ -186,22 +186,22 @@
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((p_rarch->runloop_max_frames != 0) && (frame_count >= p_rarch->runloop_max_frames)) || runloop_exec)
+#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF(p_rarch) || ((p_rarch->runloop_max_frames != 0) && (frame_count >= p_rarch->runloop_max_frames)) || runloop_exec)
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
 
 #define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
 
-#define VIDEO_HAS_FOCUS() (p_rarch->current_video->focus ? (p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
+#define VIDEO_HAS_FOCUS(p_rarch) (p_rarch->current_video->focus ? (p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
 
 #if HAVE_DYNAMIC
-#define RUNAHEAD_RUN_SECONDARY() \
+#define RUNAHEAD_RUN_SECONDARY(p_rarch) \
    if (!secondary_core_run_use_last_input(p_rarch)) \
       p_rarch->runahead_secondary_core_available = false
 #endif
 
-#define RUNAHEAD_RESUME_VIDEO() \
+#define RUNAHEAD_RESUME_VIDEO(p_rarch) \
    if (p_rarch->runahead_video_driver_is_active) \
       p_rarch->video_driver_active = true; \
    else \
@@ -245,7 +245,7 @@
    }
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#define INPUT_REMOTE_KEY_PRESSED(key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
+#define INPUT_REMOTE_KEY_PRESSED(p_rarch, key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 #endif
 
 /**
@@ -499,7 +499,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_PULSE
    &audio_pulse,
 #endif
-#ifdef __PSL1GHT__
+#if defined(__PSL1GHT__) || defined(__PS3__)
    &audio_ps3,
 #endif
 #ifdef XENON
@@ -757,6 +757,9 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(HAVE_VITAGL) | defined(HAVE_VITAGLES)
    &vita_ctx,
 #endif
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+   &gfx_ctx_ps3,
+#endif
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
 #endif
@@ -855,7 +858,7 @@ static input_driver_t *input_drivers[] = {
 #ifdef ORBIS
    &input_ps4,
 #endif
-#ifdef __PSL1GHT__
+#if defined(__PSL1GHT__) || defined(__PS3__)
    &input_ps3,
 #endif
 #if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
@@ -957,6 +960,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #endif
 #if defined(ORBIS)
    &ps4_joypad,
+#endif
+#if defined(__PSL1GHT__) || defined(__PS3__)
+   &ps3_joypad,
 #endif
 #if defined(PSP) || defined(VITA)
    &psp_joypad,
@@ -1581,6 +1587,8 @@ struct menu_list
    size_t selection_buf_size;
 };
 
+typedef struct menu_list menu_list_t;
+
 struct menu_state
 {
    /* Timers */
@@ -1875,7 +1883,6 @@ struct rarch_state
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *input_driver_remote;
 #endif
-   input_mapper_t *input_driver_mapper;
    input_driver_t *current_input;
    void *current_input_data;
 
@@ -2127,6 +2134,7 @@ struct rarch_state
 #endif
 #endif
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
+   input_mapper_t input_driver_mapper;          /* uint32_t alignment */
 
 
 #ifdef HAVE_BSV_MOVIE
@@ -2766,8 +2774,6 @@ static const struct cmd_map map[] = {
 #endif
 
 #ifdef HAVE_MENU
-static int null_menu_iterate(void *data, void *userdata,
-      enum menu_action action) { return 1; }
 static void *null_menu_init(void **userdata, bool video_is_threaded)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -2781,7 +2787,6 @@ static int null_menu_list_bind_init(menu_file_list_cbs_t *cbs,
 static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_texture */
   NULL,  /* render_messagebox */
-  null_menu_iterate,
   NULL,  /* render */
   NULL,  /* frame */
   null_menu_init,

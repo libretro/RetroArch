@@ -661,7 +661,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #endif
    desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 #ifdef HAVE_WINDOW
-   desc.OutputWindow                       = corewindow;
+   desc.OutputWindow                       = (HWND)corewindow;
 #endif
    desc.SampleDesc.Count                   = 1;
    desc.SampleDesc.Quality                 = 0;

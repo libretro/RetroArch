@@ -18,6 +18,10 @@
 #include <xtl.h>
 #endif
 
+#if defined(__PSL1GHT__) || defined(__PS3__)
+#include "ps3_defines.h"
+#endif
+
 #ifdef __MACH__
 #include <TargetConditionals.h>
 #if TARGET_IPHONE_SIMULATOR

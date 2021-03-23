@@ -248,7 +248,6 @@ typedef struct menu_ctx_driver
    void  (*set_texture)(void *data);
    /* Render a messagebox to the screen. */
    void  (*render_messagebox)(void *data, const char *msg);
-   int   (*iterate)(void *data, void *userdata, enum menu_action action);
    void  (*render)(void *data, unsigned width, unsigned height, bool is_idle);
    void  (*frame)(void *data, video_frame_info_t *video_info);
    /* Initializes the menu driver. (setup) */
@@ -402,34 +401,6 @@ typedef struct menu_ctx_displaylist
    unsigned type;
 } menu_ctx_displaylist_t;
 
-typedef struct menu_ctx_iterate
-{
-   enum menu_action action;
-
-   struct
-   {
-      int16_t x;
-      int16_t y;
-      bool touch;
-   } pointer;
-
-   struct
-   {
-      int16_t x;
-      int16_t y;
-      struct
-      {
-         bool left;
-         bool right;
-      } buttons;
-      struct
-      {
-         bool up;
-         bool down;
-      } wheel;
-   } mouse;
-} menu_ctx_iterate_t;
-
 typedef struct menu_ctx_environment
 {
    void *data;
@@ -474,8 +445,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info);
 
-bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
-      retro_time_t current_time);
+int menu_driver_deferred_push_content_list(file_list_t *list);
 
 bool menu_driver_list_cache(menu_ctx_list_t *list);
 
@@ -537,7 +507,6 @@ void menu_explore_free(void);
 bool menu_driver_search_filter_enabled(const char *label, unsigned type);
 bool menu_driver_search_push(const char *search_term);
 bool menu_driver_search_pop(void);
-void menu_driver_search_clear(void);
 struct string_list *menu_driver_search_get_terms(void);
 /* Convenience function: Appends list of current
  * search terms to specified string */

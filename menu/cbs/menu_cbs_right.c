@@ -176,7 +176,7 @@ static int action_right_input_desc(unsigned type, const char *label,
 {
    rarch_system_info_t *system           = runloop_get_system_info();
    settings_t *settings                  = config_get_ptr();
-   unsigned btn_idx, user_idx, remap_idx;
+   unsigned btn_idx, user_idx, remap_idx, bind_idx;
 
    if (!settings || !system)
       return 0;
@@ -184,12 +184,35 @@ static int action_right_input_desc(unsigned type, const char *label,
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
    btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
-   if (settings->uints.input_remap_ids[user_idx][btn_idx] < RARCH_CUSTOM_BIND_LIST_END - 1)
-      settings->uints.input_remap_ids[user_idx][btn_idx]++;
-   else if (settings->uints.input_remap_ids[user_idx][btn_idx] == RARCH_CUSTOM_BIND_LIST_END - 1)
+   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+   for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
+   {
+      if (input_config_bind_order[bind_idx] == remap_idx)
+         break;
+   }
+
+   if (bind_idx < RARCH_CUSTOM_BIND_LIST_END - 1)
+   {
+      if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
+         settings->uints.input_remap_ids[user_idx][btn_idx]++;
+      else
+      {
+         if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
+         {
+            bind_idx++;
+            bind_idx = input_config_bind_order[bind_idx];
+         }
+         else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
+            bind_idx = RARCH_UNMAPPED;
+         else
+            bind_idx = input_config_bind_order[0];
+         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
+      }
+   }
+   else if (bind_idx == RARCH_CUSTOM_BIND_LIST_END - 1)
       settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
    else
-      settings->uints.input_remap_ids[user_idx][btn_idx] = 0;
+      settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
 
    remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
 
@@ -256,21 +279,13 @@ static int action_right_goto_tab(void)
 {
    menu_ctx_list_t list_info;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
-   menu_file_list_cbs_t *cbs  = selection_buf ? (menu_file_list_cbs_t*)
-      selection_buf->list[selection].actiondata : NULL;
 
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_RIGHT;
 
    menu_driver_list_cache(&list_info);
 
-   if (cbs && cbs->action_content_list_switch)
-      return cbs->action_content_list_switch(selection_buf, menu_stack,
-            "", "", 0);
-
-   return 0;
+   return menu_driver_deferred_push_content_list(selection_buf);
 }
 
 static int action_right_mainmenu(unsigned type, const char *label,

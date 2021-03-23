@@ -629,7 +629,7 @@ font_data_t *gfx_display_font_file(
       font_size = 2.0f;
 
    if (!dispctx->font_init_first((void**)&font_data,
-            video_driver_get_ptr(false),
+            video_driver_get_ptr(),
             fontpath, font_size, is_threaded))
       return NULL;
 
@@ -1336,12 +1336,6 @@ void gfx_display_set_framebuffer_pitch(size_t pitch)
 {
    gfx_display_t *p_disp   = disp_get_ptr();
    p_disp->framebuf_pitch = pitch;
-}
-
-bool gfx_display_get_msg_force(void)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   return p_disp->msg_force;
 }
 
 void gfx_display_set_msg_force(bool state)

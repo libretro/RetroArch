@@ -757,9 +757,9 @@ static void task_save_handler(retro_task_t *task)
 
    if (task_get_cancelled(task) || written != remaining)
    {
-      char err[8192];
-
-      err[0] = '\0';
+      size_t err_size = 8192 * sizeof(char);
+      char *err       = (char*)malloc(err_size);
+      err[0]          = '\0';
 
       if (state->undo_save)
       {
@@ -767,16 +767,17 @@ static void task_save_handler(retro_task_t *task)
             msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
             undo_save_buf.path);
 
-         snprintf(err, sizeof(err), "%s \"%s\".",
+         snprintf(err, err_size - 1, "%s \"%s\".",
                   msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
                   "RAM");
       }
       else
-         snprintf(err, sizeof(err),
+         snprintf(err, err_size - 1,
                "%s %s",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), state->path);
 
       task_set_error(task, strdup(err));
+      free(err);
       task_save_handler_finished(task, state);
       return;
    }
@@ -941,17 +942,17 @@ static void task_load_handler(retro_task_t *task)
 #endif
 
       if (!state->file)
-         goto error;
+         goto end;
 
       state->size = intfstream_get_size(state->file);
 
       if (state->size < 0)
-         goto error;
+         goto end;
 
       state->data = malloc(state->size + 1);
 
       if (!state->data)
-         goto error;
+         goto end;
    }
 
 #ifdef HAVE_CHEEVOS
@@ -995,41 +996,42 @@ static void task_load_handler(retro_task_t *task)
 
    if (state->bytes_read == state->size)
    {
-      char msg[8192];
-
-      msg[0]            = '\0';
-
       task_free_title(task);
 
-      if (state->autoload)
-         snprintf(msg, sizeof(msg),
-               "%s \"%s\" %s.",
-               msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-               state->path,
-               msg_hash_to_str(MSG_SUCCEEDED));
-      else
+      if (!task_get_mute(task))
       {
-         if (state->state_slot < 0)
-            strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO),
-                 sizeof(msg));
-         else
-            snprintf(msg, sizeof(msg),
-                  msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
-                  state->state_slot);
+         size_t msg_size   = 8192 * sizeof(char);
+         char *msg         = (char*)malloc(msg_size);
 
+         msg[0]            = '\0';
+
+         if (state->autoload)
+            snprintf(msg, msg_size - 1,
+                  "%s \"%s\" %s.",
+                  msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+                  state->path,
+                  msg_hash_to_str(MSG_SUCCEEDED));
+         else
+         {
+            if (state->state_slot < 0)
+               strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO),
+                     msg_size - 1);
+            else
+               snprintf(msg, msg_size - 1,
+                     msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
+                     state->state_slot);
+         }
+
+         task_set_title(task, strdup(msg));
+         free(msg);
       }
 
-      if (!task_get_mute(task))
-         task_set_title(task, strdup(msg));
-
-      task_load_handler_finished(task, state);
-
-      return;
+      goto end;
    }
 
    return;
 
-error:
+end:
    task_load_handler_finished(task, state);
 }
 

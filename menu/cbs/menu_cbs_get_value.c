@@ -411,13 +411,11 @@ static void menu_action_setting_disp_set_label_menu_file_core(
       const char *path,
       char *s2, size_t len2)
 {
-   const char *alt = NULL;
+   const char *alt = list->list[i].alt
+      ? list->list[i].alt
+      : list->list[i].path;
    strcpy_literal(s, "(CORE)");
-
-   menu_entries_get_at_offset(list, i, NULL,
-         NULL, NULL, NULL, &alt);
-
-   *w = (unsigned)strlen(s);
+   *w              = (unsigned)strlen(s);
    if (alt)
       strlcpy(s2, alt, len2);
 }
@@ -433,13 +431,11 @@ static void menu_action_setting_disp_set_label_core_updater_entry(
 {
    core_updater_list_t *core_list         = core_updater_list_get_cached();
    const core_updater_list_entry_t *entry = NULL;
-   const char *alt                        = NULL;
-
-   *s = '\0';
-   *w = 0;
-
-   menu_entries_get_at_offset(list, i, NULL,
-         NULL, NULL, NULL, &alt);
+   const char *alt                        = list->list[i].alt
+      ? list->list[i].alt
+      : list->list[i].path;
+   *s                                     = '\0';
+   *w                                     = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -484,14 +480,12 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
       const char *path,
       char *s2, size_t len2)
 {
-   const char *alt = NULL;
    core_info_ctx_find_t core_info;
-
-   *s = '\0';
-   *w = 0;
-
-   menu_entries_get_at_offset(list, i, NULL,
-         NULL, NULL, NULL, &alt);
+   const char *alt = list->list[i].alt
+      ? list->list[i].alt
+      : list->list[i].path;
+   *s              = '\0';
+   *w              = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -519,14 +513,12 @@ static void menu_action_setting_disp_set_label_core_lock(
       const char *path,
       char *s2, size_t len2)
 {
-   const char *alt = NULL;
    core_info_ctx_find_t core_info;
-
-   *s = '\0';
-   *w = 0;
-
-   menu_entries_get_at_offset(list, i, NULL,
-         NULL, NULL, NULL, &alt);
+   const char *alt = list->list[i].alt
+      ? list->list[i].alt
+      : list->list[i].path;
+   *s              = '\0';
+   *w              = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);

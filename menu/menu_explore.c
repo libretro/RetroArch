@@ -597,7 +597,22 @@ static explore_state_t *explore_build_list(void)
             key_str                         = key->val.string.buff;
             if (string_is_equal(key_str, "crc"))
             {
-               crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
+               switch (strlen(val->val.binary.buff))
+               {
+                  case 1:
+                     crc32 = *(uint8_t*)val->val.binary.buff;
+                     break;
+                  case 2:
+                     crc32 = swap_if_little16(*(uint16_t*)val->val.binary.buff);
+                     break;
+                  case 4:
+                     crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
+                     break;
+                  default:
+                     crc32 = 0;
+                     break;
+               }
+
                continue;
             }
             else if (string_is_equal(key_str, "name"))
@@ -1161,7 +1176,8 @@ SKIP_ENTRY:;
          strlcpy(menu->deferred_path,
                pl_entry->path, sizeof(menu->deferred_path));
          info.list                     = list;
-         menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, &info);
+         menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, &info,
+               config_get_ptr());
          break;
       }
    }

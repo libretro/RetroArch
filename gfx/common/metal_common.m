@@ -25,7 +25,6 @@
 #import <gfx/video_frame.h>
 
 #import "metal_common.h"
-#include "metal/Context.h"
 
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"

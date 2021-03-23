@@ -1469,11 +1469,10 @@ static int action_bind_sublabel_core_backup_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   const char *crc = NULL;
-
    /* crc is entered as 'alt' text */
-   menu_entries_get_at_offset(list, i, NULL,
-         NULL, NULL, NULL, &crc);
+   const char *crc = list->list[i].alt
+      ? list->list[i].alt
+      : list->list[i].path;
 
    /* Set sublabel prefix */
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);

@@ -1795,7 +1795,7 @@ const struct rarch_key_map rarch_key_map_winraw[] = {
    { VK_RCONTROL, RETROK_RCTRL },
    { VK_LMENU, RETROK_LALT },
    { VK_RMENU, RETROK_RALT },
-   { VK_RETURN, RETROK_KP_ENTER },
+   { 0xE0, RETROK_KP_ENTER },
    { VK_CAPITAL, RETROK_CAPSLOCK },
    { VK_OEM_1, RETROK_SEMICOLON },
    { VK_OEM_PLUS, RETROK_EQUALS },
@@ -1808,6 +1808,7 @@ const struct rarch_key_map rarch_key_map_winraw[] = {
    { VK_OEM_5, RETROK_BACKSLASH },
    { VK_OEM_6, RETROK_RIGHTBRACKET },
    { VK_OEM_7, RETROK_QUOTE },
+   { VK_OEM_102, RETROK_OEM_102 },
    { 0, RETROK_UNKNOWN }
 };
 #endif

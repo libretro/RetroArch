@@ -452,7 +452,7 @@ static void main_loop(void)
 
    for (;;)
    {
-      if (video_driver_get_ptr(false))
+      if (video_driver_get_ptr())
       {
          start_time = OSGetSystemTime();
          task_queue_wait(swap_is_pending, &start_time);

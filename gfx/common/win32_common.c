@@ -965,10 +965,22 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
              * DirectInput is not available */
             switch (keysym)
             {
-               /* Mod handling done in winraw_callback */
+               /* Mod & Keypad handling done in winraw_callback */
                case VK_SHIFT:
                case VK_CONTROL:
                case VK_MENU:
+               case VK_INSERT:
+               case VK_DELETE:
+               case VK_HOME:
+               case VK_END:
+               case VK_PRIOR:
+               case VK_NEXT:
+               case VK_UP:
+               case VK_DOWN:
+               case VK_LEFT:
+               case VK_RIGHT:
+               case VK_CLEAR:
+               case VK_RETURN:
                   return 0;
             }
 
@@ -1274,7 +1286,7 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
    }
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1322,7 +1334,7 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
    }
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1555,7 +1567,7 @@ void win32_clip_window(bool state)
    if (state && main_window.hwnd)
    {
       PWINDOWINFO info;
-      info = malloc(sizeof(*info));
+      info         = (PWINDOWINFO)malloc(sizeof(*info));
       info->cbSize = sizeof(PWINDOWINFO);
 
       if (GetWindowInfo(main_window.hwnd, info))

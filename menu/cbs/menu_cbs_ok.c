@@ -823,8 +823,8 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_HELP:
          info_label             = label;
-         menu_dialog_push_pending(true, (enum menu_dialog_type)type);
          dl_type                = DISPLAYLIST_HELP;
+         menu_dialog_push_pending((enum menu_dialog_type)type);
          break;
       case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
@@ -1535,7 +1535,7 @@ int generic_action_ok_displaylist_push(const char *path,
    if (info_path)
       info.path  = strdup(info_path);
 
-   if (menu_displaylist_ctl(dl_type, &info))
+   if (menu_displaylist_ctl(dl_type, &info, settings))
    {
       if (menu_displaylist_process(&info))
       {
@@ -4408,13 +4408,6 @@ finish:
             subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
    }
 
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
    if (user_data)
       free(user_data);
 }
@@ -4452,13 +4445,6 @@ static void cb_net_generic(retro_task_t *task,
 finish:
    refresh = true;
    menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
 
    if (!err && 
          !string_ends_with_size(state->path,
@@ -4769,13 +4755,6 @@ finish:
    else if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
       discord_avatar_set_ready(true);
 #endif
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
 
    if (transf)
       free(transf);
@@ -5903,16 +5882,8 @@ finish:
    if (err)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
 
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
    if (user_data)
       free(user_data);
-
 }
 
 #ifndef RARCH_CONSOLE
@@ -6759,7 +6730,7 @@ static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO)
+#if defined(GEKKO) || !defined(__PSL1GHT__) && defined(__PS3__)
    unsigned width   = 0;
    unsigned  height = 0;
 
@@ -6769,7 +6740,7 @@ static int action_ok_video_resolution(const char *path,
 
       msg[0] = '\0';
 
-#if defined(_WIN32)
+#if defined(_WIN32) || !defined(__PSL1GHT__) && defined(__PS3__)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
       video_driver_set_video_mode(width, height, true);

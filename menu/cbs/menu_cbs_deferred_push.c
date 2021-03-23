@@ -50,7 +50,8 @@ enum
 #define GENERIC_DEFERRED_PUSH(name, type) \
 static int (name)(menu_displaylist_info_t *info) \
 { \
-   return deferred_push_dlist(info, type); \
+   settings_t *settings = config_get_ptr(); \
+   return deferred_push_dlist(info, type, settings); \
 }
 
 #define GENERIC_DEFERRED_CURSOR_MANAGER(name, type) \
@@ -65,18 +66,12 @@ static int (name)(menu_displaylist_info_t *info) \
    return general_push(info, a, b); \
 }
 
-#define GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(name, a, b) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list); \
-   return general_push(info, a, b); \
-}
-
 static int deferred_push_dlist(
       menu_displaylist_info_t *info,
-      enum menu_displaylist_ctl_state state)
+      enum menu_displaylist_ctl_state state,
+      settings_t *settings)
 {
-   if (!menu_displaylist_ctl(state, info))
+   if (!menu_displaylist_ctl(state, info, settings))
       return menu_cbs_exit();
    menu_displaylist_process(info);
    return 0;
@@ -85,6 +80,7 @@ static int deferred_push_dlist(
 static int deferred_push_database_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
+   settings_t *settings = config_get_ptr();
    if (!string_is_empty(info->path_b))
       free(info->path_b);
    if (!string_is_empty(info->path_c))
@@ -93,14 +89,10 @@ static int deferred_push_database_manager_list_deferred(
    info->path_b    = strdup(info->path);
    info->path_c    = NULL;
 
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
 }
 
-static int deferred_push_remappings_port(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_REMAPPINGS_PORT);
-}
-
+GENERIC_DEFERRED_PUSH(deferred_push_remappings_port,                DISPLAYLIST_OPTIONS_REMAPPINGS_PORT)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
@@ -282,11 +274,14 @@ static int deferred_push_cursor_manager_list_deferred(
    
    if (!(conf = config_file_new_from_path_to_string(path)))
       return -1;
+   
+   query_entry                    = config_get_entry(conf, "query");
+   rdb_entry                      = config_get_entry(conf, "rdb");
 
    if (     
-            !(query_entry  = config_get_entry(conf, "query"))
+            !query_entry
          ||  (string_is_empty(query_entry->value))
-         || !(rdb_entry    = config_get_entry(conf, "rdb"))
+         || !rdb_entry
          ||  (string_is_empty(rdb_entry->value))
       )
    {
@@ -294,15 +289,14 @@ static int deferred_push_cursor_manager_list_deferred(
       return -1;
    }
 
-   config_file_free(conf);
-
    rdb_path[0] = '\0';
 
    settings = config_get_ptr();
+   
    fill_pathname_join(rdb_path,
          settings->paths.path_content_database,
          rdb_entry->value, sizeof(rdb_path));
-
+   
    if (!string_is_empty(info->path_b))
       free(info->path_b);
 
@@ -316,8 +310,10 @@ static int deferred_push_cursor_manager_list_deferred(
 
    info->path_c    = strdup(query_entry->value);
    info->path      = strdup(rdb_path);
+   
+   config_file_free(conf);
 
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -328,6 +324,7 @@ static int deferred_push_cursor_manager_list_generic(
    int ret                       = -1;
    const char *path              = info->path;
    struct string_list str_list   = {0};
+   settings_t *settings          = config_get_ptr();
    
    if (!path)
       goto end;
@@ -354,7 +351,7 @@ static int deferred_push_cursor_manager_list_generic(
    info->path_b = strdup(str_list.elems[0].data);
    info->path_c = strdup(query);
 
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
 
 end:
    string_list_deinitialize(&str_list);
@@ -623,7 +620,7 @@ static int general_push(menu_displaylist_info_t *info,
       info->exts = strdup(newstring2);
    }
 
-   return deferred_push_dlist(info, state);
+   return deferred_push_dlist(info, state, settings);
 }
 
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)
@@ -632,29 +629,29 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_archive_open, PUSH_ARCHIVE_OPEN, DISPLAYL
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_default, PUSH_DEFAULT, DISPLAYLIST_DEFAULT)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_favorites_list, PUSH_DEFAULT, DISPLAYLIST_FAVORITES)
 
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_playlist_list, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_music_history_list, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_explore_list, PUSH_DEFAULT, DISPLAYLIST_EXPLORE)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_video_shader_num_passes, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_NUM_PASSES)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_shader_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PARAMETER)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_shader_preset_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PRESET_PARAMETER)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_default_core, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_label_display_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_right_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_left_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_playlist_sort_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_system_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_input_device_type, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_input_device_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
-GENERIC_DEFERRED_PUSH_CLEAR_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_playlist_list, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_music_history_list, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_explore_list, PUSH_DEFAULT, DISPLAYLIST_EXPLORE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_video_shader_num_passes, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_NUM_PASSES)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_shader_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PARAMETER)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_shader_preset_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PRESET_PARAMETER)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_playlist_default_core, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_playlist_label_display_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_playlist_right_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_playlist_left_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_playlist_sort_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_system_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_type, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,

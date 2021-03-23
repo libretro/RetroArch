@@ -1259,7 +1259,8 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
       bool is_threaded)
 {
    thread_packet_t pkt;
-   thread_video_t *thr = (thread_video_t*)video_driver_get_ptr(true);
+   thread_video_t *thr            = (thread_video_t*)
+      video_driver_get_data();
 
    if (!thr)
       return false;
@@ -1283,7 +1284,7 @@ unsigned video_thread_texture_load(void *data,
       custom_command_method_t func)
 {
    thread_packet_t pkt;
-   thread_video_t *thr  = (thread_video_t*)video_driver_get_ptr(true);
+   thread_video_t *thr  = (thread_video_t*)video_driver_get_data();
 
    if (!thr)
       return 0;

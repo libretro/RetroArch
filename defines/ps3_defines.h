@@ -517,6 +517,11 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define cellNetCtlTerm netCtlTerm
 
 #define CELL_NET_CTL_STATE_IPObtained NET_CTL_STATE_IPObtained
+#else
+#define netCtlInit cellNetCtlInit
+#define netCtlGetState cellNetCtlGetState
+#define netCtlTerm cellNetCtlTerm
+#define NET_CTL_STATE_IPObtained CELL_NET_CTL_STATE_IPObtained
 #endif
 
 /*============================================================
@@ -536,6 +541,9 @@ extern int audioAddData(uint32_t portNum, float *data,
 #include <netex/net.h>
 #include <np.h>
 #include <np/drm.h>
+
+#define netInitialize sys_net_initialize_network
+#define netFinalizeNetwork sys_net_finalize_network
 #endif
 #endif
 
@@ -599,7 +607,39 @@ extern int audioAddData(uint32_t portNum, float *data,
 
 #else
 #include <cell/sysmodule.h>
+
+#define sysModuleLoad cellSysmoduleLoadModule
+#define sysModuleUnload cellSysmoduleUnloadModule
+#define SYSMODULE_NET CELL_SYSMODULE_NET
 #endif
+#endif
+
+/*============================================================
+	FS PROTOTYPES
+============================================================ */
+#define FS_SUCCEEDED 0
+#define FS_TYPE_DIR 1
+#ifdef __PSL1GHT__
+#include <lv2/sysfs.h>
+#define O_RDONLY SYS_O_RDONLY
+#define O_WRONLY SYS_O_WRONLY
+#define O_CREAT SYS_O_CREAT
+#define O_TRUNC SYS_O_TRUNC
+#define O_RDWR SYS_O_RDWR
+#else
+#include <cell/cell_fs.h>
+#define O_RDONLY CELL_FS_O_RDONLY
+#define O_WRONLY CELL_FS_O_WRONLY
+#define O_CREAT CELL_FS_O_CREAT
+#define O_TRUNC CELL_FS_O_TRUNC
+#define O_RDWR CELL_FS_O_RDWR
+#define sysFsStat cellFsStat
+#define sysFSStat CellFsStat
+#define sysFSDirent CellFsDirent
+#define sysFsOpendir cellFsOpendir
+#define sysFsReaddir cellFsReaddir
+#define sysFSDirent CellFsDirent
+#define sysFsClosedir cellFsClosedir
 #endif
 
 #endif

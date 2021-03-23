@@ -333,9 +333,6 @@ bool retroarch_is_forced_fullscreen(void);
 void retroarch_set_current_core_type(
       enum rarch_core_type type, bool explicitly_set);
 
-bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path,
-      bool message);
-
 const char* retroarch_get_shader_preset(void);
 
 bool retroarch_is_switching_display_mode(void);
@@ -771,7 +768,7 @@ void recording_driver_update_streaming_url(void);
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
 #elif defined(__PSL1GHT__) || defined(HAVE_OPENGLES2) || defined(HAVE_GLSL)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#elif defined(__CELLOS_LV2__) || defined(HAVE_CG)
+#elif defined(HAVE_CG)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
 #else
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
@@ -1586,7 +1583,9 @@ const char* config_get_video_driver_options(void);
  *
  * Returns: video driver's userdata.
  **/
-void *video_driver_get_ptr(bool force_nonthreaded_data);
+void *video_driver_get_ptr(void);
+
+void *video_driver_get_data(void);
 
 bool video_driver_set_rotation(unsigned rotation);
 
@@ -1678,8 +1677,6 @@ void video_monitor_set_refresh_rate(float hz);
  **/
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
-
-unsigned video_pixel_get_alignment(unsigned pitch);
 
 void crt_switch_driver_reinit(void);
 
@@ -1991,6 +1988,34 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name);
 void input_driver_init_joypads(void);
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name);
+
+/* Human readable order of input binds */
+static const unsigned input_config_bind_order[] = {
+   RETRO_DEVICE_ID_JOYPAD_UP,
+   RETRO_DEVICE_ID_JOYPAD_DOWN,
+   RETRO_DEVICE_ID_JOYPAD_LEFT,
+   RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   RETRO_DEVICE_ID_JOYPAD_A,
+   RETRO_DEVICE_ID_JOYPAD_B,
+   RETRO_DEVICE_ID_JOYPAD_X,
+   RETRO_DEVICE_ID_JOYPAD_Y,
+   RETRO_DEVICE_ID_JOYPAD_SELECT,
+   RETRO_DEVICE_ID_JOYPAD_START,
+   RETRO_DEVICE_ID_JOYPAD_L,
+   RETRO_DEVICE_ID_JOYPAD_R,
+   RETRO_DEVICE_ID_JOYPAD_L2,
+   RETRO_DEVICE_ID_JOYPAD_R2,
+   RETRO_DEVICE_ID_JOYPAD_L3,
+   RETRO_DEVICE_ID_JOYPAD_R3,
+   19, /* Left Analog Up */
+   18, /* Left Analog Down */
+   17, /* Left Analog Left */
+   16, /* Left Analog Right */
+   23, /* Right Analog Up */
+   22, /* Right Analog Down */
+   21, /* Right Analog Left */
+   20, /* Right Analog Right */
+};
 
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);

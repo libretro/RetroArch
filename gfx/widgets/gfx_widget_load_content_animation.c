@@ -615,8 +615,8 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
        * final icon/text x draw positions */
       state->icon_x_end = ((int)last_video_width - text_width -
             (int)state->icon_size - (3 * (int)widget_padding)) >> 1;
-      state->icon_x_end = state->icon_x_end < (int)widget_padding ?
-            widget_padding : state->icon_x_end;
+      if (state->icon_x_end < (int)widget_padding)
+         state->icon_x_end = widget_padding;
 
       state->text_x_end = state->icon_x_end +
             (float)(state->icon_size + widget_padding);

@@ -43,6 +43,10 @@
 #include "../config.def.h"
 #include "../config.def.keybinds.h"
 
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
 #endif
@@ -6514,6 +6518,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          if (action == MENU_ACTION_OK)
          {
             menu_displaylist_info_t  info;
+            settings_t *settings          = config_get_ptr();
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
             const char      *name         = setting->name;
             size_t selection              = menu_navigation_get_selection();
@@ -6526,7 +6531,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             info.directory_ptr            = selection;
             info.list                     = menu_stack;
 
-            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
+            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, settings))
                menu_displaylist_process(&info);
 
             menu_displaylist_info_free(&info);
@@ -7187,7 +7192,7 @@ static void general_write_handler(rarch_setting_t *setting)
                   msg_hash_to_str(MENU_ENUM_LABEL_HELP));
             info.list                    = menu_stack;
 
-            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
+            if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, settings))
                menu_displaylist_process(&info);
             menu_displaylist_info_free(&info);
             setting_set_with_string_representation(setting, "false");
@@ -7381,9 +7386,15 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE:
          if (*setting->value.target.boolean)
          {
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+            cellSysutilEnableBgmPlayback();
+#endif
          }
          else
          {
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+            cellSysutilDisableBgmPlayback();
+#endif
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
@@ -7662,7 +7673,7 @@ static void change_handler_video_layout_enable(rarch_setting_t *setting)
    if (*setting->value.target.boolean)
    {
       settings_t *settings = config_get_ptr();
-      void         *driver = video_driver_get_ptr(false);
+      void         *driver = video_driver_get_ptr();
 
       video_layout_init(driver, video_driver_layout_render_interface());
       video_layout_load(settings->paths.path_video_layout);
@@ -7816,7 +7827,7 @@ static bool setting_append_list_input_player_options(
     */
    static char buffer[MAX_USERS][13+2+1];
    static char group_lbl[MAX_USERS][255];
-   unsigned i;
+   unsigned i, j;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
@@ -8074,10 +8085,12 @@ static bool setting_append_list_input_player_options(
 #endif
    }
 
-   for (i = 0; i < RARCH_BIND_LIST_END; i ++)
+   for (j = 0; j < RARCH_BIND_LIST_END; j++)
    {
       char label[255];
       char name[255];
+
+      i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
 
       if (input_config_bind_map_get_meta(i))
          continue;
@@ -10649,7 +10662,7 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-#if defined(GEKKO)
+#if defined(GEKKO) || !defined(__PSL1GHT__) && defined(__PS3__)
             if (true)
 #else
             if (!string_is_equal(video_display_server_get_ident(), "null"))
@@ -19408,7 +19421,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
-static rarch_setting_t *menu_setting_new(void)
+rarch_setting_t *menu_setting_new(void)
 {
    rarch_setting_t* list           = NULL;
    rarch_setting_info_t *list_info = (rarch_setting_info_t*)
@@ -19430,75 +19443,6 @@ static rarch_setting_t *menu_setting_new(void)
    return list;
 }
 
-bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
-{
-   uint64_t flags;
-
-   switch (state)
-   {
-      case MENU_SETTING_CTL_IS_OF_PATH_TYPE:
-         {
-            bool cbs_bound           = false;
-            rarch_setting_t *setting = (rarch_setting_t*)data;
-
-            if (!setting)
-               return false;
-
-            flags                    = setting->flags;
-
-            if (setting->type != ST_ACTION)
-               return false;
-
-            if (!setting->change_handler)
-               return false;
-
-            cbs_bound = (setting->action_right != NULL);
-            cbs_bound = cbs_bound || setting->action_left;
-            cbs_bound = cbs_bound || setting->action_select;
-
-            if (!cbs_bound)
-               return false;
-
-            if (!(flags & SD_FLAG_BROWSER_ACTION))
-               return false;
-         }
-         break;
-      case MENU_SETTING_CTL_NEW:
-         {
-            rarch_setting_t **setting = (rarch_setting_t**)data;
-            if (!setting)
-               return false;
-            *setting = menu_setting_new();
-         }
-         break;
-      case MENU_SETTING_CTL_ACTION_RIGHT:
-         {
-            rarch_setting_t *setting = (rarch_setting_t*)data;
-            if (!setting)
-               return false;
-
-            if (setting->action_right)
-            {
-               int ret = setting->action_right(setting, 0, false);
-               menu_driver_ctl(
-                     RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH, NULL);
-               menu_driver_ctl(
-                     RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE, NULL);
-               if (ret == -1)
-                  return false;
-            }
-            else
-               return false;
-         }
-         break;
-      case MENU_SETTING_CTL_NONE:
-      default:
-         break;
-   }
-
-   return true;
-}
-
 void video_driver_menu_settings(void **list_data, void *list_info_data,
       void *group_data, void *subgroup_data, const char *parent_group)
 {
@@ -19515,6 +19459,22 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    (void)subgroup_info;
    (void)global;
 
+#if !defined(__PSL1GHT__) && defined(__PS3__)
+   CONFIG_BOOL(
+         list, list_info,
+         &global->console.screen.pal60_enable,
+         MENU_ENUM_LABEL_PAL60_ENABLE,
+         MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+         false,
+         MENU_ENUM_LABEL_VALUE_OFF,
+         MENU_ENUM_LABEL_VALUE_ON,
+         group_info,
+         subgroup_info,
+         parent_group,
+         general_write_handler,
+         general_read_handler,
+         SD_FLAG_NONE);
+#endif
 #if defined(GEKKO) || defined(_XBOX360)
    CONFIG_UINT(
          list, list_info,

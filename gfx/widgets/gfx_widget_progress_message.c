@@ -270,7 +270,8 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       if (state->progress >= 0)
       {
          bar_width = (unsigned)((((float)state->progress / 100.0f) * (float)state->bar_max_width) + 0.5f);
-         bar_width = (bar_width > state->bar_max_width) ? state->bar_max_width : bar_width;
+         if (bar_width > state->bar_max_width)
+            bar_width = state->bar_max_width;
 
          bar_color = state->bar_color;
       }

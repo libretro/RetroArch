@@ -66,7 +66,7 @@ void *file_list_get_actiondata_at_offset(const file_list_t *list,
  * or non-contiguous data there, make sure you free it's fields
  * before calling this function or you might get a memory leak.
  *
- * @param list
+ * @param list List to be freed
  */
 void file_list_free(file_list_t *list);
 
@@ -80,8 +80,8 @@ bool file_list_initialize(file_list_t *list);
  * This function will not change the capacity if nitems is smaller
  * than the current capacity.
  *
- * @param list
- * @param nitems
+ * @param list The list to open for input
+ * @param nitems Number of items to reserve space for
  * @return whether or not the operation succeeded
  */
 bool file_list_reserve(file_list_t *list, size_t nitems);

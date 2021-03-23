@@ -2007,7 +2007,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("user_language",                msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, DEFAULT_USER_LANGUAGE, false);
 #endif
 #endif
+#ifndef __APPLE__
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
+#endif
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
    SETTING_UINT("input_overlay_show_physical_inputs_port", &settings->uints.input_overlay_show_physical_inputs_port, true, 0, false);
    SETTING_UINT("video_msg_bgcolor_red",        &settings->uints.video_msg_bgcolor_red, true, message_bgcolor_red, false);
@@ -2370,7 +2372,6 @@ void config_set_defaults(void *data)
 
    configuration_set_string(settings,
          settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
-
    configuration_set_string(settings,
          settings->paths.network_buildbot_assets_url,
          DEFAULT_BUILDBOT_ASSETS_SERVER_URL);
@@ -2443,7 +2444,7 @@ void config_set_defaults(void *data)
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
    *settings->paths.path_cheat_settings    = '\0';
-#ifndef IOS
+#if !defined(__APPLE__)
    *settings->arrays.bundle_assets_src = '\0';
    *settings->arrays.bundle_assets_dst = '\0';
    *settings->arrays.bundle_assets_dst_subdir = '\0';
@@ -3303,6 +3304,20 @@ static bool config_load_file(global_t *global,
          *settings->paths.directory_screenshot = '\0';
       }
    }
+   
+#if defined(__APPLE__) && defined(OSX)
+#if defined(__aarch64__)
+   /* Wrong architecture, set it back to arm64 */
+   if (string_is_equal(settings->paths.network_buildbot_url, "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"))
+       configuration_set_string(settings,
+             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
+#elif defined(__x86_64__)
+   /* Wrong architecture, set it back to x86_64 */
+   if (string_is_equal(settings->paths.network_buildbot_url, "http://buildbot.libretro.com/nightly/apple/osx/arm64/latest/"))
+       configuration_set_string(settings,
+             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
+#endif
+#endif
 
    if (string_is_equal(settings->paths.path_menu_wallpaper, "default"))
       *settings->paths.path_menu_wallpaper = '\0';

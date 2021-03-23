@@ -19,13 +19,21 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "../../../config.h"
+#endif
+
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
+
+#ifdef HAVE_MENU
+#include "../../../menu/menu_displaylist.h"
+#endif
+
 #include "../../../file_path_special.h"
 #include "../../../playlist.h"
-#include "../../../menu/menu_displaylist.h"
 #include "../../../setting_list.h"
 #include "../../../configuration.h"
 #include "../../../core_info.h"

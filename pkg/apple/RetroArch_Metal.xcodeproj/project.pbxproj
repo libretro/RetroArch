@@ -48,6 +48,8 @@
 		84DD5EB51A89E737007336C1 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
 		84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		9254B33125FA0BA300A1E0DA /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
+		9254B33825FA72F100A1E0DA /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		A90209ED44A1161587F10CA4 /* MainMenu_Metal.xib in Resources */ = {isa = PBXBuildFile; fileRef = A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */; };
 		D27C50882228360000113BC0 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
 		D27C508A2228360D00113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
@@ -116,7 +118,6 @@
 		05366521213F8BE5007E7EA0 /* filedropwidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = filedropwidget.cpp; sourceTree = "<group>"; };
 		05366522213F8BE5007E7EA0 /* thumbnaildownload.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thumbnaildownload.cpp; sourceTree = "<group>"; };
 		05366523213F8BE5007E7EA0 /* playlist.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = playlist.cpp; sourceTree = "<group>"; };
-		05366524213F8BE5007E7EA0 /* ui_qt_themes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui_qt_themes.h; sourceTree = "<group>"; };
 		05366525213F8BE5007E7EA0 /* shaderparamsdialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = shaderparamsdialog.h; sourceTree = "<group>"; };
 		05366526213F8BE5007E7EA0 /* flowlayout.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = flowlayout.cpp; sourceTree = "<group>"; };
 		05366527213F8BE5007E7EA0 /* viewoptionsdialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewoptionsdialog.cpp; sourceTree = "<group>"; };
@@ -361,18 +362,9 @@
 		05A8C73C20DB72F100FF7857 /* vulkan_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vulkan_common.c; sourceTree = "<group>"; };
 		05A8C74420DB72F100FF7857 /* metal_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_common.h; sourceTree = "<group>"; };
 		05A8C74820DB72F100FF7857 /* metal_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_common.h; sourceTree = "<group>"; };
-		05A8C74920DB72F100FF7857 /* TexturedView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TexturedView.h; sourceTree = "<group>"; };
-		05A8C74B20DB72F100FF7857 /* Context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Context.h; sourceTree = "<group>"; };
-		05A8C74C20DB72F100FF7857 /* RendererCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RendererCommon.h; sourceTree = "<group>"; };
 		05A8C74E20DB72F100FF7857 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
-		05A8C74F20DB72F100FF7857 /* View.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = View.h; sourceTree = "<group>"; };
-		05A8C75020DB72F100FF7857 /* Filter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Filter.m; sourceTree = "<group>"; };
-		05A8C75120DB72F100FF7857 /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
-		05A8C75320DB72F100FF7857 /* Context.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Context.m; sourceTree = "<group>"; };
-		05A8C75420DB72F100FF7857 /* RendererCommon.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RendererCommon.m; sourceTree = "<group>"; };
-		05A8C75620DB72F100FF7857 /* TexturedView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TexturedView.m; sourceTree = "<group>"; };
-		05A8C75720DB72F100FF7857 /* Filter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Filter.h; sourceTree = "<group>"; };
-		05A8C75820DB72F100FF7857 /* View.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = View.m; sourceTree = "<group>"; };
+		05A8C75120DB72F100FF7857 /* metal_shader_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_shader_types.h; sourceTree = "<group>"; };
+		05A8C75420DB72F100FF7857 /* metal_renderer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = metal_renderer.m; sourceTree = "<group>"; };
 		05A8C75D20DB72F100FF7857 /* gl_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_common.c; sourceTree = "<group>"; };
 		05A8C75E20DB72F100FF7857 /* d3d_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d_common.c; sourceTree = "<group>"; };
 		05A8C76320DB72F100FF7857 /* d3d10_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = d3d10_common.h; sourceTree = "<group>"; };
@@ -527,10 +519,9 @@
 		84DD5EB71A89F1C7007336C1 /* retroarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = retroarch.icns; path = ../../media/retroarch.icns; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9254B2E625F5516A00A1E0DA /* GitLabCI.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = GitLabCI.xcconfig; sourceTree = "<group>"; };
-		A902040DE66D42F9EE47BFE3 /* MenuDisplay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MenuDisplay.h; sourceTree = "<group>"; };
+		9254B33025FA0BA300A1E0DA /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = assets.zip; path = OSX/assets.zip; sourceTree = "<group>"; };
 		A90205FD4D5979BD8B7E4DD6 /* Info_Metal.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.info; name = Info_Metal.plist; path = OSX/Info_Metal.plist; sourceTree = "<group>"; };
 		A902065A41AEBECE594908C7 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu_Metal.xib; sourceTree = "<group>"; };
-		A902070F2C43F222FD56A95A /* MenuDisplay.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MenuDisplay.m; sourceTree = "<group>"; };
 		A90207489289602F593626D5 /* QTConfig.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = QTConfig.xcconfig; sourceTree = "<group>"; };
 		A90208A05A895029CEC32C14 /* ui_cocoa_msg_window_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_msg_window_metal.m; sourceTree = "<group>"; };
 		A9020AF14B9A73364C6CDDA5 /* cocoa_common_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_common_metal.m; sourceTree = "<group>"; };
@@ -629,7 +620,6 @@
 				05366512213F8BE5007E7EA0 /* thumbnailpackdownload.cpp */,
 				05366517213F8BE5007E7EA0 /* ui_qt_load_core_window.cpp */,
 				05366519213F8BE5007E7EA0 /* ui_qt_load_core_window.h */,
-				05366524213F8BE5007E7EA0 /* ui_qt_themes.h */,
 				0536652C213F8BE5007E7EA0 /* updateretroarch.cpp */,
 				05366527213F8BE5007E7EA0 /* viewoptionsdialog.cpp */,
 				05366515213F8BE5007E7EA0 /* viewoptionsdialog.h */,
@@ -1110,22 +1100,11 @@
 		05A8C74520DB72F100FF7857 /* metal */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C74B20DB72F100FF7857 /* Context.h */,
-				05A8C75320DB72F100FF7857 /* Context.m */,
-				05A8C75720DB72F100FF7857 /* Filter.h */,
-				05A8C75020DB72F100FF7857 /* Filter.m */,
 				05A8C74820DB72F100FF7857 /* metal_common.h */,
-				A902040DE66D42F9EE47BFE3 /* MenuDisplay.h */,
-				A902070F2C43F222FD56A95A /* MenuDisplay.m */,
-				05A8C74C20DB72F100FF7857 /* RendererCommon.h */,
-				05A8C75420DB72F100FF7857 /* RendererCommon.m */,
+				05A8C75420DB72F100FF7857 /* metal_renderer.m */,
 				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
 				05770B9820E805160013DABC /* menu_pipeline.metal */,
-				05A8C75120DB72F100FF7857 /* ShaderTypes.h */,
-				05A8C74920DB72F100FF7857 /* TexturedView.h */,
-				05A8C75620DB72F100FF7857 /* TexturedView.m */,
-				05A8C74F20DB72F100FF7857 /* View.h */,
-				05A8C75820DB72F100FF7857 /* View.m */,
+				05A8C75120DB72F100FF7857 /* metal_shader_types.h */,
 			);
 			path = metal;
 			sourceTree = "<group>";
@@ -1465,6 +1444,7 @@
 		841CBB821A8A33810066E9F1 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				9254B33025FA0BA300A1E0DA /* assets.zip */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -1546,6 +1526,7 @@
 			files = (
 				05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */,
 				05422E402140C8DB00F09961 /* retroarch.icns in Resources */,
+				9254B33825FA72F100A1E0DA /* assets.zip in Resources */,
 				0502387C2179713000789627 /* MainMenu_Metal.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1556,6 +1537,7 @@
 			files = (
 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
 				84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */,
+				9254B33125FA0BA300A1E0DA /* assets.zip in Resources */,
 				A90209ED44A1161587F10CA4 /* MainMenu_Metal.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1724,11 +1706,11 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
-				CODE_SIGN_IDENTITY = "Mac Developer";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
@@ -1762,11 +1744,11 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
-				CODE_SIGN_IDENTITY = "Mac Developer";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;

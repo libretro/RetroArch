@@ -227,13 +227,6 @@ finish:
             (transf ? transf->path: "unknown"), err);
    }
 
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
    if (transf)
       free(transf);
 }

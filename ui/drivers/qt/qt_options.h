@@ -6,7 +6,9 @@
 #include <QScrollArea>
 #include <QDebug>
 
-#include "../settingswidgets.h"
+#include "settingswidgets.h"
+
+#include "../../../configuration.h"
 
 class MainWindow;
 class ViewOptionsWidget;
@@ -55,14 +57,16 @@ public:
    QString categoryIconName() const { return m_categoryIconName; }
    virtual void load()
    {
+      unsigned i;
       size_t size = m_pages.size();
-      for (int i = 0; i < size; i++)
+      for (i = 0; i < size; i++)
          m_pages.at(i)->load();
    }
    virtual void apply()
    {
+      unsigned i;
       size_t size = m_pages.size();
-      for (int i = 0; i < size; i++)
+      for (i = 0; i < size; i++)
          m_pages.at(i)->apply();
    }
 protected:
@@ -560,8 +564,9 @@ static inline QWidget *create_widget(enum menu_displaylist_ctl_state name)
    QWidget             *widget = new QWidget;
    FormLayout          *layout = new FormLayout;
    file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
+   settings_t *settings        = config_get_ptr();
 
-   menu_displaylist_build_list(list, name, true);
+   menu_displaylist_build_list(list, settings, name, true);
 
    for (i = 0; i < list->size; i++)
    {

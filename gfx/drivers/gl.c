@@ -243,6 +243,17 @@ void glkitview_bind_fbo(void);
 #define gl2_renderchain_bind_backbuffer() gl2_bind_fb(0)
 #endif
 
+static unsigned gl2_get_alignment(unsigned pitch)
+{
+   if (pitch & 1)
+      return 1;
+   if (pitch & 2)
+      return 2;
+   if (pitch & 4)
+      return 4;
+   return 8;
+}
+
 static bool gl2_shader_info(gl_t *gl,
       video_shader_ctx_info_t *shader_info)
 {
@@ -1439,7 +1450,7 @@ static void gl2_renderchain_copy_frame(
 #endif
    {
       glPixelStorei(GL_UNPACK_ALIGNMENT,
-            video_pixel_get_alignment(width * gl->base_size));
+            gl2_get_alignment(width * gl->base_size));
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
       if (gl->base_size == 4 && use_rgba)
@@ -1492,7 +1503,7 @@ static void gl2_renderchain_copy_frame(
 #else
    {
       const GLvoid *data_buf = frame;
-      glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
+      glPixelStorei(GL_UNPACK_ALIGNMENT, gl2_get_alignment(pitch));
 
       if (gl->base_size == 2 && !gl->have_es2_compat)
       {
@@ -2124,7 +2135,7 @@ static void gl2_update_input_size(gl_t *gl, unsigned width,
       if (clear)
       {
          glPixelStorei(GL_UNPACK_ALIGNMENT,
-               video_pixel_get_alignment(width * sizeof(uint32_t)));
+               gl2_get_alignment(width * sizeof(uint32_t)));
 #if defined(HAVE_PSGL)
          glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
                gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
@@ -2261,7 +2272,7 @@ static void gl2_set_texture_frame(void *data,
 
    gl_load_texture_data(gl->menu_texture,
          RARCH_WRAP_EDGE, menu_filter,
-         video_pixel_get_alignment(width * base_size),
+         gl2_get_alignment(width * base_size),
          width, height, frame,
          base_size);
 
@@ -2486,7 +2497,7 @@ static void gl2_pbo_async_readback(gl_t *gl)
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
 
    gl2_renderchain_readback(gl, gl->renderchain_data,
-         video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)),
+         gl2_get_alignment(gl->vp.width * sizeof(uint32_t)),
          fmt, type, NULL);
    gl2_renderchain_unbind_pbo();
 }
@@ -2618,11 +2629,8 @@ static void gl2_video_layout_free(gl_t *gl)
 
 static void *gl2_video_layout_take_image(void *video_driver_data, struct texture_image image)
 {
-   unsigned alignment;
-   GLuint tex;
-
-   tex = 0;
-   alignment = video_pixel_get_alignment(image.width * sizeof(uint32_t));
+   GLuint tex          = 0;
+   unsigned alignment  = gl2_get_alignment(image.width * sizeof(uint32_t));
 
    glGenTextures(1, &tex);
 
@@ -4294,7 +4302,7 @@ static bool gl2_overlay_load(void *data,
 
    for (i = 0; i < num_images; i++)
    {
-      unsigned alignment = video_pixel_get_alignment(images[i].width
+      unsigned alignment = gl2_get_alignment(images[i].width
             * sizeof(uint32_t));
 
       gl_load_texture_data(gl->overlay_tex[i],

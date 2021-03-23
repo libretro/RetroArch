@@ -80,7 +80,6 @@ typedef struct
 
 static void *win32_display_server_init(void)
 {
-   HRESULT hr;
    dispserv_win32_t *dispserv = (dispserv_win32_t*)calloc(1, sizeof(*dispserv));
 
    if (!dispserv)
@@ -89,27 +88,23 @@ static void *win32_display_server_init(void)
 #ifdef HAS_TASKBAR_EXT
 #ifdef __cplusplus
    /* When compiling in C++ mode, GUIDs are references instead of pointers */
-   hr = CoCreateInstance(CLSID_TaskbarList, NULL,
+   if (FAILED(CoCreateInstance(CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
-         (void**)&dispserv->taskbar_list);
+         (void**)&dispserv->taskbar_list)))
 #else
    /* Mingw GUIDs are pointers instead of references since we're in C mode */
-   hr = CoCreateInstance(&CLSID_TaskbarList, NULL,
+   if (FAILED(CoCreateInstance(&CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, &IID_ITaskbarList3,
-         (void**)&dispserv->taskbar_list);
+         (void**)&dispserv->taskbar_list)))
 #endif
-
-   if (SUCCEEDED(hr))
-   {
-      hr = ITaskbarList3_HrInit(dispserv->taskbar_list);
-
-      if (!SUCCEEDED(hr))
-         RARCH_ERR("[dispserv]: HrInit of ITaskbarList3 failed.\n");
-   }
-   else
    {
       dispserv->taskbar_list = NULL;
       RARCH_ERR("[dispserv]: CoCreateInstance of ITaskbarList3 failed.\n");
+   }
+   else
+   {
+      if (FAILED(ITaskbarList3_HrInit(dispserv->taskbar_list)))
+         RARCH_ERR("[dispserv]: HrInit of ITaskbarList3 failed.\n");
    }
 #endif
 

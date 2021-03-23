@@ -31,8 +31,8 @@ else ifeq ($(LIBRETRO), bluemsx)
 	APP_TITLE            = blueMSX
 	APP_PRODUCT_CODE     = RARCH-BLUEMSX
 	APP_UNIQUE_ID        = 0xBAC9A
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+	APP_ICON             = pkg/ctr/assets/bluemsx.png
+	APP_BANNER           = pkg/ctr/assets/bluemsx_banner.png
 
 else ifeq ($(LIBRETRO), chailove)
 	APP_TITLE            = ChaiLove
@@ -400,6 +400,14 @@ else ifeq ($(LIBRETRO), pokemini)
 	APP_UNIQUE_ID        = 0xBAC20
 	APP_ICON             = pkg/ctr/assets/pokemini.png
 	APP_BANNER           = pkg/ctr/assets/pokemini_banner.png
+
+else ifeq ($(LIBRETRO), potator)
+	APP_TITLE            = Potator
+	APP_AUTHOR           = various
+	APP_PRODUCT_CODE     = RARCH-POTATOR
+	APP_UNIQUE_ID        = 0xBACD0
+	APP_ICON             = pkg/ctr/assets/potator.png
+	APP_BANNER           = pkg/ctr/assets/potator_banner.png
 
 else ifeq ($(LIBRETRO), prboom)
 	APP_TITLE            = PrBoom

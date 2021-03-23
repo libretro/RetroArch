@@ -308,155 +308,7 @@ build-retroarch-linux-i686:
     - "cd gfx/video_filters && make -j$NUMPROC build=release && make -j$NUMPROC build=release strip && cd -"
     - "cp -f gfx/video_filters/*.so ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
-
-# Mac OS x86_x64 (OpenGL, 10.7)
-build-retroarch-osx-x64:
-  tags:
-    - macosx-packaging
-  stage: build
-  before_script:
-    - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
-  artifacts:
-    paths:
-    - retroarch
-    - RetroArch.tar.gz
-    expire_in: 10 min
-  dependencies: []
-  script:
-    # Build RetroArch
-    - ./configure --disable-al
-    - make -j$NUMPROC
-    # Build filters
-    - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
-    - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
-    # Create app directory
-    - rm -rvf "RetroArch.app/"
-    - mkdir -vp "RetroArch.app/Contents/MacOS"
-    - mkdir -vp "RetroArch.app/Contents/Resources/video_filters"
-    - mkdir -vp "RetroArch.app/Contents/Resources/audio_filters"
-    # Copy resources and compiled RetroArch binary
-    - cp -Rv "pkg/apple/OSX/"* "RetroArch.app/Contents"
-    - cp retroarch RetroArch.app/Contents/MacOS
-    - cp media/retroarch.icns RetroArch.app/Contents/Resources/
-    - cp libretro-common/audio/dsp_filters/*.dylib RetroArch.app/Contents/Resources/audio_filters
-    - cp libretro-common/audio/dsp_filters/*.dsp RetroArch.app/Contents/Resources/audio_filters
-    - cp gfx/video_filters/*.dylib RetroArch.app/Contents/Resources/video_filters
-    - cp gfx/video_filters/*.filt RetroArch.app/Contents/Resources/video_filters
-    - rm -rvf RetroArch.app/Contents/Info_Metal.plist
-    - rm -rvf RetroArch.app/Contents/modules_ppc
-    - rm -rvf RetroArch.app/Contents/Resources/default.metallib
-    - rm -rvf RetroArch.app/Contents/Resources/en.lproj/MainMenu_Metal.nib
-    # Update properties within the application properties
-    - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
-    - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch.app/Contents/Info.plist
-    - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
-    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.7/' RetroArch.app/Contents/Info.plist
-    # TODO: It seems this messes with code signing, so delete it??
-    - rm -rvf RetroArch.app/Contents/en.lproj
-    # Create archive for use in packaging pipeline
-    - rm -f RetroArch.tar.gz
-    - tar -czf RetroArch.tar.gz RetroArch.app
-    - rm -rf RetroArch.app
-
-# Mac OS x86_x64 (Metal, 10.13)
-build-retroarch-osx-x64-metal:
-  tags:
-    - macosx-packaging
-  stage: build
-  before_script:
-    - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
-  artifacts:
-    paths:
-    - retroarch
-    - RetroArch_Metal.tar.gz
-    expire_in: 10 min
-  dependencies: []
-  script:
-    # Build RetroArch
-    - ./configure --enable-metal --disable-al --enable-coreaudio3
-    - make -j$NUMPROC
-    # Build filters
-    - "cd libretro-common/audio/dsp_filters && make -j$NUMPROC build=release && cd ../../.."
-    - "cd gfx/video_filters && make -j$NUMPROC build=release && cd ../.."
-    # Create app directory
-    - rm -rvf "RetroArch_Metal.app/"
-    - mkdir -vp "RetroArch_Metal.app/Contents/MacOS"
-    - mkdir -vp "RetroArch_Metal.app/Contents/Resources/video_filters"
-    - mkdir -vp "RetroArch_Metal.app/Contents/Resources/audio_filters"
-    # Copy resources and compiled RetroArch binary
-    - cp -Rv "pkg/apple/OSX/"* "RetroArch_Metal.app/Contents"
-    - cp retroarch RetroArch_Metal.app/Contents/MacOS
-    - cp media/retroarch.icns RetroArch_Metal.app/Contents/Resources/
-    - mv RetroArch_Metal.app/Contents/Info_Metal.plist RetroArch_Metal.app/Contents/Info.plist
-    - cp libretro-common/audio/dsp_filters/*.dylib RetroArch_Metal.app/Contents/Resources/audio_filters
-    - cp libretro-common/audio/dsp_filters/*.dsp RetroArch_Metal.app/Contents/Resources/audio_filters
-    - cp gfx/video_filters/*.dylib RetroArch_Metal.app/Contents/Resources/video_filters
-    - cp gfx/video_filters/*.filt RetroArch_Metal.app/Contents/Resources/video_filters
-    - rm -rvf RetroArch_Metal.app/Contents/modules_ppc
-    - rm -rvf RetroArch_Metal.app/Contents/Resources/en.lproj/MainMenu.nib
-    # Update properties within the application properties
-    - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch_Metal.app/Contents/Info.plist
-    - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch_Metal.app/Contents/Info.plist
-    - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch_Metal.app/Contents/Info.plist
-    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.13/' RetroArch_Metal.app/Contents/Info.plist
-    # TODO: It seems this messes with code signing, so delete it??
-    - rm -rvf RetroArch_Metal.app/Contents/en.lproj
-    # Create archive for use in packaging pipeline
-    - rm -f RetroArch_Metal.tar.gz
-    - tar -czf RetroArch_Metal.tar.gz RetroArch_Metal.app
-    - rm -rf RetroArch_Metal.app
-
-# Mac OS AArch64 (Metal, 10.14)
-build-retroarch-osx-arm64-metal:
-  tags:
-    - macosx
-  variables:
-    LIBRETRO_APPLE_PLATFORM: arm64-apple-macos10.15
-    LIBRETRO_APPLE_ISYSROOT: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-  stage: build
-  before_script:
-    - export NUMPROC=$((1 + $(sysctl -n hw.ncpu)/3))
-  artifacts:
-    paths:
-    - retroarch
-    - RetroArch.tar.gz
-    expire_in: 10 min
-  dependencies: []
-  script:
-    # Build RetroArch
-    - ./configure --enable-metal --disable-al --enable-coreaudio3
-    - make ARCH=arm64 BUILDBOT=1 -j$NUMPROC
-    # Build filters
-    - "cd libretro-common/audio/dsp_filters && make ARCH=arm64 BUILDBOT=1 -j$NUMPROC build=release && cd ../../.."
-    - "cd gfx/video_filters && make ARCH=arm64 BUILDBOT=1 -j$NUMPROC build=release && cd ../.."
-    # Create app directory
-    - rm -rvf "RetroArch.app/"
-    - mkdir -vp "RetroArch.app/Contents/MacOS"
-    - mkdir -vp "RetroArch.app/Contents/Resources/video_filters"
-    - mkdir -vp "RetroArch.app/Contents/Resources/audio_filters"
-    # Copy resources and compiled RetroArch binary
-    - cp -Rv "pkg/apple/OSX/"* "RetroArch.app/Contents"
-    - cp retroarch RetroArch.app/Contents/MacOS
-    - cp media/retroarch.icns RetroArch.app/Contents/Resources/
-    - mv RetroArch.app/Contents/Info_Metal.plist RetroArch.app/Contents/Info.plist
-    - cp libretro-common/audio/dsp_filters/*.dylib RetroArch.app/Contents/Resources/audio_filters
-    - cp libretro-common/audio/dsp_filters/*.dsp RetroArch.app/Contents/Resources/audio_filters
-    - cp gfx/video_filters/*.dylib RetroArch.app/Contents/Resources/video_filters
-    - cp gfx/video_filters/*.filt RetroArch.app/Contents/Resources/video_filters
-    - rm -rvf RetroArch.app/Contents/modules_ppc
-    - rm -rvf RetroArch.app/Contents/Resources/en.lproj/MainMenu.nib
-    # Update properties within the application properties
-    - sed -i '' 's/\${EXECUTABLE_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
-    - sed -i '' 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/com.libretro.RetroArch/' RetroArch.app/Contents/Info.plist
-    - sed -i '' 's/\${PRODUCT_NAME}/RetroArch/' RetroArch.app/Contents/Info.plist
-    - sed -i '' 's/\${MACOSX_DEPLOYMENT_TARGET}/10.15/' RetroArch.app/Contents/Info.plist
-    # TODO: It seems this messes with code signing, so delete it??
-    - rm -rvf RetroArch.app/Contents/en.lproj
-    # Create archive for use in packaging pipeline
-    - rm -f RetroArch.tar.gz
-    - tar -czf RetroArch.tar.gz RetroArch.app
-    - rm -rf RetroArch.app
-
+  
 .build-retroarch-macos-xcode:
   # Metal/Universal x86_64 arm64 is default
   tags:
@@ -469,11 +321,18 @@ build-retroarch-osx-arm64-metal:
   artifacts:
     paths:
     - ${XCPROJECT_NAME}.zip
+    - retroarch-repo/
     expire_in: 10 min
   dependencies: []
   script:
     - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme RetroArch -archivePath ${XCARCHIVE_PATH} -xcconfig pkg/apple/${XCCONFIG} archive
-    - zip -qr ${XCPROJECT_NAME}.zip ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.app
+    - pushd ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/
+    - ditto -c -k --sequesterRsrc --keepParent RetroArch.app RetroArch.zip
+    - popd
+    - mv ${XCARCHIVE_PATH}.xcarchive/Products/Users/gitlab/Applications/RetroArch.zip ${XCPROJECT_NAME}.zip
+    - mkdir .retroarch-repo
+    - "cp -r ./* .retroarch-repo"
+    - "mv .retroarch-repo/ retroarch-repo/"
 
 # Mac OS Universal, Metal
 build-retroarch-osx-universal-metal:
@@ -485,6 +344,43 @@ build-retroarch-osx-opengl-x64:
     XCARCHIVE_PATH: pkg/apple/build/RetroArchOpenGL
     XCPROJECT_NAME: RetroArch
     XCCONFIG: OpenGL_GitLabCI.xcconfig
+
+build-retroarch-ios-arm64:
+  extends: .build-retroarch-macos-xcode
+  variables:
+    XCPROJECT_NAME: RetroArch_iOS11_Metal
+    XCCONFIG: GitLabCI.xcconfig
+    XCSCHEME: "RetroArch iOS Release"
+  artifacts:
+    paths:
+    - retroarch-repo/
+    expire_in: 10 min
+  script:
+    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme "${XCSCHEME}" -xcconfig pkg/apple/iOS/GitLabCI.xcconfig build
+    - mkdir .retroarch-repo
+    - "cp -r ./* .retroarch-repo"
+    - "mv .retroarch-repo/ retroarch-repo/"
+
+build-retroarch-ios9:
+  extends: .build-retroarch-macos-xcode
+  variables:
+    XCPROJECT_NAME: RetroArch_iOS9
+    XCCONFIG: GitLabCI.xcconfig
+    XCSCHEME: "RetroArchiOS9"
+  artifacts:
+    paths:
+    - retroarch-repo/
+    expire_in: 10 min
+  script:
+    - xcodebuild -project pkg/apple/${XCPROJECT_NAME}.xcodeproj -config Release -scheme "${XCSCHEME}" -xcconfig pkg/apple/iOS/GitLabCI.xcconfig build
+    - mkdir .retroarch-repo
+    - "cp -r ./* .retroarch-repo"
+    - "mv .retroarch-repo/ retroarch-repo/"
+
+build-retroarch-tvos-arm64:
+  extends: build-retroarch-ios-arm64
+  variables:
+    XCSCHEME: "RetroArch tvOS Release"
 
 build-retroarch-dingux-mips32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:latest
