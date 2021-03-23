@@ -52,7 +52,9 @@ typedef ID3D10Predicate*          D3D10Predicate;
 typedef ID3D10Counter*            D3D10Counter;
 typedef ID3D10Device*             D3D10Device;
 typedef ID3D10Multithread*        D3D10Multithread;
+#ifdef DEBUG
 typedef ID3D10Debug*              D3D10Debug;
+#endif
 typedef ID3D10SwitchToRef*        D3D10SwitchToRef;
 typedef ID3D10InfoQueue*          D3D10InfoQueue;
 
@@ -821,6 +823,7 @@ static INLINE BOOL D3D10GetMultithreadProtected(D3D10Multithread multithread)
 {
    return multithread->lpVtbl->GetMultithreadProtected(multithread);
 }
+#ifdef DEBUG
 static INLINE HRESULT D3D10SetDebugFeatureMask(D3D10Debug debug, UINT mask)
 {
    return debug->lpVtbl->SetFeatureMask(debug, mask);
@@ -846,6 +849,7 @@ static INLINE HRESULT D3D10GetSwapChain(D3D10Debug debug, IDXGISwapChain** swap_
    return debug->lpVtbl->GetSwapChain(debug, (IDXGISwapChain**)swap_chain);
 }
 static INLINE HRESULT D3D10Validate(D3D10Debug debug) { return debug->lpVtbl->Validate(debug); }
+#endif
 static INLINE BOOL    D3D10SetUseRef(D3D10SwitchToRef switch_to_ref, BOOL use_ref)
 {
    return switch_to_ref->lpVtbl->SetUseRef(switch_to_ref, use_ref);
@@ -1007,6 +1011,7 @@ static INLINE BOOL D3D10GetBreakOnID(D3D10InfoQueue info_queue, D3D10_MESSAGE_ID
 {
    return info_queue->lpVtbl->GetBreakOnID(info_queue, id);
 }
+#ifdef DEBUG
 static INLINE void D3D10SetMuteDebugOutput(D3D10InfoQueue info_queue, BOOL mute)
 {
    info_queue->lpVtbl->SetMuteDebugOutput(info_queue, mute);
@@ -1015,6 +1020,7 @@ static INLINE BOOL D3D10GetMuteDebugOutput(D3D10InfoQueue info_queue)
 {
    return info_queue->lpVtbl->GetMuteDebugOutput(info_queue);
 }
+#endif
 
 /* end of auto-generated */
 

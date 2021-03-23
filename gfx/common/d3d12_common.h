@@ -44,10 +44,12 @@ typedef ID3D12GraphicsCommandList*                D3D12GraphicsCommandList;
 typedef ID3D12CommandQueue*                       D3D12CommandQueue;
 typedef ID3D12Device*                             D3D12Device;
 typedef ID3D12PipelineLibrary*                    D3D12PipelineLibrary;
+#ifdef DEBUG
 typedef ID3D12Debug*                              D3D12Debug;
 typedef ID3D12DebugDevice*                        D3D12DebugDevice;
 typedef ID3D12DebugCommandQueue*                  D3D12DebugCommandQueue;
 typedef ID3D12DebugCommandList*                   D3D12DebugCommandList;
+#endif
 typedef ID3D12InfoQueue*                          D3D12InfoQueue;
 
 static INLINE ULONG D3D12Release(void* object)
@@ -936,6 +938,8 @@ D3D12Serialize(D3D12PipelineLibrary pipeline_library, void* data, SIZE_T data_si
 {
    return pipeline_library->lpVtbl->Serialize(pipeline_library, data, data_size_in_bytes);
 }
+
+#ifdef DEBUG
 static INLINE ULONG D3D12ReleaseDebug(D3D12Debug debug) { return debug->lpVtbl->Release(debug); }
 static INLINE void  D3D12EnableDebugLayer(D3D12Debug debug)
 {
@@ -989,6 +993,8 @@ D3D12GetDebugCommandListFeatureMask(D3D12DebugCommandList debug_command_list)
 {
    return debug_command_list->lpVtbl->GetFeatureMask(debug_command_list);
 }
+#endif
+
 static INLINE ULONG D3D12ReleaseInfoQueue(D3D12InfoQueue info_queue)
 {
    return info_queue->lpVtbl->Release(info_queue);
@@ -1159,11 +1165,12 @@ static INLINE BOOL D3D12GetMuteDebugOutput(D3D12InfoQueue info_queue)
 }
 
 /* end of auto-generated */
-
+#ifdef DEBUG
 static INLINE HRESULT D3D12GetDebugInterface_(D3D12Debug* out)
 {
    return D3D12GetDebugInterface(uuidof(ID3D12Debug), (void**)out);
 }
+#endif
 
 static INLINE HRESULT
 D3D12CreateDevice_(DXGIAdapter adapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, D3D12Device* out)
