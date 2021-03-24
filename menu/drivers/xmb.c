@@ -2950,7 +2950,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             {
                unsigned index = 0;
                int input_num = type - input_id;
-               for (index = 0; index < sizeof(input_config_bind_order); index++)
+               for (index = 0; index < ARRAY_SIZE(input_config_bind_order); index++)
                {
                   if (input_config_bind_order[index] == input_num)
                   {

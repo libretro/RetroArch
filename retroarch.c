@@ -2273,7 +2273,6 @@ static bool menu_driver_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
-      struct rarch_state *p_rarch = &rarch_st;
       const char *dir_playlist    = settings->paths.directory_playlist;
 
       filebrowser_clear_type();
@@ -2923,6 +2922,9 @@ static bool menu_list_pop_stack(
       size_t *directory_ptr)
 {
    file_list_t *menu_list = MENU_LIST_GET(list, (unsigned)idx);
+
+   if (!menu_list)
+      return false;
 
    if (menu_list->size != 0)
    {
@@ -11035,10 +11037,13 @@ static bool command_set_shader(const char *arg)
       /* rebase on shader directory */
       if (!path_is_absolute(arg))
       {
-         char abs_arg[PATH_MAX_LENGTH];
+         static char abs_arg[PATH_MAX_LENGTH];
          const char *ref_path = settings->paths.directory_video_shader;
          fill_pathname_join(abs_arg,
                ref_path, arg, sizeof(abs_arg));
+         /* TODO/FIXME - pointer to local variable -
+          * making abs_arg static for now to workaround this
+          */
          arg = abs_arg;
       }
    }
@@ -33313,12 +33318,15 @@ static void input_state_set_last(unsigned port, unsigned device,
    if (p_rarch->input_state_list)
       element            = (input_list_element*)
          mylist_add_element(p_rarch->input_state_list);
-   element->port         = port;
-   element->device       = device;
-   element->index        = index;
-   if (id >= element->state_size)
-      input_list_element_expand(element, id);
-   element->state[id]    = value;
+   if (element)
+   {
+      element->port         = port;
+      element->device       = device;
+      element->index        = index;
+      if (id >= element->state_size)
+         input_list_element_expand(element, id);
+      element->state[id]    = value;
+   }
 }
 
 static int16_t input_state_get_last(unsigned port,
