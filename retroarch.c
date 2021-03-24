@@ -31769,10 +31769,12 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_height       = custom_vp->full_height;
 
 #if defined(HAVE_GFX_WIDGETS)
+   video_info->widgets_userdata            = &p_rarch->dispwidget_st;
    video_info->widgets_is_paused           = p_rarch->gfx_widgets_paused;
    video_info->widgets_is_fast_forwarding  = p_rarch->gfx_widgets_fast_forward;
    video_info->widgets_is_rewinding        = p_rarch->gfx_widgets_rewinding;
 #else
+   video_info->widgets_userdata            = NULL;
    video_info->widgets_is_paused           = false;
    video_info->widgets_is_fast_forwarding  = false;
    video_info->widgets_is_rewinding        = false;
