@@ -51,7 +51,11 @@
 #include "qt/ui_qt_load_core_window.h"
 #include "qt/coreinfodialog.h"
 #include "qt/playlistentrydialog.h"
+#if defined(HAVE_MENU)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "qt/shaderparamsdialog.h"
+#endif
+#endif
 #include "qt/coreoptionsdialog.h"
 #include "qt/viewoptionsdialog.h"
 
