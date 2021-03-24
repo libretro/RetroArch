@@ -8,7 +8,11 @@
 extern "C" {
 #endif
 
-#include "../.././gfx/video_shader_parse.h"
+#ifdef HAVE_CONFIG_H
+#include "../../../config.def.h"
+#endif
+
+#include "../../../gfx/video_shader_parse.h"
 
 #ifndef CXX_BUILD
 }
@@ -30,6 +34,8 @@ public:
    struct video_shader_pass *pass;
 };
 
+#ifdef HAVE_MENU
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 class ShaderParamsDialog : public QDialog
 {
    Q_OBJECT
@@ -90,5 +96,7 @@ protected:
    void resizeEvent(QResizeEvent *event);
    void paintEvent(QPaintEvent *event);
 };
+#endif
+#endif
 
 #endif
