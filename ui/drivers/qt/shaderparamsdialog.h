@@ -4,12 +4,10 @@
 #include <QDialog>
 #include <QPointer>
 
+#include <retro_common_api.h>
+
 #ifndef CXX_BUILD
 extern "C" {
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "../../../config.def.h"
 #endif
 
 #include "../../../gfx/video_shader_parse.h"
@@ -34,8 +32,6 @@ public:
    struct video_shader_pass *pass;
 };
 
-#ifdef HAVE_MENU
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 class ShaderParamsDialog : public QDialog
 {
    Q_OBJECT
@@ -96,7 +92,5 @@ protected:
    void resizeEvent(QResizeEvent *event);
    void paintEvent(QPaintEvent *event);
 };
-#endif
-#endif
 
 #endif

@@ -2019,16 +2019,18 @@ void MainWindow::onGotStatusMessage(
    }
 }
 
-#if defined(HAVE_MENU)
 void MainWindow::deferReloadShaderParams()
 {
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    emit gotReloadShaderParams();
+#endif
 #endif
 }
 
 void MainWindow::onShaderParamsClicked()
 {
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (!m_shaderParamsDialog)
       return;
@@ -2037,16 +2039,18 @@ void MainWindow::onShaderParamsClicked()
 
    onGotReloadShaderParams();
 #endif
+#endif
 }
 
 void MainWindow::onGotReloadShaderParams()
 {
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (m_shaderParamsDialog && m_shaderParamsDialog->isVisible())
       m_shaderParamsDialog->reload();
 #endif
-}
 #endif
+}
 
 void MainWindow::onCoreOptionsClicked()
 {
@@ -4641,8 +4645,10 @@ static void* ui_companion_qt_init(void)
    QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
 
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS), mainwindow, SLOT(onCoreOptionsClicked()));
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), mainwindow, SLOT(onShaderParamsClicked()));
+#endif
 #endif
 
    viewMenu->addSeparator();

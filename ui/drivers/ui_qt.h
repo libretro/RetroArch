@@ -102,11 +102,7 @@ class MainWindow;
 class ThumbnailWidget;
 class ThumbnailLabel;
 class GridView;
-#if defined(HAVE_MENU)
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 class ShaderParamsDialog;
-#endif
-#endif
 class CoreOptionsDialog;
 class CoreInfoDialog;
 class PlaylistEntryDialog;
@@ -416,11 +412,7 @@ signals:
    void gotLogMessage(const QString &msg);
    void gotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    void gotReloadPlaylists();
-#if defined(HAVE_MENU)
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    void gotReloadShaderParams();
-#endif
-#endif
    void gotReloadCoreOptions();
    void showErrorMessageDeferred(QString msg);
    void showInfoMessageDeferred(QString msg);
@@ -455,11 +447,7 @@ public slots:
    void reloadPlaylists();
    void deferReloadPlaylists();
    void onGotReloadPlaylists();
-#if defined(HAVE_MENU)
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    void onGotReloadShaderParams();
-#endif
-#endif
    void onGotReloadCoreOptions();
    void showWelcomeScreen();
    void onIconViewClicked();
@@ -473,11 +461,7 @@ public slots:
    void showAbout();
    void showDocs();
    void onThumbnailPackExtractFinished(bool success);
-#if defined(HAVE_MENU)
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    void deferReloadShaderParams();
-#endif
-#endif
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
    void downloadAllThumbnails(QString system, QUrl url = QUrl());
    void downloadPlaylistThumbnails(QString playlistPath);
@@ -509,11 +493,7 @@ private slots:
    void onStopClicked();
    void onZoomValueChanged(int value);
    void onPlaylistFilesDropped(QStringList files);
-#if defined(HAVE_MENU)
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    void onShaderParamsClicked();
-#endif
-#endif
    void onCoreOptionsClicked();
    void onShowErrorMessage(QString msg);
    void onShowInfoMessage(QString msg);
@@ -626,11 +606,7 @@ private:
    int m_allPlaylistsGridMaxCount;
    PlaylistEntryDialog *m_playlistEntryDialog;
    QElapsedTimer m_statusMessageElapsedTimer;
-#if defined(HAVE_MENU)
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    QPointer<ShaderParamsDialog> m_shaderParamsDialog;
-#endif
-#endif
    QPointer<CoreOptionsDialog> m_coreOptionsDialog;
    QNetworkAccessManager *m_networkManager;
 
