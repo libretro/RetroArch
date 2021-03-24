@@ -710,12 +710,6 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    char *tmp_base       = tmp + 2*tmp_size;
    config_file_t *conf  = NULL;
 
-   if (!path)
-   {
-      ret = false;
-      goto end;
-   }
-
    if (!(conf = config_file_new_alloc()))
    {
       ret = false;
@@ -805,7 +799,8 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       /* Step through the textures in the shader */
       for (i = 0; i < shader->luts; i++)
       {
-         fill_pathname_abbreviated_or_relative(tmp_rel, tmp_base, shader->lut[i].path, PATH_MAX_LENGTH);
+         fill_pathname_abbreviated_or_relative(tmp_rel,
+               tmp_base, shader->lut[i].path, PATH_MAX_LENGTH);
          pathname_make_slashes_portable(tmp_rel);
          config_set_string(conf, shader->lut[i].id, tmp_rel);
 
@@ -816,7 +811,8 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
             key[0]  = '\0';
             strlcpy(key, shader->lut[i].id, sizeof(key));
             strlcat(key, "_linear", sizeof(key));
-            config_set_bool(conf, key, shader->lut[i].filter == RARCH_FILTER_LINEAR);
+            config_set_bool(conf, key, 
+                  shader->lut[i].filter == RARCH_FILTER_LINEAR);
          }
 
          /* Wrap Mode */
@@ -825,7 +821,8 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
             key[0]  = '\0';
             strlcpy(key, shader->lut[i].id, sizeof(key));
             strlcat(key, "_wrap_mode", sizeof(key));
-            config_set_string(conf, key, wrap_mode_to_str(shader->lut[i].wrap));
+            config_set_string(conf, key,
+                  wrap_mode_to_str(shader->lut[i].wrap));
          }
 
          /* Mipmap On or Off */
@@ -842,8 +839,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    /* Write the File! */
    ret = config_file_write(conf, path, false);
 
-   end:
-
+end:
    config_file_free(conf);
    free(tmp);
 
@@ -1703,7 +1699,9 @@ bool video_shader_write_preset(const char *path,
 
    /* If we aren't saving a referenced preset or weren't able to save one
     * then save a full preset */
-   return video_shader_write_root_preset(shader, path);
+   if (path)
+      return video_shader_write_root_preset(shader, path);
+   return false;
 }
 
 
