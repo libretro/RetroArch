@@ -151,6 +151,13 @@ void *glkitview_init(void);
 -(void) toggleCustomKeyboard
 {
     [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
+    int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
+    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
+    if ( self.keyboardController.view.isHidden ) {
+        command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+    } else {
+        command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+    }
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }

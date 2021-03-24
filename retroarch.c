@@ -25781,8 +25781,6 @@ void input_keyboard_event(bool down, unsigned code,
       if (code == RETROK_UNKNOWN)
          return;
 
-// temp: maybe enable game focus state when ios custom keyboard is enabled
-#ifndef HAVE_COCOATOUCH
       /* Block hotkey + RetroPad mapped keyboard key events,
        * but not with game focus, and from keyboard device type,
        * and with 'enable_hotkey' modifier set and unpressed */
@@ -25802,7 +25800,6 @@ void input_keyboard_event(bool down, unsigned code,
                )))
             return;
       }
-#endif
 
       {
          retro_keyboard_event_t *key_event = &p_rarch->runloop_key_event;
