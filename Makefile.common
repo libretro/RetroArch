@@ -504,10 +504,10 @@ ifeq ($(HAVE_QT), 1)
                   ui/drivers/qt/coreinfodialog.h \
                   ui/drivers/qt/playlistentrydialog.h \
                   ui/drivers/qt/viewoptionsdialog.h
+   ifeq ($(HAVE_MENU), 1)
    ifeq ($(HAVE_SHADERS_COMMON), 1)
       MOC_HEADERS += ui/drivers/qt/shaderparamsdialog.h
    endif
-   ifeq ($(HAVE_MENU), 1)
       MOC_HEADERS += ui/drivers/qt/settingswidgets.h \
                      ui/drivers/qt/qt_options.h
    endif
