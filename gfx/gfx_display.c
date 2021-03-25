@@ -360,7 +360,10 @@ float gfx_display_get_dpi_scale_internal(
    return scale;
 }
 
-float gfx_display_get_dpi_scale(unsigned width, unsigned height)
+float gfx_display_get_dpi_scale(
+      gfx_display_t *p_disp,
+      void *settings_data,
+      unsigned width, unsigned height)
 {
    static unsigned last_width                          = 0;
    static unsigned last_height                         = 0;
@@ -370,9 +373,8 @@ float gfx_display_get_dpi_scale(unsigned width, unsigned height)
    static float last_menu_scale_factor                 = 0.0f;
    static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
    static float adjusted_scale                         = 1.0f;
-   settings_t *settings                                = config_get_ptr();
+   settings_t *settings                                = (settings_t*)settings_data;
    float menu_scale_factor                             = settings->floats.menu_scale_factor;
-   gfx_display_t *p_disp                               = disp_get_ptr();
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads

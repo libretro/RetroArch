@@ -328,7 +328,10 @@ float gfx_display_get_adjusted_scale(
 
 float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height);
 
-float gfx_display_get_dpi_scale(unsigned width, unsigned height);
+float gfx_display_get_dpi_scale(
+      gfx_display_t *p_disp,
+      void *settings_data,
+      unsigned width, unsigned height);
 
 void gfx_display_init_white_texture(uintptr_t white_texture);
 

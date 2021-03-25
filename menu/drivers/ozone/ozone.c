@@ -668,13 +668,16 @@ static void ozone_menu_animation_update_time(
       float *ticker_pixel_increment,
       unsigned video_width, unsigned video_height)
 {
+   gfx_display_t *p_disp      = disp_get_ptr();
+   settings_t *settings       = config_get_ptr();
    /* Ozone uses DPI scaling
     * > Smooth ticker scaling multiplier is
     *   gfx_display_get_dpi_scale() multiplied by
     *   a small correction factor to achieve a
     *   default scroll speed equal to that of the
     *   non-smooth ticker */
-   *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(video_width, video_height) * 0.5f;
+   *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(p_disp,
+         settings, video_width, video_height) * 0.5f;
 }
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
@@ -685,6 +688,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone_handle_t *ozone               = NULL;
    settings_t *settings                = config_get_ptr();
    gfx_animation_t *p_anim             = anim_get_ptr();
+   gfx_display_t *p_disp               = disp_get_ptr();
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
    const char *directory_assets        = settings->paths.directory_assets;
 
@@ -705,7 +709,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone->last_width        = width;
    ozone->last_height       = height;
-   ozone->last_scale_factor = gfx_display_get_dpi_scale(width, height);
+   ozone->last_scale_factor = gfx_display_get_dpi_scale(p_disp,
+         settings, width, height);
 
    file_list_initialize(&ozone->selection_buf_old);
 
@@ -1735,7 +1740,7 @@ static void ozone_render(void *data,
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   scale_factor = gfx_display_get_dpi_scale(width, height);
+   scale_factor = gfx_display_get_dpi_scale(p_disp, settings, width, height);
 
    if ((scale_factor != ozone->last_scale_factor) ||
        (width != ozone->last_width) ||
