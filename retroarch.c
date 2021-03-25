@@ -2482,15 +2482,15 @@ int generic_menu_entry_action(
                && menu_st->selection_ptr != 0
             )
          {
-            size_t i   = menu_st->scroll.index_size - 1;
+            size_t l   = menu_st->scroll.index_size - 1;
 
-            while (i 
-                  && menu_st->scroll.index_list[i - 1] 
+            while (l 
+                  && menu_st->scroll.index_list[l - 1] 
                   >= menu_st->selection_ptr)
-               i--;
+               l--;
 
-            if (i > 0)
-               menu_st->selection_ptr = menu_st->scroll.index_list[i - 1];
+            if (l > 0)
+               menu_st->selection_ptr = menu_st->scroll.index_list[l - 1];
 
             if (menu_driver_ctx->navigation_descend_alphabet)
                menu_driver_ctx->navigation_descend_alphabet(
@@ -2504,11 +2504,11 @@ int generic_menu_entry_action(
                menu_st->selection_ptr = selection_buf_size - 1;
             else
             {
-               size_t i               = 0;
-               while (i < menu_st->scroll.index_size - 1
-                     && menu_st->scroll.index_list[i + 1] <= menu_st->selection_ptr)
-                  i++;
-               menu_st->selection_ptr = menu_st->scroll.index_list[i + 1];
+               size_t l               = 0;
+               while (l < menu_st->scroll.index_size - 1
+                     && menu_st->scroll.index_list[l + 1] <= menu_st->selection_ptr)
+                  l++;
+               menu_st->selection_ptr = menu_st->scroll.index_list[l + 1];
 
                if (menu_st->selection_ptr >= selection_buf_size)
                   menu_st->selection_ptr = selection_buf_size - 1;
