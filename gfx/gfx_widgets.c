@@ -88,6 +88,7 @@ const static gfx_widget_t* const widgets[] = {
 
 static float gfx_display_get_widget_dpi_scale(
       gfx_display_t *p_disp,
+      settings_t *settings,
       unsigned width, unsigned height, bool fullscreen)
 {
    static unsigned last_width                          = 0;
@@ -98,7 +99,6 @@ static float gfx_display_get_widget_dpi_scale(
    static float last_menu_scale_factor                 = 0.0f;
    static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
    static float adjusted_scale                         = 1.0f;
-   settings_t *settings                                = config_get_ptr();
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
@@ -161,6 +161,7 @@ static float gfx_display_get_widget_dpi_scale(
 
 static float gfx_display_get_widget_pixel_scale(
       gfx_display_t *p_disp,
+      settings_t *settings,
       unsigned width, unsigned height, bool fullscreen)
 {
    static unsigned last_width                          = 0;
@@ -171,7 +172,6 @@ static float gfx_display_get_widget_pixel_scale(
    static float last_menu_scale_factor                 = 0.0f;
    static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
    static float adjusted_scale                         = 1.0f;
-   settings_t *settings                                = config_get_ptr();
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
@@ -1017,6 +1017,7 @@ static void gfx_widgets_layout(
 void gfx_widgets_iterate(
       void *data,
       void *data_disp,
+      void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
@@ -1027,14 +1028,15 @@ void gfx_widgets_iterate(
     * factor have changed */
    float scale_factor               = 0.0f;
    gfx_display_t *p_disp            = (gfx_display_t*)data_disp;
+   settings_t *settings             = (settings_t*)settings_data;
 #ifdef HAVE_XMB
    enum menu_driver_id_type type    = p_disp->menu_driver_id;
    if (type == MENU_DRIVER_ID_XMB)
-      scale_factor                  = gfx_display_get_widget_pixel_scale(p_disp, width, height, fullscreen);
+      scale_factor                  = gfx_display_get_widget_pixel_scale(p_disp, settings, width, height, fullscreen);
    else
 #endif
       scale_factor                  = gfx_display_get_widget_dpi_scale(p_disp,
-            width, height, fullscreen);
+            settings, width, height, fullscreen);
 
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
        (width        != p_dispwidget->last_video_width) ||
@@ -1924,6 +1926,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 static void gfx_widgets_context_reset(
       dispgfx_widget_t *p_dispwidget,
       gfx_display_t *p_disp,
+      settings_t *settings,
       bool is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
@@ -2026,13 +2029,13 @@ static void gfx_widgets_context_reset(
 #ifdef HAVE_XMB
    if (p_disp->menu_driver_id == MENU_DRIVER_ID_XMB)
       p_dispwidget->last_scale_factor = gfx_display_get_widget_pixel_scale(
-            p_disp,
+            p_disp, settings,
             p_dispwidget->last_video_width,
             p_dispwidget->last_video_height, fullscreen);
    else
 #endif
       p_dispwidget->last_scale_factor = gfx_display_get_widget_dpi_scale(
-                     p_disp,
+                     p_disp, settings,
                      p_dispwidget->last_video_width,
                      p_dispwidget->last_video_height,
                      fullscreen);
@@ -2042,15 +2045,19 @@ static void gfx_widgets_context_reset(
    video_driver_monitor_reset();
 }
 
-bool gfx_widgets_init(uintptr_t widgets_active_ptr,
+bool gfx_widgets_init(
+      void *data,
+      void *data_disp,
+      void *settings_data,
+      uintptr_t widgets_active_ptr,
       bool video_is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
    unsigned i;
-   dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)
-      dispwidget_get_ptr();
-   gfx_display_t *p_disp                       = disp_get_ptr();
+   dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)data;
+   gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
+   settings_t *settings                        = (settings_t*)settings_data;
    p_dispwidget->divider_width_1px             = 1;
    p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)widgets_active_ptr;
 
@@ -2107,6 +2114,7 @@ bool gfx_widgets_init(uintptr_t widgets_active_ptr,
    gfx_widgets_context_reset(
          p_dispwidget,
          p_disp,
+         settings,
          video_is_threaded,
          width, height, fullscreen,
          dir_assets, font_path);
@@ -2151,18 +2159,14 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
 }
 
 
-bool gfx_widgets_deinit(bool widgets_persisting)
+void gfx_widgets_deinit(void *data, bool widgets_persisting)
 {
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
-   if (!p_dispwidget->widgets_inited)
-      return false;
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)data;
 
    gfx_widgets_context_destroy(p_dispwidget);
 
    if (!widgets_persisting)
       gfx_widgets_free(p_dispwidget);
-
-   return true;
 }
 
 #ifdef HAVE_TRANSLATE

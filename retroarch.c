@@ -32869,6 +32869,9 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
             rarch_force_fullscreen;
 
       p_rarch->widgets_active     = gfx_widgets_init(
+            &p_rarch->dispwidget_st,
+            &p_rarch->dispgfx,
+            settings,
             (uintptr_t)&p_rarch->widgets_active,
             video_is_threaded,
             p_rarch->video_driver_width,
@@ -32954,8 +32957,11 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   if (gfx_widgets_deinit(p_rarch->widgets_persisting))
+   if (p_rarch->dispwidget_st.widgets_inited)
+   {
+      gfx_widgets_deinit(&p_rarch->dispwidget_st, p_rarch->widgets_persisting);
       p_rarch->widgets_active = false;
+   }
 #endif
 
 #ifdef HAVE_MENU
@@ -33026,8 +33032,11 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch, struct retro_c
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   if (gfx_widgets_deinit(p_rarch->widgets_persisting))
+   if (p_rarch->dispwidget_st.widgets_inited)
+   {
+      gfx_widgets_deinit(&p_rarch->dispwidget_st, p_rarch->widgets_persisting);
       p_rarch->widgets_active = false;
+   }
 #endif
 
    /* Video */
@@ -37229,6 +37238,7 @@ static enum runloop_state runloop_check_state(
       gfx_widgets_iterate(
             &p_rarch->dispwidget_st,
             &p_rarch->dispgfx,
+            settings,
             p_rarch->video_driver_width,
             p_rarch->video_driver_height,
             video_is_fullscreen,
