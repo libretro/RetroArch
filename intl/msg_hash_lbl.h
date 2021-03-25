@@ -865,6 +865,10 @@ MSG_HASH(
    "deferred_input_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_INPUT_TURBO_FIRE_SETTINGS_LIST,
+   "deferred_input_turbo_fire_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST,
    "deferred_input_haptic_feedback_settings_list"
    )
@@ -4893,6 +4897,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,
    "input_menu_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "input_turbo_fire_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
