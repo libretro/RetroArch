@@ -170,16 +170,18 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       /* Backdrop */
       gfx_display_set_alpha(backdrop_orig, state->alpha);
 
-      gfx_display_draw_quad(userdata,
-         video_width,
-         video_height,
-         0, 0,
-         state->widget_width,
-         state->widget_height,
-         video_width,
-         video_height,
-         backdrop_orig
-      );
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            0, 0,
+            state->widget_width,
+            state->widget_height,
+            video_width,
+            video_height,
+            backdrop_orig
+            );
 
       /* Icon */
       if (volume_icon)
@@ -223,7 +225,9 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
          gfx_display_set_alpha(bar_background, state->text_alpha);
          gfx_display_set_alpha(bar_foreground, state->text_alpha);
 
-         gfx_display_draw_quad(userdata,
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
                video_width,
                video_height,
                bar_x + bar_percentage * bar_width, bar_y,
@@ -232,7 +236,9 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                bar_background
                );
 
-         gfx_display_draw_quad(userdata,
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
                video_width,
                video_height,
                bar_x, bar_y,

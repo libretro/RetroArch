@@ -32777,6 +32777,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
 #endif
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL();
    settings_t *settings        = p_rarch->configuration_settings;
+   gfx_display_t *p_disp       = &p_rarch->dispgfx;
 #if defined(HAVE_GFX_WIDGETS)
    bool video_font_enable      = settings->bools.video_font_enable;
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
@@ -32906,7 +32907,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    else
 #endif
    {
-      gfx_display_init_first_driver(video_is_threaded);
+      gfx_display_init_first_driver(p_disp, video_is_threaded);
    }
 
 #ifdef HAVE_MENU

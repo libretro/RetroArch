@@ -985,7 +985,8 @@ static bool ozone_init_font(
       ozone_font_data_t *font_data,
       bool is_threaded, char *font_path, float font_size)
 {
-   int glyph_width = 0;
+   int glyph_width       = 0;
+   gfx_display_t *p_disp = disp_get_ptr();
 
    /* Free existing */
    if (font_data->font)
@@ -999,7 +1000,8 @@ static bool ozone_init_font(
    font_data->glyph_width = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
 
    /* Create font */
-   font_data->font = gfx_display_font_file(font_path, font_size, is_threaded);
+   font_data->font = gfx_display_font_file(p_disp, 
+         font_path, font_size, is_threaded);
 
    if (!font_data->font)
       return false;
@@ -2154,6 +2156,7 @@ static void ozone_draw_header(
 
    /* Separator */
    gfx_display_draw_quad(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -2416,6 +2419,7 @@ static void ozone_draw_footer(
 
    /* Separator */
    gfx_display_draw_quad(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -2961,6 +2965,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       background_color = ozone->theme->background;
 
    gfx_display_draw_quad(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -3002,7 +3007,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             menu_framebuffer_opacity);
 
    /* Menu entries */
-   gfx_display_scissor_begin(userdata,
+   gfx_display_scissor_begin(p_disp,
+         userdata,
          video_width,
          video_height,
          ozone->sidebar_offset + (unsigned) ozone->dimensions_sidebar_width,
@@ -3157,6 +3163,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       gfx_display_set_alpha(ozone->pure_white, 1.0f);
       if (cursor_visible)
          gfx_display_draw_cursor(
+               p_disp,
                userdata,
                video_width,
                video_height,

@@ -1011,6 +1011,7 @@ static void xmb_render_messagebox_internal(
       dispctx->blend_begin(userdata);
 
    gfx_display_draw_texture_slice(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -1038,6 +1039,7 @@ static void xmb_render_messagebox_internal(
 
    if (input_dialog_display_kb)
       gfx_display_draw_keyboard(
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -3427,7 +3429,7 @@ static int xmb_draw_item(
       rotate_draw.scale_z      = 1;
       rotate_draw.scale_enable = true;
 
-      gfx_display_rotate_z(&rotate_draw, userdata);
+      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
       xmb_draw_icon(
             userdata,
@@ -3514,7 +3516,7 @@ static void xmb_draw_items(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, userdata);
+   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -4093,7 +4095,7 @@ static void xmb_draw_bg(
       draw.x             = 0;
       draw.y             = 0;
 
-      gfx_display_draw_bg(&draw, userdata, false,
+      gfx_display_draw_bg(p_disp, &draw, userdata, false,
             menu_wallpaper_opacity);
       if (draw.height > 0 && draw.width > 0)
          if (dispctx && dispctx->draw)
@@ -4147,7 +4149,7 @@ static void xmb_draw_bg(
          draw.x             = 0;
          draw.y             = 0;
 
-         gfx_display_draw_bg(&draw, userdata, false,
+         gfx_display_draw_bg(p_disp, &draw, userdata, false,
                menu_wallpaper_opacity);
          if (draw.height > 0 && draw.width > 0)
             if (dispctx && dispctx->draw)
@@ -4166,7 +4168,7 @@ static void xmb_draw_bg(
          if (libretro_running || xmb_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
-         gfx_display_draw_bg(&draw, userdata,
+         gfx_display_draw_bg(p_disp, &draw, userdata,
                add_opacity, menu_wallpaper_opacity);
       }
    }
@@ -4231,6 +4233,7 @@ static void xmb_draw_dark_layer(
 static void xmb_draw_fullscreen_thumbnails(
       xmb_handle_t *xmb,
       gfx_animation_t *p_anim,
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -4454,6 +4457,7 @@ static void xmb_draw_fullscreen_thumbnails(
 
       /* Darken background */
       gfx_display_draw_quad(
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -4470,6 +4474,7 @@ static void xmb_draw_fullscreen_thumbnails(
       {
          /* Background */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -4562,6 +4567,7 @@ static void xmb_draw_fullscreen_thumbnails(
       {
          /* Background */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -4596,6 +4602,7 @@ static void xmb_draw_fullscreen_thumbnails(
       {
          /* Background */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -4788,7 +4795,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, userdata);
+   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    /**************************/
    /* Draw thumbnails: START */
@@ -5208,7 +5215,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             rotate_draw.scale_z      = 1;
             rotate_draw.scale_enable = true;
 
-            gfx_display_rotate_z(&rotate_draw, userdata);
+            gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
             xmb_draw_icon(
                   userdata,
@@ -5282,6 +5289,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    xmb_draw_fullscreen_thumbnails(
          xmb,
          p_anim,
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -5325,6 +5333,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       gfx_display_set_alpha(xmb_coord_white, MIN(xmb->alpha, 1.00f));
       if (cursor_visible)
          gfx_display_draw_cursor(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -6223,6 +6232,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 {
    char iconpath[PATH_MAX_LENGTH];
    char bg_file_path[PATH_MAX_LENGTH];
+   gfx_display_t *p_disp               = disp_get_ptr();
    iconpath[0]       = bg_file_path[0] = '\0';
 
    fill_pathname_application_special(bg_file_path,
@@ -6249,10 +6259,12 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       gfx_display_font_free(xmb->font2);
       xmb->font2 = NULL;
    }
-   xmb->font = gfx_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
+   xmb->font = gfx_display_font(p_disp,
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
          xmb->font_size,
          is_threaded);
-   xmb->font2 = gfx_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
+   xmb->font2 = gfx_display_font(p_disp,
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
          xmb->font2_size,
          is_threaded);
 

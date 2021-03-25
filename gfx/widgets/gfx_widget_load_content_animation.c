@@ -731,6 +731,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
          /* > Background underlay */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -744,6 +745,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
          /* > Background shadow */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -756,6 +758,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_shadow_top_color);
 
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -769,6 +772,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
          /* > Background */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -812,6 +816,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
           * (otherwise layout will look terrible...) */
          else
             gfx_display_draw_quad(
+                  p_disp,
                   userdata,
                   video_width,
                   video_height,
@@ -895,6 +900,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
          /* > Left */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -908,6 +914,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
          /* > Right */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,

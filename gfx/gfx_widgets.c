@@ -680,7 +680,7 @@ void gfx_widgets_draw_icon(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, userdata);
+   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -732,7 +732,7 @@ static void gfx_widgets_draw_icon_blend(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, userdata);
+   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -866,6 +866,7 @@ static void gfx_widgets_hourglass_tick(void *userdata)
 }
 
 static void gfx_widgets_font_init(
+      gfx_display_t *p_disp,
       dispgfx_widget_t *p_dispwidget,
       gfx_widget_font_data_t *font_data,
       bool is_threaded, char *font_path, float font_size)
@@ -885,7 +886,8 @@ static void gfx_widgets_font_init(
    font_data->glyph_width = scaled_size * (3.0f / 4.0f);
 
    /* Create font */
-   font_data->font = gfx_display_font_file(font_path, scaled_size, is_threaded);
+   font_data->font = gfx_display_font_file(p_disp,
+         font_path, scaled_size, is_threaded);
 
    /* Get font metadata */
    glyph_width = font_driver_get_message_width(font_data->font, "a", 1, 1.0f);
@@ -901,6 +903,7 @@ static void gfx_widgets_font_init(
 
 
 static void gfx_widgets_layout(
+      gfx_display_t *p_disp,
       dispgfx_widget_t *p_dispwidget,
       bool is_threaded, const char *dir_assets, char *font_path)
 {
@@ -920,32 +923,32 @@ static void gfx_widgets_layout(
 
       /* Create regular font */
       fill_pathname_join(font_file, ozone_path, "regular.ttf", sizeof(font_file));
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.regular,
             is_threaded, font_file, BASE_FONT_SIZE);
 
       /* Create bold font */
       fill_pathname_join(font_file, ozone_path, "bold.ttf", sizeof(font_file));
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.bold,
             is_threaded, font_file, BASE_FONT_SIZE);
 
       /* Create msg_queue font */
       fill_pathname_join(font_file, ozone_path, "regular.ttf", sizeof(font_file));
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.msg_queue,
             is_threaded, font_file, MSG_QUEUE_FONT_SIZE);
    }
    else
    {
       /* Load fonts from user-supplied path */
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.regular,
             is_threaded, font_path, BASE_FONT_SIZE);
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.bold,
             is_threaded, font_path, BASE_FONT_SIZE);
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.msg_queue,
             is_threaded, font_path, MSG_QUEUE_FONT_SIZE);
    }
@@ -1048,7 +1051,7 @@ void gfx_widgets_iterate(
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
-      gfx_widgets_layout(p_dispwidget,
+      gfx_widgets_layout(p_disp, p_dispwidget,
             is_threaded, dir_assets, font_path);
       video_driver_monitor_reset();
    }
@@ -1165,12 +1168,14 @@ static int gfx_widgets_draw_indicator(
       unsigned height = p_dispwidget->simple_widget_height * 2;
       width           = height;
 
-      gfx_display_draw_quad(userdata,
-         video_width, video_height,
-         top_right_x_advance - width, y,
-         width, height,
-         video_width, video_height,
-         p_dispwidget->backdrop_orig
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width, video_height,
+            top_right_x_advance - width, y,
+            width, height,
+            video_width, video_height,
+            p_dispwidget->backdrop_orig
       );
 
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
@@ -1199,7 +1204,9 @@ static int gfx_widgets_draw_indicator(
             txt,
             (unsigned)strlen(txt), 1) + p_dispwidget->simple_widget_padding * 2;
 
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             top_right_x_advance - width, y,
             width, height,
@@ -1295,7 +1302,9 @@ static void gfx_widgets_draw_task_msg(
    rect_height = p_dispwidget->msg_queue_height / 2;
 
    gfx_display_set_alpha(msg_queue_current_background, msg->alpha);
-   gfx_display_draw_quad(userdata,
+   gfx_display_draw_quad(
+         p_disp,
+         userdata,
          video_width, video_height,
          rect_x, rect_y,
          rect_width, rect_height,
@@ -1312,7 +1321,9 @@ static void gfx_widgets_draw_task_msg(
          msg_queue_current_bar = msg_queue_task_progress_2;
 
       gfx_display_set_alpha(msg_queue_current_bar, 1.0f);
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             p_dispwidget->msg_queue_task_rect_start_x, video_height - msg->offset_y,
             bar_width, rect_height,
@@ -1355,7 +1366,8 @@ static void gfx_widgets_draw_task_msg(
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-      gfx_display_scissor_begin(userdata,
+      gfx_display_scissor_begin(p_disp,
+            userdata,
             video_width, video_height,
             rect_x, rect_y, rect_width, rect_height);
 
@@ -1437,7 +1449,8 @@ static void gfx_widgets_draw_regular_msg(
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-      gfx_display_scissor_begin(userdata,
+      gfx_display_scissor_begin(p_disp,
+            userdata,
             video_width, video_height,
             p_dispwidget->msg_queue_scissor_start_x, 0,
             (p_dispwidget->msg_queue_scissor_start_x + msg->width - 
@@ -1471,6 +1484,7 @@ static void gfx_widgets_draw_regular_msg(
    bar_width = p_dispwidget->simple_widget_padding + msg->width;
 
    gfx_display_draw_quad(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -1625,7 +1639,9 @@ void gfx_widgets_frame(void *data)
                );
 
       /* top line */
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             0, 0,
             video_width,
@@ -1635,7 +1651,9 @@ void gfx_widgets_frame(void *data)
             outline_color
             );
       /* bottom line */
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             0,
             video_height - p_dispwidget->divider_width_1px,
@@ -1646,7 +1664,9 @@ void gfx_widgets_frame(void *data)
             outline_color
             );
       /* left line */
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width,
             video_height,
             0,
@@ -1658,7 +1678,9 @@ void gfx_widgets_frame(void *data)
             outline_color
             );
       /* right line */
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             video_width - p_dispwidget->divider_width_1px,
             0,
@@ -1700,7 +1722,9 @@ void gfx_widgets_frame(void *data)
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width,
             video_height,
             top_right_x_advance - total_width, 0,
@@ -2040,7 +2064,7 @@ static void gfx_widgets_context_reset(
                      p_dispwidget->last_video_height,
                      fullscreen);
 
-   gfx_widgets_layout(p_dispwidget,
+   gfx_widgets_layout(p_disp, p_dispwidget,
          is_threaded, dir_assets, font_path);
    video_driver_monitor_reset();
 }
@@ -2061,7 +2085,7 @@ bool gfx_widgets_init(
    p_dispwidget->divider_width_1px             = 1;
    p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)widgets_active_ptr;
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
+   if (!gfx_display_init_first_driver(p_disp, video_is_threaded))
       goto error;
    gfx_display_set_alpha(p_dispwidget->backdrop_orig, 0.75f);
    for (i = 0; i < 16; i++)

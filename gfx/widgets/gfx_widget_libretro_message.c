@@ -334,6 +334,7 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
 
 static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 {
+   gfx_display_t *p_disp                      = disp_get_ptr();
    gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
 
    if (state->status != GFX_WIDGET_LIBRETRO_MESSAGE_IDLE)
@@ -401,6 +402,7 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 
          /* Background */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -414,6 +416,7 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 
          /* Frame */
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,
@@ -426,6 +429,7 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                state->frame_color);
 
          gfx_display_draw_quad(
+               p_disp,
                userdata,
                video_width,
                video_height,

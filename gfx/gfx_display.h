@@ -227,12 +227,8 @@ void gfx_display_free(void);
 
 void gfx_display_init(void);
 
-void gfx_display_push_quad(
-      unsigned width, unsigned height,
-      const float *colors, int x1, int y1,
-      int x2, int y2);
-
 void gfx_display_draw_cursor(
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -248,11 +244,17 @@ void gfx_display_draw_text(
       bool draw_outside);
 
 font_data_t *gfx_display_font(
+      gfx_display_t *p_disp,
       enum application_special_type type,
       float font_size,
       bool video_is_threaded);
 
-void gfx_display_scissor_begin(void *data, unsigned video_width, unsigned video_height, int x, int y, unsigned width, unsigned height);
+void gfx_display_scissor_begin(
+      gfx_display_t *p_disp,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      int x, int y, unsigned width, unsigned height);
 
 void gfx_display_font_free(font_data_t *font);
 
@@ -263,11 +265,13 @@ void gfx_display_set_height(unsigned height);
 void gfx_display_set_framebuffer_pitch(size_t pitch);
 
 void gfx_display_set_msg_force(bool state);
-bool gfx_display_init_first_driver(bool video_is_threaded);
+bool gfx_display_init_first_driver(gfx_display_t *p_disp,
+      bool video_is_threaded);
 
 gfx_display_t *disp_get_ptr(void);
 
 void gfx_display_draw_keyboard(
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -277,11 +281,13 @@ void gfx_display_draw_keyboard(
       unsigned text_color);
 
 void gfx_display_draw_bg(
+      gfx_display_t *p_disp,
       gfx_display_ctx_draw_t *draw,
       void *userdata,
       bool add_opacity, float opacity_override);
 
 void gfx_display_draw_quad(
+      gfx_display_t *p_disp,
       void *data,
       unsigned video_width,
       unsigned video_height,
@@ -290,6 +296,7 @@ void gfx_display_draw_quad(
       float *color);
 
 void gfx_display_draw_polygon(
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -301,6 +308,7 @@ void gfx_display_draw_polygon(
       float *color);
 
 void gfx_display_draw_texture_slice(
+      gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -309,9 +317,11 @@ void gfx_display_draw_texture_slice(
       unsigned width, unsigned height,
       float *color, unsigned offset, float scale_factor, uintptr_t texture);
 
-void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw, void *data);
+void gfx_display_rotate_z(gfx_display_t *p_disp,
+      gfx_display_ctx_rotate_draw_t *draw, void *data);
 
-font_data_t *gfx_display_font_file(char* fontpath, float font_size, bool is_threaded);
+font_data_t *gfx_display_font_file(gfx_display_t *p_disp,
+      char* fontpath, float font_size, bool is_threaded);
 
 bool gfx_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
@@ -337,7 +347,8 @@ void gfx_display_init_white_texture(uintptr_t white_texture);
 
 bool gfx_display_driver_exists(const char *s);
 
-bool gfx_display_init_first_driver(bool video_is_threaded);
+bool gfx_display_init_first_driver(gfx_display_t *p_disp,
+      bool video_is_threaded);
 
 extern uintptr_t gfx_display_white_texture;
 
