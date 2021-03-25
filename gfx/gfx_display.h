@@ -35,6 +35,12 @@
 
 RETRO_BEGIN_DECLS
 
+/* Number of pixels corner-to-corner on a 1080p
+ * display:
+ * > sqrt((1920 * 1920) + (1080 * 1080))
+ * Note: This is a double, so no suffix */
+#define DIAGONAL_PIXELS_1080P 2202.90717008229831581901
+
 #define COLOR_TEXT_ALPHA(color, alpha) (color & 0xFFFFFF00) | alpha
 
 #define HEX_R(hex) ((hex >> 16) & 0xFF) * (1.0f / 255.0f)
@@ -316,13 +322,13 @@ bool gfx_display_reset_textures_list(
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
 
+float gfx_display_get_adjusted_scale(
+      gfx_display_t *p_disp,
+      float base_scale, float scale_factor, unsigned width);
+
+float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height);
+
 float gfx_display_get_dpi_scale(unsigned width, unsigned height);
-
-float gfx_display_get_widget_dpi_scale(
-      unsigned width, unsigned height, bool fullscreen);
-
-float gfx_display_get_widget_pixel_scale(
-      unsigned width, unsigned height, bool fullscreen);
 
 void gfx_display_init_white_texture(uintptr_t white_texture);
 

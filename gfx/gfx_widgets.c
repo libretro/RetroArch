@@ -28,6 +28,7 @@
 #include "gfx_widgets.h"
 #include "font_driver.h"
 
+#include "../configuration.h"
 #include "../msg_hash.h"
 
 #include "../tasks/task_content.h"
@@ -84,6 +85,160 @@ const static gfx_widget_t* const widgets[] = {
    &gfx_widget_progress_message,
    &gfx_widget_load_content_animation
 };
+
+static float gfx_display_get_widget_dpi_scale(
+      unsigned width, unsigned height, bool fullscreen)
+{
+   static unsigned last_width                          = 0;
+   static unsigned last_height                         = 0;
+   static float scale                                  = 0.0f;
+   static bool scale_cached                            = false;
+   bool scale_updated                                  = false;
+   static float last_menu_scale_factor                 = 0.0f;
+   static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
+   static float adjusted_scale                         = 1.0f;
+   settings_t *settings                                = config_get_ptr();
+   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
+#else
+   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
+   float menu_widget_scale_factor                      = fullscreen ?
+         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+#endif
+   gfx_display_t *p_disp                               = disp_get_ptr();
+
+   float menu_scale_factor                             = menu_widget_scale_factor;
+
+   if (gfx_widget_scale_auto)
+   {
+#ifdef HAVE_RGUI
+      /* When using RGUI, _menu_scale_factor
+       * is ignored
+       * > If we are not using a widget scale factor override,
+       *   just set menu_scale_factor to 1.0 */
+      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
+         menu_scale_factor                             = 1.0f;
+      else
+#endif
+      {
+         float _menu_scale_factor                      = 
+            settings->floats.menu_scale_factor;
+         menu_scale_factor                             = _menu_scale_factor;
+      }
+   }
+
+   /* Scale is based on display metrics - these are a fixed
+    * hardware property. To minimise performance overheads
+    * we therefore only call video_context_driver_get_metrics()
+    * on first run, or when the current video resolution changes */
+   if (!scale_cached ||
+       (width  != last_width) ||
+       (height != last_height))
+   {
+      scale         = gfx_display_get_dpi_scale_internal(width, height);
+      scale_cached  = true;
+      scale_updated = true;
+      last_width    = width;
+      last_height   = height;
+   }
+
+   /* Adjusted scale calculation may also be slow, so
+    * only update if something changes */
+   if (scale_updated ||
+       (menu_scale_factor != last_menu_scale_factor) ||
+       (p_disp->menu_driver_id != last_menu_driver_id))
+   {
+      adjusted_scale         = gfx_display_get_adjusted_scale(
+            p_disp,
+            scale, menu_scale_factor, width);
+      last_menu_scale_factor = menu_scale_factor;
+      last_menu_driver_id    = p_disp->menu_driver_id;
+   }
+
+   return adjusted_scale;
+}
+
+static float gfx_display_get_widget_pixel_scale(
+      unsigned width, unsigned height, bool fullscreen)
+{
+   static unsigned last_width                          = 0;
+   static unsigned last_height                         = 0;
+   static float scale                                  = 0.0f;
+   static bool scale_cached                            = false;
+   bool scale_updated                                  = false;
+   static float last_menu_scale_factor                 = 0.0f;
+   static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
+   static float adjusted_scale                         = 1.0f;
+   settings_t *settings                                = config_get_ptr();
+   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
+#else
+   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
+   float menu_widget_scale_factor                      = fullscreen ?
+         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+#endif
+   gfx_display_t *p_disp                               = disp_get_ptr();
+   float menu_scale_factor                             = menu_widget_scale_factor;
+
+   if (gfx_widget_scale_auto)
+   {
+#ifdef HAVE_RGUI
+      /* When using RGUI, _menu_scale_factor
+       * is ignored
+       * > If we are not using a widget scale factor override,
+       *   just set menu_scale_factor to 1.0 */
+      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
+         menu_scale_factor                             = 1.0f;
+      else
+#endif
+      {
+         float _menu_scale_factor                      = 
+            settings->floats.menu_scale_factor;
+         menu_scale_factor                             = _menu_scale_factor;
+      }
+   }
+
+   /* We need to perform a square root here, which
+    * can be slow on some platforms (not *slow*, but
+    * it involves enough work that it's worth trying
+    * to optimise). We therefore cache the pixel scale,
+    * and only update on first run or when the video
+    * size changes */
+   if (!scale_cached ||
+       (width  != last_width) ||
+       (height != last_height))
+   {
+      /* Baseline reference is a 1080p display */
+      scale = (float)(
+            sqrt((double)((width * width) + (height * height))) /
+            DIAGONAL_PIXELS_1080P);
+
+      scale_cached  = true;
+      scale_updated = true;
+      last_width    = width;
+      last_height   = height;
+   }
+
+   /* Adjusted scale calculation may also be slow, so
+    * only update if something changes */
+   if (scale_updated ||
+       (menu_scale_factor != last_menu_scale_factor) ||
+       (p_disp->menu_driver_id != last_menu_driver_id))
+   {
+      adjusted_scale         = gfx_display_get_adjusted_scale(
+            p_disp,
+            scale, menu_scale_factor, width);
+      last_menu_scale_factor = menu_scale_factor;
+      last_menu_driver_id    = p_disp->menu_driver_id;
+   }
+
+   return adjusted_scale;
+}
+
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
