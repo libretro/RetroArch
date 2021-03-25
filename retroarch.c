@@ -27144,18 +27144,16 @@ static bool midi_driver_init(struct rarch_state *p_rarch)
 {
    settings_t *settings              = p_rarch->configuration_settings;
    union string_list_elem_attr attr  = {0};
-   const char *err_str               = NULL;
+   bool ret                          = true;
 
    p_rarch->midi_drv_inputs          = string_list_new();
    p_rarch->midi_drv_outputs         = string_list_new();
 
-   if (!settings)
-      err_str = "settings unavailable";
-   else if (!p_rarch->midi_drv_inputs || !p_rarch->midi_drv_outputs)
-      err_str = "string_list_new failed";
+   if (!p_rarch->midi_drv_inputs || !p_rarch->midi_drv_outputs)
+      ret = false;
    else if (!string_list_append(p_rarch->midi_drv_inputs, "Off", attr) ||
             !string_list_append(p_rarch->midi_drv_outputs, "Off", attr))
-      err_str = "string_list_append failed";
+      ret = false;
    else
    {
       char * input  = NULL;
@@ -27171,9 +27169,9 @@ static bool midi_driver_init(struct rarch_state *p_rarch)
       }
 
       if (!midi_drv->get_avail_inputs(p_rarch->midi_drv_inputs))
-         err_str = "list of input devices unavailable";
+         ret = false;
       else if (!midi_drv->get_avail_outputs(p_rarch->midi_drv_outputs))
-         err_str = "list of output devices unavailable";
+         ret = false;
       else
       {
          if (string_is_not_equal(settings->arrays.midi_input, "Off"))
@@ -27204,42 +27202,36 @@ static bool midi_driver_init(struct rarch_state *p_rarch)
 
          p_rarch->midi_drv_data = midi_drv->init(input, output);
          if (!p_rarch->midi_drv_data)
-            err_str = "driver init failed";
+            ret = false;
          else
          {
             p_rarch->midi_drv_input_enabled  = (input  != NULL);
             p_rarch->midi_drv_output_enabled = (output != NULL);
 
             if (!midi_driver_init_io_buffers(p_rarch))
-               err_str = "out of memory";
+               ret = false;
             else
             {
                if (input)
                   RARCH_LOG("[MIDI]: Input device \"%s\".\n", input);
-               else
-                  RARCH_LOG("[MIDI]: Input disabled.\n");
 
                if (output)
                {
                   RARCH_LOG("[MIDI]: Output device \"%s\".\n", output);
                   midi_driver_set_volume(settings->uints.midi_volume);
                }
-               else
-                  RARCH_LOG("[MIDI]: Output disabled.\n");
             }
          }
       }
    }
 
-   if (err_str)
+   if (!ret)
    {
       midi_driver_free(p_rarch);
-      RARCH_ERR("[MIDI]: Initialization failed (%s).\n", err_str);
+      RARCH_ERR("[MIDI]: Initialization failed.\n");
+      return false;
    }
-   else
-      RARCH_LOG("[MIDI]: Initialized \"%s\" driver.\n", midi_drv->ident);
-
-   return err_str == NULL;
+   return true;
 }
 
 bool midi_driver_set_input(const char *input)
