@@ -321,9 +321,6 @@ static void sdl_dingux_joypad_destroy(void)
    /* Disconnect joypad */
    sdl_dingux_joypad_disconnect();
 
-   /* De-initialise joystick subsystem */
-   SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-
    /* Flush out all pending events */
    while (SDL_PollEvent(&event));
 
@@ -337,19 +334,23 @@ static void sdl_dingux_joypad_destroy(void)
 
 static void *sdl_dingux_joypad_init(void *data)
 {
-   dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
+   dingux_joypad_t *joypad      = (dingux_joypad_t*)&dingux_joypad;
+   uint32_t sdl_subsystem_flags = SDL_WasInit(0);
 
    memset(joypad, 0, sizeof(dingux_joypad_t));
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   /* Initialise joystick subsystem */
-   if (SDL_WasInit(0) == 0)
+   /* Initialise joystick subsystem, if required */
+   if (sdl_subsystem_flags == 0)
    {
       if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
          return NULL;
    }
-   else if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0)
-      return NULL;
+   else if ((sdl_subsystem_flags & SDL_INIT_JOYSTICK) == 0)
+   {
+      if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0)
+         return NULL;
+   }
 
 #if defined(HAVE_LIBSHAKE)
    /* Initialise rumble interface */

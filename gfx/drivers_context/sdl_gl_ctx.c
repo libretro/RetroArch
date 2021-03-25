@@ -71,14 +71,13 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
       SDL_FreeSurface(sdl->win);
 #endif
    sdl->win = NULL;
-
-   SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 static void *sdl_ctx_init(void *video_driver)
 {
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)
+   gfx_ctx_sdl_data_t *sdl      = (gfx_ctx_sdl_data_t*)
       calloc(1, sizeof(gfx_ctx_sdl_data_t));
+   uint32_t sdl_subsystem_flags = SDL_WasInit(0);
 
    if (!sdl)
       return NULL;
@@ -87,13 +86,17 @@ static void *sdl_ctx_init(void *video_driver)
    XInitThreads();
 #endif
 
-   if (SDL_WasInit(0) == 0)
+   /* Initialise graphics subsystem, if required */
+   if (sdl_subsystem_flags == 0)
    {
       if (SDL_Init(SDL_INIT_VIDEO) < 0)
          goto error;
    }
-   else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-      goto error;
+   else if ((sdl_subsystem_flags & SDL_INIT_VIDEO) == 0)
+   {
+      if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+         goto error;
+   }
 
    RARCH_LOG("[SDL_GL] SDL %i.%i.%i gfx context driver initialized.\n",
          SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);

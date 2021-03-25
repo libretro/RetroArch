@@ -75,8 +75,6 @@ static void sdl_gfx_free(void *data)
    if (vid->menu.frame)
       SDL_FreeSurface(vid->menu.frame);
 
-   SDL_QuitSubSystem(SDL_INIT_VIDEO);
-
    if (vid->font)
       vid->font_driver->free(vid->font);
 
@@ -248,6 +246,7 @@ static void *sdl_gfx_init(const video_info_t *video,
    const SDL_VideoInfo *video_info = NULL;
    sdl_video_t                *vid = NULL;
    settings_t            *settings = config_get_ptr();
+   uint32_t sdl_subsystem_flags    = SDL_WasInit(0);
    const char *path_font           = settings->paths.path_font;
    float video_font_size           = settings->floats.video_font_size;
    bool video_font_enable          = settings->bools.video_font_enable;
@@ -259,13 +258,17 @@ static void *sdl_gfx_init(const video_info_t *video,
    XInitThreads();
 #endif
 
-   if (SDL_WasInit(0) == 0)
+   /* Initialise graphics subsystem, if required */
+   if (sdl_subsystem_flags == 0)
    {
       if (SDL_Init(SDL_INIT_VIDEO) < 0)
          return NULL;
    }
-   else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-      return NULL;
+   else if ((sdl_subsystem_flags & SDL_INIT_VIDEO) == 0)
+   {
+      if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+         return NULL;
+   }
 
    vid = (sdl_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
