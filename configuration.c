@@ -1931,6 +1931,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_timedate_style",          &settings->uints.menu_timedate_style, true, DEFAULT_MENU_TIMEDATE_STYLE, false);
    SETTING_UINT("menu_timedate_date_separator", &settings->uints.menu_timedate_date_separator, true, DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR, false);
    SETTING_UINT("menu_ticker_type",             &settings->uints.menu_ticker_type, true, DEFAULT_MENU_TICKER_TYPE, false);
+   SETTING_UINT("menu_scroll_delay",            &settings->uints.menu_scroll_delay, true, DEFAULT_MENU_SCROLL_DELAY, false);
    SETTING_UINT("content_show_add_entry",       &settings->uints.menu_content_show_add_entry, true, DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY, false);
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_menu_color_theme",        &settings->uints.menu_rgui_color_theme, true, DEFAULT_RGUI_COLOR_THEME, false);

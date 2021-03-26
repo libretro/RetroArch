@@ -4,11 +4,13 @@
 #include <QDialog>
 #include <QPointer>
 
+#include <retro_common_api.h>
+
 #ifndef CXX_BUILD
 extern "C" {
 #endif
 
-#include "../.././gfx/video_shader_parse.h"
+#include "../../../gfx/video_shader_parse.h"
 
 #ifndef CXX_BUILD
 }

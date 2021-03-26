@@ -509,7 +509,7 @@ void path_basedir(char *path)
    if (last)
       last[1] = '\0';
    else
-      snprintf(path, 3, "." PATH_DEFAULT_SLASH());
+      strlcpy(path, "." PATH_DEFAULT_SLASH(), 3);
 }
 
 /**
@@ -1189,7 +1189,7 @@ void path_basedir_wrapper(char *path)
    if (last)
       last[1] = '\0';
    else
-      snprintf(path, 3, "." PATH_DEFAULT_SLASH());
+      strlcpy(path, "." PATH_DEFAULT_SLASH(), 3);
 }
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)

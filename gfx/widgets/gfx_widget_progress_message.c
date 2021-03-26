@@ -217,6 +217,7 @@ static void gfx_widget_progress_message_layout(
 
 static void gfx_widget_progress_message_frame(void *data, void *user_data)
 {
+   gfx_display_t *p_disp                      = disp_get_ptr();
    gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
 
    if (state->active)
@@ -240,6 +241,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       gfx_display_set_alpha(backdrop_color, state->alpha * DEFAULT_BACKDROP);
 
       gfx_display_draw_quad(
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -255,6 +257,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       gfx_display_set_alpha(state->bar_bg_color, state->alpha);
 
       gfx_display_draw_quad(
+            p_disp,
             userdata,
             video_width,
             video_height,
@@ -279,6 +282,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       gfx_display_set_alpha(bar_color, state->alpha);
 
       gfx_display_draw_quad(
+            p_disp,
             userdata,
             video_width,
             video_height,

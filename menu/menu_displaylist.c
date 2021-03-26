@@ -3851,7 +3851,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      if (n >= PATH_MAX_LENGTH)
          n = 0;
       (void)n;
       if (menu_entries_append_enum(info->list, tmp,
@@ -3874,7 +3874,7 @@ static unsigned menu_displaylist_parse_content_information(
       
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      if (n >= PATH_MAX_LENGTH)
          n = 0;
       (void)n;
       
@@ -3899,7 +3899,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       /* Silence gcc compiler warning
        * (getting so sick of these...) */
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      if (n >= PATH_MAX_LENGTH)
          n = 0;
       (void)n;
       
@@ -3971,7 +3971,7 @@ static unsigned menu_displaylist_parse_content_information(
 
       /* Silence gcc compiler warning
       * (getting so sick of these...) */
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+      if (n >= PATH_MAX_LENGTH)
          n = 0;
       (void)n;
       
@@ -4009,7 +4009,7 @@ static unsigned menu_displaylist_parse_content_information(
 
          /* Silence gcc compiler warning
          * (getting so sick of these...) */
-         if ((n < 0) || (n >= PATH_MAX_LENGTH))
+         if (n >= PATH_MAX_LENGTH)
             n = 0;
          (void)n;
          
@@ -5269,6 +5269,24 @@ unsigned menu_displaylist_build_list(
                   MENU_SETTING_ACTION, 0, 0))
             count++;
          break;
+      case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,         PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,           PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_INPUT_TURBO_MODE,           PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON, PARSE_ONLY_UINT},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx, build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          {
             const char *input_driver_id  = settings->arrays.input_driver;
@@ -5910,6 +5928,13 @@ unsigned menu_displaylist_build_list(
                   count++;
 #endif
 
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS),
+                     MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+
             for (p = 0; p < max_users; p++)
             {
                char val_s[16], val_d[16];
@@ -6112,22 +6137,6 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_TURBO_MODE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_BIND_MODE,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
@@ -6155,6 +6164,10 @@ unsigned menu_displaylist_build_list(
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,
                   PARSE_ACTION, false) == 0)
             count++;
 
@@ -7284,6 +7297,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_SCROLL_FAST,                                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_SCROLL_DELAY,                                     PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_PAUSE_LIBRETRO,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_PAUSE_NONACTIVE,                                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,                                 PARSE_ONLY_BOOL,   true},
@@ -11255,6 +11269,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_SHADER_PRESET_SAVE:
       case DISPLAYLIST_SHADER_PRESET_REMOVE:
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
+      case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
       case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
       case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:

@@ -74,19 +74,24 @@ static void *sdl_audio_init(const char *device,
    int frames;
    size_t bufsize;
    SDL_AudioSpec out;
-   SDL_AudioSpec spec   = {0};
-   void            *tmp = NULL;
-   sdl_audio_t *sdl     = NULL;
+   SDL_AudioSpec spec           = {0};
+   void *tmp                    = NULL;
+   sdl_audio_t *sdl             = NULL;
+   uint32_t sdl_subsystem_flags = SDL_WasInit(0);
 
    (void)device;
 
-   if (SDL_WasInit(0) == 0)
+   /* Initialise audio subsystem, if required */
+   if (sdl_subsystem_flags == 0)
    {
       if (SDL_Init(SDL_INIT_AUDIO) < 0)
          return NULL;
    }
-   else if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
-      return NULL;
+   else if ((sdl_subsystem_flags & SDL_INIT_AUDIO) == 0)
+   {
+      if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
+         return NULL;
+   }
 
    sdl = (sdl_audio_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
@@ -227,7 +232,6 @@ static void sdl_audio_free(void *data)
    sdl_audio_t *sdl = (sdl_audio_t*)data;
 
    SDL_CloseAudio();
-   SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
    if (sdl)
    {

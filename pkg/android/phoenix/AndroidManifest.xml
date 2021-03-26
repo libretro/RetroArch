@@ -39,5 +39,16 @@
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
         </activity>
         <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
+      <provider
+        android:name="com.retroarch.browser.provider.RetroDocumentsProvider"
+        android:authorities="${applicationId}.documents"
+        android:grantUriPermissions="true"
+        android:enabled="@bool/document_provider_enabled"
+        android:exported="true"
+        android:permission="android.permission.MANAGE_DOCUMENTS">
+        <intent-filter>
+          <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+        </intent-filter>
+      </provider>
     </application>
 </manifest>

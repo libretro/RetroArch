@@ -51,7 +51,11 @@
 #include "qt/ui_qt_load_core_window.h"
 #include "qt/coreinfodialog.h"
 #include "qt/playlistentrydialog.h"
+#if defined(HAVE_MENU)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "qt/shaderparamsdialog.h"
+#endif
+#endif
 #include "qt/coreoptionsdialog.h"
 #include "qt/viewoptionsdialog.h"
 
@@ -88,6 +92,7 @@ extern "C" {
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -1205,8 +1210,10 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_allPlaylistsGridMaxCount(0)
    ,m_playlistEntryDialog(NULL)
    ,m_statusMessageElapsedTimer()
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    ,m_shaderParamsDialog(new ShaderParamsDialog())
+#endif
 #endif
    ,m_coreOptionsDialog(new CoreOptionsDialog())
    ,m_networkManager(new QNetworkAccessManager(this))
@@ -1565,8 +1572,10 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
    connect(this, SIGNAL(gotStatusMessage(QString,unsigned,unsigned,bool)), this, SLOT(onGotStatusMessage(QString,unsigned,unsigned,bool)), Qt::AutoConnection);
    connect(this, SIGNAL(gotReloadPlaylists()), this, SLOT(onGotReloadPlaylists()), Qt::AutoConnection);
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    connect(this, SIGNAL(gotReloadShaderParams()), this, SLOT(onGotReloadShaderParams()), Qt::AutoConnection);
+#endif
 #endif
    connect(this, SIGNAL(gotReloadCoreOptions()), this, SLOT(onGotReloadCoreOptions()), Qt::AutoConnection);
 
@@ -2012,13 +2021,16 @@ void MainWindow::onGotStatusMessage(
 
 void MainWindow::deferReloadShaderParams()
 {
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    emit gotReloadShaderParams();
+#endif
 #endif
 }
 
 void MainWindow::onShaderParamsClicked()
 {
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (!m_shaderParamsDialog)
       return;
@@ -2027,13 +2039,16 @@ void MainWindow::onShaderParamsClicked()
 
    onGotReloadShaderParams();
 #endif
+#endif
 }
 
 void MainWindow::onGotReloadShaderParams()
 {
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (m_shaderParamsDialog && m_shaderParamsDialog->isVisible())
       m_shaderParamsDialog->reload();
+#endif
 #endif
 }
 
@@ -4630,8 +4645,10 @@ static void* ui_companion_qt_init(void)
    QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
 
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS), mainwindow, SLOT(onCoreOptionsClicked()));
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), mainwindow, SLOT(onShaderParamsClicked()));
+#endif
 #endif
 
    viewMenu->addSeparator();
@@ -4971,9 +4988,11 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
    {
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
       case CMD_EVENT_SHADER_PRESET_LOADED:
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          RARCH_LOG("[Qt]: Reloading shader parameters.\n");
          win_handle->qtWindow->deferReloadShaderParams();
+#endif
 #endif
          break;
       default:

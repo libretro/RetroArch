@@ -217,7 +217,9 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             0, state->y,
             state->width, state->height,
@@ -269,7 +271,9 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    if (state->alpha > 0.0f)
    {
       gfx_display_set_alpha(pure_white, state->alpha);
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width,
             video_height,
             0, 0,

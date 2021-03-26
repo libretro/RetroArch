@@ -51,7 +51,9 @@ extern "C" {
 #ifdef HAVE_MENU
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../../../menu/menu_shader.h"
+#endif
 #endif
 
 #include "../../../command.h"
@@ -67,8 +69,10 @@ extern "C" {
 }
 #endif
 
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "shaderparamsdialog.h"
+#endif
 #endif
 
 #include "qt_options.h"
@@ -1288,7 +1292,7 @@ void CoreOptionsDialog::onCoreOptionResetAllClicked()
    }
 }
 
-
+#if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 enum
 {
@@ -2969,4 +2973,5 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
       }
    }
 }
+#endif
 #endif

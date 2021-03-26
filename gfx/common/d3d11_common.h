@@ -74,7 +74,9 @@ typedef ID3D11VideoProcessorOutputView* D3D11VideoProcessorOutputView;
 typedef ID3D11VideoContext*             D3D11VideoContext;
 typedef ID3D11VideoDevice*              D3D11VideoDevice;
 typedef ID3D11Device*                   D3D11Device;
+#ifdef DEBUG
 typedef ID3D11Debug*                    D3D11Debug;
+#endif
 typedef ID3D11SwitchToRef*              D3D11SwitchToRef;
 typedef ID3D11TracingDevice*            D3D11TracingDevice;
 typedef ID3D11InfoQueue*                D3D11InfoQueue;
@@ -2141,6 +2143,8 @@ static INLINE UINT D3D11GetExceptionMode(D3D11Device device)
 {
    return device->lpVtbl->GetExceptionMode(device);
 }
+
+#ifdef DEBUG
 static INLINE HRESULT D3D11SetDebugFeatureMask(D3D11Debug debug, UINT mask)
 {
    return debug->lpVtbl->SetFeatureMask(debug, mask);
@@ -2177,6 +2181,8 @@ static INLINE HRESULT D3D11ValidateContextForDispatch(D3D11Debug debug, D3D11Dev
 {
    return debug->lpVtbl->ValidateContextForDispatch(debug, context);
 }
+#endif
+
 #ifndef __WINRT__
 static INLINE BOOL D3D11SetUseRef(D3D11SwitchToRef switch_to_ref, BOOL use_ref)
 {
@@ -2354,6 +2360,7 @@ static INLINE BOOL D3D11GetBreakOnID(D3D11InfoQueue info_queue, D3D11_MESSAGE_ID
 {
    return info_queue->lpVtbl->GetBreakOnID(info_queue, id);
 }
+#ifdef DEBUG
 static INLINE void D3D11SetMuteDebugOutput(D3D11InfoQueue info_queue, BOOL mute)
 {
    info_queue->lpVtbl->SetMuteDebugOutput(info_queue, mute);
@@ -2362,6 +2369,7 @@ static INLINE BOOL D3D11GetMuteDebugOutput(D3D11InfoQueue info_queue)
 {
    return info_queue->lpVtbl->GetMuteDebugOutput(info_queue);
 }
+#endif
 
 /* end of auto-generated */
 

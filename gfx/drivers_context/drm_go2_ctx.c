@@ -119,11 +119,21 @@ static void *gfx_ctx_go2_drm_init(void *video_driver)
       return NULL;
 
    drm->display       = go2_display_create();
-   drm->presenter     = go2_presenter_create(drm->display,
-         DRM_FORMAT_RGB565, 0xff000000, true);
 
    drm->native_width  = go2_display_height_get(drm->display);
    drm->native_height = go2_display_width_get(drm->display);
+
+   /* This driver should only be used on rotated screens */
+   if (drm->native_width < drm->native_height)
+   {
+      /* This should be fixed by using wayland/weston... */
+      go2_display_destroy(drm->display);
+      free(drm);
+      return NULL;
+   }
+
+   drm->presenter     = go2_presenter_create(drm->display,
+         DRM_FORMAT_RGB565, 0xff000000, true);
 
    return drm;
 }

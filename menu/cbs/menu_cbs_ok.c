@@ -298,6 +298,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST;
+      case ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_INPUT_TURBO_FIRE_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST;
       case ACTION_OK_DL_LATENCY_SETTINGS_LIST:
@@ -1432,6 +1434,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
+      case ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
       case ACTION_OK_DL_LATENCY_SETTINGS_LIST:
       case ACTION_OK_DL_DRIVER_SETTINGS_LIST:
@@ -1586,10 +1589,10 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
 #ifdef HAVE_COMPRESSION
       if (path_is_compressed_file(default_info_dir))
       {
-         size_t len = strlen(default_info_dir);
+         size_t _len = strlen(default_info_dir);
          /* In case of a compressed archive, we have to join with a hash */
          /* We are going to write at the position of dir: */
-         def_info->s[len] = '#';
+         def_info->s[_len] = '#';
       }
 #endif
    }
@@ -5607,6 +5610,7 @@ DEFAULT_ACTION_OK_FUNC(action_ok_push_ai_service_settings_list, ACTION_OK_DL_AI_
 DEFAULT_ACTION_OK_FUNC(action_ok_push_accessibility_settings_list, ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_input_menu_settings_list, ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_push_input_turbo_fire_settings_list, ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_input_haptic_feedback_settings_list, ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_latency_settings_list, ACTION_OK_DL_LATENCY_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
@@ -7664,6 +7668,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,                 action_ok_push_ai_service_settings_list},
          {MENU_ENUM_LABEL_INPUT_SETTINGS,                      action_ok_push_input_settings_list},
          {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                 action_ok_push_input_menu_settings_list},
+         {MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,           action_ok_push_input_turbo_fire_settings_list},
          {MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,      action_ok_push_input_haptic_feedback_settings_list},
          {MENU_ENUM_LABEL_DRIVER_SETTINGS,                     action_ok_push_driver_settings_list},
          {MENU_ENUM_LABEL_VIDEO_SETTINGS,                      action_ok_push_video_settings_list},

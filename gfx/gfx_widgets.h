@@ -303,12 +303,15 @@ void gfx_widgets_flush_text(
 typedef struct gfx_widget gfx_widget_t;
 
 bool gfx_widgets_init(
+      void *data,
+      void *data_disp,
+      void *settings_data,
       uintptr_t widgets_active_ptr,
       bool video_is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path);
 
-bool gfx_widgets_deinit(bool widgets_persisting);
+void gfx_widgets_deinit(void *data, bool widgets_persisting);
 
 void gfx_widgets_msg_queue_push(
       void *data,
@@ -326,6 +329,7 @@ void gfx_widget_volume_update_and_show(float new_volume,
 void gfx_widgets_iterate(
       void *data,
       void *data_disp,
+      void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded);

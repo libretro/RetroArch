@@ -513,14 +513,14 @@ typedef struct vk
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
 }
 
-#define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, color) \
+#define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, vulkan_color) \
 { \
-   float r        = color->r; \
-   float g        = color->g; \
-   float b        = color->b; \
-   float a        = color->a; \
-   pv[0].x        = (_x)  + 0.0f * (_width); \
-   pv[0].y        = (_y)  + 0.0f * (_height); \
+   float r        = (vulkan_color)->r; \
+   float g        = (vulkan_color)->g; \
+   float b        = (vulkan_color)->b; \
+   float a        = (vulkan_color)->a; \
+   pv[0].x        = (_x)     + 0.0f * (_width); \
+   pv[0].y        = (_y)     + 0.0f * (_height); \
    pv[0].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
    pv[0].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
    pv[0].color.r  = r; \

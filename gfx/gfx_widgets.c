@@ -28,6 +28,7 @@
 #include "gfx_widgets.h"
 #include "font_driver.h"
 
+#include "../configuration.h"
 #include "../msg_hash.h"
 
 #include "../tasks/task_content.h"
@@ -84,6 +85,159 @@ const static gfx_widget_t* const widgets[] = {
    &gfx_widget_progress_message,
    &gfx_widget_load_content_animation
 };
+
+static float gfx_display_get_widget_dpi_scale(
+      gfx_display_t *p_disp,
+      settings_t *settings,
+      unsigned width, unsigned height, bool fullscreen)
+{
+   static unsigned last_width                          = 0;
+   static unsigned last_height                         = 0;
+   static float scale                                  = 0.0f;
+   static bool scale_cached                            = false;
+   bool scale_updated                                  = false;
+   static float last_menu_scale_factor                 = 0.0f;
+   static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
+   static float adjusted_scale                         = 1.0f;
+   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
+#else
+   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
+   float menu_widget_scale_factor                      = fullscreen ?
+         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+#endif
+   float menu_scale_factor                             = menu_widget_scale_factor;
+
+   if (gfx_widget_scale_auto)
+   {
+#ifdef HAVE_RGUI
+      /* When using RGUI, _menu_scale_factor
+       * is ignored
+       * > If we are not using a widget scale factor override,
+       *   just set menu_scale_factor to 1.0 */
+      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
+         menu_scale_factor                             = 1.0f;
+      else
+#endif
+      {
+         float _menu_scale_factor                      = 
+            settings->floats.menu_scale_factor;
+         menu_scale_factor                             = _menu_scale_factor;
+      }
+   }
+
+   /* Scale is based on display metrics - these are a fixed
+    * hardware property. To minimise performance overheads
+    * we therefore only call video_context_driver_get_metrics()
+    * on first run, or when the current video resolution changes */
+   if (!scale_cached ||
+       (width  != last_width) ||
+       (height != last_height))
+   {
+      scale         = gfx_display_get_dpi_scale_internal(width, height);
+      scale_cached  = true;
+      scale_updated = true;
+      last_width    = width;
+      last_height   = height;
+   }
+
+   /* Adjusted scale calculation may also be slow, so
+    * only update if something changes */
+   if (scale_updated ||
+       (menu_scale_factor != last_menu_scale_factor) ||
+       (p_disp->menu_driver_id != last_menu_driver_id))
+   {
+      adjusted_scale         = gfx_display_get_adjusted_scale(
+            p_disp,
+            scale, menu_scale_factor, width);
+      last_menu_scale_factor = menu_scale_factor;
+      last_menu_driver_id    = p_disp->menu_driver_id;
+   }
+
+   return adjusted_scale;
+}
+
+static float gfx_display_get_widget_pixel_scale(
+      gfx_display_t *p_disp,
+      settings_t *settings,
+      unsigned width, unsigned height, bool fullscreen)
+{
+   static unsigned last_width                          = 0;
+   static unsigned last_height                         = 0;
+   static float scale                                  = 0.0f;
+   static bool scale_cached                            = false;
+   bool scale_updated                                  = false;
+   static float last_menu_scale_factor                 = 0.0f;
+   static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
+   static float adjusted_scale                         = 1.0f;
+   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
+#else
+   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
+   float menu_widget_scale_factor                      = fullscreen ?
+         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+#endif
+   float menu_scale_factor                             = menu_widget_scale_factor;
+
+   if (gfx_widget_scale_auto)
+   {
+#ifdef HAVE_RGUI
+      /* When using RGUI, _menu_scale_factor
+       * is ignored
+       * > If we are not using a widget scale factor override,
+       *   just set menu_scale_factor to 1.0 */
+      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
+         menu_scale_factor                             = 1.0f;
+      else
+#endif
+      {
+         float _menu_scale_factor                      = 
+            settings->floats.menu_scale_factor;
+         menu_scale_factor                             = _menu_scale_factor;
+      }
+   }
+
+   /* We need to perform a square root here, which
+    * can be slow on some platforms (not *slow*, but
+    * it involves enough work that it's worth trying
+    * to optimise). We therefore cache the pixel scale,
+    * and only update on first run or when the video
+    * size changes */
+   if (!scale_cached ||
+       (width  != last_width) ||
+       (height != last_height))
+   {
+      /* Baseline reference is a 1080p display */
+      scale = (float)(
+            sqrt((double)((width * width) + (height * height))) /
+            DIAGONAL_PIXELS_1080P);
+
+      scale_cached  = true;
+      scale_updated = true;
+      last_width    = width;
+      last_height   = height;
+   }
+
+   /* Adjusted scale calculation may also be slow, so
+    * only update if something changes */
+   if (scale_updated ||
+       (menu_scale_factor != last_menu_scale_factor) ||
+       (p_disp->menu_driver_id != last_menu_driver_id))
+   {
+      adjusted_scale         = gfx_display_get_adjusted_scale(
+            p_disp,
+            scale, menu_scale_factor, width);
+      last_menu_scale_factor = menu_scale_factor;
+      last_menu_driver_id    = p_disp->menu_driver_id;
+   }
+
+   return adjusted_scale;
+}
+
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
@@ -526,7 +680,7 @@ void gfx_widgets_draw_icon(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, userdata);
+   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -578,7 +732,7 @@ static void gfx_widgets_draw_icon_blend(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, userdata);
+   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -712,6 +866,7 @@ static void gfx_widgets_hourglass_tick(void *userdata)
 }
 
 static void gfx_widgets_font_init(
+      gfx_display_t *p_disp,
       dispgfx_widget_t *p_dispwidget,
       gfx_widget_font_data_t *font_data,
       bool is_threaded, char *font_path, float font_size)
@@ -731,7 +886,8 @@ static void gfx_widgets_font_init(
    font_data->glyph_width = scaled_size * (3.0f / 4.0f);
 
    /* Create font */
-   font_data->font = gfx_display_font_file(font_path, scaled_size, is_threaded);
+   font_data->font = gfx_display_font_file(p_disp,
+         font_path, scaled_size, is_threaded);
 
    /* Get font metadata */
    glyph_width = font_driver_get_message_width(font_data->font, "a", 1, 1.0f);
@@ -747,6 +903,7 @@ static void gfx_widgets_font_init(
 
 
 static void gfx_widgets_layout(
+      gfx_display_t *p_disp,
       dispgfx_widget_t *p_dispwidget,
       bool is_threaded, const char *dir_assets, char *font_path)
 {
@@ -766,32 +923,32 @@ static void gfx_widgets_layout(
 
       /* Create regular font */
       fill_pathname_join(font_file, ozone_path, "regular.ttf", sizeof(font_file));
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.regular,
             is_threaded, font_file, BASE_FONT_SIZE);
 
       /* Create bold font */
       fill_pathname_join(font_file, ozone_path, "bold.ttf", sizeof(font_file));
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.bold,
             is_threaded, font_file, BASE_FONT_SIZE);
 
       /* Create msg_queue font */
       fill_pathname_join(font_file, ozone_path, "regular.ttf", sizeof(font_file));
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.msg_queue,
             is_threaded, font_file, MSG_QUEUE_FONT_SIZE);
    }
    else
    {
       /* Load fonts from user-supplied path */
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.regular,
             is_threaded, font_path, BASE_FONT_SIZE);
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.bold,
             is_threaded, font_path, BASE_FONT_SIZE);
-      gfx_widgets_font_init(p_dispwidget,
+      gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.msg_queue,
             is_threaded, font_path, MSG_QUEUE_FONT_SIZE);
    }
@@ -863,6 +1020,7 @@ static void gfx_widgets_layout(
 void gfx_widgets_iterate(
       void *data,
       void *data_disp,
+      void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
@@ -872,15 +1030,16 @@ void gfx_widgets_iterate(
    /* Check whether screen dimensions or menu scale
     * factor have changed */
    float scale_factor               = 0.0f;
-#ifdef HAVE_XMB
    gfx_display_t *p_disp            = (gfx_display_t*)data_disp;
+   settings_t *settings             = (settings_t*)settings_data;
+#ifdef HAVE_XMB
    enum menu_driver_id_type type    = p_disp->menu_driver_id;
    if (type == MENU_DRIVER_ID_XMB)
-      scale_factor                  = gfx_display_get_widget_pixel_scale(width, height, fullscreen);
+      scale_factor                  = gfx_display_get_widget_pixel_scale(p_disp, settings, width, height, fullscreen);
    else
 #endif
-      scale_factor                  = gfx_display_get_widget_dpi_scale(
-            width, height, fullscreen);
+      scale_factor                  = gfx_display_get_widget_dpi_scale(p_disp,
+            settings, width, height, fullscreen);
 
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
        (width        != p_dispwidget->last_video_width) ||
@@ -892,7 +1051,7 @@ void gfx_widgets_iterate(
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
-      gfx_widgets_layout(p_dispwidget,
+      gfx_widgets_layout(p_disp, p_dispwidget,
             is_threaded, dir_assets, font_path);
       video_driver_monitor_reset();
    }
@@ -1009,12 +1168,14 @@ static int gfx_widgets_draw_indicator(
       unsigned height = p_dispwidget->simple_widget_height * 2;
       width           = height;
 
-      gfx_display_draw_quad(userdata,
-         video_width, video_height,
-         top_right_x_advance - width, y,
-         width, height,
-         video_width, video_height,
-         p_dispwidget->backdrop_orig
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width, video_height,
+            top_right_x_advance - width, y,
+            width, height,
+            video_width, video_height,
+            p_dispwidget->backdrop_orig
       );
 
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
@@ -1043,7 +1204,9 @@ static int gfx_widgets_draw_indicator(
             txt,
             (unsigned)strlen(txt), 1) + p_dispwidget->simple_widget_padding * 2;
 
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             top_right_x_advance - width, y,
             width, height,
@@ -1139,7 +1302,9 @@ static void gfx_widgets_draw_task_msg(
    rect_height = p_dispwidget->msg_queue_height / 2;
 
    gfx_display_set_alpha(msg_queue_current_background, msg->alpha);
-   gfx_display_draw_quad(userdata,
+   gfx_display_draw_quad(
+         p_disp,
+         userdata,
          video_width, video_height,
          rect_x, rect_y,
          rect_width, rect_height,
@@ -1156,7 +1321,9 @@ static void gfx_widgets_draw_task_msg(
          msg_queue_current_bar = msg_queue_task_progress_2;
 
       gfx_display_set_alpha(msg_queue_current_bar, 1.0f);
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             p_dispwidget->msg_queue_task_rect_start_x, video_height - msg->offset_y,
             bar_width, rect_height,
@@ -1199,7 +1366,8 @@ static void gfx_widgets_draw_task_msg(
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-      gfx_display_scissor_begin(userdata,
+      gfx_display_scissor_begin(p_disp,
+            userdata,
             video_width, video_height,
             rect_x, rect_y, rect_width, rect_height);
 
@@ -1281,7 +1449,8 @@ static void gfx_widgets_draw_regular_msg(
       gfx_widgets_flush_text(video_width, video_height,
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
-      gfx_display_scissor_begin(userdata,
+      gfx_display_scissor_begin(p_disp,
+            userdata,
             video_width, video_height,
             p_dispwidget->msg_queue_scissor_start_x, 0,
             (p_dispwidget->msg_queue_scissor_start_x + msg->width - 
@@ -1315,6 +1484,7 @@ static void gfx_widgets_draw_regular_msg(
    bar_width = p_dispwidget->simple_widget_padding + msg->width;
 
    gfx_display_draw_quad(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -1413,10 +1583,10 @@ static void INLINE gfx_widgets_font_unbind(gfx_widget_font_data_t *font_data)
 void gfx_widgets_frame(void *data)
 {
    size_t i;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
    gfx_display_t            *p_disp = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx= p_disp->dispctx;
    video_frame_info_t *video_info   = (video_frame_info_t*)data;
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)video_info->widgets_userdata;
    bool framecount_show             = video_info->framecount_show;
    bool memory_show                 = video_info->memory_show;
    bool core_status_msg_show        = video_info->core_status_msg_show;
@@ -1469,7 +1639,9 @@ void gfx_widgets_frame(void *data)
                );
 
       /* top line */
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             0, 0,
             video_width,
@@ -1479,7 +1651,9 @@ void gfx_widgets_frame(void *data)
             outline_color
             );
       /* bottom line */
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             0,
             video_height - p_dispwidget->divider_width_1px,
@@ -1490,7 +1664,9 @@ void gfx_widgets_frame(void *data)
             outline_color
             );
       /* left line */
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width,
             video_height,
             0,
@@ -1502,7 +1678,9 @@ void gfx_widgets_frame(void *data)
             outline_color
             );
       /* right line */
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width, video_height,
             video_width - p_dispwidget->divider_width_1px,
             0,
@@ -1544,7 +1722,9 @@ void gfx_widgets_frame(void *data)
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
-      gfx_display_draw_quad(userdata,
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
             video_width,
             video_height,
             top_right_x_advance - total_width, 0,
@@ -1770,6 +1950,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 static void gfx_widgets_context_reset(
       dispgfx_widget_t *p_dispwidget,
       gfx_display_t *p_disp,
+      settings_t *settings,
       bool is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
@@ -1872,33 +2053,39 @@ static void gfx_widgets_context_reset(
 #ifdef HAVE_XMB
    if (p_disp->menu_driver_id == MENU_DRIVER_ID_XMB)
       p_dispwidget->last_scale_factor = gfx_display_get_widget_pixel_scale(
+            p_disp, settings,
             p_dispwidget->last_video_width,
             p_dispwidget->last_video_height, fullscreen);
    else
 #endif
       p_dispwidget->last_scale_factor = gfx_display_get_widget_dpi_scale(
+                     p_disp, settings,
                      p_dispwidget->last_video_width,
                      p_dispwidget->last_video_height,
                      fullscreen);
 
-   gfx_widgets_layout(p_dispwidget,
+   gfx_widgets_layout(p_disp, p_dispwidget,
          is_threaded, dir_assets, font_path);
    video_driver_monitor_reset();
 }
 
-bool gfx_widgets_init(uintptr_t widgets_active_ptr,
+bool gfx_widgets_init(
+      void *data,
+      void *data_disp,
+      void *settings_data,
+      uintptr_t widgets_active_ptr,
       bool video_is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
    unsigned i;
-   dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)
-      dispwidget_get_ptr();
-   gfx_display_t *p_disp                       = disp_get_ptr();
+   dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)data;
+   gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
+   settings_t *settings                        = (settings_t*)settings_data;
    p_dispwidget->divider_width_1px             = 1;
    p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)widgets_active_ptr;
 
-   if (!gfx_display_init_first_driver(video_is_threaded))
+   if (!gfx_display_init_first_driver(p_disp, video_is_threaded))
       goto error;
    gfx_display_set_alpha(p_dispwidget->backdrop_orig, 0.75f);
    for (i = 0; i < 16; i++)
@@ -1951,6 +2138,7 @@ bool gfx_widgets_init(uintptr_t widgets_active_ptr,
    gfx_widgets_context_reset(
          p_dispwidget,
          p_disp,
+         settings,
          video_is_threaded,
          width, height, fullscreen,
          dir_assets, font_path);
@@ -1995,18 +2183,14 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
 }
 
 
-bool gfx_widgets_deinit(bool widgets_persisting)
+void gfx_widgets_deinit(void *data, bool widgets_persisting)
 {
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
-   if (!p_dispwidget->widgets_inited)
-      return false;
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)data;
 
    gfx_widgets_context_destroy(p_dispwidget);
 
    if (!widgets_persisting)
       gfx_widgets_free(p_dispwidget);
-
-   return true;
 }
 
 #ifdef HAVE_TRANSLATE

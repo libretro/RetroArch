@@ -263,6 +263,7 @@ enum settings_list_type
    SETTINGS_LIST_CRT_SWITCHRES,
    SETTINGS_LIST_AUDIO,
    SETTINGS_LIST_INPUT,
+   SETTINGS_LIST_INPUT_TURBO_FIRE,
    SETTINGS_LIST_INPUT_HOTKEY,
    SETTINGS_LIST_RECORDING,
    SETTINGS_LIST_FRAME_THROTTLING,
@@ -6268,7 +6269,7 @@ static void setting_get_string_representation_turbo_default_button(
    switch (*setting->value.target.unsigned_integer)
    {
       case INPUT_TURBO_DEFAULT_BUTTON_B:
-         strlcpy(s, "B / Fire", len);
+         strlcpy(s, "B", len);
          break;
       case INPUT_TURBO_DEFAULT_BUTTON_Y:
          strlcpy(s, "Y", len);
@@ -10637,7 +10638,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
+            menu_settings_list_current_add_range(list, list_info, -9999, 9999, 1, true, true);
+            (*list)[list_info->index - 1].offset_by = -9999;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
                   list,
                   list_info,
@@ -10655,7 +10658,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, -99999, 0, 1, false, false);
+            menu_settings_list_current_add_range(list, list_info, -9999, 9999, 1, true, true);
+            (*list)[list_info->index - 1].offset_by = -9999;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
                   list,
                   list_info,
@@ -12360,45 +12365,17 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.input_turbo_period,
-                  MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
-                  MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-                  turbo_period,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 1;
-            menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.input_turbo_duty_cycle,
-                  MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
-                  MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-                  turbo_duty_cycle,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 1;
-            menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
+            if (string_is_equal(settings->arrays.input_driver, "android") ||
+                string_is_equal(settings->arrays.input_joypad_driver, "sdl_dingux"))
+            {
+               CONFIG_ACTION(
+                     list, list_info,
+                     MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+                     MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group);
+            }
 
             CONFIG_ACTION(
                   list, list_info,
@@ -12408,39 +12385,6 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group);
 
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.input_turbo_mode,
-                  MENU_ENUM_LABEL_INPUT_TURBO_MODE,
-                  MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-                  turbo_mode,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_turbo_mode;
-            menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_MODE_LAST-1), 1, true, true);
-
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.input_turbo_default_button,
-                  MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
-                  MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-                  turbo_default_btn,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_turbo_default_button;
-            menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_DEFAULT_BUTTON_LAST-1), 1, true, true);
 
             END_SUB_GROUP(list, list_info, parent_group);
 
@@ -12450,6 +12394,14 @@ static bool setting_append_list(
                   list, list_info,
                   MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,
                   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
                   &group_info,
                   &subgroup_info,
                   parent_group);
@@ -12481,6 +12433,84 @@ static bool setting_append_list(
 
             END_GROUP(list, list_info, parent_group);
          }
+         break;
+      case SETTINGS_LIST_INPUT_TURBO_FIRE:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS),
+               parent_group);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_turbo_period,
+               MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+               turbo_period,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by = 1;
+         menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_turbo_duty_cycle,
+               MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
+               MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+               turbo_duty_cycle,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by = 1;
+         menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_turbo_mode,
+               MENU_ENUM_LABEL_INPUT_TURBO_MODE,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+               turbo_mode,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_turbo_mode;
+         menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_MODE_LAST-1), 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_turbo_default_button,
+               MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+               turbo_default_btn,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_turbo_default_button;
+         menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_DEFAULT_BUTTON_LAST-1), 1, true, true);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+
+         END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_RECORDING:
             START_GROUP(list, list_info, &group_info,
@@ -16968,6 +16998,21 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.menu_scroll_delay,
+               MENU_ENUM_LABEL_MENU_SCROLL_DELAY,
+               MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+               DEFAULT_MENU_SCROLL_DELAY,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by     = 1;
+         menu_settings_list_current_add_range(list, list_info, 1, 999, 1, true, true);
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.ui_companion_enable,
@@ -19322,6 +19367,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CRT_SWITCHRES,
       SETTINGS_LIST_AUDIO,
       SETTINGS_LIST_INPUT,
+      SETTINGS_LIST_INPUT_TURBO_FIRE,
       SETTINGS_LIST_INPUT_HOTKEY,
       SETTINGS_LIST_RECORDING,
       SETTINGS_LIST_FRAME_THROTTLING,

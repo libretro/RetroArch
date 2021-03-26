@@ -77,6 +77,7 @@ static void gfx_widget_leaderboard_display_context_destroy(void)
 
 static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 {
+   gfx_display_t *p_disp                         = disp_get_ptr();
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
    /* if there's nothing to display, just bail */
@@ -111,11 +112,13 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          y -= (widget_height + spacing);
 
          /* Backdrop */
-         gfx_display_draw_quad(video_info->userdata,
-            video_width, video_height,
-            (int)x, (int)y, widget_width, widget_height,
-            video_width, video_height,
-            p_dispwidget->backdrop_orig);
+         gfx_display_draw_quad(
+               p_disp,
+               video_info->userdata,
+               video_width, video_height,
+               (int)x, (int)y, widget_width, widget_height,
+               video_width, video_height,
+               p_dispwidget->backdrop_orig);
 
          /* Text */
          gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,

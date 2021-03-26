@@ -2161,6 +2161,14 @@ MSG_HASH(
    "Default active button for Turbo Mode 'Single Button'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "Turbo Fire"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Change turbo fire settings."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Haptic Feedback/Vibration"
    )
@@ -3978,6 +3986,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Maximum speed of the cursor when holding a direction to scroll."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Menu Scroll Delay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Initial delay in milliseconds when holding a direction to scroll."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,

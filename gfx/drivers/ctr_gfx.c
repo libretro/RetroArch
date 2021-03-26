@@ -30,6 +30,9 @@
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
+#endif
 
 #include "../font_driver.h"
 #include "../../ctr/gpu_old.h"
@@ -560,6 +563,9 @@ static bool ctr_frame(void* data, const void* frame,
 #ifdef HAVE_MENU
    bool menu_is_alive             = video_info->menu_is_alive;
 #endif
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active            = video_info->widgets_active;
+#endif
 
    if (!width || !height || !settings)
    {
@@ -887,6 +893,11 @@ static bool ctr_frame(void* data, const void* frame,
                (const struct font_params*)osd_params, NULL);
       }
    }
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+   if (widgets_active)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg)
@@ -1286,7 +1297,7 @@ static const video_poke_interface_t ctr_poke_interface = {
    ctr_apply_state_changes,
    ctr_set_texture_frame,
    ctr_set_texture_enable,
-   ctr_set_osd_msg,
+   font_driver_render_msg, /* ctr_set_osd_msg*/
    NULL,                   /* show_mouse */
    NULL,                   /* grab_mouse_toggle */
    NULL,                   /* get_current_shader */
@@ -1300,6 +1311,14 @@ static void ctr_get_poke_interface(void* data,
    (void)data;
    *iface = &ctr_poke_interface;
 }
+
+#ifdef HAVE_GFX_WIDGETS
+static bool ctr_gfx_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
 
 static bool ctr_set_shader(void* data,
                            enum rarch_shader_type type, const char* path)
@@ -1332,7 +1351,11 @@ video_driver_t video_ctr =
    NULL,
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   NULL,
 #endif
-   ctr_get_poke_interface
+   ctr_get_poke_interface,
+   NULL,
+#ifdef HAVE_GFX_WIDGETS
+   ctr_gfx_widgets_enabled
+#endif
 };

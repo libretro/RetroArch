@@ -134,13 +134,15 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       if (!state->queue[state->queue_read_index].badge)
       {
          /* Backdrop */
-         gfx_display_draw_quad(video_info->userdata,
-            video_width, video_height,
-            0, (int)state->y,
-            state->height,
-            state->height,
-            video_width, video_height,
-            p_dispwidget->backdrop_orig);
+         gfx_display_draw_quad(
+               p_disp,
+               video_info->userdata,
+               video_width, video_height,
+               0, (int)state->y,
+               state->height,
+               state->height,
+               video_width, video_height,
+               p_dispwidget->backdrop_orig);
 
          /* Icon */
          if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
@@ -184,26 +186,29 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       /* I _think_ state->unfold changes in another thread */
       scissor_me_timbers = (fabs(state->unfold - 1.0f) > 0.01);
       if (scissor_me_timbers)
-         gfx_display_scissor_begin(video_info->userdata,
-            video_width,
-            video_height,
-            state->height,
-            0,
-            (unsigned)((float)(state->width) * state->unfold),
-            state->height);
+         gfx_display_scissor_begin(
+               p_disp,
+               video_info->userdata,
+               video_width,
+               video_height,
+               state->height,
+               0,
+               (unsigned)((float)(state->width) * state->unfold),
+               state->height);
 
       /* Backdrop */
       gfx_display_draw_quad(
-         video_info->userdata,
-         video_width,
-         video_height,
-         state->height,
-         (int)state->y,
-         state->width,
-         state->height,
-         video_width,
-         video_height,
-         p_dispwidget->backdrop_orig);
+            p_disp,
+            video_info->userdata,
+            video_width,
+            video_height,
+            state->height,
+            (int)state->y,
+            state->width,
+            state->height,
+            video_width,
+            video_height,
+            p_dispwidget->backdrop_orig);
 
       /* Title */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,

@@ -221,6 +221,8 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
       case MENU_ENUM_LABEL_START_NET_RETROPAD:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
+      case MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS:
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
       case MENU_ENUM_LABEL_LATENCY_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LATENCY];
       case MENU_ENUM_LABEL_SAVING_SETTINGS:

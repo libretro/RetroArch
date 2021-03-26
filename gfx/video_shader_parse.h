@@ -190,19 +190,6 @@ bool video_shader_load_current_parameter_values(config_file_t *conf, struct vide
 
 
 /**
- * video_shader_load_root_config_into_shader:
- * @conf              : Preset file to read from.
- * @shader            : Shader handle.
- *
- * Loads preset file and all associated state (passes,
- * textures, imports, etc).
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool video_shader_load_root_config_into_shader(config_file_t *conf, struct video_shader *shader);
-
-
-/**
  * video_shader_load_preset_into_shader:
  * @path              : Path to preset file, could be a Simple Preset (including a #reference) or Full Preset
  * @shader            : Shader
@@ -212,20 +199,6 @@ bool video_shader_load_root_config_into_shader(config_file_t *conf, struct video
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_shader_load_preset_into_shader(const char *path, struct video_shader *shader);
-
-
-/**
- * video_shader_write_root_preset:
- * @conf              : Preset file to write to.
- * @shader            : Shader passes handle.
- * @preset_path       : Optional path to where the preset will be written.
- *
- * Writes preset and all associated state (passes,
- * textures, imports, etc) into @conf.
- * If @preset_path is not NULL, shader paths are saved
- * relative to it.
- **/
-bool video_shader_write_root_preset(const struct video_shader *shader, const char *preset_path);
 
 
 /**

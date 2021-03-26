@@ -668,13 +668,16 @@ static void ozone_menu_animation_update_time(
       float *ticker_pixel_increment,
       unsigned video_width, unsigned video_height)
 {
+   gfx_display_t *p_disp      = disp_get_ptr();
+   settings_t *settings       = config_get_ptr();
    /* Ozone uses DPI scaling
     * > Smooth ticker scaling multiplier is
     *   gfx_display_get_dpi_scale() multiplied by
     *   a small correction factor to achieve a
     *   default scroll speed equal to that of the
     *   non-smooth ticker */
-   *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(video_width, video_height) * 0.5f;
+   *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(p_disp,
+         settings, video_width, video_height) * 0.5f;
 }
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
@@ -685,6 +688,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone_handle_t *ozone               = NULL;
    settings_t *settings                = config_get_ptr();
    gfx_animation_t *p_anim             = anim_get_ptr();
+   gfx_display_t *p_disp               = disp_get_ptr();
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
    const char *directory_assets        = settings->paths.directory_assets;
 
@@ -705,7 +709,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone->last_width        = width;
    ozone->last_height       = height;
-   ozone->last_scale_factor = gfx_display_get_dpi_scale(width, height);
+   ozone->last_scale_factor = gfx_display_get_dpi_scale(p_disp,
+         settings, width, height);
 
    file_list_initialize(&ozone->selection_buf_old);
 
@@ -980,7 +985,8 @@ static bool ozone_init_font(
       ozone_font_data_t *font_data,
       bool is_threaded, char *font_path, float font_size)
 {
-   int glyph_width = 0;
+   int glyph_width       = 0;
+   gfx_display_t *p_disp = disp_get_ptr();
 
    /* Free existing */
    if (font_data->font)
@@ -994,7 +1000,8 @@ static bool ozone_init_font(
    font_data->glyph_width = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
 
    /* Create font */
-   font_data->font = gfx_display_font_file(font_path, font_size, is_threaded);
+   font_data->font = gfx_display_font_file(p_disp, 
+         font_path, font_size, is_threaded);
 
    if (!font_data->font)
       return false;
@@ -1735,7 +1742,7 @@ static void ozone_render(void *data,
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   scale_factor = gfx_display_get_dpi_scale(width, height);
+   scale_factor = gfx_display_get_dpi_scale(p_disp, settings, width, height);
 
    if ((scale_factor != ozone->last_scale_factor) ||
        (width != ozone->last_width) ||
@@ -2149,6 +2156,7 @@ static void ozone_draw_header(
 
    /* Separator */
    gfx_display_draw_quad(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -2411,6 +2419,7 @@ static void ozone_draw_footer(
 
    /* Separator */
    gfx_display_draw_quad(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -2956,6 +2965,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       background_color = ozone->theme->background;
 
    gfx_display_draw_quad(
+         p_disp,
          userdata,
          video_width,
          video_height,
@@ -2997,7 +3007,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             menu_framebuffer_opacity);
 
    /* Menu entries */
-   gfx_display_scissor_begin(userdata,
+   gfx_display_scissor_begin(p_disp,
+         userdata,
          video_width,
          video_height,
          ozone->sidebar_offset + (unsigned) ozone->dimensions_sidebar_width,
@@ -3152,6 +3163,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       gfx_display_set_alpha(ozone->pure_white, 1.0f);
       if (cursor_visible)
          gfx_display_draw_cursor(
+               p_disp,
                userdata,
                video_width,
                video_height,
