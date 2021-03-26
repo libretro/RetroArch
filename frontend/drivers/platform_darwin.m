@@ -403,20 +403,12 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
          home_dir_buf, "shaders_glsl",
          sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
 #endif
-#if TARGET_OS_IOS
-    int major, minor;
-    get_ios_version(&major, &minor);
-    if (major >= 10 )
-        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
-              bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-    else
-        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
-              home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif TARGET_OS_TV
+#ifdef HAVE_UPDATE_CORES
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
-                       bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+		    home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #else
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
+		    bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], home_dir_buf, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], home_dir_buf, "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
