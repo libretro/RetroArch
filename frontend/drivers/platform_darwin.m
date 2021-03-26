@@ -471,8 +471,12 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 
     char assets_zip_path[PATH_MAX_LENGTH];
 #if TARGET_OS_IOS
-    if (major > 8)
-       strcpy_literal(g_defaults.path_buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/");
+    {
+       int major, minor;
+       get_ios_version(&major, &minor);
+       if (major > 8)
+          strcpy_literal(g_defaults.path_buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/");
+    }
 #endif
 
 #if TARGET_OS_IOS
