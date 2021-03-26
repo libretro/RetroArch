@@ -16998,6 +16998,21 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.menu_scroll_delay,
+               MENU_ENUM_LABEL_MENU_SCROLL_DELAY,
+               MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+               DEFAULT_MENU_SCROLL_DELAY,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by     = 1;
+         menu_settings_list_current_add_range(list, list_info, 1, 999, 1, true, true);
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.ui_companion_enable,

@@ -23724,9 +23724,9 @@ static unsigned menu_event(
 
          first_held  = true;
          if (menu_scroll_fast)
-            delay_timer = initial_held ? 256 : 100;
+            delay_timer = initial_held ? settings->uints.menu_scroll_delay : 100;
          else
-            delay_timer = initial_held ? 256 : 20;
+            delay_timer = initial_held ? settings->uints.menu_scroll_delay : 20;
          delay_count = 0;
       }
 
