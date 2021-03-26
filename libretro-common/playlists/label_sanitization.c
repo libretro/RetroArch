@@ -136,7 +136,7 @@ static bool left_exclusion(char *left,
       strlcpy(comparison_string, strings[i], sizeof(comparison_string));
       string_to_upper(comparison_string);
 
-      if (string_is_equal(exclusion_string,
+      if (string_starts_with(exclusion_string,
                comparison_string))
          return true;
    }
