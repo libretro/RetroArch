@@ -6061,6 +6061,14 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MENU_SCROLL_FAST,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MENU_SCROLL_DELAY,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
 
          break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
@@ -7296,8 +7304,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_MENU_SCROLL_FAST,                                      PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_MENU_SCROLL_DELAY,                                     PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_PAUSE_LIBRETRO,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_PAUSE_NONACTIVE,                                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,                                 PARSE_ONLY_BOOL,   true},
