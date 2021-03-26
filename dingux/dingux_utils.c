@@ -31,6 +31,10 @@
 #define DINGUX_SHARPNESS_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/sharpness_downscaling"
 #define DINGUX_BATTERY_CAPACITY_FILE      "/sys/class/power_supply/battery/capacity"
 
+/* OpenDingux Beta defines */
+#define DINGUX_BATTERY_VOLTAGE_MIN        "/sys/class/power_supply/jz-battery/voltage_min_design"
+#define DINGUX_BATTERY_VOLTAGE_MAX        "/sys/class/power_supply/jz-battery/voltage_max_design"
+#define DINGUX_BATTERY_VOLTAGE_NOW        "/sys/class/power_supply/jz-battery/voltage_now"
 #define DINGUX_SCALING_MODE_ENVAR         "SDL_VIDEO_KMSDRM_SCALING_MODE"
 #define DINGUX_SCALING_SHARPNESS_ENVAR    "SDL_VIDEO_KMSDRM_SCALING_SHARPNESS"
 
@@ -172,13 +176,11 @@ bool dingux_ipu_reset(void)
 #endif
 }
 
-/* Fetches internal battery level */
-int dingux_get_battery_level(void)
+static int dingux_read_battery_sys_file(const char *path)
 {
-   const char *path  = DINGUX_BATTERY_CAPACITY_FILE;
-   int64_t file_len  = 0;
-   char *file_buf    = NULL;
-   int battery_level = 0;
+   int64_t file_len   = 0;
+   char *file_buf     = NULL;
+   int sys_file_value = 0;
 
    /* Check whether file exists */
    if (!path_is_valid(path))
@@ -186,19 +188,16 @@ int dingux_get_battery_level(void)
 
    /* Read file */
    if (!filestream_read_file(path, (void**)&file_buf, &file_len) ||
-       (file_len == 0))
+       (file_len == 0) ||
+       !file_buf)
       goto error;
 
    /* Convert to integer */
-   if (file_buf)
-   {
-      battery_level = atoi(file_buf);
+   sys_file_value = atoi(file_buf);
+   free(file_buf);
+   file_buf = NULL;
 
-      free(file_buf);
-      file_buf = NULL;
-   }
-
-   return battery_level;
+   return sys_file_value;
 
 error:
    if (file_buf)
@@ -208,4 +207,38 @@ error:
    }
 
    return -1;
+}
+
+/* Fetches internal battery level */
+int dingux_get_battery_level(void)
+{
+#if defined(DINGUX_BETA)
+   /* Taken from https://github.com/OpenDingux/gmenu2x/blob/master/src/battery.cpp
+    * No 'capacity' file in sysfs - Do a dumb approximation of the capacity
+    * using the current voltage reported and the min/max voltages of the
+    * battery */
+   int voltage_min = 0;
+   int voltage_max = 0;
+   int voltage_now = 0;
+
+   voltage_min = dingux_read_battery_sys_file(DINGUX_BATTERY_VOLTAGE_MIN);
+   if (voltage_min < 0)
+      return -1;
+
+   voltage_max = dingux_read_battery_sys_file(DINGUX_BATTERY_VOLTAGE_MAX);
+   if (voltage_max < 0)
+      return -1;
+
+   voltage_now = dingux_read_battery_sys_file(DINGUX_BATTERY_VOLTAGE_NOW);
+   if (voltage_now < 0)
+      return -1;
+
+   if ((voltage_max <= voltage_min) ||
+       (voltage_now <  voltage_min))
+      return -1;
+
+   return (int)(((voltage_now - voltage_min) * 100) / (voltage_max - voltage_min));
+#else
+   return dingux_read_battery_sys_file(DINGUX_BATTERY_CAPACITY_FILE);
+#endif
 }
