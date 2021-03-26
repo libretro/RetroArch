@@ -3819,6 +3819,10 @@ MSG_HASH(
    "menu_scroll_fast"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SCROLL_DELAY,
+   "menu_scroll_delay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_LOCK,
    "core_lock"
    )

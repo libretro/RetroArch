@@ -557,6 +557,8 @@ static const bool menu_show_sublabels                = true;
 static const bool menu_dynamic_wallpaper_enable      = true;
 static const bool menu_scroll_fast                   = false;
 
+#define DEFAULT_MENU_SCROLL_DELAY 256
+
 #define DEFAULT_MENU_TICKER_TYPE (TICKER_TYPE_LOOP)
 static const float menu_ticker_speed        = 2.0f;
 
