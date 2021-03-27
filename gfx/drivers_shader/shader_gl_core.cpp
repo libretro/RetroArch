@@ -1080,17 +1080,23 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       if (refl->location.ubo_vertex >= 0 || refl->location.ubo_fragment >= 0)
       {
          float v4[4];
-         glslang_build_vec4(v4, width, height);
+         v4[0] = (float)(width);
+         v4[1] = (float)(height);
+         v4[2] = 1.0f / (float)(width);
+         v4[3] = 1.0f / (float)(height);
          if (refl->location.ubo_vertex >= 0)
             glUniform4fv(refl->location.ubo_vertex, 1, v4);
          if (refl->location.ubo_fragment >= 0)
             glUniform4fv(refl->location.ubo_fragment, 1, v4);
       }
       else
-         glslang_build_vec4(
-               reinterpret_cast<float *>(data + refl->ubo_offset),
-               width,
-               height);
+      {
+         float *_data = reinterpret_cast<float *>(data + refl->ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
    }
 
    if (refl->push_constant)
@@ -1099,18 +1105,24 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             refl->location.push_fragment >= 0)
       {
          float v4[4];
-         glslang_build_vec4(v4, width, height);
+         v4[0] = (float)(width);
+         v4[1] = (float)(height);
+         v4[2] = 1.0f / (float)(width);
+         v4[3] = 1.0f / (float)(height);
          if (refl->location.push_vertex >= 0)
             glUniform4fv(refl->location.push_vertex, 1, v4);
          if (refl->location.push_fragment >= 0)
             glUniform4fv(refl->location.push_fragment, 1, v4);
       }
       else
-         glslang_build_vec4(
-               reinterpret_cast<float *>
-               (push_constant_buffer.data() + refl->push_constant_offset),
-               width,
-               height);
+      {
+         float *data = reinterpret_cast<float *>
+               (push_constant_buffer.data() + refl->push_constant_offset);
+         data[0]     = (float)(width);
+         data[1]     = (float)(height);
+         data[2]     = 1.0f / (float)(width);
+         data[3]     = 1.0f / (float)(height);
+      }
    }
 }
 
@@ -1231,17 +1243,23 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       if (refl[index].location.ubo_vertex >= 0 || refl[index].location.ubo_fragment >= 0)
       {
          float v4[4];
-         glslang_build_vec4(v4, width, height);
+         v4[0] = (float)(width);
+         v4[1] = (float)(height);
+         v4[2] = 1.0f / (float)(width);
+         v4[3] = 1.0f / (float)(height);
          if (refl[index].location.ubo_vertex >= 0)
             glUniform4fv(refl[index].location.ubo_vertex, 1, v4);
          if (refl[index].location.ubo_fragment >= 0)
             glUniform4fv(refl[index].location.ubo_fragment, 1, v4);
       }
       else
-         glslang_build_vec4(
-               reinterpret_cast<float *>(data + refl[index].ubo_offset),
-               width,
-               height);
+      {
+         float *_data = reinterpret_cast<float *>(data + refl[index].ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
    }
 
    if (refl[index].push_constant)
@@ -1249,17 +1267,23 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       if (refl[index].location.push_vertex >= 0 || refl[index].location.push_fragment >= 0)
       {
          float v4[4];
-         glslang_build_vec4(v4, width, height);
+         v4[0] = (float)(width);
+         v4[1] = (float)(height);
+         v4[2] = 1.0f / (float)(width);
+         v4[3] = 1.0f / (float)(height);
          if (refl[index].location.push_vertex >= 0)
             glUniform4fv(refl[index].location.push_vertex, 1, v4);
          if (refl[index].location.push_fragment >= 0)
             glUniform4fv(refl[index].location.push_fragment, 1, v4);
       }
       else
-         glslang_build_vec4(
-               reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset),
-               width,
-               height);
+      {
+         float *data = reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset);
+         data[0]     = (float)(width);
+         data[1]     = (float)(height);
+         data[2]     = 1.0f / (float)(width);
+         data[3]     = 1.0f / (float)(height);
+      }
    }
 }
 

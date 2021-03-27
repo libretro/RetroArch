@@ -1,4 +1,6 @@
 # Future
+
+# 1.9.1
 - ANDROID: Implementation of fullscreen over notch function (for Android 9.0 and up)
 - CHEATS: Maximum search value corrections
 - CHEEVOS: Generic memory mapping using rcheevos

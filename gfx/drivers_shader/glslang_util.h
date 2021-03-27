@@ -129,8 +129,6 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
       const char *name, const char **names,
       unsigned *index);
 
-void glslang_build_vec4(float *data, unsigned width, unsigned height);
-
 unsigned glslang_num_miplevels(unsigned width, unsigned height);
 
 RETRO_END_DECLS

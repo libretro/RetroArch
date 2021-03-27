@@ -2029,16 +2029,22 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       return;
 
    if (data && refl[index].uniform)
-      glslang_build_vec4(
-            reinterpret_cast<float *>(data + refl[index].ubo_offset),
-            width,
-            height);
+   {
+      float *_data = reinterpret_cast<float *>(data + refl[index].ubo_offset);
+      _data[0]     = (float)(width);
+      _data[1]     = (float)(height);
+      _data[2]     = 1.0f / (float)(width);
+      _data[3]     = 1.0f / (float)(height);
+   }
 
    if (refl[index].push_constant)
-      glslang_build_vec4(
-            reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2)),
-            width,
-            height);
+   {
+      float *data = reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2));
+      data[0]     = (float)(width);
+      data[1]     = (float)(height);
+      data[2]     = 1.0f / (float)(width);
+      data[3]     = 1.0f / (float)(height);
+   }
 }
 
 void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
@@ -2053,17 +2059,23 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    auto &refl = reflection.semantics[semantic];
 
    if (data && refl.uniform)
-      glslang_build_vec4(
-            reinterpret_cast<float *>(data + refl.ubo_offset),
-            width,
-            height);
+   {
+      float *_data = reinterpret_cast<float *>(data + refl.ubo_offset);
+      _data[0]     = (float)(width);
+      _data[1]     = (float)(height);
+      _data[2]     = 1.0f / (float)(width);
+      _data[3]     = 1.0f / (float)(height);
+   }
 
    if (refl.push_constant)
-      glslang_build_vec4(
-            reinterpret_cast<float *>
-            (push.buffer.data() + (refl.push_constant_offset >> 2)),
-            width,
-            height);
+   {
+      float *data = reinterpret_cast<float *>
+            (push.buffer.data() + (refl.push_constant_offset >> 2));
+      data[0]     = (float)(width);
+      data[1]     = (float)(height);
+      data[2]     = 1.0f / (float)(width);
+      data[3]     = 1.0f / (float)(height);
+   }
 }
 
 void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
