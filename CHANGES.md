@@ -1,6 +1,7 @@
 # Future
 
 # 1.9.1
+- 3DS: Graphics widgets support
 - ANDROID: Implementation of fullscreen over notch function (for Android 9.0 and up)
 - CHEATS: Maximum search value corrections
 - CHEEVOS: Generic memory mapping using rcheevos
@@ -10,10 +11,20 @@
 - INPUT MAPPING: Refresh bind list on device type change
 - INPUT MAPPING/REMAPPING: Minor bugfix - Remap file browsing starts navigation at input_remapping_directory even if the core-subdir (where saved files go) exists
 Having remaps for many different cores makes finding the active core files cumbersome, especially because remaps are not compatible between different cores (but maybe for cores emulating the same hardware)
+- IOS: Take out 'Core Downloader' from iOS 9/iOS 11 builds
+- 
 - INPUT MAPPING/REMAPPING: Major bugfix - Remap file having a different device type requires manual intervention after loading for the core to register the type properly
 - LIBRETRO: Add API extension for cores to query the number of active inputs provided by the frontend
 - LOCALIZATION: Add Finnish language
+- MAC: Code signing/notarization
+- MENU: Relocate 'Menu Scroll' settings.
+- MENU: Separate 'Turbo Fire' menu.
+- MENU: Dropdown menu for 'Custom Aspect Ratio' setting.
+- MENU: Customizable menu scroll hold delay.
 - MENU/RGUI: Add 3:2 and 3:2 (centered) aspects
+- OGA: This keeps the tradition DRM driver along with the OGA one. The probe
+function skips the driver if the screen is non rotated to fall back to
+the regular DRM driver.
 - OVERLAYS: Hide Overlay When Gamepad is Connected. Overlays will be hidden automatically when a gamepad is connected in port 1, and shown again when the gamepad is disconnected.
 - PLAYLISTS/PORTABLE: Fixed first load initialization
 - RBUF/ANIMATIONS: Simplify gfx_animation by switching from dynarray to rbuf
