@@ -2,8 +2,14 @@
 
 # 1.9.1
 - 3DS: Graphics widgets support
+- 3DS: On error, only init gfx on salamander build. This prevents graphical issues if the gfx is already initialized.
+Which should always be the case if called from a running core
+- 3DS: Update error applet
+- 3DS: Enable online Core Updater
+- 3DS: Guard threading
 - ANDROID: Implementation of fullscreen over notch function (for Android 9.0 and up)
-- AUDIO: Memalign audio buffers to 64 bytes. This is the most common cache line size, helps with performance. Also fixes issues with platforms like PSP that wrongly assume that malloc returns aligned buffers (to 16bytes). This recently broke the PSP builds.
+- AUDIO: Memalign audio buffers to 64 bytes. This is the most common cache line size, helps with performance. Also fixes issues with platforms like PSP that wrongly assume that malloc returns aligned buffers (to 16bytes). This recently broke the PSP builds
+- AUDIO/XAUDIO2: Fix threaded audio bugs with cores like Dinothawr
 - CONFIG: Add support for saving per-directory core options and deleting core option overrides
 - CONFIG/DIRS: Enable configuration of the directories used for Favorites, History, Images, Music and Video playlists
 - CONFIG/OVERRIDES: Fix empty override paths when launching without content
@@ -11,9 +17,16 @@
 - CHEEVOS: Generic memory mapping using rcheevos
 - CHEEVOS: Ensure badge textures are released before video driver is deinitialized. Should fix crashes with slang shaders.
 - CHEEVOS: Include achievement runtime state in save states
+- CHEEVOS: Prevent hardcore toggle when emu-handled cheats are active
+- CHEEVOS: Add confirmation submenu to achievements hardcore toggle
 - CORE OPTIONS: Add option to reset all core options for current core/content
 - CORE OPTIONS: Add per-folder core options
 - CORE DOWNLOADER: Enhanced core downloader search functionality
+- D3D10: Should now be able to use shaders with hardware-accelerated libretro cores
+- D3D11: Should now be able to use shaders with hardware-accelerated libretro cores
+- D3D11: Add flip model support - fallback to blit model for OSes where flip model is not supported (windows 7 and earlier). Will add a menu option later allowing the user to switch inbetween the two
+- D3D12: Should now be able to use shaders with hardware-accelerated libretro cores
+- (D3D10/11/12) Increase sprite capacity, we need this so that the hardware rendered menu drivers doesn't glitch out
 - DATABASE: Fix crash that could happen when selecting cursor
 - DATABASE/EXPLORE: Fix - Prevent segfault when accessing 'Explore' menu
 - EMSCRIPTEN: Only report back one screen pointer for rwebinput, fixes lockup when clicking on an overlay
@@ -23,9 +36,14 @@
 - INPUT MAPPING/REMAPPING: Minor bugfix - Remap file browsing starts navigation at input_remapping_directory even if the core-subdir (where saved files go) exists
 Having remaps for many different cores makes finding the active core files cumbersome, especially because remaps are not compatible between different cores (but maybe for cores emulating the same hardware)
 - IOS: Take out 'Core Downloader' from iOS 9/iOS 11 builds
+- INPUT: Keyboard device mapper rework
 - INPUT: New input bind order scan/clear fix
 - INPUT: Duplicate key event blocking additions
 - INPUT: Prevent duplicate key events with hotkeys + keyboard device type
+- INPUT/GAME FOCUS: Add option to automatically enable 'game focus' mode when running/resuming content
+- INPUT/X11: Enable keyboard input when mouse cursor is not inside the RetroArch window but window still has focus
+- INPUT/X11: Fix mouse input when mouse is grabbed
+- INPUT/UDEV/RUMBLE: Fix rumble.
 - INPUT/WINDOWS/DINPUT: Mouse grabbing/clipping with Alt-Tab
 - INPUT/WINDOWS/DINPUT: Mouse grab fixes
 - INPUT/WINDOWS/RAWINPUT: Key position fixes
@@ -48,7 +66,6 @@ Having remaps for many different cores makes finding the active core files cumbe
 - MENU/ANIMATIONS: Fix non-smooth text ticker + reduce line ticker code duplication
 - MENU: Add 'L2 + R2' menu toggle gamepad combo
 - MENU: Menu text improvements; clarifications, consistency, text mistakes, 
-- MENU: On-Screen Notifications' menu clean-ups
 - MENU: Tweak menu scroll initial hold delays
 - MENU: Restrict menu acceleration to navigation buttons
 - MENU: Add 'Menu Driver' setting to 'User Interface'
@@ -57,6 +74,8 @@ Having remaps for many different cores makes finding the active core files cumbe
 - MENU: Dropdown menu for 'Custom Aspect Ratio' setting.
 - MENU: Reorder Mouse Index next to Device Index
 - MENU: Submenu for Device Index/Mouse Index
+- MENU/NOTIFICATIONS: On-Screen Notifications' menu clean-ups
+- MENU/NOTIFICATIONS: Add option to show/hide Refresh Rate notification
 - MENU/FILEBROWSER: Start auto-selecting last used path for more file browser menu entries
 - MENU/INPUT: Input port label adjustments
 - MENU/INPUT/XMB: Proper control port icons
@@ -66,28 +85,51 @@ Having remaps for many different cores makes finding the active core files cumbe
 - MENU/DESKTOP: Fix mouse cursor limited by window range on F5 press
 - MENU/DESKTOP/WINDOWS: Remove broken 'Update RetroArch' functionality for Windows. We want this to not only be system agnostic if we bring it back, but also work outside of the Qt desktop interface
 - MENU/RGUI: Add 3:2, 5:3 and 3:2/5:3 (centered) aspects
+- MENU/RGUI/TEXT RENDERING: Add Russian language text support
+- MENU/RGUI/TEXT RENDERING: Add support for CJK punctuation glyphs
+- MIDI/WINMM: Recover from MIDI messages not handled by the device
+- MIDI/WINMM: Fix winmm midi driver hanging on content closing
 - NETWORK: Add READ/WRITE_CORE_MEMORY network commands
+- NETWORK/NETPLAY: Attempt IPv4 when IPv6 fails
+- OGA/VIDEO: support for OGS
 - OGA: This keeps the tradition DRM driver along with the OGA one. The probe
 function skips the driver if the screen is non rotated to fall back to
 the regular DRM driver.
 - OGA: Fix messages from not disappearing
+- OGA: Implement RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER. This is a faster rendering codepath for software rendered libretro cores that some libretro cores use right now. Video drivers in RetroArch have to explicitly implement this for this codepath to work at runtime.
+- OPENDINGUX/SDL: OSD font clean-up
 - OVERLAYS: Hide Overlay When Gamepad is Connected. Overlays will be hidden automatically when a gamepad is connected in port 1, and shown again when the gamepad is disconnected.
 - PLAYLISTS/PORTABLE: Fixed first load initialization
 - PS2: Added Multitap support (up to 8 players)
 - PS2: Fix for not recognized digital and other non-standard controllers
+- PS2: Fix Quitting from RA
+- PS2: Add Audio mixer
 - RBUF/ANIMATIONS: Simplify gfx_animation by switching from dynarray to rbuf
 - RBUF/CORE UPDATER: Replace static entries array with dynamic array via RBUF library
 - RBUF/M3U: Replace static entries array with dynamic array via RBUF library
 - SDL2/VIDEO: Get the SDL2 video driver to work in Wayland/KMS
+- SAVESTATES/SAVEFILES: Ensure save file and playlist compression is disabled by default
 - SHADERS: Add option to remember last selected shader preset/shader pass directories
 - SHADERS: Use last selected shader preset directory when changing shaders via previous/next hotkeys
 - SHADERS: Remove Parameters line
+- SHADERS: Shaders fix for duplicate parameters loading bug
 - SHADERS/SLANG: Fix slang shaders with rotation
+- STREAMING/FFMPEG: Add Facebook Game Stream option (for embedded ffmpeg core-enabled RetroArch builds)
 - SWITCH: Fix input bind icons being off by one line
+- VIDEO/DRM GO2: Dynamic resolution support
 - VIDEO FILTERS: Add 'Upscale_256x-320x240' video filter
 - VITA: Disable temporarily VitaGL
+- VITA: Fix bubble name
+- WIFI/LAKKA: Add a proper WiFi menu, with Enable/Disable & Disconnect options. This also allows WiFi passwords to be remembered. The underlying tool (connman) allows to store passswords (that's why it auto connects whenever you boot a Lakka device), so we expose this so that the user does not have to re-input the pass when connecting to a saved wifi.
+- WINDOWS: Add support for accelerators to main win32 message loop
+- WINDOWS: Add accelerators for Open (Ctrl+O) and Fullscreen (Alt+Enter)
+- WINDOWS: Fixes some file I/O failures on Windows when paths are longer than 260 characters.
+- WINDOWS/XP: The OpenGL 1 video driver is now the default for maximum backwards compatibility upon first startup. It's of course always possible for the user to change this.
+- WINDOWS/MENUBAR: Load accelerators, Localize Win32 menu items to current language, and display shortcut keys
 - WINDOWS/MENUBAR: Add 'Reinit' to Menubar
 - WINDOWS/MSVC: Fix rewind crash on MSVC build when using SSE2
+- UWP/VFS: Use Win32 file APIs when possible - better file I/O performance
+- WIIU: Faster startup times - remove the path_is_valid() call when loading textures
 - WIIU: Fix touchscreen mouse emulation
 
 # 1.9.0
