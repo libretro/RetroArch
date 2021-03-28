@@ -3,37 +3,91 @@
 # 1.9.1
 - 3DS: Graphics widgets support
 - ANDROID: Implementation of fullscreen over notch function (for Android 9.0 and up)
+- AUDIO: Memalign audio buffers to 64 bytes. This is the most common cache line size, helps with performance. Also fixes issues with platforms like PSP that wrongly assume that malloc returns aligned buffers (to 16bytes). This recently broke the PSP builds.
+- CONFIG: Add support for saving per-directory core options and deleting core option overrides
+- CONFIG/DIRS: Enable configuration of the directories used for Favorites, History, Images, Music and Video playlists
+- CONFIG/OVERRIDES: Fix empty override paths when launching without content
 - CHEATS: Maximum search value corrections
 - CHEEVOS: Generic memory mapping using rcheevos
 - CHEEVOS: Ensure badge textures are released before video driver is deinitialized. Should fix crashes with slang shaders.
+- CHEEVOS: Include achievement runtime state in save states
+- CORE OPTIONS: Add option to reset all core options for current core/content
+- CORE OPTIONS: Add per-folder core options
 - CORE DOWNLOADER: Enhanced core downloader search functionality
+- DATABASE: Fix crash that could happen when selecting cursor
+- DATABASE/EXPLORE: Fix - Prevent segfault when accessing 'Explore' menu
+- EMSCRIPTEN: Only report back one screen pointer for rwebinput, fixes lockup when clicking on an overlay
+- FONTS/FREETYPE: Use fontconfig to select fonts if available
 - INPUT: Add hold mode for turbo fire 'Single Button'
 - INPUT MAPPING: Refresh bind list on device type change
 - INPUT MAPPING/REMAPPING: Minor bugfix - Remap file browsing starts navigation at input_remapping_directory even if the core-subdir (where saved files go) exists
 Having remaps for many different cores makes finding the active core files cumbersome, especially because remaps are not compatible between different cores (but maybe for cores emulating the same hardware)
 - IOS: Take out 'Core Downloader' from iOS 9/iOS 11 builds
-- 
+- INPUT: New input bind order scan/clear fix
+- INPUT: Duplicate key event blocking additions
+- INPUT: Prevent duplicate key events with hotkeys + keyboard device type
+- INPUT/WINDOWS/DINPUT: Mouse grabbing/clipping with Alt-Tab
+- INPUT/WINDOWS/DINPUT: Mouse grab fixes
+- INPUT/WINDOWS/RAWINPUT: Key position fixes
+- INPUT/WINDOWS/RAWINPUT: Mouse grab fixes
+- INPUT/WINDOWS/RAWINPUT: Prevent outside window mouse clicks when grabbed
 - INPUT MAPPING/REMAPPING: Major bugfix - Remap file having a different device type requires manual intervention after loading for the core to register the type properly
 - LIBRETRO: Add API extension for cores to query the number of active inputs provided by the frontend
+- LIBRETRO: Ensure RARCH_CTL_CORE_OPTIONS_LIST_GET returns false if no core options are available
+- LINUX: Adjust brightness according to the limit. Seems like some platforms feature non-standard maximums, but the variable is correclty exported for us to use
 - LOCALIZATION: Add Finnish language
+- LOGS/SHADER: Shader log spam reduction
+- LOGS/CONFIG: Config logging cleanup
+- LOGS/SAVESTATE: Config logging cleanup
 - MAC: Code signing/notarization
+- MAC: Fix a leak with NSTemporaryDirectory() on ARC (Automatic Reference Counting) code
+- MAC: Support bundle assets extraction on macOS
+- MAC: Universal Metal build for both ARM and Intel Macs
+- MAC/UNIVERSAL: Add CoreAudio3 audio driver for Metal Universal build
+- MAC/IOS: Only extract assets once on first install
+- MENU/ANIMATIONS: Fix non-smooth text ticker + reduce line ticker code duplication
+- MENU: Add 'L2 + R2' menu toggle gamepad combo
+- MENU: Menu text improvements; clarifications, consistency, text mistakes, 
+- MENU: On-Screen Notifications' menu clean-ups
+- MENU: Tweak menu scroll initial hold delays
+- MENU: Restrict menu acceleration to navigation buttons
+- MENU: Add 'Menu Driver' setting to 'User Interface'
 - MENU: Relocate 'Menu Scroll' settings.
 - MENU: Separate 'Turbo Fire' menu.
 - MENU: Dropdown menu for 'Custom Aspect Ratio' setting.
+- MENU: Reorder Mouse Index next to Device Index
+- MENU: Submenu for Device Index/Mouse Index
+- MENU/FILEBROWSER: Start auto-selecting last used path for more file browser menu entries
+- MENU/INPUT: Input port label adjustments
+- MENU/INPUT/XMB: Proper control port icons
+- MENU/INPUT/OZONE: Proper control port icons
+- MENU/QUICK MENU: Add remap clearing ability under Quick Menu controls
 - MENU: Customizable menu scroll hold delay.
-- MENU/RGUI: Add 3:2 and 3:2 (centered) aspects
+- MENU/DESKTOP: Fix mouse cursor limited by window range on F5 press
+- MENU/DESKTOP/WINDOWS: Remove broken 'Update RetroArch' functionality for Windows. We want this to not only be system agnostic if we bring it back, but also work outside of the Qt desktop interface
+- MENU/RGUI: Add 3:2, 5:3 and 3:2/5:3 (centered) aspects
+- NETWORK: Add READ/WRITE_CORE_MEMORY network commands
 - OGA: This keeps the tradition DRM driver along with the OGA one. The probe
 function skips the driver if the screen is non rotated to fall back to
 the regular DRM driver.
+- OGA: Fix messages from not disappearing
 - OVERLAYS: Hide Overlay When Gamepad is Connected. Overlays will be hidden automatically when a gamepad is connected in port 1, and shown again when the gamepad is disconnected.
 - PLAYLISTS/PORTABLE: Fixed first load initialization
+- PS2: Added Multitap support (up to 8 players)
+- PS2: Fix for not recognized digital and other non-standard controllers
 - RBUF/ANIMATIONS: Simplify gfx_animation by switching from dynarray to rbuf
 - RBUF/CORE UPDATER: Replace static entries array with dynamic array via RBUF library
 - RBUF/M3U: Replace static entries array with dynamic array via RBUF library
+- SDL2/VIDEO: Get the SDL2 video driver to work in Wayland/KMS
 - SHADERS: Add option to remember last selected shader preset/shader pass directories
 - SHADERS: Use last selected shader preset directory when changing shaders via previous/next hotkeys
 - SHADERS: Remove Parameters line
+- SHADERS/SLANG: Fix slang shaders with rotation
 - SWITCH: Fix input bind icons being off by one line
+- VIDEO FILTERS: Add 'Upscale_256x-320x240' video filter
+- VITA: Disable temporarily VitaGL
+- WINDOWS/MENUBAR: Add 'Reinit' to Menubar
+- WINDOWS/MSVC: Fix rewind crash on MSVC build when using SSE2
 - WIIU: Fix touchscreen mouse emulation
 
 # 1.9.0
