@@ -7,11 +7,20 @@ Which should always be the case if called from a running core
 - 3DS: Update error applet
 - 3DS: Enable online Core Updater
 - 3DS: Guard threading
+- 3DS: Allow sideways screen rotation
+- 3DS: Enable threading and add a threaded audio driver
 - ANDROID: Implementation of fullscreen over notch function (for Android 9.0 and up)
+- ANDROID: Add Play Store module support.
+- ANDROID: Add option to switch all installed cores to Play Store versions
 - AUDIO: Memalign audio buffers to 64 bytes. This is the most common cache line size, helps with performance. Also fixes issues with platforms like PSP that wrongly assume that malloc returns aligned buffers (to 16bytes). This recently broke the PSP builds
+- AUDIO/ALSA: Fix float format detection
+- AUDIO/JACK: Deinterleave in the process callback. This allows us to avoid the extra copy to the deinterleave buffer and lets us use only a single jack ringbuffer.
+- AUDIO/JACK: (Audio/JACK) Fix non-blocking write. Previously we would wait on the condition variable even in the non-blocking case. This improves fast-forward performance massively and brings JACK in line with other backends in that regard.
 - AUDIO/XAUDIO2: Fix threaded audio bugs with cores like Dinothawr
 - CONFIG: Add support for saving per-directory core options and deleting core option overrides
+- CONFIG: Enable saving of changed parameters when '#include' directives are used
 - CONFIG/DIRS: Enable configuration of the directories used for Favorites, History, Images, Music and Video playlists
+- CONFIG/REMAPS: Allow loading core remaps without content
 - CONFIG/OVERRIDES: Fix empty override paths when launching without content
 - CHEATS: Maximum search value corrections
 - CHEEVOS: Generic memory mapping using rcheevos
@@ -19,51 +28,82 @@ Which should always be the case if called from a running core
 - CHEEVOS: Include achievement runtime state in save states
 - CHEEVOS: Prevent hardcore toggle when emu-handled cheats are active
 - CHEEVOS: Add confirmation submenu to achievements hardcore toggle
+- CHEEVOS: Calculate leaderboard widget spacing based on video resolution
+- CHEEVOS: Show unsupported core message when viewing achievement list for unsupported core
+- CHEEVOS: Allow disabling leaderboard notifications and trackers separately
+- CHEEVOS: Add display widget for active leaderboards
+- CHEEVOS/CORE OPTIONS: Core options blacklist. Disables hardcore mode when certain core options are set.
+- CLI: Add option for quitting on close content
+- CONTEXT/DRIVER SWITCHING: Allow context switching from gl to glcore
 - CORE OPTIONS: Add option to reset all core options for current core/content
 - CORE OPTIONS: Add per-folder core options
+- CRT/SWITCHRES: Improvements
+- CRT/SWITCHRES: Low resolution switch bug fix - This allows resolutions lower that 32x224 like 256x224 to work
 - CORE DOWNLOADER: Enhanced core downloader search functionality
 - D3D10: Should now be able to use shaders with hardware-accelerated libretro cores
 - D3D11: Should now be able to use shaders with hardware-accelerated libretro cores
+- D3D11: Skip shader/stock blend when we don't have a texture. This happens if the core calls video_cb with the frame set to null on
+the first frame, and was causing black screens/driver resets. The ffmpeg core seems to do this.
+- D3D11: Fix shaders with scaled framebuffers
 - D3D11: Add flip model support - fallback to blit model for OSes where flip model is not supported (windows 7 and earlier). Will add a menu option later allowing the user to switch inbetween the two
 - D3D12: Should now be able to use shaders with hardware-accelerated libretro cores
-- (D3D10/11/12) Increase sprite capacity, we need this so that the hardware rendered menu drivers doesn't glitch out
+- D3D10/11/12: Increase sprite capacity, we need this so that the hardware rendered menu drivers doesn't glitch out
+- DRM: Fix race condition in drm_surface_set_aspect
+- DRM/KMS: add support for custom hdmi_timings / modes
 - DATABASE: Fix crash that could happen when selecting cursor
 - DATABASE/EXPLORE: Fix - Prevent segfault when accessing 'Explore' menu
 - EMSCRIPTEN: Only report back one screen pointer for rwebinput, fixes lockup when clicking on an overlay
+- FILEIO/PERFORMANCE: Only attempt to call dir_check_defaults once per runtime session
+- FILEIO/PERFORMANCE/3DS: Increase file buffer size and savestate chunk size. This seems to help with saving large savestates.
+- FONTS: Improve handling of Arabic and Persian text
 - FONTS/FREETYPE: Use fontconfig to select fonts if available
 - INPUT: Add hold mode for turbo fire 'Single Button'
 - INPUT MAPPING: Refresh bind list on device type change
 - INPUT MAPPING/REMAPPING: Minor bugfix - Remap file browsing starts navigation at input_remapping_directory even if the core-subdir (where saved files go) exists
 Having remaps for many different cores makes finding the active core files cumbersome, especially because remaps are not compatible between different cores (but maybe for cores emulating the same hardware)
 - IOS: Take out 'Core Downloader' from iOS 9/iOS 11 builds
+- IOS: IOSApp doesn't crash anymore when a file is shared to it
 - INPUT: Keyboard device mapper rework
 - INPUT: New input bind order scan/clear fix
 - INPUT: Duplicate key event blocking additions
 - INPUT: Prevent duplicate key events with hotkeys + keyboard device type
+- INPUT: Keyboard LED driver
+- INPUT/AUTOCONFIG: Allow controllers with no/empty names to work.
 - INPUT/GAME FOCUS: Add option to automatically enable 'game focus' mode when running/resuming content
+- INPUT/HOTKEYS: Hotkey for Close Content / Unload Core
+- INPUT/LIBCEC: Map libcec-daemon keys to RETROK
 - INPUT/X11: Enable keyboard input when mouse cursor is not inside the RetroArch window but window still has focus
 - INPUT/X11: Fix mouse input when mouse is grabbed
 - INPUT/UDEV/RUMBLE: Fix rumble.
+- INPUT/WINDOWS/DINPUT: Simultaneous shift sticky fix
+- INPUT/WINDOWS/DINPUT: Prevent Win-key from opening Start Menu
+- INPUT/WINDOWS/DINPUT: Option for disabling Windows hotkeys
 - INPUT/WINDOWS/DINPUT: Mouse grabbing/clipping with Alt-Tab
 - INPUT/WINDOWS/DINPUT: Mouse grab fixes
 - INPUT/WINDOWS/RAWINPUT: Key position fixes
 - INPUT/WINDOWS/RAWINPUT: Mouse grab fixes
 - INPUT/WINDOWS/RAWINPUT: Prevent outside window mouse clicks when grabbed
+- INPUT/WINDOWS/RAWINPUT: Option for disabling Windows hotkeys
 - INPUT MAPPING/REMAPPING: Major bugfix - Remap file having a different device type requires manual intervention after loading for the core to register the type properly
+- JSON: New faster json parser/writer library rjson
+- JSON/RJSON: Replace rapidjson parser/writer in discord-rpc with rjson
 - LIBRETRO: Add API extension for cores to query the number of active inputs provided by the frontend
 - LIBRETRO: Ensure RARCH_CTL_CORE_OPTIONS_LIST_GET returns false if no core options are available
+- LIBRETRO: Add API extension for overriding frontend audio latency
+- LIBRETRO: Add API extension for cores to monitor frontend audio buffer occupancy
+- LINUX: Also show /run/media or /run/media/$USER in drives list
 - LINUX: Adjust brightness according to the limit. Seems like some platforms feature non-standard maximums, but the variable is correclty exported for us to use
 - LOCALIZATION: Add Finnish language
 - LOGS/SHADER: Shader log spam reduction
 - LOGS/CONFIG: Config logging cleanup
 - LOGS/SAVESTATE: Config logging cleanup
+- MAC: Apple Silicon/Mac M1 support
 - MAC: Code signing/notarization
 - MAC: Fix a leak with NSTemporaryDirectory() on ARC (Automatic Reference Counting) code
 - MAC: Support bundle assets extraction on macOS
 - MAC: Universal Metal build for both ARM and Intel Macs
 - MAC/UNIVERSAL: Add CoreAudio3 audio driver for Metal Universal build
 - MAC/IOS: Only extract assets once on first install
-- MENU/ANIMATIONS: Fix non-smooth text ticker + reduce line ticker code duplication
 - MENU: Add 'L2 + R2' menu toggle gamepad combo
 - MENU: Menu text improvements; clarifications, consistency, text mistakes, 
 - MENU: Tweak menu scroll initial hold delays
@@ -74,6 +114,12 @@ Having remaps for many different cores makes finding the active core files cumbe
 - MENU: Dropdown menu for 'Custom Aspect Ratio' setting.
 - MENU: Reorder Mouse Index next to Device Index
 - MENU: Submenu for Device Index/Mouse Index
+- MENU: Reorganize User Interface menu
+- MENU: Add 'Remove DSP Plugin' menu entry
+- MENU: Hide 'Auto-Shader Delay' menu setting when shaders are unavailable
+- MENU/ANIMATIONS: Fix non-smooth text ticker + reduce line ticker code duplication
+- MENU/ANIMATIONS/OZONE: Add cursor wiggle animation
+- MENU/ANIMATIONS/OZONE: Implement wiggling for main menu when wrap-around is disabled
 - MENU/NOTIFICATIONS: On-Screen Notifications' menu clean-ups
 - MENU/NOTIFICATIONS: Add option to show/hide Refresh Rate notification
 - MENU/FILEBROWSER: Start auto-selecting last used path for more file browser menu entries
@@ -81,15 +127,19 @@ Having remaps for many different cores makes finding the active core files cumbe
 - MENU/INPUT/XMB: Proper control port icons
 - MENU/INPUT/OZONE: Proper control port icons
 - MENU/QUICK MENU: Add remap clearing ability under Quick Menu controls
+- MENU/QUICK MENU: Cap 'State Slot' drop-down list to a maximum of 1000 (+Auto) entries
 - MENU: Customizable menu scroll hold delay.
 - MENU/DESKTOP: Fix mouse cursor limited by window range on F5 press
+- MENU/DESKTOP: Add simple shader option
 - MENU/DESKTOP/WINDOWS: Remove broken 'Update RetroArch' functionality for Windows. We want this to not only be system agnostic if we bring it back, but also work outside of the Qt desktop interface
+- MENU/OZONE: New Theme - Twilight Zone
 - MENU/RGUI: Add 3:2, 5:3 and 3:2/5:3 (centered) aspects
 - MENU/RGUI/TEXT RENDERING: Add Russian language text support
 - MENU/RGUI/TEXT RENDERING: Add support for CJK punctuation glyphs
 - MIDI/WINMM: Recover from MIDI messages not handled by the device
 - MIDI/WINMM: Fix winmm midi driver hanging on content closing
 - NETWORK: Add READ/WRITE_CORE_MEMORY network commands
+- NETWORK: Fix backwards condition in socket blocking behavior
 - NETWORK/NETPLAY: Attempt IPv4 when IPv6 fails
 - OGA/VIDEO: support for OGS
 - OGA: This keeps the tradition DRM driver along with the OGA one. The probe
@@ -97,39 +147,72 @@ function skips the driver if the screen is non rotated to fall back to
 the regular DRM driver.
 - OGA: Fix messages from not disappearing
 - OGA: Implement RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER. This is a faster rendering codepath for software rendered libretro cores that some libretro cores use right now. Video drivers in RetroArch have to explicitly implement this for this codepath to work at runtime.
+- OPENDINGUX: Add/Optimise rumble interface
+- OPENDINGUX: Fix frozen video when enabling fast forward
 - OPENDINGUX/SDL: OSD font clean-up
+- OPENDINGUX/SDL: Enable selection of image interpolation method when using 'sdl_dingux' gfx driver
+- OPENDINGUX/SDL: Enable integer scaling when using the 'sdl_dingux' gfx driver
+- OVERLAYS: Add option to scale overlays automatically (with aspect ratio correction)
 - OVERLAYS: Hide Overlay When Gamepad is Connected. Overlays will be hidden automatically when a gamepad is connected in port 1, and shown again when the gamepad is disconnected.
+- OVERLAYS: New default overlays for mobile (neo-retropad)
+- OVERLAYS: In addition to overlay scale, the user can now set an Overlay Aspect Adjustment factor. Most overlays are designed for 16:9 displays, which means they become stretched/ugly on modern wide aspect phones and suchlike. By changing the Overlay Aspect Adjustment factor, a user can scale the overlay width/height to achieve a uniform appearance regardless of display resolution.
+- OVERLAYS: Since scaling a gamepad overlay can result in buttons being squished too close together (or being pulled too far apart), the user can now adjust the effective spacing of the different 'halves' of an overlay via Overlay Horizontal Separation and Overlay Vertical Separation factors. Overlay Horizontal Separation divides the overlay in two vertically (left/right, at the centre point), and applies a spacing offset (positive or negative) between the UI elements on each side; Overlay Vertical Separation does the same, but the split is horizontal (top/bottom)
+- OVERLAYS/FIX: The Overlay X Offset and Overlay Y Offset options have been fixed, and now work correctly
+- OVERLAYS/FIX: All of the above options (and Overlay Scale) are configured and saved independently for landscape and portrait display orientations - so adjusting everything for a nice landscape layout won't break the portrait display
+- OVERLAYS/FIX: When using the Vulkan gfx driver, memory is leaked every time an overlay is freed
+- OVERLAYS/FIX: When threaded video is enabled, loading overlays with no images (i.e. utility-type overlays, where everything is hidden until the screen is touched) can generate segfaults due to improper usage of realloc()
+- OVERLAYS/FIX: When Show Inputs on Overlay is enabled, ASAN reports bit shift errors due to an incorrect range check when handling turbo inputs - essentially, there is no upper limit to the considered input id range, which means overlay hotkeys (menu toggle, etc.) are incorrectly treated as having turbo support, causing bit shifts using wildly inappropriate id indices
 - PLAYLISTS/PORTABLE: Fixed first load initialization
 - PS2: Added Multitap support (up to 8 players)
 - PS2: Fix for not recognized digital and other non-standard controllers
 - PS2: Fix Quitting from RA
 - PS2: Add Audio mixer
+- REWIND: Prevent 'Rewind Frames' from being set to '1' incorrectly on load content
+- RUNAHEAD: Add Run-Ahead Toggle hotkey with notifications
 - RBUF/ANIMATIONS: Simplify gfx_animation by switching from dynarray to rbuf
 - RBUF/CORE UPDATER: Replace static entries array with dynamic array via RBUF library
 - RBUF/M3U: Replace static entries array with dynamic array via RBUF library
+- SENSORS:  Android (crash-)fixes/improvements + add option to disable sensor input
 - SDL2/VIDEO: Get the SDL2 video driver to work in Wayland/KMS
+- SAVESTATES: Adding savestate garbage collector for autoincrement stavestates. As some issues indicate, there's an issue with
+the autoincrement save slot feature: slot index will increase and very old saves won't be deleted. This adds support to delete old save states with a user defined
+save state limit (global). Instead of wrapping around the slot counter it will simply delete the oldest save, since it is simpler. For now there's a limit of one deletion per save, which ensures a user cannot delete many saves by accident if they set the limit too low.
 - SAVESTATES/SAVEFILES: Ensure save file and playlist compression is disabled by default
 - SHADERS: Add option to remember last selected shader preset/shader pass directories
 - SHADERS: Use last selected shader preset directory when changing shaders via previous/next hotkeys
 - SHADERS: Remove Parameters line
 - SHADERS: Shaders fix for duplicate parameters loading bug
+- SHADERS: Fix Crash change num shader passes in UI
 - SHADERS/SLANG: Fix slang shaders with rotation
 - STREAMING/FFMPEG: Add Facebook Game Stream option (for embedded ffmpeg core-enabled RetroArch builds)
 - SWITCH: Fix input bind icons being off by one line
+- SWITCH: Fix audio issues
+- TLS/SSL: Add BearSSL support, as alternative to mbedTLS
+- VIDEO: AddVariable BFI (Black Frame Insertion)
 - VIDEO/DRM GO2: Dynamic resolution support
+- VIDEO FILTERS: Video filter optimisations
+- VIDEO FILTERS: Add several LCD-effect video filters
+- VIDEO FILTERS: Gameboy/Dot_Matrix video filters: Add XRGB8888 support
+- VIDEO FILTERS: Add Normal4x video filter
 - VIDEO FILTERS: Add 'Upscale_256x-320x240' video filter
+- VIDEO FILTERS: Add 'Upscale1.5x' video filter
 - VITA: Disable temporarily VitaGL
 - VITA: Fix bubble name
+- VITA: proper handling of boot params
+- VITA: Default menu scale 1.5x to improve readability
 - WIFI/LAKKA: Add a proper WiFi menu, with Enable/Disable & Disconnect options. This also allows WiFi passwords to be remembered. The underlying tool (connman) allows to store passswords (that's why it auto connects whenever you boot a Lakka device), so we expose this so that the user does not have to re-input the pass when connecting to a saved wifi.
+- WII/HID: Added HID support for HORI mini wired ps4 gamepad
 - WINDOWS: Add support for accelerators to main win32 message loop
 - WINDOWS: Add accelerators for Open (Ctrl+O) and Fullscreen (Alt+Enter)
 - WINDOWS: Fixes some file I/O failures on Windows when paths are longer than 260 characters.
+- WINDOWS: Fix crashing on startup on Windows when using Chinese Simplified language.
 - WINDOWS/XP: The OpenGL 1 video driver is now the default for maximum backwards compatibility upon first startup. It's of course always possible for the user to change this.
 - WINDOWS/MENUBAR: Load accelerators, Localize Win32 menu items to current language, and display shortcut keys
 - WINDOWS/MENUBAR: Add 'Reinit' to Menubar
 - WINDOWS/MSVC: Fix rewind crash on MSVC build when using SSE2
+- UWP: Don't default to XMB menu by default, default to Ozone instead
 - UWP/VFS: Use Win32 file APIs when possible - better file I/O performance
-- WIIU: Faster startup times - remove the path_is_valid() call when loading textures
+- WIIU/FILEIO/PERFORMANCE: Faster startup times - remove the path_is_valid() call when loading textures
 - WIIU: Fix touchscreen mouse emulation
 
 # 1.9.0
