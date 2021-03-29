@@ -89,7 +89,11 @@ static bool get_thumbnail_paths(
    char *path, size_t path_size,
    char *url, size_t url_size)
 {
+#if defined(__PSL1GHT__) || defined(__PS3__)
+   char *raw_url;
+#else
    char raw_url[8192];
+#endif
    char content_dir[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
    const char *system      = NULL;
@@ -99,7 +103,6 @@ static bool get_thumbnail_paths(
    const char *system_name = NULL;
    
    content_dir[0] = '\0';
-   raw_url[0]     = '\0';
    tmp_buf[0]     = '\0';
    
    if (!pl_thumb->thumbnail_path_data)
@@ -150,6 +153,14 @@ static bool get_thumbnail_paths(
    if (string_is_empty(path))
       return false;
    
+#if defined(__PSL1GHT__) || defined(__PS3__)
+   raw_url = (char*)malloc(8192 * sizeof(char));
+   
+   if (!raw_url)
+      return false;
+#endif  
+   raw_url[0]     = '\0';
+
    /* Generate remote path */
    snprintf(raw_url, sizeof(raw_url), "%s/%s/%s/%s",
          FILE_PATH_CORE_THUMBNAILS_URL,
@@ -159,9 +170,19 @@ static bool get_thumbnail_paths(
          );
 
    if (string_is_empty(raw_url))
+#if defined(__PSL1GHT__) || defined(__PS3__)
+   {
+      free(raw_url);
       return false;
+   }
+#else
+      return false;
+#endif
    
    net_http_urlencode_full(url, raw_url, url_size);
+#if defined(__PSL1GHT__) || defined(__PS3__)
+   free(raw_url);
+#endif
    
    if (string_is_empty(url))
       return false;
