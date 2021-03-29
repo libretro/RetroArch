@@ -15125,6 +15125,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       }
+      case CMD_EVENT_CONTROLLER_INIT:
+         command_event_init_controllers(p_rarch);
+         break;
       case CMD_EVENT_NONE:
          return false;
    }
@@ -35238,7 +35241,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_REWIND
    command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
-   command_event_init_controllers(p_rarch);
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
    if (!string_is_empty(global->record.path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 
