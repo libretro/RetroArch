@@ -43,6 +43,8 @@ extern drmModeCrtc *g_orig_crtc;
 
 extern drmEventContext g_drm_evctx;
 
+float drm_calc_refresh_rate(drmModeModeInfo *mode);
+
 bool drm_get_encoder(int fd);
 
 /* Restore the original CRTC. */
