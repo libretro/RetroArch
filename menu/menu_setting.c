@@ -7234,6 +7234,14 @@ static void general_write_handler(rarch_setting_t *setting)
          if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
+      case MENU_ENUM_LABEL_INPUT_MAX_USERS:
+         {
+            bool refresh = false;
+            command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+         }
+         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
          settings->modified            = true;
          settings->uints.input_joypad_map[0] = *setting->value.target.integer;
