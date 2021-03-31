@@ -505,12 +505,10 @@ static void sdl_dingux_sanitize_frame_dimensions(
    *sanitized_width = (width + 0xF) & ~0xF;
 
    /* Blacklist */
-   if (!vid->integer_scaling)
-   {
-      /* Neo Geo @ 304x224 */
-      if ((width == 304) && (height == 224))
-         *sanitized_width = 320;
-   }
+
+   /* Neo Geo @ 304x224 */
+   if (!vid->integer_scaling && (width == 304) && (height == 224))
+      *sanitized_width = 320;
 
    /*** HEIGHT ***/
    *sanitized_height = height;
@@ -521,15 +519,18 @@ static void sdl_dingux_sanitize_frame_dimensions(
    if ((width == 160) && (height == 152))
       *sanitized_height = 154;
    /* TIC-80 @ 240x136 */
-   if ((width == 240) && (height == 136))
+   else if ((width == 240) && (height == 136))
       *sanitized_height = 144;
+   /* GBA @ 240x160 */
+   else if (vid->keep_aspect && (width == 240) && (height == 160))
+      *sanitized_height = 162;
+   /* GBA (x2) @ 480x320 */
+   else if (vid->keep_aspect && (width == 480) && (height == 320))
+      *sanitized_height = 324;
 #else
-   if (!vid->integer_scaling)
-   {
-      /* Neo Geo Pocket @ 160x152 */
-      if ((width == 160) && (height == 152))
-         *sanitized_height = 160;
-   }
+   /* Neo Geo Pocket @ 160x152 */
+   if (!vid->integer_scaling && (width == 160) && (height == 152))
+      *sanitized_height = 160;
 #endif
 }
 
