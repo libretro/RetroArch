@@ -214,8 +214,6 @@ void retro_main_log_file_deinit(void)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    verbosity_state_t *g_verbosity = &main_verbosity_st;
-   if (verbosity_log_level > 1)
-      return;
 
    {
       const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
