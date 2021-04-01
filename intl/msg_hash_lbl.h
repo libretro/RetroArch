@@ -2163,6 +2163,10 @@ MSG_HASH(
    "pause_nonactive"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,
+   "menu_screensaver_timeout"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PERFCNT_ENABLE,
    "perfcnt_enable"
    )
@@ -4137,6 +4141,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    "rgui_particle_effect_speed"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "rgui_particle_effect_screensaver"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_EXTENDED_ASCII,

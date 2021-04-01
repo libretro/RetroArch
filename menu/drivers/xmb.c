@@ -370,7 +370,8 @@ typedef struct xmb_handle
 
    bool fullscreen_thumbnails_available;
    bool show_fullscreen_thumbnails;
-   bool mouse_show;
+   bool show_mouse;
+   bool show_screensaver;
    bool use_ps3_layout;
    bool last_use_ps3_layout;
    bool assets_missing;
@@ -2286,13 +2287,19 @@ static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
    switch (type)
    {
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
-         xmb->mouse_show = true;
+         xmb->show_mouse = true;
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
-         xmb->mouse_show = false;
+         xmb->show_mouse = false;
          break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
          xmb_refresh_horizontal_list(xmb);
+         break;
+      case MENU_ENVIRON_ENABLE_SCREENSAVER:
+         xmb->show_screensaver = true;
+         break;
+      case MENU_ENVIRON_DISABLE_SCREENSAVER:
+         xmb->show_screensaver = false;
          break;
       default:
          return -1;
@@ -3895,6 +3902,13 @@ static void xmb_render(void *data,
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
 
+   /* If menu screensaver is active, no further
+    * action is required */
+   if (xmb->show_screensaver)
+   {
+      GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
+      return;
+   }
 
    if (xmb->pointer.type != MENU_POINTER_DISABLED)
    {
@@ -4078,7 +4092,6 @@ static void xmb_draw_bg(
 
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
-   video_driver_set_viewport(video_width, video_height, true, false);
 
 #ifdef HAVE_SHADERPIPELINE
    if (menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
@@ -4698,6 +4711,31 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    msg[0]             = '\0';
    title_msg[0]       = '\0';
    title_truncated[0] = '\0';
+
+   video_driver_set_viewport(video_width, video_height, true, false);
+
+   /* If menu screensaver is active, blank the
+    * screen and skip drawing menu elements */
+   if (xmb->show_screensaver)
+   {
+      float black[16] = {
+         0, 0, 0, 1,
+         0, 0, 0, 1,
+         0, 0, 0, 1,
+         0, 0, 0, 1,
+      };
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            0, 0,
+            video_width, video_height,
+            video_width, video_height,
+            black);
+      video_driver_set_viewport(video_width, video_height, false, true);
+      return;
+   }
 
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4.0f;
    left_thumbnail_margin_width             = xmb->icon_size * 3.4f;
@@ -5327,7 +5365,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Cursor image */
-   if (xmb->mouse_show)
+   if (xmb->show_mouse)
    {
       bool cursor_visible = (video_fullscreen || mouse_grabbed) &&
             menu_mouse_enable;

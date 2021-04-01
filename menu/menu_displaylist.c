@@ -7309,6 +7309,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,                               PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,                                 PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,                              PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MOUSE_ENABLE,                                          PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_POINTER_ENABLE,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL,   true},
@@ -7328,6 +7329,10 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD:
                      if (kiosk_mode_enable)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT:
+                     if (menu_driver_screensaver_supported())
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_UI_COMPANION_TOGGLE:
@@ -8820,6 +8825,8 @@ unsigned menu_displaylist_build_list(
             bool menu_materialui_icons_enable          = settings->bools.menu_materialui_icons_enable;
             bool menu_materialui_show_nav_bar          = settings->bools.menu_materialui_show_nav_bar;
             bool menu_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
+            unsigned menu_rgui_particle_effect         = settings->uints.menu_rgui_particle_effect;
+            unsigned menu_screensaver_timeout          = settings->uints.menu_screensaver_timeout;
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_SCALE_FACTOR,                            PARSE_ONLY_FLOAT,  true},
@@ -8843,7 +8850,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,                       PARSE_ONLY_PATH,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_SHADOWS,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT,                    PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,              PARSE_ONLY_FLOAT,  true},
+               {MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,              PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,        PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,                             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_XMB_FONT,                                     PARSE_ONLY_PATH,   true},
                {MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,                          PARSE_ONLY_UINT,   true},
@@ -8895,6 +8903,15 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT:
                      if (menu_horizontal_animation)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED:
+                     if (menu_rgui_particle_effect != RGUI_PARTICLE_EFFECT_NONE)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER:
+                     if ((menu_screensaver_timeout != 0) &&
+                         (menu_rgui_particle_effect != RGUI_PARTICLE_EFFECT_NONE))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE:

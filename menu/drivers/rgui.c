@@ -523,6 +523,9 @@ typedef struct
    uint16_t border_light_color;
    uint16_t shadow_color;
    uint16_t particle_color;
+   /* Screensaver colors */
+   uint16_t ss_bg_color;
+   uint16_t ss_particle_color;
 } rgui_colors_t;
 
 typedef struct
@@ -653,7 +656,8 @@ typedef struct
 
    bool bg_modified;
    bool force_redraw;
-   bool mouse_show;
+   bool show_mouse;
+   bool show_screensaver;
    bool ignore_resize_events;
    bool bg_thickness;
    bool border_thickness;
@@ -1630,13 +1634,21 @@ static void rgui_render_particle_effect(
       unsigned fb_height)
 {
    size_t i;
+   uint16_t particle_color;
    /* Give speed factor a long, awkward name to minimise
     * risk of clashing with specific particle effect
     * implementation variables... */
-   float global_speed_factor   = 1.0f;
-   settings_t        *settings = config_get_ptr();
-   float particle_effect_speed = settings ? settings->floats.menu_rgui_particle_effect_speed : 0.0f;
-   uint16_t *frame_buf_data    = NULL;
+   float global_speed_factor        = 1.0f;
+   settings_t        *settings      = config_get_ptr();
+   float particle_effect_speed      = 0.0f;
+   bool particle_effect_screensaver = false;
+   uint16_t *frame_buf_data         = NULL;
+   
+   if (settings)
+   {
+      particle_effect_speed         = settings->floats.menu_rgui_particle_effect_speed;
+      particle_effect_screensaver   = settings->bools.menu_rgui_particle_effect_screensaver;
+   }
    
    /* Sanity check */
    if (!rgui || !rgui->frame_buf.data)
@@ -1644,10 +1656,22 @@ static void rgui_render_particle_effect(
    
    frame_buf_data = rgui->frame_buf.data;
    
+   /* Check whether screensaver is currently active */
+   if (rgui->show_screensaver)
+   {
+      /* Return early if screensaver animation is
+       * disabled */
+      if (!particle_effect_screensaver)
+         return;
+      particle_color = rgui->colors.ss_particle_color;
+   }
+   else
+      particle_color = rgui->colors.particle_color;
+   
    /* Adjust global animation speed */
    /* > Apply user configured speed multiplier */
    if (particle_effect_speed > 0.0001f) 
-      global_speed_factor = particle_effect_speed ;
+      global_speed_factor = particle_effect_speed;
 
    /* > Account for non-standard frame times
     *   (high/low refresh rates, or frame drops) */
@@ -1715,7 +1739,7 @@ static void rgui_render_particle_effect(
                /* Draw particle */
                on_screen = rgui_draw_particle(frame_buf_data, fb_width, fb_height,
                                  (int)particle->a, (int)particle->b,
-                                 particle_size, particle_size, rgui->colors.particle_color);
+                                 particle_size, particle_size, particle_color);
                
                /* Reset particle if it has fallen off screen */
                if (!on_screen)
@@ -1750,7 +1774,7 @@ static void rgui_render_particle_effect(
                /* Draw particle */
                on_screen = rgui_draw_particle(frame_buf_data, fb_width, fb_height,
                                  (int)particle->a, (int)particle->b,
-                                 2, (unsigned)particle->c, rgui->colors.particle_color);
+                                 2, (unsigned)particle->c, particle_color);
                
                /* Update y pos */
                particle->b += particle->d * global_speed_factor;
@@ -1793,7 +1817,7 @@ static void rgui_render_particle_effect(
                
                /* Draw particle */
                rgui_draw_particle(frame_buf_data, fb_width, fb_height,
-                     x, y, particle_size, particle_size, rgui->colors.particle_color);
+                     x, y, particle_size, particle_size, particle_color);
                
                /* Update particle speed */
                r_speed     = particle->c * global_speed_factor;
@@ -1853,7 +1877,7 @@ static void rgui_render_particle_effect(
                
                /* Draw particle */
                on_screen = rgui_draw_particle(frame_buf_data, fb_width, fb_height,
-                                 x, y, particle_size, particle_size, rgui->colors.particle_color);
+                                 x, y, particle_size, particle_size, particle_color);
                
                /* Update depth */
                particle->c -= particle->d * global_speed_factor;
@@ -1887,7 +1911,9 @@ static void rgui_render_particle_effect(
    /* If border is enabled, it must be drawn *above*
     * particle effect
     * (Wastes CPU cycles, but nothing we can do about it...) */
-   if (rgui->border_enable && !rgui->show_wallpaper)
+   if (rgui->border_enable &&
+       !rgui->show_wallpaper &&
+       !rgui->show_screensaver)
       rgui_render_border(rgui, frame_buf_data, fb_width, fb_height);
 }
 
@@ -2220,15 +2246,27 @@ static void rgui_render_background(rgui_t *rgui,
    frame_buf_t *frame_buf      = &rgui->frame_buf;
    frame_buf_t *background_buf = &rgui->background_buf;
 
-   if (frame_buf->data && background_buf->data)
-   {
-      /* Sanity check */
-      if ((fb_width != frame_buf->width) || (fb_height != frame_buf->height) || (fb_pitch != frame_buf->width << 1))
-         return;
+   /* Sanity check */
+   if (!frame_buf->data ||
+       (fb_width != frame_buf->width) ||
+       (fb_height != frame_buf->height) ||
+       (fb_pitch != frame_buf->width << 1))
+      return;
 
-      /* Copy background to framebuffer */
-      memcpy(frame_buf->data, background_buf->data, frame_buf->width * frame_buf->height * sizeof(uint16_t));
+   /* If screensaver is active, 'zero out' framebuffer */
+   if (rgui->show_screensaver)
+   {
+      size_t i;
+      uint16_t ss_bg_color    = rgui->colors.ss_bg_color;
+      uint16_t *frame_buf_ptr = frame_buf->data;
+
+      for (i = 0; i < frame_buf->width * frame_buf->height; i++)
+         *(frame_buf_ptr++) = ss_bg_color;
    }
+   /* Otherwise copy background to framebuffer */
+   else if (background_buf->data)
+      memcpy(frame_buf->data, background_buf->data,
+            frame_buf->width * frame_buf->height * sizeof(uint16_t));
 }
 
 static void rgui_render_fs_thumbnail(rgui_t *rgui,
@@ -2647,6 +2685,7 @@ static void rgui_cache_background(rgui_t *rgui,
 static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 {
    rgui_theme_t theme_colors;
+   uint32_t ss_particle_color_argb32;
    unsigned rgui_color_theme     = settings->uints.menu_rgui_color_theme;
    const char *rgui_theme_preset = settings->paths.path_rgui_theme_preset;
 
@@ -2683,6 +2722,19 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    rgui->colors.border_light_color      = argb32_to_pixel_platform_format(theme_colors.border_light_color);
    rgui->colors.shadow_color            = argb32_to_pixel_platform_format(theme_colors.shadow_color);
    rgui->colors.particle_color          = argb32_to_pixel_platform_format(theme_colors.particle_color);
+
+   /* Screensaver background is black, 100% opacity */
+   rgui->colors.ss_bg_color             = argb32_to_pixel_platform_format(0xFF000000);
+   /* Screensaver particles are a 75:25 mix of
+    * regular background animation particle colour
+    * and black, with 100% opacity */
+   ss_particle_color_argb32             = (theme_colors.particle_color +
+         (theme_colors.particle_color & 0x1010101)) >> 1;
+   ss_particle_color_argb32             = (theme_colors.particle_color +
+         ss_particle_color_argb32 +
+               ((theme_colors.particle_color ^ ss_particle_color_argb32) & 0x1010101)) >> 1;
+   rgui->colors.ss_particle_color       = argb32_to_pixel_platform_format(
+         ss_particle_color_argb32 | 0xFF000000);
 
    rgui->bg_modified                    = true;
    rgui->force_redraw                   = true;
@@ -4063,6 +4115,11 @@ static void rgui_render(void *data,
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
       rgui_render_particle_effect(rgui, p_anim, fb_width, fb_height);
 
+   /* If screensaver is active, skip drawing of
+    * text/thumbnails */
+   if (rgui->show_screensaver)
+      return;
+
    /* We use a single ticker for all text animations,
     * with the following configuration: */
    if (use_smooth_ticker)
@@ -4634,7 +4691,7 @@ static void rgui_render(void *data,
       rgui->force_redraw = true;
    }
 
-   if (rgui->mouse_show)
+   if (rgui->show_mouse)
    {
       bool cursor_visible   = video_fullscreen 
          && menu_mouse_enable;
@@ -5293,6 +5350,9 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->last_width            = rgui->frame_buf.width;
    rgui->last_height           = rgui->frame_buf.height;
 
+   rgui->show_mouse            = false;
+   rgui->show_screensaver      = false;
+
    /* Initialise particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
       rgui_init_particle_effect(rgui, p_disp);
@@ -5909,26 +5969,32 @@ static int rgui_environ(enum menu_environ_cb type,
    rgui_t           *rgui = (rgui_t*)userdata;
    gfx_display_t *p_disp  = disp_get_ptr();
 
+   if (!rgui)
+      return -1;
+
    switch (type)
    {
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
-         if (!rgui)
-            return -1;
-         rgui->mouse_show          = true;
+         rgui->show_mouse          = true;
          p_disp->framebuf_dirty    = true;
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
-         if (!rgui)
-            return -1;
-         rgui->mouse_show          = false;
+         rgui->show_mouse          = false;
          p_disp->framebuf_dirty    = false;
          break;
-      case 0:
-      default:
+      case MENU_ENVIRON_ENABLE_SCREENSAVER:
+         rgui->show_screensaver    = true;
+         rgui->force_redraw        = true;
          break;
+      case MENU_ENVIRON_DISABLE_SCREENSAVER:
+         rgui->show_screensaver    = false;
+         rgui->force_redraw        = true;
+         break;
+      default:
+         return -1;
    }
 
-   return -1;
+   return 0;
 }
 
 /* Forward declaration */
@@ -6067,7 +6133,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       rgui->force_redraw = true;
    }
 
-   if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
+   if ((rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE) &&
+       (!rgui->show_screensaver || settings->bools.menu_rgui_particle_effect_screensaver))
       rgui->force_redraw = true;
 
    if (settings->bools.menu_rgui_extended_ascii != rgui->extended_ascii_enable)
@@ -6203,7 +6270,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Read pointer input */
-   if (  settings->bools.menu_mouse_enable || 
+   if (  settings->bools.menu_mouse_enable ||
          settings->bools.menu_pointer_enable)
    {
       menu_input_get_pointer_state(&rgui->pointer);

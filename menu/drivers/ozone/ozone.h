@@ -212,6 +212,7 @@ struct ozone_handle
    float sidebar_offset;
    float last_scale_factor;
    float pure_white[16];
+   float pure_black[16];
 
    struct
    {
@@ -287,6 +288,7 @@ struct ozone_handle
    bool pointer_in_sidebar;
    bool last_pointer_in_sidebar;
    bool show_cursor;
+   bool show_screensaver;
    bool cursor_mode;
    bool sidebar_collapsed;
    bool show_thumbnail_bar;

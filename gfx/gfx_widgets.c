@@ -1598,9 +1598,14 @@ void gfx_widgets_frame(void *data)
    bool widgets_is_fastforwarding   = video_info->widgets_is_fast_forwarding;
    bool widgets_is_rewinding        = video_info->widgets_is_rewinding;
    bool runloop_is_slowmotion       = video_info->runloop_is_slowmotion;
+   bool menu_screensaver_active     = video_info->menu_screensaver_active;
    int top_right_x_advance          = video_width;
 
    p_dispwidget->gfx_widgets_frame_count++;
+
+   /* If menu screensaver is active, draw nothing */
+   if (menu_screensaver_active)
+      return;
 
    video_driver_set_viewport(video_width, video_height, true, false);
 

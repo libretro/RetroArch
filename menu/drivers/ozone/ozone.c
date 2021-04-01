@@ -705,7 +705,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    *userdata = ozone;
 
    for (i = 0; i < 15; i++)
+   {
       ozone->pure_white[i]  = 1.00f;
+      ozone->pure_black[i]  = 0.00f;
+   }
 
    ozone->last_width        = width;
    ozone->last_height       = height;
@@ -721,6 +724,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->categories_selection_ptr              = 0;
    ozone->pending_message                       = NULL;
    ozone->show_cursor                           = false;
+   ozone->show_screensaver                      = false;
 
    ozone->first_frame                           = true;
    ozone->cursor_mode                           = false;
@@ -1781,6 +1785,14 @@ static void ozone_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&ozone->pointer);
+
+   /* If menu screensaver is active, no further
+    * action is required */
+   if (ozone->show_screensaver)
+   {
+      GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
+      return;
+   }
 
    /* Check whether pointer is enabled */
    if (ozone->pointer.type != MENU_POINTER_DISABLED)
@@ -2944,6 +2956,23 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
    video_driver_set_viewport(video_width, video_height, true, false);
 
+   /* If menu screensaver is active, blank the
+    * screen and skip drawing menu elements */
+   if (ozone->show_screensaver)
+   {
+      gfx_display_set_alpha(ozone->pure_black, 1.0f);
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            0, 0, video_width, video_height,
+            video_width, video_height,
+            ozone->pure_black);
+      video_driver_set_viewport(video_width, video_height, false, true);
+      return;
+   }
+
    /* Clear text */
    ozone_font_bind(&ozone->fonts.footer);
    ozone_font_bind(&ozone->fonts.title);
@@ -3634,6 +3663,12 @@ static int ozone_environ_cb(enum menu_environ_cb type, void *data, void *userdat
             settings_t *settings              = config_get_ptr();
             ozone_refresh_horizontal_list(ozone, settings);
          }
+         break;
+      case MENU_ENVIRON_ENABLE_SCREENSAVER:
+         ozone->show_screensaver = true;
+         break;
+      case MENU_ENVIRON_DISABLE_SCREENSAVER:
+         ozone->show_screensaver = false;
          break;
       default:
          return -1;

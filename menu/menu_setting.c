@@ -6461,6 +6461,21 @@ static void setting_get_string_representation_uint_quit_on_close_content(
    }
 }
 
+static void setting_get_string_representation_uint_menu_screensaver_timeout(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   if (*setting->value.target.unsigned_integer == 0)
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   else
+      snprintf(s, len, "%u %s",
+            *setting->value.target.unsigned_integer,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
+}
+
 enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting)
 {
    if (!setting)
@@ -14123,6 +14138,22 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_quit_on_close_content;
          menu_settings_list_current_add_range(list, list_info, 0, QUIT_ON_CLOSE_CONTENT_LAST-1, 1, true, true);
 
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.menu_screensaver_timeout,
+               MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,
+               MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+               DEFAULT_MENU_SCREENSAVER_TIMEOUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_screensaver_timeout;
+         menu_settings_list_current_add_range(list, list_info, 0, 1800, 10, true, true);
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_mouse_enable,
@@ -14353,7 +14384,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+               (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_rgui_particle_effect;
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_PARTICLE_EFFECT_LAST-1, 1, true, true);
@@ -14373,6 +14406,21 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_particle_effect_screensaver,
+                  MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+                  DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             CONFIG_BOOL(
                   list, list_info,

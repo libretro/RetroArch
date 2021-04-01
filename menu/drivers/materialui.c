@@ -1155,6 +1155,7 @@ typedef struct
    float divider[16];
    float entry_divider[16];
    float screen_fade[16];
+   float screensaver_bg[16];
    float missing_thumbnail_icon[16];
    float landscape_border_shadow_opacity;
    float status_bar_shadow_opacity;
@@ -1645,7 +1646,8 @@ typedef struct materialui_handle
    char fullscreen_thumbnail_label[255];
    bool is_portrait;
    bool need_compute;
-   bool mouse_show;
+   bool show_mouse;
+   bool show_screensaver;
    bool is_playlist_tab;
    bool is_playlist;
    bool is_file_list;
@@ -1847,6 +1849,10 @@ static void materialui_prepare_colors(
    hex32_to_rgba_normalized(
             current_theme->screen_fade,
             mui->colors.screen_fade, mui->colors.screen_fade_opacity);
+
+   /* Screensaver background is always pure black,
+    * 100% opacity */
+   hex32_to_rgba_normalized(0x000000, mui->colors.screensaver_bg, 1.0f);
 
    /* Shadow colours require special handling
     * (since they are gradients) */
@@ -3523,6 +3529,11 @@ static void materialui_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&mui->pointer);
+
+   /* If menu screensaver is active, no further
+    * action is required */
+   if (mui->show_screensaver)
+      return;
 
    /* Need to adjust/range-check scroll position first,
     * otherwise cannot determine correct entry index for
@@ -6677,6 +6688,23 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    video_driver_set_viewport(video_width, video_height, true, false);
 
+   /* If menu screensaver is active, blank the
+    * screen and skip drawing menu elements */
+   if (mui->show_screensaver)
+   {
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            0, 0,
+            video_width, video_height,
+            video_width, video_height,
+            mui->colors.screensaver_bg);
+      video_driver_set_viewport(video_width, video_height, false, true);
+      return;
+   }
+
    /* Clear text */
    materialui_font_bind(&mui->font_data.title);
    materialui_font_bind(&mui->font_data.list);
@@ -6865,7 +6893,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Draw mouse cursor */
-   if (mui->mouse_show && (mui->pointer.type != MENU_POINTER_DISABLED))
+   if (mui->show_mouse && (mui->pointer.type != MENU_POINTER_DISABLED))
    {
       float color_white[16] = {
          1.0f, 1.0f, 1.0f, 1.0f,
@@ -7744,6 +7772,9 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->last_show_nav_bar                 = settings->bools.menu_materialui_show_nav_bar;
    mui->last_auto_rotate_nav_bar          = settings->bools.menu_materialui_auto_rotate_nav_bar;
 
+   mui->show_mouse                        = false;
+   mui->show_screensaver                  = false;
+
    mui->need_compute                      = false;
    mui->is_playlist_tab                   = false;
    mui->is_playlist                       = false;
@@ -8397,10 +8428,10 @@ static int materialui_environ(enum menu_environ_cb type,
    switch (type)
    {
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
-         mui->mouse_show = true;
+         mui->show_mouse = true;
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
-         mui->mouse_show = false;
+         mui->show_mouse = false;
          break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
          {
@@ -8421,11 +8452,17 @@ static int materialui_environ(enum menu_environ_cb type,
             }
          }
          break;
-      default:
+      case MENU_ENVIRON_ENABLE_SCREENSAVER:
+         mui->show_screensaver = true;
          break;
+      case MENU_ENVIRON_DISABLE_SCREENSAVER:
+         mui->show_screensaver = false;
+         break;
+      default:
+         return -1;
    }
 
-   return -1;
+   return 0;
 }
 
 /* Called before we push the new list after:

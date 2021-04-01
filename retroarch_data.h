@@ -1594,6 +1594,7 @@ struct menu_state
    retro_time_t current_time_us;
    retro_time_t powerstate_last_time_us;
    retro_time_t datetime_last_time_us;
+   retro_time_t input_last_time_us;
 
    struct
    {
@@ -1632,6 +1633,11 @@ struct menu_state
    bool entries_nonblocking_refresh;
    /* 'Close Content'-hotkey menu resetting */
    bool pending_close_content;
+   /* Screensaver status
+    * - Does menu driver support screensaver functionality?
+    * - Is screensaver currently active? */
+   bool screensaver_supported;
+   bool screensaver_active;
 };
 
 struct menu_bind_state_port
