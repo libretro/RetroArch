@@ -72,6 +72,7 @@
 #endif
 
 #include "verbosity.h"
+#include "msg_hash.h"
 
 #ifdef HAVE_QT
 #include "ui/ui_companion_driver.h"
@@ -236,7 +237,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
    asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
    asl_free(msg);
-#endif
+#endif /* TARGET_IPHONE_SIMULATOR */
 #elif defined(_XBOX1)
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[256];
@@ -298,7 +299,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if defined(__WINRT__)
    OutputDebugStringA(buffer);
 #endif
-#else
+#else /* defined(HAVE_QT) || defined(__WINRT__) */
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
@@ -312,8 +313,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    mutexUnlock(&g_verbosity->mtx);
 #endif
 
-#endif
-#endif
+#endif /* defined(HAVE_QT) || defined(__WINRT__) */
+#endif /* TARGET_OS_IPHONE */
 }
 
 void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
@@ -364,6 +365,21 @@ void RARCH_DBG(const char *fmt, ...)
    va_end(ap);
 }
 
+void RARCH_DBG_ADDENDUM(const char *fmt, ...)
+{
+   va_list ap;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+   if (verbosity_log_level > 0)
+      return;
+
+   va_start(ap, fmt);
+   RARCH_LOG_V("\t", fmt, ap);
+   va_end(ap);
+}
+
 void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
@@ -379,11 +395,34 @@ void RARCH_LOG(const char *fmt, ...)
    va_end(ap);
 }
 
+void RARCH_LOG_ADDENDUM(const char *fmt, ...)
+{
+   va_list ap;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+   if (verbosity_log_level > 1)
+      return;
+
+   va_start(ap, fmt);
+   RARCH_LOG_V("\t", fmt, ap);
+   va_end(ap);
+}
+
 void RARCH_LOG_OUTPUT(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
    RARCH_LOG_OUTPUT_V(FILE_PATH_LOG_INFO, msg, ap);
+   va_end(ap);
+}
+
+void RARCH_LOG_OUTPUT_ADDENDUM(const char *msg, ...)
+{
+   va_list ap;
+   va_start(ap, msg);
+   RARCH_LOG_OUTPUT_V("\t", msg, ap);
    va_end(ap);
 }
 
@@ -402,6 +441,21 @@ void RARCH_WARN(const char *fmt, ...)
    va_end(ap);
 }
 
+void RARCH_WARN_ADDENDUM(const char *fmt, ...)
+{
+   va_list ap;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+   if (verbosity_log_level > 2)
+      return;
+
+   va_start(ap, fmt);
+   RARCH_WARN_V("\t", fmt, ap);
+   va_end(ap);
+}
+
 void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
@@ -414,7 +468,20 @@ void RARCH_ERR(const char *fmt, ...)
    RARCH_ERR_V(FILE_PATH_LOG_ERROR, fmt, ap);
    va_end(ap);
 }
-#endif
+
+void RARCH_ERR_ADDENDUM(const char *fmt, ...)
+{
+   va_list ap;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+
+   va_start(ap, fmt);
+   RARCH_ERR_V("\t", fmt, ap);
+   va_end(ap);
+}
+#endif /* !defined(HAVE_LOGGER) */
 
 void rarch_log_file_set_override(const char *path)
 {
@@ -559,4 +626,256 @@ void rarch_log_file_deinit(void)
    /* If logging is currently disabled... */
    if (!g_verbosity->fp) /* ...initialise logging to console */
       retro_main_log_file_init(NULL, false);
+}
+
+void RARCH_LOG_OUTPUT_EXTRA_LANG(enum msg_hash_enums tag, enum msg_hash_enums msg_id, ...)
+{
+   va_list ap;
+   char us_msg[128];
+   char lang_msg[128];
+
+   size_t msg_size      = sizeof(us_msg);
+
+   if(tag == 0)
+   {
+      snprintf(us_msg, msg_size, "%s\n", msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s\n", msg_hash_to_str(msg_id));
+
+      va_start(ap, msg_id);
+      RARCH_LOG_OUTPUT_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+
+      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_LOG_OUTPUT_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+   else
+   {
+      snprintf(us_msg, msg_size, "%s %s\n",
+      msg_hash_to_str_us(tag),
+      msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s %s\n",
+      msg_hash_to_str(tag),
+      msg_hash_to_str(msg_id));
+
+      va_start(ap, msg_id);
+      RARCH_LOG_OUTPUT_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+      
+      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_LOG_OUTPUT_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+}
+
+void RARCH_DBG_EXTRA_LANG(enum msg_hash_enums tag, enum msg_hash_enums msg_id, ...)
+{
+   va_list ap;
+   char us_msg[128];
+   char lang_msg[128];
+
+   size_t msg_size                = sizeof(us_msg);
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+   if (verbosity_log_level > 0)
+      return;
+
+   if(tag == 0)
+   {
+      snprintf(us_msg, msg_size, "%s\n", msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s\n", msg_hash_to_str(msg_id));
+
+      va_start(ap, msg_id);
+      RARCH_LOG_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+
+      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_LOG_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+   else
+   {
+      snprintf(us_msg, msg_size, "%s %s\n",
+      msg_hash_to_str_us(tag),
+      msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s %s\n",
+      msg_hash_to_str(tag),
+      msg_hash_to_str(msg_id));
+
+      va_start(ap, msg_id);
+      RARCH_LOG_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+      
+      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_LOG_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+}
+
+void RARCH_LOG_EXTRA_LANG(enum msg_hash_enums tag, enum msg_hash_enums msg_id, ...)
+{
+   va_list ap;
+   char us_msg [128];
+   char lang_msg [128];
+
+   size_t msg_size   = sizeof(us_msg);
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+   if (verbosity_log_level > 1)
+      return;
+
+   if(tag == 0)
+   {
+      snprintf(us_msg, msg_size, "%s\n", msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s\n", msg_hash_to_str(msg_id));
+      
+      va_start(ap, msg_id);
+      RARCH_LOG_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+
+      if(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_LOG_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+   else
+   {
+      snprintf(us_msg, msg_size, "%s %s\n",
+      msg_hash_to_str_us(tag),
+      msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s %s\n",
+      msg_hash_to_str(tag),
+      msg_hash_to_str(msg_id));
+
+      va_start(ap, msg_id);
+      RARCH_LOG_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+
+      if(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_LOG_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+}
+
+void RARCH_WARN_EXTRA_LANG(enum msg_hash_enums tag, enum msg_hash_enums msg_id, ...)
+{
+   va_list ap;
+   char us_msg [128];
+   char lang_msg [128];
+
+   size_t msg_size                = sizeof(us_msg);
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+   if (verbosity_log_level > 2)
+      return;
+
+   if(tag == 0)
+   {
+      snprintf(us_msg, msg_size, "%s\n", msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s\n", msg_hash_to_str(msg_id));
+      
+      va_start(ap, msg_id);
+      RARCH_WARN_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+
+      if(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_WARN_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+   else
+   {
+      snprintf(us_msg, msg_size, "%s %s\n",
+      msg_hash_to_str_us(tag),
+      msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s %s\n",
+      msg_hash_to_str(tag),
+      msg_hash_to_str(msg_id));
+
+      va_start(ap, msg_id);
+      RARCH_WARN_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+
+      if(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_WARN_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+}
+
+void RARCH_ERR_EXTRA_LANG(enum msg_hash_enums tag, enum msg_hash_enums msg_id, ...)
+{
+   va_list ap;
+   char us_msg [128];
+   char lang_msg [128];
+
+   size_t msg_size                = sizeof(us_msg);
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   if (!g_verbosity->verbosity)
+      return;
+
+   if(tag == 0)
+   {
+      snprintf(us_msg, msg_size, "%s\n", msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s\n", msg_hash_to_str(msg_id));
+      
+      va_start(ap, msg_id);
+      RARCH_ERR_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+
+      if(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_ERR_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
+   else
+   {
+      snprintf(us_msg, msg_size, "%s %s\n",
+      msg_hash_to_str_us(tag),
+      msg_hash_to_str_us(msg_id));
+      snprintf(lang_msg, msg_size, "%s %s\n",
+      msg_hash_to_str(tag),
+      msg_hash_to_str(msg_id));
+
+      va_start(ap, msg_id);
+      RARCH_ERR_V(FILE_PATH_LOG_INFO, us_msg, ap);
+      va_end(ap);
+
+      if(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) != 0)
+      {
+         va_start(ap, msg_id);
+         RARCH_ERR_V("\t", lang_msg, ap);
+         va_end(ap);
+      }
+   }
 }

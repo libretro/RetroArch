@@ -147,7 +147,7 @@ static void *ctr_dsp_thread_audio_init(const char *device, unsigned rate, unsign
        !(ctr->fifo_done = scond_new()) ||
        !(ctr->thread = sthread_create(ctr_dsp_audio_loop, ctr)))
    {
-      RARCH_LOG("[Audio]: thread creation failed.\n");
+      RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_LOG_THREAD_CREATION_FAILED);
       ctr->running = false;
       ctr_dsp_thread_audio_free(ctr);
       return NULL;

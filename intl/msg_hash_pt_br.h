@@ -10265,7 +10265,7 @@ MSG_HASH(
    "Índice de disco inválido obtido."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Capturar estado do mouse"
    )
 MSG_HASH(

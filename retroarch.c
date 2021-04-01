@@ -12107,6 +12107,7 @@ static void command_event_set_volume(
       bool audio_driver_mute_enable)
 {
    char msg[128];
+   size_t msg_size             = sizeof(msg);
    float new_volume            = settings->floats.audio_volume + gain;
 
    new_volume                  = MAX(new_volume, -80.0f);
@@ -12114,8 +12115,7 @@ static void command_event_set_volume(
 
    configuration_set_float(settings, settings->floats.audio_volume, new_volume);
 
-   snprintf(msg, sizeof(msg), "%s: %.1f dB",
-         msg_hash_to_str(MSG_AUDIO_VOLUME),
+   snprintf(msg, msg_size, msg_hash_to_str(MSG_AUDIO_VOLUME),
          new_volume);
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -12127,7 +12127,7 @@ static void command_event_set_volume(
       runloop_msg_queue_push(msg, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   RARCH_LOG("[Audio]: %s\n", msg);
+   RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_AUDIO_VOLUME, new_volume);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
 }
@@ -12144,6 +12144,7 @@ static void command_event_set_mixer_volume(
       float gain)
 {
    char msg[128];
+   size_t msg_size             = sizeof(msg);
    float new_volume            = settings->floats.audio_mixer_volume + gain;
 
    new_volume                  = MAX(new_volume, -80.0f);
@@ -12151,12 +12152,11 @@ static void command_event_set_mixer_volume(
 
    configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
 
-   snprintf(msg, sizeof(msg), "%s: %.1f dB",
-         msg_hash_to_str(MSG_AUDIO_VOLUME),
+   snprintf(msg, msg_size, msg_hash_to_str(MSG_AUDIO_VOLUME),
          new_volume);
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   RARCH_LOG("[Audio]: %s\n", msg);
+   RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_AUDIO_VOLUME, new_volume);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
 }
@@ -12191,9 +12191,7 @@ static void command_event_init_controllers(rarch_system_info_t *info,
             /* Do not fix device,
              * because any use of dummy core will reset this,
              * which is not a good idea. */
-            RARCH_WARN("[Input]: Input device ID %u is unknown to this "
-                  "libretro implementation. Using RETRO_DEVICE_JOYPAD.\n",
-                  device);
+            RARCH_WARN_EXTRA_LANG(MSG_LOGTAG_INPUT, MSG_WARN_INPUT_DEVICE_ID_UNKNOWN, device);
             device = RETRO_DEVICE_JOYPAD;
          }
       }
@@ -13420,7 +13418,6 @@ bool command_event(enum event_command cmd, void *data)
    bool boolean                = false;
    struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
-
    switch (cmd)
    {
       case CMD_EVENT_SAVE_FILES:
@@ -14084,26 +14081,23 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Note: Sorting is disabled by default for
              * all content history playlists */
-            RARCH_LOG("[Playlist]: %s: [%s].\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  path_content_history);
+            RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_PLAYLIST, MSG_LOADING_HISTORY_FILE, path_content_history);
+
             playlist_config_set_path(&playlist_config, path_content_history);
             g_defaults.content_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
                   g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
 
-            RARCH_LOG("[Playlist]: %s: [%s].\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  path_content_music_history);
+            RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_PLAYLIST, MSG_LOADING_HISTORY_FILE, path_content_music_history);
+            
             playlist_config_set_path(&playlist_config, path_content_music_history);
             g_defaults.music_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
                   g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            RARCH_LOG("[Playlist]: %s: [%s].\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  path_content_video_history);
+            RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_PLAYLIST, MSG_LOADING_HISTORY_FILE, path_content_video_history);
+
             playlist_config_set_path(&playlist_config, path_content_video_history);
             g_defaults.video_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
@@ -14111,9 +14105,8 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-            RARCH_LOG("[Playlist]: %s: [%s].\n",
-                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  path_content_image_history);
+            RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_PLAYLIST, MSG_LOADING_HISTORY_FILE, path_content_image_history);
+
             playlist_config_set_path(&playlist_config, path_content_image_history);
             g_defaults.image_history = playlist_init(&playlist_config);
             playlist_set_sort_mode(
@@ -14873,9 +14866,10 @@ bool command_event(enum event_command cmd, void *data)
             if (!ret)
                return false;
 
-            RARCH_LOG("[Input]: %s => %s\n",
-                  msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
-                  grab_mouse_state ? "ON" : "OFF");
+            RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_INPUT,
+                  grab_mouse_state ?
+                  MSG_GRAB_MOUSE_STATE_ON :
+                  MSG_GRAB_MOUSE_STATE_OFF);
 
             if (grab_mouse_state)
                video_driver_hide_mouse();
@@ -14978,9 +14972,10 @@ bool command_event(enum event_command cmd, void *data)
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                         MESSAGE_QUEUE_CATEGORY_INFO);
 
-               RARCH_LOG("[Input]: %s => %s\n",
-                     "Game Focus",
-                     p_rarch->game_focus_state.enabled ? "ON" : "OFF");
+               RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_INPUT,
+                     p_rarch->game_focus_state.enabled ? 
+                     MENU_LOG_GAME_FOCUS_ON :
+                     MENU_LOG_GAME_FOCUS_OFF);
             }
          }
          break;
@@ -19448,7 +19443,6 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
          break;
       case RARCH_BLUETOOTH_CTL_FIND_DRIVER:
          {
-            const char *prefix   = "bluetooth driver";
             int i                = (int)driver_find_index(
                   "bluetooth_driver",
                   settings->arrays.bluetooth_driver);
@@ -19460,13 +19454,13 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
                if (verbosity_is_enabled())
                {
                   unsigned d;
-                  RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-                        settings->arrays.bluetooth_driver);
-                  RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+                  RARCH_ERR_EXTRA_LANG(0, MSG_ERROR_BLUETOOTH_DRIVER_NOT_FOUND, settings->arrays.bluetooth_driver);
+                  RARCH_LOG_OUTPUT_EXTRA_LANG(0, MSG_LOG_OUTPUT_AVAILABLE_BLUETOOTH_DRIVERS);
+
                   for (d = 0; bluetooth_drivers[d]; d++)
                      RARCH_LOG_OUTPUT("\t%s\n", bluetooth_drivers[d]->ident);
 
-                  RARCH_WARN("Going to default to first %s...\n", prefix);
+                  RARCH_WARN_EXTRA_LANG(0, MSG_WARN_DEFAULTING_BLUETOOTH_DRIVER);
                }
 
                p_rarch->bluetooth_driver = (const bluetooth_driver_t*)bluetooth_drivers[0];
@@ -19596,7 +19590,6 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
          break;
       case RARCH_WIFI_CTL_FIND_DRIVER:
          {
-            const char *prefix   = "wifi driver";
             int i                = (int)driver_find_index(
                   "wifi_driver",
                   settings->arrays.wifi_driver);
@@ -19608,13 +19601,13 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
                if (verbosity_is_enabled())
                {
                   unsigned d;
-                  RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-                        settings->arrays.wifi_driver);
-                  RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+                  RARCH_ERR_EXTRA_LANG(0, MSG_ERROR_WIFI_DRIVER_NOT_FOUND, settings->arrays.wifi_driver);
+                  RARCH_LOG_OUTPUT_EXTRA_LANG(0, MSG_LOG_OUTPUT_AVAILABLE_WIFI_DRIVERS);
+                  
                   for (d = 0; wifi_drivers[d]; d++)
                      RARCH_LOG_OUTPUT("\t%s\n", wifi_drivers[d]->ident);
 
-                  RARCH_WARN("Going to default to first %s...\n", prefix);
+                  RARCH_WARN_EXTRA_LANG(0, MSG_WARN_DEFAULTING_WIFI_DRIVER);
                }
 
                p_rarch->wifi_driver = (const wifi_driver_t*)wifi_drivers[0];
@@ -24985,7 +24978,6 @@ static bool input_driver_init(struct rarch_state *p_rarch,
 static bool input_driver_find_driver(
       struct rarch_state *p_rarch,
       settings_t *settings,
-      const char *prefix,
       bool verbosity_enabled)
 {
    int i                = (int)driver_find_index(
@@ -24995,20 +24987,18 @@ static bool input_driver_find_driver(
    if (i >= 0)
    {
       p_rarch->current_input = (input_driver_t*)input_drivers[i];
-      RARCH_LOG("[Input]: Found %s: \"%s\".\n", prefix,
-            p_rarch->current_input->ident);
+      RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_INPUT, MSG_LOG_FOUND_INPUT_DRIVER, p_rarch->current_input->ident);
    }
    else
    {
       if (verbosity_enabled)
       {
          unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.input_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+         RARCH_ERR_EXTRA_LANG(0, MSG_ERROR_INPUT_DRIVER_NOT_FOUND, settings->arrays.input_driver);
+         RARCH_LOG_OUTPUT_EXTRA_LANG(0, MSG_LOG_OUTPUT_AVAILABLE_INPUT_DRIVERS);
          for (d = 0; input_drivers[d]; d++)
             RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
-         RARCH_WARN("Going to default to first %s...\n", prefix);
+         RARCH_WARN_EXTRA_LANG(0, MSG_WARN_DEFAULTING_INPUT_DRIVER);
       }
 
       p_rarch->current_input = (input_driver_t*)input_drivers[0];
@@ -25575,8 +25565,7 @@ const hid_driver_t *input_hid_init_first(void)
 
       if (p_rarch->hid_data)
       {
-         RARCH_LOG("[Input]: Found HID driver: \"%s\".\n",
-               hid_drivers[i]->ident);
+         RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_INPUT, MSG_LOG_FOUND_HID_DRIVER, hid_drivers[i]->ident);
          return hid_drivers[i];
       }
    }
@@ -26094,13 +26083,14 @@ static const char *input_config_get_prefix(unsigned user, bool meta)
  * input_config_translate_str_to_rk:
  * @str                            : String to translate to key ID.
  *
- * Translates tring representation to key identifier.
+ * Translates string representation to key identifier.
  *
  * Returns: key identifier.
  **/
 enum retro_key input_config_translate_str_to_rk(const char *str)
 {
    size_t i;
+
    if (strlen(str) == 1 && ISALPHA((int)*str))
       return (enum retro_key)(RETROK_a + (TOLOWER((int)*str) - (int)'a'));
    for (i = 0; input_config_key_map[i].str; i++)
@@ -26109,7 +26099,7 @@ enum retro_key input_config_translate_str_to_rk(const char *str)
          return input_config_key_map[i].key;
    }
 
-   RARCH_WARN("[Input]: Key name \"%s\" not found.\n", str);
+   RARCH_WARN_EXTRA_LANG(MSG_LOGTAG_INPUT, MSG_WARN_KEY_NAME_NOT_FOUND, str);
    return RETROK_UNKNOWN;
 }
 
@@ -27880,12 +27870,10 @@ static void report_audio_buffer_statistics(struct rarch_state *p_rarch)
    if (!audio_compute_buffer_statistics(p_rarch, &audio_stats))
       return;
 
-   RARCH_LOG("[Audio]: Average audio buffer saturation: %.2f %%,"
-         " standard deviation (percentage points): %.2f %%.\n"
-         "[Audio]: Amount of time spent close to underrun: %.2f %%."
-         " Close to blocking: %.2f %%.\n",
+   RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_LOG_AUDIO_BUFFER_STATISTICS_SATURATION,
          audio_stats.average_buffer_saturation,
-         audio_stats.std_deviation_percentage,
+         audio_stats.std_deviation_percentage);
+   RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_LOG_AUDIO_BUFFER_STATISTICS_TIME_CLOSE_TO,
          audio_stats.close_to_underrun,
          audio_stats.close_to_blocking);
 }
@@ -27989,7 +27977,6 @@ static bool audio_driver_deinit(struct rarch_state *p_rarch,
 
 static bool audio_driver_find_driver(struct rarch_state *p_rarch,
       settings_t *settings,
-      const char *prefix,
       bool verbosity_enabled)
 {
    int i                   = (int)driver_find_index(
@@ -28004,15 +27991,14 @@ static bool audio_driver_find_driver(struct rarch_state *p_rarch,
       if (verbosity_enabled)
       {
          unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.audio_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+         RARCH_ERR_EXTRA_LANG(0, MSG_ERROR_AUDIO_DRIVER_NOT_FOUND, settings->arrays.audio_driver);
+         RARCH_LOG_OUTPUT_EXTRA_LANG(0, MSG_LOG_OUTPUT_AVAILABLE_AUDIO_DRIVERS);
          for (d = 0; audio_drivers[d]; d++)
          {
             if (audio_drivers[d])
                RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
          }
-         RARCH_WARN("Going to default to first %s...\n", prefix);
+         RARCH_WARN_EXTRA_LANG(0, MSG_WARN_DEFAULTING_AUDIO_DRIVER);
       }
 
       p_rarch->current_audio = (const audio_driver_t*)
@@ -28085,12 +28071,11 @@ static bool audio_driver_init_internal(
       return false;
    }
 
-   audio_driver_find_driver(p_rarch, settings,
-         "audio driver", verbosity_enabled);
+   audio_driver_find_driver(p_rarch, settings, verbosity_enabled);
 
    if (!p_rarch->current_audio || !p_rarch->current_audio->init)
    {
-      RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
+      RARCH_ERR_EXTRA_LANG(0, MSG_ERROR_AUDIO_DRIVER_INIT_FAILED);
       p_rarch->audio_driver_active = false;
       return false;
    }
@@ -28098,7 +28083,7 @@ static bool audio_driver_init_internal(
 #ifdef HAVE_THREADS
    if (audio_cb_inited)
    {
-      RARCH_LOG("[Audio]: Starting threaded audio driver ...\n");
+      RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_LOG_THREADED_AUDIO_DRIVER);
       if (!audio_init_thread(
                &p_rarch->current_audio,
                &p_rarch->audio_driver_context_audio_data,
@@ -28109,7 +28094,7 @@ static bool audio_driver_init_internal(
                settings->uints.audio_block_frames,
                p_rarch->current_audio))
       {
-         RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
+         RARCH_ERR_EXTRA_LANG(0, MSG_ERROR_OPEN_AUDIO_DRIVER_FAILED);
          retroarch_fail(p_rarch, 1, "audio_driver_init_internal()");
       }
    }
@@ -28130,7 +28115,7 @@ static bool audio_driver_init_internal(
 
    if (!p_rarch->audio_driver_context_audio_data)
    {
-      RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
+      RARCH_ERR_EXTRA_LANG(0, MSG_ERROR_AUDIO_DRIVER_INIT_FAILED);
       p_rarch->audio_driver_active    = false;
    }
 
@@ -28154,8 +28139,7 @@ static bool audio_driver_init_internal(
    if (p_rarch->audio_driver_input <= 0.0f)
    {
       /* Should never happen. */
-      RARCH_WARN("[Audio]: Input rate is invalid (%.3f Hz)."
-            " Using output rate (%u Hz).\n",
+      RARCH_WARN_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_WARN_INPUT_RATE_INVALID,
             p_rarch->audio_driver_input, settings->uints.audio_out_rate);
 
       p_rarch->audio_driver_input = settings->uints.audio_out_rate;
@@ -28172,8 +28156,7 @@ static bool audio_driver_init_internal(
             audio_driver_get_resampler_quality(settings),
             p_rarch->audio_source_ratio_original))
    {
-      RARCH_ERR("Failed to initialize resampler \"%s\".\n",
-            settings->arrays.audio_resampler);
+      RARCH_ERR_EXTRA_LANG(0, MSG_ERROR_RESAMPLER_INIT_FAILED, settings->arrays.audio_resampler);
       p_rarch->audio_driver_active = false;
    }
 
@@ -28208,7 +28191,9 @@ static bool audio_driver_init_internal(
          p_rarch->audio_driver_control     = true;
       }
       else
-         RARCH_WARN("[Audio]: Rate control was desired, but driver does not support needed features.\n");
+      {
+         RARCH_WARN_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_WARN_RATE_CONTROL_NOT_SUPPORTED);
+      }
    }
 
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
@@ -28311,10 +28296,11 @@ static void audio_driver_flush(
 #if 0
       if (verbosity_is_enabled())
       {
-         RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
+         RARCH_LOG_OUTPUT_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_LOG_OUTPUT_AUDIO_BUFFER_PERCENTAGE,
                (unsigned)(100 - (avail * 100) /
                   p_rarch->audio_driver_buffer_size));
-         RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
+
+         RARCH_LOG_OUTPUT_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_LOG_OUTPUT_AUDIO_BUFFER_NEW_OLD_RATE,
                p_rarch->audio_source_ratio_current,
                p_rarch->audio_source_ratio_original);
       }
@@ -29924,8 +29910,7 @@ static void video_driver_init_input(
    if (tmp)
       *input = tmp;
    else
-      input_driver_find_driver(p_rarch, settings, "input driver",
-            verbosity_enabled);
+      input_driver_find_driver(p_rarch, settings, verbosity_enabled);
 
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
@@ -35449,12 +35434,10 @@ bool retroarch_main_init(int argc, char *argv[])
     * Attempts to find a default driver for
     * all driver types.
     */
-   audio_driver_find_driver(p_rarch, settings,
-         "audio driver", verbosity_enabled);
+   audio_driver_find_driver(p_rarch, settings, verbosity_enabled);
    video_driver_find_driver(p_rarch, settings,
          "video driver", verbosity_enabled);
-   input_driver_find_driver(p_rarch, settings,
-         "input driver", verbosity_enabled);
+   input_driver_find_driver(p_rarch, settings, verbosity_enabled);
    camera_driver_find_driver(p_rarch, settings,
          "camera driver", verbosity_enabled);
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
@@ -38780,9 +38763,8 @@ void rarch_favorites_init(void)
 
    rarch_favorites_deinit();
 
-   RARCH_LOG("[Playlist]: %s: [%s].\n",
-         msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
-         path_content_favorites);
+   RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_PLAYLIST, MSG_LOADING_FAVORITES_FILE, path_content_favorites);
+
    playlist_config_set_path(&playlist_config, path_content_favorites);
    g_defaults.content_favorites = playlist_init(&playlist_config);
 

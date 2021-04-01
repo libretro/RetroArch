@@ -10169,7 +10169,7 @@ MSG_HASH(
    "Vastaanotettiin virheellinen levyindeksi."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Hiiren kaappaus tila"
    )
 MSG_HASH(

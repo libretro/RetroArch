@@ -10305,7 +10305,7 @@ MSG_HASH(
    "Numéro de disque non valide."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "État de la capture de la souris"
    )
 MSG_HASH(

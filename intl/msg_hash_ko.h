@@ -10413,7 +10413,7 @@ MSG_HASH(
    "잘못된 디스크 인덱스 수신."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "마우스 상태"
    )
 MSG_HASH(

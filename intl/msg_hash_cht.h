@@ -5069,7 +5069,7 @@ MSG_HASH(
    "錯誤的磁碟索引"
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "抓取鼠標狀態"
    )
 MSG_HASH(

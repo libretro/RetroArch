@@ -7461,7 +7461,7 @@ MSG_HASH(
    "無効なディスクインデックスです"
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "マウスステートをグラブする"
    )
 MSG_HASH(

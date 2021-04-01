@@ -10397,7 +10397,7 @@ MSG_HASH(
    "Задан неверный номер диска."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Режим перехвата мыши"
    )
 MSG_HASH(

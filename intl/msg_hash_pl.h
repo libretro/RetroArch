@@ -9009,7 +9009,7 @@ MSG_HASH(
    "Otrzymałem nieprawidłowy indeks dysku."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Sprawdź stan myszy"
    )
 MSG_HASH(

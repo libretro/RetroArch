@@ -10249,7 +10249,7 @@ MSG_HASH(
    "得到无效的盘号。"
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "抓取鼠标状态"
    )
 MSG_HASH(

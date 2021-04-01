@@ -10213,7 +10213,7 @@ MSG_HASH(
    "Indice del disco non valida."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Cattura lo stato del mouse"
    )
 MSG_HASH(

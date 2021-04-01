@@ -62,8 +62,16 @@ void logger_send_v(const char *__format, va_list args);
    logger_send("RetroArch Salamander: " __VA_ARGS__); \
 } while (0)
 
+#define RARCH_DBG_ADDENDUM(...) do { \
+   logger_send("\t" __VA_ARGS__); \
+} while (0)
+
 #define RARCH_LOG(...) do { \
    logger_send("RetroArch Salamander: " __VA_ARGS__); \
+} while (0)
+
+#define RARCH_LOG_ADDENDUM(...) do { \
+   logger_send("\t" __VA_ARGS__); \
 } while (0)
 
 #define RARCH_LOG_V(tag, fmt, vp) do { \
@@ -73,6 +81,10 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_LOG_OUTPUT(...) do { \
    logger_send("[OUTPUT] " __VA_ARGS__); \
+} while (0)
+   
+#define RARCH_LOG_OUTPUT_ADDENDUM(...) do { \
+   logger_send("\t" __VA_ARGS__); \
 } while (0)
 
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
@@ -84,6 +96,10 @@ void logger_send_v(const char *__format, va_list args);
    logger_send("[ERROR] " __VA_ARGS__); \
 } while (0)
 
+#define RARCH_ERR_ADDENDUM(...) do { \
+   logger_send("\t" __VA_ARGS__); \
+} while (0)
+
 #define RARCH_ERR_V(tag, fmt, vp) do { \
    logger_send("[ERROR] " tag); \
    logger_send_v(fmt, vp); \
@@ -91,6 +107,10 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_WARN(...) do { \
    logger_send("[WARN] " __VA_ARGS__); \
+} while (0)
+
+#define RARCH_WARN_ADDENDUM(...) do { \
+   logger_send("\t" __VA_ARGS__); \
 } while (0)
 
 #define RARCH_WARN_V(tag, fmt, vp) do { \
@@ -104,8 +124,16 @@ void logger_send_v(const char *__format, va_list args);
    logger_send("" __VA_ARGS__); \
 } while (0)
 
+#define RARCH_DBG_ADDENDUM(...) do { \
+   logger_send("" __VA_ARGS__); \
+} while (0)
+
 #define RARCH_LOG(...) do { \
    logger_send("" __VA_ARGS__); \
+} while (0)
+
+#define RARCH_LOG_ADDENDUM(...) do { \
+   logger_send("\t" __VA_ARGS__); \
 } while (0)
 
 #define RARCH_LOG_V(tag, fmt, vp) do { \
@@ -117,12 +145,20 @@ void logger_send_v(const char *__format, va_list args);
    logger_send("[ERROR] " __VA_ARGS__); \
 } while (0)
 
+#define RARCH_ERR_ADDENDUM(...) do { \
+   logger_send("\t" __VA_ARGS__); \
+} while (0)
+
 #define RARCH_ERR_V(tag, fmt, vp) do { \
    logger_send("[ERROR] " tag); \
    logger_send_v(fmt, vp); \
 } while (0)
 
 #define RARCH_WARN(...) do { \
+   logger_send("[WARN] " __VA_ARGS__); \
+} while (0)
+
+#define RARCH_WARN_ADDENDUM(...) do { \
    logger_send("[WARN] " __VA_ARGS__); \
 } while (0)
 
@@ -133,6 +169,10 @@ void logger_send_v(const char *__format, va_list args);
 
 #define RARCH_LOG_OUTPUT(...) do { \
    logger_send("[OUTPUT] " __VA_ARGS__); \
+} while (0)
+   
+#define RARCH_LOG_OUTPUT_ADDENDUM(...) do { \
+   logger_send("\t" __VA_ARGS__); \
 } while (0)
 
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
@@ -146,11 +186,16 @@ void logger_send_v(const char *__format, va_list args);
 #else /* HAVE_LOGGER */
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_DBG(const char *fmt, ...);
+void RARCH_DBG_ADDENDUM(const char *fmt, ...);
 void RARCH_LOG(const char *fmt, ...);
+void RARCH_LOG_ADDENDUM(const char *fmt, ...);
 void RARCH_LOG_BUFFER(uint8_t *buffer, size_t size);
 void RARCH_LOG_OUTPUT(const char *msg, ...);
+void RARCH_LOG_OUTPUT_ADDENDUM(const char *msg, ...);
 void RARCH_WARN(const char *fmt, ...);
+void RARCH_WARN_ADDENDUM(const char *fmt, ...);
 void RARCH_ERR(const char *fmt, ...);
+void RARCH_ERR_ADDENDUM(const char *fmt, ...);
 
 #define RARCH_LOG_OUTPUT_V RARCH_LOG_V
 #define RARCH_WARN_V RARCH_LOG_V
@@ -165,7 +210,6 @@ void rarch_log_file_init(
 void rarch_log_file_deinit(void);
 
 void rarch_log_file_set_override(const char *path);
-
 
 RETRO_END_DECLS
 
