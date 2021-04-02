@@ -2266,7 +2266,7 @@ static void rgui_render_background(rgui_t *rgui,
    /* Otherwise copy background to framebuffer */
    else if (background_buf->data)
       memcpy(frame_buf->data, background_buf->data,
-            frame_buf->width * frame_buf->height * sizeof(uint16_t));
+            (size_t)frame_buf->width * (size_t)frame_buf->height * sizeof(uint16_t));
 }
 
 static void rgui_render_fs_thumbnail(rgui_t *rgui,
