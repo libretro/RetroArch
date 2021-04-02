@@ -6129,6 +6129,10 @@ unsigned menu_displaylist_build_list(
             count++;
 #endif
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
                   PARSE_ONLY_FLOAT, false) == 0)
             count++;

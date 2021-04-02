@@ -1411,6 +1411,10 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
+   "input_touch_scale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_MODE,
    "input_bind_mode"
    )

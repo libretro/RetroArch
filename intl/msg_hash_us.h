@@ -12207,6 +12207,14 @@ MSG_HASH(
    "Adjust x/y scale for Wiimote light gun speed."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Touch Scale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Adjust x/y scale of touchscreen coordinates to accommodate OS-level display scaling."
+   )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
