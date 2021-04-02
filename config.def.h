@@ -574,6 +574,12 @@ static const bool menu_savestate_resume     = false;
 
 #define DEFAULT_QUIT_ON_CLOSE_CONTENT QUIT_ON_CLOSE_CONTENT_DISABLED
 
+/* While the menu is active, supported drivers
+ * will display a screensaver after SCREENSAVER_TIMEOUT
+ * seconds of inactivity. A timeout of zero disables
+ * the screensaver */
+#define DEFAULT_MENU_SCREENSAVER_TIMEOUT 0
+
 static const bool content_show_settings     = true;
 static const bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER
@@ -655,6 +661,7 @@ static const unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 static const bool rgui_shadows = false;
 static const unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 #define DEFAULT_RGUI_PARTICLE_EFFECT_SPEED 1.0f
+#define DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER true
 static const bool rgui_extended_ascii = false;
 #define DEFAULT_RGUI_SWITCH_ICONS true
 #endif

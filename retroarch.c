@@ -1414,6 +1414,7 @@ static bool menu_input_key_bind_iterate(
    settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *_binds = &p_rarch->menu_input_binds;
    menu_input_t *menu_input       = &p_rarch->menu_input_state;
+   struct menu_state *menu_st     = &p_rarch->menu_driver_state;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
@@ -1562,6 +1563,10 @@ static bool menu_input_key_bind_iterate(
     * will cause spurious menu actions */
    menu_input->select_inhibit     = true;
    menu_input->cancel_inhibit     = true;
+
+   /* Menu screensaver should be inhibited on each
+    * frame that the bind operation is active */
+   menu_st->input_last_time_us    = menu_st->current_time_us;
 
    return false;
 }
@@ -4453,6 +4458,9 @@ static bool menu_driver_init_internal(
       settings_t *settings,
       bool video_is_threaded)
 {
+   struct menu_state *menu_st = &p_rarch->menu_driver_state;
+   menu_ctx_environment_t menu_environ;
+
    if (p_rarch->menu_driver_ctx)
    {
       const char *ident = p_rarch->menu_driver_ctx->ident;
@@ -4476,7 +4484,7 @@ static bool menu_driver_init_internal(
    }
 
    if (!p_rarch->menu_driver_data || !menu_init(
-            &p_rarch->menu_driver_state,
+            menu_st,
             &p_rarch->dialog_st,
             p_rarch->menu_driver_ctx,
             &p_rarch->menu_input_state,
@@ -4496,7 +4504,14 @@ static bool menu_driver_init_internal(
          return false;
    }
    else
-      generic_menu_init_list(&p_rarch->menu_driver_state, settings);
+      generic_menu_init_list(menu_st, settings);
+
+   /* Initialise menu screensaver */
+   menu_environ.type              = MENU_ENVIRON_DISABLE_SCREENSAVER;
+   menu_environ.data              = NULL;
+   menu_st->input_last_time_us    = cpu_features_get_time_usec();
+   menu_st->screensaver_active    = false;
+   menu_st->screensaver_supported = menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
 
    return true;
 }
@@ -4640,6 +4655,13 @@ bool menu_driver_list_get_size(menu_ctx_list_t *list)
    list->size = p_rarch->menu_driver_ctx->list_get_size(
          p_rarch->menu_userdata, list->type);
    return true;
+}
+
+bool menu_driver_screensaver_supported(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   return menu_st->screensaver_supported;
 }
 
 retro_time_t menu_driver_get_current_time(void)
@@ -23714,6 +23736,100 @@ static unsigned menu_event(
 
    ok_old                                          = ok_current;
 
+   /* Get pointer (mouse + touchscreen) input
+    * Note: Must be done regardless of menu screensaver
+    *       state */
+
+   /* > If pointer input is disabled, do nothing */
+   if (!menu_mouse_enable && !menu_pointer_enable)
+      menu_input->pointer.type = MENU_POINTER_DISABLED;
+   else
+   {
+      menu_input_pointer_hw_state_t mouse_hw_state       = {0};
+      menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
+
+      /* Read mouse */
+      if (menu_mouse_enable)
+         menu_input_get_mouse_hw_state(p_rarch, &mouse_hw_state);
+
+      /* Read touchscreen
+       * Note: Could forgo this if mouse is currently active,
+       * but this is 'cleaner' code... (if performance is a
+       * concern - and it isn't - user can just disable touch
+       * screen support) */
+      if (menu_pointer_enable)
+         menu_input_get_touchscreen_hw_state(
+               p_rarch, &touchscreen_hw_state);
+
+      /* Mouse takes precedence */
+      if (mouse_hw_state.active)
+         menu_input->pointer.type = MENU_POINTER_MOUSE;
+      else if (touchscreen_hw_state.active)
+         menu_input->pointer.type = MENU_POINTER_TOUCHSCREEN;
+
+      /* Copy input from the current device */
+      if (menu_input->pointer.type == MENU_POINTER_MOUSE)
+         memcpy(pointer_hw_state, &mouse_hw_state, sizeof(menu_input_pointer_hw_state_t));
+      else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
+         memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
+
+      if (pointer_hw_state->active)
+         menu_st->input_last_time_us = menu_st->current_time_us;
+   }
+
+   /* Populate menu_input_state
+    * Note: dx, dy, ptr, y_accel, etc. entries are set elsewhere */
+   menu_input->pointer.x          = pointer_hw_state->x;
+   menu_input->pointer.y          = pointer_hw_state->y;
+   if (menu_input->select_inhibit || menu_input->cancel_inhibit)
+   {
+      menu_input->pointer.active  = false;
+      menu_input->pointer.pressed = false;
+   }
+   else
+   {
+      menu_input->pointer.active  = pointer_hw_state->active;
+      menu_input->pointer.pressed = pointer_hw_state->select_pressed;
+   }
+
+   /* If menu screensaver is active, any input
+    * is intercepted and used to switch it off */
+   if (menu_st->screensaver_active)
+   {
+      /* Check pointer input */
+      bool input_active = (menu_input->pointer.type != MENU_POINTER_DISABLED) &&
+            menu_input->pointer.active;
+
+      /* Check regular input */
+      if (!input_active)
+         input_active = bits_any_set(p_input->data, ARRAY_SIZE(p_input->data));
+
+      if (!input_active)
+         input_active = bits_any_set(p_trigger_input->data, ARRAY_SIZE(p_trigger_input->data));
+
+      /* Disable screensaver if required */
+      if (input_active)
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
+         menu_environ.data           = NULL;
+         menu_st->screensaver_active = false;
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      }
+
+      /* Annul received input */
+      menu_input->pointer.active      = false;
+      menu_input->pointer.pressed     = false;
+      menu_input->select_inhibit      = true;
+      menu_input->cancel_inhibit      = true;
+      pointer_hw_state->up_pressed    = false;
+      pointer_hw_state->down_pressed  = false;
+      pointer_hw_state->left_pressed  = false;
+      pointer_hw_state->right_pressed = false;
+      return MENU_ACTION_NOOP;
+   }
+
    /* Accelerate only navigation buttons */
    for (i = 0; i < 6; i++)
       navigation_current |= BIT256_GET_PTR(p_input, navigation_buttons[i]);
@@ -23772,30 +23888,35 @@ static unsigned menu_event(
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
+         menu_st->input_last_time_us = menu_st->current_time_us;
          if (p_rarch->osk_ptr < 33)
             p_rarch->osk_ptr += OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
+         menu_st->input_last_time_us = menu_st->current_time_us;
          if (p_rarch->osk_ptr >= OSK_CHARS_PER_LINE)
             p_rarch->osk_ptr -= OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
+         menu_st->input_last_time_us = menu_st->current_time_us;
          if (p_rarch->osk_ptr < 43)
             p_rarch->osk_ptr += 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
+         menu_st->input_last_time_us = menu_st->current_time_us;
          if (p_rarch->osk_ptr >= 1)
             p_rarch->osk_ptr -= 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
+         menu_st->input_last_time_us = menu_st->current_time_us;
          if (p_rarch->osk_idx > OSK_TYPE_UNKNOWN + 1)
             p_rarch->osk_idx = ((enum osk_type)
                   (p_rarch->osk_idx - 1));
@@ -23807,6 +23928,7 @@ static unsigned menu_event(
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
+         menu_st->input_last_time_us = menu_st->current_time_us;
          if (p_rarch->osk_idx < (show_osk_symbols
                   ? OSK_TYPE_LAST - 1
                   : OSK_SYMBOLS_PAGE1))
@@ -23865,59 +23987,9 @@ static unsigned menu_event(
          ret = MENU_ACTION_INFO;
       else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
-   }
 
-   /* Get pointer (mouse + touchscreen) input */
-
-   /* > If pointer input is disabled, do nothing */
-   if (!menu_mouse_enable && !menu_pointer_enable)
-      menu_input->pointer.type = MENU_POINTER_DISABLED;
-   else
-   {
-      menu_input_pointer_hw_state_t mouse_hw_state       = {0};
-      menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
-
-      /* Read mouse */
-      if (menu_mouse_enable)
-         menu_input_get_mouse_hw_state(p_rarch, &mouse_hw_state);
-
-      /* Read touchscreen
-       * Note: Could forgo this if mouse is currently active,
-       * but this is 'cleaner' code... (if performance is a
-       * concern - and it isn't - user can just disable touch
-       * screen support) */
-      if (menu_pointer_enable)
-         menu_input_get_touchscreen_hw_state(
-               p_rarch, &touchscreen_hw_state);
-
-      /* Mouse takes precedence */
-      if (mouse_hw_state.active)
-         menu_input->pointer.type = MENU_POINTER_MOUSE;
-      else if (touchscreen_hw_state.active)
-         menu_input->pointer.type = MENU_POINTER_TOUCHSCREEN;
-
-      /* Copy input from the current device */
-      if (menu_input->pointer.type == MENU_POINTER_MOUSE)
-         memcpy(pointer_hw_state, &mouse_hw_state, sizeof(menu_input_pointer_hw_state_t));
-      else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
-         memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
-   }
-
-   /* Populate menu_input_state
-    * Note: dx, dy, ptr, y_accel, etc. entries are set elsewhere */
-   if (menu_input->select_inhibit || menu_input->cancel_inhibit)
-   {
-      menu_input->pointer.active  = false;
-      menu_input->pointer.pressed = false;
-      menu_input->pointer.x       = 0;
-      menu_input->pointer.y       = 0;
-   }
-   else
-   {
-      menu_input->pointer.active  = pointer_hw_state->active;
-      menu_input->pointer.pressed = pointer_hw_state->select_pressed;
-      menu_input->pointer.x       = pointer_hw_state->x;
-      menu_input->pointer.y       = pointer_hw_state->y;
+      if (ret != MENU_ACTION_NOOP)
+         menu_st->input_last_time_us = menu_st->current_time_us;
    }
 
    return ret;
@@ -25661,8 +25733,59 @@ void input_keyboard_event(bool down, unsigned code,
    static bool deferred_wait_keys;
    struct rarch_state *p_rarch   = &rarch_st;
 
-#ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_MENU
+   struct menu_state *menu_st    = &p_rarch->menu_driver_state;
+
+   /* If screensaver is active, then it should be
+    * disabled if:
+    * - Key is down AND
+    * - OSK is active, OR:
+    * - Key is *not* mapped to RetroPad input (these
+    *   inputs are handled in menu_event() - if we
+    *   allow mapped RetroPad keys to toggle off
+    *   the screensaver, then we end up with a 'duplicate'
+    *   input that will trigger unwanted menu action)
+    * - For extra amusement, a number of keyboard keys
+    *   are hard-coded to RetroPad inputs (while the menu
+    *   is running) in such a way that they cannot be
+    *   detected via the regular 'keyboard_mapping_bits'
+    *   record. We therefore have to check each of these
+    *   explicitly...
+    * Otherwise, input is ignored whenever screensaver
+    * is active */
+   if (menu_st->screensaver_active)
+   {
+      if (down &&
+          (code != RETROK_UNKNOWN) &&
+          (menu_input_dialog_get_display_kb() ||
+               !((code == RETROK_SPACE)     || /* RETRO_DEVICE_ID_JOYPAD_START */
+                 (code == RETROK_SLASH)     || /* RETRO_DEVICE_ID_JOYPAD_X */
+                 (code == RETROK_RSHIFT)    || /* RETRO_DEVICE_ID_JOYPAD_SELECT */
+                 (code == RETROK_RIGHT)     || /* RETRO_DEVICE_ID_JOYPAD_RIGHT */
+                 (code == RETROK_LEFT)      || /* RETRO_DEVICE_ID_JOYPAD_LEFT */
+                 (code == RETROK_DOWN)      || /* RETRO_DEVICE_ID_JOYPAD_DOWN */
+                 (code == RETROK_UP)        || /* RETRO_DEVICE_ID_JOYPAD_UP */
+                 (code == RETROK_PAGEUP)    || /* RETRO_DEVICE_ID_JOYPAD_L */
+                 (code == RETROK_PAGEDOWN)  || /* RETRO_DEVICE_ID_JOYPAD_R */
+                 (code == RETROK_BACKSPACE) || /* RETRO_DEVICE_ID_JOYPAD_B */
+                 (code == RETROK_RETURN)    || /* RETRO_DEVICE_ID_JOYPAD_A */
+                 (code == RETROK_DELETE)    || /* RETRO_DEVICE_ID_JOYPAD_Y */
+                 BIT512_GET(p_rarch->keyboard_mapping_bits, code))))
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
+         menu_environ.data           = NULL;
+         menu_st->screensaver_active = false;
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      }
+      return;
+   }
+
+   if (down)
+      menu_st->input_last_time_us = menu_st->current_time_us;
+
+#ifdef HAVE_ACCESSIBILITY
    if (menu_input_dialog_get_display_kb()
          && down && is_accessibility_enabled(p_rarch))
    {
@@ -31586,17 +31709,20 @@ static void video_driver_frame(const void *data, unsigned width,
    if (p_rarch->current_video && p_rarch->current_video->frame)
       p_rarch->video_driver_active = p_rarch->current_video->frame(
             p_rarch->video_driver_data, data, width, height,
-            p_rarch->video_driver_frame_count,
-            (unsigned)pitch, video_driver_msg, &video_info);
+            p_rarch->video_driver_frame_count, (unsigned)pitch,
+            video_info.menu_screensaver_active ? "" : video_driver_msg,
+            &video_info);
 
    p_rarch->video_driver_frame_count++;
 
    /* Display the status text, with a higher priority. */
-   if (     video_info.fps_show
-         || video_info.framecount_show
-         || video_info.memory_show
-         || video_info.core_status_msg_show
+   if (  (   video_info.fps_show
+          || video_info.framecount_show
+          || video_info.memory_show
+          || video_info.core_status_msg_show
          )
+       && !video_info.menu_screensaver_active
+      )
    {
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
@@ -31809,6 +31935,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
 #ifdef HAVE_MENU
    video_info->menu_is_alive               = p_rarch->menu_driver_alive;
+   video_info->menu_screensaver_active     = p_rarch->menu_driver_state.screensaver_active;
    video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme      = settings->uints.menu_materialui_color_theme;
@@ -31830,6 +31957,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->libretro_running            = p_rarch->current_core.game_loaded;
 #else
    video_info->menu_is_alive               = false;
+   video_info->menu_screensaver_active     = false;
    video_info->menu_footer_opacity         = 0.0f;
    video_info->menu_header_opacity         = 0.0f;
    video_info->materialui_color_theme      = 0;
@@ -35436,6 +35564,7 @@ void retroarch_menu_running(void)
 
 #ifdef HAVE_MENU
    menu_handle_t *menu             = p_rarch->menu_driver_data;
+   struct menu_state *menu_st      = &p_rarch->menu_driver_state;
    if (menu)
       menu_driver_toggle(p_rarch, menu, settings,
             &p_rarch->runloop_key_event,
@@ -35459,6 +35588,18 @@ void retroarch_menu_running(void)
       enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
       command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
    }
+
+   /* Ensure that menu screensaver is disabled when
+    * first switching to the menu */
+   if (menu_st->screensaver_active)
+   {
+      menu_ctx_environment_t menu_environ;
+      menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
+      menu_environ.data           = NULL;
+      menu_st->screensaver_active = false;
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   }
+   menu_st->input_last_time_us = cpu_features_get_time_usec();
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -35475,6 +35616,7 @@ void retroarch_menu_running_finished(bool quit)
 #endif
 #ifdef HAVE_MENU
    menu_handle_t *menu                  = p_rarch->menu_driver_data;
+   struct menu_state *menu_st           = &p_rarch->menu_driver_state;
    if (menu)
       menu_driver_toggle(p_rarch, menu, settings, 
             &p_rarch->runloop_key_event,
@@ -35509,6 +35651,17 @@ void retroarch_menu_running_finished(bool quit)
          enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_ON;
          command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
       }
+   }
+
+   /* Ensure that menu screensaver is disabled when
+    * switching off the menu */
+   if (menu_st->screensaver_active)
+   {
+      menu_ctx_environment_t menu_environ;
+      menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
+      menu_environ.data           = NULL;
+      menu_st->screensaver_active = false;
+      menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
    }
 #endif
    video_driver_set_texture_enable(false, false);
@@ -37287,6 +37440,10 @@ static enum runloop_state runloop_check_state(
       bool focused                  = false;
       input_bits_t trigger_input    = current_bits;
       global_t *global              = &p_rarch->g_extern;
+      unsigned screensaver_timeout  = settings->uints.menu_screensaver_timeout;
+
+      /* Get current time */
+      menu_st->current_time_us       = current_time;
 
       cbs->poll_cb();
 
@@ -37340,8 +37497,19 @@ static enum runloop_state runloop_check_state(
          }
       }
 
-      /* Get current time */
-      menu_st->current_time_us       = current_time;
+      /* Check whether menu screensaver should be enabled */
+      if ((screensaver_timeout > 0) &&
+          menu_st->screensaver_supported &&
+          !menu_st->screensaver_active &&
+          ((menu_st->current_time_us - menu_st->input_last_time_us) >
+               ((retro_time_t)screensaver_timeout * 1000000)))
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type           = MENU_ENVIRON_ENABLE_SCREENSAVER;
+         menu_environ.data           = NULL;
+         menu_st->screensaver_active = true;
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      }
 
       /* Iterate the menu driver for one frame. */
 
