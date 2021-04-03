@@ -61,6 +61,9 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         return;
 
     slot               = (uint32_t)controller.playerIndex;
+    // if we have not assigned a slot to this controller yet, ignore it.
+    if (slot >= MAX_USERS)
+        return;
     buttons            = &mfi_buttons[slot];
 
     /* retain the values from the paused controller handler and pass them through */
@@ -136,6 +139,9 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         mfi_axes[slot][3]     = gp.rightThumbstick.yAxis.value * 32767.0f;
 
     }
+// GCGamepad is deprecated
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
     else if (controller.gamepad)
     {
         GCGamepad *gp = (GCGamepad *)controller.gamepad;
@@ -151,6 +157,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller)
         *buttons |= gp.leftShoulder.pressed  ? (1 << RETRO_DEVICE_ID_JOYPAD_L)     : 0;
         *buttons |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
     }
+#pragma clang diagnostic pop
 }
 
 static void apple_gamecontroller_joypad_poll(void)
@@ -162,8 +169,22 @@ static void apple_gamecontroller_joypad_poll(void)
         apple_gamecontroller_joypad_poll_internal(controller);
 }
 
+// GCGamepad is deprecated
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
 static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
 {
+#ifdef __IPHONE_14_0
+    // dont let tvOS or iOS do anything with **our** buttons!!
+    // iOS will start a screen recording if you hold or dbl click the OPTIONS button, we dont want that.
+    if (@available(iOS 14.0, tvOS 14.0, *)) {
+        GCExtendedGamepad *gp = (GCExtendedGamepad *)gamepad.controller.extendedGamepad;
+        gp.buttonOptions.preferredSystemGestureState = GCSystemGestureStateDisabled;
+        gp.buttonMenu.preferredSystemGestureState = GCSystemGestureStateDisabled;
+        gp.buttonHome.preferredSystemGestureState = GCSystemGestureStateDisabled;
+    }
+#endif
+    
     gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element)
     {
         apple_gamecontroller_joypad_poll_internal(updateGamepad.controller);
@@ -233,6 +254,7 @@ static void apple_gamecontroller_joypad_register(GCGamepad *gamepad)
         };
     }
 }
+#pragma clang diagnostic pop
 
 static void mfi_joypad_autodetect_add(unsigned autoconf_pad)
 {
@@ -273,6 +295,9 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
             }
         }
 
+// GCGamepad is deprecated
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
         [mfiControllers addObject:controller];
         // move any non-game controllers (like the siri remote) to the end
         if (mfiControllers.count > 1)
@@ -302,6 +327,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         apple_gamecontroller_joypad_register(controller.gamepad);
         mfi_joypad_autodetect_add((unsigned)controller.playerIndex);
     }
+#pragma clang diagnostic pop
 }
 
 static void apple_gamecontroller_joypad_disconnect(GCController* controller)
