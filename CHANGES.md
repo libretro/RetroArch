@@ -1,4 +1,12 @@
 # Future
+- DRM: set the correct video mode
+- INPUT: Ensure that 'retro_set_controller_port_device' is called when updating 'Max Users'
+- INPUT/XEGL/MOUSE: Fix xegl_ctx.c mouse activation
+- LOGGING: RARCH_LOG_V checking for verbosity level is not necessary and can cause issues; removed said check.
+- MENU: Add optional menu screensaver
+- MENU/MATERIALUI: Add icon to 'Turbo Fire' menu entry
+- OPENDINGUX/BETA: Fix IPU scaling when running GBA-resolution content 
+- VITA: Align VM block size to 1MB - should fix gpSP
 
 # 1.9.1
 - 3DS: Graphics widgets support
