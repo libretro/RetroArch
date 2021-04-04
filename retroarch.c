@@ -23723,6 +23723,7 @@ static unsigned menu_event(
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
    unsigned i                                      = 0;
+   static unsigned navigation_initial              = 0;
    unsigned navigation_current                     = 0;
    unsigned navigation_buttons[6] =
    {
@@ -23832,12 +23833,19 @@ static unsigned menu_event(
 
    /* Accelerate only navigation buttons */
    for (i = 0; i < 6; i++)
-      navigation_current |= BIT256_GET_PTR(p_input, navigation_buttons[i]);
+   {
+      if (BIT256_GET_PTR(p_input, navigation_buttons[i]))
+         navigation_current |= (1 << navigation_buttons[i]);
+   }
 
    if (navigation_current)
    {
       if (!first_held)
       {
+         /* Store first direction in order to block "diagonals" */
+         if (!navigation_initial)
+            navigation_initial = navigation_current;
+
          /* don't run anything first frame, only capture held inputs
           * for old_input_state. */
 
@@ -23870,9 +23878,10 @@ static unsigned menu_event(
    }
    else
    {
-      set_scroll   = true;
-      first_held   = false;
-      initial_held = true;
+      set_scroll         = true;
+      first_held         = false;
+      initial_held       = true;
+      navigation_initial = 0;
    }
 
    if (set_scroll)
@@ -23962,14 +23971,27 @@ static unsigned menu_event(
    else
    {
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
-         ret = MENU_ACTION_UP;
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+            ret = MENU_ACTION_UP;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-         ret = MENU_ACTION_DOWN;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
-         ret = MENU_ACTION_LEFT;
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+            ret = MENU_ACTION_DOWN;
+      }
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+            ret = MENU_ACTION_LEFT;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
-         ret = MENU_ACTION_RIGHT;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+            ret = MENU_ACTION_RIGHT;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
          ret = MENU_ACTION_SCROLL_UP;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
          ret = MENU_ACTION_SCROLL_DOWN;
