@@ -144,6 +144,24 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
 }
 
+#ifdef HAVE_OVERLAY
+static void ctr_render_overlay(void *data);
+static void ctr_free_overlay(ctr_video_t *ctr)
+{
+   unsigned i;
+
+   for (i = 0; i < ctr->overlays; i++)
+   {
+      linearFree(ctr->overlay[i].frame_coords);
+	  linearFree(ctr->overlay[i].texture.data);
+   }
+
+   free(ctr->overlay);
+   ctr->overlay = NULL;
+   ctr->overlays = 0;
+}
+#endif
+
 static void ctr_update_viewport(
       ctr_video_t* ctr,
       settings_t *settings,
@@ -494,6 +512,10 @@ static void* ctr_init(const video_info_t* video,
    ctr->smooth        = video->smooth;
    ctr->vsync         = video->vsync;
    ctr->current_buffer_top = 0;
+
+#ifdef HAVE_OVERLAY
+   video_driver_set_rgba();
+#endif
 
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
     * mode with the parallax barrier disabled
@@ -895,6 +917,11 @@ static bool ctr_frame(void* data, const void* frame,
    }
 #endif
 
+#ifdef HAVE_OVERLAY
+   if (ctr->overlay_enabled)
+      ctr_render_overlay(ctr);
+#endif
+
 #ifdef HAVE_GFX_WIDGETS
    if (widgets_active)
       gfx_widgets_frame(video_info);
@@ -1264,6 +1291,216 @@ static void ctr_unload_texture(void *data, bool threaded,
    free(texture);
 }
 
+#ifdef HAVE_OVERLAY
+static void ctr_overlay_tex_geom(void *data,
+            unsigned image, float x, float y, float w, float h)
+{
+   ctr_video_t             *ctr = (ctr_video_t *)data;
+   struct ctr_overlay_data *o = NULL;
+
+   if (ctr)
+      o = (struct ctr_overlay_data *)&ctr->overlay[image];
+
+   if (!o)
+      return;
+
+//   printf("tex_geom[%i]: %i, %i, %.6f, %.6f\n%.6f, %.6f, ", image, o->texture.width, o->texture.height,x,y,w,h);
+
+   o->frame_coords->u0 = x*o->texture.width;
+   o->frame_coords->v0 = y*o->texture.height;
+   o->frame_coords->u1 = w*o->texture.width;
+   o->frame_coords->v1 = h*o->texture.height;
+
+//   printf("tex_geom[%i]: %i, %i, %i, %i\n", image, o->frame_coords->u0,o->frame_coords->v0,o->frame_coords->u1,o->frame_coords->v1);
+
+   GSPGPU_FlushDataCache(o->frame_coords, sizeof(ctr_vertex_t));
+
+}
+
+static void ctr_overlay_vertex_geom(void *data,
+            unsigned image, float x, float y, float w, float h)
+{
+   ctr_video_t             *ctr = (ctr_video_t *)data;
+   struct ctr_overlay_data *o = NULL;
+
+   if (ctr)
+      o = (struct ctr_overlay_data *)&ctr->overlay[image];
+
+   if (!o)
+      return;
+
+//   printf("vertex_geom[%i]: %.6f, %.6f, %.6f, %.6f, ", image, x,y,w,h);
+
+   o->frame_coords->x0 = x * CTR_TOP_FRAMEBUFFER_WIDTH;
+   o->frame_coords->y0 = y * CTR_TOP_FRAMEBUFFER_HEIGHT;
+   o->frame_coords->x1 = w * (o->frame_coords->x0 + o->texture.width);
+   o->frame_coords->y1 = h * (o->frame_coords->y0 + o->texture.height);
+
+//   printf("vertex_geom[%i]: %i, %i, %i, %i\n", image, o->frame_coords->x0,o->frame_coords->y0,o->frame_coords->x1,o->frame_coords->y1);
+
+   GSPGPU_FlushDataCache(o->frame_coords, sizeof(ctr_vertex_t));
+}
+
+static bool ctr_overlay_load(void *data,
+            const void *image_data, unsigned num_images)
+{
+   void* tmpdata;
+   unsigned i, j;
+   ctr_texture_t       *texture = NULL;
+   ctr_video_t             *ctr = (ctr_video_t *)data;
+   struct texture_image *images = (struct texture_image *)image_data;
+
+   ctr_free_overlay(ctr);
+
+   ctr->overlay = (struct ctr_overlay_data *)calloc(num_images, sizeof(*ctr->overlay));
+
+   if (!ctr)
+      return false;
+
+   ctr->overlays = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      struct ctr_overlay_data *o = (struct ctr_overlay_data *)&ctr->overlay[i];
+
+      o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
+
+      if (!ctr || !images || images[i].width > 1024 || images[i].height > 1024)
+         return 0;
+
+      memset(&o->texture, 0, sizeof(ctr_texture_t));
+
+      o->texture.width              = next_pow2(images[i].width);
+      o->texture.height             = next_pow2(images[i].height);
+      o->texture.data               = linearAlloc(
+            o->texture.width * o->texture.height * sizeof(uint32_t));
+
+      if (!o->texture.data)
+      {
+         free(o);
+         return 0;
+      }
+
+      uint32_t *src = NULL;
+      uint32_t *dst = NULL;
+
+      tmpdata = linearAlloc(images[i].width
+            * images[i].height * sizeof(uint32_t));
+      if (!tmpdata)
+      {
+         linearFree(o->texture.data);
+         free(o);
+         return 0;
+      }
+
+      src = (uint32_t*)images[i].pixels;
+      dst = (uint32_t*)tmpdata;
+
+      for (j = 0; j < images[i].width * images[i].height; j++)
+      {
+         *dst =
+              ((*src >> 8)  & 0x00FF00)
+            | ((*src >> 24) & 0xFF)
+            | ((*src << 8)  & 0xFF0000)
+            | ((*src << 24) & 0xFF000000);
+         dst++;
+         src++;
+      }
+
+      GSPGPU_FlushDataCache(tmpdata,
+            images[i].width * images[i].height * sizeof(uint32_t));
+      ctrGuCopyImage(true, tmpdata,
+            images[i].width, images[i].height, CTRGU_RGBA8, false,
+            o->texture.data, o->texture.width, CTRGU_RGBA8,  true);
+
+      ctr->ppf_event_pending = true;
+
+      linearFree(tmpdata);
+
+      ctr_overlay_tex_geom(ctr, i, 0, 0, 1, 1);
+      ctr_overlay_vertex_geom(ctr, i, 0, 0, 1, 1);
+
+      ctr_set_scale_vector(&o->scale_vector,
+                       CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                       o->texture.width, o->texture.height);
+
+      ctr->overlay[i].alpha_mod = 1.0f;
+   }
+
+   return true;
+}
+
+static void ctr_overlay_enable(void *data, bool state)
+{
+   ctr_video_t *ctr = (ctr_video_t *)data;
+
+   if (!ctr)
+      return;
+
+   ctr->overlay_enabled = state;
+}
+
+static void ctr_overlay_full_screen(void *data, bool enable)
+{
+   ctr_video_t *ctr = (ctr_video_t *)data;
+   ctr->overlay_full_screen = enable;
+}
+
+static void ctr_overlay_set_alpha(void *data, unsigned image, float mod){ }
+
+static void ctr_render_overlay(void *data)
+{
+   unsigned i;
+   ctr_video_t *ctr = (ctr_video_t*)data;
+
+   for (i = 0; i < ctr->overlays; i++)
+   {
+      ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->overlay[i].texture.data), ctr->overlay[i].texture.width, ctr->overlay[i].texture.height,
+                      GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
+                      GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+                      GPU_RGBA8);
+
+      GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
+      ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->overlay[i].scale_vector, 1);
+      ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->overlay[i].frame_coords));
+
+      GPU_SetViewport(NULL,
+                      VIRT_TO_PHYS(ctr->drawbuffers.top.left),
+                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                      ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+
+      if (ctr->video_mode == CTR_VIDEO_MODE_3D)
+      {
+         GPU_SetViewport(NULL,
+                         VIRT_TO_PHYS(ctr->drawbuffers.top.right),
+                         0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                         CTR_TOP_FRAMEBUFFER_WIDTH);
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+      }
+   }
+}
+
+static const video_overlay_interface_t ctr_overlay = {
+   ctr_overlay_enable,
+   ctr_overlay_load,
+   ctr_overlay_tex_geom,
+   ctr_overlay_vertex_geom,
+   ctr_overlay_full_screen,
+   ctr_overlay_set_alpha,
+};
+
+void ctr_overlay_interface(void *data, const video_overlay_interface_t **iface)
+{
+   ctr_video_t *ctr = (ctr_video_t *)data;
+
+   if (!ctr)
+      return;
+
+   *iface = &ctr_overlay;
+}
+#endif
+
 static void ctr_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
@@ -1348,7 +1585,7 @@ video_driver_t video_ctr =
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL,
+   ctr_overlay_interface,
 #endif
 #ifdef HAVE_VIDEO_LAYOUT
    NULL,
