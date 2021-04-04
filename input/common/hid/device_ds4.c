@@ -101,11 +101,12 @@ static void *ds4_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 
 static void ds4_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
+#ifdef DEBUG
    ds4_instance_t *instance = (ds4_instance_t *)data;
    if (!instance)
       return;
-
    RARCH_LOG_BUFFER(packet, size);
+#endif
 }
 
 static void ds4_set_rumble(void *data, enum retro_rumble_effect effect, uint16_t strength) { }

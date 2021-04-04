@@ -146,11 +146,12 @@ static void hid_null_get_buttons(void *data, input_bits_t *state) { }
  */
 static void hid_null_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
+#ifdef DEBUG
    hid_null_instance_t *instance = (hid_null_instance_t *)data;
    if (!instance)
       return;
-
    RARCH_LOG_BUFFER(packet, size);
+#endif
 }
 
 /**
