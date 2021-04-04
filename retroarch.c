@@ -65,7 +65,6 @@
 #include <boolean.h>
 #include <clamping.h>
 #include <string/stdstring.h>
-#include <streams/stdin_stream.h>
 #include <dynamic/dylib.h>
 #include <file/config_file.h>
 #include <lists/string_list.h>
@@ -9777,7 +9776,7 @@ static void dir_check_shader(struct rarch_state *p_rarch,
 #if defined(HAVE_MENU)
    menu_driver_set_last_shader_preset_path(set_shader_path);
 #endif
-   command_set_shader(set_shader_path);
+   command_set_shader(NULL, set_shader_path);
    dir_list->shader_loaded = true;
 }
 #endif
@@ -10304,51 +10303,19 @@ static void retroarch_autosave_deinit(struct rarch_state *p_rarch)
 
 /* COMMAND */
 
-#if defined(HAVE_COMMAND)
-#if (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
-static void command_reply(
-      struct rarch_state *p_rarch,
-      const char * data, size_t len)
-{
-   const enum cmd_source_t lastcmd_source = p_rarch->lastcmd_source;
+#ifdef HAVE_COMMAND
 
-   switch (lastcmd_source)
-   {
-      case CMD_STDIN:
-#ifdef HAVE_STDIN_CMD
-         fwrite(data, 1,len, stdout);
-#endif
-         break;
-      case CMD_NETWORK:
-#ifdef HAVE_NETWORK_CMD
-         sendto(p_rarch->lastcmd_net_fd, data, len, 0,
-               (struct sockaddr*)&p_rarch->lastcmd_net_source,
-               p_rarch->lastcmd_net_source_len);
-#endif
-         break;
-      case CMD_NONE:
-      default:
-         break;
-   }
-}
-#endif
-
-static bool command_version(const char* arg)
+bool command_version(command_t *cmd, const char* arg)
 {
    char reply[256]             = {0};
-#if (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
-   struct rarch_state *p_rarch = &rarch_st;
-#endif
 
    snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
-#if (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
-   command_reply(p_rarch, reply, strlen(reply));
-#endif
+   cmd->replier(cmd, reply, strlen(reply));
 
    return true;
 }
 
-static bool command_get_status(const char* arg)
+bool command_get_status(command_t *cmd, const char* arg)
 {
    char reply[4096]            = {0};
    bool contentless            = false;
@@ -10380,19 +10347,19 @@ static bool command_get_status(const char* arg)
        snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n", status, system_id, content_name, content_crc32);
    }
 
-   command_reply(p_rarch, reply, strlen(reply));
+   cmd->replier(cmd, reply, strlen(reply));
 
    return true;
 }
 
-static bool command_show_osd_msg(const char* arg)
+bool command_show_osd_msg(command_t *cmd, const char* arg)
 {
     runloop_msg_queue_push(arg, 1, 180, false, NULL,
           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
     return true;
 }
 
-static bool command_get_config_param(const char* arg)
+bool command_get_config_param(command_t *cmd, const char* arg)
 {
    char reply[8192]             = {0};
    struct rarch_state  *p_rarch = &rarch_st;
@@ -10429,12 +10396,12 @@ static bool command_get_config_param(const char* arg)
    /* TODO: query any string */
 
    snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
-   command_reply(p_rarch, reply, strlen(reply));
+   cmd->replier(cmd, reply, strlen(reply));
    return true;
 }
 
 #if defined(HAVE_CHEEVOS)
-static bool command_read_ram(const char *arg)
+bool command_read_ram(command_t *cmd, const char *arg)
 {
    unsigned i;
    char *reply                  = NULL;
@@ -10444,7 +10411,6 @@ static bool command_read_ram(const char *arg)
    unsigned int alloc_size      = 0;
    unsigned int addr            = -1;
    unsigned int len             = 0;
-   struct rarch_state  *p_rarch = &rarch_st;
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
@@ -10467,12 +10433,12 @@ static bool command_read_ram(const char *arg)
       strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
       len                  = reply_at + STRLEN_CONST(" -1\n") - reply;
    }
-   command_reply(p_rarch, reply, len);
+   cmd->replier(cmd, reply, len);
    free(reply);
    return true;
 }
 
-static bool command_write_ram(const char *arg)
+bool command_write_ram(command_t *cmd, const char *arg)
 {
    unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
    uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr);
@@ -10549,7 +10515,7 @@ static uint8_t* command_memory_get_pointer(unsigned address, unsigned int* max_b
    return NULL;
 }
 
-static bool command_read_memory(const char *arg)
+bool command_read_memory(command_t *cmd, const char *arg)
 {
    unsigned i;
    char* reply                  = NULL;
@@ -10559,7 +10525,6 @@ static bool command_read_memory(const char *arg)
    unsigned int alloc_size      = 0;
    unsigned int address         = -1;
    unsigned int len             = 0;
-   struct rarch_state *p_rarch  = &rarch_st;
    unsigned int max_bytes       = 0;
 
    if (sscanf(arg, "%x %u", &address, &nbytes) != 2)
@@ -10586,16 +10551,15 @@ static bool command_read_memory(const char *arg)
    else
       len                  = strlen(reply);
 
-   command_reply(p_rarch, reply, len);
+   cmd->replier(cmd, reply, len);
    free(reply);
    return true;
 }
 
-static bool command_write_memory(const char *arg)
+bool command_write_memory(command_t *cmd, const char *arg)
 {
    unsigned int address         = (unsigned int)strtoul(arg, (char**)&arg, 16);
    unsigned int max_bytes       = 0;
-   struct rarch_state *p_rarch  = &rarch_st;
    char reply[128]              = "";
    char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
    uint8_t *data                = command_memory_get_pointer(address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
@@ -10622,334 +10586,8 @@ static bool command_write_memory(const char *arg)
 #endif
    }
 
-   command_reply(p_rarch, reply, strlen(reply));
+   cmd->replier(cmd, reply, strlen(reply));
    return true;
-}
-
-#ifdef HAVE_NETWORK_CMD
-static bool command_get_arg(const char *tok,
-      const char **arg, unsigned *index)
-{
-   unsigned i;
-
-   for (i = 0; i < ARRAY_SIZE(map); i++)
-   {
-      if (string_is_equal(tok, map[i].str))
-      {
-         if (arg)
-            *arg = NULL;
-
-         if (index)
-            *index = i;
-
-         return true;
-      }
-   }
-
-   for (i = 0; i < ARRAY_SIZE(action_map); i++)
-   {
-      const char *str = strstr(tok, action_map[i].str);
-      if (str == tok)
-      {
-         const char *argument = str + strlen(action_map[i].str);
-         if (*argument != ' ' && *argument != '\0')
-            return false;
-
-         if (arg)
-            *arg = argument + 1;
-
-         if (index)
-            *index = i;
-
-         return true;
-      }
-   }
-
-   return false;
-}
-
-static bool command_network_init(command_t *handle, uint16_t port)
-{
-   struct addrinfo *res  = NULL;
-   int fd                = socket_init((void**)&res, port,
-         NULL, SOCKET_TYPE_DATAGRAM);
-
-   RARCH_LOG("%s %hu.\n",
-         msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
-         (unsigned short)port);
-
-   if (fd < 0)
-      goto error;
-
-   handle->net_fd = fd;
-
-   if (!socket_nonblock(handle->net_fd))
-      goto error;
-
-   if (!socket_bind(handle->net_fd, (void*)res))
-   {
-      RARCH_ERR("%s.\n",
-            msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
-      goto error;
-   }
-
-   freeaddrinfo_retro(res);
-   return true;
-
-error:
-   if (res)
-      freeaddrinfo_retro(res);
-   return false;
-}
-
-static bool command_verify(const char *cmd)
-{
-   unsigned i;
-
-   if (command_get_arg(cmd, NULL, NULL))
-      return true;
-
-   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
-   RARCH_ERR("\tValid commands:\n");
-   for (i = 0; i < ARRAY_SIZE(map); i++)
-      RARCH_ERR("\t\t%s\n", map[i].str);
-
-   for (i = 0; i < ARRAY_SIZE(action_map); i++)
-      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
-
-   return false;
-}
-
-static bool command_network_send(const char *cmd_)
-{
-   char *command        = NULL;
-   char *save           = NULL;
-   const char *cmd      = NULL;
-
-   if (!network_init())
-      return false;
-
-   if (!(command = strdup(cmd_)))
-      return false;
-
-   cmd                  = strtok_r(command, ";", &save);
-   if (cmd)
-   {
-      uint16_t port     = DEFAULT_NETWORK_CMD_PORT;
-      const char *port_ = NULL;
-      const char *host  = strtok_r(NULL, ";", &save);
-      if (host)
-         port_          = strtok_r(NULL, ";", &save);
-      else
-      {
-#ifdef _WIN32
-         host = "127.0.0.1";
-#else
-         host = "localhost";
-#endif
-      }
-
-      if (port_)
-         port = strtoul(port_, NULL, 0);
-
-      RARCH_LOG("%s: \"%s\" to %s:%hu\n",
-            msg_hash_to_str(MSG_SENDING_COMMAND),
-            cmd, host, (unsigned short)port);
-
-      if (command_verify(cmd) && udp_send_packet(host, port, cmd))
-      {
-         free(command);
-         return true;
-      }
-   }
-
-   free(command);
-   return false;
-}
-#endif
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
-static void command_parse_sub_msg(command_t *handle, const char *tok)
-{
-   const char *arg = NULL;
-   unsigned index  = 0;
-
-   if (command_get_arg(tok, &arg, &index))
-   {
-      if (arg)
-      {
-         if (!action_map[index].action(arg))
-            RARCH_ERR("Command \"%s\" failed.\n", arg);
-      }
-      else
-         handle->state[map[index].id] = true;
-   }
-   else
-      RARCH_WARN("%s \"%s\" %s.\n",
-            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
-            tok,
-            msg_hash_to_str(MSG_RECEIVED));
-}
-
-static void command_parse_msg(
-      struct rarch_state *p_rarch,
-      command_t *handle,
-      char *buf, enum cmd_source_t source)
-{
-   char                            *save  = NULL;
-   const char                        *tok = strtok_r(buf, "\n", &save);
-
-   p_rarch->lastcmd_source                = source;
-
-   while (tok)
-   {
-      command_parse_sub_msg(handle, tok);
-      tok = strtok_r(NULL, "\n", &save);
-   }
-
-   p_rarch->lastcmd_source = CMD_NONE;
-}
-
-static void command_network_poll(
-      struct rarch_state *p_rarch,
-      command_t *handle)
-{
-   fd_set fds;
-   struct timeval       tmp_tv = {0};
-
-   if (handle->net_fd < 0)
-      return;
-
-   FD_ZERO(&fds);
-   FD_SET(handle->net_fd, &fds);
-
-   if (socket_select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
-      return;
-
-   if (!FD_ISSET(handle->net_fd, &fds))
-      return;
-
-   for (;;)
-   {
-      ssize_t ret;
-      char buf[1024];
-
-      buf[0] = '\0';
-
-      p_rarch->lastcmd_net_fd         = handle->net_fd;
-      p_rarch->lastcmd_net_source_len = sizeof(p_rarch->lastcmd_net_source);
-      ret                             = recvfrom(handle->net_fd, buf,
-            sizeof(buf) - 1, 0,
-            (struct sockaddr*)&p_rarch->lastcmd_net_source,
-            &p_rarch->lastcmd_net_source_len);
-
-      if (ret <= 0)
-         break;
-
-      buf[ret] = '\0';
-
-      command_parse_msg(p_rarch, handle, buf, CMD_NETWORK);
-   }
-}
-#endif
-
-static bool command_free(command_t *handle)
-{
-#ifdef HAVE_NETWORK_CMD
-   if (handle && handle->net_fd >= 0)
-      socket_close(handle->net_fd);
-#endif
-
-   free(handle);
-
-   return true;
-}
-
-#ifdef HAVE_STDIN_CMD
-static bool command_stdin_init(command_t *handle)
-{
-#ifndef _WIN32
-#ifdef HAVE_NETWORKING
-   if (!socket_nonblock(STDIN_FILENO))
-      return false;
-#endif
-#endif
-
-   handle->stdin_enable = true;
-   return true;
-}
-
-static void command_stdin_poll(
-	struct rarch_state *p_rarch,
-		command_t *handle)
-{
-   ptrdiff_t msg_len;
-   char *last_newline = NULL;
-   ssize_t        ret = read_stdin(
-         handle->stdin_buf + handle->stdin_buf_ptr,
-         STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
-
-   if (ret == 0)
-      return;
-
-   handle->stdin_buf_ptr                    += ret;
-   handle->stdin_buf[handle->stdin_buf_ptr]  = '\0';
-
-   last_newline                              =
-      strrchr(handle->stdin_buf, '\n');
-
-   if (!last_newline)
-   {
-      /* We're receiving bogus data in pipe
-       * (no terminating newline), flush out the buffer. */
-      if (handle->stdin_buf_ptr + 1 >= STDIN_BUF_SIZE)
-      {
-         handle->stdin_buf_ptr = 0;
-         handle->stdin_buf[0]  = '\0';
-      }
-
-      return;
-   }
-
-   *last_newline++ = '\0';
-   msg_len         = last_newline - handle->stdin_buf;
-
-#if defined(HAVE_NETWORKING)
-   command_parse_msg(p_rarch,
-         handle, handle->stdin_buf, CMD_STDIN);
-#endif
-
-   memmove(handle->stdin_buf, last_newline,
-         handle->stdin_buf_ptr - msg_len);
-   handle->stdin_buf_ptr -= msg_len;
-}
-#endif
-
-static bool command_network_new(
-      command_t *handle,
-      bool stdin_enable,
-      bool network_enable,
-      uint16_t port)
-{
-#ifdef HAVE_NETWORK_CMD
-   handle->net_fd = -1;
-   if (network_enable && !command_network_init(handle, port))
-      goto error;
-#endif
-
-#ifdef HAVE_STDIN_CMD
-   handle->stdin_enable = stdin_enable;
-   if (stdin_enable && !command_stdin_init(handle))
-      goto error;
-#endif
-
-   return true;
-
-#if defined(HAVE_NETWORK_CMD) || defined(HAVE_STDIN_CMD)
-error:
-   command_free(handle);
-   return false;
-#endif
 }
 #endif
 
@@ -11049,7 +10687,7 @@ static bool retroarch_apply_shader(
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool command_set_shader(const char *arg)
+bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    struct rarch_state  *p_rarch = &rarch_st;
@@ -22630,20 +22268,16 @@ static void input_driver_poll(void)
    }
 
 #ifdef HAVE_COMMAND
-   if (p_rarch->input_driver_command)
+   for (i = 0; i < ARRAY_SIZE(p_rarch->input_driver_command); i++)
    {
-      memset(p_rarch->input_driver_command->state,
-            0, sizeof(p_rarch->input_driver_command->state));
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
-      command_network_poll(p_rarch,
-            p_rarch->input_driver_command);
-#endif
+      if (p_rarch->input_driver_command[i])
+      {
+         memset(p_rarch->input_driver_command[i]->state,
+                0, sizeof(p_rarch->input_driver_command[i]->state));
 
-#ifdef HAVE_STDIN_CMD
-      if (p_rarch->input_driver_command->stdin_enable)
-         command_stdin_poll(p_rarch,
-		 p_rarch->input_driver_command);
-#endif
+         p_rarch->input_driver_command[i]->poll(
+            p_rarch->input_driver_command[i]);
+      }
    }
 #endif
 
@@ -24756,16 +24390,18 @@ static INLINE bool input_keys_pressed_other_sources(
       unsigned i,
       input_bits_t* p_new_state)
 {
+#ifdef HAVE_COMMAND
+   int j;
+   for (j = 0; j < ARRAY_SIZE(p_rarch->input_driver_command); j++)
+      if ((i < RARCH_BIND_LIST_END) && p_rarch->input_driver_command[j]
+         && p_rarch->input_driver_command[j]->state[i])
+         return true;
+#endif
+
 #ifdef HAVE_OVERLAY
    if (p_rarch->overlay_ptr &&
          ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, i))))
       return true;
-#endif
-
-#ifdef HAVE_COMMAND
-   if (p_rarch->input_driver_command)
-      return ((i < RARCH_BIND_LIST_END)
-         && p_rarch->input_driver_command->state[i]);
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
@@ -25024,7 +24660,7 @@ void input_driver_unset_nonblock_state(void)
 }
 
 #ifdef HAVE_COMMAND
-static bool input_driver_init_command(struct rarch_state *p_rarch)
+static void input_driver_init_command(struct rarch_state *p_rarch)
 {
    settings_t *settings          = p_rarch->configuration_settings;
    bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
@@ -25033,35 +24669,50 @@ static bool input_driver_init_command(struct rarch_state *p_rarch)
    bool grab_stdin               = p_rarch->current_input->grab_stdin &&
       p_rarch->current_input->grab_stdin(p_rarch->current_input_data);
 
-   if (!input_stdin_cmd_enable && !input_network_cmd_enable)
-      return false;
-
-   if (input_stdin_cmd_enable && grab_stdin)
+   #ifdef HAVE_STDIN_CMD
+   if (input_stdin_cmd_enable)
    {
-      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
-            "Cannot use this command interface.\n");
+      if (grab_stdin)
+      {
+         RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
+               "Cannot use this command interface.\n");
+      }
+      else {
+         p_rarch->input_driver_command[0] = command_stdin_new();
+         if (!p_rarch->input_driver_command[1])
+            RARCH_ERR("Failed to initialize the stdin command interface.\n");
+      }
    }
+   #endif
 
-   p_rarch->input_driver_command = (command_t*)
-      calloc(1, sizeof(*p_rarch->input_driver_command));
+   /* Initialize the network command interface */
+   #ifdef HAVE_NETWORK_CMD
+   if (input_network_cmd_enable)
+   {
+      p_rarch->input_driver_command[1] = command_network_new(network_cmd_port);
+      if (!p_rarch->input_driver_command[1])
+         RARCH_ERR("Failed to initialize the network command interface.\n");
+   }
+   #endif
 
-   if (p_rarch->input_driver_command)
-      if (command_network_new(
-               p_rarch->input_driver_command,
-               input_stdin_cmd_enable && !grab_stdin,
-               input_network_cmd_enable,
-               network_cmd_port))
-         return true;
-
-   RARCH_ERR("Failed to initialize command interface.\n");
-   return false;
+   #ifdef HAVE_LAKKA
+   p_rarch->input_driver_command[2] = command_uds_new();
+   if (!p_rarch->input_driver_command[2])
+      RARCH_ERR("Failed to initialize the UDS command interface.\n");
+   #endif
 }
 
 static void input_driver_deinit_command(struct rarch_state *p_rarch)
 {
-   if (p_rarch->input_driver_command)
-      command_free(p_rarch->input_driver_command);
-   p_rarch->input_driver_command = NULL;
+   int i;
+   for (i = 0; i < ARRAY_SIZE(p_rarch->input_driver_command); i++)
+   {
+      if (p_rarch->input_driver_command[i])
+         p_rarch->input_driver_command[i]->destroy(
+            p_rarch->input_driver_command[i]);
+
+      p_rarch->input_driver_command[i] = NULL;
+    }
 }
 #endif
 
