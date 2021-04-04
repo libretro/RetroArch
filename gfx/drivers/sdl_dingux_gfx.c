@@ -509,6 +509,23 @@ static void sdl_dingux_sanitize_frame_dimensions(
    /* Neo Geo @ 304x224 */
    if (!vid->integer_scaling && (width == 304) && (height == 224))
       *sanitized_width = 320;
+#if defined(DINGUX_BETA)
+   else if (vid->keep_aspect && !vid->integer_scaling)
+   {
+      /* Neo Geo Pocket (x2) @ 320x304 */
+      if ((width == 320) && (height == 304))
+         *sanitized_width = 336;
+      /* GB/GBC/GG @ 160x144 */
+      else if ((width == 160) && (height == 144))
+         *sanitized_width = 176;
+      /* GB/GBC/GG (x2) @ 320x288 */
+      else if ((width == 320) && (height == 288))
+         *sanitized_width = 336;
+      /* GB/GBC/GG (x3) @ 480x432 */
+      else if ((width == 480) && (height == 432))
+         *sanitized_width = 496;
+   }
+#endif
 
    /*** HEIGHT ***/
    *sanitized_height = height;
@@ -521,12 +538,15 @@ static void sdl_dingux_sanitize_frame_dimensions(
    /* TIC-80 @ 240x136 */
    else if ((width == 240) && (height == 136))
       *sanitized_height = 144;
-   /* GBA @ 240x160 */
-   else if (vid->keep_aspect && (width == 240) && (height == 160))
-      *sanitized_height = 162;
-   /* GBA (x2) @ 480x320 */
-   else if (vid->keep_aspect && (width == 480) && (height == 320))
-      *sanitized_height = 324;
+   else if (vid->keep_aspect && !vid->integer_scaling)
+   {
+      /* GBA @ 240x160 */
+      if ((width == 240) && (height == 160))
+         *sanitized_height = 162;
+      /* GBA (x2) @ 480x320 */
+      else if ((width == 480) && (height == 320))
+         *sanitized_height = 324;
+   }
 #else
    /* Neo Geo Pocket @ 160x152 */
    if (!vid->integer_scaling && (width == 160) && (height == 152))
