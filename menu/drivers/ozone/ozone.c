@@ -2897,7 +2897,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool input_menu_swap_ok_cancel_buttons = video_info->input_menu_swap_ok_cancel_buttons;
    bool battery_level_enable              = video_info->battery_level_enable;
    bool timedate_enable                   = video_info->timedate_enable;
-   gfx_display_t            *p_disp       = disp_get_ptr();
+   gfx_display_t            *p_disp       = (gfx_display_t*)video_info->disp_userdata;;
    gfx_animation_t *p_anim                = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
 

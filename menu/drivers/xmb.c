@@ -4700,7 +4700,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool libretro_running                   = video_info->libretro_running;
    unsigned menu_shader_pipeline           = video_info->menu_shader_pipeline;
    float menu_wallpaper_opacity            = video_info->menu_wallpaper_opacity;
-   gfx_display_t            *p_disp        = disp_get_ptr();
+   gfx_display_t            *p_disp        = (gfx_display_t*)video_info->disp_userdata;
    gfx_animation_t          *p_anim        = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx       = p_disp->dispctx;
    bool input_dialog_display_kb            = menu_input_dialog_get_display_kb();

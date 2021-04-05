@@ -31999,6 +31999,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->input_driver_nonblock_state = p_rarch->input_driver_nonblock_state;
    video_info->input_driver_grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
+   video_info->disp_userdata               = &p_rarch->dispgfx;
 
    video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
 

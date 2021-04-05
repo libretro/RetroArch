@@ -1116,6 +1116,7 @@ typedef struct video_frame_info
 {
    void *userdata;
    void *widgets_userdata;
+   void *disp_userdata;
 
    int custom_vp_x;
    int custom_vp_y;
