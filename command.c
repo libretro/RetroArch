@@ -100,7 +100,7 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
 static void command_parse_msg(
       command_t *handle, char *buf)
 {
-   char *save  = NULL;
+   char     *save  = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
 
    while (tok)
@@ -111,7 +111,6 @@ static void command_parse_msg(
 }
 
 #if defined(HAVE_NETWORK_CMD)
-
 typedef struct
 {
    /* Network socket FD */
@@ -147,7 +146,7 @@ static void command_network_poll(command_t *handle)
 {
    fd_set fds;
    struct timeval       tmp_tv = {0};
-   command_network_t *netcmd = (command_network_t*)handle->userptr;
+   command_network_t   *netcmd = (command_network_t*)handle->userptr;
 
    if (netcmd->net_fd < 0)
       return;
@@ -182,11 +181,12 @@ static void command_network_poll(command_t *handle)
 
 command_t* command_network_new(uint16_t port)
 {
-   struct addrinfo *res  = NULL;
-   command_t *cmd = (command_t*)calloc(1, sizeof(command_t));
+   struct addrinfo     *res  = NULL;
+   command_t            *cmd = (command_t*)calloc(1, sizeof(command_t));
    command_network_t *netcmd = (command_network_t*)calloc(
                                    1, sizeof(command_network_t));
-   int fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
+   int fd                    = socket_init(
+         (void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
 
    RARCH_LOG("%s %hu.\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
@@ -196,10 +196,10 @@ command_t* command_network_new(uint16_t port)
       goto error;
 
    netcmd->net_fd = fd;
-   cmd->userptr = netcmd;
-   cmd->poll = command_network_poll;
-   cmd->replier = network_command_reply;
-   cmd->destroy = network_command_free;
+   cmd->userptr   = netcmd;
+   cmd->poll      = command_network_poll;
+   cmd->replier   = network_command_reply;
+   cmd->destroy   = network_command_free;
 
    if (!socket_nonblock(netcmd->net_fd))
       goto error;
@@ -246,11 +246,12 @@ static void stdin_command_free(command_t *handle)
    free(handle);
 }
 
-static void command_stdin_poll(command_t *handle) {
+static void command_stdin_poll(command_t *handle)
+{
    ptrdiff_t msg_len;
-   char *last_newline = NULL;
+   char        *last_newline = NULL;
    command_stdin_t *stdincmd = (command_stdin_t*)handle->userptr;
-   ssize_t        ret = read_stdin(
+   ssize_t               ret = read_stdin(
          stdincmd->stdin_buf + stdincmd->stdin_buf_ptr,
          CMD_BUF_SIZE - stdincmd->stdin_buf_ptr - 1);
 
@@ -297,10 +298,10 @@ command_t* command_stdin_new(void)
 #endif
 #endif
 
-   cmd = (command_t*)calloc(1, sizeof(command_t));
-   stdincmd = (command_stdin_t*)calloc(1, sizeof(command_stdin_t));
+   cmd          = (command_t*)calloc(1, sizeof(command_t));
+   stdincmd     = (command_stdin_t*)calloc(1, sizeof(command_stdin_t));
    cmd->userptr = stdincmd;
-   cmd->poll = command_stdin_poll;
+   cmd->poll    = command_stdin_poll;
    cmd->replier = stdin_command_reply;
    cmd->destroy = stdin_command_free;
 
@@ -343,11 +344,12 @@ static void uds_command_free(command_t *handle)
    free(handle);
 }
 
-static void command_uds_poll(command_t *handle) {
+static void command_uds_poll(command_t *handle)
+{
    int i;
-   command_uds_t *udscmd = (command_uds_t*)handle->userptr;
-   int maxfd = udscmd->sfd;
    fd_set fds;
+   command_uds_t *udscmd       = (command_uds_t*)handle->userptr;
+   int maxfd                   = udscmd->sfd;
    struct timeval       tmp_tv = {0};
 
    if (udscmd->sfd < 0)
@@ -355,6 +357,7 @@ static void command_uds_poll(command_t *handle) {
 
    FD_ZERO(&fds);
    FD_SET(udscmd->sfd, &fds);
+
    for (i = 0; i < MAX_USER_CONNECTIONS; i++)
    {
       if (udscmd->userfd[i] >= 0)
@@ -418,9 +421,9 @@ command_t* command_uds_new(void)
    command_t *cmd;
    command_uds_t *subcmd;
    struct sockaddr_un addr;
-   const char *sp = "retroarch/cmd";
+   const char   *sp = "retroarch/cmd";
    socklen_t addrsz = offsetof(struct sockaddr_un, sun_path) + strlen(sp) + 1;
-   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+   int           fd = socket(AF_UNIX, SOCK_STREAM, 0);
    if (fd < 0)
       return NULL;
 
@@ -430,7 +433,8 @@ command_t* command_uds_new(void)
    strcpy(&addr.sun_path[1], sp);
 
    if (bind(fd, (struct sockaddr*)&addr, addrsz) < 0 ||
-       listen(fd, MAX_USER_CONNECTIONS) < 0) {
+       listen(fd, MAX_USER_CONNECTIONS) < 0)
+   {
       socket_close(fd);
       return NULL;
    }
@@ -441,15 +445,15 @@ command_t* command_uds_new(void)
       return NULL;
    }
 
-   cmd = (command_t*)calloc(1, sizeof(command_t));
-   subcmd = (command_uds_t*)calloc(1, sizeof(command_uds_t));
-   subcmd->sfd = fd;
+   cmd             = (command_t*)calloc(1, sizeof(command_t));
+   subcmd          = (command_uds_t*)calloc(1, sizeof(command_uds_t));
+   subcmd->sfd     = fd;
    subcmd->last_fd = -1;
    for (i = 0; i < MAX_USER_CONNECTIONS; i++)
       subcmd->userfd[i] = -1;
 
    cmd->userptr = subcmd;
-   cmd->poll = command_uds_poll;
+   cmd->poll    = command_uds_poll;
    cmd->replier = uds_command_reply;
    cmd->destroy = uds_command_free;
 
