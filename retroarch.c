@@ -14000,7 +14000,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(p_rarch, DRIVER_AUDIO_MASK);
-         drivers_init(p_rarch, DRIVER_AUDIO_MASK);
+         drivers_init(p_rarch, DRIVER_AUDIO_MASK, verbosity_is_enabled());
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
@@ -19582,7 +19582,8 @@ const char* config_get_record_driver_options(void)
 
 #if 0
 /* TODO/FIXME - not used apparently */
-static void find_record_driver(struct rarch_state *p_rarch, const char *prefix)
+static void find_record_driver(struct rarch_state *p_rarch, const char *prefix,
+      bool verbosity_enabled)
 {
    settings_t *settings = p_rarch->configuration_settings;
    int i                = (int)driver_find_index(
@@ -19593,7 +19594,7 @@ static void find_record_driver(struct rarch_state *p_rarch, const char *prefix)
       p_rarch->recording_driver = (const record_driver_t*)record_drivers[i];
    else
    {
-      if (verbosity_is_enabled())
+      if (verbosity_enabled)
       {
          unsigned d;
 
@@ -27555,7 +27556,8 @@ static bool audio_driver_deinit(struct rarch_state *p_rarch)
    return audio_driver_deinit_internal(p_rarch);
 }
 
-static bool audio_driver_find_driver(struct rarch_state *p_rarch, const char *prefix)
+static bool audio_driver_find_driver(struct rarch_state *p_rarch, const char *prefix,
+      bool verbosity_enabled)
 {
    settings_t *settings    = p_rarch->configuration_settings;
    int i                   = (int)driver_find_index(
@@ -27567,7 +27569,7 @@ static bool audio_driver_find_driver(struct rarch_state *p_rarch, const char *pr
          audio_drivers[i];
    else
    {
-      if (verbosity_is_enabled())
+      if (verbosity_enabled)
       {
          unsigned d;
          RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
@@ -27612,6 +27614,7 @@ static bool audio_driver_init_internal(
    size_t outsamples_max   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * slowmotion_ratio;
    int16_t *conv_buf       = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
    float *audio_buf        = (float*)memalign_alloc(64, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
+   bool verbosity_enabled  = verbosity_is_enabled();
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
@@ -27650,7 +27653,7 @@ static bool audio_driver_init_internal(
       return false;
    }
 
-   audio_driver_find_driver(p_rarch, "audio driver");
+   audio_driver_find_driver(p_rarch, "audio driver", verbosity_enabled);
 
    if (!p_rarch->current_audio || !p_rarch->current_audio->init)
    {
@@ -29749,6 +29752,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    struct retro_game_geometry *geom       = &p_rarch->video_driver_av_info.geometry;
    const enum retro_pixel_format
       video_driver_pix_fmt                = p_rarch->video_driver_pix_fmt;
+   bool verbosity_enabled                 = verbosity_is_enabled();
 #ifdef HAVE_VIDEO_FILTER
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
@@ -29874,7 +29878,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    tmp                               = p_rarch->current_input;
    /* Need to grab the "real" video driver interface on a reinit. */
-   video_driver_find_driver(p_rarch, "video driver");
+   video_driver_find_driver(p_rarch, "video driver", verbosity_enabled);
 
 #ifdef HAVE_THREADS
    video.is_threaded                 = VIDEO_DRIVER_IS_THREADED_INTERNAL();
@@ -30680,7 +30684,7 @@ static void video_driver_restore_cached(struct rarch_state *p_rarch,
    }
 }
 
-static bool video_driver_find_driver(struct rarch_state *p_rarch, const char *prefix)
+static bool video_driver_find_driver(struct rarch_state *p_rarch, const char *prefix, bool verbosity_enabled)
 {
    int i;
    settings_t          *settings           = p_rarch->configuration_settings;
@@ -30768,7 +30772,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch, const char *pr
       p_rarch->current_video = (video_driver_t*)video_drivers[i];
    else
    {
-      if (verbosity_is_enabled())
+      if (verbosity_enabled)
       {
          unsigned d;
          RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
@@ -30821,7 +30825,7 @@ static void video_driver_reinit_context(struct rarch_state *p_rarch,
    memcpy(hwr, &hwr_copy, sizeof(*hwr));
    p_rarch->hw_render_context_negotiation = iface;
 
-   drivers_init(p_rarch, flags);
+   drivers_init(p_rarch, flags, verbosity_is_enabled());
 }
 
 void video_driver_reinit(int flags)
@@ -32185,7 +32189,8 @@ const char* config_get_location_driver_options(void)
    return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
 }
 
-static void location_driver_find_driver(struct rarch_state *p_rarch, const char *prefix)
+static void location_driver_find_driver(struct rarch_state *p_rarch, const char *prefix,
+      bool verbosity_enabled)
 {
    settings_t         *settings = p_rarch->configuration_settings;
    int i                        = (int)driver_find_index(
@@ -32309,7 +32314,7 @@ static bool driver_location_get_position(double *lat, double *lon,
    return false;
 }
 
-static void init_location(void)
+static void init_location(bool verbosity_enabled)
 {
    struct rarch_state  *p_rarch = &rarch_st;
    rarch_system_info_t *system  = &p_rarch->runloop_system;
@@ -32318,7 +32323,7 @@ static void init_location(void)
    if (p_rarch->location_data)
       return;
 
-   location_driver_find_driver(p_rarch, "location driver");
+   location_driver_find_driver(p_rarch, "location driver", verbosity_enabled);
 
    p_rarch->location_data = p_rarch->location_driver->init();
 
@@ -32527,7 +32532,8 @@ void driver_set_nonblock_state(void)
  * Initializes drivers.
  * @flags determines which drivers get initialized.
  **/
-static void drivers_init(struct rarch_state *p_rarch, int flags)
+static void drivers_init(struct rarch_state *p_rarch, int flags,
+      bool verbosity_enabled)
 {
 #ifdef HAVE_MENU
    struct menu_state  *menu_st = &p_rarch->menu_driver_state;
@@ -32631,7 +32637,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    {
       /* Only initialize location driver if we're ever going to use it. */
       if (p_rarch->location_driver_active)
-         init_location();
+         init_location(verbosity_is_enabled());
    }
 
    core_info_init_current_core();
@@ -33911,13 +33917,14 @@ static void retroarch_print_help(const char *arg0)
  * with command line options overriding the config file.
  *
  **/
-static void retroarch_parse_input_and_config(
+static bool retroarch_parse_input_and_config(
       struct rarch_state *p_rarch,
       global_t *global,
       int argc, char *argv[])
 {
    unsigned i;
    static bool           first_run = true;
+   bool verbosity_enabled          = false;
    const char           *optstring = NULL;
    bool              explicit_menu = false;
    bool                 cli_active = false;
@@ -34552,7 +34559,9 @@ static void retroarch_parse_input_and_config(
       }
    }
 
-   if (verbosity_is_enabled())
+   verbosity_enabled = verbosity_is_enabled();
+
+   if (verbosity_enabled)
       rarch_log_file_init(
             p_rarch->configuration_settings->bools.log_to_file,
             p_rarch->configuration_settings->bools.log_to_file_timestamp,
@@ -34616,6 +34625,8 @@ static void retroarch_parse_input_and_config(
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          path_is_directory(global->name.savestate))
       dir_set(RARCH_DIR_SAVESTATE, global->name.savestate);
+
+   return verbosity_enabled;
 }
 
 static bool retroarch_validate_per_core_options(char *s,
@@ -34713,7 +34724,8 @@ static void retroarch_validate_cpu_features(void)
 #ifdef HAVE_MENU
 static void menu_driver_find_driver(
       struct rarch_state *p_rarch,
-      const char *prefix)
+      const char *prefix,
+      bool verbosity_enabled)
 {
    settings_t *settings = p_rarch->configuration_settings;
    int i                = (int)driver_find_index(
@@ -34725,7 +34737,7 @@ static void menu_driver_find_driver(
          menu_ctx_drivers[i];
    else
    {
-      if (verbosity_is_enabled())
+      if (verbosity_enabled)
       {
          unsigned d;
          RARCH_WARN("Couldn't find any %s named \"%s\"\n", prefix,
@@ -34785,6 +34797,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
    char log_file_name[128];
 #endif
+   bool verbosity_enabled       = false;
    bool           init_failed   = false;
    struct rarch_state *p_rarch  = &rarch_st;
    global_t            *global  = &p_rarch->g_extern;
@@ -34805,7 +34818,7 @@ bool retroarch_main_init(int argc, char *argv[])
    /* Have to initialise non-file logging once at the start... */
    retro_main_log_file_init(NULL, false);
 
-   retroarch_parse_input_and_config(p_rarch, &p_rarch->g_extern, argc, argv);
+   verbosity_enabled = retroarch_parse_input_and_config(p_rarch, &p_rarch->g_extern, argc, argv);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
@@ -34818,7 +34831,7 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 #endif
 
-   if (verbosity_is_enabled())
+   if (verbosity_enabled)
    {
       {
          char str_output[256];
@@ -34928,15 +34941,15 @@ bool retroarch_main_init(int argc, char *argv[])
     * Attempts to find a default driver for
     * all driver types.
     */
-   audio_driver_find_driver(p_rarch,  "audio driver");
-   video_driver_find_driver(p_rarch,  "video driver");
+   audio_driver_find_driver(p_rarch,  "audio driver", verbosity_enabled);
+   video_driver_find_driver(p_rarch,  "video driver", verbosity_enabled);
    input_driver_find_driver(p_rarch,  "input driver");
    camera_driver_find_driver(p_rarch, "camera driver");
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
-   location_driver_find_driver(p_rarch, "location driver");
+   location_driver_find_driver(p_rarch, "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
-   menu_driver_find_driver(p_rarch, "menu driver");
+   menu_driver_find_driver(p_rarch, "menu driver",    verbosity_enabled);
 #endif
 
    /* Attempt to initialize core */
@@ -34975,7 +34988,7 @@ bool retroarch_main_init(int argc, char *argv[])
    cheat_manager_state_free();
    command_event_init_cheats(p_rarch->configuration_settings, p_rarch);
 #endif
-   drivers_init(p_rarch, DRIVERS_CMD_ALL);
+   drivers_init(p_rarch, DRIVERS_CMD_ALL, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(p_rarch);
    input_driver_init_command(p_rarch);

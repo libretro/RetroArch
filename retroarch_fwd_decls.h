@@ -114,7 +114,8 @@ static void audio_mixer_menu_stop_cb(
 static void video_driver_gpu_record_deinit(struct rarch_state *p_rarch);
 static retro_proc_address_t video_driver_get_proc_address(const char *sym);
 static uintptr_t video_driver_get_current_framebuffer(void);
-static bool video_driver_find_driver(struct rarch_state *p_rarch, const char *prefix);
+static bool video_driver_find_driver(struct rarch_state *p_rarch, const char *prefix,
+      bool verbosity_enabled);
 
 #ifdef HAVE_BSV_MOVIE
 static void bsv_movie_deinit(struct rarch_state *p_rarch);
@@ -123,7 +124,8 @@ static bool bsv_movie_check(struct rarch_state *p_rarch);
 #endif
 
 static void driver_uninit(struct rarch_state *p_rarch, int flags);
-static void drivers_init(struct rarch_state *p_rarch,  int flags);
+static void drivers_init(struct rarch_state *p_rarch,  int flags,
+      bool verbosity_enabled);
 
 #if defined(HAVE_RUNAHEAD)
 static void core_free_retro_game_info(struct retro_game_info *dest);
