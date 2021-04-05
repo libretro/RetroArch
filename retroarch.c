@@ -22295,7 +22295,6 @@ static int16_t input_state_device(
 {
    int16_t res                   = 0;
    settings_t *settings          = p_rarch->configuration_settings;
-   bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
    input_mapper_t *handle        = &p_rarch->input_driver_mapper;
 
    switch (device)
@@ -22312,30 +22311,27 @@ static int16_t input_state_device(
             else
 #endif
             {
-               if (input_remap_binds_enable)
-               {
-                  bool bind_valid = p_rarch->libretro_input_binds[port]
-                     && p_rarch->libretro_input_binds[port][id].valid;
+               bool bind_valid = p_rarch->libretro_input_binds[port]
+                  && p_rarch->libretro_input_binds[port][id].valid;
 
-                  if (!
-                        (      bind_valid
+               if (!
+                     (      bind_valid
                             && id != settings->uints.input_remap_ids[port][id]
-                        )
                      )
+                  )
+               {
+                  if (button_mask)
                   {
-                     if (button_mask)
-                     {
-                        if (ret & (1 << id))
-                           res |= (1 << id);
-                     }
-                     else
-                        res = ret;
-
+                     if (ret & (1 << id))
+                        res |= (1 << id);
                   }
+                  else
+                     res = ret;
 
-                  if (BIT256_GET(handle->buttons[port], id))
-                     res = 1;
                }
+
+               if (BIT256_GET(handle->buttons[port], id))
+                  res = 1;
 
 #ifdef HAVE_OVERLAY
                if (port == 0)
@@ -22474,9 +22470,8 @@ static int16_t input_state_device(
                }
             }
 #endif
-            if (input_remap_binds_enable)
-               if (MAPPER_GET_KEY(handle, id))
-                  res |= 1;
+            if (MAPPER_GET_KEY(handle, id))
+               res |= 1;
          }
 
          break;
@@ -22512,20 +22507,17 @@ static int16_t input_state_device(
                      /* reset_state - used to reset input state of a button
                       * when the gamepad mapper is in action for that button*/
                      bool reset_state        = false;
-                     if (input_remap_binds_enable)
+                     if (idx < 2 && id < 2)
                      {
-                        if (idx < 2 && id < 2)
-                        {
-                           unsigned offset = RARCH_FIRST_CUSTOM_BIND +
-                              (idx * 4) + (id * 2);
+                        unsigned offset = RARCH_FIRST_CUSTOM_BIND +
+                           (idx * 4) + (id * 2);
 
-                           if (settings->uints.input_remap_ids
-                                 [port][offset]   != offset)
-                              reset_state = true;
-                           else if (settings->uints.input_remap_ids
-                                 [port][offset+1] != (offset+1))
-                              reset_state = true;
-                        }
+                        if (settings->uints.input_remap_ids
+                              [port][offset]   != offset)
+                           reset_state = true;
+                        else if (settings->uints.input_remap_ids
+                              [port][offset+1] != (offset+1))
+                           reset_state = true;
                      }
 
                      if (reset_state)
@@ -22549,19 +22541,16 @@ static int16_t input_state_device(
                }
             }
 
-            if (input_remap_binds_enable)
+            if (idx < 2 && id < 2)
             {
-               if (idx < 2 && id < 2)
-               {
-                  unsigned offset = 0 + (idx * 4) + (id * 2);
-                  int        val1 = handle->analog_value[port][offset];
-                  int        val2 = handle->analog_value[port][offset+1];
+               unsigned offset = 0 + (idx * 4) + (id * 2);
+               int        val1 = handle->analog_value[port][offset];
+               int        val2 = handle->analog_value[port][offset+1];
 
-                  if (val1)
-                     res          |= val1;
-                  else if (val2)
-                     res          |= val2;
-               }
+               if (val1)
+                  res          |= val1;
+               else if (val2)
+                  res          |= val2;
             }
          }
          break;
