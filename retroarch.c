@@ -16595,55 +16595,6 @@ static void runloop_core_msg_queue_push(
          category);
 }
 
-#ifdef HAVE_VULKAN
-static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
-{
-   return type == RETRO_HW_CONTEXT_VULKAN;
-}
-#endif
-
-#ifdef HAVE_D3D9
-static bool hw_render_context_is_d3d9(enum retro_hw_context_type type, int major, int minor)
-{
-   return type == RETRO_HW_CONTEXT_DIRECT3D && major == 9;
-}
-#endif
-
-#ifdef HAVE_D3D11
-static bool hw_render_context_is_d3d11(enum retro_hw_context_type type, int major, int minor)
-{
-   return type == RETRO_HW_CONTEXT_DIRECT3D && major == 11;
-}
-#endif
-
-#ifdef HAVE_OPENGL
-static bool hw_render_context_is_gl(enum retro_hw_context_type type)
-{
-   switch (type)
-   {
-      case RETRO_HW_CONTEXT_OPENGLES2:
-      case RETRO_HW_CONTEXT_OPENGLES3:
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-      case RETRO_HW_CONTEXT_OPENGL:
-#ifndef HAVE_OPENGL_CORE
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
-#endif
-         return true;
-      default:
-         break;
-   }
-
-   return false;
-}
-#endif
-
-#ifdef HAVE_OPENGL_CORE
-static bool hw_render_context_is_glcore(enum retro_hw_context_type type)
-{
-   return type == RETRO_HW_CONTEXT_OPENGL_CORE;
-}
-#endif
-
 #if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D9) || defined(HAVE_OPENGL_CORE)
 static video_driver_t *hw_render_context_driver(enum retro_hw_context_type type, int major, int minor)
 {
@@ -16714,23 +16665,34 @@ static enum retro_hw_context_type hw_render_context_type(const char *s)
 static const char *hw_render_context_name(enum retro_hw_context_type type, int major, int minor)
 {
 #ifdef HAVE_OPENGL_CORE
-   if (hw_render_context_is_glcore(type))
+   if (type == RETRO_HW_CONTEXT_OPENGL_CORE)
       return "glcore";
 #endif
 #ifdef HAVE_OPENGL
-   if (hw_render_context_is_gl(type))
-      return "gl";
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+      case RETRO_HW_CONTEXT_OPENGL:
+#ifndef HAVE_OPENGL_CORE
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+#endif
+         return "gl";
+      default:
+         break;
+   }
 #endif
 #ifdef HAVE_VULKAN
-   if (hw_render_context_is_vulkan(type))
+   if (type == RETRO_HW_CONTEXT_VULKAN)
       return "vulkan";
 #endif
 #ifdef HAVE_D3D11
-   if (hw_render_context_is_d3d11(type, major, minor))
+   if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 11)
       return "d3d11";
 #endif
 #ifdef HAVE_D3D9
-   if (hw_render_context_is_d3d9(type, major, minor))
+   if (type == RETRO_HW_CONTEXT_DIRECT3D && major == 9)
       return "d3d9";
 #endif
    return "N/A";
