@@ -24638,15 +24638,16 @@ void input_driver_unset_nonblock_state(void)
 static void input_driver_init_command(struct rarch_state *p_rarch)
 {
    settings_t *settings          = p_rarch->configuration_settings;
-   bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
    bool input_network_cmd_enable = settings->bools.network_cmd_enable;
    unsigned network_cmd_port     = settings->uints.network_cmd_port;
-   bool grab_stdin               = p_rarch->current_input->grab_stdin &&
-      p_rarch->current_input->grab_stdin(p_rarch->current_input_data);
 
-   #ifdef HAVE_STDIN_CMD
+#ifdef HAVE_STDIN_CMD
+   bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
+   
    if (input_stdin_cmd_enable)
    {
+      bool grab_stdin               = p_rarch->current_input->grab_stdin &&
+         p_rarch->current_input->grab_stdin(p_rarch->current_input_data);
       if (grab_stdin)
       {
          RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
@@ -24658,23 +24659,23 @@ static void input_driver_init_command(struct rarch_state *p_rarch)
             RARCH_ERR("Failed to initialize the stdin command interface.\n");
       }
    }
-   #endif
+#endif
 
    /* Initialize the network command interface */
-   #ifdef HAVE_NETWORK_CMD
+#ifdef HAVE_NETWORK_CMD
    if (input_network_cmd_enable)
    {
       p_rarch->input_driver_command[1] = command_network_new(network_cmd_port);
       if (!p_rarch->input_driver_command[1])
          RARCH_ERR("Failed to initialize the network command interface.\n");
    }
-   #endif
+#endif
 
-   #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA
    p_rarch->input_driver_command[2] = command_uds_new();
    if (!p_rarch->input_driver_command[2])
       RARCH_ERR("Failed to initialize the UDS command interface.\n");
-   #endif
+#endif
 }
 
 static void input_driver_deinit_command(struct rarch_state *p_rarch)
