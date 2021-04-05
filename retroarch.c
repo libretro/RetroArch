@@ -11977,29 +11977,21 @@ static void command_event_set_mixer_volume(
  *
  * Initialize libretro controllers.
  **/
-static void command_event_init_controllers(struct rarch_state *p_rarch)
+static void command_event_init_controllers(rarch_system_info_t *info,
+      unsigned num_active_users)
 {
    unsigned i;
-   rarch_system_info_t *info     = &p_rarch->runloop_system;
-   unsigned num_active_users     = p_rarch->input_driver_max_users;
    unsigned ports_size           = info->ports.size;
 
-   if (!info)
-      return;
-
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < ports_size; i++)
    {
       retro_ctx_controller_info_t pad;
-      const struct retro_controller_description *desc = NULL;
       unsigned device                                 = (i < num_active_users)
          ? input_config_get_device(i)
          : RETRO_DEVICE_NONE;
-
-      if (i >= ports_size)
-         break;
-
-      desc = libretro_find_controller_description(
-            &info->ports.data[i], device);
+      const struct retro_controller_description *desc = 
+         libretro_find_controller_description(
+               &info->ports.data[i], device);
 
       if (desc && !desc->desc)
       {
@@ -13246,56 +13238,56 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
-      {
+         {
 #ifdef HAVE_TRANSLATE
-         bool ai_service_pause     = settings->bools.ai_service_pause;
+            bool ai_service_pause     = settings->bools.ai_service_pause;
 
-         if (!settings->bools.ai_service_enable)
-            break;
+            if (!settings->bools.ai_service_enable)
+               break;
 
-         if (ai_service_pause)
-         {
-            /* pause on call, unpause on second press. */
-            if (!p_rarch->runloop_paused)
+            if (ai_service_pause)
             {
-               command_event(CMD_EVENT_PAUSE, NULL);
-               command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
-            }
-            else
-            {
+               /* pause on call, unpause on second press. */
+               if (!p_rarch->runloop_paused)
+               {
+                  command_event(CMD_EVENT_PAUSE, NULL);
+                  command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+               }
+               else
+               {
 #ifdef HAVE_ACCESSIBILITY
-               if (is_accessibility_enabled(p_rarch))
-                   accessibility_speak_priority(p_rarch,
-                         (char*) msg_hash_to_str(MSG_UNPAUSED), 10);
+                  if (is_accessibility_enabled(p_rarch))
+                     accessibility_speak_priority(p_rarch,
+                           (char*) msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
-               command_event(CMD_EVENT_UNPAUSE, NULL);
-            }
-         }
-         else
-         {
-           /* Don't pause - useful for Text-To-Speech since
-            * the audio can't currently play while paused.
-            * Also useful for cases when users don't want the
-            * core's sound to stop while translating.
-            *
-            * Also, this mode is required for "auto" translation
-            * packages, since you don't want to pause for that.
-            */
-            if (p_rarch->ai_service_auto == 2)
-            {
-               /* Auto mode was turned on, but we pressed the
-                * toggle button, so turn it off now. */
-               p_rarch->ai_service_auto = 0;
-#ifdef HAVE_MENU_WIDGETS
-               gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
-#endif
+                  command_event(CMD_EVENT_UNPAUSE, NULL);
+               }
             }
             else
-               command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
-         }
+            {
+               /* Don't pause - useful for Text-To-Speech since
+                * the audio can't currently play while paused.
+                * Also useful for cases when users don't want the
+                * core's sound to stop while translating.
+                *
+                * Also, this mode is required for "auto" translation
+                * packages, since you don't want to pause for that.
+                */
+               if (p_rarch->ai_service_auto == 2)
+               {
+                  /* Auto mode was turned on, but we pressed the
+                   * toggle button, so turn it off now. */
+                  p_rarch->ai_service_auto = 0;
+#ifdef HAVE_MENU_WIDGETS
+                  gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
 #endif
-         break;
-      }
+               }
+               else
+                  command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+            }
+#endif
+            break;
+         }
       case CMD_EVENT_STREAMING_TOGGLE:
          if (streaming_is_enabled())
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -13564,7 +13556,7 @@ bool command_event(enum event_command cmd, void *data)
             {
 #ifdef HAVE_MENU
                if (  (settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_CLI && global->launched_from_cli)
-                   || settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_ENABLED
+                     || settings->uints.quit_on_close_content == QUIT_ON_CLOSE_CONTENT_ENABLED
                   )
                   command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -14037,7 +14029,7 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Check whether favourties playlist is at capacity */
             if (playlist_size(g_defaults.content_favorites) >=
-                playlist_capacity(g_defaults.content_favorites))
+                  playlist_capacity(g_defaults.content_favorites))
             {
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_ADD_TO_FAVORITES_FAILED), 1, 180, true, NULL,
@@ -14063,11 +14055,11 @@ bool command_event(enum event_command cmd, void *data)
                   if (playlist_push(g_defaults.content_favorites, &entry))
                   {
                      enum playlist_sort_mode current_sort_mode =
-                           playlist_get_sort_mode(g_defaults.content_favorites);
+                        playlist_get_sort_mode(g_defaults.content_favorites);
 
                      /* New addition - need to resort if option is enabled */
                      if ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
-                         (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
+                           (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
                         playlist_qsort(g_defaults.content_favorites);
 
                      playlist_write_file(g_defaults.content_favorites);
@@ -14618,7 +14610,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             bool video_fullscreen                         =
-                  settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
+               settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
             bool current_enable_state                     = p_rarch->game_focus_state.enabled;
             bool apply_update                             = false;
@@ -14690,8 +14682,8 @@ bool command_event(enum event_command cmd, void *data)
                if (show_message)
                   runloop_msg_queue_push(
                         p_rarch->game_focus_state.enabled ?
-                              msg_hash_to_str(MSG_GAME_FOCUS_ON) :
-                                    msg_hash_to_str(MSG_GAME_FOCUS_OFF),
+                        msg_hash_to_str(MSG_GAME_FOCUS_ON) :
+                        msg_hash_to_str(MSG_GAME_FOCUS_OFF),
                         1, 60, true,
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -14752,41 +14744,47 @@ bool command_event(enum event_command cmd, void *data)
          break;
 
       case CMD_EVENT_AI_SERVICE_CALL:
-      {
-#ifdef HAVE_TRANSLATE
-         unsigned ai_service_mode = settings->uints.ai_service_mode;
-         if (ai_service_mode == 1 && is_ai_service_speech_running())
          {
-            ai_service_speech_stop();
+#ifdef HAVE_TRANSLATE
+            unsigned ai_service_mode = settings->uints.ai_service_mode;
+            if (ai_service_mode == 1 && is_ai_service_speech_running())
+            {
+               ai_service_speech_stop();
 #ifdef HAVE_ACCESSIBILITY
-            if (is_accessibility_enabled(p_rarch))
-               accessibility_speak_priority(p_rarch, "stopped.", 10);
+               if (is_accessibility_enabled(p_rarch))
+                  accessibility_speak_priority(p_rarch, "stopped.", 10);
 #endif
-         }
+            }
 #ifdef HAVE_ACCESSIBILITY
-         else if (is_accessibility_enabled(p_rarch) &&
+            else if (is_accessibility_enabled(p_rarch) &&
                   ai_service_mode == 2 &&
                   is_narrator_running(p_rarch))
-            accessibility_speak_priority(p_rarch, "stopped.", 10);
+               accessibility_speak_priority(p_rarch, "stopped.", 10);
 #endif
-         else
-         {
-            bool paused = p_rarch->runloop_paused;
-            if (data)
-               paused = *((bool*)data);
+            else
+            {
+               bool paused = p_rarch->runloop_paused;
+               if (data)
+                  paused = *((bool*)data);
 
-            if (p_rarch->ai_service_auto == 0 && !settings->bools.ai_service_pause)
-               p_rarch->ai_service_auto = 1;
-            if (p_rarch->ai_service_auto != 2)
-               RARCH_LOG("AI Service Called...\n");
-            run_translation_service(p_rarch->configuration_settings,
-                  p_rarch, paused);
-         }
+               if (p_rarch->ai_service_auto == 0 && !settings->bools.ai_service_pause)
+                  p_rarch->ai_service_auto = 1;
+               if (p_rarch->ai_service_auto != 2)
+                  RARCH_LOG("AI Service Called...\n");
+               run_translation_service(p_rarch->configuration_settings,
+                     p_rarch, paused);
+            }
 #endif
-         break;
-      }
+            break;
+         }
       case CMD_EVENT_CONTROLLER_INIT:
-         command_event_init_controllers(p_rarch);
+         {
+            rarch_system_info_t *info = &p_rarch->runloop_system;
+            if (info)
+               command_event_init_controllers(info,
+                     p_rarch->input_driver_max_users
+                     );
+         }
          break;
       case CMD_EVENT_NONE:
          return false;
