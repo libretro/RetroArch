@@ -3108,6 +3108,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Draw fullscreen thumbnails, if required */
    ozone_draw_fullscreen_thumbnails(ozone,
          userdata,
+         video_info->disp_userdata,
          video_width,
          video_height);
 
@@ -3154,6 +3155,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
       ozone_draw_backdrop(
             userdata,
+            video_info->disp_userdata,
             video_width,
             video_height,
             float_min(ozone->animations.messagebox_alpha, 0.75f));
@@ -3165,6 +3167,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
          ozone_draw_osk(ozone,
                userdata,
+               video_info->disp_userdata,
                video_width,
                video_height,
                label, str);
