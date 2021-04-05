@@ -62,6 +62,7 @@ HAVE_NETWORKING=auto       # Networking features (recommended)
 HAVE_NETWORKGAMEPAD=auto   # Networked game pad (plus baked-in core)
 C89_NETWORKGAMEPAD=no
 HAVE_NETPLAYDISCOVERY=yes  # Add netplay discovery (room creation, etc.)
+HAVE_COMMAND=no            # Network command interface, to remote control RA
 HAVE_MINIUPNPC=auto        # Mini UPnP client library (for NAT traversal)
 HAVE_BUILTINMINIUPNPC=auto # Bake in Mini UPnP client library (for NAT traversal)
 C89_BUILTINMINIUPNPC=no
