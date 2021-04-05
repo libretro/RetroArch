@@ -203,7 +203,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    unsigned video_width                 = video_info->width;
    unsigned video_height                = video_info->height;
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
-   gfx_display_t            *p_disp     = disp_get_ptr();
+   gfx_display_t            *p_disp     = (gfx_display_t*)video_info->disp_userdata;
    gfx_animation_t          *p_anim     = anim_get_ptr();
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;

@@ -120,7 +120,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       float *bar_background                = NULL;
       float *bar_foreground                = NULL;
       float bar_percentage                 = 0.0f;
-      gfx_display_t            *p_disp     = disp_get_ptr();
+      gfx_display_t            *p_disp     = (gfx_display_t*)video_info->disp_userdata;
       gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
 
       /* Note: Volume + percentage text has no component

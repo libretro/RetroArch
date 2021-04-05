@@ -334,12 +334,12 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
 
 static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 {
-   gfx_display_t *p_disp                      = disp_get_ptr();
    gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
 
    if (state->status != GFX_WIDGET_LIBRETRO_MESSAGE_IDLE)
    {
       video_frame_info_t *video_info         = (video_frame_info_t*)data;
+      gfx_display_t *p_disp                  = (gfx_display_t*)video_info->disp_userdata;
       dispgfx_widget_t *p_dispwidget         = (dispgfx_widget_t*)user_data;
 
       unsigned video_width                   = video_info->width;

@@ -406,7 +406,6 @@ static void gfx_widget_generic_message_iterate(void *user_data,
 
 static void gfx_widget_generic_message_frame(void *data, void *user_data)
 {
-   gfx_display_t *p_disp                     = disp_get_ptr();
    gfx_widget_generic_message_state_t *state = &p_w_generic_message_st;
 
    if (state->status != GFX_WIDGET_GENERIC_MESSAGE_IDLE)
@@ -419,6 +418,7 @@ static void gfx_widget_generic_message_frame(void *data, void *user_data)
       unsigned video_width                   = video_info->width;
       unsigned video_height                  = video_info->height;
       void *userdata                         = video_info->userdata;
+      gfx_display_t *p_disp                  = (gfx_display_t*)video_info->disp_userdata;
       gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;
       size_t msg_queue_size                  = p_dispwidget->current_msgs_size;
 
