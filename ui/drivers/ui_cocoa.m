@@ -350,6 +350,17 @@ static ui_application_t ui_application_cocoa = {
 #define CONVERT_POINT() [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil]
 #endif
 
+- (void)keyDown:(NSEvent *)theEvent
+{
+   switch([theEvent keyCode])
+   {
+      case 0x35: /* Escape */
+         break;
+      default:
+         [super keyDown:theEvent];
+   }
+}
+
 - (void)sendEvent:(NSEvent *)event {
    NSEventType event_type = event.type;
 
