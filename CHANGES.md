@@ -9,7 +9,7 @@
 - MENU: Add optional menu screensaver
 - MENU/MATERIALUI: Add icon to 'Turbo Fire' menu entry
 - OPENDINGUX/BETA: Fix IPU scaling when running GBA-resolution content 
-- VITA: Align VM block size to 1MB - should fix gpSP
+- VITA: Align VM block size to 1MB - should fix one of the issues with gpSP
 
 # 1.9.1
 - 3DS: Graphics widgets support
