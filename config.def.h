@@ -62,6 +62,8 @@
 #define DEFAULT_MOUSE_SCALE 1
 #endif
 
+#define DEFAULT_TOUCH_SCALE 1
+
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__)
 #define DEFAULT_POINTER_ENABLE true
 #else

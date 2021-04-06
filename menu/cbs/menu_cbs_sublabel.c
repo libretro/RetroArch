@@ -343,6 +343,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_sync,                    MENU_
 #if defined(GEKKO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_scale, MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE)
 #endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_scale,             MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_axis_threshold,                MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_period,            MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_duty_cycle,              MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE)
@@ -3398,6 +3399,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_mouse_scale);
             break;
 #endif
+         case MENU_ENUM_LABEL_INPUT_TOUCH_SCALE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_touch_scale);
+            break;
          case MENU_ENUM_LABEL_AUDIO_SYNC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_sync);
             break;

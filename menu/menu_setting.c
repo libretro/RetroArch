@@ -6388,6 +6388,13 @@ static void setting_get_string_representation_poll_type_behavior(
    }
 }
 
+static void setting_get_string_representation_input_touch_scale(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+      snprintf(s, len, "x%d", *setting->value.target.unsigned_integer);
+}
+
 #ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(
       rarch_setting_t *setting,
@@ -12050,6 +12057,23 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
 #endif
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_touch_scale,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+                  DEFAULT_TOUCH_SCALE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_input_touch_scale;
+            (*list)[list_info->index - 1].offset_by = 1;
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
 
 #ifdef VITA
             CONFIG_BOOL(

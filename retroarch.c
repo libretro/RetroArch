@@ -13981,6 +13981,7 @@ bool command_event(enum event_command cmd, void *data)
             layout_desc.y_separation_portrait   = settings->floats.input_overlay_y_separation_portrait;
             layout_desc.x_offset_portrait       = settings->floats.input_overlay_x_offset_portrait;
             layout_desc.y_offset_portrait       = settings->floats.input_overlay_y_offset_portrait;
+            layout_desc.touch_scale             = (float)settings->uints.input_touch_scale;
             layout_desc.auto_scale              = settings->bools.input_overlay_auto_scale;
 
             input_overlay_set_scale_factor(p_rarch, p_rarch->overlay_ptr, &layout_desc);
@@ -21077,7 +21078,7 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 static void input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
-      int16_t norm_x, int16_t norm_y)
+      int16_t norm_x, int16_t norm_y, float touch_scale)
 {
    size_t i;
 
@@ -21090,6 +21091,9 @@ static void input_overlay_poll(
    y -= ol->active->mod_y;
    x /= ol->active->mod_w;
    y /= ol->active->mod_h;
+
+   x *= touch_scale;
+   y *= touch_scale;
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -21404,6 +21408,7 @@ static void input_poll_overlay(
    settings_t *settings                             = p_rarch->configuration_settings;
    bool input_overlay_show_physical_inputs          = settings->bools.input_overlay_show_physical_inputs;
    unsigned input_overlay_show_physical_inputs_port = settings->uints.input_overlay_show_physical_inputs_port;
+   float touch_scale                                = (float)settings->uints.input_touch_scale;
 
    if (!ol_state)
       return;
@@ -21471,7 +21476,7 @@ static void input_poll_overlay(
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
          if (ol->enable)
-            input_overlay_poll(ol, &polled_data, x, y);
+            input_overlay_poll(ol, &polled_data, x, y, touch_scale);
          else
             ol->blocked = false;
 
@@ -21605,6 +21610,8 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
    float overlay_y_separation_portrait      = settings->floats.input_overlay_y_separation_portrait;
    float overlay_x_offset_portrait          = settings->floats.input_overlay_x_offset_portrait;
    float overlay_y_offset_portrait          = settings->floats.input_overlay_y_offset_portrait;
+   float overlay_touch_scale                = (float)settings->uints.input_touch_scale;
+
    bool load_enabled                        = input_overlay_enable;
 #ifdef HAVE_MENU
    bool overlay_hide_in_menu                = settings->bools.input_overlay_hide_in_menu;
@@ -21649,6 +21656,7 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
       layout_desc.y_separation_portrait   = overlay_y_separation_portrait;
       layout_desc.x_offset_portrait       = overlay_x_offset_portrait;
       layout_desc.y_offset_portrait       = overlay_y_offset_portrait;
+      layout_desc.touch_scale             = overlay_touch_scale;
       layout_desc.auto_scale              = input_overlay_auto_scale;
 
       task_push_overlay_load_default(input_overlay_loaded,
@@ -23007,6 +23015,7 @@ static void menu_input_get_touchscreen_hw_state(
    static bool last_cancel_pressed              = false;
    bool overlay_active                          = false;
    bool pointer_enabled                         = settings->bools.menu_pointer_enable;
+   unsigned input_touch_scale                   = settings->uints.input_touch_scale;
 #ifdef HAVE_MFI
    const input_device_driver_t 
       *sec_joypad                               = p_rarch->sec_joypad;
@@ -23066,7 +23075,8 @@ static void menu_input_get_touchscreen_hw_state(
             p_rarch->keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_X);
-   hw_state->x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
+   hw_state->x  = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
+   hw_state->x *= input_touch_scale;
 
    /* > An annoyance - we get different starting positions
     *   depending upon whether pointer_device is
@@ -23096,7 +23106,8 @@ static void menu_input_get_touchscreen_hw_state(
             p_rarch->keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_Y);
-   hw_state->y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
+   hw_state->y  = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
+   hw_state->y *= input_touch_scale;
 
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
    {

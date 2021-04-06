@@ -1888,6 +1888,7 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef GEKKO
    SETTING_UINT("input_mouse_scale",            &settings->uints.input_mouse_scale, true, DEFAULT_MOUSE_SCALE, false);
 #endif
+   SETTING_UINT("input_touch_scale",            &settings->uints.input_touch_scale, true, DEFAULT_TOUCH_SCALE, false);
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
    SETTING_UINT("input_dingux_rumble_gain",     &settings->uints.input_dingux_rumble_gain, true, DEFAULT_DINGUX_RUMBLE_GAIN, false);
 #endif
