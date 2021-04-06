@@ -36011,13 +36011,13 @@ bool retroarch_is_switching_display_mode(void)
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool retroarch_load_shader_preset_internal(
-      struct rarch_state *p_rarch,
+      char *s,
+      size_t len,
       const char *shader_directory,
       const char *core_name,
       const char *special_name)
 {
    unsigned i;
-   char shader_path[PATH_MAX_LENGTH];
 
    static enum rarch_shader_type types[] =
    {
@@ -36033,34 +36033,22 @@ static bool retroarch_load_shader_preset_internal(
 
       /* Concatenate strings into full paths */
       if (!string_is_empty(core_name))
-         fill_pathname_join_special_ext(shader_path,
+         fill_pathname_join_special_ext(s,
                shader_directory, core_name,
                special_name,
                video_shader_get_preset_extension(types[i]),
-               sizeof(shader_path));
+               len);
       else
       {
          if (string_is_empty(special_name))
             break;
 
-         fill_pathname_join(shader_path, shader_directory,
-               special_name, sizeof(shader_path));
-         strlcat(shader_path,
-               video_shader_get_preset_extension(types[i]),
-               sizeof(shader_path));
+         fill_pathname_join(s, shader_directory, special_name, len);
+         strlcat(s, video_shader_get_preset_extension(types[i]), len);
       }
 
-      if (!path_is_valid(shader_path))
-         continue;
-
-      /* Shader preset exists, load it. */
-      RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
-            shader_path);
-      strlcpy(
-            p_rarch->runtime_shader_preset,
-            shader_path,
-            sizeof(p_rarch->runtime_shader_preset));
-      return true;
+      if (path_is_valid(s))
+         return true;
    }
 
    return false;
@@ -36088,9 +36076,9 @@ static bool retroarch_load_shader_preset_internal(
  *
  * Returns: false if there was an error or no action was performed.
  */
-static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
+static bool retroarch_load_shader_preset(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
-   settings_t *settings               = p_rarch->configuration_settings;
    const char *video_shader_directory = settings->paths.directory_video_shader;
    const char *menu_config_directory  = settings->paths.directory_menu_config;
    const char *core_name              = 
@@ -36101,10 +36089,12 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
    const char *dirs[3]                = {0};
    size_t i                           = 0;
 
+   char shader_path[PATH_MAX_LENGTH];
    char content_dir_name[PATH_MAX_LENGTH];
    char config_file_directory[PATH_MAX_LENGTH];
    char old_presets_directory[PATH_MAX_LENGTH];
 
+   shader_path[0]                     = '\0';
    content_dir_name[0]                = '\0';
    config_file_directory[0]           = '\0';
    old_presets_directory[0]           = '\0';
@@ -36134,27 +36124,45 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
       if (string_is_empty(dirs[i]))
          continue;
       /* Game-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(p_rarch,
-            dirs[i], core_name,
-            game_name))
-         return true;
-      /* Folder-specifici shader preset found? */
-      if (retroarch_load_shader_preset_internal(p_rarch,
-            dirs[i], core_name,
-            content_dir_name))
-         return true;
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               game_name))
+         goto success;
+      /* Folder-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               content_dir_name))
+         goto success;
       /* Core-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(p_rarch,
-            dirs[i], core_name,
-            core_name))
-         return true;
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               core_name))
+         goto success;
       /* Global shader preset found? */
-      if (retroarch_load_shader_preset_internal(p_rarch,
-            dirs[i], NULL,
-            "global"))
-         return true;
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], NULL,
+               "global"))
+         goto success;
    }
    return false;
+
+success:
+   /* Shader preset exists, load it. */
+   RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
+         shader_path);
+   strlcpy(
+         p_rarch->runtime_shader_preset,
+         shader_path,
+         sizeof(p_rarch->runtime_shader_preset));
+   return true;
 }
 #endif
 
@@ -36193,7 +36201,7 @@ const char *retroarch_get_shader_preset(void)
                sizeof(p_rarch->runtime_shader_preset));
       else
          if (auto_shaders_enable) /* sets runtime_shader_preset */
-            retroarch_load_shader_preset(p_rarch); 
+            retroarch_load_shader_preset(p_rarch, settings); 
       return p_rarch->runtime_shader_preset;
    }
 #endif
