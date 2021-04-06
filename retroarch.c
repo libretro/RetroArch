@@ -29874,7 +29874,7 @@ static bool video_driver_init_internal(
    video_driver_set_viewport_config(geom, settings);
 
    /* Update CUSTOM viewport. */
-   custom_vp = video_viewport_get_custom();
+   custom_vp = &settings->video_viewport_custom;
 
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
@@ -30568,7 +30568,9 @@ void video_driver_set_viewport_core(void)
 
 void video_driver_reset_custom_viewport(void)
 {
-   struct video_viewport *custom_vp = video_viewport_get_custom();
+   struct rarch_state *p_rarch      = &rarch_st;
+   settings_t             *settings = p_rarch->configuration_settings;
+   struct video_viewport *custom_vp = &settings->video_viewport_custom;
 
    custom_vp->width  = 0;
    custom_vp->height = 0;
@@ -30696,7 +30698,7 @@ void video_driver_update_viewport(
 #if defined(HAVE_MENU)
       if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport* custom = video_viewport_get_custom();
+         const struct video_viewport *custom = &settings->video_viewport_custom;
 
          vp->x      = custom->x;
          vp->y      = custom->y;
@@ -31007,7 +31009,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      struct video_viewport *custom = video_viewport_get_custom();
+      struct video_viewport *custom = &settings->video_viewport_custom;
 
       if (custom)
       {
