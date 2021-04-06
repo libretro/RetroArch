@@ -1874,7 +1874,7 @@ static int generic_menu_iterate(
 #ifdef HAVE_ACCESSIBILITY
          if (     (iterate_type != last_iterate_type)
                && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-            accessibility_speak_priority(p_rarch,
+            accessibility_speak_priority(p_rarch, settings,
                   menu->menu_state_msg, 10);
 #endif
 
@@ -1996,14 +1996,14 @@ static int generic_menu_iterate(
                            &p_rarch->menu_driver_state,
                            current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
-                        accessibility_speak_priority(p_rarch,
+                        accessibility_speak_priority(p_rarch, settings,
                               menu->menu_state_msg, 10);
                      else
-                        accessibility_speak_priority(p_rarch,
+                        accessibility_speak_priority(p_rarch, settings,
                               current_sublabel, 10);
                   }
                   else
-                     accessibility_speak_priority(p_rarch,
+                     accessibility_speak_priority(p_rarch, settings,
                            menu->menu_state_msg, 10);
                }
 #endif
@@ -2150,7 +2150,7 @@ static int generic_menu_iterate(
             || last_iterate_type == ITERATE_TYPE_INFO) 
          && last_iterate_type != iterate_type 
          && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch,
+      accessibility_speak_priority(p_rarch, settings,
             "Closed dialog.", 10);
 
    last_iterate_type = iterate_type;
@@ -2640,7 +2640,7 @@ int generic_menu_entry_action(
       }
 
       if (!string_is_equal(speak_string, ""))
-         accessibility_speak_priority(p_rarch,
+         accessibility_speak_priority(p_rarch, settings,
                speak_string, 10);
    }
 #endif
@@ -10090,7 +10090,7 @@ bool menu_input_dialog_start_search(void)
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch, (char*)
+         accessibility_speak_priority(p_rarch, settings, (char*)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
 #endif
 
@@ -10138,7 +10138,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch, "Keyboard input:", 10);
+      accessibility_speak_priority(p_rarch, settings,
+            "Keyboard input:", 10);
 #endif
 
    p_rarch->menu_input_dialog_keyboard_buffer =
@@ -11268,7 +11269,8 @@ static void handle_translation_cb(
 
 #ifdef HAVE_ACCESSIBILITY
    if (text_string && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch, text_string, 10);
+      accessibility_speak_priority(p_rarch, settings,
+            text_string, 10);
 #endif
 
 finish:
@@ -13257,7 +13259,7 @@ bool command_event(enum event_command cmd, void *data)
                {
 #ifdef HAVE_ACCESSIBILITY
                   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-                     accessibility_speak_priority(p_rarch,
+                     accessibility_speak_priority(p_rarch, settings,
                            (char*) msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
                   command_event(CMD_EVENT_UNPAUSE, NULL);
@@ -14152,10 +14154,10 @@ bool command_event(enum event_command cmd, void *data)
          if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
          {
             if (boolean)
-               accessibility_speak_priority(p_rarch,
+               accessibility_speak_priority(p_rarch, settings,
                      (char*) msg_hash_to_str(MSG_PAUSED), 10);
             else
-               accessibility_speak_priority(p_rarch,
+               accessibility_speak_priority(p_rarch, settings,
                      (char*) msg_hash_to_str(MSG_UNPAUSED), 10);
          }
 #endif
@@ -14753,14 +14755,16 @@ bool command_event(enum event_command cmd, void *data)
                ai_service_speech_stop();
 #ifdef HAVE_ACCESSIBILITY
                if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-                  accessibility_speak_priority(p_rarch, "stopped.", 10);
+                  accessibility_speak_priority(p_rarch, settings,
+                        "stopped.", 10);
 #endif
             }
 #ifdef HAVE_ACCESSIBILITY
             else if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled) &&
                   ai_service_mode == 2 &&
                   is_narrator_running(p_rarch, settings))
-               accessibility_speak_priority(p_rarch, "stopped.", 10);
+               accessibility_speak_priority(p_rarch, settings,
+                     "stopped.", 10);
 #endif
             else
             {
@@ -22771,9 +22775,9 @@ static int16_t input_joypad_axis(
  * toggle menu ON if overlays are disabled in-menu */
 
 static void menu_input_driver_toggle(
-      struct rarch_state *p_rarch,
       menu_input_t *menu_input,
       settings_t *settings,
+      bool overlay_alive,
       bool on)
 {
 #ifdef HAVE_OVERLAY
@@ -22785,9 +22789,7 @@ static void menu_input_driver_toggle(
        * and overlays are disabled in menu, need to
        * inhibit 'select' input */
       if (overlay_hide_in_menu)
-         if (  input_overlay_enable &&
-               p_rarch->overlay_ptr &&
-               p_rarch->overlay_ptr->alive)
+         if (input_overlay_enable && overlay_alive)
          {
             /* Inhibits pointer 'select' and 'cancel' actions
              * (until the next time 'select'/'cancel' are released) */
@@ -23223,46 +23225,46 @@ static void input_event_osk_append(
 }
 
 static void input_event_osk_iterate(
-      struct rarch_state *p_rarch,
+      void *osk_grid,
       enum osk_type osk_idx)
 {
    switch (osk_idx)
    {
 #ifdef HAVE_LANGEXTRA
       case OSK_HIRAGANA_PAGE1:
-         memcpy(p_rarch->osk_grid,
+         memcpy(osk_grid,
                hiragana_page1_grid,
                sizeof(hiragana_page1_grid));
          break;
       case OSK_HIRAGANA_PAGE2:
-         memcpy(p_rarch->osk_grid,
+         memcpy(osk_grid,
                hiragana_page2_grid,
                sizeof(hiragana_page2_grid));
          break;
       case OSK_KATAKANA_PAGE1:
-         memcpy(p_rarch->osk_grid,
+         memcpy(osk_grid,
                katakana_page1_grid,
                sizeof(katakana_page1_grid));
          break;
       case OSK_KATAKANA_PAGE2:
-         memcpy(p_rarch->osk_grid,
+         memcpy(osk_grid,
                katakana_page2_grid,
                sizeof(katakana_page2_grid));
          break;
 #endif
       case OSK_SYMBOLS_PAGE1:
-         memcpy(p_rarch->osk_grid,
+         memcpy(osk_grid,
                symbols_page1_grid,
                sizeof(uppercase_grid));
          break;
       case OSK_UPPERCASE_LATIN:
-         memcpy(p_rarch->osk_grid,
+         memcpy(osk_grid,
                uppercase_grid,
                sizeof(uppercase_grid));
          break;
       case OSK_LOWERCASE_LATIN:
       default:
-         memcpy(p_rarch->osk_grid,
+         memcpy(osk_grid,
                lowercase_grid,
                sizeof(lowercase_grid));
          break;
@@ -23488,7 +23490,7 @@ static unsigned menu_event(
    {
       bool show_osk_symbols = input_event_osk_show_symbol_pages(p_rarch->menu_driver_data);
 
-      input_event_osk_iterate(p_rarch, p_rarch->osk_idx);
+      input_event_osk_iterate(p_rarch->osk_grid, p_rarch->osk_idx);
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
@@ -24645,12 +24647,11 @@ void input_driver_unset_nonblock_state(void)
 }
 
 #ifdef HAVE_COMMAND
-static void input_driver_init_command(struct rarch_state *p_rarch)
+static void input_driver_init_command(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
-   settings_t *settings          = p_rarch->configuration_settings;
    bool input_network_cmd_enable = settings->bools.network_cmd_enable;
    unsigned network_cmd_port     = settings->uints.network_cmd_port;
-
 #ifdef HAVE_STDIN_CMD
    bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
    
@@ -24660,7 +24661,8 @@ static void input_driver_init_command(struct rarch_state *p_rarch)
          p_rarch->current_input->grab_stdin(p_rarch->current_input_data);
       if (grab_stdin)
       {
-         RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
+         RARCH_WARN("stdin command interface is desired, "
+               "but input driver has already claimed stdin.\n"
                "Cannot use this command interface.\n");
       }
       else {
@@ -25352,6 +25354,87 @@ static const char **input_keyboard_start_line(
 }
 #endif
 
+#ifdef HAVE_ACCESSIBILITY
+static const char *accessibility_lut_name(char key)
+{
+   switch (key)
+   {
+#if 0
+      /* TODO/FIXME - overlaps with tilde */
+      case '`':
+         return "left quote";
+#endif
+      case '`':
+         return "tilde";
+      case '!':
+         return "exclamation point";
+      case '@':
+         return "at sign";
+      case '#':
+         return "hash sign";
+      case '$':
+         return "dollar sign";
+      case '%':
+         return "percent sign";
+      case '^':
+         return "carrot";
+      case '&':
+         return "ampersand";
+      case '*':
+         return "asterisk";
+      case '(':
+         return "left bracket";
+      case ')':
+         return "right bracket";
+      case '-':
+         return "minus";
+      case '_':
+         return "underscore";
+      case '=':
+         return "equals";
+      case '+':
+         return "plus";
+      case '[':
+         return "left square bracket";
+      case '{':
+         return "left curl bracket";
+      case ']':
+         return "right square bracket";
+      case '}':
+         return "right curl bracket";
+      case '\\':
+         return "back slash";
+      case '|':
+         return "pipe";
+      case ';':
+         return "semicolon";
+      case ':':
+         return "colon";
+      case '\'':
+         return "single quote";
+      case '\"':
+         return "double quote";
+      case ',':
+         return "comma";
+      case '<':
+         return "left angle bracket";
+      case '.':
+         return "period";
+      case '>':
+         return "right angle bracket";
+      case '/':
+         return "front slash";
+      case '?':
+         return "question mark";
+      case ' ':
+         return "space";
+      default:
+         break;
+   }
+   return NULL;
+}
+#endif
+
 /**
  * input_keyboard_event:
  * @down                     : Keycode was pressed down?
@@ -25434,75 +25517,19 @@ void input_keyboard_event(bool down, unsigned code,
             *say_char = c;
 
             if (character == 127)
-               accessibility_speak_priority(p_rarch, "backspace", 10);
-            else if (c == '`')
-               accessibility_speak_priority(p_rarch, "left quote", 10);
-            else if (c == '`')
-               accessibility_speak_priority(p_rarch, "tilde", 10);
-            else if (c == '!')
-               accessibility_speak_priority(p_rarch, "exclamation point", 10);
-            else if (c == '@')
-               accessibility_speak_priority(p_rarch, "at sign", 10);
-            else if (c == '#')
-               accessibility_speak_priority(p_rarch, "hash sign", 10);
-            else if (c == '$')
-               accessibility_speak_priority(p_rarch, "dollar sign", 10);
-            else if (c == '%')
-               accessibility_speak_priority(p_rarch, "percent sign", 10);
-            else if (c == '^')
-               accessibility_speak_priority(p_rarch, "carrot", 10);
-            else if (c == '&')
-               accessibility_speak_priority(p_rarch, "ampersand", 10);
-            else if (c == '*')
-               accessibility_speak_priority(p_rarch, "asterisk", 10);
-            else if (c == '(')
-               accessibility_speak_priority(p_rarch, "left bracket", 10);
-            else if (c == ')')
-               accessibility_speak_priority(p_rarch, "right bracket", 10);
-            else if (c == '-')
-               accessibility_speak_priority(p_rarch, "minus", 10);
-            else if (c == '_')
-               accessibility_speak_priority(p_rarch, "underscore", 10);
-            else if (c == '=')
-               accessibility_speak_priority(p_rarch, "equals", 10);
-            else if (c == '+')
-               accessibility_speak_priority(p_rarch, "plus", 10);
-            else if (c == '[')
-               accessibility_speak_priority(p_rarch, "left square bracket", 10);
-            else if (c == '{')
-               accessibility_speak_priority(p_rarch, "left curl bracket", 10);
-            else if (c == ']')
-               accessibility_speak_priority(p_rarch, "right square bracket", 10);
-            else if (c == '}')
-               accessibility_speak_priority(p_rarch, "right curl bracket", 10);
-            else if (c == '\\')
-               accessibility_speak_priority(p_rarch, "back slash", 10);
-            else if (c == '|')
-               accessibility_speak_priority(p_rarch, "pipe", 10);
-            else if (c == ';')
-               accessibility_speak_priority(p_rarch, "semicolon", 10);
-            else if (c == ':')
-               accessibility_speak_priority(p_rarch, "colon", 10);
-            else if (c == '\'')
-               accessibility_speak_priority(p_rarch, "single quote", 10);
-            else if (c  == '\"')
-               accessibility_speak_priority(p_rarch, "double quote", 10);
-            else if (c == ',')
-               accessibility_speak_priority(p_rarch, "comma", 10);
-            else if (c == '<')
-               accessibility_speak_priority(p_rarch, "left angle bracket", 10);
-            else if (c == '.')
-               accessibility_speak_priority(p_rarch, "period", 10);
-            else if (c == '>')
-               accessibility_speak_priority(p_rarch, "right angle bracket", 10);
-            else if (c == '/')
-               accessibility_speak_priority(p_rarch, "front slash", 10);
-            else if (c == '?')
-               accessibility_speak_priority(p_rarch, "question mark", 10);
-            else if (c == ' ')
-               accessibility_speak_priority(p_rarch, "space", 10);
-            else if (character != 0)
-               accessibility_speak_priority(p_rarch, say_char, 10);
+               accessibility_speak_priority(p_rarch, settings,
+                     "backspace", 10);
+            else
+            {
+               const char *lut_name = accessibility_lut_name(c);
+
+               if (lut_name)
+                  accessibility_speak_priority(p_rarch, settings,
+                        lut_name, 10);
+               else if (character != 0)
+                  accessibility_speak_priority(p_rarch, settings,
+                        say_char, 10);
+            }
             free(say_char);
          }
       }
@@ -34831,14 +34858,12 @@ bool retroarch_main_init(int argc, char *argv[])
    verbosity_enabled = retroarch_parse_input_and_config(p_rarch, &p_rarch->g_extern, argc, argv);
 
 #ifdef HAVE_ACCESSIBILITY
+   /* State that the narrator is on, and also include the first menu
+      item we're on at startup. */
    if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-   {
-      /* State that the narrator is on, and also include the first menu
-         item we're on at startup. */
-      accessibility_speak_priority(p_rarch,
+      accessibility_speak_priority(p_rarch, settings,
             "RetroArch accessibility on.  Main Menu Load Core.",
             10);
-   }
 #endif
 
    if (verbosity_enabled)
@@ -35000,7 +35025,7 @@ bool retroarch_main_init(int argc, char *argv[])
    drivers_init(p_rarch, DRIVERS_CMD_ALL, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(p_rarch);
-   input_driver_init_command(p_rarch);
+   input_driver_init_command(p_rarch, settings);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    if (p_rarch->input_driver_remote)
@@ -35125,8 +35150,16 @@ static void menu_driver_toggle(
    /* Apply any required menu pointer input inhibits
     * (i.e. prevent phantom input when using an overlay
     * to toggle the menu on) */
-   menu_input_driver_toggle(p_rarch,
-         &p_rarch->menu_input_state, settings, on);
+   menu_input_driver_toggle(
+         &p_rarch->menu_input_state,
+         settings,
+#ifdef HAVE_OVERLAY
+         p_rarch->overlay_ptr &&
+         p_rarch->overlay_ptr->alive,
+#else
+         false,
+#endif
+         on);
 
    if (p_rarch->menu_driver_alive)
    {
@@ -35384,7 +35417,8 @@ static void runloop_task_msg_queue_push(
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
       if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-         accessibility_speak_priority(p_rarch, (char*)msg, 0);
+         accessibility_speak_priority(p_rarch, settings,
+               (char*)msg, 0);
 #endif
       gfx_widgets_msg_queue_push(
             &p_rarch->dispwidget_st,
@@ -36363,7 +36397,8 @@ void runloop_msg_queue_push(const char *msg,
    RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
-      accessibility_speak_priority(p_rarch, (char*) msg, 0);
+      accessibility_speak_priority(p_rarch, settings,
+            (char*) msg, 0);
 #endif
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -38696,15 +38731,15 @@ unsigned int retroarch_get_rotation(void)
 #ifdef HAVE_ACCESSIBILITY
 static bool accessibility_speak_priority(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       const char* speak_text, int priority)
 {
-   settings_t *settings        = p_rarch->configuration_settings;
-
-   RARCH_LOG("Spoke: %s\n", speak_text);
-
    if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
    {
       frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+
+      RARCH_LOG("Spoke: %s\n", speak_text);
+
       if (frontend && frontend->accessibility_speak)
       {
          int speed = settings->uints.accessibility_narrator_speech_speed;

@@ -161,6 +161,7 @@ static int16_t input_joypad_analog_axis(
 static bool is_accessibility_enabled(settings_t *settings, bool accessibility_enabled);
 static bool accessibility_speak_priority(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       const char* speak_text, int priority);
 #endif
 
