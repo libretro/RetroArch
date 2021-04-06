@@ -5825,7 +5825,8 @@ static bool menu_shader_manager_operate_auto_preset(
    char config_directory[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct rarch_state *p_rarch      = &rarch_st;
+   struct retro_system_info *system = &p_rarch->runloop_system.info;
    const char *core_name            = system ? system->library_name : NULL;
    const char *auto_preset_dirs[3]  = {0};
 
@@ -10494,9 +10495,11 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
    return NULL;
 }
 
-static uint8_t* command_memory_get_pointer(unsigned address, unsigned int* max_bytes, int for_write, char* reply_at, size_t len)
+static uint8_t* command_memory_get_pointer(unsigned address,
+      unsigned int* max_bytes, int for_write, char* reply_at, size_t len)
 {
-   const rarch_system_info_t* system = runloop_get_system_info();
+   struct rarch_state       *p_rarch = &rarch_st;
+   const rarch_system_info_t* system = &p_rarch->runloop_system;
    if (!system || system->mmaps.num_descriptors == 0)
       strlcpy(reply_at, " -1 no memory map defined\n", len);
    else
@@ -39186,9 +39189,7 @@ bool frontend_driver_is_inited(void)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (!frontend)
-      return false;
-   return true;
+   return frontend != NULL;
 }
 
 void frontend_driver_init_first(void *args)
