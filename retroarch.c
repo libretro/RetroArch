@@ -29930,12 +29930,12 @@ static bool video_driver_init_internal(
    else
       RARCH_LOG("[Video]: Video @ fullscreen\n");
 
-   video_driver_display_type_set(RARCH_DISPLAY_NONE);
-   video_driver_display_set(0);
-   video_driver_display_userdata_set(0);
-   video_driver_window_set(0);
+   p_rarch->video_driver_display_type     = RARCH_DISPLAY_NONE;
+   p_rarch->video_driver_display          = 0;
+   p_rarch->video_driver_display_userdata = 0;
+   p_rarch->video_driver_window           = 0;
 
-   p_rarch->video_driver_scaler_ptr  = video_driver_pixel_converter_init(
+   p_rarch->video_driver_scaler_ptr       = video_driver_pixel_converter_init(
          p_rarch->video_driver_pix_fmt,
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch),
          RARCH_SCALE_BASE * scale);
