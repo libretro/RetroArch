@@ -1873,7 +1873,7 @@ static int generic_menu_iterate(
 
 #ifdef HAVE_ACCESSIBILITY
          if (     (iterate_type != last_iterate_type)
-               && is_accessibility_enabled(p_rarch))
+               && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
             accessibility_speak_priority(p_rarch,
                   menu->menu_state_msg, 10);
 #endif
@@ -1985,7 +1985,7 @@ static int generic_menu_iterate(
 
 #ifdef HAVE_ACCESSIBILITY
                if (  (iterate_type != last_iterate_type) &&
-                     is_accessibility_enabled(p_rarch))
+                     is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
                {
                   if (string_is_equal(menu->menu_state_msg,
                            msg_hash_to_str(
@@ -2149,7 +2149,7 @@ static int generic_menu_iterate(
    if ((last_iterate_type == ITERATE_TYPE_HELP 
             || last_iterate_type == ITERATE_TYPE_INFO) 
          && last_iterate_type != iterate_type 
-         && is_accessibility_enabled(p_rarch))
+         && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch,
             "Closed dialog.", 10);
 
@@ -2174,7 +2174,7 @@ static int generic_menu_iterate(
       if (menu_input->pointer.type == MENU_POINTER_DISABLED)
          ret = 0;
       else
-         ret = menu_input_post_iterate(p_rarch, action,
+         ret = menu_input_post_iterate(p_rarch, p_disp, menu_st, action,
                current_time);
       menu_input_set_pointer_visibility(
             &p_rarch->menu_input_pointer_hw_state, menu_input, current_time);
@@ -2581,7 +2581,7 @@ int generic_menu_entry_action(
 
 #ifdef HAVE_ACCESSIBILITY
    if (     action != 0
-         && is_accessibility_enabled(p_rarch)
+         && is_accessibility_enabled(settings, p_rarch->accessibility_enabled)
          && !menu_input_dialog_get_display_kb())
    {
       char current_label[255];
@@ -9925,14 +9925,11 @@ void dir_check_defaults(const char *custom_ini_path)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-static bool is_accessibility_enabled(struct rarch_state *p_rarch)
+static bool is_accessibility_enabled(settings_t *settings,
+      bool accessibility_enabled)
 {
-   settings_t *settings        = p_rarch->configuration_settings;
    bool accessibility_enable   = settings->bools.accessibility_enable;
-   bool accessibility_enabled  = p_rarch->accessibility_enabled;
-   if (accessibility_enabled || accessibility_enable)
-      return true;
-   return false;
+   return (accessibility_enabled || accessibility_enable);
 }
 #endif
 
@@ -10071,6 +10068,7 @@ unsigned menu_input_dialog_get_kb_idx(void)
 bool menu_input_dialog_start_search(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
    menu_handle_t         *menu = p_rarch->menu_driver_data;
 
    if (!menu)
@@ -10091,7 +10089,7 @@ bool menu_input_dialog_start_search(void)
    p_rarch->keyboard_line.enabled                   = false;
 
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled(p_rarch))
+   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, (char*)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
 #endif
@@ -10109,6 +10107,7 @@ bool menu_input_dialog_start_search(void)
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
    menu_handle_t         *menu = p_rarch->menu_driver_data;
    if (!line || !menu)
       return false;
@@ -10138,7 +10137,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    p_rarch->keyboard_line.enabled                   = false;
 
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled(p_rarch))
+   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, "Keyboard input:", 10);
 #endif
 
@@ -10750,6 +10749,7 @@ static void task_auto_translate_handler(retro_task_t *task)
 {
    int               *mode_ptr = (int*)task->user_data;
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
 
    if (task_get_cancelled(task))
       goto task_finished;
@@ -10764,7 +10764,7 @@ static void task_auto_translate_handler(retro_task_t *task)
          break;
       case 2: /* Narrator Mode */
 #ifdef HAVE_ACCESSIBILITY
-         if (!is_narrator_running(p_rarch))
+         if (!is_narrator_running(p_rarch, settings))
             goto task_finished;
 #endif
          break;
@@ -11267,7 +11267,7 @@ static void handle_translation_cb(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if (text_string && is_accessibility_enabled(p_rarch))
+   if (text_string && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, text_string, 10);
 #endif
 
@@ -13256,7 +13256,7 @@ bool command_event(enum event_command cmd, void *data)
                else
                {
 #ifdef HAVE_ACCESSIBILITY
-                  if (is_accessibility_enabled(p_rarch))
+                  if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
                      accessibility_speak_priority(p_rarch,
                            (char*) msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
@@ -14149,7 +14149,7 @@ bool command_event(enum event_command cmd, void *data)
          boolean        = !boolean;
 
 #ifdef HAVE_ACCESSIBILITY
-         if (is_accessibility_enabled(p_rarch))
+         if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
          {
             if (boolean)
                accessibility_speak_priority(p_rarch,
@@ -14752,14 +14752,14 @@ bool command_event(enum event_command cmd, void *data)
             {
                ai_service_speech_stop();
 #ifdef HAVE_ACCESSIBILITY
-               if (is_accessibility_enabled(p_rarch))
+               if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
                   accessibility_speak_priority(p_rarch, "stopped.", 10);
 #endif
             }
 #ifdef HAVE_ACCESSIBILITY
-            else if (is_accessibility_enabled(p_rarch) &&
+            else if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled) &&
                   ai_service_mode == 2 &&
-                  is_narrator_running(p_rarch))
+                  is_narrator_running(p_rarch, settings))
                accessibility_speak_priority(p_rarch, "stopped.", 10);
 #endif
             else
@@ -22027,7 +22027,7 @@ static void input_driver_poll(void)
                         {
                            int16_t   val = 
                               input_joypad_analog_button(
-                                    p_rarch, settings,
+                                    settings,
                                     joypad_driver, &joypad_info[i], (unsigned)i,
                                     RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
                                     p_rarch->libretro_input_binds[i]);
@@ -22048,7 +22048,6 @@ static void input_driver_poll(void)
                      {
                         unsigned offset = 0 + (k * 4) + (j * 2);
                         int16_t     val = input_joypad_analog_axis(
-                              p_rarch,
                               settings,
                               joypad_driver,
                               &joypad_info[i], (unsigned)i, k, j,
@@ -22672,12 +22671,12 @@ static int16_t input_state(unsigned port, unsigned device,
                   if (sec_joypad)
                      ret          = 
                         input_joypad_analog_button(
-                              p_rarch, settings,
+                              settings,
                               sec_joypad, &joypad_info,
                               port, idx, id, p_rarch->libretro_input_binds[port]);
                   if (joypad && (ret == 0))
                      ret          = input_joypad_analog_button(
-                           p_rarch, settings,
+                           settings,
                            joypad, &joypad_info,
                            port, idx, id, p_rarch->libretro_input_binds[port]);
                }
@@ -22686,11 +22685,11 @@ static int16_t input_state(unsigned port, unsigned device,
          else
          {
             if (sec_joypad)
-               ret = input_joypad_analog_axis(p_rarch, settings,
+               ret = input_joypad_analog_axis(settings,
                      sec_joypad, &joypad_info,
                      port, idx, id, p_rarch->libretro_input_binds[port]);
             if (joypad && (ret == 0))
-               ret = input_joypad_analog_axis(p_rarch, settings,
+               ret = input_joypad_analog_axis(settings,
                      joypad, &joypad_info,
                      port, idx, id, p_rarch->libretro_input_binds[port]);
          }
@@ -22725,11 +22724,10 @@ static int16_t input_state(unsigned port, unsigned device,
 }
 
 static int16_t input_joypad_axis(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       const input_device_driver_t *drv,
       unsigned port, uint32_t joyaxis, float normal_mag)
 {
-   settings_t *settings           = p_rarch->configuration_settings;
    float input_analog_deadzone    = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
    int16_t val                    = (joyaxis != AXIS_NONE) ? drv->axis(port, joyaxis) : 0;
@@ -23154,11 +23152,10 @@ static void menu_input_get_touchscreen_hw_state(
 }
 
 static INLINE bool input_event_osk_show_symbol_pages(
-      struct rarch_state *p_rarch)
+      menu_handle_t *menu)
 {
 #if defined(HAVE_LANGEXTRA)
 #if defined(HAVE_RGUI)
-   menu_handle_t *menu   = p_rarch->menu_driver_data;
    bool menu_has_fb      = (menu &&
          menu->driver_ctx &&
          menu->driver_ctx->set_texture);
@@ -23489,7 +23486,7 @@ static unsigned menu_event(
 
    if (display_kb)
    {
-      bool show_osk_symbols = input_event_osk_show_symbol_pages(p_rarch);
+      bool show_osk_symbols = input_event_osk_show_symbol_pages(p_rarch->menu_driver_data);
 
       input_event_osk_iterate(p_rarch, p_rarch->osk_idx);
 
@@ -23652,13 +23649,14 @@ void menu_input_set_pointer_y_accel(float y_accel)
    menu_input->pointer.y_accel    = y_accel;
 }
 
-static float menu_input_get_dpi(struct rarch_state *p_rarch)
+static float menu_input_get_dpi(struct rarch_state *p_rarch,
+      menu_handle_t *menu,
+      gfx_display_t *p_disp)
 {
    static unsigned last_video_width  = 0;
    static unsigned last_video_height = 0;
    static float dpi                  = 0.0f;
    static bool dpi_cached            = false;
-   menu_handle_t             *menu   = p_rarch->menu_driver_data;
 
    /* Regardless of menu driver, need 'actual' screen DPI
     * Note: DPI is a fixed hardware property. To minimise performance
@@ -23697,7 +23695,6 @@ static float menu_input_get_dpi(struct rarch_state *p_rarch)
       /* Read framebuffer info? */
       if (menu_has_fb)
       {
-         gfx_display_t *p_disp      = &p_rarch->dispgfx;
          unsigned fb_height         = p_disp->framebuf_height;
          /* Rationale for current 'DPI' determination method:
           * - Divide screen height by DPI, to get number of vertical
@@ -23766,6 +23763,7 @@ static void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 
 static int menu_input_pointer_post_iterate(
       struct rarch_state *p_rarch,
+      gfx_display_t *p_disp,
       retro_time_t current_time,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -23879,7 +23877,7 @@ static int menu_input_pointer_post_iterate(
          {
             /* Pointer is being held down
              * (i.e. for more than one frame) */
-            float dpi = menu ? menu_input_get_dpi(p_rarch) : 0.0f;
+            float dpi = menu ? menu_input_get_dpi(p_rarch, menu, p_disp) : 0.0f;
 
             /* > Update deltas + acceleration & detect press direction
              *   Note: We only do this if the pointer has moved above
@@ -24111,7 +24109,7 @@ static int menu_input_pointer_post_iterate(
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
                {
-                  bool show_osk_symbols = input_event_osk_show_symbol_pages(p_rarch);
+                  bool show_osk_symbols = input_event_osk_show_symbol_pages(p_rarch->menu_driver_data);
 
                   p_rarch->osk_ptr = point.retcode;
                   input_event_osk_append(
@@ -24148,7 +24146,7 @@ static int menu_input_pointer_post_iterate(
             else
             {
                /* Pointer has moved - check if this is a swipe */
-               float dpi = menu ? menu_input_get_dpi(p_rarch) : 0.0f;
+               float dpi = menu ? menu_input_get_dpi(p_rarch, menu, p_disp) : 0.0f;
 
                if ((dpi > 0.0f) 
                      && 
@@ -24346,11 +24344,12 @@ static int menu_input_pointer_post_iterate(
 
 static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
+      gfx_display_t *p_disp,
+      struct menu_state *menu_st,
       unsigned action,
       retro_time_t current_time)
 {
    menu_entry_t entry;
-   struct menu_state *menu_st    = &p_rarch->menu_driver_state;
    menu_list_t *menu_list        = menu_st->entries.list;
    file_list_t *selection_buf    = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
    size_t selection              = menu_st->selection_ptr;
@@ -24366,7 +24365,7 @@ static int menu_input_post_iterate(
    entry.value_enabled        = false;
    entry.sublabel_enabled     = false;
    menu_entry_get(&entry, 0, selection, NULL, false);
-   return menu_input_pointer_post_iterate(p_rarch,
+   return menu_input_pointer_post_iterate(p_rarch, p_disp,
          current_time, cbs, &entry, action);
 }
 #endif
@@ -24900,7 +24899,6 @@ int16_t button_is_pressed(
  * Returns: analog value on success, otherwise 0.
  **/
 static int16_t input_joypad_analog_button(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
@@ -24925,7 +24923,7 @@ static int16_t input_joypad_analog_button(
       normal_mag   = fabs((1.0f / 0x7fff) * mult);
    }
 
-   res = abs(input_joypad_axis(p_rarch, drv,
+   res = abs(input_joypad_axis(settings, drv,
             joypad_info->joy_idx, axis, normal_mag));
    /* If the result is zero, it's got a digital button
     * attached to it instead */
@@ -24945,7 +24943,6 @@ static int16_t input_joypad_analog_button(
 }
 
 static int16_t input_joypad_analog_axis(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
@@ -25055,11 +25052,11 @@ static int16_t input_joypad_analog_axis(
       }
 
       res           = abs(
-            input_joypad_axis(p_rarch,
+            input_joypad_axis(settings,
                drv, joypad_info->joy_idx,
                axis_plus, normal_mag));
       res          -= abs(
-            input_joypad_axis(p_rarch,
+            input_joypad_axis(settings,
                drv, joypad_info->joy_idx,
                axis_minus, normal_mag));
    }
@@ -25370,7 +25367,7 @@ void input_keyboard_event(bool down, unsigned code,
 {
    static bool deferred_wait_keys;
    struct rarch_state *p_rarch   = &rarch_st;
-
+   settings_t *settings          = p_rarch->configuration_settings;
 #ifdef HAVE_MENU
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
 
@@ -25425,7 +25422,7 @@ void input_keyboard_event(bool down, unsigned code,
 
 #ifdef HAVE_ACCESSIBILITY
    if (menu_input_dialog_get_display_kb()
-         && down && is_accessibility_enabled(p_rarch))
+         && down && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
    {
       if (code != 303 && code != 0)
       {
@@ -34812,6 +34809,7 @@ bool retroarch_main_init(int argc, char *argv[])
    bool verbosity_enabled       = false;
    bool           init_failed   = false;
    struct rarch_state *p_rarch  = &rarch_st;
+   settings_t *settings         = p_rarch->configuration_settings;
    global_t            *global  = &p_rarch->g_extern;
 
    p_rarch->osk_idx             = OSK_LOWERCASE_LATIN;
@@ -34833,7 +34831,7 @@ bool retroarch_main_init(int argc, char *argv[])
    verbosity_enabled = retroarch_parse_input_and_config(p_rarch, &p_rarch->g_extern, argc, argv);
 
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled(p_rarch))
+   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
    {
       /* State that the narrator is on, and also include the first menu
          item we're on at startup. */
@@ -34904,12 +34902,11 @@ bool retroarch_main_init(int argc, char *argv[])
 
       if (!string_is_empty(fullpath))
       {
-         settings_t *settings              = p_rarch->configuration_settings;
          enum rarch_content_type cont_type = path_is_media_type(fullpath);
 #ifdef HAVE_IMAGEVIEWER
-         bool builtin_imageviewer          = settings ? settings->bools.multimedia_builtin_imageviewer_enable : false;
+         bool builtin_imageviewer          = settings->bools.multimedia_builtin_imageviewer_enable;
 #endif
-         bool builtin_mediaplayer          = settings ? settings->bools.multimedia_builtin_mediaplayer_enable : false;
+         bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
 
          switch (cont_type)
          {
@@ -34998,7 +34995,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
 #ifdef HAVE_CHEATS
    cheat_manager_state_free();
-   command_event_init_cheats(p_rarch->configuration_settings, p_rarch);
+   command_event_init_cheats(settings, p_rarch);
 #endif
    drivers_init(p_rarch, DRIVERS_CMD_ALL, verbosity_enabled);
 #ifdef HAVE_COMMAND
@@ -35010,9 +35007,9 @@ bool retroarch_main_init(int argc, char *argv[])
       input_remote_free(p_rarch->input_driver_remote,
             p_rarch->input_driver_max_users);
    p_rarch->input_driver_remote    = NULL;
-   if (p_rarch->configuration_settings->bools.network_remote_enable)
+   if (settings->bools.network_remote_enable)
       p_rarch->input_driver_remote = input_driver_init_remote(
-            p_rarch->configuration_settings,
+            settings,
             p_rarch->input_driver_max_users);
 #endif
    input_mapper_reset(&p_rarch->input_driver_mapper);
@@ -35377,6 +35374,7 @@ static void runloop_task_msg_queue_push(
 {
 #if defined(HAVE_GFX_WIDGETS)
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
    bool widgets_active         = p_rarch->widgets_active;
 
    if (widgets_active && task->title && !task->mute)
@@ -35385,7 +35383,7 @@ static void runloop_task_msg_queue_push(
       ui_companion_driver_msg_queue_push(p_rarch, msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
-      if (is_accessibility_enabled(p_rarch))
+      if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
          accessibility_speak_priority(p_rarch, (char*)msg, 0);
 #endif
       gfx_widgets_msg_queue_push(
@@ -36358,10 +36356,13 @@ void runloop_msg_queue_push(const char *msg,
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active         = p_rarch->widgets_active;
 #endif
+#ifdef HAVE_ACCESSIBILITY
+   settings_t *settings        = p_rarch->configuration_settings;
+#endif
 
    RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled(p_rarch))
+   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, (char*) msg, 0);
 #endif
 #if defined(HAVE_GFX_WIDGETS)
@@ -38701,7 +38702,7 @@ static bool accessibility_speak_priority(
 
    RARCH_LOG("Spoke: %s\n", speak_text);
 
-   if (is_accessibility_enabled(p_rarch))
+   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
    {
       frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
       if (frontend && frontend->accessibility_speak)
@@ -38729,9 +38730,10 @@ static bool accessibility_speak_priority(
 }
 
 #ifdef HAVE_TRANSLATE
-static bool is_narrator_running(struct rarch_state *p_rarch)
+static bool is_narrator_running(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
-   if (is_accessibility_enabled(p_rarch))
+   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
    {
       frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
       if (frontend && frontend->is_narrator_running)

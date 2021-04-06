@@ -23,7 +23,7 @@ void libnx_apply_overclock(void);
 #endif
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
-static bool is_narrator_running(struct rarch_state *p_rarch);
+static bool is_narrator_running(struct rarch_state *p_rarch, settings_t *settings);
 #endif
 #endif
 
@@ -145,14 +145,12 @@ static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 static int16_t input_joypad_analog_button(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 static int16_t input_joypad_analog_axis(
-      struct rarch_state *p_rarch,
       settings_t *settings,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
@@ -160,7 +158,7 @@ static int16_t input_joypad_analog_axis(
       const struct retro_keybind *binds);
 
 #ifdef HAVE_ACCESSIBILITY
-static bool is_accessibility_enabled(struct rarch_state *p_rarch);
+static bool is_accessibility_enabled(settings_t *settings, bool accessibility_enabled);
 static bool accessibility_speak_priority(
       struct rarch_state *p_rarch,
       const char* speak_text, int priority);
@@ -184,6 +182,8 @@ static void menu_driver_list_free(
       menu_ctx_list_t *list);
 static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
+      gfx_display_t *p_disp,
+      struct menu_state *menu_st,
       unsigned action,
       retro_time_t current_time);
 #endif
