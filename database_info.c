@@ -37,7 +37,9 @@ int database_info_build_query_enum(char *s, size_t len,
    bool add_quotes = true;
    bool add_glob   = false;
 
-   strcpy_literal(s, "{'");
+   s[0]            = '{';
+   s[1]            = '\'';
+   s[2]            = '\0';
 
    switch (type)
    {

@@ -9001,8 +9001,8 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
                &info->roms[i].memory[j];
 
             path[0] = ext[0] = '\0';
-
-            strcpy_literal(ext, ".");
+            ext[0]  = '.';
+            ext[1]  = '\0';
             strlcat(ext, mem->extension, sizeof(ext));
             strlcpy(savename,
                   p_rarch->subsystem_fullpaths->elems[i].data,
