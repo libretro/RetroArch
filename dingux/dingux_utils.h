@@ -38,6 +38,17 @@ enum dingux_ipu_filter_type
    DINGUX_IPU_FILTER_LAST
 };
 
+#if defined(DINGUX_BETA)
+/* Specifies all video refresh rates supported
+ * by OpenDingux Beta */
+enum dingux_refresh_rate
+{
+   DINGUX_REFRESH_RATE_60HZ = 0,
+   DINGUX_REFRESH_RATE_50HZ,
+   DINGUX_REFRESH_RATE_LAST
+};
+#endif
+
 /* Enables/disables downscaling when using
  * the IPU hardware scaler */
 bool dingux_ipu_set_downscaling_enable(bool enable);
@@ -65,6 +76,23 @@ bool dingux_ipu_set_scaling_mode(bool keep_aspect, bool integer_scale);
 /* Sets the image filtering method when
  * using the IPU hardware scaler */
 bool dingux_ipu_set_filter_type(enum dingux_ipu_filter_type filter_type);
+
+#if defined(DINGUX_BETA)
+/* Sets the refresh rate of the integral LCD panel.
+ * If specified value is invalid, will set refresh
+ * rate to 60 Hz.
+ * Returns a floating point representation of the
+ * resultant hardware refresh rate. In the event
+ * that a refresh rate cannot be set (i.e. hardware
+ * error), returns 0.0 */
+float dingux_set_video_refresh_rate(enum dingux_refresh_rate refresh_rate);
+
+/* Gets the currently set refresh rate of the
+ * integral LCD panel.
+ * Returns false if hardware is in an undefined
+ * state. */
+bool dingux_get_video_refresh_rate(enum dingux_refresh_rate *refresh_rate);
+#endif
 
 /* Resets the IPU hardware scaler to the
  * default configuration */
