@@ -44,9 +44,9 @@
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
 
-#define FAIL_CPU(simd_type) do { \
+#define FAIL_CPU(p_rarch, simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retroarch_fail(1, "validate_cpu_features()"); \
+   retroarch_fail(p_rarch, 1, "validate_cpu_features()"); \
 } while (0)
 
 #ifdef HAVE_ZLIB
@@ -291,7 +291,7 @@
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle_local, #x); \
    memcpy(&current_core->x, &func, sizeof(func)); \
-   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_symbols()"); } \
+   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(p_rarch, 1, "init_libretro_symbols()"); } \
 } while (0)
 #else
 #define SYMBOL(x) current_core->x = x

@@ -12,7 +12,8 @@ extern "C"
 #endif
 #endif
 
-static void retroarch_fail(int error_code, const char *error);
+static void retroarch_fail(struct rarch_state *p_rarch,
+      int error_code, const char *error);
 static void ui_companion_driver_toggle(
       settings_t *settings,
       struct rarch_state *p_rarch,

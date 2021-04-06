@@ -1038,6 +1038,7 @@ static void menu_input_key_bind_poll_bind_state_internal(
 
 static void menu_input_key_bind_poll_bind_state(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       struct menu_bind_state *state,
       bool timed_out)
 {
@@ -1058,8 +1059,7 @@ static void menu_input_key_bind_poll_bind_state(
    /* poll mouse (on the relevant port) */
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
       state->state[port].mouse_buttons[b] =
-         input_mouse_button_raw(p_rarch,
-               p_rarch->configuration_settings, port, b);
+         input_mouse_button_raw(p_rarch, settings, port, b);
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -1360,7 +1360,7 @@ bool menu_input_key_bind_set_mode(
          NULL,
 #endif
          binds);
-   menu_input_key_bind_poll_bind_state(p_rarch,
+   menu_input_key_bind_poll_bind_state(p_rarch, settings,
          binds, false);
 
    current_usec             = cpu_features_get_time_usec();
@@ -1406,11 +1406,11 @@ bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
 
 static bool menu_input_key_bind_iterate(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       menu_input_ctx_bind_t *bind,
       retro_time_t current_time)
 {
    bool               timed_out   = false;
-   settings_t     *settings       = p_rarch->configuration_settings;
    struct menu_bind_state *_binds = &p_rarch->menu_input_binds;
    menu_input_t *menu_input       = &p_rarch->menu_input_state;
    struct menu_state *menu_st     = &p_rarch->menu_driver_state;
@@ -1472,7 +1472,7 @@ static bool menu_input_key_bind_iterate(
 
       p_rarch->keyboard_mapping_blocked    = false;
 
-      menu_input_key_bind_poll_bind_state(p_rarch,
+      menu_input_key_bind_poll_bind_state(p_rarch, settings,
             &new_binds, timed_out);
 
 #ifdef ANDROID
@@ -1903,6 +1903,7 @@ static int generic_menu_iterate(
             bind.len = sizeof(menu->menu_state_msg);
 
             if (menu_input_key_bind_iterate(p_rarch,
+                     settings,
                      &bind, current_time))
             {
                size_t selection = menu_st->selection_ptr;
@@ -18185,6 +18186,7 @@ static void libretro_get_environment_info(
 }
 
 static dylib_t load_dynamic_core(
+      struct rarch_state *p_rarch,
       const char *path, char *buf, size_t size)
 {
 #if defined(ANDROID)
@@ -18209,7 +18211,7 @@ static dylib_t load_dynamic_core(
       RARCH_ERR("This could happen if other modules RetroArch depends on "
             "link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-      retroarch_fail(1, "init_libretro_symbols()");
+      retroarch_fail(p_rarch, 1, "init_libretro_symbols()");
    }
 #endif
 
@@ -18385,17 +18387,18 @@ static bool init_libretro_symbols_custom(
                {
                   RARCH_ERR("[Core]: Frontend is built for dynamic libretro cores, but "
                         "path is not set. Cannot continue.\n");
-                  retroarch_fail(1, "init_libretro_symbols()");
+                  retroarch_fail(p_rarch, 1, "init_libretro_symbols()");
                }
 
                RARCH_LOG("[Core]: Loading dynamic libretro core from: \"%s\"\n",
                      path);
 
                if (!(p_rarch->lib_handle = load_dynamic_core(
-                        path,
-                        path_get_ptr(RARCH_PATH_CORE),
-                        path_get_realsize(RARCH_PATH_CORE)
-                        )))
+                           p_rarch,
+                           path,
+                           path_get_ptr(RARCH_PATH_CORE),
+                           path_get_realsize(RARCH_PATH_CORE)
+                           )))
                {
                   RARCH_ERR("%s: \"%s\"\nError(s): %s\n",
                         msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
@@ -19133,7 +19136,7 @@ bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data)
                p_rarch->bluetooth_driver = (const bluetooth_driver_t*)bluetooth_drivers[0];
 
                if (!p_rarch->bluetooth_driver)
-                  retroarch_fail(1, "find_bluetooth_driver()");
+                  retroarch_fail(p_rarch, 1, "find_bluetooth_driver()");
             }
          }
          break;
@@ -19281,7 +19284,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
                p_rarch->wifi_driver = (const wifi_driver_t*)wifi_drivers[0];
 
                if (!p_rarch->wifi_driver)
-                  retroarch_fail(1, "find_wifi_driver()");
+                  retroarch_fail(p_rarch, 1, "find_wifi_driver()");
             }
          }
          break;
@@ -19635,7 +19638,7 @@ static void find_record_driver(struct rarch_state *p_rarch, const char *prefix,
       p_rarch->recording_driver = (const record_driver_t*)record_drivers[0];
 
       if (!p_rarch->recording_driver)
-         retroarch_fail(1, "find_record_driver()");
+         retroarch_fail(p_rarch, 1, "find_record_driver()");
    }
 }
 
@@ -24654,7 +24657,7 @@ static bool input_driver_find_driver(
 
       if (!p_rarch->current_input)
       {
-         retroarch_fail(1, "find_input_driver()");
+         retroarch_fail(p_rarch, 1, "find_input_driver()");
          return false;
       }
    }
@@ -27652,7 +27655,7 @@ static bool audio_driver_find_driver(struct rarch_state *p_rarch, const char *pr
          audio_drivers[0];
 
       if (!p_rarch->current_audio)
-         retroarch_fail(1, "audio_driver_find()");
+         retroarch_fail(p_rarch, 1, "audio_driver_find()");
    }
 
    return true;
@@ -27742,7 +27745,7 @@ static bool audio_driver_init_internal(
                p_rarch->current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
-         retroarch_fail(1, "audio_driver_init_internal()");
+         retroarch_fail(p_rarch, 1, "audio_driver_init_internal()");
       }
    }
    else
@@ -29567,7 +29570,7 @@ static void video_driver_init_input(
    if (!p_rarch->current_input || !input_driver_init(p_rarch, settings))
    {
       RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
-      retroarch_fail(1, "video_driver_init_input()");
+      retroarch_fail(p_rarch, 1, "video_driver_init_input()");
    }
 }
 
@@ -30055,7 +30058,7 @@ static bool video_driver_init_internal(
    return true;
 
 error:
-   retroarch_fail(1, "init_video()");
+   retroarch_fail(p_rarch, 1, "init_video()");
    return false;
 }
 
@@ -30854,7 +30857,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch, const char *pr
       }
 
       if (!(p_rarch->current_video = (video_driver_t*)video_drivers[0]))
-         retroarch_fail(1, "find_video_driver()");
+         retroarch_fail(p_rarch, 1, "find_video_driver()");
    }
    return true;
 }
@@ -32297,7 +32300,7 @@ static void location_driver_find_driver(struct rarch_state *p_rarch,
       p_rarch->location_driver = (const location_driver_t*)location_drivers[0];
 
       if (!p_rarch->location_driver)
-         retroarch_fail(1, "find_location_driver()");
+         retroarch_fail(p_rarch, 1, "find_location_driver()");
    }
 }
 
@@ -32514,7 +32517,7 @@ static void camera_driver_find_driver(struct rarch_state *p_rarch,
       p_rarch->camera_driver = (const camera_driver_t*)camera_drivers[0];
 
       if (!p_rarch->camera_driver)
-         retroarch_fail(1, "find_camera_driver()");
+         retroarch_fail(p_rarch, 1, "find_camera_driver()");
    }
 }
 
@@ -34207,7 +34210,7 @@ static bool retroarch_parse_input_and_config(
             /* Must handle '?' otherwise you get an infinite loop */
             case '?':
                retroarch_print_help(argv[0]);
-               retroarch_fail(1, "retroarch_parse_input()");
+               retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
                break;
             /* All other arguments are handled in the second pass */
          }
@@ -34264,7 +34267,7 @@ static bool retroarch_parse_input_and_config(
                   {
                      RARCH_ERR("%s\n", msg_hash_to_str(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT));
                      retroarch_print_help(argv[0]);
-                     retroarch_fail(1, "retroarch_parse_input()");
+                     retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
                   }
                   new_port = port -1;
 
@@ -34284,7 +34287,7 @@ static bool retroarch_parse_input_and_config(
                   {
                      RARCH_ERR("Connect dualanalog to a valid port.\n");
                      retroarch_print_help(argv[0]);
-                     retroarch_fail(1, "retroarch_parse_input()");
+                     retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
                   }
                   new_port = port - 1;
 
@@ -34314,7 +34317,7 @@ static bool retroarch_parse_input_and_config(
                      RARCH_ERR("%s\n",
                            msg_hash_to_str(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT));
                      retroarch_print_help(argv[0]);
-                     retroarch_fail(1, "retroarch_parse_input()");
+                     retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
                   }
                   new_port = port - 1;
                   input_config_set_device(port - 1, RETRO_DEVICE_NONE);
@@ -34432,7 +34435,7 @@ static bool retroarch_parse_input_and_config(
                {
                   RARCH_ERR("Invalid argument in --sram-mode.\n");
                   retroarch_print_help(argv[0]);
-                  retroarch_fail(1, "retroarch_parse_input()");
+                  retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
                }
                break;
 
@@ -34497,7 +34500,7 @@ static bool retroarch_parse_input_and_config(
                if (command_network_send((const char*)optarg))
                   exit(0);
                else
-                  retroarch_fail(1, "network_cmd_send()");
+                  retroarch_fail(p_rarch, 1, "network_cmd_send()");
 #endif
                break;
 #endif
@@ -34563,7 +34566,7 @@ static bool retroarch_parse_input_and_config(
                {
                   RARCH_ERR("Wrong format for --size.\n");
                   retroarch_print_help(argv[0]);
-                  retroarch_fail(1, "retroarch_parse_input()");
+                  retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
                }
                break;
 
@@ -34631,7 +34634,7 @@ static bool retroarch_parse_input_and_config(
 
             case '?':
                retroarch_print_help(argv[0]);
-               retroarch_fail(1, "retroarch_parse_input()");
+               retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
             case RA_OPT_ACCESSIBILITY:
 #ifdef HAVE_ACCESSIBILITY
                p_rarch->accessibility_enabled = true;
@@ -34642,7 +34645,7 @@ static bool retroarch_parse_input_and_config(
                break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
-               retroarch_fail(1, "retroarch_parse_input()");
+               retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
          }
       }
    }
@@ -34665,7 +34668,7 @@ static bool retroarch_parse_input_and_config(
       if (optind < argc)
       {
          RARCH_ERR("--menu was used, but content file was passed as well.\n");
-         retroarch_fail(1, "retroarch_parse_input()");
+         retroarch_fail(p_rarch, 1, "retroarch_parse_input()");
       }
 #ifdef HAVE_DYNAMIC
       else
@@ -34753,9 +34756,10 @@ static bool retroarch_validate_per_core_options(char *s,
    return true;
 }
 
-static bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
+static bool retroarch_validate_game_options(
+      struct rarch_state *p_rarch,
+      char *s, size_t len, bool mkdir)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    const char *core_name       = p_rarch->runloop_system.info.library_name;
    const char *game_name       = path_basename(path_get(RARCH_PATH_BASENAME));
 
@@ -34786,26 +34790,26 @@ static bool retroarch_validate_folder_options(char *s, size_t len, bool mkdir)
  * Make sure we haven't compiled for something we cannot run.
  * Ideally, code would get swapped out depending on CPU support,
  * but this will do for now. */
-static void retroarch_validate_cpu_features(void)
+static void retroarch_validate_cpu_features(struct rarch_state *p_rarch)
 {
    uint64_t cpu = cpu_features_get();
    (void)cpu;
 
 #ifdef __MMX__
    if (!(cpu & RETRO_SIMD_MMX))
-      FAIL_CPU("MMX");
+      FAIL_CPU(p_rarch, "MMX");
 #endif
 #ifdef __SSE__
    if (!(cpu & RETRO_SIMD_SSE))
-      FAIL_CPU("SSE");
+      FAIL_CPU(p_rarch, "SSE");
 #endif
 #ifdef __SSE2__
    if (!(cpu & RETRO_SIMD_SSE2))
-      FAIL_CPU("SSE2");
+      FAIL_CPU(p_rarch, "SSE2");
 #endif
 #ifdef __AVX__
    if (!(cpu & RETRO_SIMD_AVX))
-      FAIL_CPU("AVX");
+      FAIL_CPU(p_rarch, "AVX");
 #endif
 }
 
@@ -34845,7 +34849,7 @@ static void menu_driver_find_driver(
          menu_ctx_drivers[0];
 
       if (!p_rarch->menu_driver_ctx)
-         retroarch_fail(1, "find_menu_driver()");
+         retroarch_fail(p_rarch, 1, "find_menu_driver()");
    }
 }
 #endif
@@ -34971,7 +34975,7 @@ bool retroarch_main_init(int argc, char *argv[])
    ExcHndlSetLogFileNameA(log_file_name);
 #endif
 
-   retroarch_validate_cpu_features();
+   retroarch_validate_cpu_features(p_rarch);
    retroarch_init_task_queue();
 
    {
@@ -35135,14 +35139,13 @@ error:
 }
 
 #if 0
-static bool retroarch_is_on_main_thread(void)
+static bool retroarch_is_on_main_thread(struct rarch_state *p_rarch)
 {
 #ifdef HAVE_THREAD_STORAGE
-   struct rarch_state *p_rarch = &rarch_st;
-   if (sthread_tls_get(&p_rarch->rarch_tls) != MAGIC_POINTER)
-      return false;
-#endif
+   return sthread_tls_get(&p_rarch->rarch_tls) == MAGIC_POINTER;
+#else
    return true;
+#endif
 }
 #endif
 
@@ -35415,12 +35418,14 @@ void retroarch_menu_running_finished(bool quit)
  * options path has been found,
  * otherwise false (0).
  **/
-static bool rarch_game_specific_options(char **output)
+static bool rarch_game_specific_options(struct rarch_state *p_rarch,
+      char **output)
 {
    char game_options_path[PATH_MAX_LENGTH];
    game_options_path[0] ='\0';
 
-   if (!retroarch_validate_game_options(game_options_path,
+   if (!retroarch_validate_game_options(p_rarch,
+            game_options_path,
             sizeof(game_options_path), false) ||
        !path_is_valid(game_options_path))
       return false;
@@ -35527,7 +35532,7 @@ static void rarch_init_core_options_path(
 
    /* Check whether game-specific options exist */
    if (game_specific_options &&
-       rarch_game_specific_options(&game_options_path))
+       rarch_game_specific_options(p_rarch, &game_options_path))
    {
       /* Notify system that we have a valid core options
        * override */
@@ -36376,9 +36381,9 @@ void retroarch_set_current_core_type(
  *
  * Sanely kills the program.
  **/
-static void retroarch_fail(int error_code, const char *error)
+static void retroarch_fail(struct rarch_state *p_rarch,
+      int error_code, const char *error)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */
@@ -38863,7 +38868,8 @@ bool core_options_create_override(bool game_specific)
    /* Get options file path (either game-specific or folder-specific) */
    if (game_specific)
    {
-      if (!retroarch_validate_game_options(options_path,
+      if (!retroarch_validate_game_options(p_rarch,
+               options_path,
             sizeof(options_path), true))
          goto error;
    }
