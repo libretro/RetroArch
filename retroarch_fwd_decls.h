@@ -99,7 +99,7 @@ static void input_overlay_load_active(
       struct rarch_state *p_rarch,
       input_overlay_t *ol, float opacity);
 static void input_overlay_auto_rotate_(struct rarch_state *p_rarch,
-      input_overlay_t *ol);
+      settings_t *settings, input_overlay_t *ol);
 #endif
 
 #ifdef HAVE_AUDIOMIXER
@@ -120,11 +120,14 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch, const char *pr
 #ifdef HAVE_BSV_MOVIE
 static void bsv_movie_deinit(struct rarch_state *p_rarch);
 static bool bsv_movie_init(struct rarch_state *p_rarch);
-static bool bsv_movie_check(struct rarch_state *p_rarch);
+static bool bsv_movie_check(struct rarch_state *p_rarch,
+      settings_t *settings);
 #endif
 
 static void driver_uninit(struct rarch_state *p_rarch, int flags);
-static void drivers_init(struct rarch_state *p_rarch,  int flags,
+static void drivers_init(struct rarch_state *p_rarch,
+      settings_t *settings,
+      int flags,
       bool verbosity_enabled);
 
 #if defined(HAVE_RUNAHEAD)

@@ -11923,7 +11923,9 @@ static bool command_event_disk_control_append_image(
  **/
 static void command_event_set_volume(
       settings_t *settings,
-      struct rarch_state *p_rarch, float gain)
+      float gain,
+      bool widgets_active,
+      bool audio_driver_mute_enable)
 {
    char msg[128];
    float new_volume            = settings->floats.audio_volume + gain;
@@ -11938,12 +11940,13 @@ static void command_event_set_volume(
          new_volume);
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (p_rarch->widgets_active)
+   if (widgets_active)
       gfx_widget_volume_update_and_show(new_volume,
-            p_rarch->audio_driver_mute_enable);
+            audio_driver_mute_enable);
    else
 #endif
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    RARCH_LOG("[Audio]: %s\n", msg);
 
@@ -11959,7 +11962,6 @@ static void command_event_set_volume(
  **/
 static void command_event_set_mixer_volume(
       settings_t *settings,
-      struct rarch_state *p_rarch,
       float gain)
 {
    char msg[128];
@@ -13242,7 +13244,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_RECORD_INIT, NULL);
          else
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         bsv_movie_check(p_rarch);
+         bsv_movie_check(p_rarch, settings);
 #endif
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
@@ -13747,7 +13749,7 @@ bool command_event(enum event_command cmd, void *data)
             if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
-                     input_overlay_auto_rotate_(p_rarch,
+                     input_overlay_auto_rotate_(p_rarch, settings,
                            p_rarch->overlay_ptr);
          }
 #endif
@@ -14009,7 +14011,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(p_rarch, DRIVER_AUDIO_MASK);
-         drivers_init(p_rarch, DRIVER_AUDIO_MASK, verbosity_is_enabled());
+         drivers_init(p_rarch, settings, DRIVER_AUDIO_MASK, verbosity_is_enabled());
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
@@ -14703,16 +14705,29 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_VOLUME_UP:
-         command_event_set_volume(settings, p_rarch, 0.5f);
+         command_event_set_volume(settings, 0.5f,
+#if defined(HAVE_GFX_WIDGETS)
+               p_rarch->widgets_active,
+#else
+               false,
+#endif
+               p_rarch->audio_driver_mute_enable);
          break;
       case CMD_EVENT_VOLUME_DOWN:
-         command_event_set_volume(settings, p_rarch, -0.5f);
+         command_event_set_volume(settings, -0.5f,
+#if defined(HAVE_GFX_WIDGETS)
+               p_rarch->widgets_active,
+#else
+               false,
+#endif
+               p_rarch->audio_driver_mute_enable
+               );
          break;
       case CMD_EVENT_MIXER_VOLUME_UP:
-         command_event_set_mixer_volume(settings, p_rarch, 0.5f);
+         command_event_set_mixer_volume(settings, 0.5f);
          break;
       case CMD_EVENT_MIXER_VOLUME_DOWN:
-         command_event_set_mixer_volume(settings, p_rarch, -0.5f);
+         command_event_set_mixer_volume(settings, -0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
          retroarch_set_frame_limit(p_rarch,
@@ -14778,10 +14793,10 @@ bool command_event(enum event_command cmd, void *data)
                if (data)
                   paused = *((bool*)data);
 
-               if (p_rarch->ai_service_auto == 0 && !settings->bools.ai_service_pause)
+               if (      p_rarch->ai_service_auto == 0 
+                     && !settings->bools.ai_service_pause)
                   p_rarch->ai_service_auto = 1;
-               if (p_rarch->ai_service_auto != 2)
-                  RARCH_LOG("AI Service Called...\n");
+
                run_translation_service(p_rarch->configuration_settings,
                      p_rarch, paused);
             }
@@ -19646,7 +19661,7 @@ static const record_driver_t *ffemu_find_backend(const char *ident)
    return NULL;
 }
 
-static void recording_driver_free_state(void)
+static void recording_driver_free_state(struct rarch_state *p_rarch)
 {
    /* TODO/FIXME - this is not being called anywhere */
    p_rarch->recording_gpu_width      = 0;
@@ -20415,10 +20430,10 @@ static void bsv_movie_deinit(struct rarch_state *p_rarch)
    p_rarch->bsv_movie_state_handle = NULL;
 }
 
-static bool runloop_check_movie_init(struct rarch_state *p_rarch)
+static bool runloop_check_movie_init(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
    char msg[16384], path[8192];
-   settings_t *settings        = p_rarch->configuration_settings;
    int state_slot              = settings->ints.state_slot;
 
    msg[0] = path[0]            = '\0';
@@ -20463,10 +20478,11 @@ static bool runloop_check_movie_init(struct rarch_state *p_rarch)
    return true;
 }
 
-static bool bsv_movie_check(struct rarch_state *p_rarch)
+static bool bsv_movie_check(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
    if (!p_rarch->bsv_movie_state_handle)
-      return runloop_check_movie_init(p_rarch);
+      return runloop_check_movie_init(p_rarch, settings);
 
    if (p_rarch->bsv_movie_state.movie_playback)
    {
@@ -20959,12 +20975,13 @@ static void input_overlay_load_active(
  * Depends upon proper naming conventions in overlay
  * config file. */
 static void input_overlay_auto_rotate_(
-      struct rarch_state *p_rarch, input_overlay_t *ol)
+      struct rarch_state *p_rarch,
+      settings_t *settings,
+      input_overlay_t *ol)
 {
    size_t i;
    enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_NONE;
    enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
-   settings_t *settings                                = p_rarch->configuration_settings;
    bool input_overlay_enable                           = settings->bools.input_overlay_enable;
    bool next_overlay_found                             = false;
    bool tmp                                            = false;
@@ -21358,7 +21375,7 @@ static void input_overlay_loaded(retro_task_t *task,
 
    /* Attempt to automatically rotate overlay, if required */
    if (inp_overlay_auto_rotate)
-      input_overlay_auto_rotate_(p_rarch,
+      input_overlay_auto_rotate_(p_rarch, settings,
             p_rarch->overlay_ptr);
 
    return;
@@ -21403,6 +21420,7 @@ void input_overlay_set_visibility(int overlay_idx,
  **/
 static void input_poll_overlay(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       input_overlay_t *ol, float opacity,
       unsigned analog_dpad_mode,
       float axis_threshold)
@@ -21415,7 +21433,6 @@ static void input_poll_overlay(
    void *input_data                                 = p_rarch->current_input_data;
    input_overlay_state_t *ol_state                  = &ol->overlay_state;
    input_driver_t *current_input                    = p_rarch->current_input;
-   settings_t *settings                             = p_rarch->configuration_settings;
    bool input_overlay_show_physical_inputs          = settings->bools.input_overlay_show_physical_inputs;
    unsigned input_overlay_show_physical_inputs_port = settings->uints.input_overlay_show_physical_inputs_port;
    float touch_scale                                = (float)settings->uints.input_touch_scale;
@@ -21978,6 +21995,7 @@ static void input_driver_poll(void)
 #ifdef HAVE_OVERLAY
    if (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive)
       input_poll_overlay(p_rarch,
+            settings,
             p_rarch->overlay_ptr,
             input_overlay_opacity,
             settings->uints.input_analog_dpad_mode[0],
@@ -23298,6 +23316,7 @@ static void input_event_osk_iterate(
  */
 static unsigned menu_event(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       input_bits_t *p_input,
       input_bits_t *p_trigger_input,
       bool display_kb)
@@ -23314,7 +23333,6 @@ static unsigned menu_event(
    struct menu_state                     *menu_st  = &p_rarch->menu_driver_state;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
-   settings_t *settings                            = p_rarch->configuration_settings;
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
@@ -24593,21 +24611,22 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
    return NULL;
 }
 
-static bool input_driver_init(struct rarch_state *p_rarch)
+static bool input_driver_init(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
    if (p_rarch->current_input)
-   {
-      settings_t *settings        = p_rarch->configuration_settings;
       p_rarch->current_input_data = input_driver_init_wrap(
             p_rarch->current_input, settings->arrays.input_joypad_driver);
-   }
 
    return (p_rarch->current_input_data != NULL);
 }
 
-static bool input_driver_find_driver(struct rarch_state *p_rarch, const char *prefix)
+static bool input_driver_find_driver(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
+      const char *prefix,
+      bool verbosity_enabled)
 {
-   settings_t *settings = p_rarch->configuration_settings;
    int i                = (int)driver_find_index(
          "input_driver",
          settings->arrays.input_driver);
@@ -24620,13 +24639,16 @@ static bool input_driver_find_driver(struct rarch_state *p_rarch, const char *pr
    }
    else
    {
-      unsigned d;
-      RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-            settings->arrays.input_driver);
-      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-      for (d = 0; input_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
-      RARCH_WARN("Going to default to first %s...\n", prefix);
+      if (verbosity_enabled)
+      {
+         unsigned d;
+         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
+               settings->arrays.input_driver);
+         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+         for (d = 0; input_drivers[d]; d++)
+            RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
+         RARCH_WARN("Going to default to first %s...\n", prefix);
+      }
 
       p_rarch->current_input = (input_driver_t*)input_drivers[0];
 
@@ -26043,21 +26065,22 @@ void input_config_get_bind_string(char *buf,
 {
    int delim                   = 0;
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
 
    *buf = '\0';
 
    if      (bind      && bind->joykey  != NO_BTN)
       input_config_get_bind_string_joykey(
-            p_rarch->configuration_settings, buf, "", bind, size);
+            settings, buf, "", bind, size);
    else if (bind      && bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(
-            p_rarch->configuration_settings, buf, "", bind, size);
+            settings, buf, "", bind, size);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
       input_config_get_bind_string_joykey(
-            p_rarch->configuration_settings, buf, "Auto: ", auto_bind, size);
+            settings, buf, "Auto: ", auto_bind, size);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(
-            p_rarch->configuration_settings, buf, "Auto: ", auto_bind, size);
+            settings, buf, "Auto: ", auto_bind, size);
 
    if (*buf)
       delim = 1;
@@ -26142,8 +26165,9 @@ void input_config_get_bind_string(char *buf,
 
 unsigned input_config_get_device_count(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    unsigned num_devices;
+   struct rarch_state *p_rarch = &rarch_st;
+
    for (num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices)
    {
       if (string_is_empty(p_rarch->input_device_info[num_devices].name))
@@ -26959,9 +26983,9 @@ static void midi_driver_free(struct rarch_state *p_rarch)
    p_rarch->midi_drv_output_enabled = false;
 }
 
-static bool midi_driver_init(struct rarch_state *p_rarch)
+static bool midi_driver_init(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
-   settings_t *settings              = p_rarch->configuration_settings;
    union string_list_elem_attr attr  = {0};
    bool ret                          = true;
 
@@ -27363,14 +27387,11 @@ size_t midi_driver_get_event_size(uint8_t status)
 /* AUDIO */
 
 static enum resampler_quality audio_driver_get_resampler_quality(
-      struct rarch_state *p_rarch)
+      settings_t *settings)
 {
-   settings_t     *settings    = p_rarch->configuration_settings;
-
-   if (!settings)
-      return RESAMPLER_QUALITY_DONTCARE;
-
-   return (enum resampler_quality)settings->uints.audio_resampler_quality;
+   if (settings)
+      return (enum resampler_quality)settings->uints.audio_resampler_quality;
+   return RESAMPLER_QUALITY_DONTCARE;
 }
 
 #ifdef HAVE_AUDIOMIXER
@@ -27780,7 +27801,7 @@ static bool audio_driver_init_internal(
             &p_rarch->audio_driver_resampler_data,
             &p_rarch->audio_driver_resampler,
             settings->arrays.audio_resampler,
-            audio_driver_get_resampler_quality(p_rarch),
+            audio_driver_get_resampler_quality(settings),
             p_rarch->audio_source_ratio_original))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
@@ -29439,12 +29460,12 @@ static void video_driver_filter_free(void)
 #endif
 
 #ifdef HAVE_VIDEO_FILTER
-static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
+static void video_driver_init_filter(enum retro_pixel_format colfmt_int,
+      settings_t *settings)
 {
    unsigned pow2_x, pow2_y, maxsize;
    void *buf                            = NULL;
    struct rarch_state          *p_rarch = &rarch_st;
-   settings_t *settings                 = p_rarch->configuration_settings;
    struct retro_game_geometry *geom     = &p_rarch->video_driver_av_info.geometry;
    unsigned width                       = geom->max_width;
    unsigned height                      = geom->max_height;
@@ -29519,7 +29540,10 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
 }
 #endif
 
-static void video_driver_init_input(input_driver_t *tmp)
+static void video_driver_init_input(
+      input_driver_t *tmp,
+      settings_t *settings,
+      bool verbosity_enabled)
 {
    struct rarch_state *p_rarch = &rarch_st;
    input_driver_t      **input = &p_rarch->current_input;
@@ -29534,17 +29558,17 @@ static void video_driver_init_input(input_driver_t *tmp)
    if (tmp)
       *input = tmp;
    else
-      input_driver_find_driver(p_rarch, "input driver");
+      input_driver_find_driver(p_rarch, settings, "input driver",
+            verbosity_enabled);
 
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
     * in a similar fashion anyways. */
-   if (!p_rarch->current_input || !input_driver_init(p_rarch))
+   if (!p_rarch->current_input || !input_driver_init(p_rarch, settings))
    {
       RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
       retroarch_fail(1, "video_driver_init_input()");
    }
-
 }
 
 /**
@@ -29784,24 +29808,26 @@ static void video_driver_set_viewport_square_pixel(struct retro_game_geometry *g
    aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
 }
 
-static bool video_driver_init_internal(bool *video_is_threaded)
+static bool video_driver_init_internal(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
+      bool *video_is_threaded,
+      bool verbosity_enabled
+     )
 {
    video_info_t video;
    unsigned max_dim, scale, width, height;
    video_viewport_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
    static uint16_t dummy_pixels[32]       = {0};
-   struct rarch_state            *p_rarch = &rarch_st;
-   settings_t *settings                   = p_rarch->configuration_settings;
    struct retro_game_geometry *geom       = &p_rarch->video_driver_av_info.geometry;
    const enum retro_pixel_format
       video_driver_pix_fmt                = p_rarch->video_driver_pix_fmt;
-   bool verbosity_enabled                 = verbosity_is_enabled();
 #ifdef HAVE_VIDEO_FILTER
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
    if (!string_is_empty(path_softfilter_plugin))
-      video_driver_init_filter(video_driver_pix_fmt);
+      video_driver_init_filter(video_driver_pix_fmt, settings);
 #endif
 
    max_dim   = MAX(geom->max_width, geom->max_height);
@@ -29980,7 +30006,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    p_rarch->current_video->suppress_screensaver(p_rarch->video_driver_data,
          settings->bools.ui_suspend_screensaver_enable);
 
-   video_driver_init_input(tmp);
+   video_driver_init_input(tmp, settings, verbosity_enabled);
 
 #ifdef HAVE_OVERLAY
    retroarch_overlay_deinit(p_rarch);
@@ -30853,7 +30879,7 @@ bool video_driver_read_viewport(uint8_t *buffer, bool is_idle)
 }
 
 static void video_driver_reinit_context(struct rarch_state *p_rarch,
-      int flags)
+      settings_t *settings, int flags)
 {
    /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
     * need to make sure to keep a copy */
@@ -30869,18 +30895,19 @@ static void video_driver_reinit_context(struct rarch_state *p_rarch,
    memcpy(hwr, &hwr_copy, sizeof(*hwr));
    p_rarch->hw_render_context_negotiation = iface;
 
-   drivers_init(p_rarch, flags, verbosity_is_enabled());
+   drivers_init(p_rarch, settings, flags, verbosity_is_enabled());
 }
 
 void video_driver_reinit(int flags)
 {
    struct rarch_state          *p_rarch    = &rarch_st;
+   settings_t *settings                    = p_rarch->configuration_settings;
    struct retro_hw_render_callback *hwr    =
       VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 
    p_rarch->video_driver_cache_context     = (hwr->cache_context != false);
    p_rarch->video_driver_cache_context_ack = false;
-   video_driver_reinit_context(p_rarch, flags);
+   video_driver_reinit_context(p_rarch, settings, flags);
    p_rarch->video_driver_cache_context     = false;
 }
 
@@ -31761,6 +31788,7 @@ void video_driver_get_window_title(char *buf, unsigned len)
  **/
 static const gfx_ctx_driver_t *video_context_driver_init(
       void *data,
+      settings_t *settings,
       const gfx_ctx_driver_t *ctx,
       const char *ident,
       enum gfx_ctx_api api, unsigned major,
@@ -31768,7 +31796,6 @@ static const gfx_ctx_driver_t *video_context_driver_init(
       void **ctx_data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   settings_t       *settings  = p_rarch->configuration_settings;
    bool  video_shared_context  = settings->bools.video_shared_context || libretro_get_shared_context();
 
    if (!ctx->bind_api(data, api, major, minor))
@@ -31797,6 +31824,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(void *data,
 {
    unsigned j;
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
    int                       i = -1;
    
    for (j = 0; gfx_ctx_vk_drivers[j]; j++)
@@ -31811,6 +31839,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(void *data,
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(data,
+            settings,
             gfx_ctx_vk_drivers[i], ident,
             api, major, minor, hw_render_ctx, ctx_data);
       if (ctx)
@@ -31823,7 +31852,9 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(void *data,
    for (i = 0; gfx_ctx_vk_drivers[i]; i++)
    {
       const gfx_ctx_driver_t *ctx =
-         video_context_driver_init(data, gfx_ctx_vk_drivers[i], ident,
+         video_context_driver_init(data,
+               settings,
+               gfx_ctx_vk_drivers[i], ident,
                api, major, minor, hw_render_ctx, ctx_data);
 
       if (ctx)
@@ -31843,6 +31874,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(void *data,
 {
    unsigned j;
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
    int                       i = -1;
    
    for (j = 0; gfx_ctx_gl_drivers[j]; j++)
@@ -31857,6 +31889,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(void *data,
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(data,
+            settings,
             gfx_ctx_gl_drivers[i], ident,
             api, major, minor, hw_render_ctx, ctx_data);
       if (ctx)
@@ -31869,7 +31902,9 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(void *data,
    for (i = 0; gfx_ctx_gl_drivers[i]; i++)
    {
       const gfx_ctx_driver_t *ctx =
-         video_context_driver_init(data, gfx_ctx_gl_drivers[i], ident,
+         video_context_driver_init(data,
+               settings,
+               gfx_ctx_gl_drivers[i], ident,
                api, major, minor, hw_render_ctx, ctx_data);
 
       if (ctx)
@@ -32233,10 +32268,11 @@ const char* config_get_location_driver_options(void)
    return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
 }
 
-static void location_driver_find_driver(struct rarch_state *p_rarch, const char *prefix,
+static void location_driver_find_driver(struct rarch_state *p_rarch,
+      settings_t *settings,
+      const char *prefix,
       bool verbosity_enabled)
 {
-   settings_t         *settings = p_rarch->configuration_settings;
    int i                        = (int)driver_find_index(
          "location_driver",
          settings->arrays.location_driver);
@@ -32246,7 +32282,7 @@ static void location_driver_find_driver(struct rarch_state *p_rarch, const char 
    else
    {
 
-      if (verbosity_is_enabled())
+      if (verbosity_enabled)
       {
          unsigned d;
          RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
@@ -32358,16 +32394,19 @@ static bool driver_location_get_position(double *lat, double *lon,
    return false;
 }
 
-static void init_location(bool verbosity_enabled)
+static void init_location(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
+      bool verbosity_enabled)
 {
-   struct rarch_state  *p_rarch = &rarch_st;
    rarch_system_info_t *system  = &p_rarch->runloop_system;
 
    /* Resource leaks will follow if location interface is initialized twice. */
    if (p_rarch->location_data)
       return;
 
-   location_driver_find_driver(p_rarch, "location driver", verbosity_enabled);
+   location_driver_find_driver(p_rarch, settings,
+         "location driver", verbosity_enabled);
 
    p_rarch->location_data = p_rarch->location_driver->init();
 
@@ -32442,9 +32481,11 @@ static void driver_camera_stop(void)
       p_rarch->camera_driver->stop(p_rarch->camera_data);
 }
 
-static void camera_driver_find_driver(struct rarch_state *p_rarch, const char *prefix)
+static void camera_driver_find_driver(struct rarch_state *p_rarch,
+      settings_t *settings,
+      const char *prefix,
+      bool verbosity_enabled)
 {
-   settings_t         *settings = p_rarch->configuration_settings;
    int i                        = (int)driver_find_index(
          "camera_driver",
          settings->arrays.camera_driver);
@@ -32453,7 +32494,7 @@ static void camera_driver_find_driver(struct rarch_state *p_rarch, const char *p
       p_rarch->camera_driver = (const camera_driver_t*)camera_drivers[i];
    else
    {
-      if (verbosity_is_enabled())
+      if (verbosity_enabled)
       {
          unsigned d;
          RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
@@ -32477,9 +32518,9 @@ static void camera_driver_find_driver(struct rarch_state *p_rarch, const char *p
    }
 }
 
-static void driver_adjust_system_rates(struct rarch_state *p_rarch)
+static void driver_adjust_system_rates(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
-   settings_t *settings                   = p_rarch->configuration_settings;
    struct retro_system_av_info *av_info   = &p_rarch->video_driver_av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
@@ -32576,14 +32617,15 @@ void driver_set_nonblock_state(void)
  * Initializes drivers.
  * @flags determines which drivers get initialized.
  **/
-static void drivers_init(struct rarch_state *p_rarch, int flags,
+static void drivers_init(struct rarch_state *p_rarch,
+      settings_t *settings,
+      int flags,
       bool verbosity_enabled)
 {
 #ifdef HAVE_MENU
    struct menu_state  *menu_st = &p_rarch->menu_driver_state;
 #endif
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL();
-   settings_t *settings        = p_rarch->configuration_settings;
    gfx_display_t *p_disp       = &p_rarch->dispgfx;
 #if defined(HAVE_GFX_WIDGETS)
    bool video_font_enable      = settings->bools.video_font_enable;
@@ -32600,7 +32642,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags,
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      driver_adjust_system_rates(p_rarch);
+      driver_adjust_system_rates(p_rarch, settings);
 
    /* Initialize video driver */
    if (flags & DRIVER_VIDEO_MASK)
@@ -32615,7 +32657,8 @@ static void drivers_init(struct rarch_state *p_rarch, int flags,
       video_driver_filter_free();
 #endif
       video_driver_set_cached_frame_ptr(NULL);
-      video_driver_init_internal(&video_is_threaded);
+      video_driver_init_internal(p_rarch, settings, &video_is_threaded,
+            verbosity_enabled);
 
       if (!p_rarch->video_driver_cache_context_ack
             && hwr->context_reset)
@@ -32645,7 +32688,8 @@ static void drivers_init(struct rarch_state *p_rarch, int flags,
          /* Resource leaks will follow if camera is initialized twice. */
          if (!p_rarch->camera_data)
          {
-            camera_driver_find_driver(p_rarch, "camera driver");
+            camera_driver_find_driver(p_rarch, settings, "camera driver",
+                  verbosity_enabled);
 
             if (p_rarch->camera_driver)
             {
@@ -32681,7 +32725,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags,
    {
       /* Only initialize location driver if we're ever going to use it. */
       if (p_rarch->location_driver_active)
-         init_location(verbosity_is_enabled());
+         init_location(p_rarch, settings, verbosity_is_enabled());
    }
 
    core_info_init_current_core();
@@ -32761,7 +32805,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags,
 
    /* Initialize MIDI  driver */
    if (flags & DRIVER_MIDI_MASK)
-      midi_driver_init(p_rarch);
+      midi_driver_init(p_rarch, settings);
 }
 
 /**
@@ -32937,7 +32981,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             (double)p_rarch->configuration_settings->uints.audio_out_rate
             / p_rarch->audio_driver_input;
 
-            driver_adjust_system_rates(p_rarch);
+            driver_adjust_system_rates(p_rarch, p_rarch->configuration_settings);
          }
          break;
       case RARCH_DRIVER_CTL_FIND_FIRST:
@@ -34768,10 +34812,10 @@ static void retroarch_validate_cpu_features(void)
 #ifdef HAVE_MENU
 static void menu_driver_find_driver(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       const char *prefix,
       bool verbosity_enabled)
 {
-   settings_t *settings = p_rarch->configuration_settings;
    int i                = (int)driver_find_index(
          "menu_driver",
          settings->arrays.menu_driver);
@@ -34985,13 +35029,17 @@ bool retroarch_main_init(int argc, char *argv[])
     */
    audio_driver_find_driver(p_rarch,  "audio driver", verbosity_enabled);
    video_driver_find_driver(p_rarch,  "video driver", verbosity_enabled);
-   input_driver_find_driver(p_rarch,  "input driver");
-   camera_driver_find_driver(p_rarch, "camera driver");
+   input_driver_find_driver(p_rarch, settings,
+         "input driver", verbosity_enabled);
+   camera_driver_find_driver(p_rarch, settings,
+         "camera driver", verbosity_enabled);
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
-   location_driver_find_driver(p_rarch, "location driver", verbosity_enabled);
+   location_driver_find_driver(p_rarch, settings,
+         "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
-   menu_driver_find_driver(p_rarch, "menu driver",    verbosity_enabled);
+   menu_driver_find_driver(p_rarch, settings,
+         "menu driver", verbosity_enabled);
 #endif
 
    /* Attempt to initialize core */
@@ -35030,7 +35078,7 @@ bool retroarch_main_init(int argc, char *argv[])
    cheat_manager_state_free();
    command_event_init_cheats(settings, p_rarch);
 #endif
-   drivers_init(p_rarch, DRIVERS_CMD_ALL, verbosity_enabled);
+   drivers_init(p_rarch, settings, DRIVERS_CMD_ALL, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(p_rarch);
    input_driver_init_command(p_rarch, settings);
@@ -36981,7 +37029,7 @@ static enum runloop_state runloop_check_state(
 
          /* Check overlay rotation, if required */
          if (input_overlay_auto_rotate)
-            input_overlay_auto_rotate_(p_rarch,
+            input_overlay_auto_rotate_(p_rarch, settings,
                   p_rarch->overlay_ptr);
 
          last_width  = video_driver_width;
@@ -37146,7 +37194,7 @@ static enum runloop_state runloop_check_state(
       bits_clear_bits(trigger_input.data, old_input.data,
             ARRAY_SIZE(trigger_input.data));
       action                    = (enum menu_action)menu_event(
-            p_rarch,
+            p_rarch, settings,
             &current_bits, &trigger_input, display_kb);
       focused                   = pause_nonactive ? is_focused : true;
       focused                   = focused &&
