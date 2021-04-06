@@ -2,14 +2,19 @@
 - DRM: set the correct video mode
 - INPUT: Ensure that 'retro_set_controller_port_device' is called when updating 'Max Users'
 - INPUT/XEGL/MOUSE: Fix xegl_ctx.c mouse activation
+- INPUT/POINTER: Add scaling to pointer input.
 - INPUT REMAPPING: Fix regression where disabling input remapping would disable input
+- IOS: Disable system button gestures on iOS 14
+- IOS: Prevent potential crash on controller connect - randomly would get a crash when connecting a game controller while RA was running
 - LOGGING: RARCH_LOG_V checking for verbosity level is not necessary and can cause issues; removed said check.
 - MAC/OPENGL: Fix codesigning issue
 - MAC/UNIVERSAL: Add TTS translation service support.
 - MENU: Add optional menu screensaver
+- MENU/INPUT: Block accidental diagonals in menu navigation 
 - MENU/MATERIALUI: Add icon to 'Turbo Fire' menu entry
 - OPENDINGUX/BETA: Fix IPU scaling when running GBA-resolution content 
 - VITA: Align VM block size to 1MB - should fix one of the issues with gpSP
+- XEGL: Fix mouse not working when using OpenGLES with X11
 
 # 1.9.1
 - 3DS: Graphics widgets support
