@@ -22351,109 +22351,109 @@ static int16_t input_state_device(
                }
 #endif
             }
-         }
 
-         /* Don't allow turbo for D-pad. */
-         if (     (id  < RETRO_DEVICE_ID_JOYPAD_UP)    ||
-             (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT) &&
-                  (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
-         {
-            /*
-             * Apply turbo button if activated.
-             */
-            unsigned turbo_mode = settings->uints.input_turbo_mode;
-
-            if (turbo_mode > INPUT_TURBO_MODE_CLASSIC)
+            /* Don't allow turbo for D-pad. */
+            if (     (id  < RETRO_DEVICE_ID_JOYPAD_UP)    ||
+                  (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT) &&
+                       (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
             {
-               /* Pressing turbo button toggles turbo mode on or off.
-                * Holding the button will
-                * pass through, else the pressed state will be modulated by a
-                * periodic pulse defined by the configured duty cycle.
+               /*
+                * Apply turbo button if activated.
                 */
+               unsigned turbo_mode = settings->uints.input_turbo_mode;
 
-               /* Avoid detecting the turbo button being held as multiple toggles */
-               if (!p_rarch->input_driver_turbo_btns.frame_enable[port])
-                  p_rarch->input_driver_turbo_btns.turbo_pressed[port] &= ~(1 << 31);
-               else if (p_rarch->input_driver_turbo_btns.turbo_pressed[port]>=0)
+               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC)
                {
-                  p_rarch->input_driver_turbo_btns.turbo_pressed[port] |= (1 << 31);
-                  /* Toggle turbo for selected buttons. */
-                  if (p_rarch->input_driver_turbo_btns.enable[port]
-                      != (1 << settings->uints.input_turbo_default_button))
+                  /* Pressing turbo button toggles turbo mode on or off.
+                   * Holding the button will
+                   * pass through, else the pressed state will be modulated by a
+                   * periodic pulse defined by the configured duty cycle.
+                   */
+
+                  /* Avoid detecting the turbo button being held as multiple toggles */
+                  if (!p_rarch->input_driver_turbo_btns.frame_enable[port])
+                     p_rarch->input_driver_turbo_btns.turbo_pressed[port] &= ~(1 << 31);
+                  else if (p_rarch->input_driver_turbo_btns.turbo_pressed[port]>=0)
                   {
-                     static const int button_map[]={
-                        RETRO_DEVICE_ID_JOYPAD_B,
-                        RETRO_DEVICE_ID_JOYPAD_Y,
-                        RETRO_DEVICE_ID_JOYPAD_A,
-                        RETRO_DEVICE_ID_JOYPAD_X,
-                        RETRO_DEVICE_ID_JOYPAD_L,
-                        RETRO_DEVICE_ID_JOYPAD_R,
-                        RETRO_DEVICE_ID_JOYPAD_L2,
-                        RETRO_DEVICE_ID_JOYPAD_R2,
-                        RETRO_DEVICE_ID_JOYPAD_L3,
-                        RETRO_DEVICE_ID_JOYPAD_R3};
-                     p_rarch->input_driver_turbo_btns.enable[port] = 1 << button_map[
-                        MIN(
-                              ARRAY_SIZE(button_map) - 1,
-                              settings->uints.input_turbo_default_button)];
+                     p_rarch->input_driver_turbo_btns.turbo_pressed[port] |= (1 << 31);
+                     /* Toggle turbo for selected buttons. */
+                     if (p_rarch->input_driver_turbo_btns.enable[port]
+                           != (1 << settings->uints.input_turbo_default_button))
+                     {
+                        static const int button_map[]={
+                           RETRO_DEVICE_ID_JOYPAD_B,
+                           RETRO_DEVICE_ID_JOYPAD_Y,
+                           RETRO_DEVICE_ID_JOYPAD_A,
+                           RETRO_DEVICE_ID_JOYPAD_X,
+                           RETRO_DEVICE_ID_JOYPAD_L,
+                           RETRO_DEVICE_ID_JOYPAD_R,
+                           RETRO_DEVICE_ID_JOYPAD_L2,
+                           RETRO_DEVICE_ID_JOYPAD_R2,
+                           RETRO_DEVICE_ID_JOYPAD_L3,
+                           RETRO_DEVICE_ID_JOYPAD_R3};
+                        p_rarch->input_driver_turbo_btns.enable[port] = 1 << button_map[
+                           MIN(
+                                 ARRAY_SIZE(button_map) - 1,
+                                 settings->uints.input_turbo_default_button)];
+                     }
+                     p_rarch->input_driver_turbo_btns.mode1_enable[port] ^= 1;
                   }
-                  p_rarch->input_driver_turbo_btns.mode1_enable[port] ^= 1;
-               }
 
-               if (p_rarch->input_driver_turbo_btns.turbo_pressed[port] & (1 << 31))
-               {
-                  /* Avoid detecting buttons being held as multiple toggles */
-                  if (!res)
-                     p_rarch->input_driver_turbo_btns.turbo_pressed[port] &= ~(1 << id);
-                  else if (!(p_rarch->input_driver_turbo_btns.turbo_pressed[port] & (1 << id)) &&
-                     turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON)
+                  if (p_rarch->input_driver_turbo_btns.turbo_pressed[port] & (1 << 31))
                   {
-                     uint16_t enable_new;
-                     p_rarch->input_driver_turbo_btns.turbo_pressed[port] |= 1 << id;
-                     /* Toggle turbo for pressed button but make
-                      * sure at least one button has turbo */
-                     enable_new = p_rarch->input_driver_turbo_btns.enable[port] ^ (1 << id);
-                     if (enable_new)
-                        p_rarch->input_driver_turbo_btns.enable[port] = enable_new;
+                     /* Avoid detecting buttons being held as multiple toggles */
+                     if (!res)
+                        p_rarch->input_driver_turbo_btns.turbo_pressed[port] &= ~(1 << id);
+                     else if (!(p_rarch->input_driver_turbo_btns.turbo_pressed[port] & (1 << id)) &&
+                           turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON)
+                     {
+                        uint16_t enable_new;
+                        p_rarch->input_driver_turbo_btns.turbo_pressed[port] |= 1 << id;
+                        /* Toggle turbo for pressed button but make
+                         * sure at least one button has turbo */
+                        enable_new = p_rarch->input_driver_turbo_btns.enable[port] ^ (1 << id);
+                        if (enable_new)
+                           p_rarch->input_driver_turbo_btns.enable[port] = enable_new;
+                     }
                   }
-               }
-               else if (turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD &&
-                     p_rarch->input_driver_turbo_btns.enable[port] &&
-                     p_rarch->input_driver_turbo_btns.mode1_enable[port])
-               {
-                  /* Hold mode stops turbo on release */
-                  p_rarch->input_driver_turbo_btns.mode1_enable[port] = 0;
-               }
+                  else if (turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD &&
+                        p_rarch->input_driver_turbo_btns.enable[port] &&
+                        p_rarch->input_driver_turbo_btns.mode1_enable[port])
+                  {
+                     /* Hold mode stops turbo on release */
+                     p_rarch->input_driver_turbo_btns.mode1_enable[port] = 0;
+                  }
 
-               if (!res && p_rarch->input_driver_turbo_btns.mode1_enable[port] &&
-                     p_rarch->input_driver_turbo_btns.enable[port] & (1 << id))
-               {
-                  /* if turbo button is enabled for this key ID */
-                  res = ((p_rarch->input_driver_turbo_btns.count
-                           % settings->uints.input_turbo_period)
-                        < settings->uints.input_turbo_duty_cycle);
-               }
-            }
-            else
-            {
-               /* If turbo button is held, all buttons pressed except
-                * for D-pad will go into a turbo mode. Until the button is
-                * released again, the input state will be modulated by a
-                * periodic pulse defined by the configured duty cycle.
-                */
-               if (res)
-               {
-                  if (p_rarch->input_driver_turbo_btns.frame_enable[port])
-                     p_rarch->input_driver_turbo_btns.enable[port] |= (1 << id);
-
-                  if (p_rarch->input_driver_turbo_btns.enable[port] & (1 << id))
+                  if (!res && p_rarch->input_driver_turbo_btns.mode1_enable[port] &&
+                        p_rarch->input_driver_turbo_btns.enable[port] & (1 << id))
+                  {
                      /* if turbo button is enabled for this key ID */
                      res = ((p_rarch->input_driver_turbo_btns.count
                               % settings->uints.input_turbo_period)
                            < settings->uints.input_turbo_duty_cycle);
+                  }
                }
                else
-                  p_rarch->input_driver_turbo_btns.enable[port] &= ~(1 << id);
+               {
+                  /* If turbo button is held, all buttons pressed except
+                   * for D-pad will go into a turbo mode. Until the button is
+                   * released again, the input state will be modulated by a
+                   * periodic pulse defined by the configured duty cycle.
+                   */
+                  if (res)
+                  {
+                     if (p_rarch->input_driver_turbo_btns.frame_enable[port])
+                        p_rarch->input_driver_turbo_btns.enable[port] |= (1 << id);
+
+                     if (p_rarch->input_driver_turbo_btns.enable[port] & (1 << id))
+                        /* if turbo button is enabled for this key ID */
+                        res = ((p_rarch->input_driver_turbo_btns.count
+                                 % settings->uints.input_turbo_period)
+                              < settings->uints.input_turbo_duty_cycle);
+                  }
+                  else
+                     p_rarch->input_driver_turbo_btns.enable[port] &= ~(1 << id);
+               }
             }
          }
 
