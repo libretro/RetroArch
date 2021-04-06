@@ -5638,8 +5638,11 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
 {
    bool refresh                  = false;
    bool ret                      = false;
+   struct rarch_state  *p_rarch  = &rarch_st;
+   settings_t *settings          = p_rarch->configuration_settings;
 
-   if (apply && !retroarch_apply_shader(type, preset_path, true))
+   if (apply && !retroarch_apply_shader(p_rarch, settings,
+            type, preset_path, true))
       goto clear;
 
    if (string_is_empty(preset_path))
@@ -5681,6 +5684,8 @@ clear:
 }
 
 static bool menu_shader_manager_save_preset_internal(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
       const struct video_shader *shader, 
       const char *basename,
       const char *dir_video_shader,
@@ -5694,9 +5699,6 @@ static bool menu_shader_manager_save_preset_internal(
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
    size_t i                       = 0;
-
-   struct rarch_state  *p_rarch   = &rarch_st;
-   settings_t *settings           = p_rarch->configuration_settings;
    bool save_reference            = 
       settings->bools.video_shader_preset_save_reference_enable;
 
@@ -5815,6 +5817,9 @@ static bool menu_shader_manager_save_preset_internal(
 }
 
 static bool menu_shader_manager_operate_auto_preset(
+      struct rarch_state *p_rarch,
+      struct retro_system_info *system,
+      settings_t *settings,
       enum auto_shader_operation op,
       const struct video_shader *shader,
       const char *dir_video_shader,
@@ -5825,8 +5830,6 @@ static bool menu_shader_manager_operate_auto_preset(
    char config_directory[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
-   struct rarch_state *p_rarch      = &rarch_st;
-   struct retro_system_info *system = &p_rarch->runloop_system.info;
    const char *core_name            = system ? system->library_name : NULL;
    const char *auto_preset_dirs[3]  = {0};
 
@@ -5884,6 +5887,7 @@ static bool menu_shader_manager_operate_auto_preset(
    {
       case AUTO_SHADER_OP_SAVE:
          return menu_shader_manager_save_preset_internal(
+               p_rarch, settings,
                shader, file,
                dir_video_shader,
                apply,
@@ -5996,7 +6000,11 @@ bool menu_shader_manager_save_auto_preset(
       const char *dir_menu_config,
       bool apply)
 {
+   struct rarch_state *p_rarch      = &rarch_st;
+   struct retro_system_info *system = &p_rarch->runloop_system.info;
+   settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
+         p_rarch, system, settings,
          AUTO_SHADER_OP_SAVE, shader, 
          dir_video_shader,
          dir_menu_config,
@@ -6019,9 +6027,11 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
       bool apply)
 {
    char config_directory[PATH_MAX_LENGTH];
-   const char *preset_dirs[3] = {0};
+   const char *preset_dirs[3]  = {0};
+   struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
 
-   config_directory[0] = '\0';
+   config_directory[0]         = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
       fill_pathname_basedir(
@@ -6034,6 +6044,7 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    preset_dirs[2] = config_directory;
 
    return menu_shader_manager_save_preset_internal(
+         p_rarch, settings,
          shader, basename,
          dir_video_shader,
          apply,
@@ -6052,7 +6063,11 @@ bool menu_shader_manager_remove_auto_preset(
       const char *dir_video_shader,
       const char *dir_menu_config)
 {
+   struct rarch_state *p_rarch      = &rarch_st;
+   struct retro_system_info *system = &p_rarch->runloop_system.info;
+   settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
+         p_rarch, system, settings,
          AUTO_SHADER_OP_REMOVE, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -6070,7 +6085,11 @@ bool menu_shader_manager_auto_preset_exists(
       const char *dir_video_shader,
       const char *dir_menu_config)
 {
+   struct rarch_state *p_rarch      = &rarch_st;
+   struct retro_system_info *system = &p_rarch->runloop_system.info;
+   settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
+         p_rarch, system, settings,
          AUTO_SHADER_OP_EXISTS, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -6280,6 +6299,7 @@ void discord_avatar_set_ready(bool ready)
 
 #ifdef HAVE_MENU
 static bool discord_download_avatar(
+      discord_state_t *discord_st,
       const char* user_id, const char* avatar_id)
 {
    static char url[PATH_MAX_LENGTH];
@@ -6287,8 +6307,6 @@ static bool discord_download_avatar(
    static char full_path[PATH_MAX_LENGTH];
    static char buf[PATH_MAX_LENGTH];
    file_transfer_t     *transf = NULL;
-   struct rarch_state *p_rarch = &rarch_st;
-   discord_state_t *discord_st = &p_rarch->discord_st;
 
    RARCH_LOG("[DISCORD]: User avatar ID: %s\n", user_id);
 
@@ -6335,7 +6353,8 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
       connectedUser->discriminator);
 
 #ifdef HAVE_MENU
-   discord_download_avatar(connectedUser->userId, connectedUser->avatar);
+   discord_download_avatar(discord_st,
+         connectedUser->userId, connectedUser->avatar);
 #endif
 }
 
@@ -6442,6 +6461,7 @@ static void handle_discord_join_request(const DiscordUser* request)
    char buf[PATH_MAX_LENGTH];
 #endif
    menu_input_ctx_line_t line;
+   struct rarch_state *p_rarch = &rarch_st;
 
    RARCH_LOG("[DISCORD]: Join request from %s#%s - %s %s\n",
       request->username,
@@ -6449,7 +6469,8 @@ static void handle_discord_join_request(const DiscordUser* request)
       request->userId,
       request->avatar);
 
-   discord_download_avatar(request->userId, request->avatar);
+   discord_download_avatar(&p_rarch->discord_st,
+         request->userId, request->avatar);
 
 #if 0
    /* TODO/FIXME: Needs in-game widgets */
@@ -10005,7 +10026,6 @@ static void menu_input_search_cb(void *userdata, const char *str)
    else
    {
       size_t idx                     = 0;
-      struct rarch_state   *p_rarch  = &rarch_st;
       struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
       menu_list_t *menu_list         = menu_st->entries.list;
       file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
@@ -10599,13 +10619,13 @@ bool command_write_memory(command_t *cmd, const char *arg)
 #endif
 
 static bool retroarch_apply_shader(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
       enum rarch_shader_type type,
       const char *preset_path, bool message)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char msg[256];
-   struct rarch_state  *p_rarch = &rarch_st;
-   settings_t      *settings    = p_rarch->configuration_settings;
    const char      *core_name   = p_rarch->runloop_system.info.library_name;
    const char      *preset_file = NULL;
 #ifdef HAVE_MENU
@@ -10719,7 +10739,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
       }
    }
 
-   return retroarch_apply_shader(type, arg, true);
+   return retroarch_apply_shader(p_rarch, settings, type, arg, true);
 }
 #endif
 
@@ -37873,7 +37893,7 @@ static enum runloop_state runloop_check_state(
             {
                const char *preset = retroarch_get_shader_preset();
                enum rarch_shader_type type = video_shader_parse_type(preset);
-               retroarch_apply_shader(type, preset, false);
+               retroarch_apply_shader(p_rarch, settings, type, preset, false);
             }
          }
       }
