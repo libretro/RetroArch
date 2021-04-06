@@ -22297,14 +22297,14 @@ static void input_driver_poll(void)
 
 static int16_t input_state_device(
       struct rarch_state *p_rarch,
+      settings_t *settings,
+      input_mapper_t *handle,
       int16_t ret,
       unsigned port, unsigned device,
       unsigned idx, unsigned id,
       bool button_mask)
 {
    int16_t res                   = 0;
-   settings_t *settings          = p_rarch->configuration_settings;
-   input_mapper_t *handle        = &p_rarch->input_driver_mapper;
 
    switch (device)
    {
@@ -22700,16 +22700,17 @@ static int16_t input_state(unsigned port, unsigned device,
    if (     (p_rarch->input_driver_flushing_input == 0)
          && !p_rarch->input_driver_block_libretro_input)
    {
+      input_mapper_t *handle        = &p_rarch->input_driver_mapper;
       if (  (device == RETRO_DEVICE_JOYPAD) &&
             (id == RETRO_DEVICE_ID_JOYPAD_MASK))
       {
          unsigned i;
          for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            if (input_state_device(p_rarch, ret, port, device, idx, i, true))
+            if (input_state_device(p_rarch, settings, handle, ret, port, device, idx, i, true))
                result |= (1 << i);
       }
       else
-         result = input_state_device(p_rarch, ret, port, device, idx, id, false);
+         result = input_state_device(p_rarch, settings, handle, ret, port, device, idx, id, false);
    }
 
 #ifdef HAVE_BSV_MOVIE
