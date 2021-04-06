@@ -10068,7 +10068,9 @@ unsigned menu_input_dialog_get_kb_idx(void)
 bool menu_input_dialog_start_search(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = p_rarch->configuration_settings;
+#endif
    menu_handle_t         *menu = p_rarch->menu_driver_data;
 
    if (!menu)
@@ -10107,7 +10109,9 @@ bool menu_input_dialog_start_search(void)
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
    struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = p_rarch->configuration_settings;
+#endif
    menu_handle_t         *menu = p_rarch->menu_driver_data;
    if (!line || !menu)
       return false;
@@ -10750,8 +10754,10 @@ static void task_auto_translate_handler(retro_task_t *task)
 {
    int               *mode_ptr = (int*)task->user_data;
    struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = p_rarch->configuration_settings;
-
+#endif
+   
    if (task_get_cancelled(task))
       goto task_finished;
 
@@ -25450,7 +25456,9 @@ void input_keyboard_event(bool down, unsigned code,
 {
    static bool deferred_wait_keys;
    struct rarch_state *p_rarch   = &rarch_st;
+#ifdef HAVE_ACCESSIBILITY
    settings_t *settings          = p_rarch->configuration_settings;
+#endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
 
@@ -35407,7 +35415,9 @@ static void runloop_task_msg_queue_push(
 {
 #if defined(HAVE_GFX_WIDGETS)
    struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = p_rarch->configuration_settings;
+#endif
    bool widgets_active         = p_rarch->widgets_active;
 
    if (widgets_active && task->title && !task->mute)
