@@ -2,7 +2,9 @@
 - DRM: set the correct video mode
 - INPUT: Ensure that 'retro_set_controller_port_device' is called when updating 'Max Users'
 - INPUT/XEGL/MOUSE: Fix xegl_ctx.c mouse activation
+- INPUT REMAPPING: Fix regression where disabling input remapping would disable input
 - LOGGING: RARCH_LOG_V checking for verbosity level is not necessary and can cause issues; removed said check.
+- MAC/OPENGL: Fix codesigning issue
 - MAC/UNIVERSAL: Add TTS translation service support.
 - MENU: Add optional menu screensaver
 - MENU/MATERIALUI: Add icon to 'Turbo Fire' menu entry
