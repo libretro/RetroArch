@@ -7,6 +7,7 @@
 - IOS: Disable system button gestures on iOS 14
 - IOS: Prevent potential crash on controller connect - randomly would get a crash when connecting a game controller while RA was running
 - LOGGING: RARCH_LOG_V checking for verbosity level is not necessary and can cause issues; removed said check.
+- MAC: Swallow 'escape' key being pressed - would previously make the game toggle between fullscreen and windowed
 - MAC/OPENGL: Fix codesigning issue
 - MAC/UNIVERSAL: Add TTS translation service support.
 - MENU: Add optional menu screensaver
