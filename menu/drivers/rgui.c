@@ -5395,14 +5395,12 @@ error:
 
    if (menu)
       free(menu);
-   p_anim->updatetime_cb = NULL;
    return NULL;
 }
 
 static void rgui_free(void *data)
 {
    rgui_t            *rgui = (rgui_t*)data;
-   gfx_animation_t *p_anim = anim_get_ptr();
 
    if (rgui)
    {
@@ -5426,8 +5424,6 @@ static void rgui_free(void *data)
    rgui_thumbnail_free(&rgui->fs_thumbnail);
    rgui_thumbnail_free(&rgui->mini_thumbnail);
    rgui_thumbnail_free(&rgui->mini_left_thumbnail);
-
-   p_anim->updatetime_cb    = NULL;
 }
 
 static void rgui_set_texture(void *data)

@@ -5196,6 +5196,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (     p_rarch->menu_driver_ctx 
                   && p_rarch->menu_driver_ctx->free)
                p_rarch->menu_driver_ctx->free(p_rarch->menu_userdata);
+            p_rarch->anim.updatetime_cb = NULL;
 
             if (p_rarch->menu_userdata)
                free(p_rarch->menu_userdata);

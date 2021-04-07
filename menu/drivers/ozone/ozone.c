@@ -886,7 +886,6 @@ error:
 
    if (menu)
       free(menu);
-   p_anim->updatetime_cb = NULL;
 
    return NULL;
 }
@@ -894,7 +893,6 @@ error:
 static void ozone_free(void *data)
 {
    ozone_handle_t *ozone   = (ozone_handle_t*) data;
-   gfx_animation_t *p_anim = anim_get_ptr();
 
    if (ozone)
    {
@@ -921,8 +919,6 @@ static void ozone_free(void *data)
       video_driver_texture_unload(&gfx_display_white_texture);
 
    font_driver_bind_block(NULL, NULL);
-
-   p_anim->updatetime_cb = NULL;
 }
 
 static void ozone_update_thumbnail_image(void *data)
