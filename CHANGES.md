@@ -14,6 +14,7 @@
 - MENU/INPUT: Block accidental diagonals in menu navigation 
 - MENU/MATERIALUI: Add icon to 'Turbo Fire' menu entry
 - OPENDINGUX/BETA: Fix IPU scaling when running GBA-resolution content 
+- OPENDINGUX/BETA: Add 50Hz support
 - VITA: Align VM block size to 1MB - should fix one of the issues with gpSP
 - XEGL: Fix mouse not working when using OpenGLES with X11
 
