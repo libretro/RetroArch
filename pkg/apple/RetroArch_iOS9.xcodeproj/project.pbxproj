@@ -46,6 +46,8 @@
 		0FDA2A891BE1AFA800F2B5DA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		507E056D1CE9C69400E023D3 /* float_to_s16_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */; };
+		92411A35260E4E120069C692 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 92411A34260E4E120069C692 /* assets.zip */; };
+		92411A38260E4E2C0069C692 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 92411A37260E4E2C0069C692 /* modules */; };
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
 		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
 /* End PBXBuildFile section */
@@ -100,6 +102,8 @@
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
+		92411A34260E4E120069C692 /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = SOURCE_ROOT; };
+		92411A37260E4E2C0069C692 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = modules; path = iOS/modules; sourceTree = "<group>"; };
 		92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
@@ -236,6 +240,7 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				92411A34260E4E120069C692 /* assets.zip */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
 			);
 			name = Assets;
@@ -245,6 +250,7 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				92411A37260E4E2C0069C692 /* modules */,
 				D42013DA260825EE00A1DEFD /* RetroArchiOS9.entitlements */,
 				507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */,
 				83D632D719ECFCC4009E3161 /* Assets */,
@@ -404,6 +410,8 @@
 			files = (
 				0FDA2A891BE1AFA800F2B5DA /* InfoPlist.strings in Resources */,
 				0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */,
+				92411A38260E4E2C0069C692 /* modules in Resources */,
+				92411A35260E4E120069C692 /* assets.zip in Resources */,
 				040A5A5722953F3300BD075F /* GCDWebUploader.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -510,7 +518,6 @@
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_UPDATE_CORES",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -612,7 +619,6 @@
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_UPDATE_CORES",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -678,7 +684,6 @@
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_UPDATE_CORES",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -779,7 +784,6 @@
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_UPDATE_CORES",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
@@ -863,7 +867,6 @@
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_UPDATE_CORES",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",

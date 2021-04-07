@@ -109,6 +109,13 @@ typedef struct ctr_video
    bool supports_parallax_disable;
    bool enable_3d;
 
+#ifdef HAVE_OVERLAY
+   struct ctr_overlay_data *overlay;
+   unsigned overlays;
+   bool overlay_enabled;
+   bool overlay_full_screen;
+#endif
+
    void* empty_framebuffer;
 
    aptHookCookie lcd_aptHook;
@@ -138,6 +145,16 @@ typedef struct ctr_texture
    enum texture_filter_type type;
    void* data;
 } ctr_texture_t;
+
+#ifdef HAVE_OVERLAY
+struct ctr_overlay_data
+{
+   ctr_texture_t texture;
+   ctr_vertex_t* frame_coords;
+   ctr_scale_vector_t scale_vector;
+   float alpha_mod;
+};
+#endif
 
 static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
       int viewport_width, int viewport_height,

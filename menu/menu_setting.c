@@ -5177,6 +5177,31 @@ static void setting_get_string_representation_uint_video_dingux_ipu_filter_type(
          break;
    }
 }
+#if defined(DINGUX_BETA)
+static void setting_get_string_representation_uint_video_dingux_refresh_rate(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case DINGUX_REFRESH_RATE_60HZ:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ),
+               len);
+         break;
+      case DINGUX_REFRESH_RATE_50HZ:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ),
+               len);
+         break;
+   }
+}
+#endif
 #endif
 
 static void setting_get_string_representation_uint_input_auto_game_focus(
@@ -6388,6 +6413,13 @@ static void setting_get_string_representation_poll_type_behavior(
    }
 }
 
+static void setting_get_string_representation_input_touch_scale(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+      snprintf(s, len, "x%d", *setting->value.target.unsigned_integer);
+}
+
 #ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(
       rarch_setting_t *setting,
@@ -6459,6 +6491,21 @@ static void setting_get_string_representation_uint_quit_on_close_content(
          strlcpy(s, "CLI", len);
          break;
    }
+}
+
+static void setting_get_string_representation_uint_menu_screensaver_timeout(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   if (*setting->value.target.unsigned_integer == 0)
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   else
+      snprintf(s, len, "%u %s",
+            *setting->value.target.unsigned_integer,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 }
 
 enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting)
@@ -7227,12 +7274,60 @@ static void general_write_handler(rarch_setting_t *setting)
          /* In case refresh rate update forced non-block video. */
          rarch_cmd = CMD_EVENT_VIDEO_SET_BLOCKING_STATE;
          break;
+#if defined(DINGUX) && defined(DINGUX_BETA)
+      case MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE:
+         {
+            enum dingux_refresh_rate current_refresh_rate = DINGUX_REFRESH_RATE_60HZ;
+            enum dingux_refresh_rate target_refresh_rate  =
+                  (enum dingux_refresh_rate)settings->uints.video_dingux_refresh_rate;
+            bool refresh_rate_valid                       = false;
+
+            /* Get current refresh rate */
+            refresh_rate_valid = dingux_get_video_refresh_rate(&current_refresh_rate);
+
+            /* Check if refresh rate has changed */
+            if (!refresh_rate_valid ||
+                (current_refresh_rate != target_refresh_rate))
+            {
+               /* Get floating point representation of
+                * new refresh rate */
+               float hw_refresh_rate = 60.0f;
+
+               switch (target_refresh_rate)
+               {
+                  case DINGUX_REFRESH_RATE_50HZ:
+                     hw_refresh_rate = 50.0f;
+                  default:
+                     break;
+               }
+
+               /* Manually update 'settings->floats.video_refresh_rate'
+                * (required for correct timing adjustments when
+                * reinitialising drivers) */
+               configuration_set_float(settings,
+                     settings->floats.video_refresh_rate,
+                     hw_refresh_rate);
+
+               /* Trigger driver reinitialisation */
+               rarch_cmd = CMD_EVENT_REINIT;
+            }
+         }
+         break;
+#endif
       case MENU_ENUM_LABEL_VIDEO_SCALE:
          settings->modified           = true;
          settings->floats.video_scale = roundf(*setting->value.target.fraction);
 
          if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
+         break;
+      case MENU_ENUM_LABEL_INPUT_MAX_USERS:
+         {
+            bool refresh = false;
+            command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+         }
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
          settings->modified            = true;
@@ -10498,42 +10593,65 @@ static bool setting_append_list(
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
             }
 
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_refresh_rate,
-                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-                  DEFAULT_REFRESH_RATE,
-                  "%.3f Hz",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_refresh_rate,
-                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-                  DEFAULT_REFRESH_RATE,
-                  "%.3f Hz",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
-            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
-            (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_st_float_video_refresh_rate_auto;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
+#if defined(DINGUX) && defined(DINGUX_BETA)
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            {
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_dingux_refresh_rate,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+                     DEFAULT_DINGUX_REFRESH_RATE,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_uint_video_dingux_refresh_rate;
+               menu_settings_list_current_add_range(list, list_info, 0, DINGUX_REFRESH_RATE_LAST - 1, 1, true, true);
+               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            }
+            else
+#endif
             {
                float actual_refresh_rate = video_driver_get_refresh_rate();
+
+               CONFIG_FLOAT(
+                     list, list_info,
+                     &settings->floats.video_refresh_rate,
+                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+                     DEFAULT_REFRESH_RATE,
+                     "%.3f Hz",
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_FLOAT(
+                     list, list_info,
+                     &settings->floats.video_refresh_rate,
+                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+                     DEFAULT_REFRESH_RATE,
+                     "%.3f Hz",
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
+               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
+               (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_st_float_video_refresh_rate_auto;
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
                if (actual_refresh_rate > 0.0)
                {
                   CONFIG_FLOAT(
@@ -11068,7 +11186,7 @@ static bool setting_append_list(
                 menu_settings_list_current_add_range(list, list_info, 5, 100, 5, true, true);
             }
 
-#if defined(HAVE_THREADS)
+#if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__)
             CONFIG_BOOL(
                   list, list_info,
                   video_driver_get_threaded(),
@@ -12027,6 +12145,23 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
 #endif
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_touch_scale,
+                  MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+                  DEFAULT_TOUCH_SCALE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_input_touch_scale;
+            (*list)[list_info->index - 1].offset_by = 1;
+            menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
 
 #ifdef VITA
             CONFIG_BOOL(
@@ -14115,6 +14250,22 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_quit_on_close_content;
          menu_settings_list_current_add_range(list, list_info, 0, QUIT_ON_CLOSE_CONTENT_LAST-1, 1, true, true);
 
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.menu_screensaver_timeout,
+               MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,
+               MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+               DEFAULT_MENU_SCREENSAVER_TIMEOUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_screensaver_timeout;
+         menu_settings_list_current_add_range(list, list_info, 0, 1800, 10, true, true);
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_mouse_enable,
@@ -14345,7 +14496,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+               (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_rgui_particle_effect;
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_PARTICLE_EFFECT_LAST-1, 1, true, true);
@@ -14365,6 +14518,21 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_rgui_particle_effect_screensaver,
+                  MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+                  MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+                  DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -19505,22 +19673,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    (void)subgroup_info;
    (void)global;
 
-#if !defined(__PSL1GHT__) && defined(__PS3__)
-   CONFIG_BOOL(
-         list, list_info,
-         &global->console.screen.pal60_enable,
-         MENU_ENUM_LABEL_PAL60_ENABLE,
-         MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-         false,
-         MENU_ENUM_LABEL_VALUE_OFF,
-         MENU_ENUM_LABEL_VALUE_ON,
-         group_info,
-         subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler,
-         SD_FLAG_NONE);
-#endif
 #if defined(GEKKO) || defined(_XBOX360)
    CONFIG_UINT(
          list, list_info,

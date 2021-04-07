@@ -195,8 +195,8 @@ endif
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += frontend/drivers/platform_ctr.o
 endif
+
 # Git Version
-ifeq ($(HAVE_GIT_VERSION), 1)
 GIT_VERSION_CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
 GIT_VERSION_CACHEFILE = $(GIT_VERSION_CACHEDIR)/git-version.cache
 
@@ -224,7 +224,6 @@ ifneq ($(GIT_VERSION),)  # Enable version_git.o?
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
    OBJ += version_git.o
 endif
-endif
 
 # General object files
 ifeq ($(HAVE_DR_MP3), 1)
@@ -233,6 +232,7 @@ endif
 
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
+       command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \

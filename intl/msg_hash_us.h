@@ -1500,6 +1500,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "The refresh rate as reported by the display driver."
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Vertical Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Set vertical refresh rate of the display. '50 Hz' will enable smooth video when running PAL content."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
+   "60 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
+   "50 Hz"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "Force-Disable sRGB FBO"
@@ -3938,6 +3956,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
    "Automatically quit RetroArch when closing content. 'CLI' quits only when content is launched via command line."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "Menu Screensaver Timeout"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "While menu is active, a screensaver will be displayed after the specified period of inactivity."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
@@ -8185,6 +8211,14 @@ MSG_HASH(
    "Adjust speed of background particle animation effects."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Screensaver Background Animation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Display background particle animation effect while menu screensaver is active."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    "Show Playlist Thumbnails"
    )
@@ -12191,6 +12225,14 @@ MSG_HASH(
    "Adjust x/y scale for Wiimote light gun speed."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Touch Scale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Adjust x/y scale of touchscreen coordinates to accommodate OS-level display scaling."
+   )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

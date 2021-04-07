@@ -733,19 +733,24 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
           * refresh rates as well.
           */
          float minimum_fps_diff = 0.0f;
+         float mode_vrefresh    = 0.0f;
+         drmModeModeInfo *mode;
 
          /* Find best match. */
          for (i = 0; i < g_drm_connector->count_modes; i++) {
+            mode = &g_drm_connector->modes[i];
+
             float diff;
-            if (width != g_drm_connector->modes[i].hdisplay ||
-               height != g_drm_connector->modes[i].vdisplay)
+            if (width != mode->hdisplay ||
+               height != mode->vdisplay)
                continue;
 
-            diff = fabsf(refresh_mod * g_drm_connector->modes[i].vrefresh
-                            - video_refresh_rate);
+            mode_vrefresh = drm_calc_refresh_rate(mode);
+
+            diff = fabsf(refresh_mod * mode_vrefresh - video_refresh_rate);
 
             if (!g_drm_mode || diff < minimum_fps_diff) {
-               g_drm_mode = &g_drm_connector->modes[i];
+               g_drm_mode = mode;
                minimum_fps_diff = diff;
             }
          }

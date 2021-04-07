@@ -37,7 +37,8 @@
 #include "gfx/common/ctr_common.h"
 #endif
 
-/* Required for OpenDingux IPU filter setting */
+/* Required for OpenDingux IPU filter + refresh
+ * rate settings */
 #if defined(DINGUX)
 #include "dingux/dingux_utils.h"
 #endif
@@ -61,6 +62,8 @@
 #if defined(GEKKO)
 #define DEFAULT_MOUSE_SCALE 1
 #endif
+
+#define DEFAULT_TOUCH_SCALE 1
 
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__)
 #define DEFAULT_POINTER_ENABLE true
@@ -381,6 +384,11 @@
 /* Sets image filtering method when using the
  * IPU hardware scaler in Dingux devices */
 #define DEFAULT_DINGUX_IPU_FILTER_TYPE DINGUX_IPU_FILTER_BICUBIC
+#if defined(DINGUX_BETA)
+/* Sets refresh rate of integral LCD panel
+ * in Dingux devices */
+#define DEFAULT_DINGUX_REFRESH_RATE DINGUX_REFRESH_RATE_60HZ
+#endif
 #endif
 
 /* Save configuration file on exit. */
@@ -574,6 +582,12 @@ static const bool menu_savestate_resume     = false;
 
 #define DEFAULT_QUIT_ON_CLOSE_CONTENT QUIT_ON_CLOSE_CONTENT_DISABLED
 
+/* While the menu is active, supported drivers
+ * will display a screensaver after SCREENSAVER_TIMEOUT
+ * seconds of inactivity. A timeout of zero disables
+ * the screensaver */
+#define DEFAULT_MENU_SCREENSAVER_TIMEOUT 0
+
 static const bool content_show_settings     = true;
 static const bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER
@@ -655,6 +669,7 @@ static const unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 static const bool rgui_shadows = false;
 static const unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 #define DEFAULT_RGUI_PARTICLE_EFFECT_SPEED 1.0f
+#define DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER true
 static const bool rgui_extended_ascii = false;
 #define DEFAULT_RGUI_SWITCH_ICONS true
 #endif
@@ -866,8 +881,15 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH 0
 #endif
 
-/*Display a notification when setting the refresh rate*/
+/* Display a notification when setting the refresh rate*/
+#if defined(_3DS) || (defined(DINGUX) && defined(DINGUX_BETA))
+/* 3DS and OpenDingux Beta devices set refresh rate
+ * on gfx driver init - set default notification
+ * state to 'false' in order to avoid OSD log spam */
+#define DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE false
+#else
 #define DEFAULT_NOTIFICATION_SHOW_REFRESH_RATE true
+#endif
 
 /* Output samplerate. */
 #ifdef GEKKO

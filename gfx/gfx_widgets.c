@@ -1583,9 +1583,9 @@ static void INLINE gfx_widgets_font_unbind(gfx_widget_font_data_t *font_data)
 void gfx_widgets_frame(void *data)
 {
    size_t i;
-   gfx_display_t            *p_disp = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx= p_disp->dispctx;
    video_frame_info_t *video_info   = (video_frame_info_t*)data;
+   gfx_display_t            *p_disp = (gfx_display_t*)video_info->disp_userdata;
+   gfx_display_ctx_driver_t *dispctx= p_disp->dispctx;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)video_info->widgets_userdata;
    bool framecount_show             = video_info->framecount_show;
    bool memory_show                 = video_info->memory_show;
@@ -1598,9 +1598,14 @@ void gfx_widgets_frame(void *data)
    bool widgets_is_fastforwarding   = video_info->widgets_is_fast_forwarding;
    bool widgets_is_rewinding        = video_info->widgets_is_rewinding;
    bool runloop_is_slowmotion       = video_info->runloop_is_slowmotion;
+   bool menu_screensaver_active     = video_info->menu_screensaver_active;
    int top_right_x_advance          = video_width;
 
    p_dispwidget->gfx_widgets_frame_count++;
+
+   /* If menu screensaver is active, draw nothing */
+   if (menu_screensaver_active)
+      return;
 
    video_driver_set_viewport(video_width, video_height, true, false);
 

@@ -1116,6 +1116,7 @@ typedef struct video_frame_info
 {
    void *userdata;
    void *widgets_userdata;
+   void *disp_userdata;
 
    int custom_vp_x;
    int custom_vp_y;
@@ -1200,6 +1201,7 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
    bool menu_is_alive;
+   bool menu_screensaver_active;
    bool msg_bgcolor_enable;
 } video_frame_info_t;
 

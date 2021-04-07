@@ -77,7 +77,6 @@ static void gfx_widget_leaderboard_display_context_destroy(void)
 
 static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 {
-   gfx_display_t *p_disp                         = disp_get_ptr();
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
    /* if there's nothing to display, just bail */
@@ -92,15 +91,15 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,
       };
-      dispgfx_widget_t* p_dispwidget = (dispgfx_widget_t*)userdata;
-      const video_frame_info_t* video_info = (const video_frame_info_t*)data;
-      const unsigned video_width = video_info->width;
-      const unsigned video_height = video_info->height;
-      const unsigned spacing = MIN(video_width, video_height) / 64;
-      const unsigned widget_height = p_dispwidget->gfx_widget_fonts.regular.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
-      unsigned y = video_height;
-      unsigned x;
-      int i;
+      unsigned i, x;
+      dispgfx_widget_t         *p_dispwidget = (dispgfx_widget_t*)userdata;
+      const video_frame_info_t *video_info   = (const video_frame_info_t*)data;
+      gfx_display_t *p_disp                  = (gfx_display_t*)video_info->disp_userdata;
+      const unsigned video_width             = video_info->width;
+      const unsigned video_height            = video_info->height;
+      const unsigned spacing                 = MIN(video_width, video_height) / 64;
+      const unsigned widget_height           = p_dispwidget->gfx_widget_fonts.regular.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
+      unsigned y                             = video_height;
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
@@ -108,8 +107,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       for (i = 0; i < state->count; ++i)
       {
          const unsigned widget_width = state->info[i].width;
-         x = video_width - widget_width - spacing;
-         y -= (widget_height + spacing);
+         x                           = video_width - widget_width - spacing;
+         y                          -= (widget_height + spacing);
 
          /* Backdrop */
          gfx_display_draw_quad(
@@ -124,7 +123,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
             state->info[i].display,
             (float)(x + CHEEVO_LBOARD_DISPLAY_PADDING),
-            (float)(y + widget_height - (CHEEVO_LBOARD_DISPLAY_PADDING - 1) - p_dispwidget->gfx_widget_fonts.regular.line_descender),
+            (float)(y + widget_height - (CHEEVO_LBOARD_DISPLAY_PADDING - 1) 
+               - p_dispwidget->gfx_widget_fonts.regular.line_descender),
             video_width, video_height,
             TEXT_COLOR_INFO,
             TEXT_ALIGN_LEFT,

@@ -217,6 +217,7 @@ typedef struct
    float y_separation_portrait;
    float x_offset_portrait;
    float y_offset_portrait;
+   float touch_scale;
    bool auto_scale;
 } overlay_layout_desc_t;
 

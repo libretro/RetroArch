@@ -28,45 +28,6 @@
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
-static const char *glslang_formats[] = {
-   "UNKNOWN",
-
-   "R8_UNORM",
-   "R8_UINT",
-   "R8_SINT",
-   "R8G8_UNORM",
-   "R8G8_UINT",
-   "R8G8_SINT",
-   "R8G8B8A8_UNORM",
-   "R8G8B8A8_UINT",
-   "R8G8B8A8_SINT",
-   "R8G8B8A8_SRGB",
-
-   "A2B10G10R10_UNORM_PACK32",
-   "A2B10G10R10_UINT_PACK32",
-
-   "R16_UINT",
-   "R16_SINT",
-   "R16_SFLOAT",
-   "R16G16_UINT",
-   "R16G16_SINT",
-   "R16G16_SFLOAT",
-   "R16G16B16A16_UINT",
-   "R16G16B16A16_SINT",
-   "R16G16B16A16_SFLOAT",
-
-   "R32_UINT",
-   "R32_SINT",
-   "R32_SFLOAT",
-   "R32G32_UINT",
-   "R32G32_SINT",
-   "R32G32_SFLOAT",
-   "R32G32B32A32_UINT",
-   "R32G32B32A32_SINT",
-   "R32G32B32A32_SFLOAT",
-};
-
-
 static void get_include_file(
       const char *line, char *include_file, size_t len)
 {
@@ -289,6 +250,43 @@ error:
 
 const char *glslang_format_to_string(enum glslang_format fmt)
 {
+   static const char *glslang_formats[] = {
+      "UNKNOWN",
+
+      "R8_UNORM",
+      "R8_UINT",
+      "R8_SINT",
+      "R8G8_UNORM",
+      "R8G8_UINT",
+      "R8G8_SINT",
+      "R8G8B8A8_UNORM",
+      "R8G8B8A8_UINT",
+      "R8G8B8A8_SINT",
+      "R8G8B8A8_SRGB",
+
+      "A2B10G10R10_UNORM_PACK32",
+      "A2B10G10R10_UINT_PACK32",
+
+      "R16_UINT",
+      "R16_SINT",
+      "R16_SFLOAT",
+      "R16G16_UINT",
+      "R16G16_SINT",
+      "R16G16_SFLOAT",
+      "R16G16B16A16_UINT",
+      "R16G16B16A16_SINT",
+      "R16G16B16A16_SFLOAT",
+
+      "R32_UINT",
+      "R32_SINT",
+      "R32_SFLOAT",
+      "R32G32_UINT",
+      "R32G32_SINT",
+      "R32G32_SFLOAT",
+      "R32G32B32A32_UINT",
+      "R32G32B32A32_SINT",
+      "R32G32B32A32_SFLOAT",
+   };
    return glslang_formats[fmt];
 }
 
@@ -331,14 +329,6 @@ enum glslang_format glslang_find_format(const char *fmt)
    FMT(R32G32B32A32_SFLOAT);
 
    return SLANG_FORMAT_UNKNOWN;
-}
-
-void glslang_build_vec4(float *data, unsigned width, unsigned height)
-{
-   data[0] = (float)(width);
-   data[1] = (float)(height);
-   data[2] = 1.0f / (float)(width);
-   data[3] = 1.0f / (float)(height);
 }
 
 unsigned glslang_num_miplevels(unsigned width, unsigned height)

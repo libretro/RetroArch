@@ -1411,6 +1411,10 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
+   "input_touch_scale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_MODE,
    "input_bind_mode"
    )
@@ -2161,6 +2165,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_PAUSE_NONACTIVE,
    "pause_nonactive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,
+   "menu_screensaver_timeout"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PERFCNT_ENABLE,
@@ -3127,6 +3135,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
    "video_dingux_ipu_filter_type"
    )
+#if defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "video_dingux_refresh_rate"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
@@ -4137,6 +4151,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    "rgui_particle_effect_speed"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "rgui_particle_effect_screensaver"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_EXTENDED_ASCII,

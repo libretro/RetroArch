@@ -44,9 +44,9 @@
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
 
-#define FAIL_CPU(simd_type) do { \
+#define FAIL_CPU(p_rarch, simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retroarch_fail(1, "validate_cpu_features()"); \
+   retroarch_fail(p_rarch, 1, "validate_cpu_features()"); \
 } while (0)
 
 #ifdef HAVE_ZLIB
@@ -106,9 +106,6 @@
 
 #define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
 #define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
-
-#define DEFAULT_NETWORK_CMD_PORT 55355
-#define STDIN_BUF_SIZE           4096
 
 #ifdef HAVE_THREADS
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
@@ -294,7 +291,7 @@
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle_local, #x); \
    memcpy(&current_core->x, &func, sizeof(func)); \
-   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_symbols()"); } \
+   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(p_rarch, 1, "init_libretro_symbols()"); } \
 } while (0)
 #else
 #define SYMBOL(x) current_core->x = x
@@ -1301,13 +1298,6 @@ enum rarch_movie_type
    RARCH_MOVIE_RECORD
 };
 
-enum cmd_source_t
-{
-   CMD_NONE = 0,
-   CMD_STDIN,
-   CMD_NETWORK
-};
-
 enum poll_type_override_t
 {
    POLL_TYPE_OVERRIDE_DONTCARE = 0,
@@ -1485,36 +1475,6 @@ struct input_overlay
 };
 #endif
 
-struct cmd_map
-{
-   const char *str;
-   unsigned id;
-};
-
-#if defined(HAVE_COMMAND)
-struct cmd_action_map
-{
-   const char *str;
-   bool (*action)(const char *arg);
-   const char *arg_desc;
-};
-#endif
-
-struct command
-{
-#ifdef HAVE_STDIN_CMD
-   size_t stdin_buf_ptr;
-#endif
-#ifdef HAVE_NETWORK_CMD
-   int net_fd;
-#endif
-#ifdef HAVE_STDIN_CMD
-   char stdin_buf[STDIN_BUF_SIZE];
-#endif
-   bool stdin_enable;
-   bool state[RARCH_BIND_LIST_END];
-};
-
 /* Input config. */
 struct input_bind_map
 {
@@ -1594,6 +1554,7 @@ struct menu_state
    retro_time_t current_time_us;
    retro_time_t powerstate_last_time_us;
    retro_time_t datetime_last_time_us;
+   retro_time_t input_last_time_us;
 
    struct
    {
@@ -1632,6 +1593,11 @@ struct menu_state
    bool entries_nonblocking_refresh;
    /* 'Close Content'-hotkey menu resetting */
    bool pending_close_content;
+   /* Screensaver status
+    * - Does menu driver support screensaver functionality?
+    * - Is screensaver currently active? */
+   bool screensaver_supported;
+   bool screensaver_active;
 };
 
 struct menu_bind_state_port
@@ -1744,11 +1710,6 @@ struct rarch_state
 #endif
 #ifdef HAVE_MENU
    struct menu_state menu_driver_state;         /* int64_t alignment */
-#endif
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-   struct sockaddr_storage lastcmd_net_source;  /* int64_t alignment */
-#endif
 #endif
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t dispwidget_st;              /* uint64_t alignment */
@@ -1877,7 +1838,7 @@ struct rarch_state
    void *keyboard_press_data;
 
 #ifdef HAVE_COMMAND
-   command_t *input_driver_command;
+   command_t *input_driver_command[MAX_CMD_DRIVERS];
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *input_driver_remote;
@@ -2127,11 +2088,6 @@ struct rarch_state
     * TODO - Dirty hack, fix it better
     */
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-   socklen_t lastcmd_net_source_len;            /* uint32_t alignment */
-#endif
-#endif
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
    input_mapper_t input_driver_mapper;          /* uint32_t alignment */
 
@@ -2682,93 +2638,6 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 static enum rarch_shader_type shader_types[] =
 {
    RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
-};
-#endif
-
-/* These forward declarations need to be declared before
- * the global state is declared */
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool command_set_shader(const char *arg);
-#endif
-#if defined(HAVE_COMMAND)
-static bool command_version(const char* arg);
-static bool command_get_status(const char* arg);
-static bool command_get_config_param(const char* arg);
-static bool command_show_osd_msg(const char* arg);
-#ifdef HAVE_CHEEVOS
-static bool command_read_ram(const char *arg);
-static bool command_write_ram(const char *arg);
-#endif
-static bool command_read_memory(const char *arg);
-static bool command_write_memory(const char *arg);
-
-static const struct cmd_action_map action_map[] = {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   { "SET_SHADER",       command_set_shader,       "<shader path>" },
-#endif
-   { "VERSION",          command_version,          "No argument"},
-   { "GET_STATUS",       command_get_status,       "No argument" },
-   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
-   { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
-#if defined(HAVE_CHEEVOS)
-   /* These functions use achievement addresses and only work if a game with achievements is
-    * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
-   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>" },
-   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ..." },
-#endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>" },
-   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
-};
-
-static const struct cmd_map map[] = {
-   { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
-   { "FAST_FORWARD_HOLD",      RARCH_FAST_FORWARD_HOLD_KEY },
-   { "SLOWMOTION",             RARCH_SLOWMOTION_KEY },
-   { "SLOWMOTION_HOLD",        RARCH_SLOWMOTION_HOLD_KEY },
-   { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
-   { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
-   { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
-   { "CLOSE_CONTENT",          RARCH_CLOSE_CONTENT_KEY },
-   { "QUIT",                   RARCH_QUIT_KEY },
-   { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
-   { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
-   { "REWIND",                 RARCH_REWIND },
-   { "BSV_RECORD_TOGGLE",      RARCH_BSV_RECORD_TOGGLE },
-   { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },
-   { "FRAMEADVANCE",           RARCH_FRAMEADVANCE },
-   { "RESET",                  RARCH_RESET },
-   { "SHADER_NEXT",            RARCH_SHADER_NEXT },
-   { "SHADER_PREV",            RARCH_SHADER_PREV },
-   { "CHEAT_INDEX_PLUS",       RARCH_CHEAT_INDEX_PLUS },
-   { "CHEAT_INDEX_MINUS",      RARCH_CHEAT_INDEX_MINUS },
-   { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
-   { "SCREENSHOT",             RARCH_SCREENSHOT },
-   { "MUTE",                   RARCH_MUTE },
-   { "OSK",                    RARCH_OSK },
-   { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
-   { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
-   { "NETPLAY_HOST_TOGGLE",    RARCH_NETPLAY_HOST_TOGGLE },
-   { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
-   { "VOLUME_UP",              RARCH_VOLUME_UP },
-   { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
-   { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
-   { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
-   { "DISK_NEXT",              RARCH_DISK_NEXT },
-   { "DISK_PREV",              RARCH_DISK_PREV },
-   { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
-   { "UI_COMPANION_TOGGLE",    RARCH_UI_COMPANION_TOGGLE },
-   { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
-   { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
-   { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
-   { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
-   { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
-   { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
-   { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
-   { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
-   { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
-   { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
-   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
-   { "AI_SERVICE",             RARCH_AI_SERVICE },
 };
 #endif
 

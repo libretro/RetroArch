@@ -71,21 +71,27 @@ GLuint gl_core_cross_compile_program(
       for (auto &res : vertex_resources.stage_inputs)
       {
          uint32_t location = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
-         vertex_compiler.set_name(res.id, string("RARCH_ATTRIBUTE_") + to_string(location));
+         char loc_buf[64];
+         snprintf(loc_buf, sizeof(loc_buf), "RARCH_ATTRIBUTE_%d", location);
+         vertex_compiler.set_name(res.id, loc_buf);
          vertex_compiler.unset_decoration(res.id, spv::DecorationLocation);
       }
 
       for (auto &res : vertex_resources.stage_outputs)
       {
          uint32_t location = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
-         vertex_compiler.set_name(res.id, string("RARCH_VARYING_") + to_string(location));
+         char loc_buf[64];
+         snprintf(loc_buf, sizeof(loc_buf), "RARCH_VARYING_%d", location);
+         vertex_compiler.set_name(res.id, loc_buf);
          vertex_compiler.unset_decoration(res.id, spv::DecorationLocation);
       }
 
       for (auto &res : fragment_resources.stage_inputs)
       {
          uint32_t location = fragment_compiler.get_decoration(res.id, spv::DecorationLocation);
-         fragment_compiler.set_name(res.id, string("RARCH_VARYING_") + to_string(location));
+         char loc_buf[64];
+         snprintf(loc_buf, sizeof(loc_buf), "RARCH_VARYING_%d", location);
+         fragment_compiler.set_name(res.id, loc_buf);
          fragment_compiler.unset_decoration(res.id, spv::DecorationLocation);
       }
 
@@ -149,7 +155,9 @@ GLuint gl_core_cross_compile_program(
       for (auto &res : fragment_resources.sampled_images)
       {
          uint32_t binding = fragment_compiler.get_decoration(res.id, spv::DecorationBinding);
-         fragment_compiler.set_name(res.id, string("RARCH_TEXTURE_") + to_string(binding));
+         char loc_buf[64];
+         snprintf(loc_buf, sizeof(loc_buf), "RARCH_TEXTURE_%d", binding);
+         fragment_compiler.set_name(res.id, loc_buf);
          fragment_compiler.unset_decoration(res.id, spv::DecorationDescriptorSet);
          fragment_compiler.unset_decoration(res.id, spv::DecorationBinding);
          texture_binding_fixups.push_back(binding);
@@ -180,8 +188,10 @@ GLuint gl_core_cross_compile_program(
       glAttachShader(program, fragment_shader);
       for (auto &res : vertex_resources.stage_inputs)
       {
-         uint32_t location = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
-         glBindAttribLocation(program, location, (string("RARCH_ATTRIBUTE_") + to_string(location)).c_str());
+         char loc_buf[64];
+         uint32_t loc = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
+         snprintf(loc_buf, sizeof(loc_buf), "RARCH_ATTRIBUTE_%d", loc);
+         glBindAttribLocation(program, loc, loc_buf);
       }
       glLinkProgram(program);
       glDeleteShader(vertex_shader);
@@ -236,7 +246,9 @@ GLuint gl_core_cross_compile_program(
       /* Force proper bindings for textures. */
       for (auto &binding : texture_binding_fixups)
       {
-         GLint location = glGetUniformLocation(program, (string("RARCH_TEXTURE_") + to_string(binding)).c_str());
+         char loc_buf[64];
+         snprintf(loc_buf, sizeof(loc_buf), "RARCH_TEXTURE_%d", binding);
+         GLint location = glGetUniformLocation(program, loc_buf);
          if (location >= 0)
             glUniform1i(location, binding);
       }
@@ -1080,17 +1092,23 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       if (refl->location.ubo_vertex >= 0 || refl->location.ubo_fragment >= 0)
       {
          float v4[4];
-         glslang_build_vec4(v4, width, height);
+         v4[0] = (float)(width);
+         v4[1] = (float)(height);
+         v4[2] = 1.0f / (float)(width);
+         v4[3] = 1.0f / (float)(height);
          if (refl->location.ubo_vertex >= 0)
             glUniform4fv(refl->location.ubo_vertex, 1, v4);
          if (refl->location.ubo_fragment >= 0)
             glUniform4fv(refl->location.ubo_fragment, 1, v4);
       }
       else
-         glslang_build_vec4(
-               reinterpret_cast<float *>(data + refl->ubo_offset),
-               width,
-               height);
+      {
+         float *_data = reinterpret_cast<float *>(data + refl->ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
    }
 
    if (refl->push_constant)
@@ -1099,18 +1117,24 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             refl->location.push_fragment >= 0)
       {
          float v4[4];
-         glslang_build_vec4(v4, width, height);
+         v4[0] = (float)(width);
+         v4[1] = (float)(height);
+         v4[2] = 1.0f / (float)(width);
+         v4[3] = 1.0f / (float)(height);
          if (refl->location.push_vertex >= 0)
             glUniform4fv(refl->location.push_vertex, 1, v4);
          if (refl->location.push_fragment >= 0)
             glUniform4fv(refl->location.push_fragment, 1, v4);
       }
       else
-         glslang_build_vec4(
-               reinterpret_cast<float *>
-               (push_constant_buffer.data() + refl->push_constant_offset),
-               width,
-               height);
+      {
+         float *data = reinterpret_cast<float *>
+               (push_constant_buffer.data() + refl->push_constant_offset);
+         data[0]     = (float)(width);
+         data[1]     = (float)(height);
+         data[2]     = 1.0f / (float)(width);
+         data[3]     = 1.0f / (float)(height);
+      }
    }
 }
 
@@ -1231,17 +1255,23 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       if (refl[index].location.ubo_vertex >= 0 || refl[index].location.ubo_fragment >= 0)
       {
          float v4[4];
-         glslang_build_vec4(v4, width, height);
+         v4[0] = (float)(width);
+         v4[1] = (float)(height);
+         v4[2] = 1.0f / (float)(width);
+         v4[3] = 1.0f / (float)(height);
          if (refl[index].location.ubo_vertex >= 0)
             glUniform4fv(refl[index].location.ubo_vertex, 1, v4);
          if (refl[index].location.ubo_fragment >= 0)
             glUniform4fv(refl[index].location.ubo_fragment, 1, v4);
       }
       else
-         glslang_build_vec4(
-               reinterpret_cast<float *>(data + refl[index].ubo_offset),
-               width,
-               height);
+      {
+         float *_data = reinterpret_cast<float *>(data + refl[index].ubo_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
+      }
    }
 
    if (refl[index].push_constant)
@@ -1249,17 +1279,23 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       if (refl[index].location.push_vertex >= 0 || refl[index].location.push_fragment >= 0)
       {
          float v4[4];
-         glslang_build_vec4(v4, width, height);
+         v4[0] = (float)(width);
+         v4[1] = (float)(height);
+         v4[2] = 1.0f / (float)(width);
+         v4[3] = 1.0f / (float)(height);
          if (refl[index].location.push_vertex >= 0)
             glUniform4fv(refl[index].location.push_vertex, 1, v4);
          if (refl[index].location.push_fragment >= 0)
             glUniform4fv(refl[index].location.push_fragment, 1, v4);
       }
       else
-         glslang_build_vec4(
-               reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset),
-               width,
-               height);
+      {
+         float *data = reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset);
+         data[0]     = (float)(width);
+         data[1]     = (float)(height);
+         data[2]     = 1.0f / (float)(width);
+         data[3]     = 1.0f / (float)(height);
+      }
    }
 }
 
@@ -2169,10 +2205,11 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
 
    unique_ptr<gl_core_filter_chain> chain{ new gl_core_filter_chain(shader->passes + (last_pass_is_fbo ? 1 : 0)) };
    if (!chain)
-      goto error;
+      return nullptr;
 
-   if (shader->luts && !gl_core_filter_chain_load_luts(chain.get(), shader.get()))
-      goto error;
+   if (      shader->luts 
+         && !gl_core_filter_chain_load_luts(chain.get(), shader.get()))
+      return nullptr;
 
    shader->num_parameters = 0;
 
@@ -2198,7 +2235,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       {
          RARCH_ERR("[GLCore]: Failed to compile shader: \"%s\".\n",
                pass->source.path);
-         goto error;
+         return nullptr;
       }
 
       for (auto &meta_param : output.meta.parameters)
@@ -2206,7 +2243,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
             RARCH_ERR("[GLCore]: Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
-            goto error;
+            return nullptr;
          }
 
          auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
@@ -2227,7 +2264,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             {
                RARCH_ERR("[GLCore]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
-               goto error;
+               return nullptr;
             }
             chain->add_parameter(i, itr - shader->parameters, meta_param.id);
          }
@@ -2410,12 +2447,9 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    chain->set_shader_preset(move(shader));
 
    if (!chain->init())
-      goto error;
+      return nullptr;
 
    return chain.release();
-
-error:
-   return nullptr;
 }
 
 struct video_shader *gl_core_filter_chain_get_preset(

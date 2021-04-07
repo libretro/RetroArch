@@ -414,8 +414,14 @@ static void menu_action_setting_disp_set_label_menu_file_core(
    const char *alt = list->list[i].alt
       ? list->list[i].alt
       : list->list[i].path;
-   strcpy_literal(s, "(CORE)");
-   *w              = (unsigned)strlen(s);
+   s[0] = '(';
+   s[1] = 'C';
+   s[2] = 'O';
+   s[3] = 'R';
+   s[4] = 'E';
+   s[5] = ')';
+   s[6] = '\0';
+   *w   = (unsigned)STRLEN_CONST("(CORE)");
    if (alt)
       strlcpy(s2, alt, len2);
 }
@@ -459,13 +465,20 @@ static void menu_action_setting_disp_set_label_core_updater_entry(
          /* Highlight locked cores */
          if (core_info.inf->is_locked)
          {
-            strcpy_literal(s, "[#!]");
-            *w = (unsigned)STRLEN_CONST("[#!]");
+            s[0] = '[';
+            s[1] = '#';
+            s[2] = '!';
+            s[3] = ']';
+            s[4] = '\0';
+            *w   = (unsigned)STRLEN_CONST("[#!]");
          }
          else
          {
-            strcpy_literal(s, "[#]");
-            *w = (unsigned)STRLEN_CONST("[#]");
+            s[0] = '[';
+            s[1] = '#';
+            s[2] = ']';
+            s[3] = '\0';
+            *w   = (unsigned)STRLEN_CONST("[#]");
          }
       }
    }
@@ -500,8 +513,11 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
    if (core_info_find(&core_info) &&
        core_info.inf->is_locked)
    {
-      strcpy_literal(s, "[!]");
-      *w = (unsigned)STRLEN_CONST("[!]");
+      s[0] = '[';
+      s[1] = '!';
+      s[2] = ']';
+      s[3] = '\0';
+      *w   = (unsigned)STRLEN_CONST("[!]");
    }
 }
 
@@ -563,7 +579,10 @@ static void menu_action_setting_disp_set_label_input_desc(
       descriptor = 
          runloop_get_system_info()->input_desc_btn[user_idx][remap_idx];
 
-   strcpy_literal(s, "---");
+   s[0] = '-';
+   s[1] = '-';
+   s[2] = '-';
+   s[3] = '\0';
 
    if (!string_is_empty(descriptor))
    {
@@ -614,7 +633,12 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
       strlcpy(s, desc, len);
    }
    else
-      strcpy_literal(s, "---");
+   {
+      s[0] = '-';
+      s[1] = '-';
+      s[2] = '-';
+      s[3] = '\0';
+   }
 
    *w = 19;
    strlcpy(s2, path, len2);
@@ -962,7 +986,7 @@ static void menu_action_setting_disp_set_label_generic(
       char *s2, size_t len2)
 {
    *s = '\0';
-   *w = (unsigned)strlen(s);
+   *w = 0;
    strlcpy(s2, path, len2);
 }
 

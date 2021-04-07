@@ -1676,6 +1676,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("rgui_swap_thumbnails",                    &settings->bools.menu_rgui_swap_thumbnails, true, rgui_swap_thumbnails, false);
    SETTING_BOOL("rgui_extended_ascii",                     &settings->bools.menu_rgui_extended_ascii, true, rgui_extended_ascii, false);
    SETTING_BOOL("rgui_switch_icons",                       &settings->bools.menu_rgui_switch_icons, true, DEFAULT_RGUI_SWITCH_ICONS, false);
+   SETTING_BOOL("rgui_particle_effect_screensaver",        &settings->bools.menu_rgui_particle_effect_screensaver, true, DEFAULT_RGUI_PARTICLE_EFFECT_SCREENSAVER, false);
 #endif
 #ifdef HAVE_XMB
    SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, DEFAULT_XMB_SHADOWS_ENABLE, false);
@@ -1887,6 +1888,7 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef GEKKO
    SETTING_UINT("input_mouse_scale",            &settings->uints.input_mouse_scale, true, DEFAULT_MOUSE_SCALE, false);
 #endif
+   SETTING_UINT("input_touch_scale",            &settings->uints.input_touch_scale, true, DEFAULT_TOUCH_SCALE, false);
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
    SETTING_UINT("input_dingux_rumble_gain",     &settings->uints.input_dingux_rumble_gain, true, DEFAULT_DINGUX_RUMBLE_GAIN, false);
 #endif
@@ -1933,6 +1935,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_ticker_type",             &settings->uints.menu_ticker_type, true, DEFAULT_MENU_TICKER_TYPE, false);
    SETTING_UINT("menu_scroll_delay",            &settings->uints.menu_scroll_delay, true, DEFAULT_MENU_SCROLL_DELAY, false);
    SETTING_UINT("content_show_add_entry",       &settings->uints.menu_content_show_add_entry, true, DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY, false);
+   SETTING_UINT("menu_screensaver_timeout",     &settings->uints.menu_screensaver_timeout, true, DEFAULT_MENU_SCREENSAVER_TIMEOUT, false);
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_menu_color_theme",        &settings->uints.menu_rgui_color_theme, true, DEFAULT_RGUI_COLOR_THEME, false);
    SETTING_UINT("rgui_thumbnail_downscaler",    &settings->uints.menu_rgui_thumbnail_downscaler, true, rgui_thumbnail_downscaler, false);
@@ -2046,6 +2049,9 @@ static struct config_uint_setting *populate_settings_uint(
 
 #if defined(DINGUX)
    SETTING_UINT("video_dingux_ipu_filter_type", &settings->uints.video_dingux_ipu_filter_type, true, DEFAULT_DINGUX_IPU_FILTER_TYPE, false);
+#if defined(DINGUX_BETA)
+   SETTING_UINT("video_dingux_refresh_rate",    &settings->uints.video_dingux_refresh_rate, true, DEFAULT_DINGUX_REFRESH_RATE, false);
+#endif
 #endif
 
 #ifdef HAVE_MENU

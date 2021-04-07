@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2016-2019 - Brad Parker
+ *  Copyright (C) 2021      - David G.F.
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -23,11 +23,45 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "retroarch.h"
+#include "input/input_defines.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 RETRO_BEGIN_DECLS
+
+#define MAX_CMD_DRIVERS              3
+#define DEFAULT_NETWORK_CMD_PORT 55355
+
+struct cmd_map
+{
+   const char *str;
+   unsigned id;
+};
+
+struct command_handler;
+
+typedef void (*command_poller_t)(struct command_handler *cmd);
+typedef void (*command_replier_t)(struct command_handler *cmd, const char * data, size_t len);
+typedef void (*command_destructor_t)(struct command_handler *cmd);
+
+struct command_handler
+{
+   /* Interface to poll the driver */
+   command_poller_t poll;
+   /* Interface to reply */
+   command_replier_t replier;
+   /* Interface to delete the underlying command */
+   command_destructor_t destroy;
+   /* Underlying command storage */
+   void *userptr;
+   /* State received */
+   bool state[RARCH_BIND_LIST_END];
+};
+
+typedef struct command_handler command_t;
 
 enum event_command
 {
@@ -205,16 +239,24 @@ enum event_command
    CMD_EVENT_CHEAT_INDEX_MINUS,
    CMD_EVENT_CHEAT_TOGGLE,
    CMD_EVENT_AI_SERVICE_CALL,
-   CMD_EVENT_SAVE_FILES
+   CMD_EVENT_SAVE_FILES,
+   CMD_EVENT_CONTROLLER_INIT
 };
-
-typedef struct command command_t;
 
 typedef struct command_handle
 {
    command_t *handle;
    unsigned id;
 } command_handle_t;
+
+enum cmd_source_t
+{
+   CMD_NONE = 0,
+   CMD_STDIN,
+   CMD_NETWORK
+};
+
+struct rarch_state;
 
 /**
  * command_event:
@@ -225,6 +267,107 @@ typedef struct command_handle
  * Returns: true (1) on success, otherwise false (0).
  **/
 bool command_event(enum event_command action, void *data);
+
+/* Constructors for the supported drivers */
+command_t* command_network_new(uint16_t port);
+command_t* command_stdin_new(void);
+command_t* command_uds_new(void);
+
+bool command_network_send(const char *cmd_);
+
+/* These forward declarations need to be declared before
+ * the global state is declared */
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+bool command_set_shader(command_t *cmd, const char *arg);
+#endif
+#if defined(HAVE_COMMAND)
+bool command_version(command_t *cmd, const char* arg);
+bool command_get_status(command_t *cmd, const char* arg);
+bool command_get_config_param(command_t *cmd, const char* arg);
+bool command_show_osd_msg(command_t *cmd, const char* arg);
+#ifdef HAVE_CHEEVOS
+bool command_read_ram(command_t *cmd, const char *arg);
+bool command_write_ram(command_t *cmd, const char *arg);
+#endif
+bool command_read_memory(command_t *cmd, const char *arg);
+bool command_write_memory(command_t *cmd, const char *arg);
+
+struct cmd_action_map
+{
+   const char *str;
+   bool (*action)(command_t* cmd, const char *arg);
+   const char *arg_desc;
+};
+
+static const struct cmd_action_map action_map[] = {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   { "SET_SHADER",       command_set_shader,       "<shader path>" },
+#endif
+   { "VERSION",          command_version,          "No argument"},
+   { "GET_STATUS",       command_get_status,       "No argument" },
+   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
+   { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
+#if defined(HAVE_CHEEVOS)
+   /* These functions use achievement addresses and only work if a game with achievements is
+    * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
+   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>" },
+   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ..." },
+#endif
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>" },
+   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
+};
+
+static const struct cmd_map map[] = {
+   { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
+   { "FAST_FORWARD_HOLD",      RARCH_FAST_FORWARD_HOLD_KEY },
+   { "SLOWMOTION",             RARCH_SLOWMOTION_KEY },
+   { "SLOWMOTION_HOLD",        RARCH_SLOWMOTION_HOLD_KEY },
+   { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
+   { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
+   { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
+   { "CLOSE_CONTENT",          RARCH_CLOSE_CONTENT_KEY },
+   { "QUIT",                   RARCH_QUIT_KEY },
+   { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
+   { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
+   { "REWIND",                 RARCH_REWIND },
+   { "BSV_RECORD_TOGGLE",      RARCH_BSV_RECORD_TOGGLE },
+   { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },
+   { "FRAMEADVANCE",           RARCH_FRAMEADVANCE },
+   { "RESET",                  RARCH_RESET },
+   { "SHADER_NEXT",            RARCH_SHADER_NEXT },
+   { "SHADER_PREV",            RARCH_SHADER_PREV },
+   { "CHEAT_INDEX_PLUS",       RARCH_CHEAT_INDEX_PLUS },
+   { "CHEAT_INDEX_MINUS",      RARCH_CHEAT_INDEX_MINUS },
+   { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
+   { "SCREENSHOT",             RARCH_SCREENSHOT },
+   { "MUTE",                   RARCH_MUTE },
+   { "OSK",                    RARCH_OSK },
+   { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
+   { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
+   { "NETPLAY_HOST_TOGGLE",    RARCH_NETPLAY_HOST_TOGGLE },
+   { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
+   { "VOLUME_UP",              RARCH_VOLUME_UP },
+   { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
+   { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
+   { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
+   { "DISK_NEXT",              RARCH_DISK_NEXT },
+   { "DISK_PREV",              RARCH_DISK_PREV },
+   { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
+   { "UI_COMPANION_TOGGLE",    RARCH_UI_COMPANION_TOGGLE },
+   { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
+   { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
+   { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
+   { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
+   { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
+   { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
+   { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
+   { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
+   { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
+   { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
+   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
+   { "AI_SERVICE",             RARCH_AI_SERVICE },
+};
+#endif
 
 RETRO_END_DECLS
 

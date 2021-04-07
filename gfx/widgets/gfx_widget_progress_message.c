@@ -217,7 +217,6 @@ static void gfx_widget_progress_message_layout(
 
 static void gfx_widget_progress_message_frame(void *data, void *user_data)
 {
-   gfx_display_t *p_disp                      = disp_get_ptr();
    gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
 
    if (state->active)
@@ -228,6 +227,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       unsigned video_width                 = video_info->width;
       unsigned video_height                = video_info->height;
       void *userdata                       = video_info->userdata;
+      gfx_display_t *p_disp                = (gfx_display_t*)video_info->disp_userdata;
 
       float *backdrop_color                = p_dispwidget->backdrop_orig;
       unsigned text_color                  = COLOR_TEXT_ALPHA(0xFFFFFFFF, (unsigned)(state->alpha * 255.0f));

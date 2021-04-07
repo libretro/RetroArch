@@ -151,6 +151,7 @@ typedef struct settings
 #ifdef GEKKO
       unsigned input_mouse_scale;
 #endif
+      unsigned input_touch_scale;
       unsigned input_hotkey_block_delay;
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
@@ -200,6 +201,7 @@ typedef struct settings
       unsigned video_stream_scale_factor;
       unsigned video_3ds_display_mode;
       unsigned video_dingux_ipu_filter_type;
+      unsigned video_dingux_refresh_rate;
 #ifdef HAVE_VIDEO_LAYOUT
       unsigned video_layout_selected_view;
 #endif
@@ -249,6 +251,7 @@ typedef struct settings
       unsigned menu_ticker_type;
       unsigned menu_scroll_delay;
       unsigned menu_content_show_add_entry;
+      unsigned menu_screensaver_timeout;
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
@@ -610,6 +613,7 @@ typedef struct settings
       bool menu_rgui_swap_thumbnails;
       bool menu_rgui_extended_ascii;
       bool menu_rgui_switch_icons;
+      bool menu_rgui_particle_effect_screensaver;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
