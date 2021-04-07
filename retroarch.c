@@ -1830,6 +1830,9 @@ static void menu_input_set_pointer_visibility(
  **/
 static int generic_menu_iterate(
       struct rarch_state *p_rarch,
+      struct menu_state *menu_st,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       settings_t *settings,
       menu_handle_t *menu,
       void *userdata, enum menu_action action,
@@ -1843,9 +1846,6 @@ static int generic_menu_iterate(
    unsigned file_type              = 0;
    int ret                         = 0;
    const char *label               = NULL;
-   struct menu_state *menu_st      = &p_rarch->menu_driver_state;
-   gfx_display_t *p_disp           = &p_rarch->dispgfx;
-   gfx_animation_t *p_anim         = &p_rarch->anim;
    file_list_t *list               = MENU_LIST_GET(menu_st->entries.list, 0);
 
    if (list && list->size)
@@ -4343,6 +4343,9 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
 /* Iterate the menu driver for one frame. */
 static bool menu_driver_iterate(
       struct rarch_state *p_rarch,
+      struct menu_state *menu_st,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       settings_t *settings,
       enum menu_action action,
       retro_time_t current_time)
@@ -4350,6 +4353,9 @@ static bool menu_driver_iterate(
    return (p_rarch->menu_driver_data && 
          generic_menu_iterate(
             p_rarch,
+            menu_st,
+            p_disp,
+            p_anim,
             settings,
             p_rarch->menu_driver_data,
             p_rarch->menu_userdata, action,
@@ -37342,7 +37348,11 @@ static enum runloop_state runloop_check_state(
          menu_st->selection_ptr      = 0;
          menu_st->pending_quick_menu = false;
       }
-      else if (!menu_driver_iterate(p_rarch, settings,
+      else if (!menu_driver_iterate(p_rarch,
+               menu_st,
+               &p_rarch->dispgfx,
+               &p_rarch->anim,
+               settings,
                action, current_time))
       {
          if (p_rarch->rarch_error_on_init)
