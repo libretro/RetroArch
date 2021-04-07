@@ -202,7 +202,7 @@ static void gfx_display_gl1_scissor_end(
 
 gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
    gfx_display_gl1_draw,
-   NULL,
+   NULL, /* draw_pipeline */
    gfx_display_gl1_blend_begin,
    gfx_display_gl1_blend_end,
    gfx_display_gl1_get_default_mvp,

@@ -4142,7 +4142,8 @@ static void xmb_draw_bg(
       }
 
       if (dispctx && dispctx->draw_pipeline)
-         dispctx->draw_pipeline(&draw, userdata, video_width, video_height);
+         dispctx->draw_pipeline(&draw, p_disp,
+               userdata, video_width, video_height);
    }
    else
 #endif
