@@ -2049,6 +2049,9 @@ static struct config_uint_setting *populate_settings_uint(
 
 #if defined(DINGUX)
    SETTING_UINT("video_dingux_ipu_filter_type", &settings->uints.video_dingux_ipu_filter_type, true, DEFAULT_DINGUX_IPU_FILTER_TYPE, false);
+#if defined(DINGUX_BETA)
+   SETTING_UINT("video_dingux_refresh_rate",    &settings->uints.video_dingux_refresh_rate, true, DEFAULT_DINGUX_REFRESH_RATE, false);
+#endif
 #endif
 
 #ifdef HAVE_MENU

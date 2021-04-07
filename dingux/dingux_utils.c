@@ -19,6 +19,7 @@
 #include <streams/file_stream.h>
 
 #if defined(DINGUX_BETA)
+#include <string/stdstring.h>
 #include <stdlib.h>
 #endif
 
@@ -37,6 +38,7 @@
 #define DINGUX_BATTERY_VOLTAGE_NOW        "/sys/class/power_supply/jz-battery/voltage_now"
 #define DINGUX_SCALING_MODE_ENVAR         "SDL_VIDEO_KMSDRM_SCALING_MODE"
 #define DINGUX_SCALING_SHARPNESS_ENVAR    "SDL_VIDEO_KMSDRM_SCALING_SHARPNESS"
+#define DINGUX_VIDEO_REFRESHRATE_ENVAR    "SDL_VIDEO_REFRESHRATE"
 
 /* Enables/disables downscaling when using
  * the IPU hardware scaler */
@@ -162,6 +164,63 @@ bool dingux_ipu_set_filter_type(enum dingux_ipu_filter_type filter_type)
 #endif
 }
 
+#if defined(DINGUX_BETA)
+/* Sets the refresh rate of the integral LCD panel.
+ * If specified value is invalid, will set refresh
+ * rate to 60 Hz.
+ * Returns a floating point representation of the
+ * resultant hardware refresh rate. In the event
+ * that a refresh rate cannot be set (i.e. hardware
+ * error), returns 0.0 */
+float dingux_set_video_refresh_rate(enum dingux_refresh_rate refresh_rate)
+{
+   float refresh_rate_float     = 60.0f;
+   const char *refresh_rate_str = "60";
+
+   /* Check filter type */
+   switch (refresh_rate)
+   {
+      case DINGUX_REFRESH_RATE_50HZ:
+         refresh_rate_float = 50.0f;
+         refresh_rate_str   = "50";
+         break;
+      default:
+         /* Refresh rate is already set to 60 Hz
+          * by default */
+         break;
+   }
+
+   if (setenv(DINGUX_VIDEO_REFRESHRATE_ENVAR, refresh_rate_str, 1) != 0)
+      refresh_rate_float = 0.0f;
+
+   return refresh_rate_float;
+}
+
+/* Gets the currently set refresh rate of the
+ * integral LCD panel. */
+bool dingux_get_video_refresh_rate(enum dingux_refresh_rate *refresh_rate)
+{
+   const char *refresh_rate_str = getenv(DINGUX_VIDEO_REFRESHRATE_ENVAR);
+
+   /* If environment variable is unset, refresh
+    * rate defaults to 60 Hz */
+   if (!refresh_rate_str)
+   {
+      *refresh_rate = DINGUX_REFRESH_RATE_60HZ;
+      return true;
+   }
+
+   if (string_is_equal(refresh_rate_str, "60"))
+      *refresh_rate = DINGUX_REFRESH_RATE_60HZ;
+   else if (string_is_equal(refresh_rate_str, "50"))
+      *refresh_rate = DINGUX_REFRESH_RATE_50HZ;
+   else
+      return false;
+
+   return true;
+}
+#endif
+
 /* Resets the IPU hardware scaler to the
  * default configuration */
 bool dingux_ipu_reset(void)
@@ -169,6 +228,7 @@ bool dingux_ipu_reset(void)
 #if defined(DINGUX_BETA)
    unsetenv(DINGUX_SCALING_MODE_ENVAR);
    unsetenv(DINGUX_SCALING_SHARPNESS_ENVAR);
+   unsetenv(DINGUX_VIDEO_REFRESHRATE_ENVAR);
    return true;
 #else
    return dingux_ipu_set_scaling_mode(true, false) &&

@@ -3135,6 +3135,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
    "video_dingux_ipu_filter_type"
    )
+#if defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "video_dingux_refresh_rate"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,

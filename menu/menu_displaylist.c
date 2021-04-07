@@ -7478,6 +7478,12 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
                      PARSE_ONLY_INT, false) == 0)
                count++;
+#if defined(DINGUX) && defined(DINGUX_BETA)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+#endif
             if (threaded && !*threaded)
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,

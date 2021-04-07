@@ -5177,6 +5177,31 @@ static void setting_get_string_representation_uint_video_dingux_ipu_filter_type(
          break;
    }
 }
+#if defined(DINGUX_BETA)
+static void setting_get_string_representation_uint_video_dingux_refresh_rate(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case DINGUX_REFRESH_RATE_60HZ:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ),
+               len);
+         break;
+      case DINGUX_REFRESH_RATE_50HZ:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ),
+               len);
+         break;
+   }
+}
+#endif
 #endif
 
 static void setting_get_string_representation_uint_input_auto_game_focus(
@@ -7249,6 +7274,46 @@ static void general_write_handler(rarch_setting_t *setting)
          /* In case refresh rate update forced non-block video. */
          rarch_cmd = CMD_EVENT_VIDEO_SET_BLOCKING_STATE;
          break;
+#if defined(DINGUX) && defined(DINGUX_BETA)
+      case MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE:
+         {
+            enum dingux_refresh_rate current_refresh_rate = DINGUX_REFRESH_RATE_60HZ;
+            enum dingux_refresh_rate target_refresh_rate  =
+                  (enum dingux_refresh_rate)settings->uints.video_dingux_refresh_rate;
+            bool refresh_rate_valid                       = false;
+
+            /* Get current refresh rate */
+            refresh_rate_valid = dingux_get_video_refresh_rate(&current_refresh_rate);
+
+            /* Check if refresh rate has changed */
+            if (!refresh_rate_valid ||
+                (current_refresh_rate != target_refresh_rate))
+            {
+               /* Get floating point representation of
+                * new refresh rate */
+               float hw_refresh_rate = 60.0f;
+
+               switch (target_refresh_rate)
+               {
+                  case DINGUX_REFRESH_RATE_50HZ:
+                     hw_refresh_rate = 50.0f;
+                  default:
+                     break;
+               }
+
+               /* Manually update 'settings->floats.video_refresh_rate'
+                * (required for correct timing adjustments when
+                * reinitialising drivers) */
+               configuration_set_float(settings,
+                     settings->floats.video_refresh_rate,
+                     hw_refresh_rate);
+
+               /* Trigger driver reinitialisation */
+               rarch_cmd = CMD_EVENT_REINIT;
+            }
+         }
+         break;
+#endif
       case MENU_ENUM_LABEL_VIDEO_SCALE:
          settings->modified           = true;
          settings->floats.video_scale = roundf(*setting->value.target.fraction);
@@ -10528,42 +10593,65 @@ static bool setting_append_list(
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
             }
 
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_refresh_rate,
-                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-                  DEFAULT_REFRESH_RATE,
-                  "%.3f Hz",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.video_refresh_rate,
-                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-                  DEFAULT_REFRESH_RATE,
-                  "%.3f Hz",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
-            (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
-            (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_st_float_video_refresh_rate_auto;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-
+#if defined(DINGUX) && defined(DINGUX_BETA)
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            {
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_dingux_refresh_rate,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+                     DEFAULT_DINGUX_REFRESH_RATE,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_uint_video_dingux_refresh_rate;
+               menu_settings_list_current_add_range(list, list_info, 0, DINGUX_REFRESH_RATE_LAST - 1, 1, true, true);
+               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            }
+            else
+#endif
             {
                float actual_refresh_rate = video_driver_get_refresh_rate();
+
+               CONFIG_FLOAT(
+                     list, list_info,
+                     &settings->floats.video_refresh_rate,
+                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+                     DEFAULT_REFRESH_RATE,
+                     "%.3f Hz",
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_FLOAT(
+                     list, list_info,
+                     &settings->floats.video_refresh_rate,
+                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+                     DEFAULT_REFRESH_RATE,
+                     "%.3f Hz",
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
+               (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
+               (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
+               (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_st_float_video_refresh_rate_auto;
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
                if (actual_refresh_rate > 0.0)
                {
                   CONFIG_FLOAT(
