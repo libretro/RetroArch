@@ -430,8 +430,13 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
  *         gfx_thumbnail_process_streams() for improved
  *         performance */
 void gfx_thumbnail_process_stream(
-      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, gfx_thumbnail_t *thumbnail, bool on_screen,
+      gfx_thumbnail_path_data_t *path_data,
+      gfx_animation_t *p_anim,
+      enum gfx_thumbnail_id thumbnail_id,
+      playlist_t *playlist,
+      size_t idx,
+      gfx_thumbnail_t *thumbnail,
+      bool on_screen,
       unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails
       )
@@ -446,7 +451,6 @@ void gfx_thumbnail_process_stream(
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
       if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
-         gfx_animation_t *p_anim             = anim_get_ptr();
          gfx_thumbnail_state_t *p_gfx_thumb  = gfx_thumb_get_ptr();
 
          /* Check if stream delay timer has elapsed */
@@ -504,8 +508,10 @@ void gfx_thumbnail_process_stream(
  *         performance */
 void gfx_thumbnail_process_streams(
       gfx_thumbnail_path_data_t *path_data,
+      gfx_animation_t *p_anim,
       playlist_t *playlist, size_t idx,
-      gfx_thumbnail_t *right_thumbnail, gfx_thumbnail_t *left_thumbnail,
+      gfx_thumbnail_t *right_thumbnail,
+      gfx_thumbnail_t *left_thumbnail,
       bool on_screen,
       unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails
@@ -526,7 +532,6 @@ void gfx_thumbnail_process_streams(
       {
          /* Check if stream delay timer has elapsed */
          gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
-         gfx_animation_t *p_anim            = anim_get_ptr();
          float delta_time                   = p_anim->delta_time;
          bool request_right                 = false;
          bool request_left                  = false;

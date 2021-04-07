@@ -3168,20 +3168,27 @@ static bool materialui_render_process_entry_playlist_thumb_list(
       bool network_on_demand_thumbnails)
 {
    bool on_screen = first_entry_found && !last_entry_found;
+   gfx_animation_t     *p_anim = anim_get_ptr();
 
    /* Load thumbnails for all on-screen entries
     * and free thumbnails for all off-screen entries */
    if (mui->secondary_thumbnail_enabled)
       gfx_thumbnail_process_streams(
-            mui->thumbnail_path_data, mui->playlist, playlist_idx,
-            &node->thumbnails.primary, &node->thumbnails.secondary,
+            mui->thumbnail_path_data,
+            p_anim,
+            mui->playlist, playlist_idx,
+            &node->thumbnails.primary,
+            &node->thumbnails.secondary,
             on_screen,
             thumbnail_upscale_threshold,
             network_on_demand_thumbnails);
    else
       gfx_thumbnail_process_stream(
-            mui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT,
-            mui->playlist, playlist_idx, &node->thumbnails.primary,
+            mui->thumbnail_path_data,
+            p_anim,
+            GFX_THUMBNAIL_RIGHT,
+            mui->playlist, playlist_idx,
+            &node->thumbnails.primary,
             on_screen,
             thumbnail_upscale_threshold,
             network_on_demand_thumbnails);
@@ -3202,15 +3209,19 @@ static bool materialui_render_process_entry_playlist_dual_icon(
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
-   bool on_screen = first_entry_found && !last_entry_found;
+   gfx_animation_t *p_anim        = anim_get_ptr();
+   bool on_screen                 = first_entry_found && !last_entry_found;
 
    /* Load thumbnails for all on-screen entries
     * and free thumbnails for all off-screen entries
     * > Note that secondary thumbnail is force
     *   enabled in dual icon mode */
    gfx_thumbnail_process_streams(
-         mui->thumbnail_path_data, mui->playlist, playlist_idx,
-         &node->thumbnails.primary, &node->thumbnails.secondary,
+         mui->thumbnail_path_data,
+         p_anim,
+         mui->playlist, playlist_idx,
+         &node->thumbnails.primary,
+         &node->thumbnails.secondary,
          on_screen,
          thumbnail_upscale_threshold,
          network_on_demand_thumbnails);
@@ -3231,6 +3242,7 @@ static bool materialui_render_process_entry_playlist_desktop(
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
+   gfx_animation_t *p_anim            = anim_get_ptr();
    gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
    bool is_selected                   = (entry_idx == selection);
    /* We want to load (and keep in memory)
@@ -3250,8 +3262,11 @@ static bool materialui_render_process_entry_playlist_desktop(
     * > Note that secondary thumbnail is force
     *   enabled */
    gfx_thumbnail_process_streams(
-         mui->thumbnail_path_data, mui->playlist, playlist_idx,
-         &node->thumbnails.primary, &node->thumbnails.secondary,
+         mui->thumbnail_path_data,
+         p_anim,
+         mui->playlist, playlist_idx,
+         &node->thumbnails.primary,
+         &node->thumbnails.secondary,
          is_on_screen,
          thumbnail_upscale_threshold,
          network_on_demand_thumbnails);
