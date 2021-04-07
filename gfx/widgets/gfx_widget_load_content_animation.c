@@ -973,12 +973,14 @@ static void gfx_widget_load_content_animation_free(void)
 }
 
 static bool gfx_widget_load_content_animation_init(
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
       bool video_is_threaded, bool fullscreen)
 {
    gfx_widget_load_content_animation_state_t *state = 
       &p_w_load_content_animation_st;
 
-   state->p_disp = disp_get_ptr();
+   state->p_disp = p_disp;
 
    return false;
 }

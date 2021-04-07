@@ -50,9 +50,13 @@ typedef struct gfx_widget_leaderboard_display_state gfx_widget_leaderboard_displ
 
 static gfx_widget_leaderboard_display_state_t p_w_leaderboard_display_st;
 
-static bool gfx_widget_leaderboard_display_init(bool video_is_threaded, bool fullscreen)
+static bool gfx_widget_leaderboard_display_init(
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      bool video_is_threaded, bool fullscreen)
 {
-   gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
+   gfx_widget_leaderboard_display_state_t *state = 
+      &p_w_leaderboard_display_st;
    memset(state, 0, sizeof(*state));
 
    return true;

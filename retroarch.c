@@ -32804,6 +32804,7 @@ static void drivers_init(struct rarch_state *p_rarch,
       p_rarch->widgets_active     = gfx_widgets_init(
             &p_rarch->dispwidget_st,
             &p_rarch->dispgfx,
+            &p_rarch->anim,
             settings,
             (uintptr_t)&p_rarch->widgets_active,
             video_is_threaded,

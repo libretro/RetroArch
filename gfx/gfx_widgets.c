@@ -2077,6 +2077,7 @@ static void gfx_widgets_context_reset(
 bool gfx_widgets_init(
       void *data,
       void *data_disp,
+      void *data_anim,
       void *settings_data,
       uintptr_t widgets_active_ptr,
       bool video_is_threaded,
@@ -2086,6 +2087,7 @@ bool gfx_widgets_init(
    unsigned i;
    dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)data;
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
+   gfx_animation_t *p_anim                     = (gfx_animation_t*)data_anim;
    settings_t *settings                        = (settings_t*)settings_data;
    p_dispwidget->divider_width_1px             = 1;
    p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)widgets_active_ptr;
@@ -2123,7 +2125,7 @@ bool gfx_widgets_init(
          const gfx_widget_t* widget = widgets[i];
 
          if (widget->init)
-            widget->init(video_is_threaded, fullscreen);
+            widget->init(p_disp, p_anim, video_is_threaded, fullscreen);
       }
 
       if (!fifo_initialize(&p_dispwidget->msg_queue,

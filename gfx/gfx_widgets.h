@@ -30,6 +30,7 @@
 #endif
 
 #include "gfx_animation.h"
+#include "gfx_display.h"
 
 #define DEFAULT_BACKDROP               0.75f
 
@@ -233,7 +234,9 @@ struct gfx_widget
 {
    /* called when the widgets system is initialized
     * -> initialize the widget here */
-   bool (*init)(bool video_is_threaded, bool fullscreen);
+   bool (*init)(gfx_display_t *p_disp,
+         gfx_animation_t *p_anim,
+         bool video_is_threaded, bool fullscreen);
 
    /* called when the widgets system is freed
     * -> free the widget here */
@@ -305,6 +308,7 @@ typedef struct gfx_widget gfx_widget_t;
 bool gfx_widgets_init(
       void *data,
       void *data_disp,
+      void *data_anim,
       void *settings_data,
       uintptr_t widgets_active_ptr,
       bool video_is_threaded,
