@@ -2126,10 +2126,8 @@ static struct config_int_setting *populate_settings_int(
    return tmp;
 }
 
-static void video_driver_default_settings(void)
+static void video_driver_default_settings(global_t *global)
 {
-   global_t                             *global  = global_get_ptr();
-
    if (!global)
       return;
 
@@ -2473,7 +2471,7 @@ void config_set_defaults(void *data)
 
    *settings->paths.log_dir = '\0';
 
-   video_driver_default_settings();
+   video_driver_default_settings(global);
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]))
       configuration_set_string(settings,
@@ -2933,13 +2931,10 @@ error:
 }
 
 #ifdef RARCH_CONSOLE
-static void video_driver_load_settings(config_file_t *conf)
+static void video_driver_load_settings(global_t *global, 
+      config_file_t *conf)
 {
    bool               tmp_bool = false;
-   global_t            *global = global_get_ptr();
-
-   if (!conf)
-      return;
 
    CONFIG_GET_INT_BASE(conf, global,
          console.screen.gamma_correction, "gamma_correction");
@@ -3192,7 +3187,8 @@ static bool config_load_file(global_t *global,
             settings->paths.directory_libretro, tmp_str);
 
 #ifdef RARCH_CONSOLE
-   video_driver_load_settings(conf);
+   if (conf)
+      video_driver_load_settings(global, conf);
 #endif
 
    /* Post-settings load */
@@ -3856,12 +3852,8 @@ static void config_parse_file(global_t *global)
    }
 }
 
-static void video_driver_save_settings(config_file_t *conf)
+static void video_driver_save_settings(global_t *global, config_file_t *conf)
 {
-   global_t            *global = global_get_ptr();
-   if (!conf)
-      return;
-
    config_set_int(conf, "gamma_correction",
          global->console.screen.gamma_correction);
    config_set_bool(conf, "flicker_filter_enable",
@@ -4035,6 +4027,7 @@ bool config_save_file(const char *path)
    struct config_path_setting     *path_settings     = NULL;
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_get_ptr();
+   global_t *global                                  = global_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
    int int_settings_size                             = sizeof(settings->ints)  / sizeof(settings->ints.placeholder);
@@ -4202,7 +4195,8 @@ bool config_save_file(const char *path)
    /* Hexadecimal settings */
    config_set_hex(conf, "video_message_color", msg_color);
 
-   video_driver_save_settings(conf);
+   if (conf)
+      video_driver_save_settings(global, conf);
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
