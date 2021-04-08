@@ -9539,13 +9539,12 @@ static void dir_free_shader(struct rarch_state *p_rarch,
 static bool dir_init_shader_internal(
       struct rarch_state *p_rarch,
       settings_t *settings,
+      struct rarch_dir_shader_list *dir_list,
       const char *shader_dir,
       const char *shader_file_name,
       bool show_hidden_files)
 {
    size_t i;
-   struct rarch_dir_shader_list *dir_list = (struct rarch_dir_shader_list*)
-         &p_rarch->dir_shader_list;
    struct string_list *new_list           = dir_list_new_special(
          shader_dir, DIR_LIST_SHADERS, NULL, show_hidden_files);
    bool shader_remember_last_dir          = settings->bools.video_shader_remember_last_dir;
@@ -9618,6 +9617,8 @@ static void dir_init_shader(
 #else
    enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
 #endif
+   struct rarch_dir_shader_list *dir_list         = (struct rarch_dir_shader_list*)
+      &p_rarch->dir_shader_list;
 
    /* Always free existing shader list */
    dir_free_shader(p_rarch, settings);
@@ -9629,6 +9630,7 @@ static void dir_init_shader(
        dir_init_shader_internal(
           p_rarch,
           settings,
+          dir_list,
           last_shader_preset_dir,
           last_shader_preset_file_name,
           show_hidden_files))
@@ -9639,6 +9641,7 @@ static void dir_init_shader(
        dir_init_shader_internal(
             p_rarch,
             settings,
+            dir_list,
             directory_video_shader, NULL, show_hidden_files))
       return;
 
@@ -9647,6 +9650,7 @@ static void dir_init_shader(
        dir_init_shader_internal(
             p_rarch,
             settings,
+            dir_list,
             directory_menu_config, NULL, show_hidden_files))
       return;
 
@@ -9661,6 +9665,7 @@ static void dir_init_shader(
          dir_init_shader_internal(
                p_rarch,
                settings,
+               dir_list,
                rarch_config_directory, NULL, show_hidden_files);
 
       free(rarch_config_directory);
@@ -9678,12 +9683,13 @@ static void dir_init_shader(
  *
  * Will also immediately apply the shader.
  **/
-static void dir_check_shader(struct rarch_state *p_rarch,
-      bool pressed_next, bool pressed_prev)
+static void dir_check_shader(
+      struct rarch_state *p_rarch,
+      settings_t *settings,
+      struct rarch_dir_shader_list *dir_list,
+      bool pressed_next,
+      bool pressed_prev)
 {
-   struct rarch_dir_shader_list *dir_list         = (struct rarch_dir_shader_list*)
-         &p_rarch->dir_shader_list;
-   settings_t *settings                           = p_rarch->configuration_settings;
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
@@ -10834,12 +10840,12 @@ task_finished:
        free(task->user_data);
 }
 
-static bool call_auto_translate_task(
+static void call_auto_translate_task(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       bool *was_paused)
 {
-   settings_t        *settings = p_rarch->configuration_settings;
-   int        ai_service_mode  = settings->uints.ai_service_mode;
+   int ai_service_mode  = settings->uints.ai_service_mode;
 
    /*Image Mode*/
    if (ai_service_mode == 0)
@@ -10848,14 +10854,13 @@ static bool call_auto_translate_task(
          p_rarch->ai_service_auto = 2;
 
       command_event(CMD_EVENT_AI_SERVICE_CALL, was_paused);
-      return true;
    }
    else /* Speech or Narrator Mode */
    {
       int* mode                          = NULL;
       retro_task_t  *t                   = task_init();
       if (!t)
-         return false;
+         return;
 
       mode                               = (int*)malloc(sizeof(int));
       *mode                              = ai_service_mode;
@@ -10865,7 +10870,6 @@ static bool call_auto_translate_task(
       t->mute                            = true;
       task_queue_push(t);
    }
-   return true;
 }
 
 static void handle_translation_cb(
@@ -11348,7 +11352,7 @@ finish:
    {
       if (     (p_rarch->ai_service_auto != 0)
             && !settings->bools.ai_service_pause)
-         call_auto_translate_task(p_rarch, &was_paused);
+         call_auto_translate_task(p_rarch, settings, &was_paused);
    }
    if (auto_string)
       free(auto_string);
@@ -12440,7 +12444,8 @@ static void update_runtime_log(
 }
 
 
-static void command_event_runtime_log_deinit(struct rarch_state *p_rarch)
+static void command_event_runtime_log_deinit(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
    char log[PATH_MAX_LENGTH]    = {0};
    unsigned hours               = 0;
@@ -12463,7 +12468,6 @@ static void command_event_runtime_log_deinit(struct rarch_state *p_rarch)
    /* Only write to file if content has run for a non-zero length of time */
    if (p_rarch->libretro_core_runtime_usec > 0)
    {
-      settings_t *settings               = p_rarch->configuration_settings;
       bool content_runtime_log           = settings->bools.content_runtime_log;
       bool content_runtime_log_aggregate = settings->bools.content_runtime_log_aggregate;
       const char  *dir_runtime_log       = settings->paths.directory_runtime_log;
@@ -13271,12 +13275,12 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SHADER_NEXT:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         dir_check_shader(p_rarch, true, false);
+         dir_check_shader(p_rarch, settings, &p_rarch->dir_shader_list, true, false);
 #endif
          break;
       case CMD_EVENT_SHADER_PREV:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         dir_check_shader(p_rarch, false, true);
+         dir_check_shader(p_rarch, settings, &p_rarch->dir_shader_list, false, true);
 #endif
          break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
@@ -13573,7 +13577,7 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
 
-            command_event_runtime_log_deinit(p_rarch);
+            command_event_runtime_log_deinit(p_rarch, settings);
             command_event_save_auto_state(settings, 
                   global, p_rarch);
 
@@ -13955,7 +13959,7 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
 
-            command_event_runtime_log_deinit(p_rarch);
+            command_event_runtime_log_deinit(p_rarch, settings);
             content_reset_savestate_backups();
             hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 #ifdef HAVE_CHEEVOS
@@ -17080,7 +17084,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
           * since normal command.c CMD_EVENT_CORE_DEINIT event
           * will not occur until after the current content has
           * been cleared (causing log to be skipped) */
-         command_event_runtime_log_deinit(p_rarch);
+         command_event_runtime_log_deinit(p_rarch, settings);
 
          p_rarch->runloop_shutdown_initiated      = true;
          p_rarch->runloop_core_shutdown_initiated = true;
@@ -18718,10 +18722,11 @@ static void secondary_core_destroy(struct rarch_state *p_rarch)
    p_rarch->secondary_library_path = NULL;
 }
 
-static bool secondary_core_ensure_exists(struct rarch_state *p_rarch)
+static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
    if (!p_rarch->secondary_lib_handle)
-      if (!secondary_core_create(p_rarch))
+      if (!secondary_core_create(p_rarch, settings))
          return false;
    return true;
 }
@@ -18729,9 +18734,10 @@ static bool secondary_core_ensure_exists(struct rarch_state *p_rarch)
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC)
 static bool secondary_core_deserialize(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       const void *buffer, int size)
 {
-   if (secondary_core_ensure_exists(p_rarch))
+   if (secondary_core_ensure_exists(p_rarch, settings))
       return p_rarch->secondary_core.retro_unserialize(buffer, size);
    secondary_core_destroy(p_rarch);
    return false;
@@ -18852,7 +18858,8 @@ static bool write_file_with_random_name(char **temp_dll_path,
    return okay;
 }
 
-static char *copy_core_to_temp_file(struct rarch_state *p_rarch)
+static char *copy_core_to_temp_file(struct rarch_state *p_rarch,
+      const char *dir_libretro)
 {
    bool  failed                = false;
    char  *temp_directory       = NULL;
@@ -18862,13 +18869,11 @@ static char *copy_core_to_temp_file(struct rarch_state *p_rarch)
    int64_t  dll_file_size      = 0;
    const char  *core_path      = path_get(RARCH_PATH_CORE);
    const char  *core_base_name = path_basename(core_path);
-   settings_t *settings        = p_rarch->configuration_settings;
-   const char  *dir_libretro   = settings->paths.directory_libretro;
 
    if (strlen(core_base_name) == 0)
       return NULL;
 
-   temp_directory             = get_temp_directory_alloc(dir_libretro);
+   temp_directory              = get_temp_directory_alloc(dir_libretro);
    if (!temp_directory)
       return NULL;
 
@@ -18944,7 +18949,8 @@ static bool rarch_environment_secondary_core_hook(
    return result;
 }
 
-static bool secondary_core_create(struct rarch_state *p_rarch)
+static bool secondary_core_create(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
    unsigned port;
    bool contentless            = false;
@@ -18962,7 +18968,8 @@ static bool secondary_core_create(struct rarch_state *p_rarch)
    if (p_rarch->secondary_library_path)
       free(p_rarch->secondary_library_path);
    p_rarch->secondary_library_path = NULL;
-   p_rarch->secondary_library_path = copy_core_to_temp_file(p_rarch);
+   p_rarch->secondary_library_path = copy_core_to_temp_file(p_rarch,
+         settings->paths.directory_libretro);
 
    if (!p_rarch->secondary_library_path)
       return false;
@@ -19048,7 +19055,7 @@ static bool secondary_core_run_use_last_input(struct rarch_state *p_rarch)
    retro_input_poll_t old_poll_function;
    retro_input_state_t old_input_function;
 
-   if (!secondary_core_ensure_exists(p_rarch))
+   if (!secondary_core_ensure_exists(p_rarch, p_rarch->configuration_settings))
    {
       secondary_core_destroy(p_rarch);
       return false;
@@ -33600,7 +33607,7 @@ static bool runahead_load_state_secondary(struct rarch_state *p_rarch)
 
    p_rarch->request_fast_savestate            = true;
    okay                                       = secondary_core_deserialize(
-         p_rarch,
+         p_rarch, p_rarch->configuration_settings,
          serialize_info->data_const, (int)serialize_info->size);
    p_rarch->request_fast_savestate            = false;
 
@@ -33725,7 +33732,7 @@ static void do_runahead(
    else
    {
 #if HAVE_DYNAMIC
-      if (!secondary_core_ensure_exists(p_rarch))
+      if (!secondary_core_ensure_exists(p_rarch, p_rarch->configuration_settings))
       {
          secondary_core_destroy(p_rarch);
          p_rarch->runahead_secondary_core_available = false;
@@ -33784,6 +33791,7 @@ force_input_dirty:
 
 static retro_time_t rarch_core_runtime_tick(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       retro_time_t current_time)
 {
    retro_time_t frame_time              =
@@ -33794,7 +33802,6 @@ static retro_time_t rarch_core_runtime_tick(
    /* Account for slow motion */
    if (runloop_slowmotion)
    {
-      settings_t *settings              = p_rarch->configuration_settings;
       float slowmotion_ratio            = settings->floats.slowmotion_ratio;
       return (retro_time_t)((double)frame_time * slowmotion_ratio);
    }
@@ -36731,6 +36738,7 @@ static bool input_driver_toggle_button_combo(
 /* Display the libretro core's framebuffer onscreen. */
 static bool menu_display_libretro(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       bool libretro_running,
       retro_time_t current_time)
 {
@@ -36749,7 +36757,7 @@ static bool menu_display_libretro(
 
       core_run();
       p_rarch->libretro_core_runtime_usec        +=
-         rarch_core_runtime_tick(p_rarch, current_time);
+         rarch_core_runtime_tick(p_rarch, settings, current_time);
       p_rarch->input_driver_block_libretro_input  = false;
 
       return false;
@@ -36769,22 +36777,6 @@ static bool menu_display_libretro(
    return true;
 }
 #endif
-
-static void update_savestate_slot(int state_slot)
-{
-   char msg[128];
-
-   msg[0] = '\0';
-
-   snprintf(msg, sizeof(msg), "%s: %d",
-         msg_hash_to_str(MSG_STATE_SLOT),
-         state_slot);
-
-   runloop_msg_queue_push(msg, 2, 180, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   RARCH_LOG("%s\n", msg);
-}
 
 static enum runloop_state runloop_check_state(
       struct rarch_state *p_rarch,
@@ -37422,7 +37414,7 @@ static enum runloop_state runloop_check_state(
             }
 
             if (p_rarch->menu_driver_alive && !p_rarch->runloop_idle)
-               if (menu_display_libretro(p_rarch,
+               if (menu_display_libretro(p_rarch, settings,
                         libretro_running, current_time))
                   video_driver_cached_frame();
 
@@ -37739,11 +37731,18 @@ static enum runloop_state runloop_check_state(
        * for this frame. */
       if (check2)
       {
+         char msg[128];
          int cur_state_slot                = state_slot;
          if (check1)
             configuration_set_int(settings, settings->ints.state_slot,
                   cur_state_slot + addition);
-         update_savestate_slot(settings->ints.state_slot);
+         msg[0] = '\0';
+         snprintf(msg, sizeof(msg), "%s: %d",
+               msg_hash_to_str(MSG_STATE_SLOT),
+               settings->ints.state_slot);
+         runloop_msg_queue_push(msg, 2, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_LOG("%s\n", msg);
       }
 
       old_should_slot_increase = should_slot_increase;
@@ -38166,7 +38165,7 @@ int runloop_iterate(void)
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
    p_rarch->libretro_core_runtime_usec += rarch_core_runtime_tick(
-         p_rarch, current_time);
+         p_rarch, settings, current_time);
 
 #ifdef HAVE_CHEEVOS
    if (settings->bools.cheevos_enable)
