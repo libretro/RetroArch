@@ -1141,6 +1141,8 @@ typedef struct video_frame_info
    unsigned custom_vp_full_width;
    unsigned custom_vp_full_height;
    unsigned black_frame_insertion;
+   unsigned fps_update_interval;
+   unsigned memory_update_interval;
 
    float menu_wallpaper_opacity;
    float menu_framebuffer_opacity;

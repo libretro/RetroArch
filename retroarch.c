@@ -31085,7 +31085,6 @@ static void video_driver_frame(const void *data, unsigned width,
       video_driver_pix_fmt      = p_rarch->video_driver_pix_fmt;
    bool runloop_idle            = p_rarch->runloop_idle;
    bool video_driver_active     = p_rarch->video_driver_active;
-   settings_t *settings         = p_rarch->configuration_settings;
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active          = p_rarch->widgets_active;
 #endif
@@ -31125,9 +31124,9 @@ static void video_driver_frame(const void *data, unsigned width,
    if (p_rarch->video_driver_frame_count)
    {
       unsigned fps_update_interval                 =
-         settings->uints.fps_update_interval;
+         video_info.fps_update_interval;
       unsigned memory_update_interval              =
-         settings->uints.memory_update_interval;
+         video_info.memory_update_interval;
       size_t buf_pos                               = 1;
       /* set this to 1 to avoid an offset issue */
       unsigned write_index                         =
@@ -31647,6 +31646,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->libretro_running            = false;
    video_info->msg_bgcolor_enable          =
       settings->bools.video_msg_bgcolor_enable;
+
+   video_info->fps_update_interval         = settings->uints.fps_update_interval;
+   video_info->memory_update_interval      = settings->uints.memory_update_interval;
 
 #ifdef HAVE_MENU
    video_info->menu_is_alive               = p_rarch->menu_driver_alive;
