@@ -25579,8 +25579,9 @@ void input_keyboard_event(bool down, unsigned code,
          {
             char c    = (char) character;
             *say_char = c;
+            say_char[1] = '\0';
 
-            if (character == 127)
+            if (character == 127 || character == 8)
                accessibility_speak_priority(p_rarch, settings,
                      "backspace", 10);
             else
