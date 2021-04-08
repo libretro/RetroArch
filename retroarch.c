@@ -9538,20 +9538,19 @@ static void dir_free_shader(struct rarch_state *p_rarch,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool dir_init_shader_internal(
       struct rarch_state *p_rarch,
+      settings_t *settings,
       const char *shader_dir,
       const char *shader_file_name,
       bool show_hidden_files)
 {
+   size_t i;
    struct rarch_dir_shader_list *dir_list = (struct rarch_dir_shader_list*)
          &p_rarch->dir_shader_list;
    struct string_list *new_list           = dir_list_new_special(
          shader_dir, DIR_LIST_SHADERS, NULL, show_hidden_files);
-   settings_t *settings                   = p_rarch->configuration_settings;
    bool shader_remember_last_dir          = settings->bools.video_shader_remember_last_dir;
    bool search_file_name                  = shader_remember_last_dir &&
          !string_is_empty(shader_file_name);
-   bool file_name_found                   = false;
-   size_t i;
 
    if (!new_list)
       return false;
@@ -9570,29 +9569,30 @@ static bool dir_init_shader_internal(
    dir_list->shader_loaded            = false;
    dir_list->remember_last_preset_dir = shader_remember_last_dir;
 
-   for (i = 0; i < new_list->size; i++)
+   if (search_file_name)
    {
-      const char *file_path = new_list->elems[i].data;
-
-      if (string_is_empty(file_path))
-         continue;
-
-      RARCH_LOG("[Shaders]: %s \"%s\"\n",
-            msg_hash_to_str(MSG_FOUND_SHADER),
-            file_path);
-
-      /* If a shader file name has been provided,
-       * search the list for a match and set 'selection'
-       * index if found */
-      if (search_file_name && !file_name_found)
+      for (i = 0; i < new_list->size; i++)
       {
-         const char *file_name = path_basename(file_path);
+         const char *file_name = NULL;
+         const char *file_path = new_list->elems[i].data;
+
+         if (string_is_empty(file_path))
+            continue;
+
+         /* If a shader file name has been provided,
+          * search the list for a match and set 'selection'
+          * index if found */
+         file_name = path_basename(file_path);
 
          if (!string_is_empty(file_name) &&
-             string_is_equal(file_name, shader_file_name))
+               string_is_equal(file_name, shader_file_name))
          {
+            RARCH_LOG("[Shaders]: %s \"%s\"\n",
+                  msg_hash_to_str(MSG_FOUND_SHADER),
+                  file_path);
+
             dir_list->selection = i;
-            file_name_found     = true;
+            break;
          }
       }
    }
@@ -9600,9 +9600,10 @@ static bool dir_init_shader_internal(
    return true;
 }
 
-static void dir_init_shader(struct rarch_state *p_rarch)
+static void dir_init_shader(
+      struct rarch_state *p_rarch,
+      settings_t *settings)
 {
-   settings_t *settings                           = p_rarch->configuration_settings;
    bool show_hidden_files                         = settings->bools.show_hidden_files;
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
    const char *directory_video_shader             = settings->paths.directory_video_shader;
@@ -9610,7 +9611,8 @@ static void dir_init_shader(struct rarch_state *p_rarch)
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
 #if defined(HAVE_MENU)
-   enum rarch_shader_type last_shader_preset_type = menu_driver_get_last_shader_preset_type();
+   menu_handle_t *menu                            = p_rarch->menu_driver_data;
+   enum rarch_shader_type last_shader_preset_type = menu ? menu->last_shader_selection.preset_type : RARCH_SHADER_NONE;
    menu_driver_get_last_shader_preset_path(
          &last_shader_preset_dir, &last_shader_preset_file_name);
 #else
@@ -9624,22 +9626,28 @@ static void dir_init_shader(struct rarch_state *p_rarch)
    if (shader_remember_last_dir &&
        (last_shader_preset_type != RARCH_SHADER_NONE) &&
        !string_is_empty(last_shader_preset_dir) &&
-       dir_init_shader_internal(p_rarch,
-            last_shader_preset_dir,
-            last_shader_preset_file_name,
-            show_hidden_files))
+       dir_init_shader_internal(
+          p_rarch,
+          settings,
+          last_shader_preset_dir,
+          last_shader_preset_file_name,
+          show_hidden_files))
       return;
 
    /* Try video shaders directory */
    if (!string_is_empty(directory_video_shader) &&
        dir_init_shader_internal(
-            p_rarch, directory_video_shader, NULL, show_hidden_files))
+            p_rarch,
+            settings,
+            directory_video_shader, NULL, show_hidden_files))
       return;
 
    /* Try config directory */
    if (!string_is_empty(directory_menu_config) &&
        dir_init_shader_internal(
-            p_rarch, directory_menu_config, NULL, show_hidden_files))
+            p_rarch,
+            settings,
+            directory_menu_config, NULL, show_hidden_files))
       return;
 
    /* Try 'top level' directory containing main
@@ -9651,7 +9659,9 @@ static void dir_init_shader(struct rarch_state *p_rarch)
 
       if (!string_is_empty(rarch_config_directory))
          dir_init_shader_internal(
-               p_rarch, rarch_config_directory, NULL, show_hidden_files);
+               p_rarch,
+               settings,
+               rarch_config_directory, NULL, show_hidden_files);
 
       free(rarch_config_directory);
    }
@@ -9680,7 +9690,8 @@ static void dir_check_shader(struct rarch_state *p_rarch,
    const char *set_shader_path                    = NULL;
    bool dir_list_initialised                      = false;
 #if defined(HAVE_MENU)
-   enum rarch_shader_type last_shader_preset_type = menu_driver_get_last_shader_preset_type();
+   menu_handle_t *menu                            = p_rarch->menu_driver_data;
+   enum rarch_shader_type last_shader_preset_type = menu ? menu->last_shader_selection.preset_type : RARCH_SHADER_NONE;
    menu_driver_get_last_shader_preset_path(
          &last_shader_preset_dir, &last_shader_preset_file_name);
 #else
@@ -9695,7 +9706,7 @@ static void dir_check_shader(struct rarch_state *p_rarch,
         (last_shader_preset_type != RARCH_SHADER_NONE) &&
         !string_is_equal(dir_list->directory, last_shader_preset_dir)))
    {
-      dir_init_shader(p_rarch);
+      dir_init_shader(p_rarch, settings);
       dir_list_initialised = true;
    }
 
