@@ -9601,7 +9601,8 @@ static bool dir_init_shader_internal(
 
 static void dir_init_shader(
       struct rarch_state *p_rarch,
-      settings_t *settings)
+      settings_t *settings,
+      struct rarch_dir_shader_list *dir_list)
 {
    bool show_hidden_files                         = settings->bools.show_hidden_files;
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
@@ -9617,8 +9618,6 @@ static void dir_init_shader(
 #else
    enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
 #endif
-   struct rarch_dir_shader_list *dir_list         = (struct rarch_dir_shader_list*)
-      &p_rarch->dir_shader_list;
 
    /* Always free existing shader list */
    dir_free_shader(p_rarch, settings);
@@ -9712,7 +9711,7 @@ static void dir_check_shader(
         (last_shader_preset_type != RARCH_SHADER_NONE) &&
         !string_is_equal(dir_list->directory, last_shader_preset_dir)))
    {
-      dir_init_shader(p_rarch, settings);
+      dir_init_shader(p_rarch, settings, dir_list);
       dir_list_initialised = true;
    }
 
