@@ -70,14 +70,14 @@ const uint16_t netplay_key_ntoh_mapping[] = {
 };
 
 /* TODO/FIXME - static global variables */
-static uint16_t mapping[RETROK_LAST];
+static uint16_t netplay_mapping[RETROK_LAST];
 
 /* The mapping of keys from libretro (host) to netplay (network) */
 uint32_t netplay_key_hton(unsigned key)
 {
    if (key >= RETROK_LAST)
       return NETPLAY_KEY_UNKNOWN;
-   return mapping[key];
+   return netplay_mapping[key];
 }
 
 /* Because the hton keymapping has to be generated, call this before using
@@ -90,7 +90,7 @@ void netplay_key_hton_init(void)
    {
       uint16_t i;
       for (i = 0; i < NETPLAY_KEY_LAST; i++)
-         mapping[NETPLAY_KEY_NTOH(i)] = i;
+         netplay_mapping[NETPLAY_KEY_NTOH(i)] = i;
       mapping_defined = true;
    }
 }
@@ -100,7 +100,7 @@ static void clear_input(netplay_input_state_t istate)
    while (istate)
    {
       istate->used = false;
-      istate = istate->next;
+      istate       = istate->next;
    }
 }
 
