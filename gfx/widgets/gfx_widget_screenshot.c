@@ -52,6 +52,7 @@ typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
 
 static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    0,             /* texture */
+   NULL,          /* p_anim */
    0,             /* texture_width */
    0,             /* texture_height */
    0,             /* height */
