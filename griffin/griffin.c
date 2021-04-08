@@ -1293,7 +1293,6 @@ NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay_handshake.c"
-#include "../network/netplay/netplay_init.c"
 #include "../network/netplay/netplay_io.c"
 #include "../network/netplay/netplay_discovery.c"
 #include "../network/netplay/netplay_room_parse.c"

@@ -666,13 +666,6 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
    uint32_t frame);
 
 /**
- * netplay_delta_frame_crc
- *
- * Get the CRC for the serialization of this frame.
- */
-uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta);
-
-/**
  * netplay_delta_frame_free
  *
  * Free a delta frame's dependencies

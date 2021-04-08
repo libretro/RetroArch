@@ -2080,7 +2080,6 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
    OBJ += network/netplay/netplay_handshake.o \
-			 network/netplay/netplay_init.o \
 			 network/netplay/netplay_io.o \
 			 network/netplay/netplay_discovery.o \
 			 network/netplay/netplay_room_parse.o
