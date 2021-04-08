@@ -128,15 +128,11 @@ static void netplay_log_connection(
    }
 
    if (str)
-   {
       snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM_NAME),
             nick, str);
-   }
    else
-   {
       snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
             nick);
-   }
 }
 #else
 static void netplay_log_connection(

@@ -56,48 +56,44 @@ static struct netplay_rooms *netplay_rooms_data;
 
 static bool netplay_json_boolean(void* ctx, bool value)
 {
-   struct netplay_json_context* pCtx = (struct netplay_json_context*)ctx;
+   struct netplay_json_context* p_ctx = (struct netplay_json_context*)ctx;
 
-   if (pCtx->state == STATE_FIELDS_OBJECT_START)
-      if (pCtx->cur_member_bool)
-         *pCtx->cur_member_bool = value;
+   if (p_ctx->state == STATE_FIELDS_OBJECT_START)
+      if (p_ctx->cur_member_bool)
+         *p_ctx->cur_member_bool = value;
 
    return true;
 }
 
-static bool netplay_json_string(void* ctx, const char* pValue, size_t length)
+static bool netplay_json_string(void* ctx, const char *p_value, size_t len)
 {
-   struct netplay_json_context* pCtx = (struct netplay_json_context*)ctx;
+   struct netplay_json_context* p_ctx = (struct netplay_json_context*)ctx;
 
-   if (pCtx->state == STATE_FIELDS_OBJECT_START)
+   if (p_ctx->state == STATE_FIELDS_OBJECT_START)
    {
-      if (pValue && length)
+      if (p_value && len)
       {
-         if (pCtx->cur_member_inthex)
-         {
-            /* CRC comes in as a string but it is stored
-             * as an unsigned casted to int. */
-            *pCtx->cur_member_inthex = (int)strtoul(pValue, NULL, 16);
-         }
-         if (pCtx->cur_member_string)
-         {
-            strlcpy(pCtx->cur_member_string, pValue, pCtx->cur_member_size);
-         }
+         /* CRC comes in as a string but it is stored
+          * as an unsigned casted to int. */
+         if (p_ctx->cur_member_inthex)
+            *p_ctx->cur_member_inthex = (int)strtoul(p_value, NULL, 16);
+         if (p_ctx->cur_member_string)
+            strlcpy(p_ctx->cur_member_string, p_value, p_ctx->cur_member_size);
       }
    }
 
    return true;
 }
 
-static bool netplay_json_number(void* ctx, const char* pValue, size_t length)
+static bool netplay_json_number(void* ctx, const char *p_value, size_t len)
 {
-   struct netplay_json_context* pCtx = (struct netplay_json_context*)ctx;
+   struct netplay_json_context *p_ctx = (struct netplay_json_context*)ctx;
 
-   if (pCtx->state == STATE_FIELDS_OBJECT_START)
+   if (p_ctx->state == STATE_FIELDS_OBJECT_START)
    {
-      if (pValue && length)
-         if (pCtx->cur_member_int)
-            *pCtx->cur_member_int = (int)strtol(pValue, NULL, 10);
+      if (p_value && len)
+         if (p_ctx->cur_member_int)
+            *p_ctx->cur_member_int = (int)strtol(p_value, NULL, 10);
    }
 
    return true;
@@ -105,11 +101,11 @@ static bool netplay_json_number(void* ctx, const char* pValue, size_t length)
 
 static bool netplay_json_start_object(void* ctx)
 {
-   struct netplay_json_context* pCtx = (struct netplay_json_context*)ctx;
+   struct netplay_json_context *p_ctx = (struct netplay_json_context*)ctx;
 
-   if (pCtx->state == STATE_FIELDS_START)
+   if (p_ctx->state == STATE_FIELDS_START)
    {
-      pCtx->state = STATE_FIELDS_OBJECT_START;
+      p_ctx->state = STATE_FIELDS_OBJECT_START;
 
       if (!netplay_rooms_data->head)
       {
@@ -122,119 +118,120 @@ static bool netplay_json_start_object(void* ctx)
          netplay_rooms_data->cur       = netplay_rooms_data->cur->next;
       }
    }
-   else if (pCtx->state == STATE_ARRAY_START)
-      pCtx->state = STATE_OBJECT_START;
+   else if (p_ctx->state == STATE_ARRAY_START)
+      p_ctx->state = STATE_OBJECT_START;
 
    return true;
 }
 
 static bool netplay_json_end_object(void* ctx)
 {
-   struct netplay_json_context* pCtx = (struct netplay_json_context*)ctx;
+   struct netplay_json_context *p_ctx = (struct netplay_json_context*)ctx;
 
-   if (pCtx->state == STATE_FIELDS_OBJECT_START)
-      pCtx->state = STATE_ARRAY_START;
+   if (p_ctx->state == STATE_FIELDS_OBJECT_START)
+      p_ctx->state = STATE_ARRAY_START;
 
    return true;
 }
 
-static bool netplay_json_object_member(void* ctx, const char* pValue, size_t length)
+static bool netplay_json_object_member(void *ctx, const char *p_value,
+      size_t len)
 {
-   struct netplay_json_context* pCtx = (struct netplay_json_context*)ctx;
+   struct netplay_json_context* p_ctx = (struct netplay_json_context*)ctx;
 
-   if (!pValue || !length)
+   if (!p_value || !len)
       return true;
 
-   if (pCtx->state == STATE_OBJECT_START && !string_is_empty(pValue)
-         && string_is_equal(pValue, "fields"))
-      pCtx->state = STATE_FIELDS_START;
+   if (p_ctx->state == STATE_OBJECT_START && !string_is_empty(p_value)
+         && string_is_equal(p_value, "fields"))
+      p_ctx->state = STATE_FIELDS_START;
 
-   if (pCtx->state == STATE_FIELDS_OBJECT_START)
+   if (p_ctx->state == STATE_FIELDS_OBJECT_START)
    {
-      pCtx->cur_member_bool   = NULL;
-      pCtx->cur_member_int    = NULL;
-      pCtx->cur_member_inthex = NULL;
-      pCtx->cur_member_string = NULL;
+      p_ctx->cur_member_bool   = NULL;
+      p_ctx->cur_member_int    = NULL;
+      p_ctx->cur_member_inthex = NULL;
+      p_ctx->cur_member_string = NULL;
 
-      if (!string_is_empty(pValue))
+      if (!string_is_empty(p_value))
       {
-         if (string_is_equal(pValue, "username"))
+         if (string_is_equal(p_value, "username"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->nickname;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->nickname);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->nickname;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->nickname);
          }
-         else if (string_is_equal(pValue, "game_name"))
+         else if (string_is_equal(p_value, "game_name"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->gamename;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->gamename);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->gamename;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->gamename);
          }
-         else if (string_is_equal(pValue, "core_name"))
+         else if (string_is_equal(p_value, "core_name"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->corename;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->corename);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->corename;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->corename);
          }
-         else if (string_is_equal(pValue, "ip"))
+         else if (string_is_equal(p_value, "ip"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->address;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->address);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->address;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->address);
          }
-         else if (string_is_equal(pValue, "port"))
+         else if (string_is_equal(p_value, "port"))
          {
-            pCtx->cur_member_int    = &netplay_rooms_data->cur->port;
+            p_ctx->cur_member_int    = &netplay_rooms_data->cur->port;
          }
-         else if (string_is_equal(pValue, "game_crc"))
+         else if (string_is_equal(p_value, "game_crc"))
          {
-            pCtx->cur_member_inthex = &netplay_rooms_data->cur->gamecrc;
+            p_ctx->cur_member_inthex = &netplay_rooms_data->cur->gamecrc;
          }
-         else if (string_is_equal(pValue, "core_version"))
+         else if (string_is_equal(p_value, "core_version"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->coreversion;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->coreversion);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->coreversion;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->coreversion);
          }
-         else if (string_is_equal(pValue, "has_password"))
+         else if (string_is_equal(p_value, "has_password"))
          {
-            pCtx->cur_member_bool   = &netplay_rooms_data->cur->has_password;
+            p_ctx->cur_member_bool   = &netplay_rooms_data->cur->has_password;
          }
-         else if (string_is_equal(pValue, "has_spectate_password"))
+         else if (string_is_equal(p_value, "has_spectate_password"))
          {
-            pCtx->cur_member_bool   = &netplay_rooms_data->cur->has_spectate_password;
+            p_ctx->cur_member_bool   = &netplay_rooms_data->cur->has_spectate_password;
          }
-         else if (string_is_equal(pValue, "fixed"))
+         else if (string_is_equal(p_value, "fixed"))
          {
-            pCtx->cur_member_bool   = &netplay_rooms_data->cur->fixed;
+            p_ctx->cur_member_bool   = &netplay_rooms_data->cur->fixed;
          }
-         else if (string_is_equal(pValue, "mitm_ip"))
+         else if (string_is_equal(p_value, "mitm_ip"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->mitm_address;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->mitm_address);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->mitm_address;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->mitm_address);
          }
-         else if (string_is_equal(pValue, "mitm_port"))
+         else if (string_is_equal(p_value, "mitm_port"))
          {
-            pCtx->cur_member_int    = &netplay_rooms_data->cur->mitm_port;
+            p_ctx->cur_member_int    = &netplay_rooms_data->cur->mitm_port;
          }
-         else if (string_is_equal(pValue, "host_method"))
+         else if (string_is_equal(p_value, "host_method"))
          {
-            pCtx->cur_member_int    = &netplay_rooms_data->cur->host_method;
+            p_ctx->cur_member_int    = &netplay_rooms_data->cur->host_method;
          }
-         else if (string_is_equal(pValue, "retroarch_version"))
+         else if (string_is_equal(p_value, "retroarch_version"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->retroarch_version;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->retroarch_version);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->retroarch_version;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->retroarch_version);
          }
-         else if (string_is_equal(pValue, "country"))
+         else if (string_is_equal(p_value, "country"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->country;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->country);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->country;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->country);
          }
-         else if (string_is_equal(pValue, "frontend"))
+         else if (string_is_equal(p_value, "frontend"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->frontend;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->frontend);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->frontend;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->frontend);
          }
-         else if (string_is_equal(pValue, "subsystem_name"))
+         else if (string_is_equal(p_value, "subsystem_name"))
          {
-            pCtx->cur_member_string = netplay_rooms_data->cur->subsystem_name;
-            pCtx->cur_member_size   = sizeof(netplay_rooms_data->cur->subsystem_name);
+            p_ctx->cur_member_string = netplay_rooms_data->cur->subsystem_name;
+            p_ctx->cur_member_size   = sizeof(netplay_rooms_data->cur->subsystem_name);
          }
       }
    }
@@ -244,15 +241,16 @@ static bool netplay_json_object_member(void* ctx, const char* pValue, size_t len
 
 static bool netplay_json_start_array(void* ctx)
 {
-   struct netplay_json_context* pCtx = (struct netplay_json_context*)ctx;
+   struct netplay_json_context* p_ctx = (struct netplay_json_context*)ctx;
 
-   if (pCtx->state == STATE_START)
-      pCtx->state = STATE_ARRAY_START;
+   if (p_ctx->state == STATE_START)
+      p_ctx->state = STATE_ARRAY_START;
 
    return true;
 }
 
-static void netplay_rooms_error(void *context, int line, int col, const char* error)
+static void netplay_rooms_error(void *context,
+      int line, int col, const char* error)
 {
    RARCH_ERR("[netplay] Error: Invalid JSON at line %d, column %d - %s.\n",
          line, col, error);
