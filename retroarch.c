@@ -5692,7 +5692,7 @@ clear:
 
 static bool menu_shader_manager_save_preset_internal(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      bool save_reference,
       const struct video_shader *shader, 
       const char *basename,
       const char *dir_video_shader,
@@ -5706,8 +5706,6 @@ static bool menu_shader_manager_save_preset_internal(
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
    size_t i                       = 0;
-   bool save_reference            = 
-      settings->bools.video_shader_preset_save_reference_enable;
 
    fullname[0] = buffer[0]        = '\0';
 
@@ -5894,7 +5892,8 @@ static bool menu_shader_manager_operate_auto_preset(
    {
       case AUTO_SHADER_OP_SAVE:
          return menu_shader_manager_save_preset_internal(
-               p_rarch, settings,
+               p_rarch,
+               settings->bools.video_shader_preset_save_reference_enable,
                shader, file,
                dir_video_shader,
                apply,
@@ -6051,7 +6050,8 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    preset_dirs[2] = config_directory;
 
    return menu_shader_manager_save_preset_internal(
-         p_rarch, settings,
+         p_rarch,
+         settings->bools.video_shader_preset_save_reference_enable,
          shader, basename,
          dir_video_shader,
          apply,
@@ -7665,14 +7665,15 @@ static void netplay_disconnect(
  **/
 static bool netplay_pre_frame(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      bool netplay_public_announce,
+      bool netplay_use_mitm_server,
       netplay_t *netplay)
 {
    bool sync_stalled     = false;
 
    retro_assert(netplay);
 
-   if (settings->bools.netplay_public_announce)
+   if (netplay_public_announce)
    {
       p_rarch->reannounce++;
       if (
@@ -7693,7 +7694,7 @@ static bool netplay_pre_frame(
    if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
       netplay_try_init_serialization(netplay);
 
-   if (netplay->is_server && !settings->bools.netplay_use_mitm_server)
+   if (netplay->is_server && !netplay_use_mitm_server)
    {
       /* Advertise our server */
       netplay_lan_ad_server(netplay);
@@ -8191,7 +8192,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_post_frame(p_rarch, netplay);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         ret = netplay_pre_frame(p_rarch, p_rarch->configuration_settings,
+         ret = netplay_pre_frame(p_rarch,
+               p_rarch->configuration_settings->bools.netplay_public_announce,
+               p_rarch->configuration_settings->bools.netplay_use_mitm_server,
                netplay);
          goto done;
       case RARCH_NETPLAY_CTL_GAME_WATCH:
@@ -9467,12 +9470,9 @@ static void path_deinit_subsystem(struct rarch_state *p_rarch)
 }
 
 static void dir_free_shader(struct rarch_state *p_rarch,
-      settings_t *settings)
+      struct rarch_dir_shader_list *dir_list,
+      bool shader_remember_last_dir)
 {
-   struct rarch_dir_shader_list *dir_list =
-      (struct rarch_dir_shader_list*)&p_rarch->dir_shader_list;
-   bool shader_remember_last_dir          = settings->bools.video_shader_remember_last_dir;
-
    if (dir_list->shader_list)
    {
       dir_list_free(dir_list->shader_list);
@@ -9575,7 +9575,8 @@ static void dir_init_shader(
 #endif
 
    /* Always free existing shader list */
-   dir_free_shader(p_rarch, settings);
+   dir_free_shader(p_rarch, dir_list,
+         settings->bools.video_shader_remember_last_dir);
 
    /* Try directory of last selected shader preset */
    if (shader_remember_last_dir &&
@@ -29687,7 +29688,9 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
-   dir_free_shader(p_rarch, p_rarch->configuration_settings);
+   dir_free_shader(p_rarch,
+         (struct rarch_dir_shader_list*)&p_rarch->dir_shader_list,
+         p_rarch->configuration_settings->bools.video_shader_remember_last_dir);
 
 #ifdef HAVE_THREADS
    if (is_threaded)
@@ -30418,13 +30421,12 @@ void video_driver_cached_frame(void)
 
 static void video_driver_monitor_adjust_system_rates(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      float video_refresh_rate,
+      bool vrr_runloop_enable,
+      float audio_max_timing_skew,
       const struct retro_system_timing *info
       )
 {
-   float video_refresh_rate               = settings->floats.video_refresh_rate;
-   bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
-   float audio_max_timing_skew            = settings->floats.audio_max_timing_skew;
    float timing_skew_hz                   = video_refresh_rate;
 
    if (!info || info->fps <= 0.0)
@@ -32571,7 +32573,10 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch,
    
    p_rarch->runloop_force_nonblock = false;
 
-   video_driver_monitor_adjust_system_rates(p_rarch, settings,
+   video_driver_monitor_adjust_system_rates(p_rarch,
+         settings->floats.video_refresh_rate,
+         settings->bools.vrr_runloop_enable,
+         settings->floats.audio_max_timing_skew,
          (const struct retro_system_timing*)
          &p_rarch->video_driver_av_info.timing);
 
