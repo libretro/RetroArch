@@ -6875,7 +6875,8 @@ static bool get_self_input_state(
                for (key = 1; key < NETPLAY_KEY_LAST; key++)
                {
                   state[word] |=
-                        cb(local_device, RETRO_DEVICE_KEYBOARD, 0, netplay_key_ntoh(key)) ?
+                        cb(local_device, RETRO_DEVICE_KEYBOARD, 0,
+                              NETPLAY_KEY_NTOH(key)) ?
                               (UINT32_C(1) << bit) : 0;
                   bit++;
                   if (bit >= 32)
@@ -7886,28 +7887,26 @@ void netplay_load_savestate(netplay_t *netplay,
    /* Record it in our own buffer */
    if (save || !serial_info)
    {
-      if (netplay_delta_frame_ready(netplay,
+      /* TODO/FIXME: This is a critical failure! */
+      if (!netplay_delta_frame_ready(netplay,
                &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
-      {
-         if (!serial_info)
-         {
-            tmp_serial_info.size = netplay->state_size;
-            tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
-            if (!core_serialize(&tmp_serial_info))
-               return;
-            tmp_serial_info.data_const = tmp_serial_info.data;
-            serial_info = &tmp_serial_info;
-         }
-         else
-         {
-            if (serial_info->size <= netplay->state_size)
-               memcpy(netplay->buffer[netplay->run_ptr].state,
-                     serial_info->data_const, serial_info->size);
-         }
-      }
-      /* FIXME: This is a critical failure! */
-      else
          return;
+
+      if (!serial_info)
+      {
+         tmp_serial_info.size = netplay->state_size;
+         tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
+         if (!core_serialize(&tmp_serial_info))
+            return;
+         tmp_serial_info.data_const = tmp_serial_info.data;
+         serial_info = &tmp_serial_info;
+      }
+      else
+      {
+         if (serial_info->size <= netplay->state_size)
+            memcpy(netplay->buffer[netplay->run_ptr].state,
+                  serial_info->data_const, serial_info->size);
+      }
    }
 
    /* Don't send it if we're expected to be desynced */
@@ -7957,50 +7956,6 @@ static void netplay_core_reset(netplay_t *netplay)
                sizeof(cmd)))
          netplay_hangup(netplay, connection);
    }
-}
-
-/**
- * netplay_settings_share_mode
- *
- * Get the preferred share mode
- */
-uint8_t netplay_settings_share_mode(
-      unsigned share_digital, unsigned share_analog)
-{
-   if (share_digital || share_analog)
-   {
-      uint8_t share_mode     = 0;
-
-      switch (share_digital)
-      {
-         case RARCH_NETPLAY_SHARE_DIGITAL_OR:
-            share_mode |= NETPLAY_SHARE_DIGITAL_OR;
-            break;
-         case RARCH_NETPLAY_SHARE_DIGITAL_XOR:
-            share_mode |= NETPLAY_SHARE_DIGITAL_XOR;
-            break;
-         case RARCH_NETPLAY_SHARE_DIGITAL_VOTE:
-            share_mode |= NETPLAY_SHARE_DIGITAL_VOTE;
-            break;
-         default:
-            share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
-      }
-
-      switch (share_analog)
-      {
-         case RARCH_NETPLAY_SHARE_ANALOG_MAX:
-            share_mode |= NETPLAY_SHARE_ANALOG_MAX;
-            break;
-         case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
-            share_mode |= NETPLAY_SHARE_ANALOG_AVERAGE;
-            break;
-         default:
-            share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
-      }
-
-      return share_mode;
-   }
-   return 0;
 }
 
 /**

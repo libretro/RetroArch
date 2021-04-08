@@ -90,7 +90,7 @@ void netplay_key_hton_init(void)
    {
       uint16_t i;
       for (i = 0; i < NETPLAY_KEY_LAST; i++)
-         mapping[netplay_key_ntoh(i)] = i;
+         mapping[NETPLAY_KEY_NTOH(i)] = i;
       mapping_defined = true;
    }
 }
@@ -176,7 +176,7 @@ static void free_input_state(netplay_input_state_t *list)
  *
  * Free a delta frame's dependencies
  */
-void netplay_delta_frame_free(struct delta_frame *delta)
+static void netplay_delta_frame_free(struct delta_frame *delta)
 {
    uint32_t i;
 
@@ -318,7 +318,7 @@ static size_t buf_remaining(struct socket_buffer *sbuf)
  *
  * Initialize a new socket buffer.
  */
-bool netplay_init_socket_buffer(
+static bool netplay_init_socket_buffer(
       struct socket_buffer *sbuf, size_t size)
 {
    sbuf->data = (unsigned char*)malloc(size);
@@ -334,7 +334,7 @@ bool netplay_init_socket_buffer(
  *
  * Resize the given socket_buffer's buffer to the requested size.
  */
-bool netplay_resize_socket_buffer(
+static bool netplay_resize_socket_buffer(
       struct socket_buffer *sbuf, size_t newsize)
 {
    unsigned char *newdata = (unsigned char*)malloc(newsize);
@@ -379,7 +379,7 @@ bool netplay_resize_socket_buffer(
  *
  * Free a socket buffer.
  */
-void netplay_deinit_socket_buffer(struct socket_buffer *sbuf)
+static void netplay_deinit_socket_buffer(struct socket_buffer *sbuf)
 {
    if (sbuf->data)
       free(sbuf->data);
@@ -640,6 +640,63 @@ void netplay_recv_flush(struct socket_buffer *sbuf)
 {
    sbuf->start = sbuf->read;
 }
+
+/**
+ * netplay_cmd_crc
+ *
+ * Send a CRC command to all active clients.
+ */
+static bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta)
+{
+   size_t i;
+   uint32_t payload[2];
+   bool success = true;
+
+   payload[0]   = htonl(delta->frame);
+   payload[1]   = htonl(delta->crc);
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      if (netplay->connections[i].active &&
+            netplay->connections[i].mode >= NETPLAY_CONNECTION_CONNECTED)
+         success = netplay_send_raw_cmd(netplay, &netplay->connections[i],
+            NETPLAY_CMD_CRC, payload, sizeof(payload)) && success;
+   }
+   return success;
+}
+
+/**
+ * netplay_cmd_request_savestate
+ *
+ * Send a savestate request command.
+ */
+static bool netplay_cmd_request_savestate(netplay_t *netplay)
+{
+   if (netplay->connections_size == 0 ||
+       !netplay->connections[0].active ||
+       netplay->connections[0].mode < NETPLAY_CONNECTION_CONNECTED)
+      return false;
+   if (netplay->savestate_request_outstanding)
+      return true;
+   netplay->savestate_request_outstanding = true;
+   return netplay_send_raw_cmd(netplay, &netplay->connections[0],
+      NETPLAY_CMD_REQUEST_SAVESTATE, NULL, 0);
+}
+
+/**
+ * netplay_cmd_stall
+ *
+ * Send a stall command.
+ */
+static bool netplay_cmd_stall(netplay_t *netplay,
+   struct netplay_connection *connection,
+   uint32_t frames)
+{
+   frames = htonl(frames);
+   return netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_STALL, &frames, sizeof(frames));
+}
+
+
 
 static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
       struct netplay_connection *connection, uint32_t cmd, uint32_t cmd_size,
@@ -2072,43 +2129,47 @@ static bool netplay_cmd_nak(netplay_t *netplay,
 }
 
 /**
- * netplay_cmd_crc
+ * netplay_settings_share_mode
  *
- * Send a CRC command to all active clients.
+ * Get the preferred share mode
  */
-bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta)
+static uint8_t netplay_settings_share_mode(
+      unsigned share_digital, unsigned share_analog)
 {
-   uint32_t payload[2];
-   bool success = true;
-   size_t i;
-   payload[0] = htonl(delta->frame);
-   payload[1] = htonl(delta->crc);
-   for (i = 0; i < netplay->connections_size; i++)
+   if (share_digital || share_analog)
    {
-      if (netplay->connections[i].active &&
-            netplay->connections[i].mode >= NETPLAY_CONNECTION_CONNECTED)
-         success = netplay_send_raw_cmd(netplay, &netplay->connections[i],
-            NETPLAY_CMD_CRC, payload, sizeof(payload)) && success;
-   }
-   return success;
-}
+      uint8_t share_mode     = 0;
 
-/**
- * netplay_cmd_request_savestate
- *
- * Send a savestate request command.
- */
-bool netplay_cmd_request_savestate(netplay_t *netplay)
-{
-   if (netplay->connections_size == 0 ||
-       !netplay->connections[0].active ||
-       netplay->connections[0].mode < NETPLAY_CONNECTION_CONNECTED)
-      return false;
-   if (netplay->savestate_request_outstanding)
-      return true;
-   netplay->savestate_request_outstanding = true;
-   return netplay_send_raw_cmd(netplay, &netplay->connections[0],
-      NETPLAY_CMD_REQUEST_SAVESTATE, NULL, 0);
+      switch (share_digital)
+      {
+         case RARCH_NETPLAY_SHARE_DIGITAL_OR:
+            share_mode |= NETPLAY_SHARE_DIGITAL_OR;
+            break;
+         case RARCH_NETPLAY_SHARE_DIGITAL_XOR:
+            share_mode |= NETPLAY_SHARE_DIGITAL_XOR;
+            break;
+         case RARCH_NETPLAY_SHARE_DIGITAL_VOTE:
+            share_mode |= NETPLAY_SHARE_DIGITAL_VOTE;
+            break;
+         default:
+            share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
+      }
+
+      switch (share_analog)
+      {
+         case RARCH_NETPLAY_SHARE_ANALOG_MAX:
+            share_mode |= NETPLAY_SHARE_ANALOG_MAX;
+            break;
+         case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
+            share_mode |= NETPLAY_SHARE_ANALOG_AVERAGE;
+            break;
+         default:
+            share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
+      }
+
+      return share_mode;
+   }
+   return 0;
 }
 
 /**
@@ -2174,19 +2235,6 @@ bool netplay_cmd_mode(netplay_t *netplay,
 
    return netplay_send_raw_cmd(netplay, connection, cmd, payload,
          payload ? sizeof(uint32_t) : 0);
-}
-
-/**
- * netplay_cmd_stall
- *
- * Send a stall command.
- */
-bool netplay_cmd_stall(netplay_t *netplay,
-   struct netplay_connection *connection,
-   uint32_t frames)
-{
-   frames = htonl(frames);
-   return netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_STALL, &frames, sizeof(frames));
 }
 
 /**
