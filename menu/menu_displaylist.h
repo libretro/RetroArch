@@ -331,7 +331,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
 bool menu_displaylist_has_subsystems(void);
 
 #if defined(HAVE_LIBRETRODB)
-unsigned menu_displaylist_explore(file_list_t *list);
+unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings);
 #endif
 
 enum filebrowser_enums filebrowser_get_type(void);

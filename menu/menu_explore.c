@@ -399,7 +399,7 @@ static void explore_load_icons(explore_state_t *state)
    }
 }
 
-static explore_state_t *explore_build_list(void)
+static explore_state_t *explore_build_list(settings_t *settings)
 {
    unsigned i;
    char tmp[PATH_MAX_LENGTH];
@@ -415,7 +415,6 @@ static explore_state_t *explore_build_list(void)
    int *rdb_indices                               = NULL;
    explore_string_t **cat_maps[EXPLORE_CAT_COUNT] = {NULL};
    explore_string_t **split_buf                   = NULL;
-   settings_t *settings                           = config_get_ptr();
    const char *directory_playlist                 = settings->paths.directory_playlist;
    const char *directory_database                 = settings->paths.path_content_database;
    libretro_vfs_implementation_dir *dir           = NULL;
@@ -834,7 +833,8 @@ static int explore_action_ok_find(const char *path, const char *label, unsigned 
    return 0;
 }
 
-unsigned menu_displaylist_explore(file_list_t *list)
+unsigned menu_displaylist_explore(file_list_t *list,
+      settings_t *settings)
 {
    unsigned i, cat;
    char tmp[512];
@@ -844,7 +844,7 @@ unsigned menu_displaylist_explore(file_list_t *list)
 
    if (!explore_state)
    {
-      explore_state             = explore_build_list();
+      explore_state             = explore_build_list(settings);
       explore_state->top_depth  = (unsigned)menu_stack->size - 1;
       explore_load_icons(explore_state);
    }
@@ -1177,7 +1177,7 @@ SKIP_ENTRY:;
                pl_entry->path, sizeof(menu->deferred_path));
          info.list                     = list;
          menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, &info,
-               config_get_ptr());
+               settings);
          break;
       }
    }

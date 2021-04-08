@@ -5607,7 +5607,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_EXPLORE:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 #if defined(HAVE_LIBRETRODB)
-         count              = menu_displaylist_explore(list);
+         count              = menu_displaylist_explore(list, settings);
 #endif
          break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
