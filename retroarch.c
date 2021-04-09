@@ -1038,7 +1038,7 @@ static void menu_input_key_bind_poll_bind_state_internal(
 
 static void menu_input_key_bind_poll_bind_state(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      unsigned joy_idx,
       struct menu_bind_state *state,
       bool timed_out)
 {
@@ -1056,10 +1056,10 @@ static void menu_input_key_bind_poll_bind_state(
 
    memset(state->state, 0, sizeof(state->state));
 
-   /* poll mouse (on the relevant port) */
+   /* Poll mouse (on the relevant port) */
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
       state->state[port].mouse_buttons[b] =
-         input_mouse_button_raw(p_rarch, settings, port, b);
+         input_mouse_button_raw(p_rarch, current_input, joy_idx, port, b);
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -1360,7 +1360,7 @@ bool menu_input_key_bind_set_mode(
          NULL,
 #endif
          binds);
-   menu_input_key_bind_poll_bind_state(p_rarch, settings,
+   menu_input_key_bind_poll_bind_state(p_rarch, settings->uints.input_joypad_map[binds->port],
          binds, false);
 
    current_usec             = cpu_features_get_time_usec();
@@ -1472,7 +1472,8 @@ static bool menu_input_key_bind_iterate(
 
       p_rarch->keyboard_mapping_blocked    = false;
 
-      menu_input_key_bind_poll_bind_state(p_rarch, settings,
+      menu_input_key_bind_poll_bind_state(p_rarch,
+            settings->uints.input_joypad_map[new_binds.port],
             &new_binds, timed_out);
 
 #ifdef ANDROID
@@ -1873,7 +1874,9 @@ static int generic_menu_iterate(
 
 #ifdef HAVE_ACCESSIBILITY
          if (     (iterate_type != last_iterate_type)
-               && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+               && is_accessibility_enabled(
+                  settings->bools.accessibility_enable,
+                  p_rarch->accessibility_enabled))
             accessibility_speak_priority(p_rarch, settings,
                   menu->menu_state_msg, 10);
 #endif
@@ -1986,7 +1989,9 @@ static int generic_menu_iterate(
 
 #ifdef HAVE_ACCESSIBILITY
                if (  (iterate_type != last_iterate_type) &&
-                     is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+                     is_accessibility_enabled(
+                        settings->bools.accessibility_enable,
+                        p_rarch->accessibility_enabled))
                {
                   if (string_is_equal(menu->menu_state_msg,
                            msg_hash_to_str(
@@ -2150,7 +2155,9 @@ static int generic_menu_iterate(
    if ((last_iterate_type == ITERATE_TYPE_HELP 
             || last_iterate_type == ITERATE_TYPE_INFO) 
          && last_iterate_type != iterate_type 
-         && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+         && is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, settings,
             "Closed dialog.", 10);
 
@@ -2412,7 +2419,9 @@ int generic_menu_entry_action(
    const menu_ctx_driver_t 
       *menu_driver_ctx            = p_rarch->menu_driver_ctx;
    settings_t   *settings         = p_rarch->configuration_settings;
+   bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   size_t scroll_accel            = menu_st->scroll.acceleration;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
    file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
@@ -2425,9 +2434,7 @@ int generic_menu_entry_action(
       case MENU_ACTION_UP:
          if (selection_buf_size > 0)
          {
-            size_t scroll_accel    = menu_st->scroll.acceleration;
             unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
             if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
             {
                size_t idx             = 0;
@@ -2451,10 +2458,7 @@ int generic_menu_entry_action(
       case MENU_ACTION_DOWN:
          if (selection_buf_size > 0)
          {
-            size_t scroll_accel    = menu_st->scroll.acceleration;
             unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
-            bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
-
             if (!(menu_st->selection_ptr >= selection_buf_size - 1
                   && !wraparound_enable))
             {
@@ -2582,7 +2586,9 @@ int generic_menu_entry_action(
 
 #ifdef HAVE_ACCESSIBILITY
    if (     action != 0
-         && is_accessibility_enabled(settings, p_rarch->accessibility_enabled)
+         && is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled)
          && !menu_input_dialog_get_display_kb())
    {
       char current_label[255];
@@ -5064,13 +5070,13 @@ const char *menu_driver_get_last_start_file_name(void)
 
 void menu_driver_set_last_start_content(const char *start_content_path)
 {
+   char archive_path[PATH_MAX_LENGTH];
    struct rarch_state *p_rarch = &rarch_st;
    menu_handle_t *menu         = p_rarch->menu_driver_data;
    settings_t *settings        = p_rarch->configuration_settings;
    bool use_last               = settings->bools.use_last_start_directory;
    const char *archive_delim   = NULL;
    const char *file_name       = NULL;
-   char archive_path[PATH_MAX_LENGTH];
 
    if (!menu)
       return;
@@ -9493,7 +9499,7 @@ static void dir_free_shader(struct rarch_state *p_rarch,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool dir_init_shader_internal(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      bool shader_remember_last_dir,
       struct rarch_dir_shader_list *dir_list,
       const char *shader_dir,
       const char *shader_file_name,
@@ -9502,7 +9508,6 @@ static bool dir_init_shader_internal(
    size_t i;
    struct string_list *new_list           = dir_list_new_special(
          shader_dir, DIR_LIST_SHADERS, NULL, show_hidden_files);
-   bool shader_remember_last_dir          = settings->bools.video_shader_remember_last_dir;
    bool search_file_name                  = shader_remember_last_dir &&
          !string_is_empty(shader_file_name);
 
@@ -9563,6 +9568,7 @@ static void dir_init_shader(
    bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
    const char *directory_video_shader             = settings->paths.directory_video_shader;
    const char *directory_menu_config              = settings->paths.directory_menu_config;
+   bool video_shader_remember_last_dir            = settings->bools.video_shader_remember_last_dir;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
 #if defined(HAVE_MENU)
@@ -9576,7 +9582,7 @@ static void dir_init_shader(
 
    /* Always free existing shader list */
    dir_free_shader(p_rarch, dir_list,
-         settings->bools.video_shader_remember_last_dir);
+         video_shader_remember_last_dir);
 
    /* Try directory of last selected shader preset */
    if (shader_remember_last_dir &&
@@ -9584,7 +9590,7 @@ static void dir_init_shader(
        !string_is_empty(last_shader_preset_dir) &&
        dir_init_shader_internal(
           p_rarch,
-          settings,
+          video_shader_remember_last_dir,
           dir_list,
           last_shader_preset_dir,
           last_shader_preset_file_name,
@@ -9595,7 +9601,7 @@ static void dir_init_shader(
    if (!string_is_empty(directory_video_shader) &&
        dir_init_shader_internal(
             p_rarch,
-            settings,
+            video_shader_remember_last_dir,
             dir_list,
             directory_video_shader, NULL, show_hidden_files))
       return;
@@ -9604,7 +9610,7 @@ static void dir_init_shader(
    if (!string_is_empty(directory_menu_config) &&
        dir_init_shader_internal(
             p_rarch,
-            settings,
+            video_shader_remember_last_dir,
             dir_list,
             directory_menu_config, NULL, show_hidden_files))
       return;
@@ -9619,7 +9625,7 @@ static void dir_init_shader(
       if (!string_is_empty(rarch_config_directory))
          dir_init_shader_internal(
                p_rarch,
-               settings,
+               video_shader_remember_last_dir,
                dir_list,
                rarch_config_directory, NULL, show_hidden_files);
 
@@ -9645,7 +9651,7 @@ static void dir_check_shader(
       bool pressed_next,
       bool pressed_prev)
 {
-   bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
+   bool video_shader_remember_last_dir            = settings->bools.video_shader_remember_last_dir;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
    const char *set_shader_path                    = NULL;
@@ -9662,8 +9668,8 @@ static void dir_check_shader(
    /* Check whether shader list needs to be
     * (re)initialised */
    if (!dir_list->shader_list ||
-       (dir_list->remember_last_preset_dir != shader_remember_last_dir) ||
-       (shader_remember_last_dir &&
+       (dir_list->remember_last_preset_dir != video_shader_remember_last_dir) ||
+       (video_shader_remember_last_dir &&
         (last_shader_preset_type != RARCH_SHADER_NONE) &&
         !string_is_equal(dir_list->directory, last_shader_preset_dir)))
    {
@@ -9682,7 +9688,7 @@ static void dir_check_shader(
     *   twice. This is wasteful, but we cannot safely cache
     *   the first result since dir_init_shader() is called
     *   in-between the two invocations... */
-   if (shader_remember_last_dir &&
+   if (video_shader_remember_last_dir &&
        (last_shader_preset_type != RARCH_SHADER_NONE) &&
        string_is_equal(dir_list->directory, last_shader_preset_dir) &&
        !string_is_empty(last_shader_preset_file_name))
@@ -9926,11 +9932,10 @@ void dir_check_defaults(const char *custom_ini_path)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-static bool is_accessibility_enabled(settings_t *settings,
+static bool is_accessibility_enabled(bool accessibility_enable,
       bool accessibility_enabled)
 {
-   bool accessibility_enable   = settings->bools.accessibility_enable;
-   return (accessibility_enabled || accessibility_enable);
+   return accessibility_enabled || accessibility_enable;
 }
 #endif
 
@@ -10091,7 +10096,9 @@ bool menu_input_dialog_start_search(void)
    p_rarch->keyboard_line.enabled                   = false;
 
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+   if (is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
          accessibility_speak_priority(p_rarch, settings, (char*)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
 #endif
@@ -10141,7 +10148,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    p_rarch->keyboard_line.enabled                   = false;
 
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+   if (is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, settings,
             "Keyboard input:", 10);
 #endif
@@ -11274,7 +11283,9 @@ static void handle_translation_cb(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if (text_string && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+   if (text_string && is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, settings,
             text_string, 10);
 #endif
@@ -11754,8 +11765,8 @@ static bool run_translation_service(
       RARCH_LOG("Request size: %d\n", bmp64_length);
 #endif
    {
-      char separator  = '?';
       char new_ai_service_url[PATH_MAX_LENGTH];
+      char separator                  = '?';
       unsigned ai_service_source_lang = settings->uints.ai_service_source_lang;
       unsigned ai_service_target_lang = settings->uints.ai_service_target_lang;
       const char *ai_service_url      = settings->arrays.ai_service_url;
@@ -12205,9 +12216,11 @@ static void command_event_set_savestate_auto_index(
 }
 
 static void command_event_set_savestate_garbage_collect(
-      settings_t *settings,
       const global_t *global,
-      struct rarch_state *p_rarch)
+      struct rarch_state *p_rarch,
+      unsigned max_to_keep,
+      bool show_hidden_files
+      )
 {
    size_t i, cnt = 0;
    char state_dir[PATH_MAX_LENGTH];
@@ -12216,11 +12229,6 @@ static void command_event_set_savestate_garbage_collect(
    struct string_list *dir_list      = NULL;
    unsigned min_idx                  = UINT_MAX;
    const char *oldest_save           = NULL;
-   unsigned max_to_keep              = settings->uints.savestate_max_keep;
-   bool show_hidden_files            = settings->bools.show_hidden_files;
-
-   if (!global || (max_to_keep == 0))
-      return;
 
    state_dir[0]                      = '\0';
    state_base[0]                     = '\0';
@@ -12916,7 +12924,11 @@ static bool command_event_main_state(
 
                /* Clean up excess savestates if necessary */
                if (savestate_auto_index && (savestate_max_keep > 0))
-                  command_event_set_savestate_garbage_collect(settings, global, p_rarch);
+                  command_event_set_savestate_garbage_collect(global,
+                        p_rarch,
+                        settings->uints.savestate_max_keep,
+                        settings->bools.show_hidden_files
+                        );
 
                if (frame_time_counter_reset_after_save_state)
                   p_rarch->video_driver_frame_time_count = 0;
@@ -13266,7 +13278,9 @@ bool command_event(enum event_command cmd, void *data)
                else
                {
 #ifdef HAVE_ACCESSIBILITY
-                  if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+                  if (is_accessibility_enabled(
+                           settings->bools.accessibility_enable,
+                           p_rarch->accessibility_enabled))
                      accessibility_speak_priority(p_rarch, settings,
                            (char*) msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
@@ -14159,7 +14173,9 @@ bool command_event(enum event_command cmd, void *data)
          boolean        = !boolean;
 
 #ifdef HAVE_ACCESSIBILITY
-         if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+         if (is_accessibility_enabled(
+                  settings->bools.accessibility_enable,
+                  p_rarch->accessibility_enabled))
          {
             if (boolean)
                accessibility_speak_priority(p_rarch, settings,
@@ -14777,13 +14793,17 @@ bool command_event(enum event_command cmd, void *data)
             {
                ai_service_speech_stop();
 #ifdef HAVE_ACCESSIBILITY
-               if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+               if (is_accessibility_enabled(
+                        settings->bools.accessibility_enable,
+                        p_rarch->accessibility_enabled))
                   accessibility_speak_priority(p_rarch, settings,
                         "stopped.", 10);
 #endif
             }
 #ifdef HAVE_ACCESSIBILITY
-            else if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled) &&
+            else if (is_accessibility_enabled(
+                     settings->bools.accessibility_enable,
+                     p_rarch->accessibility_enabled) &&
                   ai_service_mode == 2 &&
                   is_narrator_running(p_rarch, settings))
                accessibility_speak_priority(p_rarch, settings,
@@ -22021,6 +22041,8 @@ static void input_driver_poll(void)
       input_mapper_t *handle           = &p_rarch->input_driver_mapper;
       const input_device_driver_t *joypad_driver 
                                        = p_rarch->joypad;
+      float input_analog_deadzone      = settings->floats.input_analog_deadzone;
+      float input_analog_sensitivity   = settings->floats.input_analog_sensitivity;
 
       for (i = 0; i < max_users; i++)
       {
@@ -22062,7 +22084,8 @@ static void input_driver_poll(void)
                         {
                            int16_t   val = 
                               input_joypad_analog_button(
-                                    settings,
+                                    input_analog_deadzone,
+                                    input_analog_sensitivity,
                                     joypad_driver, &joypad_info[i], (unsigned)i,
                                     RETRO_DEVICE_INDEX_ANALOG_BUTTON, k,
                                     p_rarch->libretro_input_binds[i]);
@@ -22084,6 +22107,8 @@ static void input_driver_poll(void)
                         unsigned offset = 0 + (k * 4) + (j * 2);
                         int16_t     val = input_joypad_analog_axis(
                               settings,
+                              input_analog_deadzone,
+                              input_analog_sensitivity,
                               joypad_driver,
                               &joypad_info[i], (unsigned)i, k, j,
                               p_rarch->libretro_input_binds[i]);
@@ -22641,21 +22666,23 @@ static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
-   int16_t result              = 0;
-   int16_t ret                 = 0;
+   struct rarch_state *p_rarch    = &rarch_st;
+   settings_t *settings           = p_rarch->configuration_settings;
+   float input_analog_deadzone    = settings->floats.input_analog_deadzone;
+   float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
+   int16_t result                 = 0;
+   int16_t ret                    = 0;
 #ifdef HAVE_MFI
    const input_device_driver_t 
-      *sec_joypad              = p_rarch->sec_joypad;
+      *sec_joypad                 = p_rarch->sec_joypad;
 #else
    const input_device_driver_t 
-      *sec_joypad              = NULL;
+      *sec_joypad                 = NULL;
 #endif
 
-   joypad_info.axis_threshold  = p_rarch->input_driver_axis_threshold;
-   joypad_info.joy_idx         = settings->uints.input_joypad_map[port];
-   joypad_info.auto_binds      = input_autoconf_binds[joypad_info.joy_idx];
+   joypad_info.axis_threshold     = p_rarch->input_driver_axis_threshold;
+   joypad_info.joy_idx            = settings->uints.input_joypad_map[port];
+   joypad_info.auto_binds         = input_autoconf_binds[joypad_info.joy_idx];
 
 #ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_PLAYBACK_ON())
@@ -22706,12 +22733,14 @@ static int16_t input_state(unsigned port, unsigned device,
                   if (sec_joypad)
                      ret          = 
                         input_joypad_analog_button(
-                              settings,
+                              input_analog_deadzone,
+                              input_analog_sensitivity,
                               sec_joypad, &joypad_info,
                               port, idx, id, p_rarch->libretro_input_binds[port]);
                   if (joypad && (ret == 0))
                      ret          = input_joypad_analog_button(
-                           settings,
+                           input_analog_deadzone,
+                           input_analog_sensitivity,
                            joypad, &joypad_info,
                            port, idx, id, p_rarch->libretro_input_binds[port]);
                }
@@ -22721,10 +22750,14 @@ static int16_t input_state(unsigned port, unsigned device,
          {
             if (sec_joypad)
                ret = input_joypad_analog_axis(settings,
+                     input_analog_deadzone,
+                     input_analog_sensitivity,
                      sec_joypad, &joypad_info,
                      port, idx, id, p_rarch->libretro_input_binds[port]);
             if (joypad && (ret == 0))
                ret = input_joypad_analog_axis(settings,
+                     input_analog_deadzone,
+                     input_analog_sensitivity,
                      joypad, &joypad_info,
                      port, idx, id, p_rarch->libretro_input_binds[port]);
          }
@@ -22759,12 +22792,11 @@ static int16_t input_state(unsigned port, unsigned device,
 }
 
 static int16_t input_joypad_axis(
-      settings_t *settings,
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
       const input_device_driver_t *drv,
       unsigned port, uint32_t joyaxis, float normal_mag)
 {
-   float input_analog_deadzone    = settings->floats.input_analog_deadzone;
-   float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
    int16_t val                    = (joyaxis != AXIS_NONE) ? drv->axis(port, joyaxis) : 0;
 
    if (input_analog_deadzone)
@@ -22778,7 +22810,8 @@ static int16_t input_joypad_axis(
       /* due to the way normal_mag is calculated differently for buttons and
        * sticks, this results in either a radial scaled deadzone for sticks
        * or linear scaled deadzone for analog buttons */
-      val = val * MAX(1.0f,(1.0f / normal_mag)) * MIN(1.0f,((normal_mag - input_analog_deadzone)
+      val = val * MAX(1.0f,(1.0f / normal_mag)) * MIN(1.0f,
+            ((normal_mag - input_analog_deadzone)
           / (1.0f - input_analog_deadzone)));
    }
 
@@ -24936,7 +24969,8 @@ int16_t button_is_pressed(
  * Returns: analog value on success, otherwise 0.
  **/
 static int16_t input_joypad_analog_button(
-      settings_t *settings,
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
@@ -24944,7 +24978,6 @@ static int16_t input_joypad_analog_button(
 {
    int16_t res                      = 0;
    float normal_mag                 = 0.0f;
-   float input_analog_deadzone      = settings->floats.input_analog_deadzone;
    const struct retro_keybind *bind = &binds[ ident ];
    uint32_t axis                    = (bind->joyaxis == AXIS_NONE)
       ? joypad_info->auto_binds[ident].joyaxis
@@ -24960,7 +24993,10 @@ static int16_t input_joypad_analog_button(
       normal_mag   = fabs((1.0f / 0x7fff) * mult);
    }
 
-   res = abs(input_joypad_axis(settings, drv,
+   res = abs(input_joypad_axis(
+            input_analog_deadzone,
+            input_analog_sensitivity,
+            drv,
             joypad_info->joy_idx, axis, normal_mag));
    /* If the result is zero, it's got a digital button
     * attached to it instead */
@@ -24981,6 +25017,8 @@ static int16_t input_joypad_analog_button(
 
 static int16_t input_joypad_analog_axis(
       settings_t *settings,
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
@@ -25044,15 +25082,13 @@ static int16_t input_joypad_analog_axis(
       return 0;
 
    {
-      uint32_t axis_minus         = (bind_minus->joyaxis   == AXIS_NONE)
+      uint32_t axis_minus            = (bind_minus->joyaxis   == AXIS_NONE)
          ? joypad_info->auto_binds[ident_minus].joyaxis
          : bind_minus->joyaxis;
-      uint32_t axis_plus          = (bind_plus->joyaxis    == AXIS_NONE)
+      uint32_t axis_plus             = (bind_plus->joyaxis    == AXIS_NONE)
          ? joypad_info->auto_binds[ident_plus].joyaxis
          : bind_plus->joyaxis;
-      float input_analog_deadzone = 
-         settings->floats.input_analog_deadzone;
-      float normal_mag            = 0.0f;
+      float normal_mag               = 0.0f;
 
       /* normalized magnitude of stick actuation, needed for scaled
        * radial deadzone */
@@ -25089,11 +25125,15 @@ static int16_t input_joypad_analog_axis(
       }
 
       res           = abs(
-            input_joypad_axis(settings,
+            input_joypad_axis(
+               input_analog_deadzone,
+               input_analog_sensitivity,
                drv, joypad_info->joy_idx,
                axis_plus, normal_mag));
       res          -= abs(
-            input_joypad_axis(settings,
+            input_joypad_axis(
+               input_analog_deadzone,
+               input_analog_sensitivity,
                drv, joypad_info->joy_idx,
                axis_minus, normal_mag));
    }
@@ -25129,11 +25169,11 @@ static int16_t input_joypad_analog_axis(
  **/
 static bool input_mouse_button_raw(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      input_driver_t *current_input,
+      unsigned joy_idx,
       unsigned port, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   input_driver_t *current_input     = p_rarch->current_input;
 #ifdef HAVE_MFI
    const input_device_driver_t 
       *sec_joypad                    = p_rarch->sec_joypad;
@@ -25147,8 +25187,8 @@ static bool input_mouse_button_raw(
       return false;
 
    joypad_info.axis_threshold        = p_rarch->input_driver_axis_threshold;
-   joypad_info.joy_idx               = settings->uints.input_joypad_map[port];
-   joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
+   joypad_info.joy_idx               = joy_idx;
+   joypad_info.auto_binds            = input_autoconf_binds[joy_idx];
 
    if (current_input->input_state)
       return current_input->input_state(
@@ -25542,7 +25582,9 @@ void input_keyboard_event(bool down, unsigned code,
 
 #ifdef HAVE_ACCESSIBILITY
    if (menu_input_dialog_get_display_kb()
-         && down && is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+         && down && is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
    {
       if (code != 303 && code != 0)
       {
@@ -34955,7 +34997,9 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_ACCESSIBILITY
    /* State that the narrator is on, and also include the first menu
       item we're on at startup. */
-   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+   if (is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, settings,
             "RetroArch accessibility on.  Main Menu Load Core.",
             10);
@@ -35523,7 +35567,9 @@ static void runloop_task_msg_queue_push(
       ui_companion_driver_msg_queue_push(p_rarch, msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
-      if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+      if (is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
          accessibility_speak_priority(p_rarch, settings,
                (char*)msg, 0);
 #endif
@@ -36512,7 +36558,9 @@ void runloop_msg_queue_push(const char *msg,
 
    RUNLOOP_MSG_QUEUE_LOCK(p_rarch);
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+   if (is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch, settings,
             (char*) msg, 0);
 #endif
@@ -38846,7 +38894,9 @@ static bool accessibility_speak_priority(
       settings_t *settings,
       const char* speak_text, int priority)
 {
-   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+   if (is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
    {
       frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
 
@@ -38880,7 +38930,9 @@ static bool accessibility_speak_priority(
 static bool is_narrator_running(struct rarch_state *p_rarch,
       settings_t *settings)
 {
-   if (is_accessibility_enabled(settings, p_rarch->accessibility_enabled))
+   if (is_accessibility_enabled(
+            settings->bools.accessibility_enable,
+            p_rarch->accessibility_enabled))
    {
       frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
       if (frontend && frontend->is_narrator_running)

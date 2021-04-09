@@ -152,20 +152,24 @@ static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 static int16_t input_joypad_analog_button(
-      settings_t *settings,
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 static int16_t input_joypad_analog_axis(
       settings_t *settings,
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 
 #ifdef HAVE_ACCESSIBILITY
-static bool is_accessibility_enabled(settings_t *settings, bool accessibility_enabled);
+static bool is_accessibility_enabled(bool accessibility_enable,
+      bool accessibility_enabled);
 static bool accessibility_speak_priority(
       struct rarch_state *p_rarch,
       settings_t *settings,
@@ -175,7 +179,8 @@ static bool accessibility_speak_priority(
 #ifdef HAVE_MENU
 static bool input_mouse_button_raw(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      input_driver_t *current_input,
+      unsigned joy_idx,
       unsigned port, unsigned id);
 static bool input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
