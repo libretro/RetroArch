@@ -159,12 +159,14 @@ static int16_t input_joypad_analog_button(
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 static int16_t input_joypad_analog_axis(
-      settings_t *settings,
+      unsigned input_analog_dpad_mode,
       float input_analog_deadzone,
       float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
-      unsigned port, unsigned idx, unsigned ident,
+      unsigned port,
+      unsigned idx,
+      unsigned ident,
       const struct retro_keybind *binds);
 
 #ifdef HAVE_ACCESSIBILITY

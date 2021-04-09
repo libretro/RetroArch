@@ -22052,6 +22052,8 @@ static void input_driver_poll(void)
             & RETRO_DEVICE_MASK;
          input_bits_t *p_new_state                  
             = (input_bits_t*)&current_inputs;
+         unsigned input_analog_dpad_mode = 
+            settings->uints.input_analog_dpad_mode[i];
 
          switch (device)
          {
@@ -22106,11 +22108,14 @@ static void input_driver_poll(void)
                      {
                         unsigned offset = 0 + (k * 4) + (j * 2);
                         int16_t     val = input_joypad_analog_axis(
-                              settings,
+                              input_analog_dpad_mode,
                               input_analog_deadzone,
                               input_analog_sensitivity,
                               joypad_driver,
-                              &joypad_info[i], (unsigned)i, k, j,
+                              &joypad_info[i],
+                              (unsigned)i,
+                              k,
+                              j,
                               p_rarch->libretro_input_binds[i]);
 
                         if (val >= 0)
@@ -22670,6 +22675,7 @@ static int16_t input_state(unsigned port, unsigned device,
    settings_t *settings           = p_rarch->configuration_settings;
    float input_analog_deadzone    = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
+   unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[port];
    int16_t result                 = 0;
    int16_t ret                    = 0;
 #ifdef HAVE_MFI
@@ -22749,17 +22755,27 @@ static int16_t input_state(unsigned port, unsigned device,
          else
          {
             if (sec_joypad)
-               ret = input_joypad_analog_axis(settings,
+               ret = input_joypad_analog_axis(
+                     input_analog_dpad_mode,
                      input_analog_deadzone,
                      input_analog_sensitivity,
-                     sec_joypad, &joypad_info,
-                     port, idx, id, p_rarch->libretro_input_binds[port]);
+                     sec_joypad,
+                     &joypad_info,
+                     port,
+                     idx,
+                     id,
+                     p_rarch->libretro_input_binds[port]);
             if (joypad && (ret == 0))
-               ret = input_joypad_analog_axis(settings,
+               ret = input_joypad_analog_axis(
+                     input_analog_dpad_mode,
                      input_analog_deadzone,
                      input_analog_sensitivity,
-                     joypad, &joypad_info,
-                     port, idx, id, p_rarch->libretro_input_binds[port]);
+                     joypad,
+                     &joypad_info,
+                     port,
+                     idx,
+                     id,
+                     p_rarch->libretro_input_binds[port]);
          }
       }
    }
@@ -25016,12 +25032,14 @@ static int16_t input_joypad_analog_button(
 }
 
 static int16_t input_joypad_analog_axis(
-      settings_t *settings,
+      unsigned input_analog_dpad_mode,
       float input_analog_deadzone,
       float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
-      unsigned port, unsigned idx, unsigned ident,
+      unsigned port,
+      unsigned idx,
+      unsigned ident,
       const struct retro_keybind *binds)
 {
    int16_t res                              = 0;
@@ -25041,7 +25059,7 @@ static int16_t input_joypad_analog_axis(
    const struct retro_keybind *bind_y_plus  = NULL;
 
    /* Skip analog input with analog_dpad_mode */
-   switch (settings->uints.input_analog_dpad_mode[port])
+   switch (input_analog_dpad_mode)
    {
       case ANALOG_DPAD_LSTICK:
          if (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
@@ -26025,17 +26043,15 @@ static void input_config_parse_mouse_button(
 }
 
 static void input_config_get_bind_string_joykey(
-      settings_t *settings,
+      bool input_descriptor_label_show,
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   bool  label_show            = 
-      settings->bools.input_descriptor_label_show;
-
    if (GET_HAT_DIR(bind->joykey))
    {
       if (bind->joykey_label &&
-            !string_is_empty(bind->joykey_label) && label_show)
+            !string_is_empty(bind->joykey_label) 
+            && input_descriptor_label_show)
          fill_pathname_join_delim_concat(buf, prefix,
                bind->joykey_label, ' ', " (hat)", size);
       else
@@ -26067,7 +26083,8 @@ static void input_config_get_bind_string_joykey(
    else
    {
       if (bind->joykey_label &&
-            !string_is_empty(bind->joykey_label) && label_show)
+            !string_is_empty(bind->joykey_label) 
+            && input_descriptor_label_show)
          fill_pathname_join_delim_concat(buf, prefix,
                bind->joykey_label, ' ', " (btn)", size);
       else
@@ -26077,13 +26094,10 @@ static void input_config_get_bind_string_joykey(
 }
 
 static void input_config_get_bind_string_joyaxis(
-      settings_t *settings,
+      bool input_descriptor_label_show,
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   bool input_descriptor_label_show = 
-      settings->bools.input_descriptor_label_show;
-
    if (bind->joyaxis_label &&
          !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
@@ -26113,24 +26127,28 @@ void input_config_get_bind_string(char *buf,
       const struct retro_keybind *auto_bind,
       size_t size)
 {
-   int delim                   = 0;
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
+   int delim                         = 0;
+   struct rarch_state *p_rarch       = &rarch_st;
+   settings_t *settings              = p_rarch->configuration_settings;
+   bool  input_descriptor_label_show =
+      settings->bools.input_descriptor_label_show;
 
    *buf = '\0';
 
    if      (bind      && bind->joykey  != NO_BTN)
       input_config_get_bind_string_joykey(
-            settings, buf, "", bind, size);
+            input_descriptor_label_show, buf, "", bind, size);
    else if (bind      && bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(
-            settings, buf, "", bind, size);
+            input_descriptor_label_show,
+            buf, "", bind, size);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
       input_config_get_bind_string_joykey(
-            settings, buf, "Auto: ", auto_bind, size);
+            input_descriptor_label_show, buf, "Auto: ", auto_bind, size);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(
-            settings, buf, "Auto: ", auto_bind, size);
+            input_descriptor_label_show,
+            buf, "Auto: ", auto_bind, size);
 
    if (*buf)
       delim = 1;
@@ -27596,11 +27614,9 @@ static void audio_driver_deinit_resampler(struct rarch_state *p_rarch)
 }
 
 
-static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
+static bool audio_driver_deinit_internal(struct rarch_state *p_rarch,
+      bool audio_enable)
 {
-   settings_t *settings        = p_rarch->configuration_settings;
-   bool audio_enable           = settings->bools.audio_enable;
-
    if (p_rarch->current_audio && p_rarch->current_audio->free)
    {
       if (p_rarch->audio_driver_context_audio_data)
@@ -27661,14 +27677,16 @@ static bool audio_driver_free_devices_list(struct rarch_state *p_rarch)
    return true;
 }
 
-static bool audio_driver_deinit(struct rarch_state *p_rarch)
+static bool audio_driver_deinit(struct rarch_state *p_rarch,
+      settings_t *settings)
 {
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_deinit(p_rarch);
 #endif
    audio_driver_free_devices_list(p_rarch);
 
-   return audio_driver_deinit_internal(p_rarch);
+   return audio_driver_deinit_internal(p_rarch,
+         settings->bools.audio_enable);
 }
 
 static bool audio_driver_find_driver(struct rarch_state *p_rarch,
@@ -27914,7 +27932,7 @@ static bool audio_driver_init_internal(
    return true;
 
 error:
-   return audio_driver_deinit(p_rarch);
+   return audio_driver_deinit(p_rarch, settings);
 }
 
 /**
@@ -32967,7 +32985,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    }
 
    if (flags & DRIVER_AUDIO_MASK)
-      audio_driver_deinit(p_rarch);
+      audio_driver_deinit(p_rarch, p_rarch->configuration_settings);
 
    if ((flags & DRIVER_VIDEO_MASK))
       p_rarch->video_driver_data = NULL;
@@ -32982,7 +33000,8 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
       midi_driver_free(p_rarch);
 }
 
-static void retroarch_deinit_drivers(struct rarch_state *p_rarch, struct retro_callbacks *cbs)
+static void retroarch_deinit_drivers(
+      struct rarch_state *p_rarch, struct retro_callbacks *cbs)
 {
 #if defined(HAVE_GFX_WIDGETS)
    /* Tear down display widgets no matter what
@@ -32991,7 +33010,8 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch, struct retro_c
     * (breaking video_driver_has_widgets) */
    if (p_rarch->dispwidget_st.widgets_inited)
    {
-      gfx_widgets_deinit(&p_rarch->dispwidget_st, p_rarch->widgets_persisting);
+      gfx_widgets_deinit(&p_rarch->dispwidget_st,
+            p_rarch->widgets_persisting);
       p_rarch->widgets_active = false;
    }
 #endif
@@ -33794,7 +33814,7 @@ force_input_dirty:
 
 static retro_time_t rarch_core_runtime_tick(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      float slowmotion_ratio,
       retro_time_t current_time)
 {
    retro_time_t frame_time              =
@@ -33804,10 +33824,7 @@ static retro_time_t rarch_core_runtime_tick(
 
    /* Account for slow motion */
    if (runloop_slowmotion)
-   {
-      float slowmotion_ratio            = settings->floats.slowmotion_ratio;
       return (retro_time_t)((double)frame_time * slowmotion_ratio);
-   }
 
    /* Account for fast forward */
    if (runloop_fastmotion)
@@ -36766,7 +36783,9 @@ static bool menu_display_libretro(
 
       core_run();
       p_rarch->libretro_core_runtime_usec        +=
-         rarch_core_runtime_tick(p_rarch, settings, current_time);
+         rarch_core_runtime_tick(p_rarch,
+               settings->floats.slowmotion_ratio,
+               current_time);
       p_rarch->input_driver_block_libretro_input  = false;
 
       return false;
@@ -38174,7 +38193,9 @@ int runloop_iterate(void)
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
    p_rarch->libretro_core_runtime_usec += rarch_core_runtime_tick(
-         p_rarch, settings, current_time);
+         p_rarch,
+         settings->floats.slowmotion_ratio,
+         current_time);
 
 #ifdef HAVE_CHEEVOS
    if (settings->bools.cheevos_enable)
