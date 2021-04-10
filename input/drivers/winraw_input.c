@@ -660,7 +660,7 @@ static int16_t winraw_input_lightgun_state(
          return 1;
       return button_is_pressed(
             joypad, joypad_info, binds[port],
-            port, id);
+            id);
    }
    return 0;
 }

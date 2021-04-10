@@ -986,7 +986,7 @@ static int16_t udev_input_lightgun_state(
       unsigned new_id = id;
       if (button_is_pressed(joypad,
                joypad_info, binds[port],
-               port, new_id)
+               new_id)
             || udev_mouse_button_pressed(udev, port,
                binds[port][new_id].mbutton)
          )
@@ -1204,7 +1204,7 @@ static int16_t udev_input_state(
                   unsigned new_id = RARCH_LIGHTGUN_START;
                   if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id)
+                           new_id)
                         || udev_mouse_button_pressed(udev, port,
                            binds[port][new_id].mbutton)
                      )

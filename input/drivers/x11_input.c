@@ -353,7 +353,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -376,7 +376,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -399,7 +399,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -422,7 +422,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -445,7 +445,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -468,7 +468,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -491,7 +491,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -514,7 +514,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -537,7 +537,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -560,7 +560,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -583,7 +583,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
@@ -611,7 +611,7 @@ static int16_t x_input_state(
                   {
                      if (button_is_pressed(joypad,
                            joypad_info, binds[port],
-                           port, new_id))
+                           new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {

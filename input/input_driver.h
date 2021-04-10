@@ -598,7 +598,7 @@ int16_t button_is_pressed(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
-      unsigned port, unsigned id);
+      unsigned id);
 
 RETRO_END_DECLS
 

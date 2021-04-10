@@ -756,7 +756,7 @@ static int16_t dinput_input_state(
                   {
                      if (button_is_pressed(joypad,
                               joypad_info,
-                              binds[port], port, new_id))
+                              binds[port], new_id))
                         return 1;
                      else if (
                                binds[port][new_id].key < RETROK_LAST
