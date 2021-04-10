@@ -1994,7 +1994,7 @@ static int generic_menu_iterate(
 #ifdef HAVE_ACCESSIBILITY
                if (  (iterate_type != last_iterate_type) &&
                      is_accessibility_enabled(
-                        settings->bools.accessibility_enable,
+                        accessibility_enable,
                         p_rarch->accessibility_enabled))
                {
                   if (string_is_equal(menu->menu_state_msg,
@@ -2166,7 +2166,7 @@ static int generic_menu_iterate(
             || last_iterate_type == ITERATE_TYPE_INFO) 
          && last_iterate_type != iterate_type 
          && is_accessibility_enabled(
-            settings->bools.accessibility_enable,
+            accessibility_enable,
             p_rarch->accessibility_enabled))
       accessibility_speak_priority(p_rarch,
             accessibility_enable,
@@ -10503,7 +10503,7 @@ bool command_write_ram(command_t *cmd, const char *arg)
 static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address)
 {
    const rarch_memory_descriptor_t* desc = mmap->descriptors;
-   const rarch_memory_descriptor_t* end = desc + mmap->num_descriptors;
+   const rarch_memory_descriptor_t* end  = desc + mmap->num_descriptors;
 
    for (; desc < end; desc++)
    {
@@ -10774,15 +10774,6 @@ static bool is_ai_service_speech_running(void)
    bool ret = (res == AUDIO_STREAM_STATE_NONE) || (res == AUDIO_STREAM_STATE_STOPPED);
    if (!ret)
       return true;
-#endif
-   return false;
-}
-
-static bool ai_service_speech_stop(void)
-{
-#ifdef HAVE_AUDIOMIXER
-   audio_driver_mixer_stop_stream(10);
-   audio_driver_mixer_remove_stream(10);
 #endif
    return false;
 }
@@ -11927,14 +11918,11 @@ finish:
  **/
 static bool command_event_disk_control_append_image(
       struct rarch_state *p_rarch,
+      rarch_system_info_t *sys_info,
       const char *path)
 {
-   rarch_system_info_t *sys_info = &p_rarch->runloop_system;
-
-   if (!sys_info)
-      return false;
-
-   if (!disk_control_append_image(&sys_info->disk_control, path))
+   if (  !sys_info ||
+         !disk_control_append_image(&sys_info->disk_control, path))
       return false;
 
 #ifdef HAVE_THREADS
@@ -14512,9 +14500,6 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_cached_frame();
          }
          break;
-      case CMD_EVENT_LOG_FILE_DEINIT:
-         retro_main_log_file_deinit();
-         break;
       case CMD_EVENT_DISK_APPEND_IMAGE:
          {
             const char *path              = (const char*)data;
@@ -14525,14 +14510,15 @@ bool command_event(enum event_command cmd, void *data)
 
             if (disk_control_enabled(&sys_info->disk_control))
             {
-               bool success               = false;
 #if defined(HAVE_MENU)
                bool refresh               = false;
                /* Get initial disk eject state */
                bool initial_disk_ejected  = disk_control_get_eject_state(&sys_info->disk_control);
 #endif
+               rarch_system_info_t *
+                  sys_info                = &p_rarch->runloop_system;
                /* Append disk image */
-               success = command_event_disk_control_append_image(p_rarch, path);
+               bool success               = command_event_disk_control_append_image(p_rarch, sys_info, path);
 
 #if defined(HAVE_MENU)
                /* Appending a disk image may or may not affect
@@ -14556,21 +14542,22 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
             rarch_system_info_t *sys_info = &p_rarch->runloop_system;
-            bool *show_msg                = (bool*)data;
 
             if (!sys_info)
                return false;
 
             if (disk_control_enabled(&sys_info->disk_control))
             {
-               bool eject   = !disk_control_get_eject_state(&sys_info->disk_control);
-               bool verbose = true;
-               bool refresh = false;
+               bool *show_msg = (bool*)data;
+               bool eject     = !disk_control_get_eject_state(&sys_info->disk_control);
+               bool verbose   = true;
+               bool refresh   = false;
 
                if (show_msg)
-                  verbose = *show_msg;
+                  verbose     = *show_msg;
 
-               disk_control_set_eject_state(&sys_info->disk_control, eject, verbose);
+               disk_control_set_eject_state(
+                     &sys_info->disk_control, eject, verbose);
 
 #if defined(HAVE_MENU)
                /* It is necessary to refresh the disk options
@@ -14589,17 +14576,17 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_DISK_NEXT:
          {
             rarch_system_info_t *sys_info = &p_rarch->runloop_system;
-            bool *show_msg                = (bool*)data;
 
             if (!sys_info)
                return false;
 
             if (disk_control_enabled(&sys_info->disk_control))
             {
-               bool verbose = true;
+               bool *show_msg = (bool*)data;
+               bool verbose   = true;
 
                if (show_msg)
-                  verbose = *show_msg;
+                  verbose     = *show_msg;
 
                disk_control_set_index_next(&sys_info->disk_control, verbose);
             }
@@ -14613,17 +14600,17 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_DISK_PREV:
          {
             rarch_system_info_t *sys_info = &p_rarch->runloop_system;
-            bool *show_msg                = (bool*)data;
 
             if (!sys_info)
                return false;
 
             if (disk_control_enabled(&sys_info->disk_control))
             {
-               bool verbose = true;
+               bool *show_msg = (bool*)data;
+               bool verbose   = true;
 
                if (show_msg)
-                  verbose = *show_msg;
+                  verbose     = *show_msg;
 
                disk_control_set_index_prev(&sys_info->disk_control, verbose);
             }
@@ -14666,9 +14653,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GRAB_MOUSE_TOGGLE:
          {
             bool ret              = false;
-            bool grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
-
-            grab_mouse_state = !grab_mouse_state;
+            bool grab_mouse_state = !p_rarch->input_driver_grab_mouse_state;
 
             if (grab_mouse_state)
                ret = input_driver_grab_mouse(p_rarch);
@@ -14769,8 +14754,10 @@ bool command_event(enum event_command cmd, void *data)
                   video_driver_show_mouse();
                }
 
-               p_rarch->input_driver_block_hotkey = p_rarch->game_focus_state.enabled;
-               p_rarch->keyboard_mapping_blocked  = p_rarch->game_focus_state.enabled;
+               p_rarch->input_driver_block_hotkey = 
+                  p_rarch->game_focus_state.enabled;
+               p_rarch->keyboard_mapping_blocked  = 
+                  p_rarch->game_focus_state.enabled;
 
                if (show_message)
                   runloop_msg_queue_push(
@@ -14778,7 +14765,8 @@ bool command_event(enum event_command cmd, void *data)
                         msg_hash_to_str(MSG_GAME_FOCUS_ON) :
                         msg_hash_to_str(MSG_GAME_FOCUS_OFF),
                         1, 60, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+                        MESSAGE_QUEUE_CATEGORY_INFO);
 
                RARCH_LOG("[Input]: %s => %s\n",
                      "Game Focus",
@@ -14857,7 +14845,10 @@ bool command_event(enum event_command cmd, void *data)
             unsigned ai_service_mode  = settings->uints.ai_service_mode;
             if (ai_service_mode == 1 && is_ai_service_speech_running())
             {
-               ai_service_speech_stop();
+#ifdef HAVE_AUDIOMIXER
+               audio_driver_mixer_stop_stream(10);
+               audio_driver_mixer_remove_stream(10);
+#endif
 #ifdef HAVE_ACCESSIBILITY
                if (is_accessibility_enabled(
                         accessibility_enable,
@@ -15079,29 +15070,30 @@ static void retroarch_override_setting_free_state(void)
 
 static void global_free(struct rarch_state *p_rarch)
 {
-   global_t            *global           = NULL;
+   global_t            *global                     = NULL;
 
    content_deinit();
 
    path_deinit_subsystem(p_rarch);
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
-   p_rarch->rarch_is_sram_load_disabled  = false;
-   p_rarch->rarch_is_sram_save_disabled  = false;
-   p_rarch->rarch_use_sram               = false;
+   retro_main_log_file_deinit();
+
+   p_rarch->rarch_is_sram_load_disabled            = false;
+   p_rarch->rarch_is_sram_save_disabled            = false;
+   p_rarch->rarch_use_sram                         = false;
 #ifdef HAVE_PATCH
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   p_rarch->rarch_patch_blocked               = false;
+   p_rarch->rarch_bps_pref                         = false;
+   p_rarch->rarch_ips_pref                         = false;
+   p_rarch->rarch_ups_pref                         = false;
+   p_rarch->rarch_patch_blocked                    = false;
 #endif
 #ifdef HAVE_CONFIGFILE
-   p_rarch->rarch_block_config_read           = false;
-   p_rarch->runloop_overrides_active          = false;
-   p_rarch->runloop_remaps_core_active        = false;
-   p_rarch->runloop_remaps_game_active        = false;
-   p_rarch->runloop_remaps_content_dir_active = false;
+   p_rarch->rarch_block_config_read                = false;
+   p_rarch->runloop_overrides_active               = false;
+   p_rarch->runloop_remaps_core_active             = false;
+   p_rarch->runloop_remaps_game_active             = false;
+   p_rarch->runloop_remaps_content_dir_active      = false;
 #endif
 
    p_rarch->current_core.has_set_input_descriptors = false;
@@ -15193,7 +15185,8 @@ void main_exit(void *args)
 
    retroarch_msg_queue_deinit(p_rarch);
    driver_uninit(p_rarch, DRIVERS_CMD_ALL);
-   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
+
+   retro_main_log_file_deinit();
 
    rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
@@ -34294,9 +34287,9 @@ static bool retroarch_parse_input_and_config(
 
    p_rarch->has_set_username             = false;
 #ifdef HAVE_PATCH
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   p_rarch->rarch_ups_pref               = false;
+   p_rarch->rarch_ips_pref               = false;
+   p_rarch->rarch_bps_pref               = false;
    *global->name.ups                     = '\0';
    *global->name.bps                     = '\0';
    *global->name.ips                     = '\0';
