@@ -15283,16 +15283,17 @@ int rarch_main(int argc, char *argv[], void *data)
       for (i = 0; i < MAX_USERS; i++)
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
+
    retroarch_msg_queue_init(p_rarch);
 
-   if (frontend_driver_is_inited())
+   if (p_rarch->current_frontend_ctx)
    {
       content_ctx_info_t info;
 
       info.argc            = argc;
       info.argv            = argv;
       info.args            = data;
-      info.environ_get     = frontend_driver_environment_get_ptr();
+      info.environ_get     = p_rarch->current_frontend_ctx->environment_get;
 
       if (!task_push_load_content_from_cli(
                NULL,
