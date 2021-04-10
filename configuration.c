@@ -3719,7 +3719,7 @@ bool config_unload_override(void)
 bool config_load_remap(const char *directory_input_remapping,
       void *data)
 {
-   char content_dir_name[PATH_MAX_LENGTH];
+   char content_dir_name[PATH_MAX_LENGTH] = { 0 };
    /* path to the directory containing retroarch.cfg (prefix)    */
    char remap_directory[PATH_MAX_LENGTH];
    /* final path for core-specific configuration (prefix+suffix) */
