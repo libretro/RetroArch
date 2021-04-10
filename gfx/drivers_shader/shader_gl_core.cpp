@@ -826,7 +826,7 @@ private:
 
    void reflect_parameter(const std::string &name, slang_semantic_meta &meta);
    void reflect_parameter(const std::string &name, slang_texture_semantic_meta &meta);
-   void reflect_parameter_array(const std::string &name, std::vector<slang_texture_semantic_meta> &meta);
+   void reflect_parameter_array(const char *name, std::vector<slang_texture_semantic_meta> &meta);
 };
 
 bool Pass::build()
@@ -925,20 +925,24 @@ void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_met
    }
 }
 
-void Pass::reflect_parameter_array(const std::string &name, std::vector<slang_texture_semantic_meta> &meta)
+void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_semantic_meta> &meta)
 {
    size_t i;
    for (i = 0; i < meta.size(); i++)
    {
-      std::string                  n = name + std::to_string(i);
+      char n[128];
+      snprintf(n, sizeof(n), "%s%zu", name, i);
       slang_texture_semantic_meta *m = (slang_texture_semantic_meta*)&meta[i];
 
       if (m->uniform)
       {
-         int vert = glGetUniformLocation(pipeline,
-               (std::string("RARCH_UBO_VERTEX_INSTANCE.") + n).c_str());
-         int frag = glGetUniformLocation(pipeline,
-               (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + n).c_str());
+         int vert, frag;
+         char vert_n[256];
+         char frag_n[256];
+         snprintf(vert_n, sizeof(vert_n), "RARCH_UBO_VERTEX_INSTANCE.%s", n);
+         snprintf(frag_n, sizeof(frag_n), "RARCH_UBO_FRAGMENT_INSTANCE.%s", n);
+         vert = glGetUniformLocation(pipeline, vert_n);
+         frag = glGetUniformLocation(pipeline, frag_n);
 
          if (vert >= 0)
             m->location.ubo_vertex = vert;
@@ -948,10 +952,13 @@ void Pass::reflect_parameter_array(const std::string &name, std::vector<slang_te
 
       if (m->push_constant)
       {
-         int vert = glGetUniformLocation(pipeline,
-               (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + n).c_str());
-         int frag = glGetUniformLocation(pipeline,
-               (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + n).c_str());
+         int vert, frag;
+         char vert_n[256];
+         char frag_n[256];
+         snprintf(vert_n, sizeof(vert_n), "RARCH_PUSH_VERTEX_INSTANCE.%s", n);
+         snprintf(frag_n, sizeof(frag_n), "RARCH_PUSH_FRAGMENT_INSTANCE.%s", n);
+         vert = glGetUniformLocation(pipeline, vert_n);
+         frag = glGetUniformLocation(pipeline, frag_n);
 
          if (vert >= 0)
             m->location.push_vertex = vert;
