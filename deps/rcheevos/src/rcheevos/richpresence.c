@@ -394,6 +394,10 @@ int rc_richpresence_size(const char* script) {
 rc_richpresence_t* rc_parse_richpresence(void* buffer, const char* script, lua_State* L, int funcs_ndx) {
   rc_richpresence_t* self;
   rc_parse_state_t parse;
+
+  if (!buffer || !script)
+    return 0;
+
   rc_init_parse_state(&parse, buffer, L, funcs_ndx);
 
   self = RC_ALLOC(rc_richpresence_t, &parse);
@@ -402,7 +406,7 @@ rc_richpresence_t* rc_parse_richpresence(void* buffer, const char* script, lua_S
   rc_parse_richpresence_internal(self, script, &parse);
 
   rc_destroy_parse_state(&parse);
-  return parse.offset >= 0 ? self : 0;
+  return (parse.offset >= 0) ? self : 0;
 }
 
 int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L) {
