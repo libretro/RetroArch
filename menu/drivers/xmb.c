@@ -3064,7 +3064,7 @@ static int xmb_draw_item(
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    char tmp[255];
-   unsigned ticker_x_offset            = 0;
+   size_t ticker_x_offset              = 0;
    const char *ticker_str              = NULL;
    unsigned entry_type                 = 0;
    const float half_size               = xmb->icon_size / 2.0f;
@@ -4508,8 +4508,8 @@ static void xmb_draw_fullscreen_thumbnails(
             char title_buf[255];
             gfx_animation_ctx_ticker_smooth_t ticker_smooth;
             int title_x               = 0;
-            unsigned ticker_x_offset  = 0;
-            unsigned ticker_str_width = 0;
+            size_t ticker_x_offset    = 0;
+            size_t ticker_str_width   = 0;
 
             title_buf[0] = '\0';
 
@@ -7193,7 +7193,7 @@ static int xmb_pointer_up(void *userdata,
              * move selection pointer up by 1 'page' */
             unsigned bottom_idx = (unsigned)selection + 1;
             size_t new_idx      = 0;
-            unsigned step       = 0;
+            size_t step         = 0;
 
             /* Determine index of entry at bottom of screen
              * Note: cannot use xmb_calculate_visible_range()

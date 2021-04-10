@@ -204,7 +204,7 @@ bitmapfont_lut_t *bitmapfont_get_lut(void)
          for (i = 0; i < FONT_WIDTH; i++)
          {
             uint8_t rem     = 1 << ((i + j * FONT_WIDTH) & 7);
-            unsigned offset = (i + j * FONT_WIDTH) >> 3;
+            size_t offset   = (i + j * FONT_WIDTH) >> 3;
 
             /* LUT value is 'true' if specified glyph
              * position contains a pixel */

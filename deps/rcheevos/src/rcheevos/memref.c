@@ -120,7 +120,8 @@ static rc_memref_value_t* rc_alloc_memref_value_constuct_mode(rc_parse_state_t* 
   return memref_value;
 }
 
-rc_memref_value_t* rc_alloc_memref_value(rc_parse_state_t* parse, unsigned address, char size, char is_indirect) {
+rc_memref_value_t* rc_alloc_memref_value(rc_parse_state_t* parse, unsigned address, char size, char is_indirect)
+{
   if (!parse->first_memref)
     return rc_alloc_memref_value_sizing_mode(parse, address, size, is_indirect);
 

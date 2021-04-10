@@ -134,13 +134,13 @@ typedef struct gfx_animation_ctx_ticker_smooth
    const char *src_str;
    const char *spacer;
    char *dst_str;
-   unsigned *dst_str_width; /* May be set to NULL 
+   size_t *dst_str_width; /* May be set to NULL 
                                (RGUI + XMB do not require this info) */
-   unsigned *x_offset;
+   size_t *x_offset;
    font_data_t *font;
    size_t dst_str_len;
    unsigned glyph_width; /* Fallback if font == NULL */
-   unsigned field_width;
+   size_t field_width;
    float font_scale;
    enum gfx_animation_ticker_type type_enum;
    bool selected;

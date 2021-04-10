@@ -362,13 +362,13 @@ static void gfx_animation_ticker_loop(uint64_t idx,
    *width3    = width;
 }
 
-static unsigned get_ticker_smooth_generic_scroll_offset(
-      uint64_t idx, unsigned str_width, unsigned field_width)
+static size_t get_ticker_smooth_generic_scroll_offset(
+      uint64_t idx, size_t str_width, size_t field_width)
 {
-   unsigned scroll_width   = str_width - field_width;
+   size_t scroll_width     = str_width - field_width;
    unsigned pause_duration = 32;
-   unsigned ticker_period  = 2 * (scroll_width + pause_duration);
-   unsigned phase          = idx % ticker_period;
+   size_t ticker_period    = 2 * (scroll_width + pause_duration);
+   size_t phase            = idx % ticker_period;
 
    /* Determine scroll offset */
    if (phase < pause_duration)
@@ -383,17 +383,17 @@ static unsigned get_ticker_smooth_generic_scroll_offset(
 
 /* 'Fixed width' font version of ticker_smooth_scan_characters() */
 static void ticker_smooth_scan_string_fw(
-      size_t num_chars, unsigned glyph_width,
-      unsigned field_width, unsigned scroll_offset,
-      unsigned *char_offset, unsigned *num_chars_to_copy,
-      unsigned *x_offset)
+      size_t num_chars,    unsigned glyph_width,
+      size_t field_width,  size_t scroll_offset,
+      size_t *char_offset, size_t *num_chars_to_copy,
+      size_t *x_offset)
 {
-   unsigned chars_remaining = 0;
+   size_t chars_remaining = 0;
 
    /* Initialise output variables to 'sane' values */
-   *char_offset       = 0;
-   *num_chars_to_copy = 0;
-   *x_offset          = 0;
+   *char_offset           = 0;
+   *num_chars_to_copy     = 0;
+   *x_offset              = 0;
 
    /* Determine index of first character to copy */
    if (scroll_offset > 0)
@@ -417,18 +417,23 @@ static void ticker_smooth_scan_string_fw(
 }
 
 /* 'Fixed width' font version of gfx_animation_ticker_smooth_generic() */
-static void gfx_animation_ticker_smooth_generic_fw(uint64_t idx,
-      unsigned str_width, size_t num_chars,
-      unsigned glyph_width, unsigned field_width,
-      unsigned *char_offset, unsigned *num_chars_to_copy, unsigned *x_offset)
+static void gfx_animation_ticker_smooth_generic_fw(
+      uint64_t idx,
+      size_t str_width,
+      size_t num_chars,
+      unsigned glyph_width,
+      size_t field_width,
+      size_t *char_offset,
+      size_t *num_chars_to_copy,
+      size_t *x_offset)
 {
-   unsigned scroll_offset = get_ticker_smooth_generic_scroll_offset(
+   size_t scroll_offset = get_ticker_smooth_generic_scroll_offset(
       idx, str_width, field_width);
 
    /* Initialise output variables to 'sane' values */
-   *char_offset       = 0;
-   *num_chars_to_copy = 0;
-   *x_offset          = 0;
+   *char_offset        = 0;
+   *num_chars_to_copy  = 0;
+   *x_offset           = 0;
 
    /* Sanity check */
    if (num_chars < 1)
@@ -441,18 +446,18 @@ static void gfx_animation_ticker_smooth_generic_fw(uint64_t idx,
 
 /* 'Fixed width' font version of gfx_animation_ticker_smooth_loop() */
 static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
-      unsigned str_width, size_t num_chars,
-      unsigned spacer_width, size_t num_spacer_chars,
-      unsigned glyph_width, unsigned field_width,
-      unsigned *char_offset1, unsigned *num_chars_to_copy1,
-      unsigned *char_offset2, unsigned *num_chars_to_copy2,
-      unsigned *char_offset3, unsigned *num_chars_to_copy3,
-      unsigned *x_offset)
+      size_t str_width,       size_t num_chars,
+      size_t   spacer_width,  size_t num_spacer_chars,
+      unsigned glyph_width,   size_t field_width,
+      size_t   *char_offset1, size_t   *num_chars_to_copy1,
+      size_t   *char_offset2, size_t   *num_chars_to_copy2,
+      size_t   *char_offset3, size_t   *num_chars_to_copy3,
+      size_t   *x_offset)
 {
-   unsigned ticker_period   = str_width + spacer_width;
-   unsigned phase           = idx % ticker_period;
+   size_t ticker_period     = str_width + spacer_width;
+   size_t phase             = idx % ticker_period;
 
-   unsigned remaining_width = field_width;
+   size_t remaining_width   = field_width;
 
    /* Initialise output variables to 'sane' values */
    *char_offset1       = 0;
@@ -478,7 +483,7 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
    /* String 1 */
    if (phase < str_width)
    {
-      unsigned scroll_offset = phase;
+      size_t scroll_offset = phase;
 
       ticker_smooth_scan_string_fw(
             num_chars, glyph_width, remaining_width, scroll_offset,
@@ -498,8 +503,8 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
    /* String 2 */
    if (remaining_width > glyph_width)
    {
-      unsigned scroll_offset = 0;
-      unsigned x_offset2     = 0;
+      size_t scroll_offset   = 0;
+      size_t x_offset2       = 0;
 
       /* Check whether we've passed the end of string 1 */
       if (phase > str_width)
@@ -535,14 +540,14 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
 
 static void ticker_smooth_scan_characters(
       const unsigned *char_widths, size_t num_chars,
-      unsigned field_width, unsigned scroll_offset,
-      unsigned *char_offset, unsigned *num_chars_to_copy,
-      unsigned *x_offset, unsigned *str_width,
-      unsigned *display_width)
+      size_t field_width,          size_t scroll_offset,
+      size_t *char_offset,         size_t *num_chars_to_copy,
+      size_t *x_offset,            size_t *str_width,
+      size_t *display_width)
 {
-   unsigned i;
+   size_t i;
    unsigned text_width     = 0;
-   unsigned scroll_pos     = scroll_offset;
+   size_t scroll_pos       = scroll_offset;
    bool deferred_str_width = true;
 
    /* Initialise output variables to 'sane' values */
@@ -612,11 +617,11 @@ static void ticker_smooth_scan_characters(
 
 static void gfx_animation_ticker_smooth_generic(uint64_t idx,
       const unsigned *char_widths, size_t num_chars,
-      unsigned str_width, unsigned field_width,
-      unsigned *char_offset, unsigned *num_chars_to_copy,
-      unsigned *x_offset, unsigned *dst_str_width)
+      unsigned str_width,          size_t field_width,
+      size_t *char_offset,         size_t *num_chars_to_copy,
+      size_t *x_offset,            size_t *dst_str_width)
 {
-   unsigned scroll_offset = get_ticker_smooth_generic_scroll_offset(
+   size_t scroll_offset = get_ticker_smooth_generic_scroll_offset(
       idx, str_width, field_width);
 
    /* Initialise output variables to 'sane' values */
@@ -635,20 +640,29 @@ static void gfx_animation_ticker_smooth_generic(uint64_t idx,
       char_offset, num_chars_to_copy, x_offset, dst_str_width, NULL);
 }
 
-static void gfx_animation_ticker_smooth_loop(uint64_t idx,
-      const unsigned *char_widths, size_t num_chars,
-      const unsigned *spacer_widths, size_t num_spacer_chars,
-      unsigned str_width, unsigned spacer_width, unsigned field_width,
-      unsigned *char_offset1, unsigned *num_chars_to_copy1,
-      unsigned *char_offset2, unsigned *num_chars_to_copy2,
-      unsigned *char_offset3, unsigned *num_chars_to_copy3,
-      unsigned *x_offset, unsigned *dst_str_width)
+static void gfx_animation_ticker_smooth_loop(
+      uint64_t idx,
+      const unsigned *char_widths,
+      size_t num_chars,
+      const unsigned *spacer_widths,
+      size_t num_spacer_chars,
+      unsigned str_width,
+      unsigned spacer_width,
+      size_t field_width,
+      size_t *char_offset1,
+      size_t *num_chars_to_copy1,
+      size_t *char_offset2,
+      size_t *num_chars_to_copy2,
+      size_t *char_offset3,
+      size_t *num_chars_to_copy3,
+      size_t *x_offset,
+      size_t *dst_str_width)
 
 {
    unsigned ticker_period   = str_width + spacer_width;
    unsigned phase           = idx % ticker_period;
 
-   unsigned remaining_width = field_width;
+   size_t remaining_width   = field_width;
 
    /* Initialise output variables to 'sane' values */
    *char_offset1       = 0;
@@ -677,8 +691,8 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
    if (phase < str_width)
    {
       unsigned scroll_offset = phase;
-      unsigned display_width = 0;
-      unsigned str1_width    = 0;
+      size_t display_width   = 0;
+      size_t str1_width      = 0;
 
       ticker_smooth_scan_characters(
             char_widths, num_chars, remaining_width, scroll_offset,
@@ -695,10 +709,10 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
    /* String 2 */
    if (remaining_width > 0)
    {
-      unsigned scroll_offset = 0;
-      unsigned display_width = 0;
-      unsigned str2_width    = 0;
-      unsigned x_offset2     = 0;
+      size_t scroll_offset   = 0;
+      size_t display_width   = 0;
+      size_t str2_width      = 0;
+      size_t x_offset2       = 0;
 
       /* Check whether we've passed the end of string 1 */
       if (phase > str_width)
@@ -1457,8 +1471,8 @@ static bool gfx_animation_ticker_smooth_fw(
 {
    size_t spacer_len            = 0;
    unsigned glyph_width         = ticker->glyph_width;
-   unsigned src_str_width       = 0;
-   unsigned spacer_width        = 0;
+   size_t src_str_width         = 0;
+   size_t  spacer_width         = 0;
    bool success                 = false;
    bool is_active               = false;
 
@@ -1490,7 +1504,7 @@ static bool gfx_animation_ticker_smooth_fw(
     * and add '...' suffix */
    if (!ticker->selected)
    {
-      unsigned num_chars    = 0;
+      size_t num_chars      = 0;
       unsigned suffix_len   = 3;
       unsigned suffix_width = suffix_len * glyph_width;
 
@@ -1531,12 +1545,12 @@ static bool gfx_animation_ticker_smooth_fw(
    {
       case TICKER_TYPE_LOOP:
       {
-         unsigned char_offset1 = 0;
-         unsigned num_chars1   = 0;
-         unsigned char_offset2 = 0;
-         unsigned num_chars2   = 0;
-         unsigned char_offset3 = 0;
-         unsigned num_chars3   = 0;
+         size_t   char_offset1 = 0;
+         size_t   num_chars1   = 0;
+         size_t   char_offset2 = 0;
+         size_t   num_chars2   = 0;
+         size_t   char_offset3 = 0;
+         size_t   num_chars3   = 0;
 
          gfx_animation_ticker_smooth_loop_fw(
                ticker->idx,
@@ -1562,10 +1576,10 @@ static bool gfx_animation_ticker_smooth_fw(
       case TICKER_TYPE_BOUNCE:
       default:
       {
-         unsigned char_offset = 0;
-         unsigned num_chars   = 0;
+         size_t char_offset   = 0;
+         size_t num_chars     = 0;
 
-         ticker->dst_str[0] = '\0';
+         ticker->dst_str[0]   = '\0';
 
          gfx_animation_ticker_smooth_generic_fw(
                ticker->idx,
@@ -1677,7 +1691,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
     * and add '...' suffix */
    if (!ticker->selected)
    {
-      unsigned text_width;
+      size_t text_width;
       unsigned current_width = 0;
       unsigned num_chars     = 0;
       int period_width       =
@@ -1758,12 +1772,12 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    {
       case TICKER_TYPE_LOOP:
       {
-         unsigned char_offset1 = 0;
-         unsigned num_chars1   = 0;
-         unsigned char_offset2 = 0;
-         unsigned num_chars2   = 0;
-         unsigned char_offset3 = 0;
-         unsigned num_chars3   = 0;
+         size_t char_offset1 = 0;
+         size_t num_chars1   = 0;
+         size_t char_offset2 = 0;
+         size_t num_chars2   = 0;
+         size_t char_offset3 = 0;
+         size_t num_chars3   = 0;
 
          gfx_animation_ticker_smooth_loop(
                ticker->idx,
@@ -1787,17 +1801,21 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
       case TICKER_TYPE_BOUNCE:
       default:
       {
-         unsigned char_offset = 0;
-         unsigned num_chars   = 0;
+         size_t char_offset = 0;
+         size_t num_chars   = 0;
 
          ticker->dst_str[0] = '\0';
 
          gfx_animation_ticker_smooth_generic(
                ticker->idx,
-               src_char_widths, src_str_len,
-               src_str_width, ticker->field_width,
-               &char_offset, &num_chars,
-               ticker->x_offset, ticker->dst_str_width);
+               src_char_widths,
+               src_str_len,
+               src_str_width,
+               ticker->field_width,
+               &char_offset,
+               &num_chars,
+               ticker->x_offset,
+               ticker->dst_str_width);
 
          /* Copy required substring */
          if (num_chars > 0)

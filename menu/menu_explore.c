@@ -836,7 +836,8 @@ static int explore_action_ok_find(const char *path, const char *label, unsigned 
 unsigned menu_displaylist_explore(file_list_t *list,
       settings_t *settings)
 {
-   unsigned i, cat;
+    size_t i;
+   unsigned cat;
    char tmp[512];
    unsigned depth, current_type, current_cat, previous_cat;
    struct item_file *stack_top  = NULL;
@@ -980,10 +981,10 @@ SKIP_EXPLORE_BY_CATEGORY:;
    {
       /* List all items in a selected explore by category */
       explore_string_t **entries = explore_state->by[current_cat];
-      unsigned i_last            = RBUF_LEN(entries) - 1;
+      size_t i_last            = RBUF_LEN(entries) - 1;
       for (i = 0; i <= i_last; i++)
          explore_menu_entry(list, explore_state,
-               entries[i]->str, EXPLORE_TYPE_FIRSTITEM + i);
+               entries[i]->str, (unsigned)(EXPLORE_TYPE_FIRSTITEM + i));
 
       if (explore_state->has_unknown[current_cat])
       {
@@ -1122,7 +1123,7 @@ SKIP_EXPLORE_BY_CATEGORY:;
          else
             explore_menu_entry(list,
                   explore_state, e->playlist_entry->label,
-                  EXPLORE_TYPE_FIRSTITEM + (e - explore_state->entries));
+                  (unsigned)(EXPLORE_TYPE_FIRSTITEM + (e - explore_state->entries)));
 
 SKIP_ENTRY:;
       }
@@ -1182,7 +1183,7 @@ SKIP_ENTRY:;
       }
    }
 
-   return list->size;
+   return (unsigned)list->size;
 }
 
 uintptr_t menu_explore_get_entry_icon(unsigned type)

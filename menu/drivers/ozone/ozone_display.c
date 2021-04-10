@@ -579,7 +579,8 @@ void ozone_draw_messagebox(
 {
    unsigned i, y_position;
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
-   int x, y, longest_width  = 0;
+   size_t y                 = 0;
+   int x, longest_width     = 0;
    int usable_width         = 0;
    struct string_list list  = {0};
    float scale_factor       = 0.0f;
@@ -653,7 +654,7 @@ void ozone_draw_messagebox(
        *   is quite 'loose', and depends upon source image
        *   size, draw size and scale factor... */
       unsigned slice_new_w = longest_width + 48 * 2 * scale_factor;
-      unsigned slice_new_h = ozone->fonts.footer.line_height * (list.size + 2);
+      size_t   slice_new_h = ozone->fonts.footer.line_height * (list.size + 2);
       int slice_x          = x - longest_width/2 - 48 * scale_factor;
       int slice_y          = y - ozone->fonts.footer.line_height +
             ((slice_new_h >= 256) 
@@ -670,7 +671,8 @@ void ozone_draw_messagebox(
             256, 256,
             slice_new_w,
             slice_new_h,
-            width, height,
+            width,
+            height,
             ozone->theme_dynamic.message_background,
             16, scale_factor,
             ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DIALOG_SLICE]

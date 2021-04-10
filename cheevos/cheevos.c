@@ -1790,7 +1790,7 @@ static int rcheevos_match_value(const char* val, const char* match)
    {
       do
       {
-         int size;
+         size_t size;
          const char* ptr = ++match;
 
          while (*match && *match != ',')

@@ -176,7 +176,7 @@ void ozone_draw_sidebar(
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const
       ticker_spacer                  = OZONE_TICKER_SPACER;
-   unsigned ticker_x_offset          = 0;
+   size_t ticker_x_offset            = 0;
    uint32_t text_alpha               = ozone->animations.sidebar_text_alpha 
       * 255.0f;
    bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;

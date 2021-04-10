@@ -665,7 +665,7 @@ void gfx_display_draw_texture_slice(
       unsigned video_width,
       unsigned video_height,
       int x, int y, unsigned w, unsigned h,
-      unsigned new_w, unsigned new_h,
+      unsigned new_w, size_t new_h,
       unsigned width, unsigned height,
       float *color, unsigned offset, float scale_factor, uintptr_t texture)
 {

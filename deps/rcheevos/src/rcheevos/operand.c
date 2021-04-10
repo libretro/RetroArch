@@ -66,7 +66,8 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
   return RC_OK;
 }
 
-static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse, int is_indirect) {
+static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse, int is_indirect)
+{
   const char* aux = *memaddr;
   char* end;
   unsigned long address;
@@ -95,13 +96,11 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
       break;
   }
 
-  if (*aux++ != '0') {
+  if (*aux++ != '0')
     return RC_INVALID_MEMORY_OPERAND;
-  }
 
-  if (*aux != 'x' && *aux != 'X') {
+  if (*aux != 'x' && *aux != 'X')
     return RC_INVALID_MEMORY_OPERAND;
-  }
 
   aux++;
 
@@ -137,13 +136,11 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
 
   address = strtoul(aux, &end, 16);
 
-  if (end == aux) {
+  if (end == aux)
     return RC_INVALID_MEMORY_OPERAND;
-  }
 
-  if (address > 0xffffffffU) {
+  if (address > 0xffffffffU)
     address = 0xffffffffU;
-  }
 
   self->value.memref = rc_alloc_memref_value(parse, address, size, is_indirect);
   if (parse->offset < 0)

@@ -2133,7 +2133,7 @@ static void ozone_draw_header(
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const ticker_spacer = OZONE_TICKER_SPACER;
-   unsigned ticker_x_offset  = 0;
+   size_t ticker_x_offset    = 0;
    unsigned timedate_offset  = 0;
    bool use_smooth_ticker    = settings->bools.menu_ticker_smooth;
    float scale_factor        = ozone->last_scale_factor;
@@ -2624,7 +2624,7 @@ static void ozone_draw_footer(
       enum gfx_animation_ticker_type menu_ticker_type =
             (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
             static const char* const ticker_spacer    = OZONE_TICKER_SPACER;
-      unsigned ticker_x_offset                        = 0;
+      size_t ticker_x_offset                          = 0;
 
       core_title[0]     = '\0';
       core_title_buf[0] = '\0';

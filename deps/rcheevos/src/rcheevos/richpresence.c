@@ -204,7 +204,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
   const char* endline;
   const char* defaultlabel = 0;
   char* endptr = 0;
-  unsigned key;
+  size_t key;
   unsigned chars;
 
   next = &lookup->first_item;
@@ -243,7 +243,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
       }
 
       item = RC_ALLOC(rc_richpresence_lookup_item_t, parse);
-      item->value = key;
+      item->value = (unsigned)key;
       item->label = rc_alloc_str(parse, line, (int)(endline - line));
       *next = item;
       next = &item->next_item;

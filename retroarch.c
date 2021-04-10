@@ -10443,13 +10443,13 @@ bool command_get_config_param(command_t *cmd, const char* arg)
 bool command_read_ram(command_t *cmd, const char *arg)
 {
    unsigned i;
-   char *reply                  = NULL;
-   const uint8_t  *data         = NULL;
-   char *reply_at               = NULL;
-   unsigned int nbytes          = 0;
-   unsigned int alloc_size      = 0;
-   unsigned int addr            = -1;
-   unsigned int len             = 0;
+   char *reply             = NULL;
+   const uint8_t  *data    = NULL;
+   char *reply_at          = NULL;
+   unsigned int nbytes     = 0;
+   unsigned int alloc_size = 0;
+   unsigned int addr       = -1;
+   size_t len              = 0;
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
@@ -10528,7 +10528,7 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
    return NULL;
 }
 
-static uint8_t* command_memory_get_pointer(unsigned address,
+static uint8_t *command_memory_get_pointer(unsigned address,
       unsigned int* max_bytes, int for_write, char* reply_at, size_t len)
 {
    struct rarch_state       *p_rarch = &rarch_st;
@@ -10547,7 +10547,7 @@ static uint8_t* command_memory_get_pointer(unsigned address,
       else
       {
          const size_t offset = address - desc->core.start;
-         *max_bytes = (desc->core.len - offset);
+         *max_bytes          = (unsigned int)(desc->core.len - offset);
          return (uint8_t*)desc->core.ptr + desc->core.offset + offset;
       }
    }
@@ -10565,7 +10565,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
    unsigned int nbytes          = 0;
    unsigned int alloc_size      = 0;
    unsigned int address         = -1;
-   unsigned int len             = 0;
+   size_t len                   = 0;
    unsigned int max_bytes       = 0;
 
    if (sscanf(arg, "%x %u", &address, &nbytes) != 2)

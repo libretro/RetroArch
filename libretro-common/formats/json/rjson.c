@@ -1013,7 +1013,7 @@ bool rjson_check_context(rjson_t *json, unsigned int depth, ...)
 
 unsigned int rjson_get_context_depth(rjson_t *json)
 {
-   return json->stack_top - json->stack;
+   return (unsigned int)(json->stack_top - json->stack);
 }
 
 size_t rjson_get_context_count(rjson_t *json)

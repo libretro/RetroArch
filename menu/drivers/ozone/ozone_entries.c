@@ -52,7 +52,7 @@ static void ozone_draw_entry_value(
       unsigned video_width,
       unsigned video_height,
       char *value,
-      unsigned x, unsigned y,
+      size_t x, size_t y,
       uint32_t alpha_uint32,
       menu_entry_t *entry)
 {
@@ -224,7 +224,7 @@ static void ozone_content_metadata_line(
       unsigned video_height,
       ozone_handle_t *ozone,
       unsigned *y,
-      unsigned column_x,
+      size_t column_x,
       const char *text,
       uint32_t color,
       unsigned lines_count)
@@ -645,9 +645,9 @@ border_iterate:
       menu_entry_t entry;
       gfx_animation_ctx_ticker_t ticker;
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-      unsigned ticker_x_offset     = 0;
-      unsigned ticker_str_width    = 0;
-      int value_x_offset           = 0;
+      size_t   ticker_x_offset     = 0;
+      size_t   ticker_str_width    = 0;
+      size_t value_x_offset        = 0;
       static const char* const 
          ticker_spacer             = OZONE_TICKER_SPACER;
       const char *sublabel_str     = NULL;
@@ -1149,7 +1149,7 @@ void ozone_draw_thumbnail_bar(
       gfx_animation_ctx_ticker_t ticker;
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
       static const char* const ticker_spacer = OZONE_TICKER_SPACER;
-      unsigned ticker_x_offset               = 0;
+      size_t ticker_x_offset                 = 0;
       bool scroll_content_metadata           = settings->bools.ozone_scroll_content_metadata;
       bool use_smooth_ticker                 = settings->bools.menu_ticker_smooth;
       enum gfx_animation_ticker_type 

@@ -1602,8 +1602,8 @@ typedef struct materialui_handle
    unsigned nav_bar_layout_width;
    unsigned nav_bar_layout_height;
 
-   unsigned ticker_x_offset;
-   unsigned ticker_str_width;
+   size_t ticker_x_offset;
+   size_t ticker_str_width;
 
    /* Touch feedback animation parameters */
    unsigned touch_feedback_selection;
@@ -3856,7 +3856,7 @@ static void materialui_render_menu_entry_default(
    const char *entry_label                           = NULL;
    unsigned entry_type                               = 0;
    enum materialui_entry_value_type entry_value_type = MUI_ENTRY_VALUE_NONE;
-   unsigned entry_value_width                        = 0;
+   size_t entry_value_width                          = 0;
    enum msg_file_type entry_file_type                = FILE_TYPE_NONE;
    int entry_x                                       = x_offset + node->x;
    int entry_y                                       = header_height - mui->scroll_y + node->y;

@@ -1285,17 +1285,17 @@ english:
 
 static void rgui_fill_rect(
       uint16_t *data,
-      unsigned fb_width, unsigned fb_height,
-      unsigned x, unsigned y,
-      unsigned width, unsigned height,
+      size_t fb_width, size_t fb_height,
+      size_t x, size_t y,
+      size_t width, size_t height,
       uint16_t dark_color, uint16_t light_color,
       bool thickness)
 {
-   unsigned x_index, y_index;
-   unsigned x_start = x <= fb_width  ? x : fb_width;
-   unsigned y_start = y <= fb_height ? y : fb_height;
-   unsigned x_end   = x + width;
-   unsigned y_end   = y + height;
+   size_t x_index, y_index;
+   size_t   x_start = x <= fb_width  ? x : fb_width;
+   size_t   y_start = y <= fb_height ? y : fb_height;
+   size_t   x_end   = x + width;
+   size_t   y_end   = y + height;
    size_t x_size;
    uint16_t scanline_even[RGUI_MAX_FB_WIDTH]; /* Initial values don't matter here */
    uint16_t scanline_odd[RGUI_MAX_FB_WIDTH];
@@ -2775,7 +2775,7 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
 
 static void blit_line_regular(
       rgui_t *rgui,
-      unsigned fb_width, int x, int y,
+      size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui->frame_buf.data;
@@ -2795,7 +2795,7 @@ static void blit_line_regular(
 
          for (j = 0; j < FONT_HEIGHT; j++)
          {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
+            size_t buff_offset = ((y + j) * fb_width) + x;
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
@@ -2811,7 +2811,7 @@ static void blit_line_regular(
 
 static void blit_line_regular_shadow(
       rgui_t *rgui,
-      unsigned fb_width, int x, int y,
+      size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui->frame_buf.data;
@@ -2839,7 +2839,7 @@ static void blit_line_regular_shadow(
 
          for (j = 0; j < FONT_HEIGHT; j++)
          {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
+            size_t buff_offset = ((y + j) * fb_width) + x;
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
@@ -2864,7 +2864,7 @@ static void blit_line_regular_shadow(
 
 static void blit_line_extended(
       rgui_t *rgui,
-      unsigned fb_width, int x, int y,
+      size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui->frame_buf.data;
@@ -2898,7 +2898,7 @@ static void blit_line_extended(
 
          for (j = 0; j < FONT_HEIGHT; j++)
          {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
+            size_t buff_offset = ((y + j) * fb_width) + x;
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
@@ -2914,7 +2914,7 @@ static void blit_line_extended(
 
 static void blit_line_extended_shadow(
       rgui_t *rgui,
-      unsigned fb_width, int x, int y,
+      size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data = rgui->frame_buf.data;
@@ -2956,7 +2956,7 @@ static void blit_line_extended_shadow(
 
          for (j = 0; j < FONT_HEIGHT; j++)
          {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
+            size_t buff_offset = ((y + j) * fb_width) + x;
 
             for (i = 0; i < FONT_WIDTH; i++)
             {
@@ -2982,7 +2982,7 @@ static void blit_line_extended_shadow(
 #ifdef HAVE_LANGEXTRA
 static void blit_line_cjk(
       rgui_t *rgui,
-      unsigned fb_width, int x, int y,
+      size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data   = rgui->frame_buf.data;
@@ -3021,7 +3021,7 @@ static void blit_line_cjk(
 
          for (j = 0; j < FONT_10X10_HEIGHT; j++)
          {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
+            size_t buff_offset = ((y + j) * fb_width) + x;
 
             for (i = 0; i < FONT_10X10_WIDTH; i++)
             {
@@ -3037,7 +3037,7 @@ static void blit_line_cjk(
 
 static void blit_line_cjk_shadow(
       rgui_t *rgui,
-      unsigned fb_width, int x, int y,
+      size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data   = rgui->frame_buf.data;
@@ -3084,7 +3084,7 @@ static void blit_line_cjk_shadow(
 
          for (j = 0; j < FONT_10X10_HEIGHT; j++)
          {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
+            size_t buff_offset = ((y + j) * fb_width) + x;
 
             for (i = 0; i < FONT_10X10_WIDTH; i++)
             {
@@ -3109,7 +3109,7 @@ static void blit_line_cjk_shadow(
 
 static void blit_line_rus(
       rgui_t *rgui,
-      unsigned fb_width, int x, int y,
+      size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data   = rgui->frame_buf.data;
@@ -3142,7 +3142,7 @@ static void blit_line_rus(
 
          for (j = 0; j < FONT_10X10_HEIGHT; j++)
          {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
+            size_t buff_offset = ((y + j) * fb_width) + x;
 
             for (i = 0; i < FONT_10X10_WIDTH; i++)
             {
@@ -3158,7 +3158,7 @@ static void blit_line_rus(
 
 static void blit_line_rus_shadow(
       rgui_t *rgui,
-      unsigned fb_width, int x, int y,
+      size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color)
 {
    uint16_t *frame_buf_data   = rgui->frame_buf.data;
@@ -3199,7 +3199,7 @@ static void blit_line_rus_shadow(
 
          for (j = 0; j < FONT_10X10_HEIGHT; j++)
          {
-            unsigned buff_offset = ((y + j) * fb_width) + x;
+            size_t buff_offset = ((y + j) * fb_width) + x;
 
             for (i = 0; i < FONT_10X10_WIDTH; i++)
             {
@@ -3223,7 +3223,7 @@ static void blit_line_rus_shadow(
 }
 #endif
 
-static void (*blit_line)(rgui_t *rgui, unsigned fb_width, int x, int y,
+static void (*blit_line)(rgui_t *rgui, size_t fb_width, size_t x, size_t y,
       const char *message, uint16_t color, uint16_t shadow_color) = blit_line_regular;
 
 /* blit_symbol() */
@@ -3727,9 +3727,9 @@ static void rgui_render_osk(
    if (!string_is_empty(input_label))
    {
       char input_label_buf[255];
-      unsigned input_label_length;
-      int input_label_x, input_label_y;
-      unsigned ticker_x_offset = 0;
+      size_t input_label_length;
+      size_t input_label_x, input_label_y;
+      size_t ticker_x_offset = 0;
       
       input_label_buf[0] = '\0';
       
@@ -3951,7 +3951,7 @@ static void rgui_render(void *data,
    static const char* const 
       ticker_spacer               = RGUI_TICKER_SPACER;
    int bottom                     = 0;
-   unsigned ticker_x_offset       = 0;
+   size_t ticker_x_offset         = 0;
    size_t entries_end             = 0;
    bool msg_force                 = false;
    bool fb_size_changed           = false;
@@ -4070,14 +4070,14 @@ static void rgui_render(void *data,
       /* Update currently 'highlighted' item */
       if (rgui->pointer.y > rgui->term_layout.start_y)
       {
-         unsigned new_ptr;
+         size_t new_ptr;
          menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
          /* Note: It's okay for this to go out of range
           * (limits are checked in rgui_pointer_up()) */
-         new_ptr = (unsigned)((rgui->pointer.y - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start;
+         new_ptr = ((rgui->pointer.y - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start;
 
-         menu_input_set_pointer_selection(new_ptr);
+         menu_input_set_pointer_selection((unsigned)new_ptr);
       }
 
       /* Allow drag-scrolling if items are currently off-screen */
@@ -4154,7 +4154,7 @@ static void rgui_render(void *data,
        * through a list...) */
       const char *thumbnail_title = NULL;
       char thumbnail_title_buf[255];
-      unsigned title_x, title_width;
+      size_t title_x, title_width;
       thumbnail_title_buf[0] = '\0';
 
       /* Draw thumbnail */
@@ -4177,7 +4177,7 @@ static void rgui_render(void *data,
             if (gfx_animation_ticker_smooth(&ticker_smooth))
                title_width            = ticker_smooth.field_width;
             else
-               title_width            = (unsigned)(utf8len(thumbnail_title_buf) * rgui->font_width_stride);
+               title_width            = (utf8len(thumbnail_title_buf) * rgui->font_width_stride);
          }
          else
          {
@@ -4211,7 +4211,7 @@ static void rgui_render(void *data,
       char title_buf[255];
       size_t title_max_len;
       size_t title_len;
-      unsigned title_x;
+      size_t title_x;
       unsigned title_y               = rgui->term_layout.start_y - rgui->font_height_stride;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
       unsigned timedate_x            = term_end_x - (5 * rgui->font_width_stride);
@@ -4401,7 +4401,7 @@ static void rgui_render(void *data,
          /* If showing mini thumbnails, reduce title field length accordingly */
          if (show_mini_thumbnails)
          {
-            unsigned term_offset = rgui_swap_thumbnails 
+            size_t term_offset       = rgui_swap_thumbnails 
                ? (unsigned)(rgui->term_layout.height - (i - new_start) - 1)
                : (i - new_start);
             unsigned thumbnail_width = 0;
