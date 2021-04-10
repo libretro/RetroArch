@@ -13763,7 +13763,8 @@ bool command_event(enum event_command cmd, void *data)
             if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
-                     input_overlay_auto_rotate_(p_rarch, settings,
+                     input_overlay_auto_rotate_(p_rarch,
+                           settings->bools.input_overlay_enable,
                            p_rarch->overlay_ptr);
          }
 #endif
@@ -14046,7 +14047,16 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RESUME:
          retroarch_menu_running_finished(false);
          if (p_rarch->main_ui_companion_is_on_foreground)
-            ui_companion_driver_toggle(settings, p_rarch, false);
+         {
+#ifdef HAVE_QT
+            bool desktop_menu_enable = settings->bools.desktop_menu_enable;
+            bool ui_companion_toggle = settings->bools.ui_companion_toggle;
+#else
+            bool desktop_menu_enable = false;
+            bool ui_companion_toggle = false;
+#endif
+            ui_companion_driver_toggle(p_rarch, desktop_menu_enable, ui_companion_toggle, false);
+         }
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
          {
@@ -14634,7 +14644,16 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
-         ui_companion_driver_toggle(settings, p_rarch, true);
+         {
+#ifdef HAVE_QT
+            bool desktop_menu_enable = settings->bools.desktop_menu_enable;
+            bool ui_companion_toggle = settings->bools.ui_companion_toggle;
+#else
+            bool desktop_menu_enable = false;
+            bool ui_companion_toggle = false;
+#endif
+            ui_companion_driver_toggle(p_rarch, desktop_menu_enable, ui_companion_toggle, true);
+         }
          break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
@@ -16382,13 +16401,11 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 }
 
 static bool dynamic_verify_hw_context(
-      settings_t *settings,
+      const char *video_ident,
+      bool driver_switch_enable,
       enum retro_hw_context_type type,
       unsigned minor, unsigned major)
 {
-   const char   *video_ident   = settings->arrays.video_driver;
-   bool   driver_switch_enable = settings->bools.driver_switch_enable;
-
    if (driver_switch_enable)
       return true;
 
@@ -17382,7 +17399,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
          }
 
-         if (!dynamic_verify_hw_context(p_rarch->configuration_settings,
+         if (!dynamic_verify_hw_context(p_rarch->configuration_settings->arrays.video_driver,
+                                        p_rarch->configuration_settings->bools.driver_switch_enable,
                   cb->context_type, cb->version_minor, cb->version_major))
          {
             RARCH_ERR("[Environ]: SET_HW_RENDER: Dynamic verify HW context failed.\n");
@@ -18752,7 +18770,7 @@ static char *get_temp_directory_alloc(const char *override_dir)
    path[plen - 1]     = 0;
    GetTempPath(plen, path);
 #else
-   DWORD plen = GetTempPathW(0, NULL) + 1;
+   DWORD plen         = GetTempPathW(0, NULL) + 1;
    wchar_t *wide_str  = (wchar_t*)malloc(plen * sizeof(wchar_t));
 
    if (!wide_str)
@@ -19426,48 +19444,12 @@ static void ui_companion_driver_deinit(struct rarch_state *p_rarch)
    p_rarch->ui_companion_data = NULL;
 }
 
-static void ui_companion_driver_init_first(
-      settings_t *settings,
-      struct rarch_state *p_rarch)
-{
-#ifdef HAVE_QT
-   bool desktop_menu_enable          = settings->bools.desktop_menu_enable;
-   bool ui_companion_toggle          = settings->bools.ui_companion_toggle;
-
-   if (desktop_menu_enable && ui_companion_toggle)
-   {
-      p_rarch->ui_companion_qt_data  = ui_companion_qt.init();
-      p_rarch->qt_is_inited          = true;
-   }
-#endif
-
-   p_rarch->ui_companion             = (ui_companion_driver_t*)ui_companion_drivers[0];
-
-   if (p_rarch->ui_companion)
-   {
-      unsigned ui_companion_start_on_boot =
-         settings->bools.ui_companion_start_on_boot;
-
-      if (ui_companion_start_on_boot)
-      {
-         if (p_rarch->ui_companion->init)
-            p_rarch->ui_companion_data = p_rarch->ui_companion->init();
-
-         ui_companion_driver_toggle(settings, p_rarch, false);
-      }
-   }
-}
-
 static void ui_companion_driver_toggle(
-      settings_t *settings,
       struct rarch_state *p_rarch,
+      bool desktop_menu_enable,
+      bool ui_companion_toggle,
       bool force)
 {
-#ifdef HAVE_QT
-   bool     desktop_menu_enable = settings->bools.desktop_menu_enable;
-   bool     ui_companion_toggle = settings->bools.ui_companion_toggle;
-#endif
-
    if (p_rarch->ui_companion && p_rarch->ui_companion->toggle)
       p_rarch->ui_companion->toggle(p_rarch->ui_companion_data, false);
 
@@ -19484,6 +19466,40 @@ static void ui_companion_driver_toggle(
          ui_companion_qt.toggle(p_rarch->ui_companion_qt_data, force);
    }
 #endif
+}
+
+static void ui_companion_driver_init_first(
+      settings_t *settings,
+      struct rarch_state *p_rarch)
+{
+#ifdef HAVE_QT
+   bool desktop_menu_enable            = settings->bools.desktop_menu_enable;
+   bool ui_companion_toggle            = settings->bools.ui_companion_toggle;
+
+   if (desktop_menu_enable && ui_companion_toggle)
+   {
+      p_rarch->ui_companion_qt_data    = ui_companion_qt.init();
+      p_rarch->qt_is_inited            = true;
+   }
+#else
+   bool desktop_menu_enable            = false;
+   bool ui_companion_toggle            = false;
+#endif
+   unsigned ui_companion_start_on_boot =
+      settings->bools.ui_companion_start_on_boot;
+   p_rarch->ui_companion               = (ui_companion_driver_t*)ui_companion_drivers[0];
+
+   if (p_rarch->ui_companion)
+      if (ui_companion_start_on_boot)
+      {
+         if (p_rarch->ui_companion->init)
+            p_rarch->ui_companion_data = p_rarch->ui_companion->init();
+
+         ui_companion_driver_toggle(p_rarch,
+                                    desktop_menu_enable,
+                                    ui_companion_toggle,
+                                    false);
+      }
 }
 
 void ui_companion_driver_notify_refresh(void)
@@ -21003,29 +21019,21 @@ static void input_overlay_load_active(
  * config file. */
 static void input_overlay_auto_rotate_(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      bool input_overlay_enable,
       input_overlay_t *ol)
 {
    size_t i;
-   enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_NONE;
+   enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_PORTRAIT;
    enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
-   bool input_overlay_enable                           = settings->bools.input_overlay_enable;
-   bool next_overlay_found                             = false;
    bool tmp                                            = false;
-   unsigned next_overlay_index                         = 0;
 
    /* Sanity check */
-   if (!ol)
-      return;
-
-   if (!ol->alive || !input_overlay_enable)
+   if (!ol || !ol->alive || !input_overlay_enable)
       return;
 
    /* Get current screen orientation */
    if (p_rarch->video_driver_width > p_rarch->video_driver_height)
       screen_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
-   else
-      screen_orientation = OVERLAY_ORIENTATION_PORTRAIT;
 
    /* Get orientation of active overlay */
    if (!string_is_empty(ol->active->name))
@@ -21056,6 +21064,7 @@ static void input_overlay_auto_rotate_(
 
       if (!string_is_empty(desc->next_index_name))
       {
+         bool next_overlay_found = false;
          if (active_overlay_orientation == OVERLAY_ORIENTATION_LANDSCAPE)
             next_overlay_found = (strstr(desc->next_index_name, "portrait") != 0);
          else
@@ -21063,22 +21072,16 @@ static void input_overlay_auto_rotate_(
 
          if (next_overlay_found)
          {
-            next_overlay_index = desc->next_index;
+            /* We have a valid target overlay
+             * > Trigger 'overly next' command event
+             * Note: tmp == false. This prevents CMD_EVENT_OVERLAY_NEXT
+             * from calling input_overlay_auto_rotate_() again */
+            ol->next_index     = desc->next_index;
+            command_event(CMD_EVENT_OVERLAY_NEXT, &tmp);
             break;
          }
       }
    }
-
-   /* Sanity check */
-   if (!next_overlay_found)
-      return;
-
-   /* We have a valid target overlay
-    * > Trigger 'overly next' command event
-    * Note: tmp == false. This prevents CMD_EVENT_OVERLAY_NEXT
-    * from calling input_overlay_auto_rotate_() again */
-   ol->next_index = next_overlay_index;
-   command_event(CMD_EVENT_OVERLAY_NEXT, &tmp);
 }
 
 /**
@@ -21336,7 +21339,7 @@ static void input_overlay_loaded(retro_task_t *task,
    settings_t *settings                   = p_rarch->configuration_settings;
    bool input_overlay_show_mouse_cursor   = settings->bools.input_overlay_show_mouse_cursor;
    bool inp_overlay_auto_rotate           = settings->bools.input_overlay_auto_rotate;
-
+   bool input_overlay_enable              = settings->bools.input_overlay_enable;
    if (err)
       return;
 
@@ -21402,7 +21405,8 @@ static void input_overlay_loaded(retro_task_t *task,
 
    /* Attempt to automatically rotate overlay, if required */
    if (inp_overlay_auto_rotate)
-      input_overlay_auto_rotate_(p_rarch, settings,
+      input_overlay_auto_rotate_(p_rarch,
+            input_overlay_enable,
             p_rarch->overlay_ptr);
 
    return;
@@ -22853,18 +22857,16 @@ static int16_t input_joypad_axis(
 /* Must be called inside menu_driver_toggle()
  * Prevents phantom input when using an overlay to
  * toggle menu ON if overlays are disabled in-menu */
-
 static void menu_input_driver_toggle(
       menu_input_t *menu_input,
-      settings_t *settings,
+      bool overlay_hide_in_menu,
+      bool input_overlay_enable,
       bool overlay_alive,
       bool on)
 {
 #ifdef HAVE_OVERLAY
    if (on)
    {
-      bool overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
-      bool input_overlay_enable = settings->bools.input_overlay_enable;
       /* If an overlay was displayed before the toggle
        * and overlays are disabled in menu, need to
        * inhibit 'select' input */
@@ -29643,12 +29645,11 @@ static void video_driver_init_input(
  *
  * Computes monitor FPS statistics.
  **/
-static void video_driver_monitor_compute_fps_statistics(void)
+static void video_driver_monitor_compute_fps_statistics(struct rarch_state *p_rarch)
 {
    double        avg_fps       = 0.0;
    double        stddev        = 0.0;
    unsigned        samples     = 0;
-   struct rarch_state *p_rarch = &rarch_st;
 
    if (p_rarch->video_driver_frame_time_count <
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
@@ -29754,7 +29755,7 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
       return;
 #endif
 
-   video_driver_monitor_compute_fps_statistics();
+   video_driver_monitor_compute_fps_statistics(p_rarch);
 }
 
 static video_pixel_scaler_t *video_driver_pixel_converter_init(
@@ -29812,15 +29813,14 @@ error:
    return NULL;
 }
 
-static void video_driver_set_viewport_config(struct retro_game_geometry *geom,
-      settings_t *settings)
+static void video_driver_set_viewport_config(
+      struct retro_game_geometry *geom,
+      float video_aspect_ratio,
+      bool video_aspect_ratio_auto)
 {
-   float       video_aspect_ratio = settings->floats.video_aspect_ratio;
-
    if (video_aspect_ratio < 0.0f)
    {
-      if (geom->aspect_ratio > 0.0f &&
-            settings->bools.video_aspect_ratio_auto)
+      if (geom->aspect_ratio > 0.0f && video_aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
       {
@@ -29911,7 +29911,9 @@ static bool video_driver_init_internal(
    /* Update core-dependent aspect ratio values. */
    video_driver_set_viewport_square_pixel(geom);
    video_driver_set_viewport_core();
-   video_driver_set_viewport_config(geom, settings);
+   video_driver_set_viewport_config(geom,
+         settings->floats.video_aspect_ratio,
+         settings->bools.video_aspect_ratio_auto);
 
    /* Update CUSTOM viewport. */
    custom_vp = &settings->video_viewport_custom;
@@ -30181,7 +30183,7 @@ void gfx_display_draw_text(
       bool draw_outside)
 {
    struct font_params params;
-   struct rarch_state            *p_rarch = &rarch_st;
+   struct rarch_state *p_rarch = &rarch_st;
 
    if ((color & 0x000000FF) == 0)
       return;
@@ -30688,7 +30690,10 @@ void video_driver_set_aspect_ratio(void)
          break;
 
       case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config(&p_rarch->video_driver_av_info.geometry, settings);
+         video_driver_set_viewport_config(
+               &p_rarch->video_driver_av_info.geometry,
+               settings->floats.video_aspect_ratio,
+               settings->bools.video_aspect_ratio_auto);
          break;
 
       default:
@@ -35323,7 +35328,8 @@ static void menu_driver_toggle(
     * to toggle the menu on) */
    menu_input_driver_toggle(
          &p_rarch->menu_input_state,
-         settings,
+         settings->bools.input_overlay_hide_in_menu,
+         settings->bools.input_overlay_enable,
 #ifdef HAVE_OVERLAY
          p_rarch->overlay_ptr &&
          p_rarch->overlay_ptr->alive,
@@ -37149,7 +37155,8 @@ static enum runloop_state runloop_check_state(
 
          /* Check overlay rotation, if required */
          if (input_overlay_auto_rotate)
-            input_overlay_auto_rotate_(p_rarch, settings,
+            input_overlay_auto_rotate_(p_rarch,
+                  settings->bools.input_overlay_enable,
                   p_rarch->overlay_ptr);
 
          last_width  = video_driver_width;

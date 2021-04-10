@@ -15,8 +15,9 @@ extern "C"
 static void retroarch_fail(struct rarch_state *p_rarch,
       int error_code, const char *error);
 static void ui_companion_driver_toggle(
-      settings_t *settings,
       struct rarch_state *p_rarch,
+      bool desktop_menu_enable,
+      bool ui_companion_toggle,
       bool force);
 
 #ifdef HAVE_LIBNX
@@ -101,7 +102,7 @@ static void input_overlay_load_active(
       struct rarch_state *p_rarch,
       input_overlay_t *ol, float opacity);
 static void input_overlay_auto_rotate_(struct rarch_state *p_rarch,
-      settings_t *settings, input_overlay_t *ol);
+      bool input_overlay_enable, input_overlay_t *ol);
 #endif
 
 #ifdef HAVE_AUDIOMIXER
