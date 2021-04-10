@@ -333,9 +333,9 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
     * initialized to something sane. */
    for (i = 0; i < meta.parameters.size(); i++)
    {
-      bool mismatch_dup = false;
-      bool dup          = false;
-      auto itr          = std::find_if(shader->parameters,
+      struct video_shader_parameter *p = NULL;
+      bool mismatch_dup                = false;
+      auto itr                         = std::find_if(shader->parameters,
             shader->parameters + shader->num_parameters,
             [&](const video_shader_parameter &parsed_param)
             {
@@ -344,7 +344,6 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
 
       if (itr != shader->parameters + shader->num_parameters)
       {
-         dup = true;
          /* Allow duplicate #pragma parameter, but only
           * if they are exactly the same. */
          if (  meta.parameters[i].desc    != itr->desc    ||
@@ -358,10 +357,9 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
                   itr->id);
             mismatch_dup = true;
          }
+         else
+            continue;
       }
-
-      if (dup && !mismatch_dup)
-         continue;
 
       if (mismatch_dup || shader->num_parameters == GFX_MAX_PARAMETERS)
       {
@@ -369,10 +367,8 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
          return false;
       }
 
-      struct video_shader_parameter *p = (struct video_shader_parameter*)
-         &shader->parameters[shader->num_parameters++];
-
-      if (!p)
+      if (!(p = (struct video_shader_parameter*)
+         &shader->parameters[shader->num_parameters++]))
          continue;
 
       strlcpy(p->id,   meta.parameters[i].id.c_str(),   sizeof(p->id));
