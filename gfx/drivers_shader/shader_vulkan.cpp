@@ -1267,14 +1267,13 @@ bool vulkan_filter_chain::init()
 
    for (i = 0; i < passes.size(); i++)
    {
-      const std::string name = passes[i]->get_name();
 #ifdef VULKAN_DEBUG
+      const char *name = passes[i]->get_name().c_str();
       RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
-            name.empty() ?
+            string_is_empty(name) ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            name.c_str());
+            name);
 #endif
-
       source = passes[i]->set_pass_info(max_input_size,
             source, swapchain_info, pass_info[i]);
       if (!passes[i]->build())
