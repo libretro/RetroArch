@@ -32643,23 +32643,22 @@ static void driver_adjust_system_rates(
          /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
          p_rarch->runloop_force_nonblock = true;
          RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+         
+         if (VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
+         {
+            if (p_rarch->current_video->set_nonblock_state)
+               p_rarch->current_video->set_nonblock_state(
+                     p_rarch->video_driver_data, true,
+                     video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+                     video_adaptive_vsync,
+                     video_swap_interval
+                     );
+         }
+         return;
       }
    }
 
-   if (!VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
-      return;
-
-   if (p_rarch->runloop_force_nonblock)
-   {
-      if (p_rarch->current_video->set_nonblock_state)
-         p_rarch->current_video->set_nonblock_state(
-               p_rarch->video_driver_data, true,
-               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-               video_adaptive_vsync,
-               video_swap_interval
-               );
-   }
-   else
+   if (VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
       driver_set_nonblock_state();
 }
 
