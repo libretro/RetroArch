@@ -23,7 +23,6 @@
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
-using namespace std;
 using namespace spirv_cross;
 
 static const char *texture_semantic_names[] = {
@@ -55,8 +54,8 @@ static const char *semantic_uniform_names[] = {
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
-      const unordered_map<string, slang_texture_semantic_map> &semantic_map,
-      const string &name, unsigned *index)
+      const std::unordered_map<std::string, slang_texture_semantic_map> &semantic_map,
+      const std::string &name, unsigned *index)
 {
    auto itr = semantic_map.find(name);
    if (itr != end(semantic_map))
@@ -70,8 +69,8 @@ static slang_texture_semantic slang_name_to_texture_semantic(
 }
 
 static slang_texture_semantic slang_uniform_name_to_texture_semantic(
-      const unordered_map<string, slang_texture_semantic_map> &semantic_map,
-      const string &name, unsigned *index)
+      const std::unordered_map<std::string, slang_texture_semantic_map> &semantic_map,
+      const std::string &name, unsigned *index)
 {
    auto itr = semantic_map.find(name);
    if (itr != end(semantic_map))
@@ -85,8 +84,8 @@ static slang_texture_semantic slang_uniform_name_to_texture_semantic(
 }
 
 static slang_semantic slang_uniform_name_to_semantic(
-      const unordered_map<string, slang_semantic_map> &semantic_map,
-      const string &name, unsigned *index)
+      const std::unordered_map<std::string, slang_semantic_map> &semantic_map,
+      const std::string &name, unsigned *index)
 {
    unsigned i = 0;
    auto itr   = semantic_map.find(name);
@@ -277,7 +276,7 @@ static bool add_active_buffer_ranges(
    {
       unsigned sem_index             = 0;
       unsigned tex_sem_index         = 0;
-      const string &name             = compiler.get_member_name(
+      const std::string &name        = compiler.get_member_name(
             resource.base_type_id, ranges[i].index);
       const SPIRType &type           = compiler.get_type(
             compiler.get_type(resource.base_type_id).member_types[
@@ -495,7 +494,7 @@ bool slang_reflect(
    if (vertex_ubo)
    {
       reflection->ubo_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      reflection->ubo_size        = max(reflection->ubo_size,
+      reflection->ubo_size        = std::max(reflection->ubo_size,
             vertex_compiler.get_declared_struct_size(
                vertex_compiler.get_type(
                   vertex.uniform_buffers[0].base_type_id)));
@@ -504,7 +503,7 @@ bool slang_reflect(
    if (fragment_ubo)
    {
       reflection->ubo_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      reflection->ubo_size        = max(reflection->ubo_size,
+      reflection->ubo_size        = std::max(reflection->ubo_size,
             fragment_compiler.get_declared_struct_size(
                fragment_compiler.get_type(
                   fragment.uniform_buffers[0].base_type_id)));
@@ -513,7 +512,7 @@ bool slang_reflect(
    if (vertex_push)
    {
       reflection->push_constant_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      reflection->push_constant_size        = max(
+      reflection->push_constant_size        = std::max(
             reflection->push_constant_size,
             vertex_compiler.get_declared_struct_size(
                vertex_compiler.get_type(
@@ -523,7 +522,7 @@ bool slang_reflect(
    if (fragment_push)
    {
       reflection->push_constant_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      reflection->push_constant_size        = max(
+      reflection->push_constant_size        = std::max(
             reflection->push_constant_size,
             fragment_compiler.get_declared_struct_size(
                fragment_compiler.get_type(

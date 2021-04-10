@@ -35,8 +35,6 @@
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 
-using namespace std;
-
 static const uint32_t opaque_vert[] =
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
 ;
@@ -56,15 +54,15 @@ struct Texture
 class DeferredDisposer
 {
    public:
-      DeferredDisposer(vector<function<void ()>> &calls) : calls(calls) {}
+      DeferredDisposer(std::vector<std::function<void ()>> &calls) : calls(calls) {}
 
-      void defer(function<void ()> func)
+      void defer(std::function<void ()> func)
       {
-         calls.push_back(move(func));
+         calls.push_back(std::move(func));
       }
 
    private:
-      vector<function<void ()>> &calls;
+      std::vector<std::function<void ()>> &calls;
 };
 
 class Buffer
@@ -95,12 +93,12 @@ class Buffer
 class StaticTexture
 {
    public:
-      StaticTexture(string id,
+      StaticTexture(std::string id,
             VkDevice device,
             VkImage image,
             VkImageView view,
             VkDeviceMemory memory,
-            unique_ptr<Buffer> buffer,
+            std::unique_ptr<Buffer> buffer,
             unsigned width, unsigned height,
             bool linear,
             bool mipmap,
@@ -111,8 +109,8 @@ class StaticTexture
       void operator=(StaticTexture&&) = delete;
 
       void release_staging_buffer() { buffer.reset(); }
-      void set_id(string name) { id = move(name); }
-      const string &get_id() const { return id; }
+      void set_id(std::string name) { id = std::move(name); }
+      const std::string &get_id() const { return id; }
       const Texture &get_texture() const { return texture; }
 
    private:
@@ -120,8 +118,8 @@ class StaticTexture
       VkImage image;
       VkImageView view;
       VkDeviceMemory memory;
-      unique_ptr<Buffer> buffer;
-      string id;
+      std::unique_ptr<Buffer> buffer;
+      std::string id;
       Texture texture;
 };
 
@@ -177,8 +175,8 @@ struct CommonResources
          const VkPhysicalDeviceMemoryProperties &memory_properties);
    ~CommonResources();
 
-   unique_ptr<Buffer> vbo;
-   unique_ptr<Buffer> ubo;
+   std::unique_ptr<Buffer> vbo;
+   std::unique_ptr<Buffer> ubo;
    uint8_t *ubo_mapped          = nullptr;
    size_t ubo_sync_index_stride = 0;
    size_t ubo_offset            = 0;
@@ -186,14 +184,14 @@ struct CommonResources
 
    VkSampler samplers[GLSLANG_FILTER_CHAIN_COUNT][GLSLANG_FILTER_CHAIN_COUNT][GLSLANG_FILTER_CHAIN_ADDRESS_COUNT];
 
-   vector<Texture> original_history;
-   vector<Texture> fb_feedback;
-   vector<Texture> pass_outputs;
-   vector<unique_ptr<StaticTexture>> luts;
+   std::vector<Texture> original_history;
+   std::vector<Texture> fb_feedback;
+   std::vector<Texture> pass_outputs;
+   std::vector<std::unique_ptr<StaticTexture>> luts;
 
-   unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
-   unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
-   unique_ptr<video_shader> shader_preset;
+   std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_map;
+   std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_uniform_map;
+   std::unique_ptr<video_shader> shader_preset;
 
    VkDevice device;
 };
@@ -245,7 +243,7 @@ class Pass
       void set_frame_count_period(unsigned p) { frame_count_period = p; }
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
       void set_name(const char *name) { pass_name = name; }
-      const string &get_name() const { return pass_name; }
+      const std::string &get_name() const { return pass_name; }
       glslang_filter_chain_filter get_source_filter() const { 
          return pass_info.source_filter; }
 
@@ -284,17 +282,17 @@ class Pass
       VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
       VkDescriptorPool pool            = VK_NULL_HANDLE;
 
-      vector<VkDescriptorSet> sets;
+      std::vector<VkDescriptorSet> sets;
       CommonResources *common = nullptr;
 
       Size2D current_framebuffer_size;
       VkViewport current_viewport;
       vulkan_filter_chain_pass_info pass_info;
 
-      vector<uint32_t> vertex_shader;
-      vector<uint32_t> fragment_shader;
-      unique_ptr<Framebuffer> framebuffer;
-      unique_ptr<Framebuffer> fb_feedback;
+      std::vector<uint32_t> vertex_shader;
+      std::vector<uint32_t> fragment_shader;
+      std::unique_ptr<Framebuffer> framebuffer;
+      std::unique_ptr<Framebuffer> fb_feedback;
       VkRenderPass swapchain_render_pass;
 
       void clear_vk();
@@ -333,22 +331,22 @@ class Pass
       unsigned pass_number        = 0;
 
       size_t ubo_offset           = 0;
-      string pass_name;
+      std::string pass_name;
 
       struct Parameter
       {
-         string id;
+         std::string id;
          unsigned index;
          unsigned semantic_index;
       };
 
-      vector<Parameter> parameters;
-      vector<Parameter> filtered_parameters;
+      std::vector<Parameter> parameters;
+      std::vector<Parameter> filtered_parameters;
 
       struct PushConstant
       {
          VkShaderStageFlags stages = 0;
-         vector<uint32_t> buffer; /* uint32_t to have correct alignment. */
+         std::vector<uint32_t> buffer; /* uint32_t to have correct alignment. */
       };
       PushConstant push;
 };
@@ -360,9 +358,9 @@ struct vulkan_filter_chain
       vulkan_filter_chain(const vulkan_filter_chain_create_info &info);
       ~vulkan_filter_chain();
 
-      inline void set_shader_preset(unique_ptr<video_shader> shader)
+      inline void set_shader_preset(std::unique_ptr<video_shader> shader)
       {
-         common.shader_preset = move(shader);
+         common.shader_preset = std::move(shader);
       }
 
       inline video_shader *get_shader_preset()
@@ -391,7 +389,7 @@ struct vulkan_filter_chain
       void set_frame_direction(int32_t direction);
       void set_pass_name(unsigned pass, const char *name);
 
-      void add_static_texture(unique_ptr<StaticTexture> texture);
+      void add_static_texture(std::unique_ptr<StaticTexture> texture);
       void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
       void release_staging_buffers();
 
@@ -400,9 +398,9 @@ struct vulkan_filter_chain
       VkPhysicalDevice gpu;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
       VkPipelineCache cache;
-      vector<unique_ptr<Pass>> passes;
-      vector<vulkan_filter_chain_pass_info> pass_info;
-      vector<vector<function<void ()>>> deferred_calls;
+      std::vector<std::unique_ptr<Pass>> passes;
+      std::vector<vulkan_filter_chain_pass_info> pass_info;
+      std::vector<std::vector<std::function<void ()>>> deferred_calls;
       CommonResources common;
       VkFormat original_format;
 
@@ -424,7 +422,7 @@ struct vulkan_filter_chain
       bool init_feedback();
       bool init_alias();
       void update_history(DeferredDisposer &disposer, VkCommandBuffer cmd);
-      vector<unique_ptr<Framebuffer>> original_history;
+      std::vector<std::unique_ptr<Framebuffer>> original_history;
       bool require_clear = false;
       void clear_history_and_feedback(VkCommandBuffer cmd);
       void update_feedback_info();
@@ -512,7 +510,7 @@ static VkFormat glslang_format_to_vk(glslang_format fmt)
    return VK_FORMAT_UNDEFINED;
 }
 
-static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
+static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
       VkCommandBuffer cmd,
       const struct vulkan_filter_chain_create_info *info,
       vulkan_filter_chain *chain,
@@ -520,7 +518,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
 {
    unsigned i;
    texture_image image;
-   unique_ptr<Buffer> buffer;
+   std::unique_ptr<Buffer> buffer;
    VkMemoryRequirements mem_reqs;
    VkImageCreateInfo image_info    = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
    VkImageViewCreateInfo view_info = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
@@ -581,7 +579,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    vkCreateImageView(info->device, &view_info, nullptr, &view);
 
    buffer                                = 
-      unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
+      std::unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
                image.width * image.height * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
    ptr                                   = buffer->map();
    memcpy(ptr, image.pixels, image.width * image.height * sizeof(uint32_t));
@@ -682,8 +680,8 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image_texture_free(&image);
    image.pixels = nullptr;
 
-   return unique_ptr<StaticTexture>(new StaticTexture(shader->id, info->device,
-            tex, view, memory, move(buffer), image.width, image.height,
+   return std::unique_ptr<StaticTexture>(new StaticTexture(shader->id, info->device,
+            tex, view, memory, std::move(buffer), image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             image_info.mipLevels > 1,
             rarch_wrap_to_address(shader->wrap)));
@@ -726,7 +724,7 @@ static bool vulkan_filter_chain_load_luts(
 
    for (i = 0; i < shader->luts; i++)
    {
-      unique_ptr<StaticTexture> image = 
+      std::unique_ptr<StaticTexture> image = 
          vulkan_filter_chain_load_lut(cmd, info, chain, &shader->lut[i]);
       if (!image)
       {
@@ -734,7 +732,7 @@ static bool vulkan_filter_chain_load_luts(
          goto error;
       }
 
-      chain->add_static_texture(move(image));
+      chain->add_static_texture(std::move(image));
    }
 
    vkEndCommandBuffer(cmd);
@@ -931,7 +929,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
 void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
       VkCommandBuffer cmd)
 {
-   unique_ptr<Framebuffer> tmp;
+   std::unique_ptr<Framebuffer> tmp;
    VkImageLayout src_layout = input_texture.layout;
 
    /* Transition input texture to something appropriate. */
@@ -951,7 +949,7 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
       src_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    }
 
-   unique_ptr<Framebuffer> &back = original_history.back();
+   std::unique_ptr<Framebuffer> &back = original_history.back();
    swap(back, tmp);
 
    if   (input_texture.width      != tmp->get_size().width  ||
@@ -1057,7 +1055,7 @@ bool vulkan_filter_chain::init_history()
 
    for (i = 0; i < passes.size(); i++)
       required_images =
-         max(required_images,
+         std::max(required_images,
                passes[i]->get_reflection().semantic_textures[
                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
 
@@ -1144,7 +1142,7 @@ bool vulkan_filter_chain::init_alias()
 
    for (i = 0; i < passes.size(); i++)
    {
-      const string name = passes[i]->get_name();
+      const std::string name = passes[i]->get_name();
       if (name.empty())
          continue;
 
@@ -1251,7 +1249,7 @@ bool vulkan_filter_chain::init_ubo()
    common.ubo_sync_index_stride = common.ubo_offset;
 
    if (common.ubo_offset != 0)
-      common.ubo                = unique_ptr<Buffer>(new Buffer(device,
+      common.ubo                = std::unique_ptr<Buffer>(new Buffer(device,
                memory_properties, common.ubo_offset * deferred_calls.size(),
                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 
@@ -1269,7 +1267,7 @@ bool vulkan_filter_chain::init()
 
    for (i = 0; i < passes.size(); i++)
    {
-      const string name = passes[i]->get_name();
+      const std::string name = passes[i]->get_name();
 #ifdef VULKAN_DEBUG
       RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
             name.empty() ?
@@ -1314,9 +1312,9 @@ void vulkan_filter_chain::set_input_texture(
 }
 
 void vulkan_filter_chain::add_static_texture(
-      unique_ptr<StaticTexture> texture)
+      std::unique_ptr<StaticTexture> texture)
 {
-   common.luts.push_back(move(texture));
+   common.luts.push_back(std::move(texture));
 }
 
 void vulkan_filter_chain::set_frame_count(uint64_t count)
@@ -1344,12 +1342,12 @@ void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
    passes[pass]->set_name(name);
 }
 
-StaticTexture::StaticTexture(string id,
+StaticTexture::StaticTexture(std::string id,
       VkDevice device,
       VkImage image,
       VkImageView view,
       VkDeviceMemory memory,
-      unique_ptr<Buffer> buffer,
+      std::unique_ptr<Buffer> buffer,
       unsigned width, unsigned height,
       bool linear,
       bool mipmap,
@@ -1358,8 +1356,8 @@ StaticTexture::StaticTexture(string id,
      image(image),
      view(view),
      memory(memory),
-     buffer(move(buffer)),
-     id(move(id))
+     buffer(std::move(buffer)),
+     id(std::move(id))
 {
    texture.filter         = GLSLANG_FILTER_CHAIN_NEAREST;
    texture.mip_filter     = GLSLANG_FILTER_CHAIN_NEAREST;
@@ -1561,8 +1559,8 @@ void Pass::clear_vk()
 bool Pass::init_pipeline_layout()
 {
    unsigned i;
-   vector<VkDescriptorSetLayoutBinding> bindings;
-   vector<VkDescriptorPoolSize> desc_counts;
+   std::vector<VkDescriptorSetLayoutBinding> bindings;
+   std::vector<VkDescriptorPoolSize> desc_counts;
    VkPushConstantRange push_range                  = {};
    VkDescriptorSetLayoutCreateInfo set_layout_info = {
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
@@ -1821,7 +1819,7 @@ CommonResources::CommonResources(VkDevice device,
    };
 
    vbo                          = 
-      unique_ptr<Buffer>(new Buffer(device,
+      std::unique_ptr<Buffer>(new Buffer(device,
                memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 
    void *ptr                    = vbo->map();
@@ -1947,7 +1945,7 @@ bool Pass::init_feedback()
    if (final_pass)
       return false;
 
-   fb_feedback = unique_ptr<Framebuffer>(
+   fb_feedback = std::unique_ptr<Framebuffer>(
          new Framebuffer(device, memory_properties,
             current_framebuffer_size,
             pass_info.rt_format, pass_info.max_levels));
@@ -1958,13 +1956,13 @@ bool Pass::build()
 {
    unsigned i;
    unsigned j = 0;
-   unordered_map<string, slang_semantic_map> semantic_map;
+   std::unordered_map<std::string, slang_semantic_map> semantic_map;
 
    framebuffer.reset();
    fb_feedback.reset();
 
    if (!final_pass)
-      framebuffer = unique_ptr<Framebuffer>(
+      framebuffer = std::unique_ptr<Framebuffer>(
             new Framebuffer(device, memory_properties,
                current_framebuffer_size,
                pass_info.rt_format, pass_info.max_levels));
@@ -2374,7 +2372,7 @@ Framebuffer::Framebuffer(
       unsigned max_levels) :
    size(max_size),
    format(format),
-   max_levels(max(max_levels, 1u)),
+   max_levels(std::max(max_levels, 1u)),
    memory_properties(mem_props),
    device(device)
 {
@@ -2397,7 +2395,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.extent.width      = size.width;
    info.extent.height     = size.height;
    info.extent.depth      = 1;
-   info.mipLevels         = min(max_levels,
+   info.mipLevels         = std::min(max_levels,
          glslang_num_miplevels(size.width, size.height));
    info.arrayLayers       = 1;
    info.samples           = VK_SAMPLE_COUNT_1_BIT;
@@ -2543,7 +2541,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
 
    tmpinfo.num_passes      = 1;
 
-   unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
+   std::unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
    if (!chain)
       return nullptr;
 
@@ -2577,7 +2575,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
-   unique_ptr<video_shader> shader{ new video_shader() };
+   std::unique_ptr<video_shader> shader{ new video_shader() };
 
    if (!shader)
       return nullptr;
@@ -2589,7 +2587,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    auto tmpinfo          = *info;
    tmpinfo.num_passes    = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
-   unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
+   std::unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
    if (!chain)
       goto error;
 
@@ -2631,7 +2629,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             goto error;
          }
 
-         auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
+         auto itr = std::find_if(shader->parameters, shader->parameters + shader->num_parameters,
                [&](const video_shader_parameter &param)
                {
                   return meta_param.id == param.id;
@@ -2825,7 +2823,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(move(shader));
+   chain->set_shader_preset(std::move(shader));
 
    if (!chain->init())
       goto error;
