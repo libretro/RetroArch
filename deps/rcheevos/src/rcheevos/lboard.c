@@ -151,6 +151,10 @@ int rc_lboard_size(const char* memaddr) {
 rc_lboard_t* rc_parse_lboard(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx) {
   rc_lboard_t* self;
   rc_parse_state_t parse;
+
+  if (!buffer || !memaddr)
+    return 0;
+
   rc_init_parse_state(&parse, buffer, L, funcs_ndx);
   
   self = RC_ALLOC(rc_lboard_t, &parse);
@@ -159,7 +163,7 @@ rc_lboard_t* rc_parse_lboard(void* buffer, const char* memaddr, lua_State* L, in
   rc_parse_lboard_internal(self, memaddr, &parse);
 
   rc_destroy_parse_state(&parse);
-  return parse.offset >= 0 ? self : 0;
+  return (parse.offset >= 0) ? self : 0;
 }
 
 int rc_evaluate_lboard(rc_lboard_t* self, int* value, rc_peek_t peek, void* peek_ud, lua_State* L) {
