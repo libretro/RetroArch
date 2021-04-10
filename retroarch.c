@@ -11909,7 +11909,7 @@ static bool command_event_disk_control_append_image(
    retroarch_autosave_deinit(p_rarch);
 #endif
 
-   /* TODO: Need to figure out what to do with subsystems case. */
+   /* TODO/FIXME: Need to figure out what to do with subsystems case. */
    if (path_is_empty(RARCH_PATH_SUBSYSTEM))
    {
       /* Update paths for our new image.
@@ -12085,15 +12085,15 @@ static void command_event_deinit_core(
 
 #ifdef HAVE_CHEATS
 static void command_event_init_cheats(
-      settings_t *settings,
+      bool apply_cheats_after_load,
+      const char *path_cheat_db,
       struct rarch_state *p_rarch)
 {
-   bool        allow_cheats      = true;
-   bool apply_cheats_after_load  = settings->bools.apply_cheats_after_load;
-   const char *path_cheat_db     = settings->paths.path_cheat_database;
 #ifdef HAVE_NETWORKING
-   allow_cheats                 &= !netplay_driver_ctl(
+   bool allow_cheats             = !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
+#else
+   bool allow_cheats             = true;
 #endif
 #ifdef HAVE_BSV_MOVIE
    allow_cheats                 &= !(p_rarch->bsv_movie_state_handle != NULL);
@@ -12111,16 +12111,11 @@ static void command_event_init_cheats(
 #endif
 
 static void command_event_load_auto_state(
-      settings_t *settings,
       global_t *global,
       struct rarch_state *p_rarch)
 {
    char savestate_name_auto[PATH_MAX_LENGTH];
    bool ret                        = false;
-   bool savestate_auto_load        = settings->bools.savestate_auto_load;
-
-   if (!global || !savestate_auto_load)
-      return;
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
       return;
@@ -12358,8 +12353,8 @@ static bool event_init_content(
 #ifdef HAVE_CHEEVOS
    if (!cheevos_enable || !cheevos_hardcore_mode_enable)
 #endif
-      command_event_load_auto_state(settings, 
-            global, p_rarch);
+      if (global && settings->bools.savestate_auto_load)
+         command_event_load_auto_state(global, p_rarch);
 
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_deinit(p_rarch);
@@ -33682,7 +33677,9 @@ static bool runahead_core_run_use_last_input(struct rarch_state *p_rarch)
 
 static void do_runahead(
       struct rarch_state *p_rarch,
-      int runahead_count, bool use_secondary)
+      int runahead_count,
+      bool runahead_hide_warnings,
+      bool use_secondary)
 {
    int frame_number        = 0;
    bool last_frame         = false;
@@ -33701,9 +33698,6 @@ static void do_runahead(
    {
       if (!runahead_create(p_rarch))
       {
-         settings_t *settings        = p_rarch->configuration_settings;
-         bool runahead_hide_warnings = settings->bools.run_ahead_hide_warnings;
-
          if (!runahead_hide_warnings)
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto force_input_dirty;
@@ -35194,7 +35188,9 @@ bool retroarch_main_init(int argc, char *argv[])
 
 #ifdef HAVE_CHEATS
    cheat_manager_state_free();
-   command_event_init_cheats(settings, p_rarch);
+   command_event_init_cheats(settings->bools.apply_cheats_after_load,
+                             settings->paths.path_cheat_database,
+                             p_rarch);
 #endif
    drivers_init(p_rarch, settings, DRIVERS_CMD_ALL, verbosity_enabled);
 #ifdef HAVE_COMMAND
@@ -36777,7 +36773,7 @@ static bool input_driver_toggle_button_combo(
 /* Display the libretro core's framebuffer onscreen. */
 static bool menu_display_libretro(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      float slowmotion_ratio,
       bool libretro_running,
       retro_time_t current_time)
 {
@@ -36796,9 +36792,7 @@ static bool menu_display_libretro(
 
       core_run();
       p_rarch->libretro_core_runtime_usec        +=
-         rarch_core_runtime_tick(p_rarch,
-               settings->floats.slowmotion_ratio,
-               current_time);
+         rarch_core_runtime_tick(p_rarch, slowmotion_ratio, current_time);
       p_rarch->input_driver_block_libretro_input  = false;
 
       return false;
@@ -37456,7 +37450,8 @@ static enum runloop_state runloop_check_state(
             }
 
             if (p_rarch->menu_driver_alive && !p_rarch->runloop_idle)
-               if (menu_display_libretro(p_rarch, settings,
+               if (menu_display_libretro(p_rarch,
+                        settings->floats.slowmotion_ratio,
                         libretro_running, current_time))
                   video_driver_cached_frame();
 
@@ -38198,6 +38193,7 @@ int runloop_iterate(void)
          do_runahead(
                p_rarch,
                run_ahead_num_frames,
+               settings->bools.run_ahead_hide_warnings,
                settings->bools.run_ahead_secondary_instance);
       else
 #endif
