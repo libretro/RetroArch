@@ -32603,11 +32603,11 @@ static void driver_adjust_system_rates(
    struct retro_system_av_info *av_info   = &p_rarch->video_driver_av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
+   double input_sample_rate               = info->sample_rate;
+   double input_fps                       = info->fps;
    
-   if (info->sample_rate > 0.0)
+   if (input_sample_rate > 0.0)
    {
-      double input_sample_rate       = info->sample_rate;
-      double input_fps               = info->fps;
       if (vrr_runloop_enable)
          p_rarch->audio_driver_input = input_sample_rate;
       else
@@ -32625,9 +32625,8 @@ static void driver_adjust_system_rates(
    
    p_rarch->runloop_force_nonblock = false;
 
-   if (info && info->fps > 0.0)
+   if (input_fps > 0.0)
    {
-      double input_fps              = info->fps;
       float timing_skew_hz          = video_refresh_rate;
 
       if (p_rarch->video_driver_crt_switching_active)
