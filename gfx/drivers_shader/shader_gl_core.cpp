@@ -189,9 +189,9 @@ GLuint gl_core_cross_compile_program(
       for (auto &res : vertex_resources.stage_inputs)
       {
          char loc_buf[64];
-         uint32_t loc = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
-         snprintf(loc_buf, sizeof(loc_buf), "RARCH_ATTRIBUTE_%d", loc);
-         glBindAttribLocation(program, loc, loc_buf);
+         uint32_t _loc = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
+         snprintf(loc_buf, sizeof(loc_buf), "RARCH_ATTRIBUTE_%d", _loc);
+         glBindAttribLocation(program, _loc, loc_buf);
       }
       glLinkProgram(program);
       glDeleteShader(vertex_shader);
@@ -1128,12 +1128,12 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       }
       else
       {
-         float *data = reinterpret_cast<float *>
+         float *_data = reinterpret_cast<float *>
                (push_constant_buffer.data() + refl->push_constant_offset);
-         data[0]     = (float)(width);
-         data[1]     = (float)(height);
-         data[2]     = 1.0f / (float)(width);
-         data[3]     = 1.0f / (float)(height);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
       }
    }
 }
@@ -1290,11 +1290,11 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       }
       else
       {
-         float *data = reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset);
-         data[0]     = (float)(width);
-         data[1]     = (float)(height);
-         data[2]     = 1.0f / (float)(width);
-         data[3]     = 1.0f / (float)(height);
+         float *_data = reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
       }
    }
 }

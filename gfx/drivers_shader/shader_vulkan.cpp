@@ -2039,11 +2039,11 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
 
    if (refl[index].push_constant)
    {
-      float *data = reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2));
-      data[0]     = (float)(width);
-      data[1]     = (float)(height);
-      data[2]     = 1.0f / (float)(width);
-      data[3]     = 1.0f / (float)(height);
+      float *_data = reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2));
+      _data[0]     = (float)(width);
+      _data[1]     = (float)(height);
+      _data[2]     = 1.0f / (float)(width);
+      _data[3]     = 1.0f / (float)(height);
    }
 }
 
@@ -2069,12 +2069,12 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
 
    if (refl.push_constant)
    {
-      float *data = reinterpret_cast<float *>
+      float *_data = reinterpret_cast<float *>
             (push.buffer.data() + (refl.push_constant_offset >> 2));
-      data[0]     = (float)(width);
-      data[1]     = (float)(height);
-      data[2]     = 1.0f / (float)(width);
-      data[3]     = 1.0f / (float)(height);
+      _data[0]     = (float)(width);
+      _data[1]     = (float)(height);
+      _data[2]     = 1.0f / (float)(width);
+      _data[3]     = 1.0f / (float)(height);
    }
 }
 
