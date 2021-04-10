@@ -24618,29 +24618,20 @@ static void input_keys_pressed(
       }
    }
 
-   /* Check the libretro input first */
-   if (p_rarch->input_driver_block_libretro_input)
    {
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         if (input_keys_pressed_other_sources(p_rarch,
-                  i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-         }
-      }
-   }
-   else
-   {
-      int16_t ret = input_state_wrap(
-            p_rarch->current_input,
-            p_rarch->current_input_data,
-            p_rarch->joypad,
-            sec_joypad,
-            joypad_info, &binds[port],
-            p_rarch->keyboard_mapping_blocked,
-            port, RETRO_DEVICE_JOYPAD, 0,
-            RETRO_DEVICE_ID_JOYPAD_MASK);
+      int16_t ret = 0;
+
+      /* Check the libretro input first */
+      if (!p_rarch->input_driver_block_libretro_input)
+         ret = input_state_wrap(
+               p_rarch->current_input,
+               p_rarch->current_input_data,
+               p_rarch->joypad,
+               sec_joypad,
+               joypad_info, &binds[port],
+               p_rarch->keyboard_mapping_blocked,
+               port, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_MASK);
 
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
