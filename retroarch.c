@@ -12278,9 +12278,9 @@ static void command_event_set_savestate_garbage_collect(
    {
       unsigned idx;
       char elem_base[128];
+      const char *ext                 = NULL;
       const char *end                 = NULL;
       const char *dir_elem            = dir_list->elems[i].data;
-      const char *ext                 = NULL;
 
       elem_base[0]                    = '\0';
 
@@ -12434,8 +12434,12 @@ static void update_runtime_log(
 }
 
 
-static void command_event_runtime_log_deinit(struct rarch_state *p_rarch,
-      settings_t *settings)
+static void command_event_runtime_log_deinit(
+      struct rarch_state *p_rarch,
+      bool content_runtime_log,
+      bool content_runtime_log_aggregate,
+      const char *dir_runtime_log,
+      const char *dir_playlist)
 {
    char log[PATH_MAX_LENGTH]    = {0};
    unsigned hours               = 0;
@@ -12443,10 +12447,10 @@ static void command_event_runtime_log_deinit(struct rarch_state *p_rarch,
    unsigned seconds             = 0;
    int n                        = 0;
 
+   /* TODO/FIXME - should we hide this logging behind verbosity being enabled? */
    runtime_log_convert_usec2hms(
          p_rarch->libretro_core_runtime_usec,
          &hours, &minutes, &seconds);
-
    n = snprintf(log, sizeof(log),
          "[Core]: Content ran for a total of: %02u hours, %02u minutes, %02u seconds.",
          hours, minutes, seconds);
@@ -12458,11 +12462,6 @@ static void command_event_runtime_log_deinit(struct rarch_state *p_rarch,
    /* Only write to file if content has run for a non-zero length of time */
    if (p_rarch->libretro_core_runtime_usec > 0)
    {
-      bool content_runtime_log           = settings->bools.content_runtime_log;
-      bool content_runtime_log_aggregate = settings->bools.content_runtime_log_aggregate;
-      const char  *dir_runtime_log       = settings->paths.directory_runtime_log;
-      const char  *dir_playlist          = settings->paths.directory_playlist;
-
       /* Per core logging */
       if (content_runtime_log)
          update_runtime_log(p_rarch, dir_runtime_log, dir_playlist, true);
@@ -12476,7 +12475,7 @@ static void command_event_runtime_log_deinit(struct rarch_state *p_rarch,
     * possibility of duplicate logging */
    p_rarch->libretro_core_runtime_usec = 0;
    memset(p_rarch->runtime_content_path, 0, sizeof(p_rarch->runtime_content_path));
-   memset(p_rarch->runtime_core_path, 0, sizeof(p_rarch->runtime_core_path));
+   memset(p_rarch->runtime_core_path,    0, sizeof(p_rarch->runtime_core_path));
 }
 
 static void command_event_runtime_log_init(struct rarch_state *p_rarch)
@@ -12631,15 +12630,12 @@ static bool command_event_init_core(
 }
 
 static bool command_event_save_auto_state(
-      settings_t *settings,
+      bool savestate_auto_save,
       global_t *global,
-      struct rarch_state *p_rarch)
+      const enum rarch_core_type current_core_type)
 {
    bool ret                    = false;
    char savestate_name_auto[PATH_MAX_LENGTH];
-   bool savestate_auto_save    = settings->bools.savestate_auto_save;
-   const enum rarch_core_type
-      current_core_type        = p_rarch->current_core_type;
 
    if (!global || !savestate_auto_save)
       return false;
@@ -13577,9 +13573,13 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
 
-            command_event_runtime_log_deinit(p_rarch, settings);
-            command_event_save_auto_state(settings, 
-                  global, p_rarch);
+            command_event_runtime_log_deinit(p_rarch,
+                  settings->bools.content_runtime_log,
+                  settings->bools.content_runtime_log_aggregate,
+                  settings->paths.directory_runtime_log,
+                  settings->paths.directory_playlist);
+            command_event_save_auto_state(settings->bools.savestate_auto_save,
+                  global, p_rarch->current_core_type);
 
 #ifdef HAVE_CONFIGFILE
             if (p_rarch->runloop_overrides_active)
@@ -13960,7 +13960,11 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
 
-            command_event_runtime_log_deinit(p_rarch, settings);
+            command_event_runtime_log_deinit(p_rarch,
+                  settings->bools.content_runtime_log,
+                  settings->bools.content_runtime_log_aggregate,
+                  settings->paths.directory_runtime_log,
+                  settings->paths.directory_playlist);
             content_reset_savestate_backups();
             hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 #ifdef HAVE_CHEEVOS
@@ -17123,7 +17127,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
           * since normal command.c CMD_EVENT_CORE_DEINIT event
           * will not occur until after the current content has
           * been cleared (causing log to be skipped) */
-         command_event_runtime_log_deinit(p_rarch, settings);
+         command_event_runtime_log_deinit(p_rarch,
+               settings->bools.content_runtime_log,
+               settings->bools.content_runtime_log_aggregate,
+               settings->paths.directory_runtime_log,
+               settings->paths.directory_playlist);
 
          p_rarch->runloop_shutdown_initiated      = true;
          p_rarch->runloop_core_shutdown_initiated = true;
@@ -36605,9 +36613,10 @@ bool retroarch_main_quit(void)
 
    if (!p_rarch->runloop_shutdown_initiated)
    {
-      command_event_save_auto_state(p_rarch->configuration_settings,
+      command_event_save_auto_state(
+            p_rarch->configuration_settings->bools.savestate_auto_save,
             global,
-            p_rarch);
+            p_rarch->current_core_type);
 
       /* If any save states are in progress, wait
        * until all tasks are complete (otherwise
@@ -37700,11 +37709,14 @@ static enum runloop_state runloop_check_state(
       /* Check if libretro pause key was pressed. If so, pause or
        * unpause the libretro core. */
 
-      if (focused && pause_pressed && !old_pause_pressed)
-         command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
-      else if (focused && !old_focus)
-         command_event(CMD_EVENT_UNPAUSE, NULL);
-      else if (!focused && old_focus)
+      if (focused)
+      {
+         if (pause_pressed && !old_pause_pressed)
+            command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+         else if (!old_focus)
+            command_event(CMD_EVENT_UNPAUSE, NULL);
+      }
+      else if (old_focus)
          command_event(CMD_EVENT_PAUSE, NULL);
 
       old_focus           = focused;
@@ -38059,10 +38071,17 @@ int runloop_iterate(void)
    unsigned max_users                           = p_rarch->input_driver_max_users;
    retro_time_t current_time                    = cpu_features_get_time_usec();
 #ifdef HAVE_MENU
-   bool core_paused                             = p_rarch->runloop_paused || (settings->bools.menu_pause_libretro && p_rarch->menu_driver_alive);
+   bool menu_pause_libretro                     = settings->bools.menu_pause_libretro;
+   bool core_paused                             = p_rarch->runloop_paused || (menu_pause_libretro && p_rarch->menu_driver_alive);
 #else
    bool core_paused                             = p_rarch->runloop_paused;
 #endif
+   float slowmotion_ratio                       = settings->floats.slowmotion_ratio;
+#ifdef HAVE_CHEEVOS
+   bool cheevos_enable                          = settings->bools.cheevos_enable;
+#endif
+   bool audio_sync                              = settings->bools.audio_sync;
+
 
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st                  = &p_rarch->discord_st;
@@ -38091,9 +38110,6 @@ int runloop_iterate(void)
          p_rarch->runloop_frame_time_last  = 0;
       else
       {
-         float slowmotion_ratio            =
-            settings->floats.slowmotion_ratio;
-
          p_rarch->runloop_frame_time_last  = current;
 
          if (p_rarch->runloop_slowmotion)
@@ -38165,7 +38181,7 @@ int runloop_iterate(void)
       case RUNLOOP_STATE_END:
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
-         if (settings->bools.menu_pause_libretro &&
+         if (menu_pause_libretro &&
                netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
             )
             netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
@@ -38212,10 +38228,10 @@ int runloop_iterate(void)
          unsigned k;
          struct retro_keybind *general_binds = input_config_binds[i];
          struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-         unsigned x_plus                     =  RARCH_ANALOG_RIGHT_X_PLUS;
-         unsigned y_plus                     =  RARCH_ANALOG_RIGHT_Y_PLUS;
-         unsigned x_minus                    =  RARCH_ANALOG_RIGHT_X_MINUS;
-         unsigned y_minus                    =  RARCH_ANALOG_RIGHT_Y_MINUS;
+         unsigned x_plus                     = RARCH_ANALOG_RIGHT_X_PLUS;
+         unsigned y_plus                     = RARCH_ANALOG_RIGHT_Y_PLUS;
+         unsigned x_minus                    = RARCH_ANALOG_RIGHT_X_MINUS;
+         unsigned y_minus                    = RARCH_ANALOG_RIGHT_Y_MINUS;
 
          /* Push analog to D-Pad mappings to binds. */
 
@@ -38256,19 +38272,22 @@ int runloop_iterate(void)
 
    {
 #ifdef HAVE_RUNAHEAD
-      unsigned run_ahead_num_frames = settings->uints.run_ahead_frames;
+      bool run_ahead_enabled            = settings->bools.run_ahead_enabled;
+      unsigned run_ahead_num_frames     = settings->uints.run_ahead_frames;
+      bool run_ahead_hide_warnings      = settings->bools.run_ahead_hide_warnings;
+      bool run_ahead_secondary_instance = settings->bools.run_ahead_secondary_instance;
       /* Run Ahead Feature replaces the call to core_run in this loop */
-      bool want_runahead            = settings->bools.run_ahead_enabled && run_ahead_num_frames > 0;
+      bool want_runahead                = run_ahead_enabled && run_ahead_num_frames > 0;
 #ifdef HAVE_NETWORKING
-      want_runahead                 = want_runahead && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
+      want_runahead                     = want_runahead && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
 #endif
 
       if (want_runahead)
          do_runahead(
                p_rarch,
                run_ahead_num_frames,
-               settings->bools.run_ahead_hide_warnings,
-               settings->bools.run_ahead_secondary_instance);
+               run_ahead_hide_warnings,
+               run_ahead_secondary_instance);
       else
 #endif
          core_run();
@@ -38278,11 +38297,11 @@ int runloop_iterate(void)
     * core_run() or run_ahead() */
    p_rarch->libretro_core_runtime_usec += rarch_core_runtime_tick(
          p_rarch,
-         settings->floats.slowmotion_ratio,
+         slowmotion_ratio,
          current_time);
 
 #ifdef HAVE_CHEEVOS
-   if (settings->bools.cheevos_enable)
+   if (cheevos_enable)
       rcheevos_test();
 #endif
 #ifdef HAVE_CHEATS
@@ -38296,7 +38315,7 @@ int runloop_iterate(void)
    for (i = 0; i < max_users; i++)
    {
       unsigned j;
-      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode        = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
 
       /* Restores analog D-pad binds temporarily overridden. */
 
@@ -38339,8 +38358,6 @@ end:
    if (vrr_runloop_enable)
    {
       struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
-      bool audio_sync                      = settings->bools.audio_sync;
-
       /* Sync on video only, block audio later. */
       if (p_rarch->fastforward_after_frames && audio_sync)
       {
