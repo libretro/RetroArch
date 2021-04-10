@@ -175,7 +175,8 @@ static bool is_accessibility_enabled(bool accessibility_enable,
       bool accessibility_enabled);
 static bool accessibility_speak_priority(
       struct rarch_state *p_rarch,
-      settings_t *settings,
+      bool accessibility_enable,
+      unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority);
 #endif
 
