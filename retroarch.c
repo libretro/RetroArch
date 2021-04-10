@@ -30479,48 +30479,31 @@ void video_driver_cached_frame(void)
    p_rarch->recording_data      = recording;
 }
 
-static void video_driver_monitor_adjust_system_rates(
-      struct rarch_state *p_rarch,
+static bool video_driver_monitor_adjust_system_rates(
+      float timing_skew_hz,
       float video_refresh_rate,
       bool vrr_runloop_enable,
       float audio_max_timing_skew,
-      const struct retro_system_timing *info
-      )
+      double input_fps)
 {
-   float timing_skew_hz                   = video_refresh_rate;
-
-   if (p_rarch->video_driver_crt_switching_active)
-      timing_skew_hz                       = p_rarch->video_driver_core_hz;
-
    if (!vrr_runloop_enable)
    {
       float timing_skew                    = fabs(
-            1.0f - info->fps / timing_skew_hz);
+            1.0f - input_fps / timing_skew_hz);
       /* We don't want to adjust pitch too much. If we have extreme cases,
        * just don't readjust at all. */
       if (timing_skew <= audio_max_timing_skew)
-         return;
-
+         return true;
       RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
             " (Display = %.2f Hz, Game = %.2f Hz)\n",
             video_refresh_rate,
-            (float)info->fps);
+            (float)input_fps);
    }
-
-   if (info->fps <= timing_skew_hz)
-      return;
-
-   /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   p_rarch->runloop_force_nonblock = true;
-   RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+   return input_fps <= timing_skew_hz;
 }
 
-static void video_driver_lock_new(void)
+static void video_driver_lock_new(struct rarch_state *p_rarch)
 {
-#ifdef HAVE_THREADS
-   struct rarch_state *p_rarch = &rarch_st;
-#endif
-
    VIDEO_DRIVER_LOCK_FREE();
 #ifdef HAVE_THREADS
    if (!p_rarch->display_lock)
@@ -32623,16 +32606,18 @@ static void driver_adjust_system_rates(
    
    if (info->sample_rate > 0.0)
    {
+      double input_sample_rate       = info->sample_rate;
+      double input_fps               = info->fps;
       if (vrr_runloop_enable)
-         p_rarch->audio_driver_input = info->sample_rate;
+         p_rarch->audio_driver_input = input_sample_rate;
       else
          p_rarch->audio_driver_input = 
             audio_driver_monitor_adjust_system_rates(
-                                                     info->sample_rate,
-                                                     info->fps,
-                                                     video_refresh_rate,
-                                                     video_swap_interval,
-                                                     audio_max_timing_skew);
+                  input_sample_rate,
+                  input_fps,
+                  video_refresh_rate,
+                  video_swap_interval,
+                  audio_max_timing_skew);
       
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
             p_rarch->audio_driver_input);
@@ -32642,12 +32627,24 @@ static void driver_adjust_system_rates(
 
    if (info && info->fps > 0.0)
    {
-      p_rarch->video_driver_core_hz = info->fps;
-      video_driver_monitor_adjust_system_rates(p_rarch,
+      double input_fps              = info->fps;
+      float timing_skew_hz          = video_refresh_rate;
+
+      if (p_rarch->video_driver_crt_switching_active)
+         timing_skew_hz             = input_fps;
+      p_rarch->video_driver_core_hz = input_fps;
+      
+      if (!video_driver_monitor_adjust_system_rates(
+         timing_skew_hz,
          video_refresh_rate,
          vrr_runloop_enable,
          audio_max_timing_skew,
-         info);
+         input_fps))
+      {
+         /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
+         p_rarch->runloop_force_nonblock = true;
+         RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+      }
    }
 
    if (!VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
@@ -32761,7 +32758,7 @@ static void drivers_init(struct rarch_state *p_rarch,
 
       p_rarch->video_driver_frame_time_count = 0;
 
-      video_driver_lock_new();
+      video_driver_lock_new(p_rarch);
 #ifdef HAVE_VIDEO_FILTER
       video_driver_filter_free();
 #endif
