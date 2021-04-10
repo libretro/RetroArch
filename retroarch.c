@@ -28345,21 +28345,18 @@ void audio_driver_set_buffer_size(size_t bufsize)
 }
 
 static float audio_driver_monitor_adjust_system_rates(
-      settings_t *settings,
-      struct retro_system_av_info *av_info)
+      const struct retro_system_timing *info,
+      float video_refresh_rate,
+      unsigned video_swap_interval,
+      float audio_max_timing_skew)
 {
-   const struct retro_system_timing *info =
-      (const struct retro_system_timing*)&av_info->timing;
    float ret                              = info->sample_rate;
-   const float target_video_sync_rate     =
-      settings->floats.video_refresh_rate 
-      / settings->uints.video_swap_interval;
-   float max_timing_skew                  = 
-      settings->floats.audio_max_timing_skew;
+   const float target_video_sync_rate     = video_refresh_rate
+   / video_swap_interval;
    float timing_skew                      =
       fabs(1.0f - info->fps / target_video_sync_rate);
-   if (timing_skew <= max_timing_skew)
-      ret        *= target_video_sync_rate / info->fps;
+   if (timing_skew <= audio_max_timing_skew)
+      return (ret * target_video_sync_rate / info->fps);
    return ret;
 }
 
@@ -30489,11 +30486,6 @@ static void video_driver_monitor_adjust_system_rates(
 {
    float timing_skew_hz                   = video_refresh_rate;
 
-   if (!info || info->fps <= 0.0)
-      return;
-
-   p_rarch->video_driver_core_hz           = info->fps;
-
    if (p_rarch->video_driver_crt_switching_active)
       timing_skew_hz                       = p_rarch->video_driver_core_hz;
 
@@ -32611,8 +32603,13 @@ static void camera_driver_find_driver(struct rarch_state *p_rarch,
    }
 }
 
-static void driver_adjust_system_rates(struct rarch_state *p_rarch,
-      settings_t *settings)
+static void driver_adjust_system_rates(
+      struct rarch_state *p_rarch,
+      bool vrr_runloop_enable,
+      float video_refresh_rate,
+      float audio_max_timing_skew,
+      bool video_adaptive_vsync,
+      unsigned video_swap_interval)
 {
    struct retro_system_av_info *av_info   = &p_rarch->video_driver_av_info;
    const struct retro_system_timing *info =
@@ -32620,14 +32617,15 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch,
    
    if (info->sample_rate > 0.0)
    {
-      bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
-      const struct retro_system_timing *info =
-         (const struct retro_system_timing*)&av_info->timing;
       if (vrr_runloop_enable)
          p_rarch->audio_driver_input = info->sample_rate;
       else
          p_rarch->audio_driver_input = 
-            audio_driver_monitor_adjust_system_rates(settings, av_info);
+            audio_driver_monitor_adjust_system_rates(
+                                                     info,
+                                                     video_refresh_rate,
+                                                     video_swap_interval,
+                                                     audio_max_timing_skew);
       
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
             p_rarch->audio_driver_input);
@@ -32635,21 +32633,21 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch,
    
    p_rarch->runloop_force_nonblock = false;
 
-   video_driver_monitor_adjust_system_rates(p_rarch,
-         settings->floats.video_refresh_rate,
-         settings->bools.vrr_runloop_enable,
-         settings->floats.audio_max_timing_skew,
-         (const struct retro_system_timing*)
-         &p_rarch->video_driver_av_info.timing);
+   if (info && info->fps > 0.0)
+   {
+      p_rarch->video_driver_core_hz = info->fps;
+      video_driver_monitor_adjust_system_rates(p_rarch,
+         video_refresh_rate,
+         vrr_runloop_enable,
+         audio_max_timing_skew,
+         info);
+   }
 
    if (!VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
       return;
 
    if (p_rarch->runloop_force_nonblock)
    {
-      bool video_adaptive_vsync    = settings->bools.video_adaptive_vsync;
-      unsigned video_swap_interval = settings->uints.video_swap_interval;
-
       if (p_rarch->current_video->set_nonblock_state)
          p_rarch->current_video->set_nonblock_state(
                p_rarch->video_driver_data, true,
@@ -32740,7 +32738,13 @@ static void drivers_init(struct rarch_state *p_rarch,
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      driver_adjust_system_rates(p_rarch, settings);
+      driver_adjust_system_rates(p_rarch,
+                                 settings->bools.vrr_runloop_enable,
+                                 settings->floats.video_refresh_rate,
+                                 settings->floats.audio_max_timing_skew,
+                                 settings->bools.video_adaptive_vsync,
+                                 settings->uints.video_swap_interval
+                                 );
 
    /* Initialize video driver */
    if (flags & DRIVER_VIDEO_MASK)
@@ -33083,7 +33087,13 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             (double)p_rarch->configuration_settings->uints.audio_out_rate
             / p_rarch->audio_driver_input;
 
-            driver_adjust_system_rates(p_rarch, p_rarch->configuration_settings);
+            driver_adjust_system_rates(p_rarch,
+                                       p_rarch->configuration_settings->bools.vrr_runloop_enable,
+                                       p_rarch->configuration_settings->floats.video_refresh_rate,
+                                       p_rarch->configuration_settings->floats.audio_max_timing_skew,
+                                       p_rarch->configuration_settings->bools.video_adaptive_vsync,
+                                       p_rarch->configuration_settings->uints.video_swap_interval
+                                       );
          }
          break;
       case RARCH_DRIVER_CTL_FIND_FIRST:
