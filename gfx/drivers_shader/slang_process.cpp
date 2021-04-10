@@ -49,7 +49,7 @@ static std::string get_semantic_name(const std::unordered_map<std::string, M>* m
 
 static std::string
 get_semantic_name(slang_reflection& reflection,
-      slang_semantic semantic, unsigned index)
+      slang_semantic _semantic, unsigned index)
 {
    static const char* names[] = {
       "MVP",
@@ -59,10 +59,10 @@ get_semantic_name(slang_reflection& reflection,
       "FrameDirection",
    };
    int size = sizeof(names) / sizeof(*names);
-   if ((int)semantic < size)
-      return std::string(names[semantic]);
+   if ((int)_semantic < size)
+      return std::string(names[_semantic]);
 
-   return get_semantic_name(reflection.semantic_map, semantic, index);
+   return get_semantic_name(reflection.semantic_map, _semantic, index);
 }
 
 static std::string
@@ -80,23 +80,6 @@ get_semantic_name(slang_reflection& reflection,
       return std::string(names[semantic]) + std::to_string(index);
 
    return get_semantic_name(reflection.texture_semantic_map, semantic, index);
-}
-
-static std::string get_size_semantic_name(
-      slang_reflection& reflection,
-      slang_texture_semantic semantic, unsigned index)
-{
-   static const char* names[] = {
-      "OriginalSize", "SourceSize", "OriginalHistorySize", "PassOutputSize", "PassFeedbackSize",
-   };
-   int size;
-   if ((int)semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
-      return std::string(names[semantic]);
-   size = sizeof(names) / sizeof(*names);
-   if ((int)semantic < size)
-      return std::string(names[semantic]) + std::to_string(index);
-
-   return get_semantic_name(reflection.texture_semantic_uniform_map, semantic, index);
 }
 
 static bool slang_process_reflection(
@@ -204,10 +187,22 @@ static bool slang_process_reflection(
          uniform_sem_t uniform = { map->uniforms[semantic],
             src.num_components
                * (unsigned)sizeof(float) };
-         std::string uniform_id     = get_semantic_name(
-               sl_reflection, (slang_semantic)semantic, 0);
-
-         strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+         slang_semantic _semantic   = (slang_semantic)semantic;
+         static const char* names[] = {
+            "MVP",
+            "OutputSize",
+            "FinalViewportSize",
+            "FrameCount",
+            "FrameDirection",
+         };
+         int size = sizeof(names) / sizeof(*names);
+         if (semantic < size)
+            strlcpy(uniform.id, names[_semantic], sizeof(uniform.id));
+         else
+         {
+            std::string uniform_id  = get_semantic_name(sl_reflection.semantic_map, _semantic, 0);
+            strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+         }
 
          if (src.push_constant)
          {
@@ -299,13 +294,23 @@ static bool slang_process_reflection(
                      + index * map->textures[semantic].size_stride),
                4 * sizeof(float)
             };
-
-            std::string uniform_id =
-               get_size_semantic_name(
-                     sl_reflection,
-                     (slang_texture_semantic)semantic, index);
-
-            strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+            slang_texture_semantic _semantic = (slang_texture_semantic)semantic;
+            static const char* names[] = {
+               "OriginalSize", "SourceSize", "OriginalHistorySize", "PassOutputSize", "PassFeedbackSize",
+            };
+            if (semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
+               strlcpy(uniform.id, names[_semantic], sizeof(uniform.id));
+            else
+            {
+               int size = sizeof(names) / sizeof(*names);
+               if (semantic < size)
+                  snprintf(uniform.id, sizeof(uniform.id), "%s%d", names[_semantic], index);
+               else
+               {
+                  std::string uniform_id = get_semantic_name(sl_reflection.texture_semantic_uniform_map, _semantic, index);
+                  strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+               }
+            }
 
             if (src.push_constant)
             {
