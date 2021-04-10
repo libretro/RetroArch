@@ -1745,20 +1745,29 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    if (!menu_shader)
       return;
 
-   filter = "Shader Preset (";
+   filter.append("Shader Preset (");
 
    /* NOTE: Maybe we should have a way to get a list 
     * of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
-      filter += QLatin1Literal(" *") + ".cgp";
+   {
+      filter.append(QLatin1Literal(" *"));
+      filter.append(".cgp");
+   }
 
    if (video_shader_is_supported(RARCH_SHADER_GLSL))
-      filter += QLatin1Literal(" *") + ".glslp";
+   {
+      filter.append(QLatin1Literal(" *"));
+      filter.append(".glslp");
+   }
 
    if (video_shader_is_supported(RARCH_SHADER_SLANG))
-      filter += QLatin1Literal(" *") + ".slangp";
+   {
+      filter.append(QLatin1Literal(" *"));
+      filter.append(".slangp");
+   }
 
-   filter    += ")";
+   filter.append(")");
    path       = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
@@ -1895,20 +1904,20 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    if (!menu_shader)
       return;
 
-   filter = "Shader (";
+   filter.append("Shader (");
 
    /* NOTE: Maybe we should have a way to get a list 
     * of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
-      filter += QLatin1Literal(" *.cg");
+      filter.append(QLatin1Literal(" *.cg"));
 
    if (video_shader_is_supported(RARCH_SHADER_GLSL))
-      filter += QLatin1Literal(" *.glsl");
+      filter.append(QLatin1Literal(" *.glsl"));
 
    if (video_shader_is_supported(RARCH_SHADER_SLANG))
-      filter += QLatin1Literal(" *.slang");
+      filter.append(QLatin1Literal(" *.slang"));
 
-   filter += ")";
+   filter.append(")");
 
    path = QFileDialog::getOpenFileName(
          this,

@@ -454,7 +454,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    if (selectedDatabase.isEmpty())
       selectedDatabase = QFileInfo(currentPlaylistPath).fileName();
    else
-      selectedDatabase += ".lpl";
+      selectedDatabase.append(".lpl");
 
    dialog.reset(new QProgressDialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this));
    dialog->setWindowModality(Qt::ApplicationModal);
