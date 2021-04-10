@@ -10782,7 +10782,7 @@ static void task_auto_translate_handler(retro_task_t *task)
          break;
       case 2: /* Narrator Mode */
 #ifdef HAVE_ACCESSIBILITY
-         if (!is_narrator_running(p_rarch, settings))
+         if (!is_narrator_running(p_rarch, settings->bools.accessibility_enable))
             goto task_finished;
 #endif
          break;
@@ -14819,7 +14819,7 @@ bool command_event(enum event_command cmd, void *data)
                      settings->bools.accessibility_enable,
                      p_rarch->accessibility_enabled) &&
                   ai_service_mode == 2 &&
-                  is_narrator_running(p_rarch, settings))
+                  is_narrator_running(p_rarch, settings->bools.accessibility_enable))
                accessibility_speak_priority(p_rarch, settings,
                      "stopped.", 10);
 #endif
@@ -38959,10 +38959,10 @@ static bool accessibility_speak_priority(
 
 #ifdef HAVE_TRANSLATE
 static bool is_narrator_running(struct rarch_state *p_rarch,
-      settings_t *settings)
+      bool accessibility_enable)
 {
    if (is_accessibility_enabled(
-            settings->bools.accessibility_enable,
+            accessibility_enable,
             p_rarch->accessibility_enabled))
    {
       frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;

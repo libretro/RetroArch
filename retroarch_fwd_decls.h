@@ -25,7 +25,7 @@ void libnx_apply_overclock(void);
 #endif
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
-static bool is_narrator_running(struct rarch_state *p_rarch, settings_t *settings);
+static bool is_narrator_running(struct rarch_state *p_rarch, bool accessibility_enable);
 #endif
 #endif
 
