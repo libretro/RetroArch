@@ -28347,19 +28347,20 @@ void audio_driver_set_buffer_size(size_t bufsize)
 }
 
 static float audio_driver_monitor_adjust_system_rates(
-      const struct retro_system_timing *info,
+      double input_sample_rate,
+      double input_fps,
       float video_refresh_rate,
       unsigned video_swap_interval,
       float audio_max_timing_skew)
 {
-   float ret                              = info->sample_rate;
+   float inp_sample_rate                  = input_sample_rate;
    const float target_video_sync_rate     = video_refresh_rate
    / video_swap_interval;
    float timing_skew                      =
-      fabs(1.0f - info->fps / target_video_sync_rate);
+      fabs(1.0f - input_fps / target_video_sync_rate);
    if (timing_skew <= audio_max_timing_skew)
-      return (ret * target_video_sync_rate / info->fps);
-   return ret;
+      return (inp_sample_rate * target_video_sync_rate / input_fps);
+   return inp_sample_rate;
 }
 
 #ifdef HAVE_REWIND
@@ -32627,7 +32628,8 @@ static void driver_adjust_system_rates(
       else
          p_rarch->audio_driver_input = 
             audio_driver_monitor_adjust_system_rates(
-                                                     info,
+                                                     info->sample_rate,
+                                                     info->fps,
                                                      video_refresh_rate,
                                                      video_swap_interval,
                                                      audio_max_timing_skew);
