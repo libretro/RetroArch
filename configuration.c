@@ -4543,9 +4543,9 @@ bool input_remapping_load_file(void *data, const char *path)
    for (i = 0; i < MAX_USERS; i++)
    {
       char s1[32], s2[32], s3[32];
-      char btn_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char key_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char stk_ident[8][128]                             = {{0}};
+      char btn_ident[RARCH_FIRST_CUSTOM_BIND][128] = {{0}};
+      char key_ident[RARCH_FIRST_CUSTOM_BIND][128] = {{0}};
+      char stk_ident[8][128]                       = {{0}};
 
       old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
       old_libretro_device[i]  = settings->uints.input_libretro_device[i];
@@ -4560,15 +4560,17 @@ bool input_remapping_load_file(void *data, const char *path)
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
+         const char *key_string = key_strings[j];
+         
          if (j < RARCH_FIRST_CUSTOM_BIND)
          {
             int btn_remap = -1;
             int key_remap = -1;
 
             fill_pathname_join_delim(btn_ident[j], s1,
-                  key_strings[j], '_', sizeof(btn_ident[j]));
+                  key_string, '_', sizeof(btn_ident[j]));
             fill_pathname_join_delim(key_ident[j], s2,
-                  key_strings[j], '_', sizeof(btn_ident[j]));
+                  key_string, '_', sizeof(btn_ident[j]));
 
             if (config_get_int(conf, btn_ident[j], &btn_remap))
             {
@@ -4591,13 +4593,13 @@ bool input_remapping_load_file(void *data, const char *path)
             k             = j - RARCH_FIRST_CUSTOM_BIND;
 
             fill_pathname_join_delim(stk_ident[k], s3,
-                  key_strings[j], '$', sizeof(stk_ident[k]));
+                  key_string, '$', sizeof(stk_ident[k]));
 
             snprintf(stk_ident[k],
                   sizeof(stk_ident[k]),
                   "%s_%s",
                   s3,
-                  key_strings[j]);
+                  key_string);
 
             if (config_get_int(conf, stk_ident[k], &stk_remap))
             {
@@ -4659,28 +4661,30 @@ bool input_remapping_save_file(const char *path)
    for (i = 0; i < max_users; i++)
    {
       char s1[32], s2[32], s3[32];
-      char btn_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char key_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char stk_ident[8][128]                             = {{0}};
+      char btn_ident[RARCH_FIRST_CUSTOM_BIND][128] = {{0}};
+      char key_ident[RARCH_FIRST_CUSTOM_BIND][128] = {{0}};
+      char stk_ident[8][128]                       = {{0}};
 
       s1[0] = '\0';
       s2[0] = '\0';
+      s3[0] = '\0';
 
       snprintf(s1, sizeof(s1), "input_player%u_btn", i + 1);
       snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
-      snprintf(s3, sizeof(s1), "input_player%u_stk", i + 1);
+      snprintf(s3, sizeof(s3), "input_player%u_stk", i + 1);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
-         unsigned remap_id  = settings->uints.input_remap_ids[i][j];
-         unsigned keymap_id = settings->uints.input_keymapper_ids[i][j];
-
+         unsigned remap_id      = settings->uints.input_remap_ids[i][j];
+         unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
+         const char *key_string = key_strings[j];
+         
          if (j < RARCH_FIRST_CUSTOM_BIND)
          {
             fill_pathname_join_delim(btn_ident[j], s1,
-               key_strings[j], '_', sizeof(btn_ident[j]));
+               key_string, '_', sizeof(btn_ident[j]));
             fill_pathname_join_delim(key_ident[j], s2,
-               key_strings[j], '_', sizeof(btn_ident[j]));
+               key_string, '_', sizeof(btn_ident[j]));
 
             /* only save values that have been modified */
             if (remap_id != j && remap_id != RARCH_UNMAPPED)
@@ -4699,7 +4703,7 @@ bool input_remapping_save_file(const char *path)
          {
             k = j - RARCH_FIRST_CUSTOM_BIND;
             fill_pathname_join_delim(stk_ident[k], s3,
-               key_strings[j], '_', sizeof(stk_ident[k]));
+               key_string, '_', sizeof(stk_ident[k]));
             if (remap_id != j && remap_id != RARCH_UNMAPPED)
                config_set_int(conf, stk_ident[k],
                   settings->uints.input_remap_ids[i][j]);
