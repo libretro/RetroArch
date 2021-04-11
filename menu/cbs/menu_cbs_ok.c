@@ -1990,6 +1990,7 @@ static int generic_action_ok(const char *path,
             conf_key[0]             = '\0';
 
             if (conf)
+            {
                if (input_remapping_load_file(conf, action_path))
                {
                   for (port = 0; port < MAX_USERS; port++)
@@ -2005,6 +2006,9 @@ static int generic_action_ok(const char *path,
                      core_set_controller_port_device(&pad);
                   }
                }
+               config_file_free(conf);
+               conf = NULL;
+            }
          }
 #endif
          break;

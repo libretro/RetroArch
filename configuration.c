@@ -3781,8 +3781,11 @@ bool config_load_remap(const char *directory_input_remapping,
    /* If a game remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(game_path)))
    {
+      bool ret = input_remapping_load_file(new_conf, game_path);
+      config_file_free(new_conf);
+      new_conf = NULL;
       RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
-      if (input_remapping_load_file(new_conf, game_path))
+      if (ret)
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          /* msg_remap_loaded is set to MSG_GAME_REMAP_FILE_LOADED
@@ -3794,8 +3797,11 @@ bool config_load_remap(const char *directory_input_remapping,
    /* If a content-dir remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(content_path)))
    {
+      bool ret = input_remapping_load_file(new_conf, content_path);
+      config_file_free(new_conf);
+      new_conf = NULL;
       RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
-      if (input_remapping_load_file(new_conf, content_path))
+      if (ret)
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          msg_remap_loaded = MSG_DIRECTORY_REMAP_FILE_LOADED;
@@ -3806,8 +3812,11 @@ bool config_load_remap(const char *directory_input_remapping,
    /* If a core remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(core_path)))
    {
+      bool ret = input_remapping_load_file(new_conf, core_path);
+      config_file_free(new_conf);
+      new_conf = NULL;
       RARCH_LOG("[Remaps]: Core-specific remap found at \"%s\".\n", core_path);
-      if (input_remapping_load_file(new_conf, core_path))
+      if (ret)
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          msg_remap_loaded = MSG_CORE_REMAP_FILE_LOADED;
@@ -3815,6 +3824,8 @@ bool config_load_remap(const char *directory_input_remapping,
       }
    }
 
+   if (new_conf)
+      config_file_free(new_conf);
    new_conf = NULL;
 
    return false;
@@ -4606,8 +4617,6 @@ bool input_remapping_load_file(void *data, const char *path)
       snprintf(s1, sizeof(s1), "input_libretro_device_p%u", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
    }
-
-   config_file_free(conf);
 
    return true;
 }
