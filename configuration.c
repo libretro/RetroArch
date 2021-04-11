@@ -3946,23 +3946,11 @@ bool config_save_autoconf_profile(const
    fill_pathname_join(buf, autoconf_dir, joypad_driver, sizeof(buf));
 
    if (path_is_directory(buf))
-   {
-      char buf_new[PATH_MAX_LENGTH];
-
-      buf_new[0] = '\0';
-
-      fill_pathname_join(buf_new, buf,
-            sanitised_name, sizeof(buf_new));
-      fill_pathname_noext(autoconf_file,
-            buf_new, ".cfg", sizeof(autoconf_file));
-   }
+      fill_pathname_join_concat(autoconf_file, buf,
+            sanitised_name, ".cfg", sizeof(autoconf_file));
    else
-   {
-      fill_pathname_join(buf, autoconf_dir,
-            sanitised_name, sizeof(buf));
-      fill_pathname_noext(autoconf_file,
-            buf, ".cfg", sizeof(autoconf_file));
-   }
+      fill_pathname_join_concat(autoconf_file, autoconf_dir,
+            sanitised_name, ".cfg", sizeof(autoconf_file));
 
    /* Open config file */
    conf = config_file_new_from_path_to_string(autoconf_file);
@@ -4637,7 +4625,6 @@ bool input_remapping_save_file(const char *path)
 {
    bool ret;
    unsigned i, j;
-   char buf[PATH_MAX_LENGTH];
    char remap_file[PATH_MAX_LENGTH];
    char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
       "b", "y", "select", "start",
@@ -4649,11 +4636,11 @@ bool input_remapping_save_file(const char *path)
    settings_t              *settings = config_get_ptr();
    const char *dir_input_remapping   = settings->paths.directory_input_remapping;
 
-   buf[0] = remap_file[0]            = '\0';
+   remap_file[0]                     = '\0';
 
-   fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
-   fill_pathname_noext(remap_file, buf,
-         FILE_PATH_REMAP_EXTENSION, sizeof(remap_file));
+   fill_pathname_join_concat(remap_file, dir_input_remapping, path, 
+         FILE_PATH_REMAP_EXTENSION,
+         sizeof(remap_file));
 
    if (!(conf = config_file_new_from_path_to_string(remap_file)))
    {
@@ -4743,15 +4730,11 @@ bool input_remapping_save_file(const char *path)
 bool input_remapping_remove_file(const char *path,
       const char *dir_input_remapping)
 {
-   char buf[PATH_MAX_LENGTH];
    char remap_file[PATH_MAX_LENGTH];
-   buf[0] = remap_file[0]  = '\0';
-
-   fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
-   fill_pathname_noext(remap_file, buf,
+   remap_file[0]  = '\0';
+   fill_pathname_join_concat(remap_file, dir_input_remapping, path,
          FILE_PATH_REMAP_EXTENSION,
          sizeof(remap_file));
-
    return filestream_delete(remap_file) == 0 ? true : false;
 }
 #endif

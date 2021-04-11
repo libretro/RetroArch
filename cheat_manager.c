@@ -140,7 +140,6 @@ bool cheat_manager_save(
 {
    bool ret;
    unsigned i;
-   char buf[PATH_MAX_LENGTH];
    char cheats_file[PATH_MAX_LENGTH];
    config_file_t *conf         = NULL;
    cheat_manager_t *cheat_st   = &cheat_manager_state;
@@ -164,7 +163,7 @@ bool cheat_manager_save(
       (char*)"cheat%u_repeat_add_to_address"
    };
 
-   buf[0] = cheats_file[0] = '\0';
+   cheats_file[0] = '\0';
 
    if (!cheat_st->cheats || cheat_st->size == 0)
       return false;
@@ -172,11 +171,10 @@ bool cheat_manager_save(
    if (!cheat_database)
       strlcpy(cheats_file, path, sizeof(cheats_file));
    else
-   {
-      fill_pathname_join(buf, cheat_database, path, sizeof(buf));
-
-      fill_pathname_noext(cheats_file, buf, ".cht", sizeof(cheats_file));
-   }
+      fill_pathname_join_concat(cheats_file,
+            cheat_database, path,
+            ".cht",
+            sizeof(cheats_file));
 
    if (!overwrite)
       conf = config_file_new_from_path_to_string(cheats_file);
