@@ -4537,12 +4537,12 @@ bool input_remapping_load_file(void *data, const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char s1[64], s2[64], s3[64];
+      char s1[32], s2[32], s3[32];
       char btn_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
       char key_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char stk_ident[8][4096]                            = {{0}};
+      char stk_ident[8][128]                             = {{0}};
 
-      char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][128] = {
+      char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8]   = {
          "b", "y", "select", "start",
          "up", "down", "left", "right",
          "a", "x", "l", "r", "l2", "r2",
@@ -4654,12 +4654,12 @@ bool input_remapping_save_file(const char *path)
 
    for (i = 0; i < max_users; i++)
    {
-      char s1[64], s2[64], s3[64];
+      char s1[32], s2[32], s3[32];
       char btn_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
       char key_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
       char stk_ident[8][128]                             = {{0}};
 
-      char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][128] = {
+      char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8]   = {
          "b", "y", "select", "start",
          "up", "down", "left", "right",
          "a", "x", "l", "r", "l2", "r2",
