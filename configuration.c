@@ -661,10 +661,6 @@ static void config_parse_file(global_t *global);
 
 struct defaults g_defaults;
 
-/* TODO/FIXME - static public global variables */
-static unsigned old_analog_dpad_mode[MAX_USERS];
-static unsigned old_libretro_device[MAX_USERS];
-
 /**
  * config_get_default_audio:
  *
@@ -4544,8 +4540,8 @@ bool input_remapping_load_file(void *data, const char *path)
    {
       char s1[32], s2[32], s3[32];
 
-      old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
-      old_libretro_device[i]  = settings->uints.input_libretro_device[i];
+      global->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      global->old_libretro_device[i]  = settings->uints.input_libretro_device[i];
 
       s1[0] = '\0';
       s2[0] = '\0';
@@ -4782,12 +4778,14 @@ void input_remapping_set_defaults(bool deinit)
                   settings->uints.input_remap_ids[i][j], j);
       }
 
-      if (old_analog_dpad_mode[i])
+      if (global->old_analog_dpad_mode[i])
          configuration_set_uint(settings,
-               settings->uints.input_analog_dpad_mode[i], old_analog_dpad_mode[i]);
-      if (old_libretro_device[i])
+               settings->uints.input_analog_dpad_mode[i],
+               global->old_analog_dpad_mode[i]);
+      if (global->old_libretro_device[i])
          configuration_set_uint(settings,
-               settings->uints.input_libretro_device[i], old_libretro_device[i]);
+               settings->uints.input_libretro_device[i],
+               global->old_libretro_device[i]);
    }
 }
 #endif
