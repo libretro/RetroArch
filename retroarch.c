@@ -4906,7 +4906,7 @@ static void menu_driver_set_last_shader_path_int(
       return;
 
    /* Cache file name */
-   file_name = path_basename(shader_path);
+   file_name = path_basename_nocompression(shader_path);
    if (!string_is_empty(file_name))
       strlcpy(shader_file, file_name, file_len);
 }
@@ -10651,7 +10651,7 @@ static bool retroarch_apply_shader(
       return false;
 
    if (!string_is_empty(preset_path))
-      preset_file = path_basename(preset_path);
+      preset_file = path_basename_nocompression(preset_path);
 
    p_rarch->runtime_shader_preset[0] = '\0';
 
@@ -18968,7 +18968,7 @@ static char *copy_core_to_temp_file(struct rarch_state *p_rarch,
    void  *dll_file_data        = NULL;
    int64_t  dll_file_size      = 0;
    const char  *core_path      = path_get(RARCH_PATH_CORE);
-   const char  *core_base_name = path_basename(core_path);
+   const char  *core_base_name = path_basename_nocompression(core_path);
 
    if (strlen(core_base_name) == 0)
       return NULL;
@@ -35932,29 +35932,19 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return (p_rarch->current_core_type == CORE_TYPE_DUMMY);
       case RARCH_CTL_IS_CORE_LOADED:
          {
-            const char *core_path        = (const char*)data;
-            const char *core_file        = NULL;
-            const char *loaded_core_path = NULL;
-            const char *loaded_core_file = NULL;
-
-            if (string_is_empty(core_path))
-               return false;
-
-            /* Get core file name */
-            core_file = path_basename(core_path);
-            if (string_is_empty(core_file))
-               return false;
-
-            /* Get loaded core file name */
-            loaded_core_path = path_get(RARCH_PATH_CORE);
-            if (!string_is_empty(loaded_core_path))
-               loaded_core_file = path_basename(loaded_core_path);
-
-            /* Check whether specified core and currently
-             * loaded core are the same */
-            if (!string_is_empty(loaded_core_file) &&
-                string_is_equal(core_file, loaded_core_file))
-               return true;
+            const char *core_path = (const char*)data;
+            const char *core_file = path_basename_nocompression(core_path);
+            if (!string_is_empty(core_file))
+            {
+               /* Get loaded core file name */
+               const char *loaded_core_file = path_basename_nocompression(
+                     path_get(RARCH_PATH_CORE));
+               /* Check whether specified core and currently
+                * loaded core are the same */
+               if (!string_is_empty(loaded_core_file))
+                  if (string_is_equal(core_file, loaded_core_file))
+                     return true;
+            }
          }
          return false;
       case RARCH_CTL_HAS_SET_USERNAME:

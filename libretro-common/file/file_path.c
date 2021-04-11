@@ -574,6 +574,16 @@ const char *path_basename(const char *path)
    return path;
 }
 
+/* Specialized version */
+const char *path_basename_nocompression(const char *path)
+{
+   /* We cut at the last slash */
+   const char *last  = find_last_slash(path);
+   if (last)
+      return last + 1;
+   return path;
+}
+
 /**
  * path_is_absolute:
  * @path               : path

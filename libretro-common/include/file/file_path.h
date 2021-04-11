@@ -125,6 +125,7 @@ char *path_remove_extension(char *path);
  * Returns: basename from path.
  **/
 const char *path_basename(const char *path);
+const char *path_basename_nocompression(const char *path);
 
 /**
  * path_basedir:
