@@ -4710,7 +4710,6 @@ bool input_remapping_save_file(const char *path)
       {
          char stk_ident[128];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
-         unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
          const char *key_string = key_strings[j];
          stk_ident[0]           = '\0';
          fill_pathname_join_delim(stk_ident, s3,
