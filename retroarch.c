@@ -25487,7 +25487,6 @@ static const char **input_keyboard_start_line(
 
    return (const char**)&keyboard_line->buffer;
 }
-#endif
 
 #ifdef HAVE_ACCESSIBILITY
 static const char *accessibility_lut_name(char key)
@@ -25568,6 +25567,7 @@ static const char *accessibility_lut_name(char key)
    }
    return NULL;
 }
+#endif
 #endif
 
 /**
@@ -38167,11 +38167,13 @@ int runloop_iterate(void)
          return 1;
       case RUNLOOP_STATE_END:
 #ifdef HAVE_NETWORKING
+#ifdef HAVE_MENU
          /* FIXME: This is an ugly way to tell Netplay this... */
          if (menu_pause_libretro &&
                netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
             )
             netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
 #endif
          goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
