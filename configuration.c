@@ -4673,48 +4673,59 @@ bool input_remapping_save_file(const char *path)
       snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
       snprintf(s3, sizeof(s3), "input_player%u_stk", i + 1);
 
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
+      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
+         char btn_ident[128];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
          const char *key_string = key_strings[j];
-         
-         if (j < RARCH_FIRST_CUSTOM_BIND)
-         {
-            char btn_ident[128], key_ident[128];
-            btn_ident[0] = key_ident[0] = '\0';
-            fill_pathname_join_delim(btn_ident, s1,
+         btn_ident[0]           = '\0';
+         fill_pathname_join_delim(btn_ident, s1,
                key_string, '_', sizeof(btn_ident));
-            fill_pathname_join_delim(key_ident, s2,
-               key_string, '_', sizeof(key_ident));
 
-            /* only save values that have been modified */
-            if (remap_id != j && remap_id != RARCH_UNMAPPED)
-               config_set_int(conf, btn_ident,
-                     settings->uints.input_remap_ids[i][j]);
-            else if (remap_id != j && remap_id == RARCH_UNMAPPED)
-               config_set_int(conf, btn_ident, -1);
-            else
-               config_unset(conf, btn_ident);
-
-            if (keymap_id != RETROK_UNKNOWN)
-               config_set_int(conf, key_ident,
-                  settings->uints.input_keymapper_ids[i][j]);
-         }
+         /* only save values that have been modified */
+         if (remap_id == j)
+            config_unset(conf, btn_ident);
          else
          {
-            char stk_ident[128];
-            stk_ident[0] = '\0';
-            fill_pathname_join_delim(stk_ident, s3,
+            if (remap_id == RARCH_UNMAPPED)
+               config_set_int(conf, btn_ident, -1);
+            else
+               config_set_int(conf, btn_ident,
+                     settings->uints.input_remap_ids[i][j]);
+         }
+
+         if (keymap_id != RETROK_UNKNOWN)
+         {
+            char key_ident[128];
+            key_ident[0] = '\0';
+            fill_pathname_join_delim(key_ident, s2,
+                  key_string, '_', sizeof(key_ident));
+            config_set_int(conf, key_ident,
+                  settings->uints.input_keymapper_ids[i][j]);
+         }
+      }
+
+      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+      {
+         char stk_ident[128];
+         unsigned remap_id      = settings->uints.input_remap_ids[i][j];
+         unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
+         const char *key_string = key_strings[j];
+         stk_ident[0]           = '\0';
+         fill_pathname_join_delim(stk_ident, s3,
                key_string, '_', sizeof(stk_ident));
-            if (remap_id != j && remap_id != RARCH_UNMAPPED)
-               config_set_int(conf, stk_ident,
-                  settings->uints.input_remap_ids[i][j]);
-            else if (remap_id != j && remap_id == RARCH_UNMAPPED)
+
+         if (remap_id == j)
+            config_unset(conf, stk_ident);
+         else
+         {
+            if (remap_id == RARCH_UNMAPPED)
                config_set_int(conf, stk_ident,
                      -1);
             else
-               config_unset(conf, stk_ident);
+               config_set_int(conf, stk_ident,
+                     settings->uints.input_remap_ids[i][j]);
          }
       }
 
