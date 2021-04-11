@@ -2357,7 +2357,8 @@ void config_set_defaults(void *data)
 
    input_config_reset();
 #ifdef HAVE_CONFIGFILE
-   input_remapping_set_defaults(true);
+   input_remapping_deinit();
+   input_remapping_set_defaults();
 #endif
 
    /* Verify that binds are in proper order. */
@@ -3771,7 +3772,7 @@ bool config_load_remap(const char *directory_input_remapping,
          sizeof(game_path));
 
 #ifdef HAVE_CONFIGFILE
-   input_remapping_set_defaults(false);
+   input_remapping_set_defaults();
 #endif
 
    /* If a game remap file exists, load it. */
@@ -4533,7 +4534,10 @@ bool input_remapping_load_file(void *data, const char *path)
       return false;
 
    if (!string_is_empty(global->name.remapfile))
-      input_remapping_set_defaults(true);
+   {
+      input_remapping_deinit();
+      input_remapping_set_defaults();
+   }
    global->name.remapfile = strdup(path);
 
    for (i = 0; i < MAX_USERS; i++)
@@ -4739,54 +4743,6 @@ bool input_remapping_remove_file(const char *path,
          sizeof(remap_file));
 
    return filestream_delete(remap_file) == 0 ? true : false;
-}
-
-void input_remapping_set_defaults(bool deinit)
-{
-   unsigned i, j;
-   settings_t *settings = config_get_ptr();
-   global_t     *global = global_get_ptr();
-
-   if (!global)
-      return;
-
-   if (deinit)
-   {
-      if (!string_is_empty(global->name.remapfile))
-         free(global->name.remapfile);
-      global->name.remapfile = NULL;
-      rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
-      rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
-      rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
-   }
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
-      {
-         if (j < RARCH_FIRST_CUSTOM_BIND)
-         {
-            const struct  retro_keybind *keybind = &input_config_binds[i][j];
-            if (keybind)
-               configuration_set_uint(settings,
-                     settings->uints.input_remap_ids[i][j], keybind->id);
-            configuration_set_uint(settings,
-                  settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
-         }
-         else
-            configuration_set_uint(settings,
-                  settings->uints.input_remap_ids[i][j], j);
-      }
-
-      if (global->old_analog_dpad_mode[i])
-         configuration_set_uint(settings,
-               settings->uints.input_analog_dpad_mode[i],
-               global->old_analog_dpad_mode[i]);
-      if (global->old_libretro_device[i])
-         configuration_set_uint(settings,
-               settings->uints.input_libretro_device[i],
-               global->old_libretro_device[i]);
-   }
 }
 #endif
 

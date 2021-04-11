@@ -12063,6 +12063,46 @@ static void command_event_disable_overrides(struct rarch_state *p_rarch)
    config_unload_override();
    p_rarch->runloop_overrides_active = false;
 }
+
+void input_remapping_set_defaults(void)
+{
+   unsigned i, j;
+   struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
+   global_t     *global        = &p_rarch->g_extern;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+      {
+         const struct  retro_keybind *keybind = &input_config_binds[i][j];
+         if (keybind)
+            configuration_set_uint(settings,
+                  settings->uints.input_remap_ids[i][j], keybind->id);
+         configuration_set_uint(settings,
+               settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
+      }
+
+      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+         configuration_set_uint(settings,
+               settings->uints.input_remap_ids[i][j], j);
+   }
+
+   if (global)
+   {
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         if (global->old_analog_dpad_mode[i])
+            configuration_set_uint(settings,
+                  settings->uints.input_analog_dpad_mode[i],
+                  global->old_analog_dpad_mode[i]);
+         if (global->old_libretro_device[i])
+            configuration_set_uint(settings,
+                  settings->uints.input_libretro_device[i],
+                  global->old_libretro_device[i]);
+      }
+   }
+}
 #endif
 
 static void command_event_deinit_core(
@@ -12099,7 +12139,10 @@ static void command_event_deinit_core(
          || p_rarch->runloop_remaps_content_dir_active
          || p_rarch->runloop_remaps_game_active
       )
-      input_remapping_set_defaults(true);
+   {
+      input_remapping_deinit();
+      input_remapping_set_defaults();
+   }
 #endif
 }
 
@@ -13015,6 +13058,18 @@ static bool command_event_resize_windowed_scale(struct rarch_state *p_rarch)
    return true;
 }
 
+void input_remapping_deinit(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   global_t     *global        = &p_rarch->g_extern;
+   if (!string_is_empty(global->name.remapfile))
+      free(global->name.remapfile);
+   global->name.remapfile                     = NULL;
+   p_rarch->runloop_remaps_core_active        = false;
+   p_rarch->runloop_remaps_content_dir_active = false;
+   p_rarch->runloop_remaps_game_active        = false;
+}
+
 static bool input_driver_grab_mouse(struct rarch_state *p_rarch)
 {
    if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
@@ -13592,7 +13647,10 @@ bool command_event(enum event_command cmd, void *data)
                   || p_rarch->runloop_remaps_content_dir_active
                   || p_rarch->runloop_remaps_game_active
                )
-               input_remapping_set_defaults(true);
+            {
+               input_remapping_deinit();
+               input_remapping_set_defaults();
+            }
 #endif
 
             if (is_inited)
@@ -35984,24 +36042,15 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_SET_REMAPS_CORE_ACTIVE:
          p_rarch->runloop_remaps_core_active = true;
          break;
-      case RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE:
-         p_rarch->runloop_remaps_core_active = false;
-         break;
       case RARCH_CTL_IS_REMAPS_CORE_ACTIVE:
          return p_rarch->runloop_remaps_core_active;
       case RARCH_CTL_SET_REMAPS_GAME_ACTIVE:
          p_rarch->runloop_remaps_game_active = true;
          break;
-      case RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE:
-         p_rarch->runloop_remaps_game_active = false;
-         break;
       case RARCH_CTL_IS_REMAPS_GAME_ACTIVE:
          return p_rarch->runloop_remaps_game_active;
       case RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE:
          p_rarch->runloop_remaps_content_dir_active = true;
-         break;
-      case RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE:
-         p_rarch->runloop_remaps_content_dir_active = false;
          break;
       case RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE:
          return p_rarch->runloop_remaps_content_dir_active;
@@ -36623,7 +36672,10 @@ bool retroarch_main_quit(void)
             || p_rarch->runloop_remaps_content_dir_active
             || p_rarch->runloop_remaps_game_active
          )
-         input_remapping_set_defaults(true);
+      {
+         input_remapping_deinit();
+         input_remapping_set_defaults();
+      }
 #endif
    }
 

@@ -81,7 +81,8 @@ static int action_start_remap_file_load(
       unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_CONFIGFILE
-   input_remapping_set_defaults(true);
+   input_remapping_deinit();
+   input_remapping_set_defaults();
 #endif
    return 0;
 }

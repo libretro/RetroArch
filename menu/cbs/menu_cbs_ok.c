@@ -3411,22 +3411,22 @@ static int generic_action_ok_remap_file_operation(const char *path,
             case ACTION_OK_REMAP_FILE_REMOVE_CORE:
                if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
                {
-                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
-                  input_remapping_set_defaults(true);
+                  input_remapping_deinit();
+                  input_remapping_set_defaults();
                }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_GAME:
                if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
                {
-                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
-                  input_remapping_set_defaults(true);
+                  input_remapping_deinit();
+                  input_remapping_set_defaults();
                }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
                if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
                {
-                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
-                  input_remapping_set_defaults(true);
+                  input_remapping_deinit();
+                  input_remapping_set_defaults();
                }
                break;
          }
