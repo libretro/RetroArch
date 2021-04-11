@@ -112,31 +112,31 @@ static unsigned x_retro_id_to_rarch(unsigned id)
    switch (id)
    {
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-	 return RARCH_LIGHTGUN_DPAD_RIGHT;
+         return RARCH_LIGHTGUN_DPAD_RIGHT;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-	 return RARCH_LIGHTGUN_DPAD_LEFT;
+         return RARCH_LIGHTGUN_DPAD_LEFT;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-	 return RARCH_LIGHTGUN_DPAD_UP;
+         return RARCH_LIGHTGUN_DPAD_UP;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-	 return RARCH_LIGHTGUN_DPAD_DOWN;
+         return RARCH_LIGHTGUN_DPAD_DOWN;
       case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
          return RARCH_LIGHTGUN_SELECT;
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-	 return RARCH_LIGHTGUN_START;
+         return RARCH_LIGHTGUN_START;
       case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
          return RARCH_LIGHTGUN_RELOAD;
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
          return RARCH_LIGHTGUN_TRIGGER;
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-	 return RARCH_LIGHTGUN_AUX_A;
+         return RARCH_LIGHTGUN_AUX_A;
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-	 return RARCH_LIGHTGUN_AUX_B;
+         return RARCH_LIGHTGUN_AUX_B;
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-	 return RARCH_LIGHTGUN_AUX_C;
+         return RARCH_LIGHTGUN_AUX_C;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
-	 return RARCH_LIGHTGUN_START;
+         return RARCH_LIGHTGUN_START;
       default:
-	 break;
+         break;
    }
 
    return 0;
@@ -382,7 +382,7 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
             case RETRO_DEVICE_ID_LIGHTGUN_START:
-	    case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
@@ -398,8 +398,8 @@ static int16_t x_input_state(
                   if (binds[port][new_id].valid)
                   {
                      if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
+                              joypad_info, binds[port],
+                              new_id))
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
