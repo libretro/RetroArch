@@ -7196,7 +7196,7 @@ int action_ok_core_lock(const char *path,
          core_name = core_info.inf->display_name;
       /* If not, use core file name */
       else
-         core_name = path_basename(core_path);
+         core_name = path_basename_nocompression(core_path);
 
       /* Build error message */
       strlcpy(
@@ -7256,7 +7256,7 @@ static int action_ok_core_delete(const char *path,
          core_name = core_info.inf->display_name;
       /* If not, use core file name */
       else
-         core_name = path_basename(core_path);
+         core_name = path_basename_nocompression(core_path);
 
       /* Build notification message */
       strlcpy(msg, msg_hash_to_str(MSG_CORE_DELETE_DISABLED), sizeof(msg));
@@ -7289,7 +7289,7 @@ static int action_ok_core_delete(const char *path,
     * interface */
    if (play_feature_delivery_enabled())
    {
-      const char *core_filename = path_basename(core_path);
+      const char *core_filename = path_basename_nocompression(core_path);
       char backup_core_path[PATH_MAX_LENGTH];
 
       backup_core_path[0] = '\0';

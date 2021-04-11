@@ -5132,7 +5132,7 @@ void menu_driver_set_last_start_content(const char *start_content_path)
       file_name       = path_basename(archive_path);
    }
    else
-      file_name       = path_basename(start_content_path);
+      file_name       = path_basename_nocompression(start_content_path);
 
    if (!string_is_empty(file_name))
       strlcpy(menu->last_start_content.file_name, file_name,

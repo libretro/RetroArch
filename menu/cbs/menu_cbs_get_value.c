@@ -1152,12 +1152,12 @@ static void menu_action_setting_disp_set_label_core_option_override_info(
    *w = 19;
 
    if (!string_is_empty(override_path))
-      options_file = path_basename(override_path);
+      options_file = path_basename_nocompression(override_path);
    else if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       const char *options_path = coreopts->conf_path;
       if (!string_is_empty(options_path))
-         options_file = path_basename(options_path);
+         options_file = path_basename_nocompression(options_path);
    }
 
    if (!string_is_empty(options_file))
