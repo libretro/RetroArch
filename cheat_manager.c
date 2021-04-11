@@ -705,7 +705,7 @@ static bool cheat_manager_get_game_specific_filename(
       return false;
 
    core_name = system_info.library_name;
-   game_name = path_basename(global->name.cheatfile);
+   game_name = path_basename_nocompression(global->name.cheatfile);
 
    if (string_is_empty(path_cheat_database) ||
          string_is_empty(core_name) ||

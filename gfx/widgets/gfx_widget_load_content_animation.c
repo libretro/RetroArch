@@ -352,7 +352,8 @@ bool gfx_widget_start_load_content_animation(void)
          if (entry &&
              !string_is_empty(entry->core_path))
          {
-            const char *entry_core_file = path_basename(entry->core_path);
+            const char *entry_core_file = path_basename_nocompression(
+                  entry->core_path);
 
             /* Check whether core matches... */
             if (string_is_empty(entry_core_file) ||

@@ -2626,7 +2626,7 @@ bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
       return false;
 
    return string_is_equal(playlist->entries[idx].path, path) &&
-          string_is_equal(path_basename(playlist->entries[idx].core_path), path_basename(core_path));
+          string_is_equal(path_basename_nocompression(playlist->entries[idx].core_path), path_basename_nocompression(core_path));
 }
 
 bool playlist_entries_are_equal(
@@ -2696,7 +2696,7 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
          *db_name = playlist->entries[idx].db_name;
       else
       {
-         const char *conf_path_basename = path_basename(playlist->config.path);
+         const char *conf_path_basename = path_basename_nocompression(playlist->config.path);
 
          /* Only use file basename if this is a 'collection' playlist
           * (i.e. ignore history/favourites) */

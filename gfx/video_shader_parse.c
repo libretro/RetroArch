@@ -1059,7 +1059,8 @@ static bool video_shader_write_referenced_preset(
    /* If the initial preset loaded is the ever-changing retroarch 
     * preset don't save a reference
     * TODO/FIXME - remove once we don't write this preset anymore */
-   if (!strncmp(path_basename(shader->loaded_preset_path), "retroarch",
+   if (!strncmp(path_basename_nocompression(shader->loaded_preset_path),
+            "retroarch",
             STRLEN_CONST("retroarch")))
    {
       RARCH_WARN("[Shaders]: Saving Full Preset because we can't save"

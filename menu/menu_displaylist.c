@@ -2420,7 +2420,7 @@ static void menu_displaylist_set_new_playlist(
       const char *path, bool sort_enabled)
 {
    playlist_config_t playlist_config;
-   const char *playlist_file_name      = path_basename(path);
+   const char *playlist_file_name      = path_basename_nocompression(path);
    int content_favorites_size          = settings->ints.content_favorites_size;
    unsigned content_history_size       = settings->uints.content_history_size;
    bool playlist_sort_alphabetical     = settings->bools.playlist_sort_alphabetical;
@@ -2936,7 +2936,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
                      if (!string_is_empty(playlist_path))
                      {
-                        const char *playlist_file = path_basename(playlist_path);
+                        const char *playlist_file = path_basename_nocompression(playlist_path);
 
                         if (!string_is_empty(playlist_file))
                            remove_entry_enabled = string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY) ||
@@ -3259,7 +3259,7 @@ static unsigned menu_displaylist_parse_playlists(
       if (string_is_empty(path))
          continue;
 
-      playlist_file = path_basename(path);
+      playlist_file = path_basename_nocompression(path);
 
       if (string_is_empty(playlist_file))
          continue;
@@ -3514,7 +3514,7 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
          if (string_is_empty(path))
             continue;
 
-         playlist_file = path_basename(path);
+         playlist_file = path_basename_nocompression(path);
 
          if (string_is_empty(playlist_file))
             continue;
@@ -3589,7 +3589,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    if (string_is_empty(playlist_path))
       return false;
 
-   playlist_file = path_basename(playlist_path);
+   playlist_file = path_basename_nocompression(playlist_path);
 
    if (string_is_empty(playlist_file))
       return false;

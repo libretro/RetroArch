@@ -2184,7 +2184,7 @@ static void materialui_refresh_playlist_icon_list(materialui_handle_t *mui,
       if (string_is_empty(path))
          continue;
 
-      playlist_file = path_basename(path);
+      playlist_file = path_basename_nocompression(path);
 
       if (string_is_empty(playlist_file))
          continue;
@@ -2232,7 +2232,7 @@ static void materialui_set_node_playlist_icon(
    if (string_is_empty(playlist_path))
       return;
 
-   playlist_file = path_basename(playlist_path);
+   playlist_file = path_basename_nocompression(playlist_path);
 
    if (string_is_empty(playlist_path))
       return;

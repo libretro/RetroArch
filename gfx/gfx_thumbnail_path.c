@@ -272,7 +272,7 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
       if (string_is_empty(playlist_path))
          return true;
       
-      playlist_file = path_basename(playlist_path);
+      playlist_file = path_basename_nocompression(playlist_path);
       
       /* Note: This is not considered an error
        * (just means that input playlist is ignored) */
@@ -811,7 +811,7 @@ bool gfx_thumbnail_get_content_dir(
    tmp_buf[0] = '\0';
    
    strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
-   strlcpy(content_dir, path_basename(tmp_buf), len);
+   strlcpy(content_dir, path_basename_nocompression(tmp_buf), len);
    
    return !string_is_empty(content_dir);
 }
