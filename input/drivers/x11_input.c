@@ -107,6 +107,41 @@ static bool x_mouse_button_pressed(
    return false;
 }
 
+static unsigned x_retro_id_to_rarch(unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+	 return RARCH_LIGHTGUN_DPAD_RIGHT;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+	 return RARCH_LIGHTGUN_DPAD_LEFT;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+	 return RARCH_LIGHTGUN_DPAD_UP;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+	 return RARCH_LIGHTGUN_DPAD_DOWN;
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+         return RARCH_LIGHTGUN_SELECT;
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+	 return RARCH_LIGHTGUN_START;
+      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+         return RARCH_LIGHTGUN_RELOAD;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return RARCH_LIGHTGUN_TRIGGER;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+	 return RARCH_LIGHTGUN_AUX_A;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+	 return RARCH_LIGHTGUN_AUX_B;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+	 return RARCH_LIGHTGUN_AUX_C;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+	 return RARCH_LIGHTGUN_START;
+      default:
+	 break;
+   }
+
+   return 0;
+}
+
 static int16_t x_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -342,238 +377,19 @@ static int16_t x_input_state(
                break;
             /*buttons*/
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_TRIGGER;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_RELOAD;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_AUX_A;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_AUX_B;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_AUX_C;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
             case RETRO_DEVICE_ID_LIGHTGUN_START:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_START;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
-            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_SELECT;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
+	    case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_DPAD_UP;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_DPAD_DOWN;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_DPAD_LEFT;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
                {
-                  unsigned new_id = RARCH_LIGHTGUN_DPAD_RIGHT;
+                  unsigned new_id = x_retro_id_to_rarch(id);
                   if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
@@ -599,29 +415,6 @@ static int16_t x_input_state(
                return x11->mouse_delta_x;
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
                return x11->mouse_delta_y;
-            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_START;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           new_id))
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
-                     {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
-                     }
-                  }
-               }
-               break;
          }
          break;
    }
