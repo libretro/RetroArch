@@ -343,7 +343,7 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
    if (string_is_empty(path))
       return 0;
 
-   playlist_file = path_basename(path);
+   playlist_file = path_basename_nocompression(path);
 
    if (string_is_empty(playlist_file))
       return 0;
@@ -404,7 +404,7 @@ static int action_get_title_deferred_core_backup_list(
    else
    {
       /* If not, use core file name */
-      const char *core_filename = path_basename(core_path);
+      const char *core_filename = path_basename_nocompression(core_path);
 
       if (!string_is_empty(core_filename))
          strlcat(s, core_filename, len);
