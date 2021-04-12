@@ -23,6 +23,7 @@
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
+using namespace std;
 using namespace spirv_cross;
 
 static const char *texture_semantic_names[] = {
