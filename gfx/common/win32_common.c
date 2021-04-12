@@ -232,6 +232,12 @@ typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 
 HACCEL window_accelerators;
 
+#if (defined(_MSC_VER) && (_MSC_VER >= 1400)) || defined(__MINGW32__)
+#ifndef _XBOX
+#define HAVE_CLIP_WINDOW
+#endif
+#endif
+
 /* Power Request APIs */
 
 #if !defined(_XBOX) && (_MSC_VER == 1310)
@@ -1030,6 +1036,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             taskbar_is_created = true;
 #endif
          break;
+#ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
          if (input_mouse_grabbed())
             win32_clip_window(true);
@@ -1038,6 +1045,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          if (input_mouse_grabbed())
             win32_clip_window(false);
          break;
+#endif
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -1144,6 +1152,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             taskbar_is_created = true;
 #endif
          break;
+#ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
          if (input_mouse_grabbed())
             win32_clip_window(true);
@@ -1152,6 +1161,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
          if (input_mouse_grabbed())
             win32_clip_window(false);
          break;
+#endif
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -1561,7 +1571,7 @@ void win32_check_window(void *data,
 
 void win32_clip_window(bool state)
 {
-#if !defined(_XBOX)
+#ifdef HAVE_CLIP_WINDOW
    RECT clip_rect;
 
    if (state && main_window.hwnd)
