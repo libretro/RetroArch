@@ -494,7 +494,7 @@ bool slang_reflect(
    if (vertex_ubo)
    {
       reflection->ubo_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      reflection->ubo_size        = std::max(reflection->ubo_size,
+      reflection->ubo_size        = max(reflection->ubo_size,
             vertex_compiler.get_declared_struct_size(
                vertex_compiler.get_type(
                   vertex.uniform_buffers[0].base_type_id)));
@@ -503,7 +503,7 @@ bool slang_reflect(
    if (fragment_ubo)
    {
       reflection->ubo_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      reflection->ubo_size        = std::max(reflection->ubo_size,
+      reflection->ubo_size        = max(reflection->ubo_size,
             fragment_compiler.get_declared_struct_size(
                fragment_compiler.get_type(
                   fragment.uniform_buffers[0].base_type_id)));
@@ -512,7 +512,7 @@ bool slang_reflect(
    if (vertex_push)
    {
       reflection->push_constant_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      reflection->push_constant_size        = std::max(
+      reflection->push_constant_size        = max(
             reflection->push_constant_size,
             vertex_compiler.get_declared_struct_size(
                vertex_compiler.get_type(
@@ -522,7 +522,7 @@ bool slang_reflect(
    if (fragment_push)
    {
       reflection->push_constant_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      reflection->push_constant_size        = std::max(
+      reflection->push_constant_size        = max(
             reflection->push_constant_size,
             fragment_compiler.get_declared_struct_size(
                fragment_compiler.get_type(
