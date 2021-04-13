@@ -29,6 +29,7 @@ typedef struct ozone_handle ozone_handle_t;
 #include "../../gfx/gfx_display.h"
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
+#include "../../menu_screensaver.h"
 
 #include "../../configuration.h"
 
@@ -119,6 +120,7 @@ struct ozone_handle
    char *pending_message;
    file_list_t selection_buf_old;                  /* ptr alignment */
    file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
+   menu_screensaver_t *screensaver;
 
    struct
    {
@@ -212,7 +214,6 @@ struct ozone_handle
    float sidebar_offset;
    float last_scale_factor;
    float pure_white[16];
-   float pure_black[16];
 
    struct
    {

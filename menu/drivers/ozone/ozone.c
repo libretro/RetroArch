@@ -705,10 +705,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    *userdata = ozone;
 
    for (i = 0; i < 15; i++)
-   {
       ozone->pure_white[i]  = 1.00f;
-      ozone->pure_black[i]  = 0.00f;
-   }
 
    ozone->last_width        = width;
    ozone->last_height       = height;
@@ -742,6 +739,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone->thumbnail_path_data = gfx_thumbnail_path_init();
    if (!ozone->thumbnail_path_data)
+      goto error;
+
+   ozone->screensaver = menu_screensaver_init();
+   if (!ozone->screensaver)
       goto error;
 
    ozone->fullscreen_thumbnails_available       = false;
@@ -913,6 +914,8 @@ static void ozone_free(void *data)
 
       if (ozone->thumbnail_path_data)
          free(ozone->thumbnail_path_data);
+
+      menu_screensaver_free(ozone->screensaver);
    }
 
    if (gfx_display_white_texture)
@@ -1328,6 +1331,9 @@ static void ozone_context_reset(void *data, bool is_threaded)
       /* TODO: update savestate thumbnail image */
 
       ozone_restart_cursor_animation(ozone);
+
+      /* Screensaver */
+      menu_screensaver_context_destroy(ozone->screensaver);
    }
    video_driver_monitor_reset();
 }
@@ -1399,6 +1405,9 @@ static void ozone_context_destroy(void *data)
 
    /* Horizontal list */
    ozone_context_destroy_horizontal_list(ozone);
+
+   /* Screensaver */
+   menu_screensaver_context_destroy(ozone->screensaver);
 }
 
 static void *ozone_list_get_entry(void *data,
@@ -1782,10 +1791,18 @@ static void ozone_render(void *data,
    /* Read pointer state */
    menu_input_get_pointer_state(&ozone->pointer);
 
-   /* If menu screensaver is active, no further
-    * action is required */
+   /* If menu screensaver is active, update
+    * screensaver and return */
    if (ozone->show_screensaver)
    {
+      menu_screensaver_iterate(
+            ozone->screensaver,
+            p_disp, p_anim,
+            (enum menu_screensaver_effect)settings->uints.menu_screensaver_animation,
+            settings->floats.menu_screensaver_animation_speed,
+            ozone->theme->screensaver_tint,
+            width, height,
+            settings->paths.directory_assets);
       GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
       return;
    }
@@ -2950,24 +2967,16 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       last_use_preferred_system_color_theme = use_preferred_system_color_theme;
    }
 
-   video_driver_set_viewport(video_width, video_height, true, false);
-
-   /* If menu screensaver is active, blank the
-    * screen and skip drawing menu elements */
+   /* If menu screensaver is active, draw
+    * screensaver and return */
    if (ozone->show_screensaver)
    {
-      gfx_display_set_alpha(ozone->pure_black, 1.0f);
-      gfx_display_draw_quad(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            0, 0, video_width, video_height,
-            video_width, video_height,
-            ozone->pure_black);
-      video_driver_set_viewport(video_width, video_height, false, true);
+      menu_screensaver_frame(ozone->screensaver,
+            video_info, p_disp);
       return;
    }
+
+   video_driver_set_viewport(video_width, video_height, true, false);
 
    /* Clear text */
    ozone_font_bind(&ozone->fonts.footer);

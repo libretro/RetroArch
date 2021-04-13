@@ -988,12 +988,14 @@ ifeq ($(HAVE_MENU), 1)
       OBJ += menu/drivers/materialui.o
       DEFINES += -DHAVE_MATERIALUI
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_XMB), 1)
       OBJ += menu/drivers/xmb.o
       DEFINES += -DHAVE_XMB
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_OZONE), 1)
@@ -1005,11 +1007,16 @@ ifeq ($(HAVE_MENU), 1)
              menu/drivers/ozone/ozone_sidebar.o
       DEFINES += -DHAVE_OZONE
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_STRIPES), 1)
       OBJ += menu/drivers/stripes.o
       DEFINES += -DHAVE_STRIPES
+   endif
+
+   ifeq ($(HAVE_MENU_SCREENSAVER), 1)
+      OBJ += menu/menu_screensaver.o
    endif
 endif
 

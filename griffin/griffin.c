@@ -1370,6 +1370,9 @@ MENU
 
 #ifdef HAVE_MENU
 #include "../menu/menu_setting.c"
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+#include "../menu/menu_screensaver.c"
+#endif
 
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"

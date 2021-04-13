@@ -6508,6 +6508,44 @@ static void setting_get_string_representation_uint_menu_screensaver_timeout(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 }
 
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+static void setting_get_string_representation_uint_menu_screensaver_animation(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MENU_SCREENSAVER_BLANK:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF),
+               len);
+         break;
+      case MENU_SCREENSAVER_SNOW:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW),
+               len);
+         break;
+      case MENU_SCREENSAVER_STARFIELD:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD),
+               len);
+         break;
+      case MENU_SCREENSAVER_VORTEX:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX),
+               len);
+         break;
+   }
+}
+#endif
+
 enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting)
 {
    if (!setting)
@@ -14266,6 +14304,46 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_menu_screensaver_timeout;
          menu_settings_list_current_add_range(list, list_info, 0, 1800, 10, true, true);
 
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+         if (string_is_equal(settings->arrays.menu_driver, "glui") ||
+             string_is_equal(settings->arrays.menu_driver, "xmb")  ||
+             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_screensaver_animation,
+                  MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION,
+                  MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+                  DEFAULT_MENU_SCREENSAVER_ANIMATION,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_menu_screensaver_animation;
+            menu_settings_list_current_add_range(list, list_info, 0, MENU_SCREENSAVER_LAST-1, 1, true, true);
+            (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.menu_screensaver_animation_speed,
+                  MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+                  MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+                  DEFAULT_MENU_SCREENSAVER_ANIMATION_SPEED,
+                  "%.1fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
+         }
+#endif
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_mouse_enable,

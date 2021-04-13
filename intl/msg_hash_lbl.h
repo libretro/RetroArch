@@ -2171,6 +2171,14 @@ MSG_HASH(
    "menu_screensaver_timeout"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION,
+   "menu_screensaver_animation"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "menu_screensaver_animation_speed"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PERFCNT_ENABLE,
    "perfcnt_enable"
    )

@@ -41,6 +41,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_entries.h"
+#include "../menu_screensaver.h"
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail_path.h"
@@ -86,6 +87,12 @@
  *   any timing fluctuations, resulting in
  *   smooth motion */
 #define XMB_TAB_SWITCH_REPEAT_DELAY 99000
+
+/* XMB does not have a clean colour theme
+ * implementation. Until this is available,
+ * the menu screensaver tint will be set to
+ * a fixed colour: HTML WhiteSmoke */
+#define XMB_SCREENSAVER_TINT 0xF5F5F5
 
 #if 0
 #define XMB_DEBUG
@@ -294,6 +301,8 @@ typedef struct xmb_handle
    font_data_t *font2;
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
+
+   menu_screensaver_t *screensaver;
 
    gfx_thumbnail_path_data_t *thumbnail_path_data;
    struct {
@@ -3902,10 +3911,18 @@ static void xmb_render(void *data,
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
 
-   /* If menu screensaver is active, no further
-    * action is required */
+   /* If menu screensaver is active, update
+    * screensaver and return */
    if (xmb->show_screensaver)
    {
+      menu_screensaver_iterate(
+            xmb->screensaver,
+            p_disp, p_anim,
+            (enum menu_screensaver_effect)settings->uints.menu_screensaver_animation,
+            settings->floats.menu_screensaver_animation_speed,
+            XMB_SCREENSAVER_TINT,
+            width, height,
+            settings->paths.directory_assets);
       GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
       return;
    }
@@ -4713,30 +4730,16 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    title_msg[0]       = '\0';
    title_truncated[0] = '\0';
 
-   video_driver_set_viewport(video_width, video_height, true, false);
-
-   /* If menu screensaver is active, blank the
-    * screen and skip drawing menu elements */
+   /* If menu screensaver is active, draw
+    * screensaver and return */
    if (xmb->show_screensaver)
    {
-      float black[16] = {
-         0, 0, 0, 1,
-         0, 0, 0, 1,
-         0, 0, 0, 1,
-         0, 0, 0, 1,
-      };
-      gfx_display_draw_quad(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            0, 0,
-            video_width, video_height,
-            video_width, video_height,
-            black);
-      video_driver_set_viewport(video_width, video_height, false, true);
+      menu_screensaver_frame(xmb->screensaver,
+            video_info, p_disp);
       return;
    }
+
+   video_driver_set_viewport(video_width, video_height, true, false);
 
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4.0f;
    left_thumbnail_margin_width             = xmb->icon_size * 3.4f;
@@ -5739,6 +5742,11 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb_init_ribbon(xmb);
 
+   /* Initialise screensaver */
+   xmb->screensaver = menu_screensaver_init();
+   if (!xmb->screensaver)
+      goto error;
+
    /* Thumbnail initialisation */
    xmb->thumbnail_path_data = gfx_thumbnail_path_init();
    if (!xmb->thumbnail_path_data)
@@ -5795,6 +5803,8 @@ static void xmb_free(void *data)
 
       if (xmb->thumbnail_path_data)
          free(xmb->thumbnail_path_data);
+
+      menu_screensaver_free(xmb->screensaver);
    }
 
    if (gfx_display_white_texture)
@@ -6313,6 +6323,8 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
    xmb_context_reset_horizontal_list(xmb);
 
+   menu_screensaver_context_destroy(xmb->screensaver);
+
    /* Only reload thumbnails if:
     * > Thumbnails are enabled
     * > This is a playlist, a database list, a file list
@@ -6660,6 +6672,8 @@ static void xmb_context_destroy(void *data)
 
    xmb->font = NULL;
    xmb->font2 = NULL;
+
+   menu_screensaver_context_destroy(xmb->screensaver);
 }
 
 static void xmb_toggle(void *userdata, bool menu_on)
