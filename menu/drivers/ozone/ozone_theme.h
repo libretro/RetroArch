@@ -41,6 +41,9 @@ typedef struct ozone_theme
    uint32_t text_selected_rgba;
    uint32_t text_sublabel_rgba;
 
+   /* Screensaver 'tint' (RGB24) */
+   uint32_t screensaver_tint;
+
    /* Sidebar color */
    float *sidebar_background;
    float *sidebar_top_gradient;

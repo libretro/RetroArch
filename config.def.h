@@ -43,6 +43,11 @@
 #include "dingux/dingux_utils.h"
 #endif
 
+/* Required for menu screensaver animation */
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+#include "menu/menu_screensaver.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -587,6 +592,13 @@ static const bool menu_savestate_resume     = false;
  * seconds of inactivity. A timeout of zero disables
  * the screensaver */
 #define DEFAULT_MENU_SCREENSAVER_TIMEOUT 0
+
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+/* When menu screensaver is enabled, specifies
+ * animation effect and animation speed */
+#define DEFAULT_MENU_SCREENSAVER_ANIMATION MENU_SCREENSAVER_BLANK
+#define DEFAULT_MENU_SCREENSAVER_ANIMATION_SPEED 1.0f
+#endif
 
 static const bool content_show_settings     = true;
 static const bool content_show_favorites    = true;

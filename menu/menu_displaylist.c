@@ -79,6 +79,9 @@
 #include "menu_shader.h"
 #endif
 #include "menu_dialog.h"
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+#include "menu_screensaver.h"
+#endif
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -7298,8 +7301,14 @@ unsigned menu_displaylist_build_list(
          break;         
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
-            bool kiosk_mode_enable    = settings->bools.kiosk_mode_enable;
-            bool desktop_menu_enable  = settings->bools.desktop_menu_enable;
+            bool kiosk_mode_enable                                  = settings->bools.kiosk_mode_enable;
+            bool desktop_menu_enable                                = settings->bools.desktop_menu_enable;
+            bool menu_screensaver_supported                         = menu_driver_screensaver_supported();
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+            enum menu_screensaver_effect menu_screensaver_animation =
+                  (enum menu_screensaver_effect)settings->uints.menu_screensaver_animation;
+#endif
+
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_SETTINGS,                                         PARSE_ACTION,      true},
@@ -7314,6 +7323,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,                               PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,                                 PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,                              PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION,                            PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED,                      PARSE_ONLY_FLOAT,  false},
                {MENU_ENUM_LABEL_MOUSE_ENABLE,                                          PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_POINTER_ENABLE,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL,   true},
@@ -7336,9 +7347,20 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT:
-                     if (menu_driver_screensaver_supported())
+                     if (menu_screensaver_supported)
                         build_list[i].checked = true;
                      break;
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+                  case MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION:
+                     if (menu_screensaver_supported)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED:
+                     if (menu_screensaver_supported &&
+                         (menu_screensaver_animation != MENU_SCREENSAVER_BLANK))
+                        build_list[i].checked = true;
+                     break;
+#endif
                   case MENU_ENUM_LABEL_UI_COMPANION_TOGGLE:
                      if (desktop_menu_enable)
                         build_list[i].checked = true;

@@ -257,6 +257,9 @@ ozone_theme_t ozone_theme_light = {
    0x374CFFFF,
    0x878787FF,
 
+   /* Screensaver 'tint' (RGB24) */
+   0xEBEBEB,                               /* screensaver_tint */
+
    ozone_sidebar_background_light,
    ozone_sidebar_gradient_top_light,
    ozone_sidebar_gradient_bottom_light,
@@ -285,6 +288,9 @@ ozone_theme_t ozone_theme_dark = {
    0xFFFFFFFF,
    0x00FFC5FF,
    0x9F9FA1FF,
+
+   /* Screensaver 'tint' (RGB24) */
+   0xFFFFFF,                               /* screensaver_tint */
 
    ozone_sidebar_background_dark,
    ozone_sidebar_gradient_top_dark,
@@ -317,6 +323,9 @@ ozone_theme_t ozone_theme_nord = {
    0xECEFF4FF,                             /* text_rgba */
    0xA9C791FF,                             /* text_selected_rgba */
    0x8FBCBBFF,                             /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xECEFF4,                               /* screensaver_tint */
 
    /* Sidebar color */
    ozone_sidebar_background_nord,          /* sidebar_background */
@@ -352,6 +361,9 @@ ozone_theme_t ozone_theme_gruvbox_dark = {
    0x8EC07CFF,                                     /* text_selected_rgba */
    0xD79921FF,                                     /* text_sublabel_rgba */
 
+   /* Screensaver 'tint' (RGB24) */
+   0xEBDBB2,                                       /* screensaver_tint */
+
    /* Sidebar color */
    ozone_sidebar_background_gruvbox_dark,          /* sidebar_background */
    ozone_sidebar_gradient_top_gruvbox_dark,        /* sidebar_top_gradient */
@@ -385,6 +397,9 @@ ozone_theme_t ozone_theme_boysenberry = {
    0xFEBCFFFF,                                    /* text_rgba */
    0xFEBCFFFF,                                    /* text_selected_rgba */
    0xD599FFFF,                                    /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xFEBCFF,                                      /* screensaver_tint */
 
    /* Sidebar color */
    ozone_sidebar_background_boysenberry,          /* sidebar_background */
@@ -420,6 +435,9 @@ ozone_theme_t ozone_theme_hacking_the_kernel = {
    0x83FF83FF,                                           /* text_selected_rgba */
    0x53E63DFF,                                           /* text_sublabel_rgba */
 
+   /* Screensaver 'tint' (RGB24) */
+   0x00E528,                                             /* screensaver_tint */
+
    /* Sidebar color */
    ozone_sidebar_background_hacking_the_kernel,          /* sidebar_background */
    ozone_sidebar_gradient_top_hacking_the_kernel,        /* sidebar_top_gradient */
@@ -453,6 +471,9 @@ ozone_theme_t ozone_theme_twilight_zone = {
    0xFDFCFEFF,                                      /* text_rgba */
    0xB78CC8FF,                                      /* text_selected_rgba */
    0x9A6C99FF,                                      /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xFDFCFE,                                        /* screensaver_tint */
 
    /* Sidebar color */
    ozone_sidebar_background_twilight_zone,          /* sidebar_background */
