@@ -7153,46 +7153,40 @@ static void general_read_handler(rarch_setting_t *setting)
          *setting->value.target.fraction = settings->floats.video_refresh_rate;
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->uints.input_joypad_map[0];
-         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->uints.input_joypad_map[1];
-         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->uints.input_joypad_map[2];
-         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->uints.input_joypad_map[3];
-         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->uints.input_joypad_map[4];
+         *setting->value.target.integer = settings->uints.input_joypad_map[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX];
          break;
       default:
          break;
    }
 }
 
+static enum event_command write_handler_get_cmd(rarch_setting_t *setting)
+{
+   if (setting && setting->cmd_trigger_idx != CMD_EVENT_NONE)
+   {
+      if (setting->flags & SD_FLAG_EXIT)
+         if (*setting->value.target.boolean)
+            *setting->value.target.boolean = false;
+
+      if (setting->cmd_trigger_event_triggered ||
+            (setting->flags & SD_FLAG_CMD_APPLY_AUTO))
+         return setting->cmd_trigger_idx;
+   }
+   return CMD_EVENT_NONE;
+}
+
 static void general_write_handler(rarch_setting_t *setting)
 {
    enum event_command rarch_cmd = CMD_EVENT_NONE;
-   settings_t *settings         = config_get_ptr();
 
    if (!setting)
       return;
 
-   if (setting->cmd_trigger_idx != CMD_EVENT_NONE)
-   {
-      uint64_t flags = setting->flags;
-
-      if (flags & SD_FLAG_EXIT)
-      {
-         if (*setting->value.target.boolean)
-            *setting->value.target.boolean = false;
-      }
-      if (setting->cmd_trigger_event_triggered ||
-            (flags & SD_FLAG_CMD_APPLY_AUTO))
-         rarch_cmd = setting->cmd_trigger_idx;
-   }
+   rarch_cmd                    = write_handler_get_cmd(setting);
 
    switch (setting->enum_idx)
    {
@@ -7269,6 +7263,7 @@ static void general_write_handler(rarch_setting_t *setting)
          if (*setting->value.target.boolean)
          {
             menu_displaylist_info_t info;
+            settings_t *settings         = config_get_ptr();
             file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
 
             menu_displaylist_info_init(&info);
@@ -7285,17 +7280,24 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-         configuration_set_float(settings, settings->floats.audio_max_timing_skew,
-               *setting->value.target.fraction);
+         {
+            settings_t *settings         = config_get_ptr();
+            configuration_set_float(settings,
+                  settings->floats.audio_max_timing_skew,
+                  *setting->value.target.fraction);
+         }
          break;
       case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          if (*setting->value.target.fraction < 0.0005)
          {
-            configuration_set_bool(settings, settings->bools.audio_rate_control, false);
+            settings_t *settings         = config_get_ptr();
+            configuration_set_bool(settings,
+                  settings->bools.audio_rate_control, false);
             audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
          }
          else
          {
+            settings_t *settings         = config_get_ptr();
             configuration_set_bool(settings, settings->bools.audio_rate_control, true);
             audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
          }
@@ -7315,8 +7317,11 @@ static void general_write_handler(rarch_setting_t *setting)
 #if defined(DINGUX) && defined(DINGUX_BETA)
       case MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE:
          {
-            enum dingux_refresh_rate current_refresh_rate = DINGUX_REFRESH_RATE_60HZ;
-            enum dingux_refresh_rate target_refresh_rate  =
+            settings_t *settings         = config_get_ptr();
+            enum dingux_refresh_rate 
+               current_refresh_rate      = DINGUX_REFRESH_RATE_60HZ;
+            enum dingux_refresh_rate 
+               target_refresh_rate       =
                   (enum dingux_refresh_rate)settings->uints.video_dingux_refresh_rate;
             bool refresh_rate_valid                       = false;
 
@@ -7353,11 +7358,14 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
 #endif
       case MENU_ENUM_LABEL_VIDEO_SCALE:
-         settings->modified           = true;
-         settings->floats.video_scale = roundf(*setting->value.target.fraction);
+         {
+            settings_t *settings         = config_get_ptr();
+            settings->modified           = true;
+            settings->floats.video_scale = roundf(*setting->value.target.fraction);
 
-         if (!settings->bools.video_fullscreen)
-            rarch_cmd = CMD_EVENT_REINIT;
+            if (!settings->bools.video_fullscreen)
+               rarch_cmd = CMD_EVENT_REINIT;
+         }
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          {
@@ -7368,28 +7376,20 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-         settings->modified            = true;
-         settings->uints.input_joypad_map[0] = *setting->value.target.integer;
-         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-         settings->modified            = true;
-         settings->uints.input_joypad_map[1] = *setting->value.target.integer;
-         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-         settings->modified            = true;
-         settings->uints.input_joypad_map[2] = *setting->value.target.integer;
-         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-         settings->modified            = true;
-         settings->uints.input_joypad_map[3] = *setting->value.target.integer;
-         break;
       case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         settings->modified            = true;
-         settings->uints.input_joypad_map[4] = *setting->value.target.integer;
+         {
+            settings_t *settings         = config_get_ptr();
+            settings->modified           = true;
+            settings->uints.input_joypad_map[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
+         }
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          if (!verbosity_is_enabled())
          {
+            settings_t *settings          = config_get_ptr();
             rarch_log_file_init(
                   settings->bools.log_to_file,
                   settings->bools.log_to_file_timestamp,
@@ -7406,6 +7406,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_LOG_TO_FILE:
          if (verbosity_is_enabled())
          {
+            settings_t *settings       = config_get_ptr();
             bool log_to_file           = settings->bools.log_to_file;
             bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
             const char *log_dir        = settings->paths.log_dir;
@@ -7425,6 +7426,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
          if (verbosity_is_enabled() && is_logging_to_file())
          {
+            settings_t *settings       = config_get_ptr();
             bool log_to_file           = settings->bools.log_to_file;
             bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
             const char *log_dir        = settings->paths.log_dir;
@@ -7441,7 +7443,10 @@ static void general_write_handler(rarch_setting_t *setting)
 #if defined(DINGUX)
       case MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE:
 #endif
-         video_driver_set_filtering(1, settings->bools.video_ctx_scaling, settings->bools.video_ctx_scaling);
+         {
+            settings_t *settings       = config_get_ptr();
+            video_driver_set_filtering(1, settings->bools.video_ctx_scaling, settings->bools.video_ctx_scaling);
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
@@ -7532,41 +7537,65 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
-#ifdef HAVE_AUDIOMIXER
-         if (settings->bools.audio_enable_menu)
-            audio_driver_load_system_sounds();
-         else
-            audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-#endif
-         break;
-      case MENU_ENUM_LABEL_MENU_SOUND_BGM:
-#ifdef HAVE_AUDIOMIXER
-         if (settings->bools.audio_enable_menu)
          {
-            if (settings->bools.audio_enable_menu_bgm)
-               audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#ifdef HAVE_AUDIOMIXER
+            settings_t *settings       = config_get_ptr();
+            if (settings->bools.audio_enable_menu)
+               audio_driver_load_system_sounds();
             else
                audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-         }
 #endif
+         }
+         break;
+      case MENU_ENUM_LABEL_MENU_SOUND_BGM:
+         {
+#ifdef HAVE_AUDIOMIXER
+            settings_t *settings       = config_get_ptr();
+            if (settings->bools.audio_enable_menu)
+            {
+               if (settings->bools.audio_enable_menu_bgm)
+                  audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+               else
+                  audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+            }
+#endif
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
-         video_display_server_set_window_opacity(settings->uints.video_window_opacity);
+         {
+            settings_t *settings       = config_get_ptr();
+            video_display_server_set_window_opacity(settings->uints.video_window_opacity);
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS:
-         video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
+         {
+            settings_t *settings       = config_get_ptr();
+            video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
+         }
          break;
       case MENU_ENUM_LABEL_MIDI_INPUT:
-         midi_driver_set_input(settings->arrays.midi_input);
+         {
+            settings_t *settings       = config_get_ptr();
+            midi_driver_set_input(settings->arrays.midi_input);
+         }
          break;
       case MENU_ENUM_LABEL_MIDI_OUTPUT:
-         midi_driver_set_output(settings->arrays.midi_output);
+         {
+            settings_t *settings       = config_get_ptr();
+            midi_driver_set_output(settings->arrays.midi_output);
+         }
          break;
       case MENU_ENUM_LABEL_MIDI_VOLUME:
-         midi_driver_set_volume(settings->uints.midi_volume);
+         {
+            settings_t *settings       = config_get_ptr();
+            midi_driver_set_volume(settings->uints.midi_volume);
+         }
          break;
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
-         frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+         {
+            settings_t *settings       = config_get_ptr();
+            frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+         }
          break;
       case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
          {
@@ -7628,6 +7657,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE:
          {
             unsigned new_capacity;
+            settings_t *settings       = config_get_ptr();
             int content_favorites_size = settings->ints.content_favorites_size;
 
             /* Get new size */
@@ -7689,19 +7719,28 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
-         /* when changing the username, clear out the password and token */
-         settings->arrays.cheevos_password[0] = '\0';
-         settings->arrays.cheevos_token[0] = '\0';
+         {
+            settings_t *settings       = config_get_ptr();
+            /* when changing the username, clear out the password and token */
+            settings->arrays.cheevos_password[0] = '\0';
+            settings->arrays.cheevos_token[0] = '\0';
+         }
          break;
       case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
-         /* when changing the password, clear out the token */
-         settings->arrays.cheevos_token[0] = '\0';
+         {
+            settings_t *settings       = config_get_ptr();
+            /* when changing the password, clear out the token */
+            settings->arrays.cheevos_token[0] = '\0';
+         }
          break;
       case MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE:
+         {
 #ifdef HAVE_AUDIOMIXER
-         if (settings->bools.cheevos_unlock_sound_enable)
-            audio_driver_load_system_sounds();
+            settings_t *settings       = config_get_ptr();
+            if (settings->bools.cheevos_unlock_sound_enable)
+               audio_driver_load_system_sounds();
 #endif
+         }
          break;
       case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
          /* When toggling sensor input off, ensure
