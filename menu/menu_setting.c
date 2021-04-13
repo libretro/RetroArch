@@ -7052,13 +7052,13 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    double video_refresh_rate = 0.0;
    double deviation          = 0.0;
    unsigned sample_points    = 0;
-   gfx_animation_t *p_anim   = anim_get_ptr();
    if (!setting)
       return;
 
    if (video_monitor_fps_statistics(&video_refresh_rate,
             &deviation, &sample_points))
    {
+      gfx_animation_t *p_anim   = anim_get_ptr();
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
       GFX_ANIMATION_SET_ACTIVE(p_anim);
@@ -7124,6 +7124,26 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
 
+static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
+{
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting || setting->enum_idx == MSG_UNKNOWN)
+      return;
+
+   *setting->value.target.fraction = *(audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
+   if (*setting->value.target.fraction < 0.0005)
+   {
+      configuration_set_bool(settings, settings->bools.audio_rate_control, false);
+      audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
+   }
+   else
+   {
+      configuration_set_bool(settings, settings->bools.audio_rate_control, true);
+      audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
+   }
+}
+
 static void general_read_handler(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
@@ -7133,19 +7153,6 @@ static void general_read_handler(rarch_setting_t *setting)
 
    switch (setting->enum_idx)
    {
-      case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
-         *setting->value.target.fraction = *(audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
-         if (*setting->value.target.fraction < 0.0005)
-         {
-            configuration_set_bool(settings, settings->bools.audio_rate_control, false);
-            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
-         }
-         else
-         {
-            configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
-         }
-         break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
          *setting->value.target.fraction = settings->floats.audio_max_timing_skew;
          break;
@@ -7177,6 +7184,61 @@ static enum event_command write_handler_get_cmd(rarch_setting_t *setting)
          return setting->cmd_trigger_idx;
    }
    return CMD_EVENT_NONE;
+}
+
+static void write_handler_audio_rate_control_delta(rarch_setting_t *setting)
+{
+   settings_t *settings         = config_get_ptr();
+   enum event_command rarch_cmd = CMD_EVENT_NONE;
+
+   if (!setting)
+      return;
+
+   rarch_cmd                    = write_handler_get_cmd(setting);
+
+   if (*setting->value.target.fraction < 0.0005)
+   {
+      configuration_set_bool(settings,
+            settings->bools.audio_rate_control, false);
+      audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
+   }
+   else
+   {
+      configuration_set_bool(settings, settings->bools.audio_rate_control, true);
+      audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
+   }
+
+   if (rarch_cmd || setting->cmd_trigger_event_triggered)
+      command_event(rarch_cmd, NULL);
+}
+
+static void write_handler_logging_verbosity(rarch_setting_t *setting)
+{
+   enum event_command rarch_cmd = CMD_EVENT_NONE;
+
+   if (!setting)
+      return;
+
+   rarch_cmd                    = write_handler_get_cmd(setting);
+
+   if (!verbosity_is_enabled())
+   {
+      settings_t *settings = config_get_ptr();
+      rarch_log_file_init(
+            settings->bools.log_to_file,
+            settings->bools.log_to_file_timestamp,
+            settings->paths.log_dir);
+      verbosity_enable();
+   }
+   else
+   {
+      verbosity_disable();
+      rarch_log_file_deinit();
+   }
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+
+   if (rarch_cmd || setting->cmd_trigger_event_triggered)
+      command_event(rarch_cmd, NULL);
 }
 
 static void general_write_handler(rarch_setting_t *setting)
@@ -7287,21 +7349,6 @@ static void general_write_handler(rarch_setting_t *setting)
                   *setting->value.target.fraction);
          }
          break;
-      case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
-         if (*setting->value.target.fraction < 0.0005)
-         {
-            settings_t *settings         = config_get_ptr();
-            configuration_set_bool(settings,
-                  settings->bools.audio_rate_control, false);
-            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
-         }
-         else
-         {
-            settings_t *settings         = config_get_ptr();
-            configuration_set_bool(settings, settings->bools.audio_rate_control, true);
-            audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
-         }
-         break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
 
@@ -7385,23 +7432,6 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->modified           = true;
             settings->uints.input_joypad_map[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
          }
-         break;
-      case MENU_ENUM_LABEL_LOG_VERBOSITY:
-         if (!verbosity_is_enabled())
-         {
-            settings_t *settings          = config_get_ptr();
-            rarch_log_file_init(
-                  settings->bools.log_to_file,
-                  settings->bools.log_to_file_timestamp,
-                  settings->paths.log_dir);
-            verbosity_enable();
-         }
-         else
-         {
-            verbosity_disable();
-            rarch_log_file_deinit();
-         }
-         retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
          break;
       case MENU_ENUM_LABEL_LOG_TO_FILE:
          if (verbosity_is_enabled())
@@ -9519,7 +9549,7 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group,
-                  general_write_handler,
+                  write_handler_logging_verbosity,
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
@@ -11911,8 +11941,8 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_write_handler,
-               general_read_handler);
+               write_handler_audio_rate_control_delta,
+               read_handler_audio_rate_control_delta);
          menu_settings_list_current_add_range(
                list,
                list_info,
