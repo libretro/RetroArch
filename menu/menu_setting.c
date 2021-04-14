@@ -643,22 +643,23 @@ static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
    float       step = setting->step;
    global_t *global = global_get_ptr();
 
-   if ( global )
+   if (global)
    {
-      if ( global->menu.action_press_time  > _21_SECONDS)
-         step = setting->step*1000000.0f;
-      else if ( global->menu.action_press_time  > _18_SECONDS)
-         step = setting->step*100000.0f;
-      else if ( global->menu.action_press_time  > _15_SECONDS)
-         step = setting->step*10000.0f;
-      else if ( global->menu.action_press_time  > _12_SECONDS)
-         step = setting->step*1000.0f;
-      else if ( global->menu.action_press_time  > _9_SECONDS)
-         step = setting->step*100.0f;
-      else if ( global->menu.action_press_time  > _6_SECONDS)
-         step = setting->step*10.0f;
-      else if ( global->menu.action_press_time  > _3_SECONDS)
-         step = setting->step*5.0f;
+      retro_time_t action_press_time = global->menu.action_press_time;
+      if      (action_press_time  > _21_SECONDS)
+         step = setting->step * 1000000.0f;
+      else if (action_press_time  > _18_SECONDS)
+         step = setting->step * 100000.0f;
+      else if (action_press_time  > _15_SECONDS)
+         step = setting->step * 10000.0f;
+      else if (action_press_time  > _12_SECONDS)
+         step = setting->step * 1000.0f;
+      else if (action_press_time  > _9_SECONDS)
+         step = setting->step * 100.0f;
+      else if (action_press_time  > _6_SECONDS)
+         step = setting->step * 10.0f;
+      else if (action_press_time  > _3_SECONDS)
+         step = setting->step * 5.0f;
       else
          step = setting->step;
    }
@@ -3373,24 +3374,19 @@ static void setting_set_string_representation_timedate_date_seperator(char *s)
    unsigned menu_timedate_date_separator = settings ?
          settings->uints.menu_timedate_date_separator :
          MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
-   char separator_char;
 
    switch (menu_timedate_date_separator)
    {
       case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-         separator_char = '/';
+         string_replace_all_chars(s, '-', '/');
          break;
       case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-         separator_char = '.';
+         string_replace_all_chars(s, '-', '.');
          break;
       case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
       default:
-         separator_char = '-';
          break;
    }
-
-   if (separator_char != '-')
-      string_replace_all_chars(s, '-', separator_char);
 }
 
 static void setting_get_string_representation_uint_menu_timedate_style(
@@ -4755,11 +4751,7 @@ static void setting_get_string_representation_uint_notification_show_screenshot_
          break;
    }
 }
-#endif
-#endif
 
-#ifdef HAVE_SCREENSHOTS
-#ifdef HAVE_GFX_WIDGETS
 static void setting_get_string_representation_uint_notification_show_screenshot_flash(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -4833,11 +4825,11 @@ static void setting_get_string_representation_uint_custom_viewport_height(rarch_
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
 
-   if (!(rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
+   if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_height);
-   else  if ((rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
+   else  if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_width);
@@ -5177,6 +5169,7 @@ static void setting_get_string_representation_uint_video_dingux_ipu_filter_type(
          break;
    }
 }
+
 #if defined(DINGUX_BETA)
 static void setting_get_string_representation_uint_video_dingux_refresh_rate(
       rarch_setting_t *setting,
@@ -5238,26 +5231,28 @@ static void setting_get_string_representation_uint_input_auto_game_focus(
  * Can prevent the user from locking him/herself out of the program. */
 static bool setting_is_protected_driver(rarch_setting_t *setting)
 {
-   if (!setting)
-      return false;
-
-   switch (setting->enum_idx)
+   if (setting)
    {
-      case MENU_ENUM_LABEL_INPUT_DRIVER:
-      case MENU_ENUM_LABEL_JOYPAD_DRIVER:
-      case MENU_ENUM_LABEL_VIDEO_DRIVER:
-      case MENU_ENUM_LABEL_MENU_DRIVER:
-         return true;
-      default:
-         return false;
+      switch (setting->enum_idx)
+      {
+         case MENU_ENUM_LABEL_INPUT_DRIVER:
+         case MENU_ENUM_LABEL_JOYPAD_DRIVER:
+         case MENU_ENUM_LABEL_VIDEO_DRIVER:
+         case MENU_ENUM_LABEL_MENU_DRIVER:
+            return true;
+         default:
+            break;
+      }
    }
+
+   return false;
 }
 
 static int setting_action_left_analog_dpad_mode(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned port = 0;
-   settings_t      *settings = config_get_ptr();
+   unsigned        port = 0;
+   settings_t *settings = config_get_ptr();
 
    if (!setting)
       return -1;
@@ -5400,15 +5395,18 @@ static int setting_action_left_bind_device(
 static int setting_action_left_mouse_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
+   unsigned index_offset    = 0;
    settings_t *settings     = config_get_ptr();
 
    if (!setting)
       return -1;
 
-   if (settings->uints.input_mouse_index[setting->index_offset])
-      --settings->uints.input_mouse_index[setting->index_offset];
+   index_offset             = setting->index_offset;
+
+   if (settings->uints.input_mouse_index[index_offset])
+      --settings->uints.input_mouse_index[index_offset];
    else
-      settings->uints.input_mouse_index[setting->index_offset] = MAX_USERS - 1;
+      settings->uints.input_mouse_index[index_offset] = MAX_USERS - 1;
 
    settings->modified = true;
    return 0;
