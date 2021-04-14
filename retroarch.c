@@ -31966,8 +31966,6 @@ static const gfx_ctx_driver_t *video_context_driver_init(
       unsigned minor, bool hw_render_ctx,
       void **ctx_data)
 {
-   bool  video_shared_context  = settings->bools.video_shared_context || libretro_get_shared_context();
-
    if (!ctx->bind_api(data, api, major, minor))
    {
       RARCH_WARN("Failed to bind API (#%u, version %u.%u)"
@@ -31981,8 +31979,13 @@ static const gfx_ctx_driver_t *video_context_driver_init(
       return NULL;
 
    if (ctx->bind_hw_render)
+   {
+      bool  video_shared_context  = 
+         settings->bools.video_shared_context || p_rarch->core_set_shared_context;
+
       ctx->bind_hw_render(*ctx_data,
             video_shared_context && hw_render_ctx);
+   }
 
    return ctx;
 }
@@ -33192,21 +33195,28 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
    {
       case RARCH_DRIVER_CTL_SET_REFRESH_RATE:
          {
-            float *hz = (float*)data;
+            float *hz                    = (float*)data;
+            settings_t *settings         = p_rarch->configuration_settings;
+            unsigned audio_out_rate      = settings->uints.audio_out_rate;
+            bool vrr_runloop_enable      = settings->bools.vrr_runloop_enable;
+            float video_refresh_rate     = settings->floats.video_refresh_rate;
+            float audio_max_timing_skew  = settings->floats.audio_max_timing_skew;
+            bool video_adaptive_vsync    = settings->bools.video_adaptive_vsync;
+            unsigned video_swap_interval = settings->uints.video_swap_interval;
+
             video_monitor_set_refresh_rate(*hz);
 
             /* Sets audio monitor rate to new value. */
             p_rarch->audio_source_ratio_original   =
-            p_rarch->audio_source_ratio_current    =
-            (double)p_rarch->configuration_settings->uints.audio_out_rate
-            / p_rarch->audio_driver_input;
+            p_rarch->audio_source_ratio_current    = (double)audio_out_rate
+                                                     / p_rarch->audio_driver_input;
 
             driver_adjust_system_rates(p_rarch,
-                                       p_rarch->configuration_settings->bools.vrr_runloop_enable,
-                                       p_rarch->configuration_settings->floats.video_refresh_rate,
-                                       p_rarch->configuration_settings->floats.audio_max_timing_skew,
-                                       p_rarch->configuration_settings->bools.video_adaptive_vsync,
-                                       p_rarch->configuration_settings->uints.video_swap_interval
+                                       vrr_runloop_enable,
+                                       video_refresh_rate,
+                                       audio_max_timing_skew,
+                                       video_adaptive_vsync,
+                                       video_swap_interval
                                        );
          }
          break;
