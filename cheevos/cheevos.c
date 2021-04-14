@@ -491,6 +491,12 @@ static void rcheevos_invalidate_address(unsigned address)
 
 uint8_t* rcheevos_patch_address(unsigned address)
 {
+   if (rcheevos_locals.memory.count == 0)
+   {
+      /* memory map was not previously initialized (no achievements for this game?) try now */
+      rcheevos_memory_init(&rcheevos_locals.memory, rcheevos_locals.patchdata.console_id);
+   }
+
    return rcheevos_memory_find(&rcheevos_locals.memory, address);
 }
 
@@ -1476,10 +1482,12 @@ bool rcheevos_unload(void)
 #endif
    }
 
+   if (rcheevos_locals.memory.count > 0)
+      rcheevos_memory_destroy(&rcheevos_locals.memory);
+
    if (rcheevos_locals.loaded)
    {
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
-      rcheevos_memory_destroy(&rcheevos_locals.memory);
 #ifdef HAVE_MENU
       cheevos_reset_menu_badges();
 #endif
