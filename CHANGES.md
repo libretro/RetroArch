@@ -1,8 +1,10 @@
 # Future
+- DISCORD/RP: Fix regression
 - DRM: set the correct video mode
 - INPUT: Ensure that 'retro_set_controller_port_device' is called when updating 'Max Users'
 - INPUT/XEGL/MOUSE: Fix xegl_ctx.c mouse activation
 - INPUT/POINTER: Add scaling to pointer input.
+- INPUT REMAPPING: Fix regression on loading file
 - INPUT REMAPPING: Fix regression where disabling input remapping would disable input
 - IOS: Disable system button gestures on iOS 14
 - IOS: Prevent potential crash on controller connect - randomly would get a crash when connecting a game controller while RA was running
