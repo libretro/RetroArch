@@ -931,7 +931,7 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
    for (i = 0; i < meta.size(); i++)
    {
       char n[128];
-      snprintf(n, sizeof(n), "%s%zu", name, i);
+      snprintf(n, sizeof(n), "%s%u", name, (unsigned)i);
       slang_texture_semantic_meta *m = (slang_texture_semantic_meta*)&meta[i];
 
       if (m->uniform)
