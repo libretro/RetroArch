@@ -643,9 +643,11 @@ static int16_t winraw_input_lightgun_state(
       const struct retro_keybind **binds,
       bool keyboard_mapping_blocked,
       unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
+      unsigned id,
+      float axis_threshold,
+      const uint64_t joykey,
+      const uint32_t joyaxis
+      )
 {
    if (!keyboard_mapping_blocked)
       if ((binds[port][id].key < RETROK_LAST) 
@@ -654,13 +656,17 @@ static int16_t winraw_input_lightgun_state(
          return 1;
    if (binds[port][id].valid)
    {
+      if ((uint16_t)joykey != NO_BTN && joypad->button(
+               port, (uint16_t)joykey))
+         return 1;
+      if (joyaxis != AXIS_NONE &&
+            ((float)abs(joypad->axis(port, joyaxis)) 
+             / 0x8000) > axis_threshold)
+         return 1;
       if (mouse && winraw_mouse_button_pressed(wr,
                mouse, port, binds[port]
                [id].mbutton))
          return 1;
-      return button_is_pressed(
-            joypad, joypad_info, binds[port],
-            id);
    }
    return 0;
 }
@@ -862,12 +868,27 @@ static int16_t winraw_input_state(
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
 				case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
                {
-                  unsigned new_id = winraw_retro_id_to_rarch(id);
-                  return winraw_input_lightgun_state(wr, mouse, joypad,
+                  unsigned new_id                = winraw_retro_id_to_rarch(id);
+                  const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
+                  const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
+                  const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
+                  const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
+                  uint16_t port                  = joypad_info->joy_idx;
+                  float axis_threshold           = joypad_info->axis_threshold;
+                  const uint64_t joykey          = (bind_joykey != NO_BTN)
+                     ? bind_joykey  : autobind_joykey;
+                  const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+                     ? bind_joyaxis : autobind_joyaxis;
+                  return winraw_input_lightgun_state(
+                        wr, mouse, joypad,
                         joypad_info,
                         binds,
                         keyboard_mapping_blocked,
-                        port, device, idx, new_id);
+                        port, 
+                        new_id,
+                        axis_threshold,
+                        joykey,
+                        joyaxis);
                }
 				/*deprecated*/
 				case RETRO_DEVICE_ID_LIGHTGUN_X:

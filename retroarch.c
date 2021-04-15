@@ -479,15 +479,32 @@ static int16_t input_state_wrap(
           * states together */
          if (binds[port][id].valid)
          {
-            if (button_is_pressed(
-                     joypad,
-                     joypad_info, binds[port], id))
+            /* Auto-binds are per joypad, not per user. */
+            const uint64_t bind_joykey     = binds[port][id].joykey;
+            const uint64_t bind_joyaxis    = binds[port][id].joyaxis;
+            const uint64_t autobind_joykey = joypad_info->auto_binds[id].joykey;
+            const uint64_t autobind_joyaxis= joypad_info->auto_binds[id].joyaxis;
+            uint16_t port                  = joypad_info->joy_idx;
+            float axis_threshold           = joypad_info->axis_threshold;
+            const uint64_t joykey          = (bind_joykey != NO_BTN)
+               ? bind_joykey  : autobind_joykey;
+            const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+               ? bind_joyaxis : autobind_joyaxis;
+
+            if ((uint16_t)joykey != NO_BTN && joypad->button(
+                     port, (uint16_t)joykey))
+               return 1;
+            if (joyaxis != AXIS_NONE &&
+                  ((float)abs(joypad->axis(port, joyaxis)) 
+                   / 0x8000) > axis_threshold)
                return 1;
 #ifdef HAVE_MFI
-            else if (sec_joypad &&
-                  button_is_pressed(
-                     sec_joypad,
-                     joypad_info, binds[port], id))
+            if ((uint16_t)joykey != NO_BTN && sec_joypad->button(
+                     port, (uint16_t)joykey))
+               return 1;
+            if (joyaxis != AXIS_NONE &&
+                  ((float)abs(sec_joypad->axis(port, joyaxis)) 
+                   / 0x8000) > axis_threshold)
                return 1;
 #endif
          }
@@ -25025,17 +25042,29 @@ bool input_key_pressed(int key, bool keyboard_pressed)
       )
    {
       rarch_joypad_info_t joypad_info;
-      struct rarch_state           
-         *p_rarch                = &rarch_st;
+      struct rarch_state *p_rarch    = &rarch_st;
       const input_device_driver_t
-         *joypad                 = (const input_device_driver_t*)p_rarch->joypad;
-      joypad_info.joy_idx        = 0;
-      joypad_info.auto_binds     = input_autoconf_binds[0];
-      joypad_info.axis_threshold = p_rarch->input_driver_axis_threshold;
-      return button_is_pressed(
-            joypad, &joypad_info,
-            input_config_binds[0],
-            key);
+         *joypad                     = (const input_device_driver_t*)
+         p_rarch->joypad;
+      const uint64_t bind_joykey     = input_config_binds[0][key].joykey;
+      const uint64_t bind_joyaxis    = input_config_binds[0][key].joyaxis;
+      const uint64_t autobind_joykey = input_autoconf_binds[0][key].joykey;
+      const uint64_t autobind_joyaxis= input_autoconf_binds[0][key].joyaxis;
+      uint16_t port                  = 0;
+      float axis_threshold           = p_rarch->input_driver_axis_threshold;
+      const uint64_t joykey          = (bind_joykey != NO_BTN)
+         ? bind_joykey  : autobind_joykey;
+      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+         ? bind_joyaxis : autobind_joyaxis;
+
+      if ((uint16_t)joykey != NO_BTN && joypad->button(
+               port, (uint16_t)joykey))
+         return true;
+      if (joyaxis != AXIS_NONE &&
+            ((float)abs(joypad->axis(port, joyaxis)) 
+             / 0x8000) > axis_threshold)
+         return true;
+      return false;
    }
    return true;
 }
@@ -25044,34 +25073,6 @@ bool input_mouse_grabbed(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->input_driver_grab_mouse_state;
-}
-
-int16_t button_is_pressed(
-      const input_device_driver_t *joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned id)
-{
-    /* Auto-binds are per joypad, not per user. */
-    const uint64_t bind_joykey     = binds[id].joykey;
-    const uint64_t bind_joyaxis    = binds[id].joyaxis;
-    const uint64_t autobind_joykey = joypad_info->auto_binds[id].joykey;
-    const uint64_t autobind_joyaxis= joypad_info->auto_binds[id].joyaxis;
-    uint16_t port                  = joypad_info->joy_idx;
-    float axis_threshold           = joypad_info->axis_threshold;
-    const uint64_t joykey          = (bind_joykey != NO_BTN)
-    ? bind_joykey  : autobind_joykey;
-    const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
-    ? bind_joyaxis : autobind_joyaxis;
-
-    if ((uint16_t)joykey != NO_BTN && joypad->button(
-            port, (uint16_t)joykey))
-        return 1;
-    if (joyaxis != AXIS_NONE &&
-          ((float)abs(joypad->axis(port, joyaxis)) 
-           / 0x8000) > axis_threshold)
-        return 1;
-    return 0;
 }
 
 /**

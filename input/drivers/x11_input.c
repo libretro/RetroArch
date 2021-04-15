@@ -389,7 +389,17 @@ static int16_t x_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
                {
-                  unsigned new_id = x_retro_id_to_rarch(id);
+                  unsigned new_id                = x_retro_id_to_rarch(id);
+                  const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
+                  const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
+                  const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
+                  const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
+                  uint16_t port                  = joypad_info->joy_idx;
+                  float axis_threshold           = joypad_info->axis_threshold;
+                  const uint64_t joykey          = (bind_joykey != NO_BTN)
+                     ? bind_joykey  : autobind_joykey;
+                  const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+                     ? bind_joyaxis : autobind_joyaxis;
                   if (!keyboard_mapping_blocked)
                      if ((binds[port][new_id].key < RETROK_LAST) 
                            && x_keyboard_pressed(x11, binds[port]
@@ -397,9 +407,12 @@ static int16_t x_input_state(
                         return 1;
                   if (binds[port][new_id].valid)
                   {
-                     if (button_is_pressed(joypad,
-                              joypad_info, binds[port],
-                              new_id))
+                     if ((uint16_t)joykey != NO_BTN && joypad->button(
+                              port, (uint16_t)joykey))
+                        return 1;
+                     if (joyaxis != AXIS_NONE &&
+                           ((float)abs(joypad->axis(port, joyaxis)) 
+                            / 0x8000) > axis_threshold)
                         return 1;
                      else if (settings->uints.input_mouse_index[port] == 0)
                      {
