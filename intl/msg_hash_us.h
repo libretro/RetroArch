@@ -8215,6 +8215,14 @@ MSG_HASH(
    "Select a menu theme preset from the file browser."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Menu Transparency"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Enable background display of running content while Quick Menu is active. Disabling transparency may alter theme colors."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Shadow Effects"
    )

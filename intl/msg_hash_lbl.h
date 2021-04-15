@@ -4149,6 +4149,10 @@ MSG_HASH(
    "menu_rgui_full_width_layout"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY,
+   "menu_rgui_transparency"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_SHADOWS,
    "menu_rgui_shadows"
    )
