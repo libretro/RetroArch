@@ -5876,6 +5876,10 @@ static bool menu_shader_manager_operate_auto_preset(
    char config_directory[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
+   static enum rarch_shader_type shader_types[] =
+   {
+      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
+   };
    const char *core_name            = system ? system->library_name : NULL;
    const char *auto_preset_dirs[3]  = {0};
 
@@ -5944,13 +5948,13 @@ static bool menu_shader_manager_operate_auto_preset(
          {
             /* remove all supported auto-shaders of given type */
             char *end;
-            size_t i, j, n, m;
+            size_t i, j, m;
 
             char preset_path[PATH_MAX_LENGTH];
 
             /* n = amount of relevant shader presets found
              * m = amount of successfully deleted shader presets */
-            n = m = 0;
+            size_t n = m = 0;
 
             for (i = 0; i < ARRAY_SIZE(auto_preset_dirs); i++)
             {

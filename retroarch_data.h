@@ -2611,16 +2611,7 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_UNDO,          "Undo"},
    {RETROK_OEM_102,       "OEM-102"}
 };
-#endif
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static enum rarch_shader_type shader_types[] =
-{
-   RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
-};
-#endif
-
-#ifdef HAVE_MENU
 static void *null_menu_init(void **userdata, bool video_is_threaded)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -2628,6 +2619,7 @@ static void *null_menu_init(void **userdata, bool video_is_threaded)
       return NULL;
    return menu;
 }
+
 static int null_menu_list_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx) { return 0; }
 
