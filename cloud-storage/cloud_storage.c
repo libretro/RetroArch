@@ -286,6 +286,26 @@ char *cloud_storage_get_md5_hash(char *absolute_filename)
    return checksum_str;
 }
 
+static char *_config_value_to_directory(const char *value)
+{
+   char *dir;
+   int i;
+
+   dir = strdup(value);
+   path_basedir(dir);
+   for (i = strlen(dir) - 1; i > 0; i++)
+   {
+      if (dir[i] == '/')
+      {
+         dir[i] = '\0';
+      } else {
+         break;
+      }
+   }
+
+   return dir;
+}
+
 static char *_get_absolute_filename(folder_type_t folder_type, char *filename)
 {
    global_t *global;
@@ -294,14 +314,14 @@ static char *_get_absolute_filename(folder_type_t folder_type, char *filename)
    char *absolute_filename;
 
    global = global_get_ptr();
-   raw_folder = global->name.savestate;
-   if (strlen(raw_folder) == 0)
+   switch (folder_type)
    {
-      return NULL;
+      case CLOUD_STORAGE_GAME_STATES:
+         folder = _config_value_to_directory(global->name.savestate);
+         break;
+      default:
+         return NULL;
    }
-
-   folder = strdup(raw_folder);
-   path_basedir(folder);
 
    absolute_filename = pathname_join(folder, filename);
 
@@ -500,7 +520,10 @@ static void _sync_files_upload(folder_type_t folder_type)
    }
 
    dir_name = strdup(raw_dir);
-   path_basedir(dir_name);
+   if (strrchr(dir_name, '.') > strrchr(dir_name, '/'))
+   {
+      path_basedir(dir_name);
+   }
 
    dir = retro_opendir(dir_name);
    while (dir != NULL && retro_readdir(dir))
@@ -665,7 +688,10 @@ static void _sync_files_download(folder_type_t folder_type)
 
       local_file = _get_absolute_filename(folder_type, remote_file->name);
 
-      if (_have_local_file_for_remote_file(folder_type, remote_file))
+      if (!local_file)
+      {
+         need_download = false;
+      } else if (_have_local_file_for_remote_file(folder_type, remote_file))
       {
          need_download = _file_need_download(local_file, remote_file);
       } else
@@ -728,10 +754,13 @@ void cloud_storage_sync_files(void)
 {
    bool sync_states;
    global_t *global = global_get_ptr();
+   char *raw_folder;
+   int i;
    struct _operation_queue_item *queue_item = NULL;
    struct _operation_queue_item *previous_queue_item = NULL;
 
-   sync_states = strcmp(_game_states_config_value, global->name.savestate) != 0;
+   raw_folder = _config_value_to_directory(global->name.savestate);
+   sync_states = strcmp(_game_states_config_value, raw_folder) != 0;
 
    if (!sync_states)
    {
