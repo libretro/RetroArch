@@ -25116,9 +25116,9 @@ static int16_t input_joypad_analog_button(
    {
       int16_t mult = 0;
       if (axis != AXIS_NONE)
-         mult      = drv->axis(
-               joypad_info->joy_idx, axis);
-      normal_mag   = fabs((1.0f / 0x7fff) * mult);
+         if ((mult = drv->axis(
+                     joypad_info->joy_idx, axis)) != 0)
+            normal_mag   = fabs((1.0f / 0x7fff) * mult);
    }
 
    /* If the result is zero, it's got a digital button
