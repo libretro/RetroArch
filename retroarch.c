@@ -12495,23 +12495,28 @@ static void command_event_runtime_log_deinit(
       const char *dir_runtime_log,
       const char *dir_playlist)
 {
-   char log[PATH_MAX_LENGTH]    = {0};
-   unsigned hours               = 0;
-   unsigned minutes             = 0;
-   unsigned seconds             = 0;
-   int n                        = 0;
+   if (verbosity_is_enabled())
+   {
+      int n;
+      char log[PATH_MAX_LENGTH] = {0};
+      unsigned hours            = 0;
+      unsigned minutes          = 0;
+      unsigned seconds          = 0;
 
-   /* TODO/FIXME - should we hide this logging behind verbosity being enabled? */
-   runtime_log_convert_usec2hms(
-         p_rarch->libretro_core_runtime_usec,
-         &hours, &minutes, &seconds);
-   n = snprintf(log, sizeof(log),
-         "[Core]: Content ran for a total of: %02u hours, %02u minutes, %02u seconds.",
-         hours, minutes, seconds);
-   if ((n < 0) || (n >= PATH_MAX_LENGTH))
-      n = 0; /* Just silence any potential gcc warnings... */
-   (void)n;
-   RARCH_LOG("%s\n",log);
+      runtime_log_convert_usec2hms(
+            p_rarch->libretro_core_runtime_usec,
+            &hours, &minutes, &seconds);
+
+      n                         = 
+         snprintf(log, sizeof(log),
+               "[Core]: Content ran for a total of:"
+               " %02u hours, %02u minutes, %02u seconds.",
+               hours, minutes, seconds);
+      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+         n = 0; /* Just silence any potential gcc warnings... */
+      (void)n;
+      RARCH_LOG("%s\n",log);
+   }
 
    /* Only write to file if content has run for a non-zero length of time */
    if (p_rarch->libretro_core_runtime_usec > 0)
