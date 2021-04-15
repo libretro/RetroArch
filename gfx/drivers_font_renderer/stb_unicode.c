@@ -42,6 +42,10 @@
 #define STB_UNICODE_ATLAS_ROWS 16
 #define STB_UNICODE_ATLAS_COLS 16
 #define STB_UNICODE_ATLAS_SIZE (STB_UNICODE_ATLAS_ROWS * STB_UNICODE_ATLAS_COLS)
+/* Padding is required between each glyph in
+ * the atlas to prevent texture bleed when
+ * drawing with linear filtering enabled */
+#define STB_UNICODE_ATLAS_PADDING 1
 
 typedef struct stb_unicode_atlas_slot
 {
@@ -195,8 +199,8 @@ static bool font_renderer_stb_unicode_create_atlas(
    self->max_glyph_width  = font_size < 0 ? -font_size : font_size;
    self->max_glyph_height = font_size < 0 ? -font_size : font_size;
 
-   self->atlas.width      = self->max_glyph_width  * STB_UNICODE_ATLAS_COLS;
-   self->atlas.height     = self->max_glyph_height * STB_UNICODE_ATLAS_ROWS;
+   self->atlas.width      = (self->max_glyph_width  + STB_UNICODE_ATLAS_PADDING) * STB_UNICODE_ATLAS_COLS;
+   self->atlas.height     = (self->max_glyph_height + STB_UNICODE_ATLAS_PADDING) * STB_UNICODE_ATLAS_ROWS;
 
    self->atlas.buffer     = (uint8_t*)
       calloc(self->atlas.width * self->atlas.height, sizeof(uint8_t));
@@ -210,8 +214,8 @@ static bool font_renderer_stb_unicode_create_atlas(
    {
       for (x = 0; x < STB_UNICODE_ATLAS_COLS; x++)
       {
-         slot->glyph.atlas_offset_x = x * self->max_glyph_width;
-         slot->glyph.atlas_offset_y = y * self->max_glyph_height;
+         slot->glyph.atlas_offset_x = x * (self->max_glyph_width  + STB_UNICODE_ATLAS_PADDING);
+         slot->glyph.atlas_offset_y = y * (self->max_glyph_height + STB_UNICODE_ATLAS_PADDING);
          slot++;
       }
    }

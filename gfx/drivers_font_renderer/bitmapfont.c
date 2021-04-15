@@ -28,6 +28,11 @@
 #define BMP_ATLAS_ROWS 16
 #define BMP_ATLAS_SIZE (BMP_ATLAS_COLS * BMP_ATLAS_ROWS)
 
+/* Padding is required between each glyph in
+ * the atlas to prevent texture bleed when
+ * drawing with linear filtering enabled */
+#define BMP_ATLAS_PADDING 1
+
 typedef struct bm_renderer
 {
    unsigned scale_factor;
@@ -96,16 +101,16 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
    if (!handle->scale_factor)
       handle->scale_factor = 1;
 
-   handle->atlas.width  = FONT_WIDTH * handle->scale_factor * BMP_ATLAS_COLS;
-   handle->atlas.height = FONT_HEIGHT * handle->scale_factor * BMP_ATLAS_ROWS;
+   handle->atlas.width  = (BMP_ATLAS_PADDING + (FONT_WIDTH  * handle->scale_factor)) * BMP_ATLAS_COLS;
+   handle->atlas.height = (BMP_ATLAS_PADDING + (FONT_HEIGHT * handle->scale_factor)) * BMP_ATLAS_ROWS;
    handle->atlas.buffer = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
 
    for (i = 0; i < BMP_ATLAS_SIZE; i++)
    {
       unsigned x                       = (i % BMP_ATLAS_COLS) *
-         handle->scale_factor * FONT_WIDTH;
+         (BMP_ATLAS_PADDING + (handle->scale_factor * FONT_WIDTH));
       unsigned y                       = (i / BMP_ATLAS_COLS) *
-         handle->scale_factor * FONT_HEIGHT;
+         (BMP_ATLAS_PADDING + (handle->scale_factor * FONT_HEIGHT));
 
       char_to_texture(handle, i, x, y);
 
