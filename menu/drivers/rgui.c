@@ -128,6 +128,18 @@ static const rgui_theme_t rgui_theme_classic_red = {
    0xC09E8686  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_classic_red = {
+   0xFFFF362B, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFFF362B, /* title_color */
+   0xFF1B1B1B, /* bg_dark_color */
+   0xFF363636, /* bg_light_color */
+   0xFF6D0000, /* border_dark_color */
+   0xFFA30000, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF7A6D6D  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_classic_orange = {
    0xFFF87217, /* hover_color */
    0xFFFFFFFF, /* normal_color */
@@ -138,6 +150,18 @@ static const rgui_theme_t rgui_theme_classic_orange = {
    0xC0E46C03, /* border_light_color */
    0xC0000000, /* shadow_color */
    0xC09E9286  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_classic_orange = {
+   0xFFF87217, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFF87217, /* title_color */
+   0xFF1B1B1B, /* bg_dark_color */
+   0xFF363636, /* bg_light_color */
+   0xFF7A1B00, /* border_dark_color */
+   0xFFBE5200, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF7A7A6D  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_yellow = {
@@ -152,6 +176,18 @@ static const rgui_theme_t rgui_theme_classic_yellow = {
    0xC0999581  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_classic_yellow = {
+   0xFFFFD801, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFFFD801, /* title_color */
+   0xFF1B1B1B, /* bg_dark_color */
+   0xFF363636, /* bg_light_color */
+   0xFF885F00, /* border_dark_color */
+   0xFFCCA300, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF7A7A6D  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_classic_green = {
    0xFF64FF64, /* hover_color */
    0xFFFFFFFF, /* normal_color */
@@ -162,6 +198,18 @@ static const rgui_theme_t rgui_theme_classic_green = {
    0xC0408040, /* border_light_color */
    0xC0000000, /* shadow_color */
    0xC0879E87  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_classic_green = {
+   0xFF64FF64, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFF64FF64, /* title_color */
+   0xFF1B1B1B, /* bg_dark_color */
+   0xFF363636, /* bg_light_color */
+   0xFF1B361B, /* border_dark_color */
+   0xFF366D36, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF6D7A6D  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_blue = {
@@ -176,6 +224,18 @@ static const rgui_theme_t rgui_theme_classic_blue = {
    0xC086949E  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_classic_blue = {
+   0xFF48BEFF, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFF48BEFF, /* title_color */
+   0xFF1B1B1B, /* bg_dark_color */
+   0xFF363636, /* bg_light_color */
+   0xFF004488, /* border_dark_color */
+   0xFF1B7ABE, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF6D7A7A  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_classic_violet = {
    0xFFD86EFF, /* hover_color */
    0xFFFFFFFF, /* normal_color */
@@ -186,6 +246,18 @@ static const rgui_theme_t rgui_theme_classic_violet = {
    0xC0842DCE, /* border_light_color */
    0xC0000000, /* shadow_color */
    0xC08E8299  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_classic_violet = {
+   0xFFD86EFF, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFD86EFF, /* title_color */
+   0xFF1B1B1B, /* bg_dark_color */
+   0xFF363636, /* bg_light_color */
+   0xFF360052, /* border_dark_color */
+   0xFF6D1BA3, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF6D6D7A  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_classic_grey = {
@@ -200,6 +272,18 @@ static const rgui_theme_t rgui_theme_classic_grey = {
    0xC078828A  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_classic_grey = {
+   0xFFB6C1C7, /* hover_color */
+   0xFFFFFFFF, /* normal_color */
+   0xFFB6C1C7, /* title_color */
+   0xFF1B1B1B, /* bg_dark_color */
+   0xFF363636, /* bg_light_color */
+   0xFF444444, /* border_dark_color */
+   0xFF5F6D7A, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF5F6D6D  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_legacy_red = {
    0xFFFFBDBD, /* hover_color */
    0xFFFAF6D5, /* normal_color */
@@ -210,6 +294,18 @@ static const rgui_theme_t rgui_theme_legacy_red = {
    0xC0F27A6F, /* border_light_color */
    0xC01F0C0A, /* shadow_color */
    0xC0F75431  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_legacy_red = {
+   0xFFFFBDBD, /* hover_color */
+   0xFFFAF6D5, /* normal_color */
+   0xFFFF948A, /* title_color */
+   0xFF7A3629, /* bg_dark_color */
+   0xFF963636, /* bg_light_color */
+   0xFF964444, /* border_dark_color */
+   0xFFCC5F52, /* border_light_color */
+   0xFF0E0000, /* shadow_color */
+   0xFFCC4429  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_dark_purple = {
@@ -224,6 +320,18 @@ static const rgui_theme_t rgui_theme_dark_purple = {
    0xC09786A0  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_dark_purple = {
+   0xFFF2B5D6, /* hover_color */
+   0xFFE8D0CC, /* normal_color */
+   0xFFC79FC2, /* title_color */
+   0xFF441B44, /* bg_dark_color */
+   0xFF522952, /* bg_light_color */
+   0xFF6D446D, /* border_dark_color */
+   0xFF885F88, /* border_light_color */
+   0xFF0E000E, /* shadow_color */
+   0xFF7A6D88  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_midnight_blue = {
    0xFFB2D3ED, /* hover_color */
    0xFFD3DCDE, /* normal_color */
@@ -234,6 +342,18 @@ static const rgui_theme_t rgui_theme_midnight_blue = {
    0xC06D7F91, /* border_light_color */
    0xC00A0F14, /* shadow_color */
    0xC084849E  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_midnight_blue = {
+   0xFFB2D3ED, /* hover_color */
+   0xFFD3DCDE, /* normal_color */
+   0xFF86A1BA, /* title_color */
+   0xFF1B2936, /* bg_dark_color */
+   0xFF293644, /* bg_light_color */
+   0xFF364452, /* border_dark_color */
+   0xFF525F7A, /* border_light_color */
+   0xFF00000E, /* shadow_color */
+   0xFF6D6D7A  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_golden = {
@@ -248,6 +368,18 @@ static const rgui_theme_t rgui_theme_golden = {
    0xC0F7D15E  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_golden = {
+   0xFFFFE666, /* hover_color */
+   0xFFFFFFDC, /* normal_color */
+   0xFFFFCC00, /* title_color */
+   0xFF966D00, /* bg_dark_color */
+   0xFF967A1B, /* bg_light_color */
+   0xFFBE881B, /* border_dark_color */
+   0xFFCCA30E, /* border_light_color */
+   0xFF291B00, /* shadow_color */
+   0xFFCCB144  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_electric_blue = {
    0xFF7DF9FF, /* hover_color */
    0xFFDBE9F4, /* normal_color */
@@ -258,6 +390,18 @@ static const rgui_theme_t rgui_theme_electric_blue = {
    0xC070C9FF, /* border_light_color */
    0xC012294D, /* shadow_color */
    0xC080C7E6  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_electric_blue = {
+   0xFF7DF9FF, /* hover_color */
+   0xFFDBE9F4, /* normal_color */
+   0xFF86CDE0, /* title_color */
+   0xFF1B52A3, /* bg_dark_color */
+   0xFF0065D9, /* bg_light_color */
+   0xFF2988B1, /* border_dark_color */
+   0xFF5FA3CC, /* border_light_color */
+   0xFF0E1B36, /* shadow_color */
+   0xFF6DA3BE  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_apple_green = {
@@ -272,6 +416,18 @@ static const rgui_theme_t rgui_theme_apple_green = {
    0xC0A3C44E  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_apple_green = {
+   0xFFB0FC64, /* hover_color */
+   0xFFD8F2CB, /* normal_color */
+   0xFFA6D652, /* title_color */
+   0xFF365F36, /* bg_dark_color */
+   0xFF526D29, /* bg_light_color */
+   0xFF526D29, /* border_dark_color */
+   0xFF7A965F, /* border_light_color */
+   0xFF0E1B0E, /* shadow_color */
+   0xFF88A336  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_volcanic_red = {
    0xFFFFCC99, /* hover_color */
    0xFFD3D3D3, /* normal_color */
@@ -282,6 +438,18 @@ static const rgui_theme_t rgui_theme_volcanic_red = {
    0xC0FF0000, /* border_light_color */
    0xC0330D0D, /* shadow_color */
    0xC0E67D45  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_volcanic_red = {
+   0xFFFFCC99, /* hover_color */
+   0xFFD3D3D3, /* normal_color */
+   0xFFDDADAF, /* title_color */
+   0xFF7A1B1B, /* bg_dark_color */
+   0xFF96000E, /* bg_light_color */
+   0xFFA31B1B, /* border_dark_color */
+   0xFFCC0000, /* border_light_color */
+   0xFF290000, /* shadow_color */
+   0xFFBE5F36  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_lagoon = {
@@ -296,6 +464,18 @@ static const rgui_theme_t rgui_theme_lagoon = {
    0xC09FB1C7  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_lagoon = {
+   0xFFBCE1EB, /* hover_color */
+   0xFFCFCFC4, /* normal_color */
+   0xFF86C7C7, /* title_color */
+   0xFF364452, /* bg_dark_color */
+   0xFF44525F, /* bg_light_color */
+   0xFF446D6D, /* border_dark_color */
+   0xFF527A7A, /* border_light_color */
+   0xFF0E1B1B, /* shadow_color */
+   0xFF7A96A3  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_brogrammer = {
    0xFF3498DB, /* hover_color */
    0xFFECF0F1, /* normal_color */
@@ -306,6 +486,18 @@ static const rgui_theme_t rgui_theme_brogrammer = {
    0xC0E74C3C, /* border_light_color */
    0xC0000000, /* shadow_color */
    0xC0606060  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_brogrammer = {
+   0xFF3498DB, /* hover_color */
+   0xFFECF0F1, /* normal_color */
+   0xFF2ECC71, /* title_color */
+   0xFF1B1B1B, /* bg_dark_color */
+   0xFF1B1B1B, /* bg_light_color */
+   0xFFBE3629, /* border_dark_color */
+   0xFFBE3629, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF525252  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_dracula = {
@@ -320,6 +512,18 @@ static const rgui_theme_t rgui_theme_dracula = {
    0xC06272A4  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_dracula = {
+   0xFFBD93F9, /* hover_color */
+   0xFFF8F8F2, /* normal_color */
+   0xFFFF79C6, /* title_color */
+   0xFF1B2936, /* bg_dark_color */
+   0xFF1B2936, /* bg_light_color */
+   0xFF525F88, /* border_dark_color */
+   0xFF525F88, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF525F88  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_fairyfloss = {
    0xFFFFF352, /* hover_color */
    0xFFF8F8F2, /* normal_color */
@@ -330,6 +534,18 @@ static const rgui_theme_t rgui_theme_fairyfloss = {
    0xC08077A8, /* border_light_color */
    0xC0262433, /* shadow_color */
    0xC0C5A3FF  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_fairyfloss = {
+   0xFFFFF352, /* hover_color */
+   0xFFF8F8F2, /* normal_color */
+   0xFFFFB8D1, /* title_color */
+   0xFF52446D, /* bg_dark_color */
+   0xFF52446D, /* bg_light_color */
+   0xFF706087, /* border_dark_color */
+   0xFF706087, /* border_light_color */
+   0xFF1B1B29, /* shadow_color */
+   0xFFA388CC  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_flatui = {
@@ -344,6 +560,18 @@ static const rgui_theme_t rgui_theme_flatui = {
    0xE0B3DFFF  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_flatui = {
+   0xFF0A74B9, /* hover_color */
+   0xFF2C3E50, /* normal_color */
+   0xFF8E44AD, /* title_color */
+   0xFFDEEEEE, /* bg_dark_color */
+   0xFFDEEEEE, /* bg_light_color */
+   0xFF8F9F9F, /* border_dark_color */
+   0xFF8F9F9F, /* border_light_color */
+   0xFFBECECE, /* shadow_color */
+   0xFFAFCEEE  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_gruvbox_dark = {
    0xFFFE8019, /* hover_color */
    0xFFEBDBB2, /* normal_color */
@@ -354,6 +582,18 @@ static const rgui_theme_t rgui_theme_gruvbox_dark = {
    0xC099897A, /* border_light_color */
    0xC0000000, /* shadow_color */
    0xC098971A  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_gruvbox_dark = {
+   0xFFFE8019, /* hover_color */
+   0xFFEBDBB2, /* normal_color */
+   0xFF83A598, /* title_color */
+   0xFF292929, /* bg_dark_color */
+   0xFF292929, /* bg_light_color */
+   0xFF7A6D5F, /* border_dark_color */
+   0xFF7A6D5F, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF7A7A0E  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_gruvbox_light = {
@@ -368,6 +608,18 @@ static const rgui_theme_t rgui_theme_gruvbox_light = {
    0xE0D5C4A1  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_gruvbox_light = {
+   0xFFAF3A03, /* hover_color */
+   0xFF3C3836, /* normal_color */
+   0xFF076678, /* title_color */
+   0xFFEEDEBE, /* bg_dark_color */
+   0xFFEEDEBE, /* bg_light_color */
+   0xFF8F7F6F, /* border_dark_color */
+   0xFF8F7F6F, /* border_light_color */
+   0xFFCEBE9F, /* shadow_color */
+   0xFFCEBE9F  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_hacking_the_kernel = {
    0xFF83FF83, /* hover_color */
    0xFF00E000, /* normal_color */
@@ -378,6 +630,18 @@ static const rgui_theme_t rgui_theme_hacking_the_kernel = {
    0xC0036303, /* border_light_color */
    0xC0154D2B, /* shadow_color */
    0xC0008C00  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_hacking_the_kernel = {
+   0xFF83FF83, /* hover_color */
+   0xFF00E000, /* normal_color */
+   0xFF00FF00, /* title_color */
+   0xFF000000, /* bg_dark_color */
+   0xFF000000, /* bg_light_color */
+   0xFF005200, /* border_dark_color */
+   0xFF005200, /* border_light_color */
+   0xFF0E361B, /* shadow_color */
+   0xFF006D00  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_nord = {
@@ -392,6 +656,18 @@ static const rgui_theme_t rgui_theme_nord = {
    0xC05E81AC  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_nord = {
+   0xFF8FBCBB, /* hover_color */
+   0xFFD8DEE9, /* normal_color */
+   0xFF81A1C1, /* title_color */
+   0xFF292936, /* bg_dark_color */
+   0xFF292936, /* bg_light_color */
+   0xFF364452, /* border_dark_color */
+   0xFF364452, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF446D88  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_nova = {
    0XFF7FC1CA, /* hover_color */
    0XFFC5D4DD, /* normal_color */
@@ -402,6 +678,18 @@ static const rgui_theme_t rgui_theme_nova = {
    0xC0627985, /* border_light_color */
    0xC01E272C, /* shadow_color */
    0xC0889BA7  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_nova = {
+   0XFF7FC1CA, /* hover_color */
+   0XFFC5D4DD, /* normal_color */
+   0XFF9A93E1, /* title_color */
+   0xFF364452, /* bg_dark_color */
+   0xFF364452, /* bg_light_color */
+   0xFF546370, /* border_dark_color */
+   0xFF546370, /* border_light_color */
+   0xFF0E1B1B, /* shadow_color */
+   0xFF6D7A88  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_one_dark = {
@@ -416,6 +704,18 @@ static const rgui_theme_t rgui_theme_one_dark = {
    0xC05F697A  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_one_dark = {
+   0XFF98C379, /* hover_color */
+   0XFFBBBBBB, /* normal_color */
+   0XFFD19A66, /* title_color */
+   0xFF1B2929, /* bg_dark_color */
+   0xFF1B2929, /* bg_light_color */
+   0xFF364452, /* border_dark_color */
+   0xFF364452, /* border_light_color */
+   0xFF000000, /* shadow_color */
+   0xFF44525F  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_palenight = {
    0xFFC792EA, /* hover_color */
    0xFFBFC7D5, /* normal_color */
@@ -426,6 +726,18 @@ static const rgui_theme_t rgui_theme_palenight = {
    0xC0697098, /* border_light_color */
    0xC00D0E14, /* shadow_color */
    0xC0697098  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_palenight = {
+   0xFFC792EA, /* hover_color */
+   0xFFBFC7D5, /* normal_color */
+   0xFF82AAFF, /* title_color */
+   0xFF1B2936, /* bg_dark_color */
+   0xFF1B2936, /* bg_light_color */
+   0xFF51617A, /* border_dark_color */
+   0xFF51617A, /* border_light_color */
+   0xFF00000E, /* shadow_color */
+   0xFF525F7A  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_solarized_dark = {
@@ -440,6 +752,18 @@ static const rgui_theme_t rgui_theme_solarized_dark = {
    0xC0586E75  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_solarized_dark = {
+   0xFFB58900, /* hover_color */
+   0xFF839496, /* normal_color */
+   0xFF268BD2, /* title_color */
+   0xFF002936, /* bg_dark_color */
+   0xFF002936, /* bg_light_color */
+   0xFF7A8888, /* border_dark_color */
+   0xFF7A8888, /* border_light_color */
+   0xFF000E0E, /* shadow_color */
+   0xFF44525F  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_solarized_light = {
    0xFFB58900, /* hover_color */
    0xFF657B83, /* normal_color */
@@ -450,6 +774,18 @@ static const rgui_theme_t rgui_theme_solarized_light = {
    0xE093A1A1, /* border_light_color */
    0xE0E0DBC9, /* shadow_color */
    0xE0FFC5AD  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_solarized_light = {
+   0xFFB58900, /* hover_color */
+   0xFF657B83, /* normal_color */
+   0xFF268BD2, /* title_color */
+   0xFFEEDECE, /* bg_dark_color */
+   0xFFEEDECE, /* bg_light_color */
+   0xFF8F9F9F, /* border_dark_color */
+   0xFF8F9F9F, /* border_light_color */
+   0xFFDECEBE, /* shadow_color */
+   0xFFEEBE9F  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_tango_dark = {
@@ -464,6 +800,18 @@ static const rgui_theme_t rgui_theme_tango_dark = {
    0xC0C4A000  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_tango_dark = {
+   0xFF8AE234, /* hover_color */
+   0xFFEEEEEC, /* normal_color */
+   0xFF729FCF, /* title_color */
+   0xFF293636, /* bg_dark_color */
+   0xFF293636, /* bg_light_color */
+   0xFF556160, /* border_dark_color */
+   0xFF556160, /* border_light_color */
+   0xFF0E0E0E, /* shadow_color */
+   0xFFA38800  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_tango_light = {
    0xFF4E9A06, /* hover_color */
    0xFF2E3436, /* normal_color */
@@ -474,6 +822,18 @@ static const rgui_theme_t rgui_theme_tango_light = {
    0xE0C7C7C7, /* border_light_color */
    0xE0D3D7CF, /* shadow_color */
    0xE0FFCA78  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_tango_light = {
+   0xFF4E9A06, /* hover_color */
+   0xFF2E3436, /* normal_color */
+   0xFF204A87, /* title_color */
+   0xFFDEDEDE, /* bg_dark_color */
+   0xFFDEDEDE, /* bg_light_color */
+   0xFFBEBEBE, /* border_dark_color */
+   0xFFBEBEBE, /* border_light_color */
+   0xFFCECEBE, /* shadow_color */
+   0xFFEEBE6F  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_zenburn = {
@@ -488,6 +848,18 @@ static const rgui_theme_t rgui_theme_zenburn = {
    0xC0AC7373  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_zenburn = {
+   0xFFF0DFAF, /* hover_color */
+   0xFFDCDCCC, /* normal_color */
+   0xFF8FB28F, /* title_color */
+   0xFF363636, /* bg_dark_color */
+   0xFF363636, /* bg_light_color */
+   0xFF505050, /* border_dark_color */
+   0xFF505050, /* border_light_color */
+   0xFF0E0E0E, /* shadow_color */
+   0xFF885F5F  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_anti_zenburn = {
    0xFF336C6C, /* hover_color */
    0xFF232333, /* normal_color */
@@ -500,6 +872,18 @@ static const rgui_theme_t rgui_theme_anti_zenburn = {
    0xE0B090B0  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_opaque_anti_zenburn = {
+   0xFF336C6C, /* hover_color */
+   0xFF232333, /* normal_color */
+   0xFF205070, /* title_color */
+   0xFFBEBEBE, /* bg_dark_color */
+   0xFFBEBEBE, /* bg_light_color */
+   0xFF9F9F9F, /* border_dark_color */
+   0xFF9F9F9F, /* border_light_color */
+   0xFFAFAFAF, /* shadow_color */
+   0xFFAF8FAF  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_flux = {
    0xFF6FCB9F, /* hover_color */
    0xFF666547, /* normal_color */
@@ -510,6 +894,18 @@ static const rgui_theme_t rgui_theme_flux = {
    0xE0FFE28A, /* border_light_color */
    0xE0FFE28A, /* shadow_color */
    0xE0FB2E01  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_flux = {
+   0xFF6FCB9F, /* hover_color */
+   0xFF666547, /* normal_color */
+   0xFFFB2E01, /* title_color */
+   0xFFEEEEAF, /* bg_dark_color */
+   0xFFEEEEAF, /* bg_light_color */
+   0xFFEEDE7F, /* border_dark_color */
+   0xFFEEDE7F, /* border_light_color */
+   0xFFEEDE7F, /* shadow_color */
+   0xFFEE2000  /* particle_color */
 };
 
 typedef struct
@@ -662,6 +1058,8 @@ typedef struct
    bool bg_thickness;
    bool border_thickness;
    bool border_enable;
+   bool transparency_supported;
+   bool transparency_enable;
    bool shadow_enable;
    bool extended_ascii_enable;
    bool is_playlist;
@@ -957,11 +1355,11 @@ static const uint8_t rgui_symbol_data_switch_off_right[RGUI_SYMBOL_WIDTH * RGUI_
 static uint16_t argb32_to_abgr1555(uint32_t col)
 {
    /* Extract colour components */
-   unsigned a = (col >> 24) & 0xff;
-   unsigned r = (col >> 16) & 0xff;
-   unsigned g = (col >> 8)  & 0xff;
-   unsigned b = col & 0xff;
-   if (a < 0xff)
+   unsigned a = (col >> 24) & 0xFF;
+   unsigned r = (col >> 16) & 0xFF;
+   unsigned g = (col >> 8)  & 0xFF;
+   unsigned b =  col        & 0xFF;
+   if (a < 0xFF)
    {
       /* Background and border colours are normally semi-transparent
        * (so we can see suspended content when opening the quick menu).
@@ -974,10 +1372,10 @@ static uint16_t argb32_to_abgr1555(uint32_t col)
        * become abnormally bright.
        * We therefore have to darken each RGB value according to the alpha
        * component of the input colour... */
-      float a_factor = (float)a * (1.0 / 255.0);
-      r = (unsigned)(((float)r * a_factor) + 0.5) & 0xff;
-      g = (unsigned)(((float)g * a_factor) + 0.5) & 0xff;
-      b = (unsigned)(((float)b * a_factor) + 0.5) & 0xff;
+      float a_factor = (float)a * (1.0f / 255.0f);
+      r = (unsigned)(((float)r * a_factor) + 0.5f) & 0xFF;
+      g = (unsigned)(((float)g * a_factor) + 0.5f) & 0xFF;
+      b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
    }
    /* Convert from 8 bit to 5 bit */
    r = r >> 3;
@@ -991,12 +1389,12 @@ static uint16_t argb32_to_abgr1555(uint32_t col)
 static uint16_t argb32_to_rgb5a3(uint32_t col)
 {
    /* Extract colour components */
-   unsigned a = (col >> 24) & 0xff;
-   unsigned r = (col >> 16) & 0xff;
-   unsigned g = (col >> 8)  & 0xff;
-   unsigned b = col & 0xff;
-   unsigned a3 = a >> 5;
-   if (a < 0xff)
+   unsigned a  = (col >> 24) & 0xFF;
+   unsigned r  = (col >> 16) & 0xFF;
+   unsigned g  = (col >> 8)  & 0xFF;
+   unsigned b  =  col        & 0xFF;
+   unsigned a3 =  a   >> 5;
+   if (a < 0xFF)
    {
       /* Gekko platforms only have a 3 bit alpha channel, which
        * is one bit less than all 'standard' target platforms.
@@ -1005,22 +1403,22 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
        * borders to appear too bright. We therefore have to darken
        * each RGB component according to the difference between Gekko
        * alpha and normal 4 bit alpha values... */
-      unsigned a4 = a >> 4;
-      float a_factor = 1.0;
+      unsigned a4    = a >> 4;
+      float a_factor = 1.0f;
       if (a3 > 0)
       {
          /* Avoid divide by zero errors... */
-         a_factor = ((float)a4 * (1.0 / 15.0)) / ((float)a3 * (1.0 / 7.0));
+         a_factor = ((float)a4 * (1.0f / 15.0f)) / ((float)a3 * (1.0f / 7.0f));
       }
-      r = (unsigned)(((float)r * a_factor) + 0.5);
-      g = (unsigned)(((float)g * a_factor) + 0.5);
-      b = (unsigned)(((float)b * a_factor) + 0.5);
+      r = (unsigned)(((float)r * a_factor) + 0.5f);
+      g = (unsigned)(((float)g * a_factor) + 0.5f);
+      b = (unsigned)(((float)b * a_factor) + 0.5f);
       /* a_factor can actually be greater than 1. This will never happen
        * with the current preset theme colour values, but users can set
        * any custom values they like, so we have to play it safe... */
-      r = (r <= 0xff) ? r : 0xff;
-      g = (g <= 0xff) ? g : 0xff;
-      b = (b <= 0xff) ? b : 0xff;
+      r = (r <= 0xFF) ? r : 0xFF;
+      g = (g <= 0xFF) ? g : 0xFF;
+      b = (b <= 0xFF) ? b : 0xFF;
    }
    /* Convert RGB from 8 bit to 4 bit */
    r = r >> 4;
@@ -1033,20 +1431,20 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
 /* PSP */
 static uint16_t argb32_to_abgr4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xff) >> 4;
-   unsigned r = ((col >> 16) & 0xff) >> 4;
-   unsigned g = ((col >> 8)  & 0xff) >> 4;
-   unsigned b = ((col & 0xff)      ) >> 4;
+   unsigned a = ((col >> 24) & 0xFF) >> 4;
+   unsigned r = ((col >> 16) & 0xFF) >> 4;
+   unsigned g = ((col >> 8)  & 0xFF) >> 4;
+   unsigned b = ( col        & 0xFF) >> 4;
    return (a << 12) | (b << 8) | (g << 4) | r;
 }
 
 /* D3D10/11/12 */
 static uint16_t argb32_to_bgra4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xff) >> 4;
-   unsigned r = ((col >> 16) & 0xff) >> 4;
-   unsigned g = ((col >> 8)  & 0xff) >> 4;
-   unsigned b = ((col & 0xff)      ) >> 4;
+   unsigned a = ((col >> 24) & 0xFF) >> 4;
+   unsigned r = ((col >> 16) & 0xFF) >> 4;
+   unsigned g = ((col >> 8)  & 0xFF) >> 4;
+   unsigned b = ( col        & 0xFF) >> 4;
    return (b << 12) | (g << 8) | (r << 4) | a;
 }
 
@@ -1054,19 +1452,19 @@ static uint16_t argb32_to_bgra4444(uint32_t col)
 static uint16_t argb32_to_rgb565(uint32_t col)
 {
    /* Extract colour components */
-   unsigned a = (col >> 24) & 0xff;
-   unsigned r = (col >> 16) & 0xff;
-   unsigned g = (col >> 8)  & 0xff;
-   unsigned b = col & 0xff;
-   if (a < 0xff)
+   unsigned a = (col >> 24) & 0xFF;
+   unsigned r = (col >> 16) & 0xFF;
+   unsigned g = (col >> 8)  & 0xFF;
+   unsigned b =  col        & 0xFF;
+   if (a < 0xFF)
    {
       /* RGB565 has no alpha component - as with PS2 colour conversion,
        * have to darken each RGB value according to the alpha component
        * of the input colour... */
-      float a_factor = (float)a * (1.0 / 255.0);
-      r = (unsigned)(((float)r * a_factor) + 0.5) & 0xff;
-      g = (unsigned)(((float)g * a_factor) + 0.5) & 0xff;
-      b = (unsigned)(((float)b * a_factor) + 0.5) & 0xff;
+      float a_factor = (float)a * (1.0f / 255.0f);
+      r = (unsigned)(((float)r * a_factor) + 0.5f) & 0xFF;
+      g = (unsigned)(((float)g * a_factor) + 0.5f) & 0xFF;
+      b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
    }
    /* Convert from 8 bit to 5 bit */
    r = r >> 3;
@@ -1079,28 +1477,34 @@ static uint16_t argb32_to_rgb565(uint32_t col)
 /* All other platforms */
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xff) >> 4;
-   unsigned r = ((col >> 16) & 0xff) >> 4;
-   unsigned g = ((col >> 8)  & 0xff) >> 4;
-   unsigned b = ((col & 0xff)      ) >> 4;
+   unsigned a = ((col >> 24) & 0xFF) >> 4;
+   unsigned r = ((col >> 16) & 0xFF) >> 4;
+   unsigned g = ((col >> 8)  & 0xFF) >> 4;
+   unsigned b = ( col        & 0xFF) >> 4;
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
 static uint16_t (*argb32_to_pixel_platform_format)(uint32_t col) = argb32_to_rgba4444;
 
-static void rgui_set_pixel_format_function(void)
+/* Returns true if current pixel format supports
+ * framebuffer transparency */
+static bool rgui_set_pixel_format_function(void)
 {
-   const char *driver_ident = video_driver_get_ident();
+   const char *driver_ident    = video_driver_get_ident();
+   bool transparency_supported = true;
    
    /* Default fallback... */
    if (string_is_empty(driver_ident))
    {
       argb32_to_pixel_platform_format = argb32_to_rgba4444;
-      return;
+      return transparency_supported;
    }
    
    if (     string_is_equal(driver_ident, "ps2"))        /* PS2 */
+   {
       argb32_to_pixel_platform_format = argb32_to_abgr1555;
+      transparency_supported          = false;
+   }
    else if (string_is_equal(driver_ident, "gx"))         /* GEKKO */
       argb32_to_pixel_platform_format = argb32_to_rgb5a3;
    else if (string_is_equal(driver_ident, "psp1"))       /* PSP */
@@ -1110,9 +1514,14 @@ static void rgui_set_pixel_format_function(void)
             string_is_equal(driver_ident, "d3d12"))
       argb32_to_pixel_platform_format = argb32_to_bgra4444;
    else if (string_is_equal(driver_ident, "sdl_dingux")) /* DINGUX SDL */
+   {
       argb32_to_pixel_platform_format = argb32_to_rgb565;
+      transparency_supported          = false;
+   }
    else
       argb32_to_pixel_platform_format = argb32_to_rgba4444;
+   
+   return transparency_supported;
 }
 
 /* ==============================
@@ -2433,79 +2842,150 @@ static void rgui_render_mini_thumbnail(
 
 static const rgui_theme_t *get_theme(rgui_t *rgui)
 {
+   bool transparent = rgui->transparency_supported &&
+         rgui->transparency_enable;
+
    switch (rgui->color_theme)
    {
       case RGUI_THEME_CLASSIC_RED:
-         return &rgui_theme_classic_red;
+         return transparent ?
+               &rgui_theme_classic_red :
+               &rgui_theme_opaque_classic_red;
       case RGUI_THEME_CLASSIC_ORANGE:
-         return &rgui_theme_classic_orange;
+         return transparent ?
+               &rgui_theme_classic_orange :
+               &rgui_theme_opaque_classic_orange;
       case RGUI_THEME_CLASSIC_YELLOW:
-         return &rgui_theme_classic_yellow;
+         return transparent ?
+               &rgui_theme_classic_yellow :
+               &rgui_theme_opaque_classic_yellow;
       case RGUI_THEME_CLASSIC_GREEN:
-         return &rgui_theme_classic_green;
+         return transparent ?
+               &rgui_theme_classic_green :
+               &rgui_theme_opaque_classic_green;
       case RGUI_THEME_CLASSIC_BLUE:
-         return &rgui_theme_classic_blue;
+         return transparent ?
+               &rgui_theme_classic_blue :
+               &rgui_theme_opaque_classic_blue;
       case RGUI_THEME_CLASSIC_VIOLET:
-         return &rgui_theme_classic_violet;
+         return transparent ?
+               &rgui_theme_classic_violet :
+               &rgui_theme_opaque_classic_violet;
       case RGUI_THEME_CLASSIC_GREY:
-         return &rgui_theme_classic_grey;
+         return transparent ?
+               &rgui_theme_classic_grey :
+               &rgui_theme_opaque_classic_grey;
       case RGUI_THEME_LEGACY_RED:
-         return &rgui_theme_legacy_red;
+         return transparent ?
+               &rgui_theme_legacy_red :
+               &rgui_theme_opaque_legacy_red;
       case RGUI_THEME_DARK_PURPLE:
-         return &rgui_theme_dark_purple;
+         return transparent ?
+               &rgui_theme_dark_purple :
+               &rgui_theme_opaque_dark_purple;
       case RGUI_THEME_MIDNIGHT_BLUE:
-         return &rgui_theme_midnight_blue;
+         return transparent ?
+               &rgui_theme_midnight_blue :
+               &rgui_theme_opaque_midnight_blue;
       case RGUI_THEME_GOLDEN:
-         return &rgui_theme_golden;
+         return transparent ?
+               &rgui_theme_golden :
+               &rgui_theme_opaque_golden;
       case RGUI_THEME_ELECTRIC_BLUE:
-         return &rgui_theme_electric_blue;
+         return transparent ?
+               &rgui_theme_electric_blue :
+               &rgui_theme_opaque_electric_blue;
       case RGUI_THEME_APPLE_GREEN:
-         return &rgui_theme_apple_green;
+         return transparent ?
+               &rgui_theme_apple_green :
+               &rgui_theme_opaque_apple_green;
       case RGUI_THEME_VOLCANIC_RED:
-         return &rgui_theme_volcanic_red;
+         return transparent ?
+               &rgui_theme_volcanic_red :
+               &rgui_theme_opaque_volcanic_red;
       case RGUI_THEME_LAGOON:
-         return &rgui_theme_lagoon;
+         return transparent ?
+               &rgui_theme_lagoon :
+               &rgui_theme_opaque_lagoon;
       case RGUI_THEME_BROGRAMMER:
-         return &rgui_theme_brogrammer;
+         return transparent ?
+               &rgui_theme_brogrammer :
+               &rgui_theme_opaque_brogrammer;
       case RGUI_THEME_DRACULA:
-         return &rgui_theme_dracula;
+         return transparent ?
+               &rgui_theme_dracula :
+               &rgui_theme_opaque_dracula;
       case RGUI_THEME_FAIRYFLOSS:
-         return &rgui_theme_fairyfloss;
+         return transparent ?
+               &rgui_theme_fairyfloss :
+               &rgui_theme_opaque_fairyfloss;
       case RGUI_THEME_FLATUI:
-         return &rgui_theme_flatui;
+         return transparent ?
+               &rgui_theme_flatui :
+               &rgui_theme_opaque_flatui;
       case RGUI_THEME_GRUVBOX_DARK:
-         return &rgui_theme_gruvbox_dark;
+         return transparent ?
+               &rgui_theme_gruvbox_dark :
+               &rgui_theme_opaque_gruvbox_dark;
       case RGUI_THEME_GRUVBOX_LIGHT:
-         return &rgui_theme_gruvbox_light;
+         return transparent ?
+               &rgui_theme_gruvbox_light :
+               &rgui_theme_opaque_gruvbox_light;
       case RGUI_THEME_HACKING_THE_KERNEL:
-         return &rgui_theme_hacking_the_kernel;
+         return transparent ?
+               &rgui_theme_hacking_the_kernel :
+               &rgui_theme_opaque_hacking_the_kernel;
       case RGUI_THEME_NORD:
-         return &rgui_theme_nord;
+         return transparent ?
+               &rgui_theme_nord :
+               &rgui_theme_opaque_nord;
       case RGUI_THEME_NOVA:
-         return &rgui_theme_nova;
+         return transparent ?
+               &rgui_theme_nova :
+               &rgui_theme_opaque_nova;
       case RGUI_THEME_ONE_DARK:
-         return &rgui_theme_one_dark;
+         return transparent ?
+               &rgui_theme_one_dark :
+               &rgui_theme_opaque_one_dark;
       case RGUI_THEME_PALENIGHT:
-         return &rgui_theme_palenight;
+         return transparent ?
+               &rgui_theme_palenight :
+               &rgui_theme_opaque_palenight;
       case RGUI_THEME_SOLARIZED_DARK:
-         return &rgui_theme_solarized_dark;
+         return transparent ?
+               &rgui_theme_solarized_dark :
+               &rgui_theme_opaque_solarized_dark;
       case RGUI_THEME_SOLARIZED_LIGHT:
-         return &rgui_theme_solarized_light;
+         return transparent ?
+               &rgui_theme_solarized_light :
+               &rgui_theme_opaque_solarized_light;
       case RGUI_THEME_TANGO_DARK:
-         return &rgui_theme_tango_dark;
+         return transparent ?
+               &rgui_theme_tango_dark :
+               &rgui_theme_opaque_tango_dark;
       case RGUI_THEME_TANGO_LIGHT:
-         return &rgui_theme_tango_light;
+         return transparent ?
+               &rgui_theme_tango_light :
+               &rgui_theme_opaque_tango_light;
       case RGUI_THEME_ZENBURN:
-         return &rgui_theme_zenburn;
+         return transparent ?
+               &rgui_theme_zenburn :
+               &rgui_theme_opaque_zenburn;
       case RGUI_THEME_ANTI_ZENBURN:
-         return &rgui_theme_anti_zenburn;
+         return transparent ?
+               &rgui_theme_anti_zenburn :
+               &rgui_theme_opaque_anti_zenburn;
       case RGUI_THEME_FLUX:
-         return &rgui_theme_flux;
+         return transparent ?
+               &rgui_theme_flux :
+               &rgui_theme_opaque_flux;
       default:
          break;
    }
 
-   return &rgui_theme_classic_green;
+   return transparent ?
+         &rgui_theme_classic_green :
+         &rgui_theme_opaque_classic_green;
 }
 
 static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const char *theme_path)
@@ -2640,15 +3120,19 @@ end:
    else
    {
       /* Use 'Classic Green' fallback */
-      theme_colors->normal_color       = rgui_theme_classic_green.normal_color;
-      theme_colors->hover_color        = rgui_theme_classic_green.hover_color;
-      theme_colors->title_color        = rgui_theme_classic_green.title_color;
-      theme_colors->bg_dark_color      = rgui_theme_classic_green.bg_dark_color;
-      theme_colors->bg_light_color     = rgui_theme_classic_green.bg_light_color;
-      theme_colors->border_dark_color  = rgui_theme_classic_green.border_dark_color;
-      theme_colors->border_light_color = rgui_theme_classic_green.border_light_color;
-      theme_colors->shadow_color       = rgui_theme_classic_green.shadow_color;
-      theme_colors->particle_color     = rgui_theme_classic_green.particle_color;
+      const rgui_theme_t *fallback_theme =
+            (rgui->transparency_supported && rgui->transparency_enable) ?
+                  &rgui_theme_classic_green : &rgui_theme_opaque_classic_green;
+
+      theme_colors->normal_color       = fallback_theme->normal_color;
+      theme_colors->hover_color        = fallback_theme->hover_color;
+      theme_colors->title_color        = fallback_theme->title_color;
+      theme_colors->bg_dark_color      = fallback_theme->bg_dark_color;
+      theme_colors->bg_light_color     = fallback_theme->bg_light_color;
+      theme_colors->border_dark_color  = fallback_theme->border_dark_color;
+      theme_colors->border_light_color = fallback_theme->border_light_color;
+      theme_colors->shadow_color       = fallback_theme->shadow_color;
+      theme_colors->particle_color     = fallback_theme->particle_color;
    }
 
    if (conf)
@@ -2688,8 +3172,10 @@ static void prepare_rgui_colors(rgui_t *rgui, settings_t *settings)
    uint32_t ss_particle_color_argb32;
    unsigned rgui_color_theme     = settings->uints.menu_rgui_color_theme;
    const char *rgui_theme_preset = settings->paths.path_rgui_theme_preset;
+   bool rgui_transparency        = settings->bools.menu_rgui_transparency;
 
    rgui->color_theme             = rgui_color_theme;
+   rgui->transparency_enable     = rgui_transparency;
    rgui->show_wallpaper          = false;
 
    if (rgui->color_theme == RGUI_THEME_CUSTOM)
@@ -5306,7 +5792,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->menu_sublabel[0] = '\0';
 
    /* Set pixel format conversion function */
-   rgui_set_pixel_format_function();
+   rgui->transparency_supported = rgui_set_pixel_format_function();
 
    /* Initialise fonts */
    if (!rgui_fonts_init(rgui))
@@ -6144,7 +6630,9 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       rgui->force_redraw          = true;
    }
 
-   if (settings->uints.menu_rgui_color_theme != rgui->color_theme)
+   if ((settings->uints.menu_rgui_color_theme != rgui->color_theme) ||
+       (rgui->transparency_supported &&
+            (settings->bools.menu_rgui_transparency != rgui->transparency_enable)))
       prepare_rgui_colors(rgui, settings);
    else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_CUSTOM)
    {
