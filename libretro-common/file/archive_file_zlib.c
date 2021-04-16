@@ -328,7 +328,7 @@ static int64_t zip_file_read(
       const char *needle, void **buf,
       const char *optional_outfile)
 {
-   file_archive_transfer_t state            = {ARCHIVE_TRANSFER_INIT};
+   file_archive_transfer_t state            = {0};
    decomp_state_t decomp                    = {0};
    struct archive_extract_userdata userdata = {0};
    bool returnerr                           = true;
@@ -339,8 +339,9 @@ static int64_t zip_file_read(
    if (optional_outfile)
       decomp.opt_file        = strdup(optional_outfile);
 
-   userdata.transfer = &state;
-   userdata.cb_data = &decomp;
+   state.type                = ARCHIVE_TRANSFER_INIT;
+   userdata.transfer         = &state;
+   userdata.cb_data          = &decomp;
    decomp.buf                = buf;
 
    do
