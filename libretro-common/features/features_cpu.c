@@ -324,6 +324,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 #if defined(__ARM_NEON__)
 static void arm_enable_runfast_mode(void)
 {
+#if defined(__arm__)
    /* RunFast mode. Enables flush-to-zero and some
     * floating point optimizations. */
    static const unsigned x = 0x04086060;
@@ -337,6 +338,7 @@ static void arm_enable_runfast_mode(void)
          : "=r"(r)
          : "r"(x), "r"(y)
         );
+#endif
 }
 #endif
 
