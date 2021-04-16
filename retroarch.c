@@ -25071,7 +25071,6 @@ bool input_key_pressed(int key, bool keyboard_pressed)
         )
       )
    {
-      rarch_joypad_info_t joypad_info;
       struct rarch_state *p_rarch    = &rarch_st;
       const input_device_driver_t
          *joypad                     = (const input_device_driver_t*)
