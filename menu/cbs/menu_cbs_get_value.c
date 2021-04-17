@@ -1572,6 +1572,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_BLUETOOTH_DRIVER:
          case MENU_ENUM_LABEL_WIFI_DRIVER:
          case MENU_ENUM_LABEL_MENU_DRIVER:
+#ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_TIMEZONE:
+#endif
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
             break;
          case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:

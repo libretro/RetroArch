@@ -277,6 +277,10 @@
 /* Forward declarations */
 #include "retroarch_fwd_decls.h"
 
+#ifdef HAVE_LAKKA
+#include "lakka.h"
+#endif
+
 /* GLOBAL POINTER GETTERS */
 
 #ifdef HAVE_NETWORKING
@@ -8722,6 +8726,40 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
+#ifdef HAVE_LAKKA
+      case STRING_LIST_TIMEZONES:
+         {
+            const char *opt  = DEFAULT_TIMEZONE;
+            *len            += strlen(opt) + 1;
+            string_list_append(s, opt, attr);
+
+            FILE *zones_file = popen("grep -v ^# /usr/share/zoneinfo/zone.tab | "
+                                     "cut -f3 | "
+                                     "sort", "r");
+
+            if (zones_file != NULL)
+            {
+               char zone_desc[TIMEZONE_LENGTH];
+               while (fgets(zone_desc, TIMEZONE_LENGTH, zones_file))
+               {
+                  size_t zone_desc_len = strlen(zone_desc);
+
+                  if (zone_desc_len > 0)
+                     if (zone_desc[--zone_desc_len] == '\n')
+                        zone_desc[zone_desc_len] = '\0';
+
+                  if (strlen(zone_desc) > 0)
+                  {
+                     const char *opt  = zone_desc;
+                     *len            += strlen(opt) + 1;
+                     string_list_append(s, opt, attr);
+                  }
+               }
+               pclose(zones_file);
+            }
+         }
+         break;
+#endif
       case STRING_LIST_SUPPORTED_CORES_PATHS:
          core_info_get_list(&core_info_list);
 

@@ -29,6 +29,10 @@
 #include "input/input_defines.h"
 #include "led/led_defines.h"
 
+#ifdef HAVE_LAKKA
+#include "lakka.h"
+#endif
+
 #define configuration_set_float(settings, var, newvar) \
 { \
    settings->modified = true; \
@@ -381,6 +385,9 @@ typedef struct settings
       char ai_service_url[PATH_MAX_LENGTH];
 
       char crt_switch_timings[255];
+#ifdef HAVE_LAKKA
+      char timezone[TIMEZONE_LENGTH];
+#endif
    } arrays;
 
    struct
@@ -1010,6 +1017,11 @@ void config_save_file_salamander(void);
 #endif
 
 settings_t *config_get_ptr(void);
+
+#ifdef HAVE_LAKKA
+const char *config_get_all_timezones(void);
+void config_set_timezone(char *timezone);
+#endif
 
 RETRO_END_DECLS
 

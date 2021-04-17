@@ -195,6 +195,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_BLUETOOTH_ENABLE,
    "bluetooth_enable"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_TIMEZONE,
+   "timezone"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
