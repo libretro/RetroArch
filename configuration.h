@@ -552,6 +552,7 @@ typedef struct settings
       bool menu_show_load_content_animation;
       bool notification_show_autoconfig;
       bool notification_show_cheats_applied;
+      bool notification_show_patch_applied;
       bool notification_show_remap_load;
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;

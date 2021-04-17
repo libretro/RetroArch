@@ -13594,6 +13594,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+#ifdef HAVE_CHEATS
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.notification_show_cheats_applied,
@@ -13608,7 +13609,23 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-
+#endif
+#ifdef HAVE_PATCH
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_patch_applied,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+               DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.notification_show_remap_load,
