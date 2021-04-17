@@ -30504,11 +30504,6 @@ void video_monitor_set_refresh_rate(float hz)
    configuration_set_float(settings,
          settings->floats.video_refresh_rate,
          hz);
-
-   /* Without CMD_EVENT_REINIT vulkan will not switch rate properly,
-    * and with other drivers it prevents switching properly.. */
-   if (string_is_equal(settings->arrays.video_driver, "vulkan"))
-      command_event(CMD_EVENT_REINIT, NULL);
 }
 
 /**
