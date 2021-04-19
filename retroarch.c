@@ -35332,6 +35332,9 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_MENU
           || p_rarch->menu_driver_alive
 #endif
+#if defined(__PS3__) || defined(__PSL1GHT__)
+          || 1
+#endif
          )
       {
          /* Attempt initializing dummy core */
