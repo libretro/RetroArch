@@ -7949,75 +7949,47 @@ static void update_streaming_url_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_LAKKA
 static void systemd_service_toggle(const char *path, char *unit, bool enable)
 {
-   int      pid = fork();
-   char* args[] = {(char*)"systemctl", NULL, NULL, NULL};
-
-   if (enable)
-      args[1] = (char*)"start";
-   else
-      args[1] = (char*)"stop";
-   args[2] = unit;
-
-   if (enable)
-      filestream_close(filestream_open(path,
-               RETRO_VFS_FILE_ACCESS_WRITE,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE));
-   else
-      filestream_delete(path);
+   pid_t pid    = fork();
+   char* args[] = {(char*)"systemctl",
+                   enable ? (char*)"start" : (char*)"stop",
+                   unit,
+                   NULL};
 
    if (pid == 0)
+   {
+      if (enable)
+         filestream_close(filestream_open(path,
+                  RETRO_VFS_FILE_ACCESS_WRITE,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE));
+      else
+         filestream_delete(path);
+
       execvp(args[0], args);
-
-   return;
+   }
 }
 
-static void ssh_enable_toggle_change_handler(void *data)
+static void ssh_enable_toggle_change_handler(rarch_setting_t *setting)
 {
-   bool enable           = false;
-   settings_t *settings  = config_get_ptr();
-   bool ssh_enable       = settings ? settings->bools.ssh_enable : false;
-
-   if (ssh_enable)
-      enable             = true;
-
    systemd_service_toggle(LAKKA_SSH_PATH, (char*)"sshd.service",
-         enable);
+         *setting->value.target.boolean);
 }
 
-static void samba_enable_toggle_change_handler(void *data)
+static void samba_enable_toggle_change_handler(rarch_setting_t *setting)
 {
-   bool enable           = false;
-   settings_t *settings  = config_get_ptr();
-   bool samba_enable     = settings ? settings->bools.samba_enable : false;
-
-   if (samba_enable)
-      enable = true;
-
    systemd_service_toggle(LAKKA_SAMBA_PATH, (char*)"smbd.service",
-         enable);
+         *setting->value.target.boolean);
 }
 
-static void bluetooth_enable_toggle_change_handler(void *data)
+static void bluetooth_enable_toggle_change_handler(rarch_setting_t *setting)
 {
-   bool enable           = false;
-   settings_t *settings  = config_get_ptr();
-
-   if (settings && settings->bools.bluetooth_enable)
-      enable = true;
-
    systemd_service_toggle(LAKKA_BLUETOOTH_PATH, (char*)"bluetooth.service",
-         enable);
+         *setting->value.target.boolean);
 }
 
-static void localap_enable_toggle_change_handler(void *data)
+static void localap_enable_toggle_change_handler(rarch_setting_t *setting)
 {
-   bool enable           = false;
-   settings_t *settings  = config_get_ptr();
-
-   if (settings && settings->bools.localap_enable)
-      enable = true;
-
-   driver_wifi_tether_start_stop(enable, LAKKA_LOCALAP_PATH);
+   driver_wifi_tether_start_stop(*setting->value.target.boolean,
+         LAKKA_LOCALAP_PATH);
 }
 #endif
 
