@@ -307,7 +307,7 @@ static void filebrowser_parse(
 
          if (!path_is_compressed)
          {
-            file_path = path_basename(file_path);
+            file_path = path_basename_nocompression(file_path);
             if (string_is_empty(file_path))
                continue;
          }
@@ -3424,7 +3424,7 @@ static unsigned menu_displaylist_parse_cores(
       path = str_list->elems[i].data;
 
       if (!string_is_empty(path))
-         path = path_basename(path);
+         path = path_basename_nocompression(path);
 
 #ifndef HAVE_DYNAMIC
       if (frontend_driver_has_fork())
@@ -3744,18 +3744,17 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
       for (i = 0; i < str_list->size; i++)
       {
          char path_base[PATH_MAX_LENGTH];
-         const char *path                 =
-            path_basename(str_list->elems[i].data);
+         const char *path;
 
          path_base[0] = '\0';
 
          if (str_list->elems[i].attr.i == FILE_TYPE_DIRECTORY)
             continue;
 
-         if (string_is_empty(path))
-            continue;
+         path = path_basename(str_list->elems[i].data);
 
-         if (!string_is_equal_noncase(path_get_extension(path),
+         if (      string_is_empty(path)
+               || !string_is_equal_noncase(path_get_extension(path),
                   "lpl"))
             continue;
 
@@ -5121,7 +5120,8 @@ static unsigned menu_displaylist_populate_subsystem(
                   for (j = 0; j < content_get_subsystem_rom_id(); j++)
                   {
                      strlcat(rom_buff,
-                           path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
+                           path_basename(content_get_subsystem_rom(j)),
+                           sizeof(rom_buff));
                      if (j != content_get_subsystem_rom_id() - 1)
                         strlcat(rom_buff, "|", sizeof(rom_buff));
                   }
@@ -12101,7 +12101,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             menu_displaylist_parse_playlist_generic(menu, info,
                   settings,
-                  path_basename(info->path),
+                  path_basename_nocompression(info->path),
                   info->path,
                   true, /* Is a collection */
                   true, /* Enable sorting (if allowed by user config) */
