@@ -10701,6 +10701,23 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_force_resolution,
+                     MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+                     DEFAULT_FORCE_RESOLUTION,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_CMD_APPLY_AUTO);
+               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
 
 #if defined(DINGUX) && defined(DINGUX_BETA)

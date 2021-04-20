@@ -669,6 +669,14 @@ extern "C" {
          bool *quit, bool *resize, unsigned *width, unsigned *height)
 	{
 		*quit   = App::GetInstance()->IsWindowClosed();
+      settings_t* settings = config_get_ptr();
+		if (settings->bools.video_force_resolution)
+		{
+			*width = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
+			*height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
+			return;
+		}
+
 		*resize = App::GetInstance()->CheckWindowResized();
 		if (*resize)
 		{

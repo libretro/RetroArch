@@ -501,6 +501,7 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif
+      bool video_force_resolution;
 
       /* Accessibility */
       bool accessibility_enable;

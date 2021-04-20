@@ -30109,6 +30109,14 @@ static bool video_driver_init_internal(
       }
    }
 
+#ifdef __WINRT__
+   if (settings->bools.video_force_resolution)
+   {
+      width = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
+      height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
+   }
+#endif
+
    if (width && height)
       RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);
    else
