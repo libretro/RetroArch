@@ -79,19 +79,43 @@
 }
 
 static void action_get_title_fill_search_filter_default(
-      char *s, enum msg_hash_enums lbl, size_t len)
+      enum msg_hash_enums lbl, char *s, size_t len)
 {
    /* Copy label value */
    strlcpy(s, msg_hash_to_str(lbl), len);
 
    /* Add current search terms */
-   menu_driver_search_append_terms_string(s, len);
+   menu_entries_search_append_terms_string(s, len);
 }
 
 #define DEFAULT_TITLE_SEARCH_FILTER_MACRO(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
-   action_get_title_fill_search_filter_default(s, lbl, len); \
+   action_get_title_fill_search_filter_default(lbl, s, len); \
+   return 0; \
+}
+
+static void action_get_title_fill_path_search_filter_default(
+      const char *path, enum msg_hash_enums lbl, char *s, size_t len)
+{
+   const char *title = msg_hash_to_str(lbl);
+
+   if (!string_is_empty(title))
+      strlcpy(s, title, len);
+
+   if (!string_is_empty(path))
+   {
+      strlcat(s, " ", len);
+      strlcat(s, path, len);
+   }
+
+   menu_entries_search_append_terms_string(s, len);
+}
+
+#define DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(func_name, lbl) \
+  static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
+{ \
+   action_get_title_fill_path_search_filter_default(path, lbl, s, len); \
    return 0; \
 }
 
@@ -376,7 +400,7 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
       strlcpy(s, playlist_file, len);
 
    /* Add current search terms */
-   menu_driver_search_append_terms_string(s, len);
+   menu_entries_search_append_terms_string(s, len);
 
    return 0;
 }
@@ -667,7 +691,6 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_cheat_directory,      MENU_ENUM_LABEL_
 DEFAULT_FILL_TITLE_MACRO(action_get_title_core_directory,       MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_core_info_directory,  MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_audio_filter,         MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN)
-DEFAULT_FILL_TITLE_MACRO(action_get_title_video_shader_preset,  MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_configurations,       MENU_ENUM_LABEL_VALUE_CONFIG)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_content_database_directory,   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_savestate_directory,          MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY)
@@ -734,6 +757,8 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_images_list,    MENU
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_music_list,     MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_video_list,     MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
+
+DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_video_shader_preset, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
 
 static int action_get_title_generic(char *s, size_t len, const char *path,
       const char *text)
@@ -802,9 +827,15 @@ static int action_get_title_default(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
-   strlcat(s, " ", len);
+
    if (!string_is_empty(path))
+   {
+      strlcat(s, " ", len);
       strlcat(s, path, len);
+   }
+
+   menu_entries_search_append_terms_string(s, len);
+
    return 0;
 }
 
@@ -843,7 +874,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
       {
          if (info_list[i].is_playlist_tab)
             action_get_title_fill_search_filter_default(
-                  s, info_list[i].val, len);
+                  info_list[i].val, s, len);
          else
             strlcpy(s, msg_hash_to_str(info_list[i].val), len);
          return 0;

@@ -1900,7 +1900,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
             xmb->title_name, path, sizeof(xmb->title_name));
 
       /* Add current search terms */
-      menu_driver_search_append_terms_string(
+      menu_entries_search_append_terms_string(
             xmb->title_name, sizeof(xmb->title_name));
    }
 }

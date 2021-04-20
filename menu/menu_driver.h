@@ -28,7 +28,6 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
-#include <lists/string_list.h>
 
 #include "menu_defines.h"
 #include "menu_input.h"
@@ -327,11 +326,6 @@ typedef struct
 {
    uint64_t state;
 
-   /* Holds a list of search terms that may be
-    * used to filter the currently displayed
-    * menu list */
-   struct string_list *search_terms;
-
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
    char *core_buf;
@@ -507,12 +501,6 @@ void menu_explore_free(void);
 /* Returns true if search filter is enabled
  * for the specified menu list */
 bool menu_driver_search_filter_enabled(const char *label, unsigned type);
-bool menu_driver_search_push(const char *search_term);
-bool menu_driver_search_pop(void);
-struct string_list *menu_driver_search_get_terms(void);
-/* Convenience function: Appends list of current
- * search terms to specified string */
-void menu_driver_search_append_terms_string(char *s, size_t len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 void menu_driver_set_last_shader_preset_path(const char *path);

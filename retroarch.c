@@ -3265,6 +3265,7 @@ void menu_entries_append(
       size_t entry_idx)
 {
    menu_ctx_list_t list_info;
+   size_t i;
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
@@ -3331,6 +3332,10 @@ void menu_entries_append(
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
 
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
+
    list->list[idx].actiondata      = cbs;
 
    menu_cbs_init(&p_rarch->menu_driver_state,
@@ -3348,6 +3353,7 @@ bool menu_entries_append_enum(
       size_t entry_idx)
 {
    menu_ctx_list_t list_info;
+   size_t i;
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
@@ -3414,6 +3420,10 @@ bool menu_entries_append_enum(
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
 
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
+
    list->list[idx].actiondata      = cbs;
 
    if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
@@ -3435,6 +3445,7 @@ void menu_entries_prepend(file_list_t *list,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
    menu_ctx_list_t list_info;
+   size_t i;
    size_t idx                      = 0;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
@@ -3497,6 +3508,10 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_label               = NULL;
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
+
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
 
    list->list[idx].actiondata      = cbs;
 
@@ -3710,6 +3725,219 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    }
 
    return true;
+}
+
+static menu_serch_terms_t *menu_entries_search_get_terms_internal(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   file_list_t *list           = MENU_LIST_GET(menu_st->entries.list, 0);
+   menu_file_list_cbs_t *cbs   = NULL;
+
+   if (!list ||
+       (list->size < 1))
+      return NULL;
+
+   cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+
+   if (!cbs)
+      return NULL;
+
+   return &cbs->search;
+}
+
+bool menu_entries_search_push(const char *search_term)
+{
+   menu_serch_terms_t *search = menu_entries_search_get_terms_internal();
+   char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
+   size_t i;
+
+   search_term_clipped[0] = '\0';
+
+   /* Sanity check + verify whether we have reached
+    * the maximum number of allowed search terms */
+   if (!search ||
+       string_is_empty(search_term) ||
+       (search->size >= MENU_SEARCH_FILTER_MAX_TERMS))
+      return false;
+
+   /* Check whether search term already exists
+    * > Note that we clip the input search term
+    *   to MENU_SEARCH_FILTER_MAX_LENGTH characters
+    *   *before* comparing existing entries */
+   strlcpy(search_term_clipped, search_term,
+         sizeof(search_term_clipped));
+
+   for (i = 0; i < search->size; i++)
+   {
+      if (string_is_equal(search_term_clipped,
+            search->terms[i]))
+         return false;
+   }
+
+   /* Add search term */
+   strlcpy(search->terms[search->size], search_term_clipped,
+         sizeof(search->terms[search->size]));
+   search->size++;
+
+   return true;
+}
+
+bool menu_entries_search_pop(void)
+{
+   menu_serch_terms_t *search = menu_entries_search_get_terms_internal();
+
+   /* Do nothing if list of search terms is empty */
+   if (!search ||
+       (search->size == 0))
+      return false;
+
+   /* Remove last item from the list */
+   search->size--;
+   search->terms[search->size][0] = '\0';
+
+   return true;
+}
+
+menu_serch_terms_t *menu_entries_search_get_terms(void)
+{
+   menu_serch_terms_t *search = menu_entries_search_get_terms_internal();
+
+   if (!search ||
+       (search->size == 0))
+      return NULL;
+
+   return search;
+}
+
+/* Convenience function: Appends list of current
+ * search terms to specified string */
+void menu_entries_search_append_terms_string(char *s, size_t len)
+{
+   menu_serch_terms_t *search = menu_entries_search_get_terms_internal();
+
+   if (search &&
+       (search->size > 0) &&
+       s)
+   {
+      size_t current_len = strlen_size(s, len);
+      size_t i;
+
+      /* If buffer is already 'full', nothing
+       * further can be added */
+      if (current_len >= len)
+         return;
+
+      s   += current_len;
+      len -= current_len;
+
+      for (i = 0; i < search->size; i++)
+      {
+         strlcat(s, " > ", len);
+         strlcat(s, search->terms[i], len);
+      }
+   }
+}
+
+/* Searches current menu list for specified 'needle'
+ * string. If string is found, returns true and sets
+ * 'idx' to the matching list entry index. */
+bool menu_entries_list_search(const char *needle, size_t *idx)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   menu_list_t *menu_list      = menu_st->entries.list;
+   file_list_t *list           = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
+   bool match_found            = false;
+   bool char_search            = false;
+   char needle_char            = 0;
+   size_t i;
+
+   if (!list ||
+       string_is_empty(needle) ||
+       !idx)
+      goto end;
+
+   /* Check if we are searching for a single
+    * Latin alphabet character */
+   char_search    = ((needle[1] == '\0') && (ISALPHA(needle[0])));
+   if (char_search)
+      needle_char = TOLOWER(needle[0]);
+
+   for (i = 0; i < list->size; i++)
+   {
+      const char *entry_label = NULL;
+      menu_entry_t entry;
+
+      /* Note the we have to get the actual menu
+       * entry here, since we need the exact label
+       * that is currently displayed by the menu
+       * driver */
+      MENU_ENTRY_INIT(entry);
+      entry.value_enabled    = false;
+      entry.sublabel_enabled = false;
+      menu_entry_get(&entry, 0, i, NULL, true);
+
+      /* When using the file browser, one or more
+       * 'utility' entries will be added to the top
+       * of the list (e.g. 'Parent Directory'). These
+       * have no bearing on the actual content of the
+       * list, and should be excluded from the search */
+      if ((entry.type == FILE_TYPE_SCAN_DIRECTORY) ||
+          (entry.type == FILE_TYPE_MANUAL_SCAN_DIRECTORY) ||
+          (entry.type == FILE_TYPE_USE_DIRECTORY) ||
+          (entry.type == FILE_TYPE_PARENT_DIRECTORY))
+         continue;
+
+      /* Get displayed entry label */
+      if (!string_is_empty(entry.rich_label))
+         entry_label = entry.rich_label;
+      else
+         entry_label = entry.path;
+
+      if (string_is_empty(entry_label))
+         continue;
+
+      /* If we are performing a single character
+       * search, jump to the first entry whose
+       * first character matches */
+      if (char_search)
+      {
+         if (needle_char == TOLOWER(entry_label[0]))
+         {
+            *idx        = i;
+            match_found = true;
+            break;
+         }
+      }
+      /* Otherwise perform an exhaustive string
+       * comparison */
+      else
+      {
+         const char *found_str = (const char *)strcasestr(entry_label, needle);
+
+         /* Found a match with the first characters
+          * of the label -> best possible match,
+          * so quit immediately */
+         if (found_str == entry_label)
+         {
+            *idx        = i;
+            match_found = true;
+            break;
+         }
+         /* Found a mid-string match; this is a valid
+          * result, but keep searching for the best
+          * possible match */
+         else if (found_str)
+         {
+            *idx        = i;
+            match_found = true;
+         }
+      }
+   }
+
+end:
+   return match_found;
 }
 
 static void menu_display_common_image_upload(
@@ -4408,21 +4636,10 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
    struct rarch_state   *p_rarch  = &rarch_st;
    settings_t *settings           = p_rarch->configuration_settings;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
-   menu_handle_t *menu_data       = p_rarch->menu_driver_data;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
 
-   /* Must clear any existing menu search terms
-    * when switching 'tabs', since doing so
-    * bypasses standard backwards navigation
-    * (i.e. 'cancel' actions would normally
-    * pop the search stack - this will not
-    * happen if we jump to a new list directly) */
-   if (menu_data->search_terms)
-      string_list_free(menu_data->search_terms);
-   menu_data->search_terms     = NULL;
-
-   menu_st->selection_ptr      = 0; 
+   menu_st->selection_ptr         = 0;
 
    if (!menu_driver_displaylist_push(
             p_rarch,
@@ -4755,129 +4972,15 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST)) ||
-                       /* > Check for core updater */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST));
+                       /* > Core updater */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)) ||
+                       /* > File browser (Load Content) */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+                       /* > Shader presets/passes */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS));
 
    return filter_enabled;
-}
-
-bool menu_driver_search_push(const char *search_term)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-   union string_list_elem_attr attr;
-
-   if (!menu || string_is_empty(search_term))
-      return false;
-
-   /* Initialise list, if required */
-   if (!menu->search_terms)
-   {
-      menu->search_terms = string_list_new();
-
-      if (!menu->search_terms)
-         return false;
-   }
-
-   /* Check whether search term already exists */
-   if (string_list_find_elem(menu->search_terms, search_term))
-      return false;
-
-   /* Add search term */
-   attr.i = 0;
-
-   if (!string_list_append(menu->search_terms,
-         search_term, attr))
-      return false;
-
-   return true;
-}
-
-bool menu_driver_search_pop(void)
-{
-   struct rarch_state *p_rarch      = &rarch_st;
-   menu_handle_t *menu              = p_rarch->menu_driver_data;
-   union string_list_elem_attr attr = {0};
-   size_t element_index;
-
-   if (!menu || !menu->search_terms)
-      return false;
-
-   /* If we have a 'broken' list, free it
-    * (this cannot actually happen, but if
-    * we didn't free the list in this case
-    * then menu navigation could get 'stuck') */
-   if ((menu->search_terms->size < 1) ||
-       !menu->search_terms->elems)
-      goto free_list;
-
-   /* Get index of last element in the list */
-   element_index = menu->search_terms->size - 1;
-
-   /* If this is the only element, free the
-    * entire list */
-   if (element_index == 0)
-      goto free_list;
-
-   /* Otherwise, 'reset' the element... */
-   if (menu->search_terms->elems[element_index].data)
-   {
-      free(menu->search_terms->elems[element_index].data);
-      menu->search_terms->elems[element_index].data = NULL;
-   }
-
-   if (menu->search_terms->elems[element_index].userdata)
-   {
-      free(menu->search_terms->elems[element_index].userdata);
-      menu->search_terms->elems[element_index].userdata = NULL;
-   }
-
-   menu->search_terms->elems[element_index].attr = attr;
-
-   /* ...and decrement the list size */
-   menu->search_terms->size--;
-
-   return true;
-
-free_list:
-   string_list_free(menu->search_terms);
-   menu->search_terms = NULL;
-   return true;
-}
-
-struct string_list *menu_driver_search_get_terms(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-
-   if (!menu)
-      return NULL;
-
-   return menu->search_terms;
-}
-
-/* Convenience function: Appends list of current
- * search terms to specified string */
-void menu_driver_search_append_terms_string(char *s, size_t len)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-
-   if (menu &&
-       menu->search_terms &&
-       (menu->search_terms->size > 0) &&
-       s)
-   {
-      char search_str[512];
-
-      search_str[0] = '\0';
-
-      string_list_join_concat(search_str, sizeof(search_str),
-            menu->search_terms, " > ");
-
-      strlcat(s, " > ", len);
-      strlcat(s, search_str, len);
-   }
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -5262,10 +5365,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (p_rarch->menu_driver_data->core_buf)
                free(p_rarch->menu_driver_data->core_buf);
             p_rarch->menu_driver_data->core_buf  = NULL;
-
-            if (menu_data->search_terms)
-               string_list_free(menu_data->search_terms);
-            menu_data->search_terms              = NULL;
 
             menu_st->entries_need_refresh        = false;
             menu_st->entries_nonblocking_refresh = false;
@@ -10015,8 +10114,6 @@ static void osk_update_last_codepoint(
    }
 }
 
-
-
 #ifdef HAVE_MENU
 static void menu_input_search_cb(void *userdata, const char *str)
 {
@@ -10034,15 +10131,19 @@ static void menu_input_search_cb(void *userdata, const char *str)
    file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
          NULL, &label, &type, NULL);
 
-   if (menu_driver_search_filter_enabled(label, type))
+   /* Do not apply search filter if string
+    * consists of a single Latin alphabet
+    * character */
+   if (((str[1] != '\0') || (!ISALPHA(str[0]))) &&
+       menu_driver_search_filter_enabled(label, type))
    {
       /* Add search term */
-      if (menu_driver_search_push(str))
+      if (menu_entries_search_push(str))
       {
          bool refresh = false;
 
          /* Reset navigation pointer */
-         menu_st->selection_ptr      = 0;
+         menu_st->selection_ptr = 0;
          menu_driver_navigation_set(false);
 
          /* Refresh menu */
@@ -10054,17 +10155,11 @@ static void menu_input_search_cb(void *userdata, const char *str)
     * first matching entry */
    else
    {
-      size_t idx                     = 0;
-      struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
-      menu_list_t *menu_list         = menu_st->entries.list;
-      file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+      size_t idx = 0;
 
-      if (!selection_buf)
-         goto end;
-
-      if (file_list_search(selection_buf, str, &idx))
+      if (menu_entries_list_search(str, &idx))
       {
-         menu_st->selection_ptr      = idx;
+         menu_st->selection_ptr = idx;
          menu_driver_navigation_set(true);
       }
    }
