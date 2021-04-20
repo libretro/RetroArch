@@ -7653,9 +7653,11 @@ static void netplay_announce(struct rarch_state *p_rarch)
    }
    else
    {
+      const char *base = path_basename(path_get(RARCH_PATH_BASENAME));
+
       net_http_urlencode(&gamename,
-         !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
-         path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
+         !string_is_empty(base) ? base : "N/A");
+      /* TODO/FIXME - subsystem should be implemented later? */
       net_http_urlencode(&subsystemname, "N/A");
    }
 
