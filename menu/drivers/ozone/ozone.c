@@ -513,13 +513,8 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* If this is a playlist, handle 'backing out'
           * of a search, if required */
          if (ozone->is_playlist)
-         {
-            struct string_list *menu_search_terms = 
-               menu_driver_search_get_terms();
-            if (menu_search_terms &&
-                (menu_search_terms->size > 0))
+            if (menu_entries_search_get_terms())
                break;
-         }
 
          if (ozone->cursor_in_sidebar)
          {
@@ -3239,7 +3234,7 @@ static void ozone_set_header(ozone_handle_t *ozone)
          strlcpy(ozone->title, node->console_name, sizeof(ozone->title));
 
          /* Add current search terms */
-         menu_driver_search_append_terms_string(
+         menu_entries_search_append_terms_string(
                ozone->title, sizeof(ozone->title));
       }
    }
@@ -3330,8 +3325,8 @@ static void ozone_populate_entries(void *data,
        * (Ozone is a fickle beast...) */
       if (ozone->is_playlist)
       {
-         struct string_list *menu_search_terms =
-               menu_driver_search_get_terms();
+         menu_serch_terms_t *menu_search_terms =
+               menu_entries_search_get_terms();
          size_t num_search_terms               =
                menu_search_terms ? menu_search_terms->size : 0;
 
