@@ -441,6 +441,8 @@ static core_info_list_t *core_info_list_new(const char *path,
 
             if (!string_is_empty(core_file_id))
             {
+               /* TODO/FIXME - we should find a cleaner way to do this
+                * instead of this preprocessor hackery */
 #if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA) && !defined(HW_WUP))
                char *last_underscore = strrchr(core_file_id, '_');
                if (last_underscore)
@@ -576,7 +578,7 @@ static core_info_t *core_info_find_internal(
    if (!list || string_is_empty(core))
       return NULL;
 
-   core_filename = path_basename(core);
+   core_filename = path_basename_nocompression(core);
    if (string_is_empty(core_filename))
       return NULL;
 
@@ -844,31 +846,34 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 }
 
 /*
- * Matches core path A and B "base" filename (ignoring everything after _libretro)
+ * Matches core path A and B "base" filename (ignoring 
+ * everything after _libretro)
  *
  * Ex:
  *   snes9x_libretro.dll and snes9x_libretro_android.so are matched
- *   snes9x__2005_libretro.dll and snes9x_libretro_android.so are NOT matched
+ *   snes9x__2005_libretro.dll and snes9x_libretro_android.so are 
+ *   NOT matched
  */
-bool core_info_core_file_id_is_equal(const char* core_path_a, const char* core_path_b)
+bool core_info_core_file_id_is_equal(const char* core_path_a,
+      const char* core_path_b)
 {
    const char *core_path_basename_a = NULL;
-   const char *extension_pos        = NULL;
-   const char *underscore_pos       = NULL;
 
    if (!core_path_a || !core_path_b)
       return false;
 
-   core_path_basename_a = path_basename(core_path_a);
+   core_path_basename_a = path_basename_nocompression(core_path_a);
 
    if (core_path_basename_a)
    {
-      extension_pos = strrchr(core_path_basename_a, '.');
+      const char *extension_pos = strrchr(core_path_basename_a, '.');
 
       if (extension_pos)
       {
+         const char *underscore_pos = NULL;
+
          /* Remove extension */
-         *((char*)extension_pos) = '\0';
+         *((char*)extension_pos)    = '\0';
 
          underscore_pos = strrchr(core_path_basename_a, '_');
 
@@ -877,11 +882,15 @@ bool core_info_core_file_id_is_equal(const char* core_path_a, const char* core_p
 
          if (underscore_pos)
          {
-            size_t core_base_file_id_length  = underscore_pos - core_path_basename_a;
-            const char* core_path_basename_b = path_basename(core_path_b);
+            size_t core_base_file_id_length  = 
+               underscore_pos - core_path_basename_a;
+            const char* core_path_basename_b = 
+               path_basename_nocompression(
+                  core_path_b);
 
-            if (string_starts_with_size(core_path_basename_a, core_path_basename_b,
-                  core_base_file_id_length))
+            if (string_starts_with_size(
+                     core_path_basename_a, core_path_basename_b,
+                     core_base_file_id_length))
                return true;
          }
       }
@@ -956,18 +965,17 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
 bool core_info_database_match_archive_member(const char *database_path)
 {
    char      *database           = NULL;
-   const char      *new_path     = path_basename(database_path);
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   const char      *new_path     = path_basename_nocompression(database_path);
+   core_info_state_t *p_coreinfo = NULL;
 
    if (string_is_empty(new_path))
       return false;
-
-   database                 = strdup(new_path);
-
-   if (string_is_empty(database))
-      goto error;
+   if (!(database = strdup(new_path)))
+      return false;
 
    path_remove_extension(database);
+
+   p_coreinfo               = coreinfo_get_ptr();
 
    if (p_coreinfo->curr_list)
    {
@@ -988,9 +996,7 @@ bool core_info_database_match_archive_member(const char *database_path)
       }
    }
 
-error:
-   if (database)
-      free(database);
+   free(database);
    return false;
 }
 
@@ -999,17 +1005,16 @@ bool core_info_database_supports_content_path(
 {
    char      *database           = NULL;
    const char      *new_path     = path_basename(database_path);
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo = NULL;
 
    if (string_is_empty(new_path))
       return false;
-
-   database                 = strdup(new_path);
-
-   if (string_is_empty(database))
-      goto error;
+   if (!(database = strdup(new_path)))
+      return false;
 
    path_remove_extension(database);
+
+   p_coreinfo                    = coreinfo_get_ptr();
 
    if (p_coreinfo->curr_list)
    {
@@ -1031,9 +1036,7 @@ bool core_info_database_supports_content_path(
       }
    }
 
-error:
-   if (database)
-      free(database);
+   free(database);
    return false;
 }
 
