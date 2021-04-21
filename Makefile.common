@@ -107,7 +107,8 @@ ifeq ($(HAVE_SHADERPIPELINE), 1)
    DEFINES += -DHAVE_SHADERPIPELINE
 endif
 
-INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
+# local includes must go first
+INCLUDE_DIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR) $(INCLUDE_DIRS)
 
 # Switches
 #
