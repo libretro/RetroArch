@@ -10411,23 +10411,6 @@ bool menu_driver_is_alive(void)
 }
 #endif
 
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-static char *strcpy_alloc(const char *src)
-{
-   char *result = NULL;
-   size_t   len = strlen(src);
-
-   if (len == 0)
-      return NULL;
-
-   result = (char*)malloc(len + 1);
-   strcpy_literal(result, src);
-   return result;
-}
-#endif
-#endif
-
 /* MESSAGE QUEUE */
 
 static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
@@ -18906,26 +18889,39 @@ static void set_load_content_info(
 static void strcat_alloc(char **dst, const char *s)
 {
    size_t len1;
-   char *src  = *dst;
+   char *src          = *dst;
 
    if (!src)
    {
-      src     = (s) ? strcpy_alloc(s) : (char*)calloc(1,1);
-      *dst    = src;
+      if (s)
+      {
+         size_t   len = strlen(s);
+         if (len != 0)
+         {
+            char *dst = (char*)malloc(len + 1);
+            strcpy_literal(dst, s);
+            src       = dst;
+         }
+         else
+            src       = NULL;
+      }
+      else
+         src          = (char*)calloc(1,1);
+
+      *dst            = src;
       return;
    }
 
    if (!s)
       return;
 
-   len1       = strlen(src);
-   src        = (char*)realloc(src, len1 + strlen(s) + 1);
+   len1               = strlen(src);
 
-   if (!src)
+   if (!(src = (char*)realloc(src, len1 + strlen(s) + 1)))
       return;
 
-   *dst       = src;
-   strcpy(src + len1, s);
+   *dst               = src;
+   strcpy_literal(src + len1, s);
 }
 
 static void secondary_core_destroy(struct rarch_state *p_rarch)
@@ -19030,7 +19026,18 @@ static char *get_temp_directory_alloc(const char *override_dir)
          src          = "/tmp";
    }
 #endif
-   path               = (src) ? strcpy_alloc(src) : (char*)calloc(1,1);
+   if (src)
+   {
+      size_t   len    = strlen(src);
+      if (len != 0)
+      {
+         char *dst    = (char*)malloc(len + 1);
+         strcpy_literal(dst, src);
+         src          = dst;
+      }
+   }
+   else
+      path            = (char*)calloc(1,1);
 #endif
    return path;
 }
@@ -19038,15 +19045,30 @@ static char *get_temp_directory_alloc(const char *override_dir)
 static bool write_file_with_random_name(char **temp_dll_path,
       const char *retroarch_tmp_path, const void* data, ssize_t dataSize)
 {
+   int ext_len;
    unsigned i;
    char number_buf[32];
    bool okay                = false;
    const char *prefix       = "tmp";
+   char *ext                = NULL;
    time_t time_value        = time(NULL);
-   unsigned number_value    = (unsigned)time_value;
+   unsigned _number_value   = (unsigned)time_value;
    const char *src          = path_get_extension(*temp_dll_path);
-   char *ext                = (src) ? strcpy_alloc(src) : (char*)calloc(1,1);
-   int ext_len              = (int)strlen(ext);
+
+   if (src)
+   {
+      size_t   len          = strlen(src);
+      if (len != 0)
+      {
+         char *dst          = (char*)malloc(len + 1);
+         strcpy_literal(dst, src);
+         ext                = dst;
+      }
+   }
+   else
+      ext                   = (char*)calloc(1,1);
+
+   ext_len                  = (int)strlen(ext);
 
    if (ext_len > 0)
    {
@@ -19059,9 +19081,8 @@ static bool write_file_with_random_name(char **temp_dll_path,
    /* Try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
    {
-      int number;
-      number_value = number_value * 214013 + 2531011;
-      number       = (number_value >> 14) % 100000;
+      int number_value = _number_value * 214013 + 2531011;
+      int number       = (number_value >> 14) % 100000;
 
       snprintf(number_buf, sizeof(number_buf), "%05d", number);
 
