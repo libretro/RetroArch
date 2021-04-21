@@ -35441,6 +35441,7 @@ bool retroarch_main_init(int argc, char *argv[])
    /* Handle core initialization failure */
    if (init_failed)
    {
+#ifdef HAVE_DYNAMIC
       /* Check if menu was active prior to core initialization */
       if (   !global->launched_from_cli
           || global->cli_load_menu_on_error
@@ -35448,14 +35449,17 @@ bool retroarch_main_init(int argc, char *argv[])
           || p_rarch->menu_driver_alive
 #endif
          )
+#endif
       {
          /* Attempt initializing dummy core */
          p_rarch->current_core_type = CORE_TYPE_DUMMY;
          if (!command_event(CMD_EVENT_CORE_INIT, &p_rarch->current_core_type))
             goto error;
       }
+#ifdef HAVE_DYNAMIC
       else /* Fall back to regular error handling */
          goto error;
+#endif
    }
 
 #ifdef HAVE_CHEATS
