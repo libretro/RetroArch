@@ -55,6 +55,7 @@ struct config_file
 {
    char *path;
    char *reference;
+   struct config_entry_list **entries_map;
    struct config_entry_list *entries;
    struct config_entry_list *tail;
    struct config_entry_list *last;
