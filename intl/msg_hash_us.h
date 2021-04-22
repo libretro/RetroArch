@@ -12219,6 +12219,14 @@ MSG_HASH(
    "Enable or disable Wi-Fi Access Point."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Time zone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Select your time zone to adjust the date and time to your location."
+   )
+MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Switching off Wi-Fi Access Point."
    )

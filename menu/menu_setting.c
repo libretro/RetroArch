@@ -7991,6 +7991,24 @@ static void localap_enable_toggle_change_handler(rarch_setting_t *setting)
    driver_wifi_tether_start_stop(*setting->value.target.boolean,
          LAKKA_LOCALAP_PATH);
 }
+
+static void timezone_change_handler(rarch_setting_t *setting)
+{
+   if (!setting)
+      return;
+
+   config_set_timezone(setting->value.target.string);
+
+   RFILE *tzfp = filestream_open(LAKKA_TIMEZONE_PATH,
+                       RETRO_VFS_FILE_ACCESS_WRITE,
+                       RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (tzfp != NULL)
+   {
+      filestream_printf(tzfp, "TIMEZONE=%s", setting->value.target.string);
+      filestream_close(tzfp);
+   }
+}
 #endif
 
 static bool setting_append_list_input_player_options(
@@ -18538,6 +18556,23 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = localap_enable_toggle_change_handler;
+
+            CONFIG_STRING_OPTIONS(
+                  list, list_info,
+                  settings->arrays.timezone,
+                  sizeof(settings->arrays.timezone),
+                  MENU_ENUM_LABEL_TIMEZONE,
+                  MENU_ENUM_LABEL_VALUE_TIMEZONE,
+                  DEFAULT_TIMEZONE,
+                  config_get_all_timezones(),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_read_handler,
+                  general_write_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
+            (*list)[list_info->index - 1].action_ok      = setting_action_ok_mapped_string;
+            (*list)[list_info->index - 1].change_handler = timezone_change_handler;
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);

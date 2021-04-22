@@ -1185,6 +1185,47 @@ const char *config_get_midi_driver_options(void)
    return char_list_new_special(STRING_LIST_MIDI_DRIVERS, NULL);
 }
 
+#ifdef HAVE_LAKKA
+void config_set_timezone(char *timezone)
+{
+   setenv("TZ", timezone, 1);
+   tzset();
+}
+
+const char *config_get_all_timezones(void)
+{
+   return char_list_new_special(STRING_LIST_TIMEZONES, NULL);
+}
+
+static void load_timezone(char *setting)
+{
+   char haystack[TIMEZONE_LENGTH+32];
+   static char *needle = "TIMEZONE=";
+   size_t needle_len = strlen(needle);
+
+   RFILE *tzfp = filestream_open(LAKKA_TIMEZONE_PATH,
+                       RETRO_VFS_FILE_ACCESS_READ,
+                       RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (tzfp != NULL)
+   {
+      filestream_gets(tzfp, haystack, sizeof(haystack)-1);
+      filestream_close(tzfp);
+
+      char *start = strstr(haystack, needle);
+
+      if (start != NULL)
+         snprintf(setting, TIMEZONE_LENGTH, "%s", start + needle_len);
+      else
+         snprintf(setting, TIMEZONE_LENGTH, "%s", DEFAULT_TIMEZONE);
+   }
+   else
+      snprintf(setting, TIMEZONE_LENGTH, "%s", DEFAULT_TIMEZONE);
+
+   config_set_timezone(setting);
+}
+#endif
+
 bool config_overlay_enable_default(void)
 {
    if (g_defaults.overlay_set)
@@ -2347,6 +2388,7 @@ void config_set_defaults(void *data)
    configuration_set_bool(settings,
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
    configuration_set_bool(settings, settings->bools.localap_enable, false);
+   load_timezone(settings->arrays.timezone);
 #endif
 
 #ifdef HAVE_MENU
