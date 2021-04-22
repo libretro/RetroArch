@@ -746,9 +746,8 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
    }
 }
 
-static void gfx_animation_line_ticker_generic(uint64_t idx,
-      size_t line_len, size_t max_lines, size_t num_lines,
-      size_t *line_offset)
+static size_t gfx_animation_line_ticker_generic(uint64_t idx,
+      size_t line_len, size_t max_lines, size_t num_lines)
 {
    size_t line_ticks    =  TICKER_LINE_DISPLAY_TICKS(line_len);
    /* Note: This function is only called if num_lines > max_lines */
@@ -770,22 +769,19 @@ static void gfx_animation_line_ticker_generic(uint64_t idx,
 
    /* Lines scrolling upwards */
    if (phase <= excess_lines)
-      *line_offset = phase;
+      return phase;
    /* Lines scrolling downwards */
-   else
-      *line_offset = (excess_lines * 2) - phase;
+   return (excess_lines * 2) - phase;
 }
 
-static void gfx_animation_line_ticker_loop(uint64_t idx,
-      size_t line_len, size_t num_lines,
-      size_t *line_offset)
+static size_t gfx_animation_line_ticker_loop(uint64_t idx,
+      size_t line_len, size_t num_lines)
 {
    size_t line_ticks    =  TICKER_LINE_DISPLAY_TICKS(line_len);
    size_t ticker_period = num_lines + 1;
    size_t phase         = (idx / line_ticks) % ticker_period;
-
    /* In this case, line_offset is simply equal to the phase */
-   *line_offset = phase;
+   return phase;
 }
 
 static void set_line_smooth_fade_parameters(
@@ -1883,20 +1879,18 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
    switch (line_ticker->type_enum)
    {
       case TICKER_TYPE_LOOP:
-         gfx_animation_line_ticker_loop(
+         line_offset = gfx_animation_line_ticker_loop(
                line_ticker->idx,
                line_ticker->line_len,
-               lines.size,
-               &line_offset);
+               lines.size);
          break;
       case TICKER_TYPE_BOUNCE:
       default:
-         gfx_animation_line_ticker_generic(
+         line_offset = gfx_animation_line_ticker_generic(
                line_ticker->idx,
                line_ticker->line_len,
                line_ticker->max_lines,
-               lines.size,
-               &line_offset);
+               lines.size);
 
          break;
    }
