@@ -22957,6 +22957,33 @@ static int16_t input_state_device(
    return res;
 }
 
+static int16_t _input_state(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
+
+static int16_t input_state(unsigned port, unsigned device,
+      unsigned idx, unsigned id) {
+   struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
+   unsigned *from = *(settings->uints.input_combine_from+port);
+   unsigned into = settings->uints.input_combine_into[port];
+   int16_t ret = 0;
+   int i;
+
+   if(into) return 0;
+
+   ret = _input_state(port,device,idx,id);
+
+   if((ret == 0) && (from[0])) {
+      /* check any combined ports */
+      for(i = 0; i < MAX_USERS; i++) {
+        if(!from[i]) break;
+        ret = _input_state(from[i]-1,device,idx,id);
+        if(ret) break;
+      }
+   }
+   return ret;
+}
+
 /**
  * input_state:
  * @port                 : user number.
@@ -22969,7 +22996,7 @@ static int16_t input_state_device(
  * Returns: Non-zero if the given key (identified by @id)
  * was pressed by the user (assigned to @port).
  **/
-static int16_t input_state(unsigned port, unsigned device,
+static int16_t _input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;

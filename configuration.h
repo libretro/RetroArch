@@ -127,6 +127,8 @@ typedef struct settings
        * Does not override main binds. */
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
+      unsigned input_combine_into[MAX_USERS];
+      unsigned input_combine_from[MAX_USERS][MAX_USERS];
 
       unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
