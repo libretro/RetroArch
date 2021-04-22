@@ -283,29 +283,26 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-static void gfx_animation_ticker_generic(uint64_t idx,
-      size_t max_width, size_t *offset, size_t *width)
+static size_t gfx_animation_ticker_generic(uint64_t idx,
+      size_t old_width)
 {
-   int ticker_period     = (int)(2 * (*width - max_width) + 4);
-   int phase             = idx % ticker_period;
+   const int phase_left_stop   = 2;
+   int ticker_period           = (int)(2 * old_width + 4);
+   int phase                   = idx % ticker_period;
 
-   int phase_left_stop   = 2;
-   int phase_left_moving = (int)(phase_left_stop + (*width - max_width));
-   int phase_right_stop  = phase_left_moving + 2;
+   int phase_left_moving       = (int)(phase_left_stop + old_width);
+   int phase_right_stop        = phase_left_moving + 2;
 
-   int left_offset       = phase - phase_left_stop;
-   int right_offset      = (int)((*width - max_width) - (phase - phase_right_stop));
+   int left_offset             = phase - phase_left_stop;
+   int right_offset            = (int)(old_width - (phase - phase_right_stop));
 
    if (phase < phase_left_stop)
-      *offset = 0;
+      return 0;
    else if (phase < phase_left_moving)
-      *offset = left_offset;
+      return left_offset;
    else if (phase < phase_right_stop)
-      *offset = *width - max_width;
-   else
-      *offset = right_offset;
-
-   *width = max_width;
+      return old_width;
+   return right_offset;
 }
 
 static void gfx_animation_ticker_loop(uint64_t idx,
@@ -1428,13 +1425,11 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
       case TICKER_TYPE_BOUNCE:
       default:
          {
-            size_t offset = 0;
-
-            gfx_animation_ticker_generic(
+            size_t offset = gfx_animation_ticker_generic(
                   ticker->idx,
-                  ticker->len,
-                  &offset,
-                  &str_len);
+                  str_len - ticker->len);
+
+            str_len       = ticker->len;
 
             utf8cpy(
                   ticker->s,
