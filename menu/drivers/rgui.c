@@ -1052,6 +1052,7 @@ typedef struct
 
    bool bg_modified;
    bool force_redraw;
+   bool force_menu_refresh;
    bool show_mouse;
    bool show_screensaver;
    bool ignore_resize_events;
@@ -4477,6 +4478,22 @@ static void rgui_render(void *data,
       rgui->aspect_update_pending = false;
    }
 
+   /* Refresh current menu, if required */
+   if (rgui->force_menu_refresh)
+   {
+      bool refresh = false;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+      /* Menu entries may change as a result of the
+       * refresh; skip rendering of the 'obsolete'
+       * menu this frame, and force a redraw of the
+       * updated menu on the next frame */
+      rgui->force_redraw       = true;
+      rgui->force_menu_refresh = false;
+      return;
+   }
+
    current_display_cb = menu_input_dialog_get_display_kb();
 
    if (!rgui->force_redraw)
@@ -6440,6 +6457,14 @@ static void rgui_populate_entries(void *data,
             /* Menu viewport has been overridden - must ignore
              * resize events until the menu is next toggled off */
             rgui->ignore_resize_events = true;
+#if !defined(GEKKO)
+            /* Changing the video config may alter the list
+             * of entries that should be displayed in the
+             * video scaling menu. The current menu layout
+             * was generated using the previous video config;
+             * we therefore have to force a menu refresh */
+            rgui->force_menu_refresh = true;
+#endif
          }
       }
    }
