@@ -19075,7 +19075,7 @@ static char *get_temp_directory_alloc(const char *override_dir)
       {
          char *dst    = (char*)malloc(len + 1);
          strcpy_literal(dst, src);
-         src          = dst;
+         path         = dst;
       }
    }
    else
@@ -19133,6 +19133,7 @@ static bool write_file_with_random_name(char **temp_dll_path,
       *temp_dll_path = NULL;
 
       strcat_alloc(temp_dll_path, retroarch_tmp_path);
+      strcat_alloc(temp_dll_path, PATH_DEFAULT_SLASH());
       strcat_alloc(temp_dll_path, prefix);
       strcat_alloc(temp_dll_path, number_buf);
       strcat_alloc(temp_dll_path, ext);
@@ -19187,6 +19188,7 @@ static char *copy_core_to_temp_file(struct rarch_state *p_rarch,
    }
 
    strcat_alloc(&tmp_dll_path, retroarch_tmp_path);
+   strcat_alloc(&tmp_dll_path, PATH_DEFAULT_SLASH());
    strcat_alloc(&tmp_dll_path, core_base_name);
 
    if (!filestream_write_file(tmp_dll_path, dll_file_data, dll_file_size))
