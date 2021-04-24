@@ -602,16 +602,18 @@ uint64_t cpu_features_get(void)
 #endif
 #if defined(__MACH__)
    size_t len          = sizeof(size_t);
+
+   if (sysctlbyname("hw.optional.floatingpoint", NULL, &len, NULL, 0) == 0)
+   {
+      cpu |= RETRO_SIMD_CMOV;
+   }
+
+#if defined(CPU_X86)
+   len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
    {
       cpu |= RETRO_SIMD_MMX;
       cpu |= RETRO_SIMD_MMXEXT;
-   }
-
-   len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.floatingpoint", NULL, &len, NULL, 0) == 0)
-   {
-      cpu |= RETRO_SIMD_CMOV;
    }
 
    len            = sizeof(size_t);
@@ -654,10 +656,19 @@ uint64_t cpu_features_get(void)
    if (sysctlbyname("hw.optional.altivec", NULL, &len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_VMX;
 
+#else
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.neon", NULL, &len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_NEON;
 
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.neon_fp16", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_VFPV3;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.neon_hpfp", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_VFPV4;
+#endif
 #elif defined(_XBOX1)
    cpu |= RETRO_SIMD_MMX;
    cpu |= RETRO_SIMD_SSE;
