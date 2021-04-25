@@ -153,7 +153,7 @@ static void ctr_free_overlay(ctr_video_t *ctr)
    for (i = 0; i < ctr->overlays; i++)
    {
       linearFree(ctr->overlay[i].frame_coords);
-	  linearFree(ctr->overlay[i].texture.data);
+      linearFree(ctr->overlay[i].texture.data);
    }
 
    free(ctr->overlay);
@@ -513,7 +513,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->vsync         = video->vsync;
    ctr->current_buffer_top = 0;
 
-#ifdef HAVE_OVERLAY
+#if defined(HAVE_OVERLAY) || defined(HAVE_GFX_WIDGETS)
    video_driver_set_rgba();
 #endif
 
@@ -1295,7 +1295,7 @@ static void ctr_unload_texture(void *data, bool threaded,
 static void ctr_overlay_tex_geom(void *data,
             unsigned image, float x, float y, float w, float h)
 {
-   ctr_video_t             *ctr = (ctr_video_t *)data;
+   ctr_video_t           *ctr = (ctr_video_t *)data;
    struct ctr_overlay_data *o = NULL;
 
    if (ctr)
@@ -1320,7 +1320,7 @@ static void ctr_overlay_tex_geom(void *data,
 static void ctr_overlay_vertex_geom(void *data,
             unsigned image, float x, float y, float w, float h)
 {
-   ctr_video_t             *ctr = (ctr_video_t *)data;
+   ctr_video_t           *ctr = (ctr_video_t *)data;
    struct ctr_overlay_data *o = NULL;
 
    if (ctr)
