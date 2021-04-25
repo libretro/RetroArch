@@ -737,8 +737,8 @@ void cheat_manager_load_game_specific_cheats(const char *path_cheat_database)
             path_cheat_database,
             false))
    {
-      RARCH_LOG("[Cheats]: Load game-specific cheatfile: %s\n", cheat_file);
-      cheat_manager_load(cheat_file, true);
+      if (cheat_manager_load(cheat_file, true))
+         RARCH_LOG("[Cheats]: Load game-specific cheatfile: %s\n", cheat_file);
    }
 }
 
@@ -751,8 +751,8 @@ void cheat_manager_save_game_specific_cheats(const char *path_cheat_database)
             path_cheat_database,
             true))
    {
-      RARCH_LOG("[Cheats]: Save game-specific cheatfile: %s\n", cheat_file);
-      cheat_manager_save(cheat_file, NULL, true);
+      if (cheat_manager_save(cheat_file, NULL, true))
+         RARCH_LOG("[Cheats]: Save game-specific cheatfile: %s\n", cheat_file);
    }
 }
 
