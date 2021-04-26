@@ -54,6 +54,8 @@ typedef struct cocoa_ctx_data
 /* TODO/FIXME - static globals */
 static unsigned g_vk_minor          = 0;
 static unsigned g_vk_major          = 0;
+/* Forward declaration */
+CocoaView *cocoaview_get(void);
 
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
@@ -179,9 +181,13 @@ static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
    {
       cocoa_ctx->vk.context.has_acquired_swapchain = false;
       if (cocoa_ctx->vk.swapchain == VK_NULL_HANDLE)
+      {
          retro_sleep(10);
+      }
       else
+      {
          vulkan_present(&cocoa_ctx->vk, cocoa_ctx->vk.context.current_swapchain_index);
+      }
    }
    vulkan_acquire_next_image(&cocoa_ctx->vk);
 }
