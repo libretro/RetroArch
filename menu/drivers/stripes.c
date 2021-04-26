@@ -4144,7 +4144,7 @@ static int stripes_list_push(void *data, void *userdata,
                   MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0);
 
             core_info_get_list(&list);
-            if (core_info_list_num_info_files(list))
+            if (list->info_count > 0)
             {
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),

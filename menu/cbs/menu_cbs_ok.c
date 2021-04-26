@@ -3556,44 +3556,36 @@ static int action_ok_path_manual_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *new_core_path,
       const char *content_label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char ext_name[255];
-   char core_display_name[PATH_MAX_LENGTH];
+   size_t selection              = menu_navigation_get_selection();
+   struct playlist_entry entry   = {0};
+   menu_handle_t *menu           = menu_driver_get_ptr();
+   core_info_t *core_info        = NULL;
+   const char *core_display_name = NULL;
    char resolved_core_path[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
-   size_t selection                        = menu_navigation_get_selection();
-   struct playlist_entry entry             = {0};
-   menu_handle_t            *menu          = menu_driver_get_ptr();
-   settings_t *settings                    = config_get_ptr();
-   const char *path_libretro_info          = settings->paths.path_libretro_info;
-   const char *path_dir_libretro           = settings->paths.directory_libretro;
-   bool show_hidden_files                  = settings->bools.show_hidden_files;
 
-   ext_name[0]                             = '\0';
-   core_display_name[0]                    = '\0';
-   resolved_core_path[0]                   = '\0';
-   msg[0]                                  = '\0';
+   resolved_core_path[0] = '\0';
+   msg[0]                = '\0';
 
-   if (!menu)
+   if (!menu ||
+       string_is_empty(new_core_path))
       return menu_cbs_exit();
 
-   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
-      return menu_cbs_exit();
+   /* Get core display name */
+   if (core_info_find(new_core_path, &core_info))
+      core_display_name = core_info->display_name;
 
-   core_info_get_name(new_core_path,
-         core_display_name, sizeof(core_display_name),
-         path_libretro_info,
-         path_dir_libretro,
-         ext_name,
-         show_hidden_files,
-         true);
+   if (string_is_empty(core_display_name))
+      core_display_name = path_basename_nocompression(new_core_path);
 
+   /* Get 'real' core path */
    strlcpy(resolved_core_path, new_core_path, sizeof(resolved_core_path));
    playlist_resolve_path(PLAYLIST_SAVE, true, resolved_core_path, sizeof(resolved_core_path));
 
    /* the update function reads our entry
     * as const, so these casts are safe */
    entry.core_path = (char*)resolved_core_path;
-   entry.core_name = core_display_name;
+   entry.core_name = (char*)core_display_name;
 
    command_playlist_update_write(
          NULL,
@@ -5200,19 +5192,16 @@ static int action_ok_add_to_favorites(const char *path,
       {
          if (!string_is_empty(path_get(RARCH_PATH_CORE)))
          {
-            core_info_ctx_find_t core_info;
+            core_info_t *core_info = NULL;
 
             /* >> core_path */
             strlcpy(core_path, path_get(RARCH_PATH_CORE), sizeof(core_path));
 
             /* >> core_name
              * (always use display name, if available) */
-            core_info.inf  = NULL;
-            core_info.path = core_path;
-
-            if (core_info_find(&core_info))
-               if (!string_is_empty(core_info.inf->display_name))
-                  strlcpy(core_name, core_info.inf->display_name,
+            if (core_info_find(core_path, &core_info))
+               if (!string_is_empty(core_info->display_name))
+                  strlcpy(core_name, core_info->display_name,
                         sizeof(core_name));
          }
 
@@ -5336,19 +5325,16 @@ static int action_ok_add_to_favorites_playlist(const char *path,
       /* > core_path + core_name */
       if (!string_is_empty(entry->core_path) && !string_is_empty(entry->core_name))
       {
-         core_info_ctx_find_t core_info;
+         core_info_t *core_info = NULL;
 
          /* >> core_path */
          string_list_append(str_list, entry->core_path, attr);
 
          /* >> core_name
           * (always use display name, if available) */
-         core_info.inf  = NULL;
-         core_info.path = entry->core_path;
-
-         if (core_info_find(&core_info))
-            if (!string_is_empty(core_info.inf->display_name))
-               strlcpy(core_display_name, core_info.inf->display_name, sizeof(core_display_name));
+         if (core_info_find(entry->core_path, &core_info))
+            if (!string_is_empty(core_info->display_name))
+               strlcpy(core_display_name, core_info->display_name, sizeof(core_display_name));
 
          if (!string_is_empty(core_display_name))
             string_list_append(str_list, core_display_name, attr);
@@ -7181,19 +7167,17 @@ int action_ok_core_lock(const char *path,
    if (!core_info_set_core_lock(core_path, lock))
    {
       const char *core_name = NULL;
-      core_info_ctx_find_t core_info;
+      core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
 
       msg[0] = '\0';
 
       /* Need to fetch core name for error message */
-      core_info.inf  = NULL;
-      core_info.path = core_path;
 
       /* If core is found, use display name */
-      if (core_info_find(&core_info) &&
-          core_info.inf->display_name)
-         core_name = core_info.inf->display_name;
+      if (core_info_find(core_path, &core_info) &&
+          core_info->display_name)
+         core_name = core_info->display_name;
       /* If not, use core file name */
       else
          core_name = path_basename_nocompression(core_path);
@@ -7240,20 +7224,18 @@ static int action_ok_core_delete(const char *path,
    /* Check whether core is locked */
    if (core_info_get_core_lock(core_path, true))
    {
-      const char *core_name = NULL;
-      core_info_ctx_find_t core_info;
+      const char *core_name  = NULL;
+      core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
 
       msg[0] = '\0';
 
       /* Need to fetch core name for notification */
-      core_info.inf  = NULL;
-      core_info.path = core_path;
 
       /* If core is found, use display name */
-      if (core_info_find(&core_info) &&
-          core_info.inf->display_name)
-         core_name = core_info.inf->display_name;
+      if (core_info_find(core_path, &core_info) &&
+          core_info->display_name)
+         core_name = core_info->display_name;
       /* If not, use core file name */
       else
          core_name = path_basename_nocompression(core_path);

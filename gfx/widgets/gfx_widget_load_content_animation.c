@@ -284,13 +284,13 @@ bool gfx_widget_start_load_content_animation(void)
    const char *content_path                         = path_get(RARCH_PATH_CONTENT);
    const char *core_path                            = path_get(RARCH_PATH_CORE);
    playlist_t *playlist                             = playlist_get_cached();
+   core_info_t *core_info                           = NULL;
 
    bool playlist_entry_found                        = false;
    bool has_content                                 = false;
    bool has_system                                  = false;
    bool has_db_name                                 = false;
 
-   core_info_ctx_find_t core_info_finder;
    char icon_path[PATH_MAX_LENGTH];
 
    icon_path[0] = '\0';
@@ -314,13 +314,10 @@ bool gfx_widget_start_load_content_animation(void)
       return false;
 
    /* Check core validity */
-   core_info_finder.inf  = NULL;
-   core_info_finder.path = core_path;
-
-   if (!core_info_find(&core_info_finder))
+   if (!core_info_find(core_path, &core_info))
       return false;
 
-   core_path = core_info_finder.inf->path;
+   core_path = core_info->path;
 
    /* Parse content path
     * > If we have a cached playlist, attempt to find
@@ -357,10 +354,8 @@ bool gfx_widget_start_load_content_animation(void)
 
             /* Check whether core matches... */
             if (string_is_empty(entry_core_file) ||
-                !string_starts_with_size(
-                     entry_core_file,
-                     core_info_finder.inf->core_file_id.str,
-                     core_info_finder.inf->core_file_id.len))
+                !string_starts_with(entry_core_file,
+                     core_info->core_file_id.str))
                entry = NULL;
          }
       }
@@ -430,8 +425,8 @@ bool gfx_widget_start_load_content_animation(void)
    if (!has_system)
    {
       /* Use core display name, if available */
-      if (!string_is_empty(core_info_finder.inf->display_name))
-         strlcpy(state->system_name, core_info_finder.inf->display_name,
+      if (!string_is_empty(core_info->display_name))
+         strlcpy(state->system_name, core_info->display_name,
                sizeof(state->system_name));
       /* Otherwise, just use 'RetroArch' as a fallback */
       else
@@ -466,7 +461,7 @@ bool gfx_widget_start_load_content_animation(void)
    {
       const char *core_db_name           = NULL;
       struct string_list *databases_list =
-            core_info_finder.inf->databases_list;
+            core_info->databases_list;
 
       /* We can only use the core db_name if the
        * core is associated with exactly one database */

@@ -471,22 +471,19 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
    if ((info->type == FILE_TYPE_DOWNLOAD_CORE) ||
        (info->type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
    {
-      core_info_ctx_find_t core_info_finder;
+      core_info_t *core_info_menu = NULL;
 
       core_path = info->path;
 
       /* Core updater entry - search for corresponding
        * core info */
-      core_info_finder.inf  = NULL;
-      core_info_finder.path = core_path;
-
-      if (core_info_find(&core_info_finder))
-         core_info = core_info_finder.inf;
+      if (core_info_find(core_path, &core_info_menu))
+         core_info = core_info_menu;
    }
    else if (core_info_get_current_core(&core_info) && core_info)
       core_path = core_info->path;
 
-   if (!core_info || !core_info->config_data)
+   if (!core_info || !core_info->has_info)
    {
       if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
@@ -3074,7 +3071,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
           !string_is_equal(system->library_name,
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
          )
-         && core_info && core_info->config_data
+         && core_info && core_info->has_info
       )
       if (menu_entries_append_enum(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
@@ -3843,18 +3840,15 @@ static unsigned menu_displaylist_parse_content_information(
    }
    else
    {
-      core_info_ctx_find_t core_info;
+      core_info_t *core_info = NULL;
 
       /* No playlist - just extract what we can... */
       content_path   = loaded_content_path;
       core_path      = loaded_core_path;
 
-      core_info.inf  = NULL;
-      core_info.path = core_path;
-
-      if (core_info_find(&core_info))
-         if (!string_is_empty(core_info.inf->display_name))
-            strlcpy(core_name, core_info.inf->display_name, sizeof(core_name));
+      if (core_info_find(core_path, &core_info))
+         if (!string_is_empty(core_info->display_name))
+            strlcpy(core_name, core_info->display_name, sizeof(core_name));
    }
 
    /* Content label */
@@ -6031,7 +6025,7 @@ unsigned menu_displaylist_build_list(
          {
             core_info_list_t *info_list        = NULL;
             core_info_get_list(&info_list);
-            if (core_info_list_num_info_files(info_list))
+            if (info_list->info_count > 0)
             {
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(

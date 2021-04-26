@@ -238,7 +238,7 @@ runtime_log_t *runtime_log_init(
    char log_file_dir[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
-   core_info_ctx_find_t core_info;
+   core_info_t *core_info     = NULL;
    runtime_log_t *runtime_log = NULL;
 
    content_name[0]            = '\0';
@@ -266,12 +266,9 @@ runtime_log_t *runtime_log_init(
     * we are performing aggregate (not per core) logging,
     * since content name is sometimes dependent upon core
     * (e.g. see TyrQuake below) */
-   core_info.inf  = NULL;
-   core_info.path = core_path;
-
-   if (core_info_find(&core_info) &&
-       core_info.inf->core_name)
-      strlcpy(core_name, core_info.inf->core_name, sizeof(core_name));
+   if (core_info_find(core_path, &core_info) &&
+       core_info->core_name)
+      strlcpy(core_name, core_info->core_name, sizeof(core_name));
 
    if (string_is_empty(core_name))
       return NULL;

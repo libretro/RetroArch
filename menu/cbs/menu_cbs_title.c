@@ -408,7 +408,7 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
 static int action_get_title_deferred_core_backup_list(
       const char *core_path, const char *prefix, char *s, size_t len)
 {
-   core_info_ctx_find_t core_info;
+   core_info_t *core_info = NULL;
 
    if (string_is_empty(core_path) || string_is_empty(prefix))
       return 0;
@@ -417,17 +417,14 @@ static int action_get_title_deferred_core_backup_list(
    strlcpy(s, prefix, len);
    strlcat(s, ": ", len);
 
-   /* Search for specified core */
-   core_info.inf  = NULL;
-   core_info.path = core_path;
-
-   /* If core is found, add display name */
-   if (core_info_find(&core_info) &&
-       core_info.inf->display_name)
-      strlcat(s, core_info.inf->display_name, len);
+   /* Search for specified core
+    * > If core is found, add display name */
+   if (core_info_find(core_path, &core_info) &&
+       core_info->display_name)
+      strlcat(s, core_info->display_name, len);
    else
    {
-      /* If not, use core file name */
+      /* > If not, use core file name */
       const char *core_filename = path_basename_nocompression(core_path);
 
       if (!string_is_empty(core_filename))
@@ -463,19 +460,15 @@ static int action_get_core_information_list(
    if ((menu_type == FILE_TYPE_DOWNLOAD_CORE) ||
        (menu_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
    {
-      const char *core_path = path;
-      core_info_ctx_find_t core_info_finder;
+      core_info_t *core_info_menu = NULL;
 
-      if (string_is_empty(core_path))
+      if (string_is_empty(path))
          goto error;
 
       /* Core updater/manager entry - search for
        * corresponding core info */
-      core_info_finder.inf  = NULL;
-      core_info_finder.path = core_path;
-
-      if (core_info_find(&core_info_finder))
-         core_info = core_info_finder.inf;
+      if (core_info_find(path, &core_info_menu))
+         core_info = core_info_menu;
    }
    else
       core_info_get_current_core(&core_info);

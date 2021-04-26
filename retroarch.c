@@ -1986,17 +1986,15 @@ static int generic_menu_iterate(
 #endif
                   case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
                      {
-                        core_info_ctx_find_t core_info;
-                        const char *path = selection_buf->list[selection].path;
-                        /* Search for specified core */
-                        core_info.inf    = NULL;
-                        core_info.path   = path;
+                        core_info_t *core_info = NULL;
+                        const char *path       = selection_buf->list[selection].path;
 
+                        /* Search for specified core */
                         if (     path 
-                              && core_info_find(&core_info)
-                              && !string_is_empty(core_info.inf->description))
+                              && core_info_find(path, &core_info)
+                              && !string_is_empty(core_info->description))
                            strlcpy(menu->menu_state_msg,
-                                 core_info.inf->description,
+                                 core_info->description,
                                  sizeof(menu->menu_state_msg));
                         else
                            strlcpy(menu->menu_state_msg,
@@ -13618,7 +13616,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
-            core_info_ctx_find_t info_find;
             rarch_system_info_t *system_info = &p_rarch->runloop_system;
             struct retro_system_info *system = &system_info->info;
             const char *core_path            = path_get(RARCH_PATH_CORE);
@@ -13634,9 +13631,8 @@ bool command_event(enum event_command cmd, void *data)
                      system,
                      &system_info->load_no_content))
                return false;
-            info_find.path = core_path;
 
-            if (!core_info_load(&info_find, &p_rarch->core_info_st))
+            if (!core_info_load(core_path, &p_rarch->core_info_st))
             {
 #ifdef HAVE_DYNAMIC
                return false;
