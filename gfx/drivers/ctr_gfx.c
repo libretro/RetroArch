@@ -1218,10 +1218,10 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
          {
             ((uint32_t*)texture->data)[ctrgu_swizzle_coords(i, j,
                texture->width)] =
-                    ((*src >> 8)  & 0x00FF00) 
-                  | ((*src >> 24) & 0xFF)
-                  | ((*src << 8)  & 0xFF0000)
-                  | ((*src << 24) & 0xFF000000);
+                    ((*src << 8)  & 0xFF000000) 
+                  | ((*src << 8)  & 0x00FF0000)
+                  | ((*src << 8)  & 0x0000FF00)
+                  | ((*src >> 24) & 0x000000FF);
             src++;
          }
       GSPGPU_FlushDataCache(texture->data, texture->width 
@@ -1248,10 +1248,10 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
       for (i = 0; i < image->width * image->height; i++)
       {
          *dst = 
-              ((*src >> 8)  & 0x00FF00) 
-            | ((*src >> 24) & 0xFF)
-            | ((*src << 8)  & 0xFF0000)
-            | ((*src << 24) & 0xFF000000);
+              ((*src << 8)  & 0xFF000000) 
+            | ((*src << 8)  & 0x00FF0000)
+            | ((*src << 8)  & 0x0000FF00)
+            | ((*src >> 24) & 0x000000FF);
          dst++;
          src++;
       }
