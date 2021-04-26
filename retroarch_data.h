@@ -162,11 +162,11 @@
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch) (&p_rarch->hw_render)
 
 #ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK(p_rarch) slock_lock(p_rarch->runloop_msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch) slock_unlock(p_rarch->runloop_msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop) slock_lock(runloop.msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop) slock_unlock(runloop.msg_queue_lock)
 #else
-#define RUNLOOP_MSG_QUEUE_LOCK(p_rarch)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch)
+#define RUNLOOP_MSG_QUEUE_LOCK(p_runloop)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop)
 #endif
 
 #ifdef HAVE_BSV_MOVIE
@@ -183,7 +183,7 @@
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF(p_rarch) || ((p_rarch->runloop_max_frames != 0) && (frame_count >= p_rarch->runloop_max_frames)) || runloop_exec)
+#define TIME_TO_EXIT(quit_key_pressed) (runloop_state.shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF(p_rarch) || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
@@ -1661,6 +1661,54 @@ struct discord_state
 typedef struct discord_state discord_state_t;
 #endif
 
+struct runloop
+{ 
+   retro_usec_t frame_time_last;        /* int64_t alignment */
+
+   msg_queue_t msg_queue;                        /* ptr alignment */
+#ifdef HAVE_THREADS
+   slock_t *msg_queue_lock;
+#endif
+   size_t msg_queue_size;
+
+   core_option_manager_t *core_options;
+   retro_keyboard_event_t key_event;             /* ptr alignment */
+   retro_keyboard_event_t frontend_key_event;    /* ptr alignment */
+
+   rarch_system_info_t system;                   /* ptr alignment */
+   struct retro_frame_time_callback frame_time;  /* ptr alignment */
+   struct retro_audio_buffer_status_callback audio_buffer_status; /* ptr alignment */
+   unsigned pending_windowed_scale;
+   unsigned max_frames;
+   unsigned audio_latency;
+
+   bool missing_bios;
+   bool force_nonblock;
+   bool paused;
+   bool idle;
+   bool slowmotion;
+   bool fastmotion;
+   bool shutdown_initiated;
+   bool core_shutdown_initiated;
+   bool core_running;
+   bool perfcnt_enable;
+   bool game_options_active;
+   bool folder_options_active;
+   bool autosave;
+#ifdef HAVE_CONFIGFILE
+   bool overrides_active;
+   bool remaps_core_active;
+   bool remaps_game_active;
+   bool remaps_content_dir_active;
+#endif
+#ifdef HAVE_SCREENSHOTS
+   bool max_frames_screenshot;
+   char max_frames_screenshot_path[PATH_MAX_LENGTH];
+#endif
+};
+
+typedef struct runloop runloop_state_t;
+
 struct rarch_state
 {
    double audio_source_ratio_original;
@@ -1679,7 +1727,7 @@ struct rarch_state
    menu_input_t menu_input_state;               /* retro_time_t alignment */
 #endif
 
-   retro_usec_t runloop_frame_time_last;        /* int64_t alignment */
+   
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
@@ -1738,13 +1786,11 @@ struct rarch_state
 #ifdef HAVE_MENU
    const char **menu_input_dialog_keyboard_buffer;
 #endif
-   core_option_manager_t *runloop_core_options;
 
    const record_driver_t *recording_driver;
    void *recording_data;
 
 #ifdef HAVE_THREADS
-   slock_t *runloop_msg_queue_lock;
    slock_t *display_lock;
    slock_t *context_lock;
 #endif
@@ -1859,13 +1905,12 @@ struct rarch_state
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
-   msg_queue_t runloop_msg_queue;                        /* ptr alignment */
+   
    gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    content_state_t            content_st;                /* ptr alignment */
    midi_event_t midi_drv_input_event;                    /* ptr alignment */
    midi_event_t midi_drv_output_event;                   /* ptr alignment */
    core_info_state_t core_info_st;                       /* ptr alignment */
-   rarch_system_info_t runloop_system;                   /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
    const input_device_driver_t *joypad;                  /* ptr alignment */
 #ifdef HAVE_MFI
@@ -1876,12 +1921,8 @@ struct rarch_state
 #endif
    gfx_display_t              dispgfx;                   /* ptr alignment */
    input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
-   struct retro_frame_time_callback runloop_frame_time;  /* ptr alignment */
-   struct retro_audio_buffer_status_callback runloop_audio_buffer_status; /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
    struct retro_audio_callback audio_callback;           /* ptr alignment */
-   retro_keyboard_event_t runloop_key_event;             /* ptr alignment */
-   retro_keyboard_event_t runloop_frontend_key_event;    /* ptr alignment */
    video_driver_frame_t frame_bak;                       /* ptr alignment */
    struct rarch_dir_shader_list dir_shader_list;         /* ptr alignment */
 #ifdef HAVE_RUNAHEAD
@@ -1922,7 +1963,6 @@ struct rarch_state
    uintptr_t video_driver_display;
    uintptr_t video_driver_window;
 
-   size_t runloop_msg_queue_size;
    size_t recording_gpu_width;
    size_t recording_gpu_height;
 
@@ -1979,9 +2019,6 @@ struct rarch_state
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
-   unsigned runloop_pending_windowed_scale;
-   unsigned runloop_max_frames;
-   unsigned runloop_audio_latency;
    unsigned fastforward_after_frames;
 
 #ifdef HAVE_MENU
@@ -2096,9 +2133,6 @@ struct rarch_state
    char cli_shader[PATH_MAX_LENGTH];
    char runtime_shader_preset[PATH_MAX_LENGTH];
 #endif
-#ifdef HAVE_SCREENSHOTS
-   char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH];
-#endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
    char subsystem_path[PATH_MAX_LENGTH];
@@ -2156,16 +2190,6 @@ struct rarch_state
 #ifdef HAVE_PATCH
    bool rarch_patch_blocked;
 #endif
-   bool runloop_missing_bios;
-   bool runloop_force_nonblock;
-   bool runloop_paused;
-   bool runloop_idle;
-   bool runloop_slowmotion;
-   bool runloop_fastmotion;
-   bool runloop_shutdown_initiated;
-   bool runloop_core_shutdown_initiated;
-   bool runloop_core_running;
-   bool runloop_perfcnt_enable;
    bool video_driver_window_title_update;
 
    /**
@@ -2209,16 +2233,6 @@ struct rarch_state
 #endif
 #ifdef HAVE_CONFIGFILE
    bool rarch_block_config_read;
-   bool runloop_overrides_active;
-   bool runloop_remaps_core_active;
-   bool runloop_remaps_game_active;
-   bool runloop_remaps_content_dir_active;
-#endif
-   bool runloop_game_options_active;
-   bool runloop_folder_options_active;
-   bool runloop_autosave;
-#ifdef HAVE_SCREENSHOTS
-   bool runloop_max_frames_screenshot;
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool cli_shader_disable;
