@@ -2866,17 +2866,14 @@ bool playlist_entry_has_core(const struct playlist_entry *entry)
  * core association */
 core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry)
 {
-   core_info_ctx_find_t core_info;
+   core_info_t *core_info = NULL;
 
    if (!playlist_entry_has_core(entry))
       return NULL;
 
    /* Search for associated core */
-   core_info.inf  = NULL;
-   core_info.path = entry->core_path;
-
-   if (core_info_find(&core_info))
-      return core_info.inf;
+   if (core_info_find(entry->core_path, &core_info))
+      return core_info;
 
    return NULL;
 }
@@ -2888,7 +2885,7 @@ core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry)
  * default core association */
 core_info_t *playlist_get_default_core_info(playlist_t* playlist)
 {
-   core_info_ctx_find_t core_info;
+   core_info_t *core_info = NULL;
 
    if (!playlist ||
        string_is_empty(playlist->default_core_path) ||
@@ -2898,11 +2895,8 @@ core_info_t *playlist_get_default_core_info(playlist_t* playlist)
       return NULL;
 
    /* Search for associated core */
-   core_info.inf  = NULL;
-   core_info.path = playlist->default_core_path;
-
-   if (core_info_find(&core_info))
-      return core_info.inf;
+   if (core_info_find(playlist->default_core_path, &core_info))
+      return core_info;
 
    return NULL;
 }

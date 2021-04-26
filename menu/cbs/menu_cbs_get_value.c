@@ -451,19 +451,16 @@ static void menu_action_setting_disp_set_label_core_updater_entry(
        core_updater_list_get_filename(core_list, path, &entry) &&
        !string_is_empty(entry->local_core_path))
    {
-      core_info_ctx_find_t core_info;
+      core_info_t *core_info = NULL;
 
       /* Check whether core is installed
        * > Note: We search core_info here instead
        *   of calling path_is_valid() since we don't
        *   want to perform disk access every frame */
-      core_info.inf  = NULL;
-      core_info.path = entry->local_core_path;
-
-      if (core_info_find(&core_info))
+      if (core_info_find(entry->local_core_path, &core_info))
       {
          /* Highlight locked cores */
-         if (core_info.inf->is_locked)
+         if (core_info->is_locked)
          {
             s[0] = '[';
             s[1] = '#';
@@ -493,12 +490,12 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
       const char *path,
       char *s2, size_t len2)
 {
-   core_info_ctx_find_t core_info;
-   const char *alt = list->list[i].alt
-      ? list->list[i].alt
-      : list->list[i].path;
-   *s              = '\0';
-   *w              = 0;
+   core_info_t *core_info = NULL;
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   *s                     = '\0';
+   *w                     = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -507,11 +504,8 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   core_info.inf  = NULL;
-   core_info.path = path;
-
-   if (core_info_find(&core_info) &&
-       core_info.inf->is_locked)
+   if (core_info_find(path, &core_info) &&
+       core_info->is_locked)
    {
       s[0] = '[';
       s[1] = '!';
@@ -529,12 +523,12 @@ static void menu_action_setting_disp_set_label_core_lock(
       const char *path,
       char *s2, size_t len2)
 {
-   core_info_ctx_find_t core_info;
-   const char *alt = list->list[i].alt
-      ? list->list[i].alt
-      : list->list[i].path;
-   *s              = '\0';
-   *w              = 0;
+   core_info_t *core_info = NULL;
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   *s                     = '\0';
+   *w                     = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -543,11 +537,8 @@ static void menu_action_setting_disp_set_label_core_lock(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   core_info.inf  = NULL;
-   core_info.path = path;
-
-   if (core_info_find(&core_info) &&
-       core_info.inf->is_locked)
+   if (core_info_find(path, &core_info) &&
+       core_info->is_locked)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);

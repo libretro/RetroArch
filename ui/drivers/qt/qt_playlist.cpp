@@ -981,7 +981,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    if (!specialPlaylist && selectedAction->parent() == associateMenu.data())
    {
-      core_info_ctx_find_t coreInfo;
+      core_info_t *coreInfo                   = NULL;
       playlist_t *cachedPlaylist              = playlist_get_cached();
       playlist_t *playlist                    = NULL;
       bool loadPlaylist                       = true;
@@ -1010,14 +1010,11 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       if (playlist)
       {
          /* Get core info */
-         coreInfo.inf  = NULL;
-         coreInfo.path = corePath;
-
-         if (core_info_find(&coreInfo))
+         if (core_info_find(corePath, &coreInfo))
          {
             /* Set new core association */
-            playlist_set_default_core_path(playlist, coreInfo.inf->path);
-            playlist_set_default_core_name(playlist, coreInfo.inf->display_name);
+            playlist_set_default_core_path(playlist, coreInfo->path);
+            playlist_set_default_core_name(playlist, coreInfo->display_name);
          }
          else
          {

@@ -474,17 +474,14 @@ static void pl_manager_validate_core_association(
    else
    {
       char core_display_name[PATH_MAX_LENGTH];
-      core_info_ctx_find_t core_info;
+      core_info_t *core_info = NULL;
       
       core_display_name[0] = '\0';
       
       /* Search core info */
-      core_info.inf  = NULL;
-      core_info.path = core_path;
-      
-      if (core_info_find(&core_info) &&
-          !string_is_empty(core_info.inf->display_name))
-         strlcpy(core_display_name, core_info.inf->display_name,
+      if (core_info_find(core_path, &core_info) &&
+          !string_is_empty(core_info->display_name))
+         strlcpy(core_display_name, core_info->display_name,
                sizeof(core_display_name));
       
       /* If core_display_name string is empty, it means the

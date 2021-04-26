@@ -571,20 +571,18 @@ static int action_start_core_lock(
    /* ...Otherwise, attempt to unlock it */
    if (!core_info_set_core_lock(core_path, false))
    {
-      const char *core_name = NULL;
-      core_info_ctx_find_t core_info;
+      const char *core_name  = NULL;
+      core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
 
       msg[0] = '\0';
 
       /* Need to fetch core name for error message */
-      core_info.inf  = NULL;
-      core_info.path = core_path;
 
       /* If core is found, use display name */
-      if (core_info_find(&core_info) &&
-          core_info.inf->display_name)
-         core_name = core_info.inf->display_name;
+      if (core_info_find(core_path, &core_info) &&
+          core_info->display_name)
+         core_name = core_info->display_name;
       /* If not, use core file name */
       else
          core_name = path_basename(core_path);

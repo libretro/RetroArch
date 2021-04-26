@@ -65,25 +65,23 @@
 
 static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
 {
-   core_info_ctx_find_t core_info;
+   core_info_t *core_info = NULL;
 
    /* Set sublabel prefix */
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
    strlcat(s, ": ", len);
 
    /* Search for specified core */
-   core_info.inf  = NULL;
-   core_info.path = path;
 
-   if (core_info_find(&core_info) &&
-       core_info.inf->licenses_list)
+   if (core_info_find(path, &core_info) &&
+       core_info->licenses_list)
    {
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
       tmp[0]  = '\0';
 
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
-            core_info.inf->licenses_list, ", ");
+            core_info->licenses_list, ", ");
       strlcat(s, tmp, len);
       return 1;
    }

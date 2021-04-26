@@ -556,15 +556,12 @@ void *task_push_core_backup(
       core_name = core_display_name;
    else
    {
-      core_info_ctx_find_t core_info;
-
-      core_info.inf  = NULL;
-      core_info.path = core_path;
+      core_info_t *core_info = NULL;
 
       /* If core is found, use display name */
-      if (core_info_find(&core_info) &&
-          core_info.inf->display_name)
-         core_name = core_info.inf->display_name;
+      if (core_info_find(core_path, &core_info) &&
+          core_info->display_name)
+         core_name = core_info->display_name;
       else
       {
          /* If not, use core file name */
@@ -926,8 +923,8 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       bool *core_loaded)
 {
    task_finder_data_t find_data;
-   core_info_ctx_find_t core_info;
    enum core_backup_type backup_type;
+   core_info_t *core_info              = NULL;
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
@@ -974,17 +971,14 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       goto error;
    }
 
-   /* Get core name */
-   core_info.inf  = NULL;
-   core_info.path = core_path;
-
-   /* If core is found, use display name */
-   if (core_info_find(&core_info) &&
-       core_info.inf->display_name)
-      core_name = core_info.inf->display_name;
+   /* Get core name
+    * > If core is found, use display name */
+   if (core_info_find(core_path, &core_info) &&
+       core_info->display_name)
+      core_name = core_info->display_name;
    else
    {
-      /* If not, use core file name */
+      /* > If not, use core file name */
       core_name = path_basename(core_path);
 
       if (string_is_empty(core_name))
