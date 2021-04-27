@@ -1491,20 +1491,23 @@ DEPENDENCIES
 #endif
 
 #ifdef HAVE_7ZIP
-#include "../deps/7zip/7zIn.c"
+#include "../deps/7zip/7zArcIn.c"
+#include "../deps/7zip/7zBuf.c"
+#include "../deps/7zip/7zCrc.c"
+#include "../deps/7zip/7zCrcOpt.c"
+#include "../deps/7zip/7zDec.c"
+#include "../deps/7zip/CpuArch.c"
+#include "../deps/7zip/Delta.c"
+#include "../deps/7zip/LzFind.c"
+#include "../deps/7zip/LzmaDec.c"
+#include "../deps/7zip/Lzma2Dec.c"
+#include "../deps/7zip/LzmaEnc.c"
+#include "../deps/7zip/Bra.c"
 #include "../deps/7zip/Bra86.c"
+#include "../deps/7zip/BraIA64.c"
+#include "../deps/7zip/Bcj2.c"
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"
-#include "../deps/7zip/LzmaDec.c"
-#include "../deps/7zip/LzmaEnc.c"
-#include "../deps/7zip/7zCrcOpt.c"
-#include "../deps/7zip/Bra.c"
-#include "../deps/7zip/7zDec.c"
-#include "../deps/7zip/Bcj2.c"
-#include "../deps/7zip/7zCrc.c"
-#include "../deps/7zip/Lzma2Dec.c"
-#include "../deps/7zip/LzFind.c"
-#include "../deps/7zip/7zBuf.c"
 #endif
 
 #ifdef WANT_LIBFAT

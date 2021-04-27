@@ -1870,20 +1870,24 @@ ifeq ($(HAVE_7ZIP),1)
    INCLUDE_DIRS += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
-   7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
-           $(DEPS_DIR)/7zip/Bra86.o \
-           $(DEPS_DIR)/7zip/7zFile.o \
-           $(DEPS_DIR)/7zip/7zStream.o \
+   7ZOBJ = $(DEPS_DIR)/7zip/7zArcIn.o \
+           $(DEPS_DIR)/7zip/7zBuf.o \
+           $(DEPS_DIR)/7zip/7zCrc.o \
+           $(DEPS_DIR)/7zip/7zCrcOpt.o \
+           $(DEPS_DIR)/7zip/7zDec.o \
+           $(DEPS_DIR)/7zip/CpuArch.o \
+           $(DEPS_DIR)/7zip/Delta.o \
            $(DEPS_DIR)/7zip/LzFind.o \
            $(DEPS_DIR)/7zip/LzmaDec.o \
-           $(DEPS_DIR)/7zip/LzmaEnc.o \
-           $(DEPS_DIR)/7zip/7zCrcOpt.o \
-           $(DEPS_DIR)/7zip/Bra.o \
-           $(DEPS_DIR)/7zip/7zDec.o \
-           $(DEPS_DIR)/7zip/Bcj2.o \
-           $(DEPS_DIR)/7zip/7zCrc.o \
            $(DEPS_DIR)/7zip/Lzma2Dec.o \
-           $(DEPS_DIR)/7zip/7zBuf.o
+           $(DEPS_DIR)/7zip/LzmaEnc.o \
+           $(DEPS_DIR)/7zip/Bra.o \
+           $(DEPS_DIR)/7zip/Bra86.o \
+           $(DEPS_DIR)/7zip/BraIA64.o \
+           $(DEPS_DIR)/7zip/Bcj2.o \
+           $(DEPS_DIR)/7zip/7zFile.o \
+           $(DEPS_DIR)/7zip/7zStream.o
+
    OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_7z.o \
            $(7ZOBJ)
 endif

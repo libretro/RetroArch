@@ -38,6 +38,7 @@
 
 #define SEVENZIP_MAGIC "7z\xBC\xAF\x27\x1C"
 #define SEVENZIP_MAGIC_LEN 6
+#define SEVENZIP_LOOKTOREAD_BUF_SIZE (1 << 14)
 
 /* Assume W-functions do not work below Win2K and Xbox platforms */
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
@@ -50,25 +51,25 @@ struct sevenzip_context_t
 {
    uint8_t *output;
    CFileInStream archiveStream;
-   CLookToRead lookStream;
+   CLookToRead2 lookStream;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
    CSzArEx db;
    size_t temp_size;
-   uint32_t block_index;
    uint32_t parse_index;
    uint32_t decompress_index;
    uint32_t packIndex;
+   UInt32   block_index;
 };
 
-static void *sevenzip_stream_alloc_impl(void *p, size_t size)
+static void *sevenzip_stream_alloc_impl(ISzAllocPtr p, size_t size)
 {
    if (size == 0)
       return 0;
    return malloc(size);
 }
 
-static void sevenzip_stream_free_impl(void *p, void *address)
+static void sevenzip_stream_free_impl(ISzAllocPtr p, void *address)
 {
    (void)p;
 
@@ -76,7 +77,7 @@ static void sevenzip_stream_free_impl(void *p, void *address)
       free(address);
 }
 
-static void *sevenzip_stream_alloc_tmp_impl(void *p, size_t size)
+static void *sevenzip_stream_alloc_tmp_impl(ISzAllocPtr p, size_t size)
 {
    (void)p;
    if (size == 0)
@@ -98,6 +99,12 @@ static void* sevenzip_stream_new(void)
    sevenzip_context->block_index        = 0xFFFFFFFF;
    sevenzip_context->output             = NULL;
 
+   sevenzip_context->lookStream.bufSize = SEVENZIP_LOOKTOREAD_BUF_SIZE * sizeof(Byte);
+   sevenzip_context->lookStream.buf     = (Byte*)malloc(sevenzip_context->lookStream.bufSize);
+
+   if (!sevenzip_context->lookStream.buf)
+      sevenzip_context->lookStream.bufSize = 0;
+
    return sevenzip_context;
 }
 
@@ -117,6 +124,9 @@ static void sevenzip_parse_file_free(void *context)
    SzArEx_Free(&sevenzip_context->db, &sevenzip_context->allocImp);
    File_Close(&sevenzip_context->archiveStream.file);
 
+   if (sevenzip_context->lookStream.buf)
+      free(sevenzip_context->lookStream.buf);
+
    free(sevenzip_context);
 }
 
@@ -131,7 +141,7 @@ static int64_t sevenzip_file_read(
       const char *optional_outfile)
 {
    CFileInStream archiveStream;
-   CLookToRead lookStream;
+   CLookToRead2 lookStream;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
    CSzArEx db;
@@ -144,6 +154,12 @@ static int64_t sevenzip_file_read(
    allocImp.Free        = sevenzip_stream_free_impl;
    allocTempImp.Alloc   = sevenzip_stream_alloc_tmp_impl;
    allocTempImp.Free    = sevenzip_stream_free_impl;
+
+   lookStream.bufSize   = SEVENZIP_LOOKTOREAD_BUF_SIZE * sizeof(Byte);
+   lookStream.buf       = (Byte*)malloc(lookStream.bufSize);
+
+   if (!lookStream.buf)
+      lookStream.bufSize = 0;
 
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
    if (!string_is_empty(path))
@@ -169,51 +185,34 @@ static int64_t sevenzip_file_read(
 #endif
 
    FileInStream_CreateVTable(&archiveStream);
-   LookToRead_CreateVTable(&lookStream, false);
-   lookStream.realStream = &archiveStream.s;
-   LookToRead_Init(&lookStream);
+   LookToRead2_CreateVTable(&lookStream, false);
+   lookStream.realStream = &archiveStream.vt;
+   LookToRead2_Init(&lookStream);
    CrcGenerateTable();
 
-   db.db.PackSizes               = NULL;
-   db.db.PackCRCsDefined         = NULL;
-   db.db.PackCRCs                = NULL;
-   db.db.Folders                 = NULL;
-   db.db.Files                   = NULL;
-   db.db.NumPackStreams          = 0;
-   db.db.NumFolders              = 0;
-   db.db.NumFiles                = 0;
-   db.startPosAfterHeader        = 0;
-   db.dataPos                    = 0;
-   db.FolderStartPackStreamIndex = NULL;
-   db.PackStreamStartPositions   = NULL;
-   db.FolderStartFileIndex       = NULL;
-   db.FileIndexToFolderIndexMap  = NULL;
-   db.FileNameOffsets            = NULL;
-   db.FileNames.data             = NULL;
-   db.FileNames.size             = 0;
+   memset(&db, 0, sizeof(db));
 
    SzArEx_Init(&db);
 
-   if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)
+   if (SzArEx_Open(&db, &lookStream.vt, &allocImp, &allocTempImp) == SZ_OK)
    {
       uint32_t i;
       bool file_found      = false;
       uint16_t *temp       = NULL;
       size_t temp_size     = 0;
-      uint32_t block_index = 0xFFFFFFFF;
+      UInt32 block_index   = 0xFFFFFFFF;
       SRes res             = SZ_OK;
 
-      for (i = 0; i < db.db.NumFiles; i++)
+      for (i = 0; i < db.NumFiles; i++)
       {
          size_t len;
          char infile[PATH_MAX_LENGTH];
          size_t offset                = 0;
          size_t outSizeProcessed      = 0;
-         const CSzFileItem    *f      = db.db.Files + i;
 
          /* We skip over everything which is not a directory.
-          * FIXME: Why continue then if f->IsDir is true?*/
-         if (f->IsDir)
+          * FIXME: Why continue then if IsDir is true?*/
+         if (SzArEx_IsDir(&db, i))
             continue;
 
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
@@ -248,7 +247,7 @@ static int64_t sevenzip_file_read(
              * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
              * */
             file_found = true;
-            res = SzArEx_Extract(&db, &lookStream.s, i, &block_index,
+            res = SzArEx_Extract(&db, &lookStream.vt, i, &block_index,
                   &output, &output_size, &offset, &outSizeProcessed,
                   &allocImp, &allocTempImp);
 
@@ -301,6 +300,9 @@ static int64_t sevenzip_file_read(
    SzArEx_Free(&db, &allocImp);
    File_Close(&archiveStream.file);
 
+   if (lookStream.buf)
+      free(lookStream.buf);
+
    return outsize;
 }
 
@@ -331,7 +333,7 @@ static int sevenzip_stream_decompress_data_to_file_iterate(
    size_t outSizeProcessed = 0;
 
    res = SzArEx_Extract(&sevenzip_context->db,
-         &sevenzip_context->lookStream.s, sevenzip_context->decompress_index,
+         &sevenzip_context->lookStream.vt, sevenzip_context->decompress_index,
          &sevenzip_context->block_index, &sevenzip_context->output,
          &output_size, &offset, &outSizeProcessed,
          &sevenzip_context->allocImp, &sevenzip_context->allocTempImp);
@@ -388,17 +390,17 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 #endif
 
    FileInStream_CreateVTable(&sevenzip_context->archiveStream);
-   LookToRead_CreateVTable(&sevenzip_context->lookStream, false);
-   sevenzip_context->lookStream.realStream = &sevenzip_context->archiveStream.s;
-   LookToRead_Init(&sevenzip_context->lookStream);
+   LookToRead2_CreateVTable(&sevenzip_context->lookStream, false);
+   sevenzip_context->lookStream.realStream = &sevenzip_context->archiveStream.vt;
+   LookToRead2_Init(&sevenzip_context->lookStream);
    CrcGenerateTable();
    SzArEx_Init(&sevenzip_context->db);
 
-   if (SzArEx_Open(&sevenzip_context->db, &sevenzip_context->lookStream.s,
+   if (SzArEx_Open(&sevenzip_context->db, &sevenzip_context->lookStream.vt,
          &sevenzip_context->allocImp, &sevenzip_context->allocTempImp) != SZ_OK)
       goto error;
 
-   state->step_total = sevenzip_context->db.db.NumFiles;
+   state->step_total = sevenzip_context->db.NumFiles;
 
    return 0;
 
@@ -414,9 +416,7 @@ static int sevenzip_parse_file_iterate_step_internal(
       uint32_t *size, uint32_t *csize, uint32_t *checksum,
       unsigned *payback, struct archive_extract_userdata *userdata)
 {
-   const CSzFileItem *file = sevenzip_context->db.db.Files + sevenzip_context->parse_index;
-
-   if (sevenzip_context->parse_index < sevenzip_context->db.db.NumFiles)
+   if (sevenzip_context->parse_index < sevenzip_context->db.NumFiles)
    {
       size_t len = SzArEx_GetFileNameUtf16(&sevenzip_context->db,
             sevenzip_context->parse_index, NULL);
@@ -424,11 +424,14 @@ static int sevenzip_parse_file_iterate_step_internal(
 
       if (sevenzip_context->packIndex < sevenzip_context->db.db.NumPackStreams)
       {
-         compressed_size = sevenzip_context->db.db.PackSizes[sevenzip_context->packIndex];
+         compressed_size = sevenzip_context->db.db.PackPositions[sevenzip_context->packIndex + 1] -
+               sevenzip_context->db.db.PackPositions[sevenzip_context->packIndex];
+
          sevenzip_context->packIndex++;
       }
 
-      if (len < PATH_MAX_LENGTH && !file->IsDir)
+      if (len < PATH_MAX_LENGTH &&
+          !SzArEx_IsDir(&sevenzip_context->db, sevenzip_context->parse_index))
       {
          char infile[PATH_MAX_LENGTH];
          SRes res                     = SZ_ERROR_FAIL;
@@ -455,8 +458,8 @@ static int sevenzip_parse_file_iterate_step_internal(
          strlcpy(filename, infile, PATH_MAX_LENGTH);
 
          *cmode    = 0; /* unused for 7zip */
-         *checksum = file->Crc;
-         *size     = (uint32_t)file->Size;
+         *checksum = sevenzip_context->db.CRCs.Vals[sevenzip_context->parse_index];
+         *size     = (uint32_t)SzArEx_GetFileSize(&sevenzip_context->db, sevenzip_context->parse_index);
          *csize    = (uint32_t)compressed_size;
 
          *cdata    = (uint8_t *)(size_t)sevenzip_context->parse_index;
