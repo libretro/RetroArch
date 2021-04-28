@@ -205,7 +205,7 @@ ifeq ($(HAVE_RUNAHEAD), 1)
 endif
 
 ifeq ($(HAVE_7ZIP), 1)
-   CFLAGS      += -DHAVE_7ZIP
+   CFLAGS      += -DHAVE_7ZIP -D_7ZIP_ST
 endif
 
 ifeq ($(HAVE_SCREENSHOTS), 1)
