@@ -49,15 +49,6 @@ struct config_include_list
    struct config_include_list *next;
 };
 
-static uint32_t config_file_hash_string(const char *str)
-{
-   unsigned char c;
-   uint32_t hash = (uint32_t)0x811c9dc5;
-   while ((c = (unsigned char)*(str++)) != '\0')
-      hash = ((hash * (uint32_t)0x01000193) ^ (uint32_t)c);
-   return (hash ? hash : 1);
-}
-
 /* Forward declaration */
 static bool config_file_parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line, config_file_cb_t *cb);
@@ -336,15 +327,16 @@ static void config_file_add_child_list(config_file_t *parent, config_file_t *chi
        * to the parent hash map */
       for (i = 0, cap = RHMAP_CAP(child->entries_map); i != cap; i++)
       {
-         uint32_t child_hash = RHMAP_KEY(child->entries_map, i);
+         uint32_t child_hash   = RHMAP_KEY(child->entries_map, i);
+         const char *child_key = RHMAP_KEY_STR(child->entries_map, i);
 
-         if (!RHMAP_HAS(parent->entries_map, child_hash))
+         if (!RHMAP_HAS_FULL(parent->entries_map, child_hash, child_key))
          {
             struct config_entry_list *entry =
-                  RHMAP_GET(child->entries_map, child_hash);
+                  RHMAP_GET_FULL(child->entries_map, child_hash, child_key);
 
             if (entry)
-               RHMAP_SET(parent->entries_map, child_hash, entry);
+               RHMAP_SET_FULL(parent->entries_map, child_hash, child_key, entry);
          }
       }
 
@@ -481,11 +473,11 @@ static int config_file_load_internal(
             /* Only add entry to the map if an entry
              * with the specified value does not
              * already exist */
-            uint32_t hash = config_file_hash_string(list->key);
+            uint32_t hash = rhmap_hash_string(list->key);
 
-            if (!RHMAP_HAS(conf->entries_map, hash))
+            if (!RHMAP_HAS_FULL(conf->entries_map, hash, list->key))
             {
-               RHMAP_SET(conf->entries_map, hash, list);
+               RHMAP_SET_FULL(conf->entries_map, hash, list->key, list);
 
                if (cb && list->value)
                   cb->config_file_new_entry_cb(list->key, list->value);
@@ -697,9 +689,9 @@ static int config_file_from_string_internal(
             /* Only add entry to the map if an entry
              * with the specified value does not
              * already exist */
-            uint32_t hash = config_file_hash_string(list->key);
-            if (!RHMAP_HAS(conf->entries_map, hash))
-               RHMAP_SET(conf->entries_map, hash, list);
+            uint32_t hash = rhmap_hash_string(list->key);
+            if (!RHMAP_HAS_FULL(conf->entries_map, hash, list->key))
+               RHMAP_SET_FULL(conf->entries_map, hash, list->key, list);
          }
       }
 
@@ -804,10 +796,11 @@ bool config_append_file(config_file_t *conf, const char *path)
    for (i = 0, cap = RHMAP_CAP(new_conf->entries_map); i != cap; i++)
    {
       uint32_t new_hash               = RHMAP_KEY(new_conf->entries_map, i);
-      struct config_entry_list *entry = RHMAP_GET(new_conf->entries_map, new_hash);
+      const char *new_key             = RHMAP_KEY_STR(new_conf->entries_map, i);
+      struct config_entry_list *entry = RHMAP_GET_FULL(new_conf->entries_map, new_hash, new_key);
 
       if (entry)
-         RHMAP_SET(conf->entries_map, new_hash, entry);
+         RHMAP_SET_FULL(conf->entries_map, new_hash, new_key, entry);
    }
 
    if (new_conf->tail)
@@ -934,7 +927,7 @@ static struct config_entry_list *config_get_entry_internal(
    struct config_entry_list *entry    = NULL;
    struct config_entry_list *previous = prev ? *prev : NULL;
 
-   entry = RHMAP_GET(conf->entries_map, config_file_hash_string(key));
+   entry = RHMAP_GET_STR(conf->entries_map, key);
 
    if (entry)
       return entry;
@@ -953,7 +946,7 @@ static struct config_entry_list *config_get_entry_internal(
 struct config_entry_list *config_get_entry(
       const config_file_t *conf, const char *key)
 {
-   return RHMAP_GET(conf->entries_map, config_file_hash_string(key));
+   return RHMAP_GET_STR(conf->entries_map, key);
 }
 
 bool config_get_double(config_file_t *conf, const char *key, double *in)
@@ -1227,7 +1220,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 
    conf->last       = entry;
 
-   RHMAP_SET(conf->entries_map, config_file_hash_string(entry->key), entry);
+   RHMAP_SET_STR(conf->entries_map, entry->key, entry);
 }
 
 void config_unset(config_file_t *conf, const char *key)
@@ -1244,7 +1237,7 @@ void config_unset(config_file_t *conf, const char *key)
    if (!entry)
       return;
 
-   (void)RHMAP_DEL(conf->entries_map, config_file_hash_string(entry->key));
+   (void)RHMAP_DEL_STR(conf->entries_map, entry->key);
 
    if (entry->key)
       free(entry->key);
@@ -1465,7 +1458,7 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 
 bool config_entry_exists(config_file_t *conf, const char *entry)
 {
-   return (bool)RHMAP_HAS(conf->entries_map, config_file_hash_string(entry));
+   return (bool)RHMAP_HAS_STR(conf->entries_map, entry);
 }
 
 bool config_get_entry_list_head(config_file_t *conf,
