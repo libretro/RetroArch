@@ -106,7 +106,8 @@ static core_info_t *core_info_find_internal(
    {
       core_info_t *info = &list->list[i];
 
-      if (info->core_file_id.hash == hash)
+      if ((info->core_file_id.hash == hash) &&
+          string_is_equal(info->core_file_id.str, core_file_id))
          return info;
    }
 
