@@ -116,12 +116,12 @@
 #define RHMAP_FIT(b, n) ((!(n) || ((b) && (size_t)(n) * 2 <= RHMAP_MAX(b))) ? 0 : RHMAP__GROW(b, n))
 #define RHMAP_TRYFIT(b, n) (RHMAP_FIT((b), (n)), (!(n) || ((b) && (size_t)(n) * 2 <= RHMAP_MAX(b))))
 
-#define RHMAP_SET(b, key, val) RHMAP__SET_FULL(b, key, NULL, val)
-#define RHMAP_GET(b, key)      RHMAP__GET_FULL(b, key, NULL)
-#define RHMAP_HAS(b, key)      RHMAP__HAS_FULL(b, key, NULL)
-#define RHMAP_DEL(b, key)      RHMAP__DEL_FULL(b, key, NULL)
-#define RHMAP_PTR(b, key)      RHMAP__PTR_FULL(b, key, NULL)
-#define RHMAP_IDX(b, key)      RHMAP__IDX_FULL(b, key, NULL)
+#define RHMAP_SET(b, key, val) RHMAP_SET_FULL(b, key, NULL, val)
+#define RHMAP_GET(b, key)      RHMAP_GET_FULL(b, key, NULL)
+#define RHMAP_HAS(b, key)      RHMAP_HAS_FULL(b, key, NULL)
+#define RHMAP_DEL(b, key)      RHMAP_DEL_FULL(b, key, NULL)
+#define RHMAP_PTR(b, key)      RHMAP_PTR_FULL(b, key, NULL)
+#define RHMAP_IDX(b, key)      RHMAP_IDX_FULL(b, key, NULL)
 
 #ifdef __GNUC__
 #define RHMAP__UNUSED __attribute__((__unused__))
@@ -134,14 +134,21 @@
 #pragma warning(disable:4505) //unreferenced local function has been removed
 #endif
 
-#define RHMAP_SET_STR(b, string_key, val) RHMAP__SET_FULL(b, hash_string(string_key), string_key, val)
-#define RHMAP_GET_STR(b, string_key)      RHMAP__GET_FULL(b, hash_string(string_key), string_key)
-#define RHMAP_HAS_STR(b, string_key)      RHMAP__HAS_FULL(b, hash_string(string_key), string_key)
-#define RHMAP_DEL_STR(b, string_key)      RHMAP__DEL_FULL(b, hash_string(string_key), string_key)
-#define RHMAP_PTR_STR(b, string_key)      RHMAP__PTR_FULL(b, hash_string(string_key), string_key)
-#define RHMAP_IDX_STR(b, string_key)      RHMAP__IDX_FULL(b, hash_string(string_key), string_key)
+#define RHMAP_SET_FULL(b, key, str, val) (RHMAP__FIT1(b), b[rhmap__idx(RHMAP__HDR(b), (key), (str), 1, 0)] = (val))
+#define RHMAP_GET_FULL(b, key, str) (RHMAP__FIT1(b), b[rhmap__idx(RHMAP__HDR(b), (key), (str), 0, 0)])
+#define RHMAP_HAS_FULL(b, key, str) ((b) ? rhmap__idx(RHMAP__HDR(b), (key), (str), 0, 0) != -1 : 0)
+#define RHMAP_DEL_FULL(b, key, str) ((b) ? rhmap__idx(RHMAP__HDR(b), (key), (str), 0, sizeof(*(b))) != -1 : 0)
+#define RHMAP_PTR_FULL(b, key, str) (RHMAP__FIT1(b), &b[rhmap__idx(RHMAP__HDR(b), (key), (str), 1, 0)])
+#define RHMAP_IDX_FULL(b, key, str) ((b) ? rhmap__idx(RHMAP__HDR(b), (key), (str), 0, 0) : -1)
 
-RHMAP__UNUSED static uint32_t hash_string(const char* str)
+#define RHMAP_SET_STR(b, string_key, val) RHMAP_SET_FULL(b, rhmap_hash_string(string_key), string_key, val)
+#define RHMAP_GET_STR(b, string_key)      RHMAP_GET_FULL(b, rhmap_hash_string(string_key), string_key)
+#define RHMAP_HAS_STR(b, string_key)      RHMAP_HAS_FULL(b, rhmap_hash_string(string_key), string_key)
+#define RHMAP_DEL_STR(b, string_key)      RHMAP_DEL_FULL(b, rhmap_hash_string(string_key), string_key)
+#define RHMAP_PTR_STR(b, string_key)      RHMAP_PTR_FULL(b, rhmap_hash_string(string_key), string_key)
+#define RHMAP_IDX_STR(b, string_key)      RHMAP_IDX_FULL(b, rhmap_hash_string(string_key), string_key)
+
+RHMAP__UNUSED static uint32_t rhmap_hash_string(const char* str)
 {
    unsigned char c;
    uint32_t hash = (uint32_t)0x811c9dc5;
@@ -154,13 +161,6 @@ struct rhmap__hdr { size_t len, maxlen; uint32_t *keys; char** key_strs; };
 #define RHMAP__HDR(b) (((struct rhmap__hdr *)&(b)[-1])-1)
 #define RHMAP__GROW(b, n) (*(void**)(&(b)) = rhmap__grow(RHMAP__HDR(b), (void*)(b), sizeof(*(b)), (size_t)(n)))
 #define RHMAP__FIT1(b) ((b) && RHMAP_LEN(b) * 2 <= RHMAP_MAX(b) ? 0 : RHMAP__GROW(b, 0))
-
-#define RHMAP__SET_FULL(b, key, str, val) (RHMAP__FIT1(b), b[rhmap__idx(RHMAP__HDR(b), (key), (str), 1, 0)] = (val))
-#define RHMAP__GET_FULL(b, key, str) (RHMAP__FIT1(b), b[rhmap__idx(RHMAP__HDR(b), (key), (str), 0, 0)])
-#define RHMAP__HAS_FULL(b, key, str) ((b) ? rhmap__idx(RHMAP__HDR(b), (key), (str), 0, 0) != -1 : 0)
-#define RHMAP__DEL_FULL(b, key, str) ((b) ? rhmap__idx(RHMAP__HDR(b), (key), (str), 0, sizeof(*(b))) != -1 : 0)
-#define RHMAP__PTR_FULL(b, key, str) (RHMAP__FIT1(b), &b[rhmap__idx(RHMAP__HDR(b), (key), (str), 1, 0)])
-#define RHMAP__IDX_FULL(b, key, str) ((b) ? rhmap__idx(RHMAP__HDR(b), (key), (str), 0, 0) : -1)
 
 RHMAP__UNUSED static void* rhmap__grow(struct rhmap__hdr *old_hdr, void* old_ptr, size_t elem_size, size_t reserve)
 {
@@ -236,7 +236,7 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
 
    for (i = key;; i++)
    {
-      if (hdr->keys[i &= hdr->maxlen] == key && (!hdr->key_strs[i] || !strcmp(hdr->key_strs[i], str)))
+      if (hdr->keys[i &= hdr->maxlen] == key && (!hdr->key_strs[i] || !str || !strcmp(hdr->key_strs[i], str)))
       {
          if (del)
          {
