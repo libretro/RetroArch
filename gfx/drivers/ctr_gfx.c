@@ -513,10 +513,6 @@ static void* ctr_init(const video_info_t* video,
    ctr->vsync         = video->vsync;
    ctr->current_buffer_top = 0;
 
-#if defined(HAVE_OVERLAY) || defined(HAVE_GFX_WIDGETS)
-   video_driver_set_rgba();
-#endif
-
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
     * mode with the parallax barrier disabled
     * (i.e. these are the only platforms that can use
@@ -1398,11 +1394,11 @@ static bool ctr_overlay_load(void *data,
 
       for (j = 0; j < images[i].width * images[i].height; j++)
       {
-         *dst =
-              ((*src >> 8)  & 0x00FF00)
-            | ((*src >> 24) & 0xFF)
-            | ((*src << 8)  & 0xFF0000)
-            | ((*src << 24) & 0xFF000000);
+         *dst = 
+              ((*src << 8)  & 0xFF000000) 
+            | ((*src << 8)  & 0x00FF0000)
+            | ((*src << 8)  & 0x0000FF00)
+            | ((*src >> 24) & 0x000000FF);
          dst++;
          src++;
       }
