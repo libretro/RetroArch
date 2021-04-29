@@ -392,6 +392,7 @@ build-retroarch-dingux-mips32:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
+    - retroarch
     - retroarch_rg350.opk
     - ${MEDIA_PATH}
     expire_in: 10 min
@@ -413,6 +414,7 @@ build-retroarch-dingux-odbeta-mips32:
     - export NUMPROC=$(($(nproc)/3))
   artifacts:
     paths:
+    - retroarch
     - retroarch_rg350_odbeta.opk
     - ${MEDIA_PATH}
     expire_in: 10 min
