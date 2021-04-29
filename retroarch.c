@@ -12699,15 +12699,12 @@ static void command_event_runtime_log_init(struct rarch_state *p_rarch)
 
 static void retroarch_set_frame_limit(
       struct rarch_state *p_rarch,
-      float fastforward_ratio_orig)
+      float fastforward_ratio)
 {
-   struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
-   float fastforward_ratio              = (fastforward_ratio_orig == 0.0f)
-      ? 1.0f : fastforward_ratio_orig;
+   const struct retro_system_av_info* av_info = &p_rarch->video_driver_av_info;
 
-   p_rarch->frame_limit_last_time       = cpu_features_get_time_usec();
-   p_rarch->frame_limit_minimum_time    = (retro_time_t)roundf(1000000.0f
-         / (av_info->timing.fps * fastforward_ratio));
+   p_rarch->frame_limit_minimum_time = (fastforward_ratio < 1.0f) ? 0.0f :
+      (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
 }
 
 static bool command_event_init_core(
@@ -12809,6 +12806,8 @@ static bool command_event_init_core(
       return false;
 
    retroarch_set_frame_limit(p_rarch, fastforward_ratio);
+   p_rarch->frame_limit_last_time = cpu_features_get_time_usec();
+
    command_event_runtime_log_init(p_rarch);
    return true;
 }
@@ -38293,7 +38292,6 @@ int runloop_iterate(void)
    unsigned i;
    struct rarch_state                  *p_rarch = &rarch_st;
    settings_t *settings                         = p_rarch->configuration_settings;
-   float fastforward_ratio                      = settings->floats.fastforward_ratio;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
    bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
    unsigned max_users                           = p_rarch->input_driver_max_users;
@@ -38582,14 +38580,11 @@ int runloop_iterate(void)
       autosave_unlock();
 #endif
 
-   /* Condition for max speed x0.0 when vrr_runloop is off to skip that part */
-   if (!(fastforward_ratio || vrr_runloop_enable))
-      return 0;
-
 end:
    if (vrr_runloop_enable)
    {
-      struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
+      const retro_time_t fastforward_ratio = settings->floats.fastforward_ratio;
+
       /* Sync on video only, block audio later. */
       if (p_rarch->fastforward_after_frames && audio_sync)
       {
@@ -38621,20 +38616,16 @@ end:
          }
       }
 
-      /* Fast Forward for max speed x0.0 */
-      if (!fastforward_ratio && runloop_state.fastmotion)
-         return 0;
-
-      p_rarch->frame_limit_minimum_time =
-         (retro_time_t)roundf(1000000.0f / (av_info->timing.fps *
-                  (runloop_state.fastmotion
-                   ? fastforward_ratio : 1.0f)));
+      retroarch_set_frame_limit(p_rarch, runloop_state.fastmotion ? fastforward_ratio : 1.0f);
    }
 
+   /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
+   if (p_rarch->frame_limit_minimum_time)
    {
-      retro_time_t to_sleep_ms  = (
+      const retro_time_t end_frame_time = cpu_features_get_time_usec();
+      const retro_time_t to_sleep_ms = (
             (p_rarch->frame_limit_last_time + p_rarch->frame_limit_minimum_time)
-            - cpu_features_get_time_usec()) / 1000;
+            - end_frame_time) / 1000;
 
       if (to_sleep_ms > 0)
       {
@@ -38644,15 +38635,18 @@ end:
          p_rarch->frame_limit_last_time += p_rarch->frame_limit_minimum_time;
 
          if (sleep_ms > 0)
+         {
 #if defined(HAVE_COCOATOUCH)
             if (!p_rarch->main_ui_companion_is_on_foreground)
 #endif
                retro_sleep(sleep_ms);
+         }
+
          return 1;
       }
-   }
 
-   p_rarch->frame_limit_last_time  = cpu_features_get_time_usec();
+      p_rarch->frame_limit_last_time = end_frame_time;
+   }
 
    return 0;
 }
