@@ -330,10 +330,11 @@ static void config_file_add_child_list(config_file_t *parent, config_file_t *chi
          uint32_t child_hash   = RHMAP_KEY(child->entries_map, i);
          const char *child_key = RHMAP_KEY_STR(child->entries_map, i);
 
-         if (!RHMAP_HAS_FULL(parent->entries_map, child_hash, child_key))
+         if (child_hash &&
+             child_key &&
+             !RHMAP_HAS_FULL(parent->entries_map, child_hash, child_key))
          {
-            struct config_entry_list *entry =
-                  RHMAP_GET_FULL(child->entries_map, child_hash, child_key);
+            struct config_entry_list *entry = child->entries_map[i];
 
             if (entry)
                RHMAP_SET_FULL(parent->entries_map, child_hash, child_key, entry);
@@ -795,12 +796,16 @@ bool config_append_file(config_file_t *conf, const char *path)
    /* Update hash map */
    for (i = 0, cap = RHMAP_CAP(new_conf->entries_map); i != cap; i++)
    {
-      uint32_t new_hash               = RHMAP_KEY(new_conf->entries_map, i);
-      const char *new_key             = RHMAP_KEY_STR(new_conf->entries_map, i);
-      struct config_entry_list *entry = RHMAP_GET_FULL(new_conf->entries_map, new_hash, new_key);
+      uint32_t new_hash   = RHMAP_KEY(new_conf->entries_map, i);
+      const char *new_key = RHMAP_KEY_STR(new_conf->entries_map, i);
 
-      if (entry)
-         RHMAP_SET_FULL(conf->entries_map, new_hash, new_key, entry);
+      if (new_hash && new_key)
+      {
+         struct config_entry_list *entry = new_conf->entries_map[i];
+
+         if (entry)
+            RHMAP_SET_FULL(conf->entries_map, new_hash, new_key, entry);
+      }
    }
 
    if (new_conf->tail)
