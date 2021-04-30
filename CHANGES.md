@@ -1,23 +1,50 @@
 # Future
+
+# 1.9.2
+- 3DS: Enable graphics widgets / overlays
+- 3DS: Load texture images as BGR colors
+- 3DS: Change default asset directory
+- CHEEVOS: Allow rcheevos_patch_address to be called on game without achievements
+- CHEEVOS: Update achievement memory maps (add Supervision)
+- CONFIG/FILE: Use hash map to optimise key/value lookups
+- CORE INFO: Performance optimisations + code clean-ups/refactors
+- CRT/SWITCHRES: Fixed CRTSwitchRes framebuffer bug
 - DISCORD/RP: Fix regression
 - DRM: set the correct video mode
+- FASTFORWARD: Enforce minimum fastforward_ratio of 1.0
+- FONTS/FREETYPE/STB_UNICODE/BITMAPFONT: Prevent texture bleed when rendering text at non-integer scales
 - INPUT: Ensure that 'retro_set_controller_port_device' is called when updating 'Max Users'
 - INPUT/XEGL/MOUSE: Fix xegl_ctx.c mouse activation
+- INPUT/SDL: Fix crash in SDL input driver when analogs are bound.
 - INPUT/POINTER: Add scaling to pointer input.
 - INPUT REMAPPING: Fix regression on loading file
 - INPUT REMAPPING: Fix regression where disabling input remapping would disable input
 - IOS: Disable system button gestures on iOS 14
 - IOS: Prevent potential crash on controller connect - randomly would get a crash when connecting a game controller while RA was running
+- LAKKA: Add menu for time zone setting
 - LOGGING: RARCH_LOG_V checking for verbosity level is not necessary and can cause issues; removed said check.
+- LOGGING: Silence inappropriate cheatfile logging
+- IOS/MAC: Add CPU VFP unit detection for Darwin
 - MAC: Swallow 'escape' key being pressed - would previously make the game toggle between fullscreen and windowed
+- MAC: Intel and ARM64 timer change proposal.
+- MAC/ARM64: run_fast_mode disabled for 64 bits invalid instructions.
 - MAC/OPENGL: Fix codesigning issue
 - MAC/UNIVERSAL: Add TTS translation service support.
 - MENU: Add optional menu screensaver
+- MENU: Add search filter support to cheats and overlays file browser menus
+- MENU/FILEBROWSER: Enhanced 'Load Content' file browser search functionality
 - MENU/INPUT: Block accidental diagonals in menu navigation 
+- MENU/RGUI: Add option to disable menu transparency
+- MENU/RGUI: Fix display of 'Video > Scaling' menu when 'Lock Menu Aspect Ratio' is enabled
 - MENU/MATERIALUI: Add icon to 'Turbo Fire' menu entry
-- OPENDINGUX/BETA: Fix IPU scaling when running GBA-resolution content 
+- MENU/OZONE: Ozone Dracula theme
+- OPENDINGUX/BETA: Fix IPU scaling when running GBA-resolution content
 - OPENDINGUX/BETA: Add 50Hz support
+- OPENDINGUX: Enable 'SaveRAM Autosave Interval' by default
+- PATCHES: Added multi-softpatching support + OSD messages for patches
+- RHMAP: Track the complete string in rhmap
 - VITA: Align VM block size to 1MB - should fix one of the issues with gpSP
+- WINDOWS/GDI: Fix non-ASCII text rendering
 - XEGL: Fix mouse not working when using OpenGLES with X11
 
 # 1.9.1
