@@ -866,6 +866,10 @@ static const bool audio_enable_menu_bgm    = false;
  * applied */
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
 
+/* Display a notification when applying an
+ * IPS/BPS/UPS patch file */
+#define DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED true
+
 /* Display a notification when loading an
  * input remap file */
 #define DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD true
