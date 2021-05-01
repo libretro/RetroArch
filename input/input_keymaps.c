@@ -51,8 +51,12 @@
 #endif
 
 #if defined(__linux__) || defined(HAVE_WAYLAND)
+#if defined(__linux__)
 #include <linux/input.h>
 #include <linux/kd.h>
+#elif defined(__FreeBSD__)
+#include <dev/evdev/input.h>
+#endif
 #endif
 
 #ifdef HAVE_X11
