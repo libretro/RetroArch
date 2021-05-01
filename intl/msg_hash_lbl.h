@@ -897,6 +897,14 @@ MSG_HASH(
    "deferred_power_management_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CPU_PERFPOWER_LIST,
+   "deferred_cpu_perfpower_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CPU_POLICY_ENTRY,
+   "deferred_cpu_policy_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST,
    "deferred_lakka_list"
    )
@@ -4721,6 +4729,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,
    "power_management_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CPU_PERFPOWER,
+   "cpu_perfpower_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,

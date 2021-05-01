@@ -621,6 +621,8 @@ DEFAULT_TITLE_MACRO(action_get_user_interface_settings_list,    MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_ai_service_settings_list,        MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_accessibility_settings_list,     MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_power_management_settings_list,  MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_cpu_perfpower_settings_list,     MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER)
+DEFAULT_TITLE_MACRO(action_get_cpu_policy_entry_list,           MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY)
 DEFAULT_TITLE_MACRO(action_get_menu_sounds_list,                MENU_ENUM_LABEL_VALUE_MENU_SOUNDS)
 DEFAULT_TITLE_MACRO(action_get_menu_file_browser_settings_list, MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_retro_achievements_settings_list,MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS)
@@ -955,6 +957,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST,             action_get_ai_service_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST,          action_get_accessibility_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST,       action_get_power_management_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CPU_PERFPOWER_LIST,                   action_get_cpu_perfpower_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CPU_POLICY_ENTRY,                     action_get_cpu_policy_entry_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST,                     action_get_menu_sounds_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST,      action_get_menu_file_browser_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST,     action_get_retro_achievements_settings_list},

@@ -764,6 +764,7 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += wifi/drivers/connmanctl.o
+   OBJ += misc/cpufreq/cpufreq.o
 endif
 
 # Audio

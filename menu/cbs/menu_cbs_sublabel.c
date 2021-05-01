@@ -31,6 +31,7 @@
 #include "../../core_info.h"
 #include "../../verbosity.h"
 #include "../../bluetooth/bluetooth_driver.h"
+#include "../../misc/cpufreq/cpufreq.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -1007,6 +1008,26 @@ static int action_bind_sublabel_bluetooth_list(
    driver_bluetooth_device_get_sublabel(s, i, len);
    return 0;
 }
+
+#ifdef HAVE_LAKKA
+static int action_bind_sublabel_cpu_policy_entry_list(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   /* Displays info about the Policy entry */
+   cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
+   if (drivers)
+   {
+      sprintf(s, "%s | Freq: %u MHz\n", drivers[i]->scaling_governor,
+         drivers[i]->current_frequency / 1000);
+      return 0;
+   }
+
+   return -1;
+}
+#endif
 
 #ifdef HAVE_CHEEVOS
 static int action_bind_sublabel_cheevos_entry(
@@ -3916,6 +3937,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_TIMEZONE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timezone);
+            break;
+         case MENU_ENUM_LABEL_CPU_POLICY_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cpu_policy_entry_list);
             break;
 #endif
          case MENU_ENUM_LABEL_USER_LANGUAGE:
