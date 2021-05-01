@@ -47,11 +47,13 @@
 #include <poll.h>
 
 #include <libudev.h>
-#ifdef __linux__
+#if defined(__linux__)
 #include <linux/types.h>
-#endif
 #include <linux/input.h>
 #include <linux/kd.h>
+#elif defined(__FreeBSD__)
+#include <dev/evdev/input.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
