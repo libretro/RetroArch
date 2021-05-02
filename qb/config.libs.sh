@@ -164,6 +164,8 @@ check_lib '' THREADS "$PTHREADLIB" pthread_create
 check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
 check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
 
+check_pkgconf LIBCHECK check 0.15
+
 if [ "$OS" = 'Linux' ]; then
    check_header '' CDROM sys/ioctl.h scsi/sg.h
 fi

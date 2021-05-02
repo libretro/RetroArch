@@ -275,6 +275,10 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o
 
+OBJ += \
+       $(LIBRETRO_COMM_DIR)/lists/linked_list.o \
+       $(LIBRETRO_COMM_DIR)/queues/generic_queue.o
+
 ifneq ($(findstring Linux,$(OS)),)
 	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o
 endif
