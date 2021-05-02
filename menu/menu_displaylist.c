@@ -110,6 +110,7 @@
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
 #include "../core_backup.h"
+#include "../misc/cpufreq/cpufreq.h"
 
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
@@ -8423,6 +8424,7 @@ unsigned menu_displaylist_build_list(
          {
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CPU_PERFPOWER,              PARSE_ACTION},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -9830,6 +9832,59 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_LOAD_DISC:
          /* No-op */
          break;
+#endif
+#ifdef HAVE_LAKKA
+      case DISPLAYLIST_CPU_POLICY_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         menu_entries_append_enum(info->list,
+            info->path,
+            info->path,
+            MENU_ENUM_LABEL_CPU_POLICY_MIN_FREQ,
+            MENU_SETTINGS_CPU_POLICY_SET_MINFREQ, 0, 0);
+
+         menu_entries_append_enum(info->list,
+            info->path,
+            info->path,
+            MENU_ENUM_LABEL_CPU_POLICY_MAX_FREQ,
+            MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ, 0, 0);
+
+         menu_entries_append_enum(info->list,
+            info->path,
+            info->path,
+            MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR,
+            MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR, 0, 0);
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+
+         break;
+      case DISPLAYLIST_CPU_PERFPOWER_LIST:
+      {
+         cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(true);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         if (drivers)
+         {
+            int count = 0;
+            while (*drivers)
+            {
+               char policyid[16];
+               sprintf(policyid, "%u", count++);
+               menu_entries_append_enum(info->list,
+                  policyid,
+                  policyid,
+                  MENU_ENUM_LABEL_CPU_POLICY_ENTRY,
+                  0, 0, 0);
+               drivers++;
+            }
+         }
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+         break;
+      }
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       case DISPLAYLIST_SWITCH_CPU_PROFILE:

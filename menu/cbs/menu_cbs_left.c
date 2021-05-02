@@ -43,6 +43,7 @@
 #include "../../network/netplay/netplay.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
+#include "../misc/cpufreq/cpufreq.h"
 
 #ifndef BIND_ACTION_LEFT
 #define BIND_ACTION_LEFT(cbs, name) (cbs)->action_left = (name)
@@ -670,6 +671,45 @@ static int manual_content_scan_core_name_left(unsigned type, const char *label,
    return 0;
 }
 
+#ifdef HAVE_LAKKA
+static int cpu_policy_freq_tweak(unsigned type, const char *label,
+      bool wraparound)
+{
+   bool refresh = false;
+   cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
+   unsigned policyid = atoi(label);
+   uint32_t next_freq;
+   if (!drivers)
+     return 0;
+
+   switch (type) {
+   case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
+      next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
+         drivers[policyid]->min_policy_freq, -1);
+      set_cpu_scaling_min_frequency(drivers[policyid], next_freq);
+      break;
+   case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
+      next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
+         drivers[policyid]->max_policy_freq, -1);
+      set_cpu_scaling_max_frequency(drivers[policyid], next_freq);
+      break;
+   case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
+   {
+      int pidx = string_list_find_elem(drivers[policyid]->available_governors,
+         drivers[policyid]->scaling_governor);
+      if (pidx > 1)
+      {
+         set_cpu_scaling_governor(drivers[policyid],
+            drivers[policyid]->available_governors->elems[pidx-2].data);
+      }
+      break;
+   }
+   };
+
+   return 0;
+}
+#endif
+
 static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -970,6 +1010,13 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_LEFT(cbs, manual_content_scan_core_name_left);
                break;
+            #ifdef HAVE_LAKKA
+            case MENU_ENUM_LABEL_CPU_POLICY_MAX_FREQ:
+            case MENU_ENUM_LABEL_CPU_POLICY_MIN_FREQ:
+            case MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR:
+               BIND_ACTION_LEFT(cbs, cpu_policy_freq_tweak);
+               break;
+            #endif
             default:
                return -1;
          }

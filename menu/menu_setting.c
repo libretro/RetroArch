@@ -16337,6 +16337,16 @@ static bool setting_append_list(
                SD_FLAG_CMD_APPLY_AUTO);
 #endif
 
+#ifdef HAVE_LAKKA
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CPU_PERFPOWER,
+               MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
