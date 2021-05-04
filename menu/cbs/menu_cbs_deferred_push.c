@@ -251,8 +251,10 @@ GENERIC_DEFERRED_PUSH(deferred_push_switch_cpu_profile,             DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_switch_gpu_profile,             DISPLAYLIST_SWITCH_GPU_PROFILE)
 #endif
 
+#if defined(HAVE_LAKKA)
 GENERIC_DEFERRED_PUSH(deferred_push_cpu_perfpower,                  DISPLAYLIST_CPU_PERFPOWER_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_cpu_policy,                     DISPLAYLIST_CPU_POLICY_LIST)
+#endif
 
 GENERIC_DEFERRED_PUSH(deferred_push_manual_content_scan_list,       DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_manual_content_scan_dat_file,   DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES)
@@ -773,8 +775,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE, deferred_push_switch_cpu_profile},
 #endif
+#if defined(HAVE_LAKKA)
       {MENU_ENUM_LABEL_DEFERRED_CPU_PERFPOWER_LIST, deferred_push_cpu_perfpower},
       {MENU_ENUM_LABEL_DEFERRED_CPU_POLICY_ENTRY, deferred_push_cpu_policy},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST, deferred_push_remappings_port },
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST, deferred_push_accounts_list},
       {MENU_ENUM_LABEL_CORE_LIST, deferred_push_core_list},
