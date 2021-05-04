@@ -413,6 +413,12 @@ static bool menu_screensaver_update_state(
 {
    bool init_effect = false;
 
+#if defined(_3DS)
+   /* 3DS has an 'incomplete' font driver,
+    * and cannot render screensaver effects */
+   effect = MENU_SCREENSAVER_BLANK;
+#endif
+
    /* Check if dimensions have changed */
    if ((screensaver->last_width  != width) ||
        (screensaver->last_height != height))
