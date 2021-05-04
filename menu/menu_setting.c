@@ -14383,7 +14383,7 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_menu_screensaver_timeout;
          menu_settings_list_current_add_range(list, list_info, 0, 1800, 10, true, true);
 
-#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+#if (defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)) && !defined(_3DS)
          if (string_is_equal(settings->arrays.menu_driver, "glui") ||
              string_is_equal(settings->arrays.menu_driver, "xmb")  ||
              string_is_equal(settings->arrays.menu_driver, "ozone"))
