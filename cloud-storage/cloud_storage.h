@@ -29,6 +29,8 @@
 #include <boolean.h>
 #include <time.h>
 
+#include <lists/linked_list.h>
+
 RETRO_BEGIN_DECLS
 
 #define GAME_STATES_FOLDER_NAME "save_states"
@@ -51,7 +53,7 @@ typedef struct cloud_storage_item_t cloud_storage_item_t;
 
 struct cloud_storage_folder_t
 {
-   cloud_storage_item_t *children;
+   linked_list_t *children;
 };
 typedef struct cloud_storage_folder_t cloud_storage_folder_t;
 
@@ -72,7 +74,6 @@ struct cloud_storage_item_t
       cloud_storage_file_t file;
       cloud_storage_folder_t folder;
    } type_data;
-   cloud_storage_item_t *next;
 };
 
 enum folder_type_t
@@ -128,6 +129,8 @@ void cloud_storage_shutdown(void);
 void cloud_storage_sync_files(void);
 
 void cloud_storage_upload_file(folder_type_t folder_type, char *file_name);
+
+void cloud_storage_item_list_free(void *item);
 
 void cloud_storage_item_free(cloud_storage_item_t *item);
 

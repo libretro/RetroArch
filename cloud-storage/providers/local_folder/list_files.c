@@ -48,6 +48,11 @@ static cloud_storage_item_t *_get_file_metadata(const char *folder_path, const c
    return metadata;
 }
 
+void _free_file_list(void *file)
+{
+   cloud_storage_item_free((cloud_storage_item_t *)file);
+}
+
 void cloud_storage_local_folder_list_files(cloud_storage_item_t *folder)
 {
    RDIR *dir;
@@ -55,8 +60,8 @@ void cloud_storage_local_folder_list_files(cloud_storage_item_t *folder)
 
    if (folder->type_data.folder.children)
    {
-      cloud_storage_item_free(folder->type_data.folder.children);
-      folder->type_data.folder.children = NULL;
+      linked_list_free(folder->type_data.folder.children, &_free_file_list);
+      folder->type_data.folder.children = linked_list_new();
    }
 
    dir = retro_opendir(folder->id);
@@ -73,17 +78,7 @@ void cloud_storage_local_folder_list_files(cloud_storage_item_t *folder)
       filename = retro_dirent_get_name(dir);
       if (strcmp(filename, ".") && strcmp(filename, ".."))
       {
-         new_item = _get_file_metadata(folder->id, filename);
-
-         if (!folder->type_data.folder.children)
-         {
-            folder->type_data.folder.children = new_item;
-            last_item = new_item;
-         } else
-         {
-            last_item->next = new_item;
-            last_item = new_item;
-         }
+         linked_list_add(folder->type_data.folder.children, _get_file_metadata(folder->id, filename));
       }
    }
 

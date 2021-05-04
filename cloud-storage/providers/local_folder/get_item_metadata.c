@@ -25,6 +25,7 @@
 #include <time.h>
 
 #include <file/file_path.h>
+#include <lists/linked_list.h>
 
 #include "../../provider_common.h"
 #include "local_folder_internal.h"
@@ -48,6 +49,7 @@ cloud_storage_item_t *cloud_storage_local_folder_get_folder_metadata(const char 
    metadata->item_type = CLOUD_STORAGE_FOLDER;
    metadata->name = strdup(folder_name);
    metadata->last_sync_time = time(NULL);
+   metadata->type_data.folder.children = linked_list_new();
 
    return metadata;
 }

@@ -28,6 +28,8 @@
 #include <retroarch.h>
 #include <retro_dirent.h>
 #include <utils/md5.h>
+#include <lists/linked_list.h>
+#include <queues/generic_queue.h>
 #include <rthreads/rthreads.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
@@ -38,17 +40,16 @@
 
 #define BUFFER_SIZE 8192
 
-enum _operation_queue_item_type_t
+enum _operation_type_t
 {
    SYNC_FILES,
    UPLOAD_FILE,
    DOWNLOAD_FILE
 };
 
-struct _operation_queue_item;
-struct _operation_queue_item
+struct _operation_t
 {
-   enum _operation_queue_item_type_t operation;
+   enum _operation_type_t operation_type;
 
    union
    {
@@ -68,9 +69,7 @@ struct _operation_queue_item
          folder_type_t folder_type;
          cloud_storage_item_t *remote_file;
       } download;
-   } operation_parameters;
-
-   struct _operation_queue_item *next;
+   } parameters;
 };
 
 static bool _shutdown = true;
@@ -82,7 +81,7 @@ static bool _need_sync_runtime_logs = false;
 
 cloud_storage_item_t *_game_states = NULL;
 
-static struct _operation_queue_item *_operation_queue = NULL;
+static generic_queue_t *_operation_queue = NULL;
 static slock_t *_operation_queue_mutex;
 
 static scond_t *_operation_condition;
@@ -92,14 +91,15 @@ static void _sync_files_execute(folder_type_t folder_type);
 
 static void _upload_file_execute(folder_type_t folder_type, char *file_name);
 
+void cloud_storage_item_list_free(void *item)
+{
+   cloud_storage_item_free((cloud_storage_item_t *) item);
+}
+
 void cloud_storage_item_free(cloud_storage_item_t *item)
 {
-   cloud_storage_item_t *next;
-
    while (item)
    {
-      next = item->next;
-
       free(item->id);
       free(item->name);
 
@@ -115,61 +115,52 @@ void cloud_storage_item_free(cloud_storage_item_t *item)
          }
       }
 
-      if (item->item_type == CLOUD_STORAGE_FOLDER && item->type_data.folder.children)
+      if (item->item_type == CLOUD_STORAGE_FOLDER)
       {
-         cloud_storage_item_free(item->type_data.folder.children);
+         linked_list_free(item->type_data.folder.children, &cloud_storage_item_list_free);
       }
 
       free(item);
-
-      item = next;
    }
 }
 
-static void _free_operation_queue_item(struct _operation_queue_item *queue_item)
+static void _free_operation(struct _operation_t *operation)
 {
-   switch (queue_item->operation)
+   switch (operation->operation_type)
    {
       case UPLOAD_FILE:
-         if (queue_item->operation_parameters.upload.local_file)
+         if (operation->parameters.upload.local_file)
          {
-            free(queue_item->operation_parameters.upload.local_file);
+            free(operation->parameters.upload.local_file);
          }
          break;
       case DOWNLOAD_FILE:
-         if (queue_item->operation_parameters.download.remote_file)
+         if (operation->parameters.download.remote_file)
          {
-            cloud_storage_item_free(queue_item->operation_parameters.download.remote_file);
+            cloud_storage_item_free(operation->parameters.download.remote_file);
          }
          break;
       default:
          break;
    }
 
-   free(queue_item);
+   free(operation);
 }
 
-static void _free_operation_queue(struct _operation_queue_item *queue)
+static void _free_operation_list(void *operation)
 {
-   struct _operation_queue_item *next_item;
-
-   while (queue)
-   {
-      next_item = queue->next;
-      _free_operation_queue_item(queue);
-      queue = next_item;
-   }
+   _free_operation((struct _operation_t *) operation);
 }
 
 static void _operation_thread_loop(void *user_data)
 {
    while (!_shutdown)
    {
-      struct _operation_queue_item *task;
+      struct _operation_t *operation;
 
       slock_lock(_operation_queue_mutex);
 
-      if (!_operation_queue)
+      if (generic_queue_length(_operation_queue) == 0)
       {
          scond_wait(_operation_condition, _operation_queue_mutex);
       }
@@ -180,36 +171,31 @@ static void _operation_thread_loop(void *user_data)
          continue;
       }
 
-      task = _operation_queue;
-      if (_operation_queue)
-      {
-         _operation_queue = _operation_queue->next;
-         task->next = NULL;
-      }
+      operation = (struct _operation_t *)generic_queue_pop(_operation_queue);
 
       slock_unlock(_operation_queue_mutex);
 
-      if (task)
+      if (operation)
       {
-         switch (task->operation)
+         switch (operation->operation_type)
          {
             case SYNC_FILES:
-               _sync_files_execute(task->operation_parameters.sync.folder_type);
+               _sync_files_execute(operation->parameters.sync.folder_type);
                break;
             case UPLOAD_FILE:
-               _upload_file_execute(task->operation_parameters.upload.folder_type, task->operation_parameters.upload.local_file);
+               _upload_file_execute(operation->parameters.upload.folder_type, operation->parameters.upload.local_file);
                break;
             case DOWNLOAD_FILE:
                break;
          }
 
-         _free_operation_queue_item(task);
+         _free_operation(operation);
       }
    }
 
    if (_operation_queue)
    {
-      _free_operation_queue(_operation_queue);
+      generic_queue_free(_operation_queue, &_free_operation_list);
    }
 }
 
@@ -224,6 +210,7 @@ void cloud_storage_init(void)
 
    _provider = cloud_storage_local_folder_create();
 
+   _operation_queue = generic_queue_new();
    _operation_queue_mutex = slock_new();
    _operation_condition = scond_new();
 
@@ -335,7 +322,8 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
    char *local_file)
 {
    cloud_storage_item_t *folder;
-   cloud_storage_item_t *file;
+   linked_list_iterator_t *iterator;
+   cloud_storage_item_t *file = NULL;
 
    switch (folder_type)
    {
@@ -351,13 +339,22 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
       return NULL;
    }
 
-   for (file = folder->type_data.folder.children; file != NULL; file = file->next)
+   iterator = linked_list_iterator(folder->type_data.folder.children, true);
+   while (iterator)
    {
+      file = (cloud_storage_item_t *)linked_list_iterator_value(iterator);
       if (file->item_type == CLOUD_STORAGE_FILE && !strcmp(local_file, file->name))
       {
-         return file;
+         break;
       }
    }
+
+   if (iterator)
+   {
+      linked_list_iterator_free(iterator);
+   }
+
+   return file;
 
    return NULL;
 }
@@ -413,7 +410,6 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
       remote_file = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
       remote_file->item_type = CLOUD_STORAGE_FILE;
       remote_file->name = strdup(find_last_slash(local_file) + 1);
-      remote_file->next = NULL;
       new_file = true;
    }
 
@@ -435,8 +431,7 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
 
       if (new_file)
       {
-         remote_file->next = remote_folder->type_data.folder.children;
-         remote_folder->type_data.folder.children = remote_file;
+         linked_list_add(remote_folder->type_data.folder.children, remote_file);
       }
    }
 }
@@ -486,6 +481,8 @@ static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_st
    } else
    {
       item_to_update->type_data.folder.children = other->type_data.folder.children;
+      /* Set other to have a new empty list of children so that it can be freed */
+      other->type_data.folder.children = linked_list_new();
    }
 }
 
@@ -654,6 +651,7 @@ static void _sync_files_download(folder_type_t folder_type)
 {
    cloud_storage_item_t *remote_folder;
    cloud_storage_item_t *remote_file;
+   linked_list_iterator_t *iterator;
 
    switch (folder_type)
    {
@@ -669,17 +667,21 @@ static void _sync_files_download(folder_type_t folder_type)
       return;
    }
 
-   for (remote_file = remote_folder->type_data.folder.children; remote_file != NULL; remote_file = remote_file->next)
+   iterator = linked_list_iterator(remote_folder->type_data.folder.children, true);
+   while (iterator)
    {
       char *local_file;
       bool need_download = false;
       cloud_storage_item_t *current_metadata;
+
+      remote_file = (cloud_storage_item_t *)linked_list_iterator_value(iterator);
 
       if (remote_file->last_sync_time < time(NULL) - 30)
       {
          current_metadata = _provider->get_file_metadata(remote_file);
          if (!current_metadata)
          {
+            iterator = linked_list_iterator_next(iterator);
             continue;
          }
          _update_existing_item(remote_file, current_metadata);
@@ -703,6 +705,8 @@ static void _sync_files_download(folder_type_t folder_type)
       {
          _download_file(local_file, remote_file);
       }
+
+      iterator = linked_list_iterator_next(iterator);
    }
 }
 
@@ -756,8 +760,8 @@ void cloud_storage_sync_files(void)
    global_t *global = global_get_ptr();
    char *raw_folder;
    int i;
-   struct _operation_queue_item *queue_item = NULL;
-   struct _operation_queue_item *previous_queue_item = NULL;
+   generic_queue_iterator_t *iterator;
+   struct _operation_t *operation;
 
    raw_folder = _config_value_to_directory(global->name.savestate);
    sync_states = strcmp(_game_states_config_value, raw_folder) != 0;
@@ -778,43 +782,25 @@ void cloud_storage_sync_files(void)
       return;
    }
 
-   for (queue_item = _operation_queue; queue_item != NULL; queue_item = queue_item->next)
-   {
-      if (queue_item->operation == UPLOAD_FILE || queue_item->operation == DOWNLOAD_FILE)
+   iterator = generic_queue_iterator(_operation_queue, true);
+   while (iterator) {
+      struct _operation_t *operation;
+      
+      operation = (struct _operation_t *)generic_queue_iterator_value(iterator);
+      if (operation->operation_type == UPLOAD_FILE || operation->operation_type == DOWNLOAD_FILE)
       {
-         if (!previous_queue_item)
-         {
-            _free_operation_queue_item(queue_item);
-         } else
-         {
-            struct _operation_queue_item *next_item;
-
-            next_item = queue_item->next;
-            _free_operation_queue_item(queue_item);
-            previous_queue_item->next = next_item;
-            queue_item = next_item;
-         }
-
-         continue;
-      }
-
-      previous_queue_item = queue_item;
-   }
-
-   if (sync_states)
-   {
-      queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
-      queue_item->operation = SYNC_FILES;
-      queue_item->operation_parameters.sync.folder_type = CLOUD_STORAGE_GAME_STATES;
-      if (previous_queue_item)
-      {
-         previous_queue_item->next = queue_item;
+         iterator = generic_queue_iterator_remove(iterator);
+         _free_operation(operation);
       } else
       {
-         _operation_queue = queue_item;
+         iterator = generic_queue_iterator_next(iterator);
       }
-      previous_queue_item = queue_item;
    }
+
+   operation = (struct _operation_t *)calloc(1, sizeof(struct _operation_t));
+   operation->operation_type = SYNC_FILES;
+   operation->parameters.sync.folder_type = CLOUD_STORAGE_GAME_STATES;
+   generic_queue_push(_operation_queue, operation);
 
    scond_signal(_operation_condition);
 
@@ -839,8 +825,8 @@ static void _upload_file_execute(folder_type_t folder_type, char *file_name)
 
 void cloud_storage_upload_file(folder_type_t folder_type, char *file_name)
 {
-   struct _operation_queue_item *queue_item;
-   struct _operation_queue_item *previous_queue_item = NULL;
+   struct _operation_t *operation;
+   generic_queue_iterator_t *iterator;
 
    slock_lock(_operation_queue_mutex);
 
@@ -850,36 +836,34 @@ void cloud_storage_upload_file(folder_type_t folder_type, char *file_name)
       return;
    }
 
-   for (queue_item = _operation_queue; queue_item != NULL; queue_item = queue_item->next)
+   iterator = generic_queue_iterator(_operation_queue, true);
+   while (iterator)
    {
-      switch (queue_item->operation)
+      operation = (struct _operation_t *)generic_queue_iterator_value(iterator);
+      switch (operation->operation_type)
       {
          case SYNC_FILES:
+            generic_queue_iterator_free(iterator);
             goto complete;
          case UPLOAD_FILE:
-            if (queue_item->operation_parameters.upload.folder_type && !strcmp(file_name, queue_item->operation_parameters.upload.local_file))
+            if (operation->parameters.upload.folder_type == folder_type && !strcmp(file_name, operation->parameters.upload.local_file))
             {
+               generic_queue_iterator_free(iterator);
                goto complete;
             }
             break;
-         case DOWNLOAD_FILE:
-            continue;
+         default:
+            break;
       }
 
-      previous_queue_item = queue_item;
+      iterator = generic_queue_iterator_next(iterator);
    }
 
-   queue_item = (struct _operation_queue_item *)calloc(1, sizeof(struct _operation_queue_item));
-   queue_item->operation = UPLOAD_FILE;
-   queue_item->operation_parameters.sync.folder_type = folder_type;
-   queue_item->operation_parameters.upload.local_file = strdup(file_name);
-   if (previous_queue_item)
-   {
-      previous_queue_item->next = queue_item;
-   } else
-   {
-      _operation_queue = queue_item;
-   }
+   operation = (struct _operation_t *)calloc(1, sizeof(struct _operation_t));
+   operation->operation_type = UPLOAD_FILE;
+   operation->parameters.sync.folder_type = folder_type;
+   operation->parameters.upload.local_file = strdup(file_name);
+   generic_queue_push(_operation_queue, operation);
 
    scond_signal(_operation_condition);
 
