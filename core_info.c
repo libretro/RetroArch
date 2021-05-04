@@ -40,6 +40,23 @@
 #include "play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#define CORE_INFO_CACHE_FILE_NAME ".cache"
+
+typedef struct
+{
+   char **current_string_val;
+   struct string_list **current_string_list_val;
+   uint32_t *current_entry_uint_val;
+   bool *current_entry_bool_val;
+   bool to_core_file_id;
+   bool to_firmware;
+   core_info_t *core_info;
+   core_info_cache_list_t *core_info_cache_list;
+
+   unsigned array_depth;
+   unsigned object_depth;
+} CCJSONContext;
+
 enum compare_op
 {
    COMPARE_OP_EQUAL = 0,
@@ -397,9 +414,48 @@ static void core_info_list_resolve_all_extensions(
 #endif
 }
 
+static void core_info_free(core_info_t* info)
+{
+   size_t i;
+
+   free(info->path);
+   free(info->core_name);
+   free(info->systemname);
+   free(info->system_id);
+   free(info->system_manufacturer);
+   free(info->display_name);
+   free(info->display_version);
+   free(info->supported_extensions);
+   free(info->authors);
+   free(info->permissions);
+   free(info->licenses);
+   free(info->categories);
+   free(info->databases);
+   free(info->notes);
+   free(info->required_hw_api);
+   free(info->description);
+   string_list_free(info->supported_extensions_list);
+   string_list_free(info->authors_list);
+   string_list_free(info->note_list);
+   string_list_free(info->permissions_list);
+   string_list_free(info->licenses_list);
+   string_list_free(info->categories_list);
+   string_list_free(info->databases_list);
+   string_list_free(info->required_hw_api_list);
+
+   for (i = 0; i < info->firmware_count; i++)
+   {
+      free(info->firmware[i].path);
+      free(info->firmware[i].desc);
+   }
+   free(info->firmware);
+
+   free(info->core_file_id.str);
+}
+
 static void core_info_list_free(core_info_list_t *core_info_list)
 {
-   size_t i, j;
+   size_t i;
 
    if (!core_info_list)
       return;
@@ -407,45 +463,29 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    for (i = 0; i < core_info_list->count; i++)
    {
       core_info_t *info = (core_info_t*)&core_info_list->list[i];
-
-      free(info->path);
-      free(info->core_name);
-      free(info->systemname);
-      free(info->system_id);
-      free(info->system_manufacturer);
-      free(info->display_name);
-      free(info->display_version);
-      free(info->supported_extensions);
-      free(info->authors);
-      free(info->permissions);
-      free(info->licenses);
-      free(info->categories);
-      free(info->databases);
-      free(info->notes);
-      free(info->required_hw_api);
-      free(info->description);
-      string_list_free(info->supported_extensions_list);
-      string_list_free(info->authors_list);
-      string_list_free(info->note_list);
-      string_list_free(info->permissions_list);
-      string_list_free(info->licenses_list);
-      string_list_free(info->categories_list);
-      string_list_free(info->databases_list);
-      string_list_free(info->required_hw_api_list);
-
-      for (j = 0; j < info->firmware_count; j++)
-      {
-         free(info->firmware[j].path);
-         free(info->firmware[j].desc);
-      }
-      free(info->firmware);
-
-      free(info->core_file_id.str);
+      core_info_free(info);
    }
 
    free(core_info_list->all_ext);
    free(core_info_list->list);
    free(core_info_list);
+}
+
+static void core_info_cache_list_free(core_info_cache_list_t *core_info_cache_list)
+{
+   size_t i;
+
+   if (!core_info_cache_list)
+      return;
+
+   for (i = 0; i < core_info_cache_list->length; i++)
+   {
+      core_info_t* info = (core_info_t*)&core_info_cache_list->items[i];
+      core_info_free(info);
+   }
+
+   free(core_info_cache_list->items);
+   free(core_info_cache_list);
 }
 
 static core_info_list_t *core_info_list_new(const char *path,
@@ -454,11 +494,12 @@ static core_info_list_t *core_info_list_new(const char *path,
       bool dir_show_hidden_files)
 {
    size_t i;
-   struct string_list contents      = {0};
-   core_info_t *core_info           = NULL;
-   core_info_list_t *core_info_list = NULL;
-   const char *info_dir             = libretro_info_dir;
-   bool ok                          = false;
+   struct string_list contents                  = {0};
+   core_info_t *core_info                       = NULL;
+   core_info_list_t *core_info_list             = NULL;
+   core_info_cache_list_t *core_info_cache_list = NULL;
+   const char *info_dir                         = libretro_info_dir;
+   bool ok                                      = false;
 
    string_list_initialize(&contents);
 
@@ -505,9 +546,16 @@ static core_info_list_t *core_info_list_new(const char *path,
    core_info_list->list  = core_info;
    core_info_list->count = contents.size;
 
+#ifdef _3DS
+   core_info_cache_list = core_info_read_cache_file(libretro_info_dir);
+   if (!core_info_cache_list)
+      goto error;
+#endif
+
    for (i = 0; i < contents.size; i++)
    {
       core_info_t *info         = &core_info[i];
+      core_info_t *info_cache   = NULL;
       const char *base_path     = contents.elems[i].data;
       const char *core_filename = NULL;
       config_file_t *conf       = NULL;
@@ -520,6 +568,13 @@ static core_info_list_t *core_info_list_new(const char *path,
           !core_info_get_file_id(core_filename, core_file_id,
                sizeof(core_file_id)))
          continue;
+
+      info_cache = core_info_get_cache(core_info_cache_list, core_file_id);
+      if (info_cache)
+      {
+         core_info_copy(info_cache, info);
+         continue;
+      }
 
       /* Cache core path */
       info->path = strdup(base_path);
@@ -543,8 +598,22 @@ static core_info_list_t *core_info_list_new(const char *path,
       /* Get fallback display name, if required */
       if (!info->display_name)
          info->display_name = strdup(core_filename);
+
+      info->is_installed = true;
+#ifdef _3DS
+      core_info_add_cache(core_info_cache_list, info);
+      core_info_cache_list->refresh = true;
+#endif
    }
 
+#ifdef _3DS
+   core_info_check_uninstalled(core_info_cache_list);
+   if (core_info_cache_list->refresh) {
+      core_info_write_cache_file(core_info_cache_list, libretro_info_dir);
+   }
+
+   core_info_cache_list_free(core_info_cache_list);
+#endif
    core_info_list_resolve_all_extensions(core_info_list);
 
    string_list_deinitialize(&contents);
@@ -1579,4 +1648,806 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       core_info->is_locked = is_locked;
 
    return is_locked;
+}
+
+core_info_t *core_info_get_cache(core_info_cache_list_t *list, char *core_file_id)
+{
+   size_t i;
+   core_info_t *info = NULL;
+
+   if (!list | !core_file_id)
+      return NULL;
+
+   for (i = 0; i < list->length; i++)
+   {
+      core_info_t *temp = (core_info_t*)&list->items[i];
+      if (!temp)
+         continue;
+
+      if (string_is_equal(temp->core_file_id.str, core_file_id))
+      {
+         temp->is_installed = true;
+         info = temp;
+         break;
+      }
+   }
+
+   return info;
+}
+
+void core_info_add_cache(core_info_cache_list_t *list, core_info_t *info)
+{
+   if (!info->core_file_id.str)
+      return;
+
+   if (list->length >= list->capacity)
+   {
+      size_t prev_capacity = list->capacity;
+      list->capacity = list->capacity * 2;
+      list->items = (core_info_t*)realloc(list->items, list->capacity * sizeof(core_info_t));
+      memset(&list->items[prev_capacity], 0, (list->capacity - prev_capacity) * sizeof(core_info_t));
+   }
+
+   core_info_t *cache = &list->items[list->length];
+   core_info_copy(info, cache);
+   list->length++;
+}
+
+static bool CCJSONObjectMemberHandler(void *context, const char *pValue, size_t length)
+{
+   CCJSONContext *pCtx = (CCJSONContext *)context;
+
+   if ((pCtx->object_depth == 2) && (pCtx->array_depth == 1) && length)
+   {
+      pCtx->current_string_val      = NULL;
+      pCtx->current_string_list_val = NULL;
+      pCtx->current_entry_uint_val  = NULL;
+      pCtx->current_entry_bool_val  = NULL;
+      pCtx->to_core_file_id         = false;
+      pCtx->to_firmware             = false;
+
+      switch (pValue[0])
+      {
+      case 'a':
+         if (string_is_equal(pValue, "authors"))
+         {
+            pCtx->current_string_val = &pCtx->core_info->authors;
+            pCtx->current_string_list_val = &pCtx->core_info->authors_list;
+         }
+         break;
+      case 'c':
+         if (string_is_equal(pValue, "categories"))
+         {
+            pCtx->current_string_val = &pCtx->core_info->categories;
+            pCtx->current_string_list_val = &pCtx->core_info->categories_list;
+         }
+         else if (string_is_equal(pValue, "core_name"))
+            pCtx->current_string_val = &pCtx->core_info->core_name;
+         else if (string_is_equal(pValue, "core_file_id"))
+            pCtx->to_core_file_id = true;
+         break;
+      case 'd':
+         if (string_is_equal(pValue, "display_name"))
+            pCtx->current_string_val = &pCtx->core_info->display_name;
+         else if (string_is_equal(pValue, "display_version"))
+            pCtx->current_string_val = &pCtx->core_info->display_version;
+         else if (string_is_equal(pValue, "databases"))
+         {
+            pCtx->current_string_val = &pCtx->core_info->databases;
+            pCtx->current_string_list_val = &pCtx->core_info->databases_list;
+         }
+         else if (string_is_equal(pValue, "description"))
+            pCtx->current_string_val = &pCtx->core_info->description;
+         else if (string_is_equal(pValue, "database_match_archive_member"))
+            pCtx->current_entry_bool_val = &pCtx->core_info->database_match_archive_member;
+         break;
+      case 'f':
+         if (string_is_equal(pValue, "firmware"))
+            pCtx->to_firmware = true;
+         break;
+      case 'h':
+         if (string_is_equal(pValue, "has_info"))
+            pCtx->current_entry_bool_val = &pCtx->core_info->has_info;
+         break;
+      case 'l':
+         if (string_is_equal(pValue, "licenses"))
+         {
+            pCtx->current_string_val = &pCtx->core_info->licenses;
+            pCtx->current_string_list_val = &pCtx->core_info->licenses_list;
+         }
+         else if (string_is_equal(pValue, "is_experimental"))
+            pCtx->current_entry_bool_val = &pCtx->core_info->is_experimental;
+         else if (string_is_equal(pValue, "is_locked"))
+            pCtx->current_entry_bool_val = &pCtx->core_info->is_locked;
+         break;
+      case 'n':
+         if (string_is_equal(pValue, "notes"))
+         {
+            pCtx->current_string_val = &pCtx->core_info->notes;
+            pCtx->current_string_list_val = &pCtx->core_info->note_list;
+         }
+         break;
+      case 'p':
+         if (string_is_equal(pValue, "path"))
+            pCtx->current_string_val = &pCtx->core_info->path;
+         else if (string_is_equal(pValue, "permissions"))
+         {
+            pCtx->current_string_val = &pCtx->core_info->permissions;
+            pCtx->current_string_list_val = &pCtx->core_info->permissions_list;
+         }
+         break;
+      case 'r':
+         if (string_is_equal(pValue, "required_hw_api"))
+         {
+            pCtx->current_string_val = &pCtx->core_info->required_hw_api;
+            pCtx->current_string_list_val = &pCtx->core_info->required_hw_api_list;
+         }
+         break;
+      case 's':
+         if (string_is_equal(pValue, "system_manufacturer"))
+            pCtx->current_string_val = &pCtx->core_info->system_manufacturer;
+         else if (string_is_equal(pValue, "systemname"))
+            pCtx->current_string_val = &pCtx->core_info->systemname;
+         else if (string_is_equal(pValue, "system_id"))
+            pCtx->current_string_val = &pCtx->core_info->system_id;
+         else if (string_is_equal(pValue, "supported_extensions"))
+         {
+            pCtx->current_string_val = &pCtx->core_info->supported_extensions;
+            pCtx->current_string_list_val = &pCtx->core_info->supported_extensions_list;
+         }
+         else if (string_is_equal(pValue, "supports_no_game"))
+            pCtx->current_entry_bool_val = &pCtx->core_info->supports_no_game;
+         break;
+      }
+   }
+   else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 1) && length)
+   {
+      if (pCtx->to_core_file_id)
+      {
+         if (string_is_equal(pValue, "str"))
+            pCtx->current_string_val = &pCtx->core_info->core_file_id.str;
+         else if (string_is_equal(pValue, "hash"))
+            pCtx->current_entry_uint_val = &pCtx->core_info->core_file_id.hash;
+      }
+   }
+   else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 2) && length)
+   {
+      if (pCtx->to_firmware)
+      {
+         if (string_is_equal(pValue, "path"))
+            pCtx->current_string_val = &pCtx->core_info->firmware[pCtx->core_info->firmware_count - 1].path;
+         else if (string_is_equal(pValue, "desc"))
+            pCtx->current_string_val = &pCtx->core_info->firmware[pCtx->core_info->firmware_count - 1].desc;
+         else if (string_is_equal(pValue, "missing"))
+            pCtx->current_entry_bool_val = &pCtx->core_info->firmware[pCtx->core_info->firmware_count - 1].missing;
+         else if (string_is_equal(pValue, "optional"))
+            pCtx->current_entry_bool_val = &pCtx->core_info->firmware[pCtx->core_info->firmware_count - 1].optional;
+      }
+   }
+
+   return true;
+}
+
+static bool CCJSONStringHandler(void *context, const char *pValue, size_t length)
+{
+   CCJSONContext *pCtx = (CCJSONContext*)context;
+
+   if (pCtx->current_string_val)
+   {
+      *pCtx->current_string_val = strdup(pValue);
+
+      if (pCtx->current_string_list_val)
+      {
+         *pCtx->current_string_list_val = string_split(*pCtx->current_string_val, "|");
+      }
+   }
+
+   return true;
+}
+
+static bool CCJSONNumberHandler(void *context, const char *pValue, size_t length)
+{
+   CCJSONContext *pCtx = (CCJSONContext*)context;
+
+   if (pCtx->current_entry_uint_val)
+      *pCtx->current_entry_uint_val = (unsigned)strtoul(pValue, NULL, 10);
+
+   return true;
+}
+
+static bool CCJSONBoolHandler(void *context, bool value)
+{
+   CCJSONContext *pCtx = (CCJSONContext *)context;
+
+   if (pCtx->current_entry_bool_val)
+      *pCtx->current_entry_bool_val = value;
+
+   return true;
+}
+
+static bool CCJSONStartObjectHandler(void *context)
+{
+   CCJSONContext *pCtx = (CCJSONContext*)context;
+
+   pCtx->object_depth++;
+
+   if ((pCtx->object_depth == 1) && (pCtx->array_depth == 0))
+   {
+      pCtx->core_info_cache_list = new_core_info_cache_list();
+      if (!pCtx->core_info_cache_list)
+         return false;
+   }
+   else if ((pCtx->object_depth == 2) && (pCtx->array_depth == 1))
+   {
+      pCtx->core_info = (core_info_t *)calloc(1, sizeof(core_info_t));
+      if (!pCtx->core_info)
+         return false;
+   }
+   else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 2))
+   {
+      if (pCtx->to_firmware)
+      {
+         pCtx->core_info->firmware_count++;
+         pCtx->core_info->firmware = (core_info_firmware_t *)realloc(pCtx->core_info->firmware, pCtx->core_info->firmware_count * sizeof(core_info_firmware_t));
+      }
+   }
+
+   return true;
+}
+
+static bool CCJSONEndObjectHandler(void *context)
+{
+   CCJSONContext *pCtx = (CCJSONContext*)context;
+
+   if ((pCtx->object_depth == 2) && (pCtx->array_depth == 1))
+   {
+      core_info_add_cache(pCtx->core_info_cache_list, pCtx->core_info);
+      core_info_free(pCtx->core_info);
+   }
+   else if ((pCtx->object_depth == 3) && (pCtx->array_depth == 1))
+   {
+      if (pCtx->to_core_file_id)
+         pCtx->to_core_file_id = false;
+   }
+
+   retro_assert(pCtx->object_depth > 0);
+   pCtx->object_depth--;
+
+   return true;
+}
+
+static bool CCJSONStartArrayHandler(void *context)
+{
+   CCJSONContext *pCtx = (CCJSONContext*)context;
+
+   pCtx->array_depth++;
+
+   return true;
+}
+
+static bool CCJSONEndArrayHandler(void *context)
+{
+   CCJSONContext *pCtx = (CCJSONContext*)context;
+
+   if ((pCtx->object_depth == 2) && (pCtx->array_depth == 2))
+   {
+      if (pCtx->to_firmware)
+         pCtx->to_firmware = false;
+   }
+
+   retro_assert(pCtx->array_depth > 0);
+   pCtx->array_depth--;
+
+   return true;
+}
+
+core_info_cache_list_t *core_info_read_cache_file(const char *info_dir)
+{
+   core_info_cache_list_t *core_info_cache_list;
+   char file_path[PATH_MAX_LENGTH];
+
+   core_info_cache_list = NULL;
+
+   file_path[0] = '\0';
+   fill_pathname_join(file_path, info_dir, CORE_INFO_CACHE_FILE_NAME, sizeof(file_path));
+
+#if defined(HAVE_ZLIB)
+   /* Always use RZIP interface when reading playlists
+    * > this will automatically handle uncompressed
+    *   data */
+   intfstream_t *file = intfstream_open_rzip_file(
+      file_path,
+      RETRO_VFS_FILE_ACCESS_READ);
+#else
+   intfstream_t *file = intfstream_open_file(
+      playlist->config.path,
+      RETRO_VFS_FILE_ACCESS_READ,
+      RETRO_VFS_FILE_ACCESS_HINT_NONE);
+#endif
+
+   if (file) {
+      rjson_t *parser;
+      CCJSONContext context = { 0 };
+
+      parser = rjson_open_stream(file);
+      if (!parser)
+      {
+         RARCH_ERR("Failed to create JSON parser\n");
+         goto end;
+      }
+
+      rjson_set_options(parser,
+         RJSON_OPTION_ALLOW_UTF8BOM
+         | RJSON_OPTION_ALLOW_COMMENTS
+         | RJSON_OPTION_ALLOW_UNESCAPED_CONTROL_CHARACTERS
+         | RJSON_OPTION_REPLACE_INVALID_ENCODING);
+
+      if (rjson_parse(parser, &context,
+         CCJSONObjectMemberHandler,
+         CCJSONStringHandler,
+         CCJSONNumberHandler,
+         CCJSONStartObjectHandler,
+         CCJSONEndObjectHandler,
+         CCJSONStartArrayHandler,
+         CCJSONEndArrayHandler,
+         CCJSONBoolHandler,
+         NULL) // null 
+         != RJSON_DONE)
+      {
+         RARCH_WARN("Error parsing chunk:\n---snip---\n%.*s\n---snip---\n",
+            rjson_get_source_context_len(parser),
+            rjson_get_source_context_buf(parser));
+         RARCH_WARN("Error: Invalid JSON at line %d, column %d - %s.\n",
+            (int)rjson_get_source_line(parser),
+            (int)rjson_get_source_column(parser),
+            (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
+      }
+      core_info_cache_list = context.core_info_cache_list;
+      rjson_free(parser);
+   }
+   else
+   {
+      core_info_cache_list = new_core_info_cache_list();
+   }
+
+end:
+   intfstream_close(file);
+   free(file);
+
+   return core_info_cache_list;
+}
+
+core_info_cache_list_t *new_core_info_cache_list(void)
+{
+   const int default_cache_capacity = 8;
+
+   core_info_cache_list_t *core_info_cache_list;
+
+   core_info_cache_list = (core_info_cache_list_t *)malloc(sizeof(*core_info_cache_list));
+   if (!core_info_cache_list)
+      return NULL;
+
+   core_info_cache_list->items = (core_info_t *)calloc(default_cache_capacity, sizeof(core_info_t));
+   if (!core_info_cache_list->items)
+   {
+      core_info_cache_list_free(core_info_cache_list);
+      return NULL;
+   }
+
+   core_info_cache_list->length = 0;
+   core_info_cache_list->capacity = default_cache_capacity;
+   core_info_cache_list->refresh = false;
+
+   return core_info_cache_list;
+}
+
+void core_info_write_cache_file(core_info_cache_list_t *list, const char *info_dir)
+{
+   size_t i, j;
+
+   intfstream_t *file = NULL;
+   rjsonwriter_t *writer;
+   char file_path[PATH_MAX_LENGTH];
+
+   file_path[0] = '\0';
+
+   fill_pathname_join(file_path, info_dir, CORE_INFO_CACHE_FILE_NAME, sizeof(file_path));
+
+   file = intfstream_open_file(file_path, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!file)
+   {
+      RARCH_ERR("Failed to write to core info cache file: %s\n", file_path);
+      return;
+   }
+
+   writer = rjsonwriter_open_stream(file);
+   if (!writer)
+   {
+      RARCH_ERR("Failed to create JSON writer\n");
+      goto end;
+   }
+
+   rjsonwriter_add_start_object(writer);
+   rjsonwriter_add_newline(writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "version");
+   rjsonwriter_add_colon(writer);
+   rjsonwriter_add_space(writer);
+   rjsonwriter_add_string(writer, "1.0");
+   rjsonwriter_add_comma(writer);
+   rjsonwriter_add_newline(writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "items");
+   rjsonwriter_add_colon(writer);
+   rjsonwriter_add_space(writer);
+   rjsonwriter_add_start_array(writer);
+   rjsonwriter_add_newline(writer);
+
+   for (i = 0; i < list->length; i++)
+   {
+      core_info_t* info = &list->items[i];
+      if (!info->is_installed)
+         continue;
+
+      if (i > 0)
+      {
+         rjsonwriter_add_comma(writer);
+         rjsonwriter_add_newline(writer);
+      }
+      
+      rjsonwriter_add_spaces(writer, 4);
+      rjsonwriter_add_start_object(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "path");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->path);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "display_name");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->display_name);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "display_version");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->display_version);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "core_name");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->core_name);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "system_manufacturer");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->system_manufacturer);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "systemname");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->systemname);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "system_id");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->system_id);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "supported_extensions");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->supported_extensions);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "authors");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->authors);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "permissions");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->permissions);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "licenses");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->licenses);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "categories");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->categories);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "databases");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->databases);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "notes");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->notes);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "required_hw_api");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->required_hw_api);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "description");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->description);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      if (info->firmware_count)
+      {
+         rjsonwriter_add_spaces(writer, 6);
+         rjsonwriter_add_string(writer, "firmware");
+         rjsonwriter_add_colon(writer);
+         rjsonwriter_add_space(writer);
+         rjsonwriter_add_start_array(writer);
+         rjsonwriter_add_newline(writer);
+
+         for (j = 0; j < info->firmware_count; j++)
+         {
+            rjsonwriter_add_spaces(writer, 8);
+            rjsonwriter_add_start_object(writer);
+            rjsonwriter_add_newline(writer);
+            rjsonwriter_add_spaces(writer, 10);
+            rjsonwriter_add_string(writer, "path");
+            rjsonwriter_add_colon(writer);
+            rjsonwriter_add_space(writer);
+            rjsonwriter_add_string(writer, info->firmware[j].path);
+            rjsonwriter_add_comma(writer);
+            rjsonwriter_add_newline(writer);
+            rjsonwriter_add_spaces(writer, 10);
+            rjsonwriter_add_string(writer, "desc");
+            rjsonwriter_add_colon(writer);
+            rjsonwriter_add_space(writer);
+            rjsonwriter_add_string(writer, info->firmware[j].desc);
+            rjsonwriter_add_comma(writer);
+            rjsonwriter_add_newline(writer);
+            rjsonwriter_add_spaces(writer, 10);
+            rjsonwriter_add_string(writer, "missing");
+            rjsonwriter_add_colon(writer);
+            rjsonwriter_add_space(writer);
+            rjsonwriter_add_bool(writer, info->firmware[j].missing);
+            rjsonwriter_add_comma(writer);
+            rjsonwriter_add_newline(writer);
+            rjsonwriter_add_spaces(writer, 10);
+            rjsonwriter_add_string(writer, "optional");
+            rjsonwriter_add_colon(writer);
+            rjsonwriter_add_space(writer);
+            rjsonwriter_add_bool(writer, info->firmware[j].optional);
+            rjsonwriter_add_newline(writer);
+            rjsonwriter_add_spaces(writer, 8);
+            rjsonwriter_add_end_object(writer);
+
+            if (j < info->firmware_count - 1)
+               rjsonwriter_add_comma(writer);
+
+            rjsonwriter_add_newline(writer);
+         }
+
+         rjsonwriter_add_spaces(writer, 6);
+         rjsonwriter_add_end_array(writer);
+         rjsonwriter_add_comma(writer);
+         rjsonwriter_add_newline(writer);
+      }
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "core_file_id");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_newline(writer);
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_start_object(writer);
+      rjsonwriter_add_newline(writer);
+      rjsonwriter_add_spaces(writer, 8);
+      rjsonwriter_add_string(writer, "str");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_string(writer, info->core_file_id.str);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+      rjsonwriter_add_spaces(writer, 8);
+      rjsonwriter_add_string(writer, "hash");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_unsigned(writer, info->core_file_id.hash);
+      rjsonwriter_add_newline(writer);
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_end_object(writer);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "firmware_count");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_unsigned(writer, info->firmware_count);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "has_info");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_bool(writer, info->has_info);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "supports_no_game");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_bool(writer, info->supports_no_game);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "database_match_archive_member");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_bool(writer, info->database_match_archive_member);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "is_experimental");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_bool(writer, info->is_experimental);
+      rjsonwriter_add_comma(writer);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 6);
+      rjsonwriter_add_string(writer, "is_locked");
+      rjsonwriter_add_colon(writer);
+      rjsonwriter_add_space(writer);
+      rjsonwriter_add_bool(writer, info->is_locked);
+      rjsonwriter_add_newline(writer);
+
+      rjsonwriter_add_spaces(writer, 4);
+      rjsonwriter_add_end_object(writer);
+   }
+
+   rjsonwriter_add_newline(writer);
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_end_array(writer);
+   rjsonwriter_add_newline(writer);
+   rjsonwriter_add_end_object(writer);
+   rjsonwriter_add_newline(writer);
+   rjsonwriter_free(writer);
+
+   RARCH_LOG("[CoreInfo]: Written to cache file: %s\n", file_path);
+end:
+   intfstream_close(file);
+   free(file);
+
+   list->refresh = false;
+}
+
+void core_info_copy(core_info_t *src, core_info_t *dst)
+{
+   size_t i;
+
+   dst->path                  = src->path ? strdup(src->path) : NULL;
+   dst->display_name          = src->display_name ? strdup(src->display_name) : NULL;
+   dst->display_version       = src->display_version ? strdup(src->display_version) : NULL;
+   dst->core_name             = src->core_name ? strdup(src->core_name) : NULL;
+   dst->system_manufacturer   = src->system_manufacturer ? strdup(src->system_manufacturer) : NULL;
+   dst->systemname            = src->systemname ? strdup(src->systemname) : NULL;
+   dst->system_id             = src->system_id ? strdup(src->system_id) : NULL;
+   dst->supported_extensions  = src->supported_extensions ? strdup(src->supported_extensions) : NULL;
+   dst->authors               = src->authors ? strdup(src->authors) : NULL;
+   dst->permissions           = src->permissions ? strdup(src->permissions) : NULL;
+   dst->licenses              = src->licenses ? strdup(src->licenses) : NULL;
+   dst->categories            = src->categories ? strdup(src->categories) : NULL;
+   dst->databases             = src->databases ? strdup(src->databases) : NULL;
+   dst->notes                 = src->notes ? strdup(src->notes) : NULL;
+   dst->required_hw_api       = src->required_hw_api ? strdup(src->required_hw_api) : NULL;
+   dst->description           = src->description ? strdup(src->description) : NULL;
+   dst->categories_list       = src->categories_list ? string_list_clone(src->categories_list) : NULL;
+   dst->databases_list        = src->databases_list ? string_list_clone(src->databases_list) : NULL;
+   dst->note_list             = src->note_list ? string_list_clone(src->note_list) : NULL;
+   dst->supported_extensions_list = src->supported_extensions_list ? string_list_clone(src->supported_extensions_list) : NULL;
+   dst->authors_list          = src->authors_list ? string_list_clone(src->authors_list) : NULL;
+   dst->permissions_list      = src->permissions_list ? string_list_clone(src->permissions_list) : NULL;
+   dst->licenses_list         = src->licenses_list ? string_list_clone(src->licenses_list) : NULL;
+   dst->required_hw_api_list  = src->required_hw_api_list ? string_list_clone(src->required_hw_api_list) : NULL;
+
+   if (src->firmware_count)
+   {
+      dst->firmware = (core_info_firmware_t*)calloc(src->firmware_count, sizeof(core_info_firmware_t));
+      if (!dst->firmware)
+         return;
+
+      for (i = 0; i < src->firmware_count; i++)
+      {
+         dst->firmware[i].path = src->firmware[i].path ? strdup(src->firmware[i].path) : NULL;
+         dst->firmware[i].desc = src->firmware[i].desc ? strdup(src->firmware[i].desc) : NULL;
+         dst->firmware[i].missing = src->firmware[i].missing;
+         dst->firmware[i].optional = src->firmware[i].optional;
+      }
+   }
+
+   dst->core_file_id.str = src->core_file_id.str ? strdup(src->core_file_id.str) : NULL;
+   dst->core_file_id.hash = src->core_file_id.hash;
+
+   dst->firmware_count        = src->firmware_count;
+   dst->has_info              = src->has_info;
+   dst->supports_no_game      = src->supports_no_game;
+   dst->database_match_archive_member = src->database_match_archive_member;
+   dst->is_experimental       = src->is_experimental;
+   dst->is_locked             = src->is_locked;
+   dst->is_installed          = src->is_installed;
+}
+
+void core_info_check_uninstalled(core_info_cache_list_t *list)
+{
+   size_t i;
+
+   if (!list)
+      return;
+
+   for (i = 0; i < list->length; i++)
+   {
+      core_info_t *info = (core_info_t *)&list->items[i];
+      if (!info)
+         continue;
+
+      if (!info->is_installed)
+      {
+         list->refresh = true;
+         return;
+      }
+   }
 }
