@@ -27,6 +27,7 @@
 
 #include <compat/strl.h>
 #include <formats/image.h>
+#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
 #include "slang_reflection.h"
