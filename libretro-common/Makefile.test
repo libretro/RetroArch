@@ -1,0 +1,35 @@
+include ../config.mk
+
+OBJDIR = ../obj-unix
+
+TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined
+
+TEST_GENERIC_QUEUE = test_generic_queue
+TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
+TEST_GENERIC_QUEUE_FLAGS = $(CFLAGS) $(LDFLAGS) $(LIBCHECK_CFLAGS)
+TEST_GENERIC_QUEUE_LIBS = $(LIBCHECK_LIBS)
+
+$(TEST_GENERIC_QUEUE): $(TEST_GENERIC_QUEUE_SRC)
+	$(CC) $(TEST_UNIT_CFLAGS) -o $(OBJDIR)/test/$@ $(TEST_GENERIC_QUEUE_SRC) $(TEST_GENERIC_QUEUE_LIBS)
+
+TEST_LINKED_LIST = test_linked_list
+TEST_LINKED_LIST_SRC = test/lists/test_linked_list.c lists/linked_list.c
+TEST_LINKED_LIST_LIBS = $(LIBCHECK_LIBS)
+
+$(TEST_LINKED_LIST): $(TEST_LINKED_LIST_SRC)
+	$(CC) $(TEST_UNIT_CFLAGS) -o $(OBJDIR)/test/$@ $(TEST_LINKED_LIST_SRC) $(TEST_LINKED_LIST_LIBS)
+
+TESTS = $(TEST_GENERIC_QUEUE) $(TEST_LINKED_LIST)
+
+ifeq ($(HAVE_LIBCHECK),1)
+test-dir:
+	@mkdir -p $(OBJDIR)/test
+
+test: test-dir $(TESTS)
+	@for t in $(TESTS); do \
+		LD_LIBRARY_PATH='$(LD_PATH)' $(OBJDIR)/test/$$t; \
+	done
+else
+test:
+	@echo "Cannot run unit tests. libcheck was not found."
+endif
