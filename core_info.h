@@ -110,14 +110,6 @@ typedef struct
    size_t info_count;
 } core_info_list_t;
 
-typedef struct 
-{
-   core_info_t *items;
-   size_t length;
-   size_t capacity;
-   bool refresh;
-} core_info_cache_list_t;
-
 typedef struct core_info_ctx_firmware
 {
    const char *path;
@@ -165,7 +157,7 @@ bool core_info_get_current_core(core_info_t **core);
 void core_info_deinit_list(void);
 
 bool core_info_init_list(const char *path_info, const char *dir_cores,
-      const char *exts, bool show_hidden_files);
+      const char *exts, bool show_hidden_files, bool enable_cache);
 
 bool core_info_get_list(core_info_list_t **core);
 
@@ -212,13 +204,11 @@ core_info_state_t *coreinfo_get_ptr(void);
 
 bool core_info_core_file_id_is_equal(const char *core_path_a, const char *core_path_b);
 
-core_info_t *core_info_get_cache(core_info_cache_list_t *list, char *core_file_id);
-void core_info_add_cache(core_info_cache_list_t *list, core_info_t *info);
-void core_info_copy(core_info_t *src, core_info_t *dst);
-void core_info_write_cache_file(core_info_cache_list_t *list, const char *info_dir);
-core_info_cache_list_t *core_info_read_cache_file(const char *info_dir);
-core_info_cache_list_t *new_core_info_cache_list(void);
-void core_info_check_uninstalled(core_info_cache_list_t *list);
+/* When called, generates a temporary file
+ * that will force an info cache refresh the
+ * next time that core info is initialised with
+ * caching enabled */
+bool core_info_cache_force_refresh(const char *path_info);
 
 RETRO_END_DECLS
 

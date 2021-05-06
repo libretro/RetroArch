@@ -243,6 +243,15 @@
 #endif
 #define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
 
+/* Specifies whether to cache core info
+ * into a single (compressed) file for improved
+ * load times on platforms with slow IO */
+#if defined(_3DS)
+#define DEFAULT_CORE_INFO_CACHE_ENABLE true
+#else
+#define DEFAULT_CORE_INFO_CACHE_ENABLE false
+#endif
+
 /* Specifies whether to 'reload' (fork and quit)
  * RetroArch when launching content with the
  * currently loaded core

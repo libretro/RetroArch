@@ -7809,6 +7809,20 @@ static void general_write_handler(rarch_setting_t *setting)
             task_push_wifi_disable(NULL);
 #endif
          break;
+      case MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE:
+         {
+            settings_t *settings           = config_get_ptr();
+            const char *dir_libretro       = settings->paths.directory_libretro;
+            const char *path_libretro_info = settings->paths.path_libretro_info;
+
+            /* When enabling the core info cache,
+             * force a cache refresh on the next
+             * core info initialisation */
+            if (*setting->value.target.boolean)
+               core_info_cache_force_refresh(!string_is_empty(path_libretro_info) ?
+                     path_libretro_info : dir_libretro);
+         }
+         break;
       default:
          break;
    }
@@ -9327,9 +9341,9 @@ static bool setting_append_list(
          {
             unsigned i, listing = 0;
 #ifndef HAVE_DYNAMIC
-            struct bool_entry bool_entries[7];
+            struct bool_entry bool_entries[8];
 #else
-            struct bool_entry bool_entries[6];
+            struct bool_entry bool_entries[7];
 #endif
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -9382,6 +9396,13 @@ static bool setting_append_list(
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
             bool_entries[listing].default_value  = DEFAULT_ALLOW_ROTATE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.core_info_cache_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE;
+            bool_entries[listing].default_value  = DEFAULT_CORE_INFO_CACHE_ENABLE;
+            bool_entries[listing].flags          = SD_FLAG_NONE;
             listing++;
 
 #ifndef HAVE_DYNAMIC
