@@ -89,6 +89,7 @@ typedef struct
    bool database_match_archive_member;
    bool is_experimental;
    bool is_locked;
+   bool is_installed;
 } core_info_t;
 
 /* A subset of core_info parameters required for
@@ -108,6 +109,14 @@ typedef struct
    size_t count;
    size_t info_count;
 } core_info_list_t;
+
+typedef struct 
+{
+   core_info_t *items;
+   size_t length;
+   size_t capacity;
+   bool refresh;
+} core_info_cache_list_t;
 
 typedef struct core_info_ctx_firmware
 {
@@ -202,6 +211,14 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path);
 core_info_state_t *coreinfo_get_ptr(void);
 
 bool core_info_core_file_id_is_equal(const char *core_path_a, const char *core_path_b);
+
+core_info_t *core_info_get_cache(core_info_cache_list_t *list, char *core_file_id);
+void core_info_add_cache(core_info_cache_list_t *list, core_info_t *info);
+void core_info_copy(core_info_t *src, core_info_t *dst);
+void core_info_write_cache_file(core_info_cache_list_t *list, const char *info_dir);
+core_info_cache_list_t *core_info_read_cache_file(const char *info_dir);
+core_info_cache_list_t *new_core_info_cache_list(void);
+void core_info_check_uninstalled(core_info_cache_list_t *list);
 
 RETRO_END_DECLS
 
