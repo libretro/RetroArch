@@ -14131,6 +14131,7 @@ bool command_event(enum event_command cmd, void *data)
             const char *dir_libretro       = settings->paths.directory_libretro;
             const char *path_libretro_info = settings->paths.path_libretro_info;
             bool show_hidden_files         = settings->bools.show_hidden_files;
+            bool core_info_cache_enable    = settings->bools.core_info_cache_enable;
 
             ext_name[0]                    = '\0';
 
@@ -14143,7 +14144,8 @@ bool command_event(enum event_command cmd, void *data)
                core_info_init_list(path_libretro_info,
                      dir_libretro,
                      ext_name,
-                     show_hidden_files
+                     show_hidden_files,
+                     core_info_cache_enable
                      );
          }
          break;

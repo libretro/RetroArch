@@ -2886,6 +2886,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Check if all the required firmware is present before attempting to load content."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "Cache Core Info Files"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "Maintain a persistent local cache of installed core information. Greatly reduces loading times on platforms with slow disk access."
+   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,

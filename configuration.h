@@ -777,6 +777,7 @@ typedef struct settings
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
       bool check_firmware_before_loading;
+      bool core_info_cache_enable;
 #ifndef HAVE_DYNAMIC
       bool always_reload_core_on_run_content;
 #endif
