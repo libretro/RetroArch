@@ -8753,15 +8753,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #endif
-#ifdef HAVE_LAKKA_SWITCH
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_REBOOT,
-               MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-#else
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_REBOOT,
@@ -8769,7 +8760,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-#endif
+
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REBOOT);
 
          CONFIG_ACTION(
@@ -16359,6 +16350,7 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_LAKKA
+#ifndef HAVE_LAKKA_SWITCH
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_CPU_PERFPOWER,
@@ -16366,6 +16358,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);

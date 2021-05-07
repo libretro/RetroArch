@@ -9834,6 +9834,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          /* No-op */
          break;
 #endif
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       case DISPLAYLIST_CPU_POLICY_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -9886,6 +9887,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_clear   = true;
          break;
       }
+#endif
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       case DISPLAYLIST_SWITCH_CPU_PROFILE:

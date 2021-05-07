@@ -1010,6 +1010,7 @@ static int action_bind_sublabel_bluetooth_list(
    return 0;
 }
 
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
 static int action_bind_sublabel_cpu_policy_entry_list(
       file_list_t *list,
@@ -1029,7 +1030,7 @@ static int action_bind_sublabel_cpu_policy_entry_list(
    return -1;
 }
 #endif
-
+#endif
 #ifdef HAVE_CHEEVOS
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -3942,9 +3943,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_TIMEZONE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timezone);
             break;
+#ifndef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_CPU_POLICY_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cpu_policy_entry_list);
             break;
+#endif
 #endif
          case MENU_ENUM_LABEL_USER_LANGUAGE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_language);

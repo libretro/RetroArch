@@ -1010,12 +1010,14 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_LEFT(cbs, manual_content_scan_core_name_left);
                break;
+            #ifndef HAVE_LAKKA_SWITCH
             #ifdef HAVE_LAKKA
             case MENU_ENUM_LABEL_CPU_POLICY_MAX_FREQ:
             case MENU_ENUM_LABEL_CPU_POLICY_MIN_FREQ:
             case MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR:
                BIND_ACTION_LEFT(cbs, cpu_policy_freq_tweak);
                break;
+            #endif
             #endif
             default:
                return -1;

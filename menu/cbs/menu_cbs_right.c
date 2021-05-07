@@ -789,6 +789,7 @@ static int manual_content_scan_core_name_right(unsigned type, const char *label,
    return 0;
 }
 
+#ifdef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
 static int cpu_policy_freq_tweak(unsigned type, const char *label,
       bool wraparound)
@@ -827,7 +828,7 @@ static int cpu_policy_freq_tweak(unsigned type, const char *label,
    return 0;
 }
 #endif
-
+#endif
 int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1129,12 +1130,14 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_RIGHT(cbs, manual_content_scan_core_name_right);
                break;
+            #ifndef HAVE_LAKKA_SWITCH
             #ifdef HAVE_LAKKA
             case MENU_ENUM_LABEL_CPU_POLICY_MAX_FREQ:
             case MENU_ENUM_LABEL_CPU_POLICY_MIN_FREQ:
             case MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR:
                BIND_ACTION_RIGHT(cbs, cpu_policy_freq_tweak);
                break;
+            #endif
             #endif
             default:
                return -1;
