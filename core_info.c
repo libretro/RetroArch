@@ -1222,17 +1222,23 @@ static void core_info_path_list_free(core_path_list_t *path_list)
 }
 
 static core_path_list_t *core_info_path_list_new(const char *core_dir,
-      const char *core_ext, bool show_hidden_files)
+      const char *core_exts, bool show_hidden_files)
 {
-   core_path_list_t *path_list = (core_path_list_t*)calloc(1, sizeof(*path_list));
-   bool dir_list_ok            = false;
+   core_path_list_t *path_list       = (core_path_list_t*)
+         calloc(1, sizeof(*path_list));
+   struct string_list *core_ext_list = NULL;
+   bool dir_list_ok                  = false;
    char exts[32];
    size_t i;
 
    exts[0] = '\0';
 
-   if (string_is_empty(core_ext) ||
+   if (string_is_empty(core_exts) ||
        !path_list)
+      goto error;
+
+   core_ext_list = string_split(core_exts, "|");
+   if (!core_ext_list)
       goto error;
 
    /* Allocate list containers */
@@ -1249,7 +1255,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Get list of file extensions to include
     * (core + lock file) */
-   fill_pathname_join_delim(exts, core_ext, FILE_PATH_LOCK_EXTENSION_NO_DOT,
+   fill_pathname_join_delim(exts, core_exts, FILE_PATH_LOCK_EXTENSION_NO_DOT,
          '|', sizeof(exts));
 
    /* Fetch core directory listing */
@@ -1303,7 +1309,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
          continue;
 
       /* Check whether this is a core or lock file */
-      if (string_is_equal(file_ext, core_ext))
+      if (string_list_find_elem(core_ext_list, file_ext))
       {
          path_list->core_list->list[
                path_list->core_list->size].path     = file_path;
@@ -1321,9 +1327,11 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
       }
    }
 
+   string_list_free(core_ext_list);
    return path_list;
 
 error:
+   string_list_free(core_ext_list);
    core_info_path_list_free(path_list);
    return NULL;
 }
