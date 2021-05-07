@@ -50,6 +50,11 @@
 
 #define CORE_INFO_CACHE_DEFAULT_CAPACITY 8
 
+/* TODO/FIXME: Apparently rzip compression is an issue on UWP */
+#if defined(HAVE_ZLIB) && !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#define CORE_INFO_CACHE_COMPRESS
+#endif
+
 typedef struct
 {
    core_info_t *items;
@@ -746,8 +751,7 @@ static void core_info_cache_write(core_info_cache_list_t *list, const char *info
       fill_pathname_join(file_path, info_dir, FILE_PATH_CORE_INFO_CACHE,
             sizeof(file_path));
 
-   /* TODO/FIXME: Apparently rzip compression is an issue on UWP */
-#if defined(HAVE_ZLIB) && !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#if defined(CORE_INFO_CACHE_COMPRESS)
    file = intfstream_open_rzip_file(file_path,
          RETRO_VFS_FILE_ACCESS_WRITE);
 #else
@@ -769,6 +773,13 @@ static void core_info_cache_write(core_info_cache_list_t *list, const char *info
       RARCH_ERR("[Core Info] Failed to create JSON writer\n");
       goto end;
    }
+
+#if defined(CORE_INFO_CACHE_COMPRESS)
+   /* When compressing info cache, human readability
+    * is not a factor - can skip all indentation
+    * and new line characters */
+   rjsonwriter_set_options(writer, RJSONWRITER_OPTION_SKIP_WHITESPACE);
+#endif
 
    rjsonwriter_add_start_object(writer);
    rjsonwriter_add_newline(writer);
