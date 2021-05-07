@@ -29,6 +29,7 @@
 
 #define BUFFER_SIZE 8192
 
+/* Copy a file from local storage folder to the corresponding RetroArch folder. */
 bool cloud_storage_local_folder_download_file(
    cloud_storage_item_t *file_to_download,
    char *local_file)
@@ -50,6 +51,7 @@ bool cloud_storage_local_folder_download_file(
       return false;
    }
 
+   /* Copy the file 8k bytes at a time */
    bytes_read = filestream_read(src_file, buffer, BUFFER_SIZE);
    while (bytes_read > 0) {
       filestream_write(dest_file, buffer, bytes_read);

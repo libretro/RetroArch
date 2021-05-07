@@ -30,22 +30,26 @@
 
 static char *_base_dir = NULL;
 
-bool _ready_for_request(void)
+/* Ready if the base folder for local folder provider exists */
+static bool _ready_for_request(void)
 {
    return _base_dir != NULL;
 }
 
+/* Get the base directory for the local folder provider. */
 const char *cloud_storage_local_folder_get_base_dir()
 {
    return _base_dir;
 }
 
+/* Create the storage provider structure for the local folder provider. */
 cloud_storage_provider_t *cloud_storage_local_folder_create(void)
 {
    cloud_storage_provider_t *provider;
 
    provider = (cloud_storage_provider_t *)malloc(sizeof(cloud_storage_provider_t));
 
+   /* Assign the function pointers */
    provider->ready_for_request = _ready_for_request;
    provider->list_files = cloud_storage_local_folder_list_files;
    provider->download_file = cloud_storage_local_folder_download_file;
@@ -56,6 +60,7 @@ cloud_storage_provider_t *cloud_storage_local_folder_create(void)
    provider->delete_file = cloud_storage_local_folder_delete_file;
    provider->create_folder = cloud_storage_local_folder_create_folder;
 
+   /* Create the base directory if it doesn't exist */
    if (!_base_dir)
    {
       _base_dir = getenv("RETRO_CLOUD_STORAGE_TEST");
@@ -64,6 +69,9 @@ cloud_storage_provider_t *cloud_storage_local_folder_create(void)
          char *tmpdir;
          size_t tmpdir_len;
 
+         /* Will create in the temp directory. Try to identify an appropriate
+          * directory to use for the temp directory.
+          */
          tmpdir = getenv("TMPDIR");
          if (!tmpdir){
             tmpdir = getenv("TMP");
@@ -82,6 +90,7 @@ cloud_storage_provider_t *cloud_storage_local_folder_create(void)
 
          if (tmpdir)
          {
+            /* Found a temp directory to use */
             _base_dir = pathname_join(tmpdir, "retro_cloud_storage_test");
             if (!path_is_directory(_base_dir) && !path_mkdir(_base_dir)) {
                free(_base_dir);

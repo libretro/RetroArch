@@ -30,6 +30,7 @@
 #include "../../provider_common.h"
 #include "local_folder_internal.h"
 
+/* Create a new metadata structure for file in the local folder directory. */
 static cloud_storage_item_t *_get_file_metadata(const char *folder_path, const char *filename)
 {
    char *absolute_path;
@@ -48,11 +49,17 @@ static cloud_storage_item_t *_get_file_metadata(const char *folder_path, const c
    return metadata;
 }
 
-void _free_file_list(void *file)
+/* Release the memory for a cloud_storage_item_t. Use this function with
+ * linked_list_free().
+ */
+static void _free_file_list(void *file)
 {
    cloud_storage_item_free((cloud_storage_item_t *)file);
 }
 
+/* Add the metadata for the files in the local folder directory to the
+ * folder metadata.
+ */
 void cloud_storage_local_folder_list_files(cloud_storage_item_t *folder)
 {
    RDIR *dir;
@@ -70,6 +77,7 @@ void cloud_storage_local_folder_list_files(cloud_storage_item_t *folder)
       return;
    }
 
+   /* Read the directory and add each file as a child of the folder */
    while (retro_readdir(dir))
    {
       const char *filename;

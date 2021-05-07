@@ -29,6 +29,10 @@
 #include "../../cloud_storage.h"
 #include "local_folder_internal.h"
 
+/* Create the metadata for a local folder. If the doesn't exist create it.
+ * Return NULL if unable create the folder.
+ * id attribute is the absolute path.
+ */
 cloud_storage_item_t *cloud_storage_local_folder_create_folder(const char *folder_name)
 {
    char *absolute_path;

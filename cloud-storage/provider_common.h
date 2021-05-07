@@ -27,6 +27,16 @@
 
 RETRO_BEGIN_DECLS
 
+/**
+ * @brief Get the hex encoded MD5 hash of a local file
+ *
+ * Calculates the MD5 checksum of the contents of a local file. The checksum
+ * is hex encoded and returned a newly allocated char*. Caller must release
+ * the returned string.
+ *
+ * @param absolute_filename absolute filename of the local file
+ * @return hex encoded MD5 checksum of file contents
+ */
 char *cloud_storage_get_md5_hash(char *absolute_filename);
 
 RETRO_END_DECLS

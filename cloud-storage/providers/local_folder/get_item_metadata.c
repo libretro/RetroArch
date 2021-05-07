@@ -30,6 +30,10 @@
 #include "../../provider_common.h"
 #include "local_folder_internal.h"
 
+/* Get the metadata for a folder in the local storage folder. Return NULL if it
+ * doesn't exist.
+ * id attribute is the absolute path
+ */
 cloud_storage_item_t *cloud_storage_local_folder_get_folder_metadata(const char *folder_name)
 {
    char *absolute_path;
@@ -44,6 +48,7 @@ cloud_storage_item_t *cloud_storage_local_folder_get_folder_metadata(const char 
       return NULL;
    }
 
+   /* Create the metadata */
    metadata = (cloud_storage_item_t *)calloc(sizeof(cloud_storage_item_t), 1);
    metadata->id = absolute_path;
    metadata->item_type = CLOUD_STORAGE_FOLDER;
@@ -54,6 +59,10 @@ cloud_storage_item_t *cloud_storage_local_folder_get_folder_metadata(const char 
    return metadata;
 }
 
+/* Get the metadata for a file in the local storage folder. Return NULL if it
+ * doesn't exist. The file is identified from its metadata.
+ * id attribute is the absolute path
+ */
 cloud_storage_item_t *cloud_storage_local_folder_get_file_metadata(cloud_storage_item_t *file)
 {
    cloud_storage_item_t *metadata;
@@ -62,6 +71,7 @@ cloud_storage_item_t *cloud_storage_local_folder_get_file_metadata(cloud_storage
       return NULL;
    }
 
+   /* Create the metadata */
    metadata = (cloud_storage_item_t *)calloc(sizeof(cloud_storage_item_t), 1);
    metadata->id = strdup(file->id);
    metadata->name = strdup(file->name);
@@ -73,6 +83,11 @@ cloud_storage_item_t *cloud_storage_local_folder_get_file_metadata(cloud_storage
    return metadata;
 }
 
+/* Get the metadata for a file in the local storage folder. Return NULL if it
+ * doesn't exist. The file is identified from its parent folder's metadata
+ * and filename.
+ * id attribute is the absolute path
+ */
 cloud_storage_item_t *cloud_storage_local_folder_get_file_metadata_by_name(
    cloud_storage_item_t *folder,
    char *filename)
@@ -88,6 +103,7 @@ cloud_storage_item_t *cloud_storage_local_folder_get_file_metadata_by_name(
       return NULL;
    }
 
+   /* Create the metadata */
    metadata = (cloud_storage_item_t *)calloc(sizeof(cloud_storage_item_t), 1);
    metadata->id = absolute_path;
    metadata->item_type = CLOUD_STORAGE_FILE;

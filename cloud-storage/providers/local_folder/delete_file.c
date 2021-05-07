@@ -27,6 +27,7 @@
 #include "../../cloud_storage.h"
 #include "local_folder_internal.h"
 
+/* Delete the local file. */
 bool cloud_storage_local_folder_delete_file(cloud_storage_item_t *file)
 {
    filestream_delete(file->id);

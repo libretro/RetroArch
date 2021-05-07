@@ -29,6 +29,9 @@
 
 #define BUFFER_SIZE 8192
 
+/* Copy a file from a RetroArch directory to a folder in the local folder provider
+ * base directory. Tries to create the destination file if it doesn't exist.
+ */
 bool cloud_storage_local_folder_upload_file(
    cloud_storage_item_t *remote_dir,
    cloud_storage_item_t *remote_file,
@@ -46,6 +49,7 @@ bool cloud_storage_local_folder_upload_file(
       return false;
    }
 
+   /* Try to open the destination file, creating if needed */
    dest_filename = pathname_join(remote_dir->id, remote_file->name);
    dest_file = filestream_open(dest_filename, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!dest_file) {
@@ -55,6 +59,7 @@ bool cloud_storage_local_folder_upload_file(
    }
    free(dest_filename);
 
+   /* Copy the file contents over 8k at a time */
    bytes_read = filestream_read(src_file, buffer, BUFFER_SIZE);
    while (bytes_read > 0) {
       filestream_write(dest_file, buffer, bytes_read);

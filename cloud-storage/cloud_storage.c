@@ -91,7 +91,7 @@ static void _sync_files_execute(folder_type_t folder_type);
 
 static void _upload_file_execute(folder_type_t folder_type, char *file_name);
 
-void cloud_storage_item_list_free(void *item)
+void _cloud_storage_item_free_fn(void *item)
 {
    cloud_storage_item_free((cloud_storage_item_t *) item);
 }
@@ -117,7 +117,7 @@ void cloud_storage_item_free(cloud_storage_item_t *item)
 
       if (item->item_type == CLOUD_STORAGE_FOLDER)
       {
-         linked_list_free(item->type_data.folder.children, &cloud_storage_item_list_free);
+         linked_list_free(item->type_data.folder.children, &_cloud_storage_item_free_fn);
       }
 
       free(item);
@@ -147,7 +147,7 @@ static void _free_operation(struct _operation_t *operation)
    free(operation);
 }
 
-static void _free_operation_list(void *operation)
+static void _free_operation_fn(void *operation)
 {
    _free_operation((struct _operation_t *) operation);
 }
@@ -158,8 +158,13 @@ static void _operation_thread_loop(void *user_data)
    {
       struct _operation_t *operation;
 
+      /* In the critical section:
+       * - Go back to waiting if the opertion queue is empty
+       * - Break out of the loop and shutdown the operation thread if
+       *   _shutdown is true
+       * - Pop an operation off of the queue and release the lock
+       */
       slock_lock(_operation_queue_mutex);
-
       if (generic_queue_length(_operation_queue) == 0)
       {
          scond_wait(_operation_condition, _operation_queue_mutex);
@@ -172,7 +177,6 @@ static void _operation_thread_loop(void *user_data)
       }
 
       operation = (struct _operation_t *)generic_queue_pop(_operation_queue);
-
       slock_unlock(_operation_queue_mutex);
 
       if (operation)
@@ -193,9 +197,10 @@ static void _operation_thread_loop(void *user_data)
       }
    }
 
+   /* Broke out of the operation loop, will shutdown the operation thread */
    if (_operation_queue)
    {
-      generic_queue_free(_operation_queue, &_free_operation_list);
+      generic_queue_free(_operation_queue, &_free_operation_fn);
    }
 }
 
@@ -230,10 +235,10 @@ void cloud_storage_shutdown(void)
       return;
    }
 
+   /* Signal the operation thread to shutdown in a critical section */
    slock_lock(_operation_queue_mutex);
    _shutdown = true;
    scond_signal(_operation_condition);
-
    slock_unlock(_operation_queue_mutex);
 
    sthread_join(_operation_thread);
@@ -256,6 +261,7 @@ char *cloud_storage_get_md5_hash(char *absolute_filename)
 
    MD5_Init(&md5_ctx);
 
+   /* Pass the contents of the local file through the MD5 hash function */
    bytes_read = filestream_read(file, buffer, BUFFER_SIZE);
    while (bytes_read > 0)
    {
@@ -267,12 +273,14 @@ char *cloud_storage_get_md5_hash(char *absolute_filename)
    checksum = (unsigned char *)calloc(16, sizeof(char));
    MD5_Final(checksum, &md5_ctx);
 
+   /* Convert the MD5 checksum to a hex string */
    checksum_str = bytes_to_hex_str(checksum, 16);
    free(checksum);
 
    return checksum_str;
 }
 
+/* Converts a value (game save/state directory setting) to an absolute directory path */
 static char *_config_value_to_directory(const char *value)
 {
    char *dir;
@@ -293,6 +301,7 @@ static char *_config_value_to_directory(const char *value)
    return dir;
 }
 
+/* Generate the local absolute filename from the folder category and filename */
 static char *_get_absolute_filename(folder_type_t folder_type, char *filename)
 {
    global_t *global;
@@ -317,6 +326,14 @@ static char *_get_absolute_filename(folder_type_t folder_type, char *filename)
    return absolute_filename;
 }
 
+/**
+ * Retrieve the metadata for a storage provider file that corresponds to
+ * a local file.
+ *
+ * @param folder_type folder category for the local file
+ * @param local_file name of the local file
+ * @return metadata for the storage provider file
+ */
 static cloud_storage_item_t *_get_remote_file_for_local_file(
    folder_type_t folder_type,
    char *local_file)
@@ -339,6 +356,7 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
       return NULL;
    }
 
+   /* Look for the file among the immediate children */
    iterator = linked_list_iterator(folder->type_data.folder.children, true);
    while (iterator)
    {
@@ -355,10 +373,12 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
    }
 
    return file;
-
-   return NULL;
 }
 
+/* Check if a file needs to be uploaded
+ * - Storage provider does not have a corresponding file
+ * - The checksums are different
+ */
 static bool _file_need_upload(folder_type_t folder_type, char *local_file, cloud_storage_item_t *remote_file)
 {
    char *checksum_str = NULL;
@@ -386,6 +406,15 @@ static bool _file_need_upload(folder_type_t folder_type, char *local_file, cloud
    return need_upload;
 }
 
+/**
+ * @brief Copies a local file to the storage provider
+ *
+ * Copy a local file to a corresponding file in the storage provider.
+ *
+ * @param folder_type folder category
+ * @param local_file absolute path of the local file to copy
+ * @param remote_file metadata for the file in the storage provider
+ */
 static void _upload_file(folder_type_t folder_type, char *local_file, cloud_storage_item_t *remote_file)
 {
    cloud_storage_item_t *remote_folder;
@@ -405,6 +434,7 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
       return;
    }
 
+   /* If not in storage provider, make a new metadata structure */
    if (!remote_file)
    {
       remote_file = (cloud_storage_item_t *)calloc(1, sizeof(cloud_storage_item_t));
@@ -413,6 +443,7 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
       new_file = true;
    }
 
+   /* If the upload succeeded, update teh checksum and last sync time */
    if (_provider->upload_file(
       remote_folder,
       remote_file,
@@ -429,6 +460,7 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
 
       remote_file->last_sync_time = time(NULL);
 
+      /* If new, add to the parent folder */
       if (new_file)
       {
          linked_list_add(remote_folder->type_data.folder.children, remote_file);
@@ -436,6 +468,7 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
    }
 }
 
+/* Copy the metadata from one structure to another */
 static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_storage_item_t *other)
 {
    if (item_to_update->name)
@@ -449,6 +482,7 @@ static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_st
       item_to_update->name = strdup(other->name);
    }
 
+   /* Copy the file attributes */
    if (item_to_update->item_type == CLOUD_STORAGE_FILE)
    {
       if (item_to_update->type_data.file.download_url)
@@ -465,6 +499,8 @@ static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_st
    }
 
    item_to_update->item_type = other->item_type;
+
+   /* Copy the folder attributes */
    if (other->item_type == CLOUD_STORAGE_FILE)
    {
       if (other->type_data.file.download_url)
@@ -486,6 +522,9 @@ static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_st
    }
 }
 
+/* Iterate over the files in a local folder category. Find any files that
+ * need to be uploaded and upload them to the storage provider.
+ */
 static void _sync_files_upload(folder_type_t folder_type)
 {
    global_t *global;
@@ -522,6 +561,7 @@ static void _sync_files_upload(folder_type_t folder_type)
       path_basedir(dir_name);
    }
 
+   /* Iterate over the local files */
    dir = retro_opendir(dir_name);
    while (dir != NULL && retro_readdir(dir))
    {
@@ -534,6 +574,7 @@ static void _sync_files_upload(folder_type_t folder_type)
       {
          cloud_storage_item_t *remote_file;
 
+         /* Look for a matching file in the storage provider */
          remote_file = _get_remote_file_for_local_file(folder_type, filename);
          if (remote_file && remote_file->item_type == CLOUD_STORAGE_FOLDER)
          {
@@ -542,6 +583,7 @@ static void _sync_files_upload(folder_type_t folder_type)
          {
             cloud_storage_item_t *current_metadata;
 
+            /* If the metadata is at least 30s old, consider it stale and refresh */
             if (remote_file->last_sync_time < time(NULL) - 30)
             {
                current_metadata = _provider->get_file_metadata(remote_file);
@@ -550,6 +592,7 @@ static void _sync_files_upload(folder_type_t folder_type)
             }
          }
 
+         /* Upload the file if necessary */
          if (_file_need_upload(folder_type, absolute_filename, remote_file))
          {
             _upload_file(folder_type, absolute_filename, remote_file);
@@ -562,6 +605,7 @@ static void _sync_files_upload(folder_type_t folder_type)
    free(dir_name);
 }
 
+/* Check for a local file that corresponds to a file from the storage provider */
 static bool _have_local_file_for_remote_file(
    folder_type_t folder_type,
    cloud_storage_item_t *remote_file)
@@ -596,6 +640,7 @@ static bool _have_local_file_for_remote_file(
 
    path_basedir(dir_name);
 
+   /* Check the local files in the folder category for a matching file */
    dir = retro_opendir(dir_name);
    while (dir != NULL && retro_readdir(dir))
    {
@@ -611,6 +656,10 @@ static bool _have_local_file_for_remote_file(
    return found;
 }
 
+/* Check if a file in the storage provider needs to be copied to a local file
+ * - Local file does not exist
+ * - Checksums are different
+ */
 static bool _file_need_download(char *local_file, cloud_storage_item_t *remote_file)
 {
    char *checksum_str = NULL;
@@ -639,6 +688,7 @@ static bool _file_need_download(char *local_file, cloud_storage_item_t *remote_f
    return need_download;
 }
 
+/* Copy a file from the storage provider to a local file */
 static void _download_file(char *local_file, cloud_storage_item_t *remote_file)
 {
    _provider->download_file(
@@ -647,6 +697,9 @@ static void _download_file(char *local_file, cloud_storage_item_t *remote_file)
    );
 }
 
+/* Iterate over the files in the storage provider for a given folder category
+ * and download any files that need downloading.
+ */
 static void _sync_files_download(folder_type_t folder_type)
 {
    cloud_storage_item_t *remote_folder;
@@ -667,6 +720,7 @@ static void _sync_files_download(folder_type_t folder_type)
       return;
    }
 
+   /* Iterate over the remote files */
    iterator = linked_list_iterator(remote_folder->type_data.folder.children, true);
    while (iterator)
    {
@@ -676,6 +730,7 @@ static void _sync_files_download(folder_type_t folder_type)
 
       remote_file = (cloud_storage_item_t *)linked_list_iterator_value(iterator);
 
+      /* If the metadata is at least 30s old, consider it stale and refresh */
       if (remote_file->last_sync_time < time(NULL) - 30)
       {
          current_metadata = _provider->get_file_metadata(remote_file);
@@ -690,6 +745,7 @@ static void _sync_files_download(folder_type_t folder_type)
 
       local_file = _get_absolute_filename(folder_type, remote_file->name);
 
+      /* Check if storage provider file needs to be downloaded */
       if (!local_file)
       {
          need_download = false;
@@ -701,6 +757,7 @@ static void _sync_files_download(folder_type_t folder_type)
          need_download = true;
       }
 
+      /* Download the file */
       if (need_download)
       {
          _download_file(local_file, remote_file);
@@ -710,6 +767,9 @@ static void _sync_files_download(folder_type_t folder_type)
    }
 }
 
+/* For a folder category, create the folder in the storage provider if missing.
+ * If it was present already, get the list of files in the folder.
+ */
 static bool _prepare_folder(folder_type_t folder_type)
 {
    const char *folder_name;
@@ -727,6 +787,7 @@ static bool _prepare_folder(folder_type_t folder_type)
 
    if (*folder == NULL)
    {
+      /* Need to try to get the metadata from the storage provider */
       *folder = _provider->get_folder_metadata(folder_name);
       if (*folder)
       {
@@ -734,6 +795,7 @@ static bool _prepare_folder(folder_type_t folder_type)
          return true;
       } else
       {
+         /* Folder didn't exist, so create it */
          *folder = _provider->create_folder(folder_name);
          return *folder != NULL;
       }
@@ -743,6 +805,7 @@ static bool _prepare_folder(folder_type_t folder_type)
    }
 }
 
+/* Peforms the file sync operations (upload and download). */
 static void _sync_files_execute(folder_type_t folder_type)
 {
    if (!_prepare_folder(folder_type))
@@ -754,6 +817,7 @@ static void _sync_files_execute(folder_type_t folder_type)
    _sync_files_download(folder_type);
 }
 
+/* Adds a new file sync operation to the operation queue. */
 void cloud_storage_sync_files(void)
 {
    bool sync_states;
@@ -768,6 +832,7 @@ void cloud_storage_sync_files(void)
 
    if (!sync_states)
    {
+      /* Only want to sync if the folder has changed */
       return;
    } else
    {
@@ -776,12 +841,16 @@ void cloud_storage_sync_files(void)
 
    slock_lock(_operation_queue_mutex);
 
+   /* Ignore the sync operation if the storage provider is not ready */
    if (!_provider->ready_for_request())
    {
       slock_unlock(_operation_queue_mutex);
       return;
    }
 
+   /* Remove any pending upload and download operations, since a sync will upload and
+    * download all files/
+    */
    iterator = generic_queue_iterator(_operation_queue, true);
    while (iterator) {
       struct _operation_t *operation;
@@ -797,16 +866,17 @@ void cloud_storage_sync_files(void)
       }
    }
 
+   /* Create the new sync operation and add it to the operation queue */
    operation = (struct _operation_t *)calloc(1, sizeof(struct _operation_t));
    operation->operation_type = SYNC_FILES;
    operation->parameters.sync.folder_type = CLOUD_STORAGE_GAME_STATES;
    generic_queue_push(_operation_queue, operation);
 
    scond_signal(_operation_condition);
-
    slock_unlock(_operation_queue_mutex);
 }
 
+/* Performs a copy of a local file to the storage provider */
 static void _upload_file_execute(folder_type_t folder_type, char *file_name)
 {
    cloud_storage_item_t *remote_file;
@@ -823,6 +893,7 @@ static void _upload_file_execute(folder_type_t folder_type, char *file_name)
    }
 }
 
+/* Adds a new file upload operation to the operation queue. */
 void cloud_storage_upload_file(folder_type_t folder_type, char *file_name)
 {
    struct _operation_t *operation;
@@ -836,6 +907,7 @@ void cloud_storage_upload_file(folder_type_t folder_type, char *file_name)
       return;
    }
 
+   /* Look for any pending sync or matching upload operations. If any are found, do not add this operation. */
    iterator = generic_queue_iterator(_operation_queue, true);
    while (iterator)
    {
@@ -859,6 +931,7 @@ void cloud_storage_upload_file(folder_type_t folder_type, char *file_name)
       iterator = generic_queue_iterator_next(iterator);
    }
 
+   /* Create the new upload operation and add it to the operation queue */
    operation = (struct _operation_t *)calloc(1, sizeof(struct _operation_t));
    operation->operation_type = UPLOAD_FILE;
    operation->parameters.sync.folder_type = folder_type;
