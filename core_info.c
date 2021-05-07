@@ -50,6 +50,11 @@
 
 #define CORE_INFO_CACHE_DEFAULT_CAPACITY 8
 
+/* TODO/FIXME: Apparently rzip compression is an issue on UWP */
+#if defined(HAVE_ZLIB) && !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#define CORE_INFO_CACHE_COMPRESS
+#endif
+
 typedef struct
 {
    core_info_t *items;
@@ -746,8 +751,7 @@ static void core_info_cache_write(core_info_cache_list_t *list, const char *info
       fill_pathname_join(file_path, info_dir, FILE_PATH_CORE_INFO_CACHE,
             sizeof(file_path));
 
-   /* TODO/FIXME: Apparently rzip compression is an issue on UWP */
-#if defined(HAVE_ZLIB) && !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#if defined(CORE_INFO_CACHE_COMPRESS)
    file = intfstream_open_rzip_file(file_path,
          RETRO_VFS_FILE_ACCESS_WRITE);
 #else
@@ -769,6 +773,13 @@ static void core_info_cache_write(core_info_cache_list_t *list, const char *info
       RARCH_ERR("[Core Info] Failed to create JSON writer\n");
       goto end;
    }
+
+#if defined(CORE_INFO_CACHE_COMPRESS)
+   /* When compressing info cache, human readability
+    * is not a factor - can skip all indentation
+    * and new line characters */
+   rjsonwriter_set_options(writer, RJSONWRITER_OPTION_SKIP_WHITESPACE);
+#endif
 
    rjsonwriter_add_start_object(writer);
    rjsonwriter_add_newline(writer);
@@ -1222,17 +1233,23 @@ static void core_info_path_list_free(core_path_list_t *path_list)
 }
 
 static core_path_list_t *core_info_path_list_new(const char *core_dir,
-      const char *core_ext, bool show_hidden_files)
+      const char *core_exts, bool show_hidden_files)
 {
-   core_path_list_t *path_list = (core_path_list_t*)calloc(1, sizeof(*path_list));
-   bool dir_list_ok            = false;
+   core_path_list_t *path_list       = (core_path_list_t*)
+         calloc(1, sizeof(*path_list));
+   struct string_list *core_ext_list = NULL;
+   bool dir_list_ok                  = false;
    char exts[32];
    size_t i;
 
    exts[0] = '\0';
 
-   if (string_is_empty(core_ext) ||
+   if (string_is_empty(core_exts) ||
        !path_list)
+      goto error;
+
+   core_ext_list = string_split(core_exts, "|");
+   if (!core_ext_list)
       goto error;
 
    /* Allocate list containers */
@@ -1249,7 +1266,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Get list of file extensions to include
     * (core + lock file) */
-   fill_pathname_join_delim(exts, core_ext, FILE_PATH_LOCK_EXTENSION_NO_DOT,
+   fill_pathname_join_delim(exts, core_exts, FILE_PATH_LOCK_EXTENSION_NO_DOT,
          '|', sizeof(exts));
 
    /* Fetch core directory listing */
@@ -1303,7 +1320,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
          continue;
 
       /* Check whether this is a core or lock file */
-      if (string_is_equal(file_ext, core_ext))
+      if (string_list_find_elem(core_ext_list, file_ext))
       {
          path_list->core_list->list[
                path_list->core_list->size].path     = file_path;
@@ -1321,9 +1338,11 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
       }
    }
 
+   string_list_free(core_ext_list);
    return path_list;
 
 error:
+   string_list_free(core_ext_list);
    core_info_path_list_free(path_list);
    return NULL;
 }
