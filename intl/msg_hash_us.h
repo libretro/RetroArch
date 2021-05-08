@@ -540,11 +540,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "CPU Features"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "CPU Architecture:"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "CPU Cores:"
    )
@@ -2102,11 +2102,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    "Always enable 'Game Focus' mode when launching and resuming content. When set to 'Detect', option will be enabled if current core implements frontend keyboard callback functionality."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_OFF */
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "OFF"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_ON */
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    "ON"
    )
@@ -2584,6 +2584,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
    "Game Focus (Toggle)"
+   )
+MSG_HASH(
+   MENU_LOG_GAME_FOCUS_ON,
+   "Game Focus => ON"
+   )
+MSG_HASH(
+   MENU_LOG_GAME_FOCUS_OFF,
+   "Game Focus => OFF"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
@@ -7539,7 +7547,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
    "All Playlists"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_OFF */
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
    "OFF"
    )
@@ -7895,11 +7903,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
    "Fast"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME has multiple duplicates */
    MENU_ENUM_LABEL_VALUE_ON,
    "ON"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME has multiple duplicates */
    MENU_ENUM_LABEL_VALUE_OFF,
    "OFF"
    )
@@ -8425,7 +8433,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
    "5:3 (Centered)"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_OFF */
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "OFF"
    )
@@ -8577,7 +8585,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX,
    "Flux"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_OFF */
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
    "OFF"
    )
@@ -9188,11 +9196,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
    "Slide"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_OFF */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
    "OFF"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_OFF */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
    "OFF"
    )
@@ -9208,7 +9216,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
    "Dual Icon"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_OFF */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
    "OFF"
    )
@@ -9228,11 +9236,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP,
    "Desktop"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_OFF */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
    "OFF"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME duplicate of MENU_ENUM_LABEL_VALUE_ON */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
    "ON"
    )
@@ -10572,7 +10580,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUDIO_VOLUME,
-   "Audio volume"
+   "Audio volume: %.1f dB"
    )
 MSG_HASH(
    MSG_AUTODETECT,
@@ -11123,8 +11131,12 @@ MSG_HASH(
    "Got invalid disc index."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
-   "Grab mouse state"
+   MSG_GRAB_MOUSE_STATE_ON,
+   "Grab mouse state => ON"
+   )
+MSG_HASH(
+   MSG_GRAB_MOUSE_STATE_OFF,
+   "Grab mouse state => OFF"
    )
 MSG_HASH(
    MSG_GAME_FOCUS_ON,
@@ -11216,11 +11228,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
-   "Loading history file"
+   "Loading history file: [%s]."
    )
 MSG_HASH(
    MSG_LOADING_FAVORITES_FILE,
-   "Loading favorites file"
+   "Loading favorites file: [%s]."
    )
 MSG_HASH(
    MSG_LOADING_STATE,
@@ -11571,8 +11583,32 @@ MSG_HASH(
    "Bluetooth scan complete."
    )
 MSG_HASH(
+   MSG_ERROR_BLUETOOTH_DRIVER_NOT_FOUND,
+   "Couldn't find any bluetooth driver named \"%s\"\n"
+   )
+MSG_HASH(
+   MSG_LOG_OUTPUT_AVAILABLE_BLUETOOTH_DRIVERS,
+   "Available bluetooth drivers are:"
+   )
+MSG_HASH(
+   MSG_WARN_DEFAULTING_BLUETOOTH_DRIVER,
+   "Defaulting to first bluetooth driver..."
+   )
+MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
    "Wi-Fi scan complete."
+   )
+MSG_HASH(
+   MSG_ERROR_WIFI_DRIVER_NOT_FOUND,
+   "Couldn't find any wifi driver named \"%s\"\n"
+   )
+MSG_HASH(
+   MSG_LOG_OUTPUT_AVAILABLE_WIFI_DRIVERS,
+   "Available wifi drivers are:"
+   )
+MSG_HASH(
+   MSG_WARN_DEFAULTING_WIFI_DRIVER,
+   "Defaulting to first wifi driver..."
    )
 MSG_HASH(
    MSG_SCANNING_BLUETOOTH_DEVICES,
@@ -11601,6 +11637,118 @@ MSG_HASH(
 MSG_HASH(
    MSG_PREPARING_FOR_CONTENT_SCAN,
    "Preparing for content scan..."
+   )
+MSG_HASH(
+   MSG_ERROR_INPUT_DRIVER_NOT_FOUND,
+   "Couldn't find any input driver named \"%s\"\n"
+   )
+MSG_HASH(
+   MSG_LOG_OUTPUT_AVAILABLE_INPUT_DRIVERS,
+   "Available input drivers are:"
+   )
+MSG_HASH(
+   MSG_WARN_DEFAULTING_INPUT_DRIVER,
+   "Defaulting to first input driver..."
+   )
+MSG_HASH(
+   MSG_ERROR_AUDIO_DRIVER_NOT_FOUND,
+   "Couldn't find any audio driver named \"%s\"\n"
+   )
+MSG_HASH(
+   MSG_LOG_OUTPUT_AVAILABLE_AUDIO_DRIVERS,
+   "Available audio drivers are:"
+   )
+MSG_HASH(
+   MSG_WARN_DEFAULTING_AUDIO_DRIVER,
+   "Defaulting to first audio driver..."
+   )
+MSG_HASH(
+   MSG_LOGTAG_PLAYLIST,
+   "[Playlist]:"
+   )
+MSG_HASH(
+   MSG_LOGTAG_AUDIO,
+   "[Audio]:"
+   )
+MSG_HASH(
+   MSG_LOGTAG_INPUT,
+   "[Input]:"
+   )
+MSG_HASH(
+   MSG_LOG_AUDIO_BUFFER_STATISTICS_SATURATION,
+   "Average audio buffer saturation: %.2f%%, standard deviation (percentage points): %.2f%%."
+   )
+MSG_HASH(
+   MSG_LOG_AUDIO_BUFFER_STATISTICS_TIME_CLOSE_TO,
+   "Amount of time spent close to underrun: %.2f%%. Close to blocking: %.2f%%."
+   )
+MSG_HASH(
+   MSG_LOG_THREADED_AUDIO_DRIVER,
+   "Starting threaded audio driver..."
+   )
+MSG_HASH(
+   MSG_LOG_SET_AUDIO_INPUT_RATE,
+   "Set audio input rate to: %.2f Hz."
+   )
+MSG_HASH(
+   MSG_LOG_THREAD_CREATION_FAILED,
+   "Thread creation failed."
+   )
+MSG_HASH(
+   MSG_LOG_AUDIO_INITIALIZED,
+   "Audio initialized."
+   )
+MSG_HASH(
+   MSG_LOG_FOUND_INPUT_DRIVER,
+   "Found input driver: \"%s\"."
+   )
+MSG_HASH(
+   MSG_LOG_FOUND_HID_DRIVER,
+   "Found HID driver: \"%s\"."
+   )
+MSG_HASH(
+   MSG_WARN_INPUT_DEVICE_ID_UNKNOWN,
+   "Input device ID %u is unknown to this libretro implementation. Using RETRO_DEVICE_JOYPAD."
+   )
+MSG_HASH(
+   MSG_WARN_INPUT_RATE_INVALID,
+   "Input rate is invalid (%.3f Hz). Using output rate (%u Hz)."
+   )
+MSG_HASH(
+   MSG_WARN_RATE_CONTROL_NOT_SUPPORTED,
+   "Rate control was desired, but driver does not support needed features."
+   )
+MSG_HASH(
+   MSG_WARN_KEY_NAME_NOT_FOUND,
+   "Key name \"%s\" not found."
+   )
+MSG_HASH(
+   MSG_ERROR_RESAMPLER_INIT_FAILED,
+   "Failed to initialize resampler \"%s\".\n"
+   )
+MSG_HASH(
+   MSG_ERROR_AUDIO_DRIVER_INIT_FAILED,
+   "Failed to initialize audio driver. Will continue without audio."
+   )
+MSG_HASH(
+   MSG_ERROR_OPEN_AUDIO_DRIVER_FAILED,
+   "Cannot open threaded audio driver. Exiting..."
+   )
+MSG_HASH(
+   MSG_ERROR_GET_RELEASED_BUFFER_FAILED,
+   "Failed to get released buffer?"
+   )
+MSG_HASH(
+   MSG_LOG_OUTPUT_AUDIO_BUFFER_PERCENTAGE,
+   "Audio buffer is %u%% full"
+   )
+MSG_HASH(
+   MSG_LOG_OUTPUT_AUDIO_BUFFER_NEW_OLD_RATE,
+   "New rate: %lf, Original rate: %lf"
+   )
+MSG_HASH(
+   MSG_LOG_WRITTEN_TO_PLAYLIST,
+   "Written to playlist file:"
    )
 MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD,

@@ -9333,7 +9333,7 @@ MSG_HASH(
    "Geçersiz disk indeksi var."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Fare durumunu yakala"
    )
 MSG_HASH(

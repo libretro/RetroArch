@@ -36,6 +36,7 @@
 #include "../../network/discord.h"
 #endif
 
+#include "../../msg_hash.h"
 #include "../../config.def.h"
 #include "../../config.def.keybinds.h"
 #include "../../wifi/wifi_driver.h"
@@ -2478,6 +2479,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       if (!content_set_subsystem_by_name(entry->subsystem_ident))
       {
+         /* TODO: is [playlist] a tag (should be replaced by MSG_LOGTAG_PLAYLIST) or does it actually refer to something? */
          RARCH_LOG("[playlist] subsystem not found in implementation\n");
          goto error;
       }

@@ -36,6 +36,7 @@
 #include "verbosity.h"
 #include "file_path_special.h"
 #include "core_info.h"
+#include "msg_hash.h"
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
@@ -1327,7 +1328,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
    playlist->old_format      = false;
    playlist->compressed      = false;
 
-   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->config.path);
+   RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_PLAYLIST, MSG_LOG_WRITTEN_TO_PLAYLIST, playlist->config.path);
 end:
    intfstream_close(file);
    free(file);
@@ -1636,7 +1637,7 @@ void playlist_write_file(playlist_t *playlist)
    playlist->modified   = false;
    playlist->compressed = compressed;
 
-   RARCH_LOG("[Playlist]: Written to playlist file: %s\n", playlist->config.path);
+   RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_PLAYLIST, MSG_LOG_WRITTEN_TO_PLAYLIST, playlist->config.path);
 end:
    intfstream_close(file);
    free(file);

@@ -9469,7 +9469,7 @@ MSG_HASH(
    "Ungültiger Disc-Index."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Maus-Status"
    )
 MSG_HASH(
@@ -9562,7 +9562,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
-   "Lade Verlaufs-Datei"
+   "Lade Verlaufs-Datei %s"
    )
 MSG_HASH(
    MSG_LOADING_FAVORITES_FILE,

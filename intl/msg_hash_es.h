@@ -10301,7 +10301,7 @@ MSG_HASH(
    "Índice de disco incorrecto."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Capturar estado del ratón"
    )
 MSG_HASH(

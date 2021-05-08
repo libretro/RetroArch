@@ -86,7 +86,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
       uint32_t num;
       if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
       {
-         RARCH_ERR("[Audio]: Failed to get released buffer?\n");
+         RARCH_ERR_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_ERROR_GET_RELEASED_BUFFER_FAILED);
          return -1;
       }
 
@@ -331,7 +331,7 @@ static void *switch_audio_init(const char *device,
    swa->blocking       = block_frames;
    swa->is_paused      = true;
 
-   RARCH_LOG("[Audio]: Audio initialized\n");
+   RARCH_LOG_EXTRA_LANG(MSG_LOGTAG_AUDIO, MSG_LOG_AUDIO_INITIALIZED);
 
    return swa;
 

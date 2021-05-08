@@ -4513,7 +4513,7 @@ MSG_HASH(
    "Há um índice de disco inválido"
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "Capturar estado do rato"
    )
 MSG_HASH(

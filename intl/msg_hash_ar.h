@@ -8249,7 +8249,7 @@ MSG_HASH(
    "رقم القرص غير صحيح."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
+   MSG_GRAB_MOUSE_STATE_ON,
    "حالة أسر سهم الفأرة"
    )
 MSG_HASH(
@@ -8334,7 +8334,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
-   "تحميل ملف المحفوظات"
+   " تحميل ملف المحفوظات %s"
+   )
+MSG_HASH(
+   MSG_LOGTAG_PLAYLIST,
+   "المحفوظات:"
    )
 MSG_HASH(
    MSG_LOADING_FAVORITES_FILE,
