@@ -9,6 +9,8 @@
 *.map
 *.swp
 *.cache
+*.gcda
+*.gcno
 .tmp
 .tmp.c
 .tmp.cxx

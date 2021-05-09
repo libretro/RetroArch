@@ -2,7 +2,7 @@ include ../config.mk
 
 OBJDIR = ../obj-unix
 
-TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined
+TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined -ftest-coverage -fprofile-arcs -ggdb
 
 TEST_GENERIC_QUEUE = test_generic_queue
 TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
@@ -19,7 +19,21 @@ TEST_LINKED_LIST_LIBS = $(LIBCHECK_LIBS)
 $(TEST_LINKED_LIST): $(TEST_LINKED_LIST_SRC)
 	$(CC) $(TEST_UNIT_CFLAGS) -o $(OBJDIR)/test/$@ $(TEST_LINKED_LIST_SRC) $(TEST_LINKED_LIST_LIBS)
 
-TESTS = $(TEST_GENERIC_QUEUE) $(TEST_LINKED_LIST)
+TEST_STDSTRING = test_stdstring
+TEST_STDSTRING_SRC = test/string/test_stdstring.c string/stdstring.c encodings/encoding_utf.c compat/compat_strl.c
+TEST_STDSTRING_LIBS = $(LIBCHECK_LIBS)
+
+$(TEST_STDSTRING): $(TEST_STDSTRING_SRC)
+	$(CC) $(TEST_UNIT_CFLAGS) -o $(OBJDIR)/test/$@ $(TEST_STDSTRING_SRC) $(TEST_STDSTRING_LIBS)
+
+TEST_HASH = test_hash
+TEST_HASH_SRC = test/utils/test_hash.c utils/md5.c
+TEST_HASH_LIBS = $(LIBCHECK_LIBS)
+
+$(TEST_HASH): $(TEST_HASH_SRC)
+	$(CC) $(TEST_UNIT_CFLAGS) -o $(OBJDIR)/test/$@ $(TEST_HASH_SRC) $(TEST_HASH_LIBS)
+
+TESTS = $(TEST_GENERIC_QUEUE) $(TEST_LINKED_LIST) $(TEST_STDSTRING) $(TEST_HASH)
 
 ifeq ($(HAVE_LIBCHECK),1)
 test-dir:
@@ -28,7 +42,9 @@ test-dir:
 test: test-dir $(TESTS)
 	@for t in $(TESTS); do \
 		LD_LIBRARY_PATH='$(LD_PATH)' $(OBJDIR)/test/$$t; \
-	done
+	done; \
+	lcov -c -d . -o test/coverage.info; \
+	genhtml -o test/coverage/ test/coverage.info
 else
 test:
 	@echo "Cannot run unit tests. libcheck was not found."
