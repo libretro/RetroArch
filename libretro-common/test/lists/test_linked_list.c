@@ -1275,6 +1275,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_linked_list_set_at_first);
    tcase_add_test(tc_core, test_linked_list_set_at_middle);
    tcase_add_test(tc_core, test_linked_list_set_at_last);
+   tcase_add_test(tc_core, test_linked_list_iterator_remove_null);
    tcase_add_test(tc_core, test_linked_list_iterator_remove_first);
    tcase_add_test(tc_core, test_linked_list_iterator_remove_middle);
    tcase_add_test(tc_core, test_linked_list_iterator_remove_last);

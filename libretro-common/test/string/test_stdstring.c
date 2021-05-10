@@ -211,6 +211,32 @@ START_TEST (test_strlcpy)
 }
 END_TEST
 
+START_TEST (test_strlcat)
+{
+   char buf1[8];
+   buf1[0] = 'f';
+   buf1[1] = '\0';
+   ck_assert_uint_eq(10, strlcat(buf1, "ooooooooo", sizeof(buf1)));
+   ck_assert(!memcmp(buf1, "foooooo\0", 8));
+   ck_assert_uint_eq(13, strlcat(buf1, "123456", sizeof(buf1)));
+   ck_assert(!memcmp(buf1, "foooooo\0", 8));
+}
+END_TEST
+
+START_TEST (test_strldup)
+{
+   char buf1[8] = "foo";
+   char *tv1 = strldup(buf1, 16);
+   char *tv2 = strldup(buf1, 2);
+   ck_assert(tv1 != (char*)buf1);
+   ck_assert(tv2 != (char*)buf1);
+   ck_assert_uint_eq(strlen(tv2), 1);
+   ck_assert(tv2[0] == 'f' && tv2[1] == 0);
+   free(tv1);
+   free(tv2);
+}
+END_TEST
+
 START_TEST (test_utf8_conv_utf32)
 {
    uint32_t output[12];
@@ -273,6 +299,8 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_string_replacesubstr);
    tcase_add_test(tc_core, test_word_wrap);
    tcase_add_test(tc_core, test_strlcpy);
+   tcase_add_test(tc_core, test_strlcat);
+   tcase_add_test(tc_core, test_strldup);
    tcase_add_test(tc_core, test_utf8_conv_utf32);
    tcase_add_test(tc_core, test_utf16_conv);
    tcase_add_test(tc_core, test_utf8_util);
