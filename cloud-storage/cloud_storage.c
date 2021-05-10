@@ -365,6 +365,8 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
       {
          break;
       }
+
+      iterator = linked_list_iterator_next(iterator);
    }
 
    if (iterator)
