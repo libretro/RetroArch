@@ -789,7 +789,7 @@ static int manual_content_scan_core_name_right(unsigned type, const char *label,
    return 0;
 }
 
-#ifdef HAVE_LAKKA_SWITCH
+#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
 static int cpu_policy_freq_tweak(unsigned type, const char *label,
       bool wraparound)
