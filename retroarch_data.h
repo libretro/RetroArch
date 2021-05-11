@@ -1719,8 +1719,9 @@ struct rarch_state
    double audio_source_ratio_original;
    double audio_source_ratio_current;
    struct retro_system_av_info video_driver_av_info; /* double alignment */
+   #ifdef HAVE_SR2
    videocrt_switch_t crt_switch_st;                  /* double alignment */
-
+   #endif
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_time_t libretro_core_runtime_last;
@@ -2626,7 +2627,7 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_BREAK,         "Break"},
    {RETROK_MENU,          "Menu"},
    {RETROK_POWER,         "Power"},
-   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "€" */
+   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "ï¿½" */
    {RETROK_UNDO,          "Undo"},
    {RETROK_OEM_102,       "OEM-102"}
 };

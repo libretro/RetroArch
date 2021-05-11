@@ -67,7 +67,9 @@ enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
    CRT_SWITCH_15KHZ,
-   CRT_SWITCH_31KHZ
+   CRT_SWITCH_31KHZ,
+   CRT_SWITCH_32_120,
+   CRT_SWITCH_INI
 };
 
 enum override_type
@@ -697,6 +699,7 @@ typedef struct settings
       bool kiosk_mode_enable;
 
       bool crt_switch_custom_refresh_enable;
+      bool crt_switch_hires_menu;
 
       /* Netplay */
       bool netplay_public_announce;

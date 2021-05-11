@@ -6132,7 +6132,13 @@ static void setting_get_string_representation_uint_crt_switch_resolutions(
          strlcpy(s, "15 KHz", len);
          break;
       case CRT_SWITCH_31KHZ:
-         strlcpy(s, "31 KHz", len);
+         strlcpy(s, "31 KHz, Standard", len);
+         break;
+      case CRT_SWITCH_32_120:
+         strlcpy(s, "31 KHz, 120Hz", len);
+         break;
+      case CRT_SWITCH_INI:
+         strlcpy(s, "INI", len);
          break;
    }
 }
@@ -11661,7 +11667,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_crt_switch_resolutions;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_range(list, list_info, CRT_SWITCH_NONE, CRT_SWITCH_31KHZ, 1.0, true, true);
+         menu_settings_list_current_add_range(list, list_info, CRT_SWITCH_NONE, CRT_SWITCH_INI, 1.0, true, true);
 
 			CONFIG_UINT(
 				  list, list_info,
@@ -11719,6 +11725,22 @@ static bool setting_append_list(
                &settings->bools.crt_switch_custom_refresh_enable,
                MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
                MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.crt_switch_hires_menu,
+               MENU_ENUM_LABEL_CRT_SWITCH_HIRES_MENU,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
                false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
