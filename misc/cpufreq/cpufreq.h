@@ -38,7 +38,7 @@ enum cpu_scaling_mode
    CPUSCALING_MAX_PERFORMANCE,         /* Performance (Max Freq)             */
    CPUSCALING_MIN_POWER,               /* Use Powersave governor             */
    CPUSCALING_BALANCED,                /* Uses schedutil/ondemand            */
-   CPUSCALING_MANUAL,                  /* Can manually tweak stuff           */
+   CPUSCALING_MANUAL                   /* Can manually tweak stuff           */
 };
 
 typedef struct cpu_scaling_opts
@@ -89,7 +89,8 @@ uint32_t get_cpu_scaling_next_frequency(cpu_scaling_driver_t *driver,
 uint32_t get_cpu_scaling_next_frequency_limit(uint32_t freq, int step);
 
 /* Set the scaling governor for this scaling driver */
-bool set_cpu_scaling_governor(cpu_scaling_driver_t *driver, const char* governor);
+bool set_cpu_scaling_governor(cpu_scaling_driver_t *driver,
+      const char* governor);
 
 /* Signal certain events that are of interest of this driver */
 void set_cpu_scaling_signal(enum cpu_scaling_event);
