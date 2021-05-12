@@ -9869,17 +9869,66 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          if (drivers)
          {
             int count = 0;
-            while (*drivers)
+
+            menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE),
+               msg_hash_to_str(MENU_ENUM_LABEL_CPU_PERF_MODE),
+               MENU_ENUM_LABEL_CPU_PERF_MODE,
+               0, 0, 0);
+
+            switch (get_cpu_scaling_mode(NULL))
             {
-               char policyid[16];
-               sprintf(policyid, "%u", count++);
+            case CPUSCALING_MANUAL:
+               while (*drivers)
+               {
+                  char policyid[16];
+                  sprintf(policyid, "%u", count++);
+                  menu_entries_append_enum(info->list,
+                     policyid,
+                     policyid,
+                     MENU_ENUM_LABEL_CPU_POLICY_ENTRY,
+                     0, 0, 0);
+                  drivers++;
+               }
+               break;
+            case CPUSCALING_MANAGED_PER_CONTEXT:
+               /* Allows user to pick two governors */
                menu_entries_append_enum(info->list,
-                  policyid,
-                  policyid,
-                  MENU_ENUM_LABEL_CPU_POLICY_ENTRY,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR),
+                  "0",
+                  MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR,
                   0, 0, 0);
-               drivers++;
-            }
+
+               menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR),
+                  "1",
+                  MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR,
+                  0, 0, 0);
+
+               /* fallthrough */
+            case CPUSCALING_MANAGED_PERFORMANCE:
+               /* Allow users to choose max/min frequencies */
+               menu_entries_append_enum(info->list,
+                  "0",
+                  "0",
+                  MENU_ENUM_LABEL_CPU_MANAGED_MIN_FREQ,
+                  MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ,
+                  0, 0);
+
+               menu_entries_append_enum(info->list,
+                  "1",
+                  "1",
+                  MENU_ENUM_LABEL_CPU_MANAGED_MAX_FREQ,
+                  MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ,
+                  0, 0);
+
+               break;
+            case CPUSCALING_MAX_PERFORMANCE:
+            case CPUSCALING_MIN_POWER:
+            case CPUSCALING_BALANCED:
+               /* No settings for these modes */
+               break;
+            };
          }
 
          info->need_push    = true;

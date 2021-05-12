@@ -288,6 +288,12 @@ typedef struct settings
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
       unsigned quit_on_close_content;
+
+#ifdef HAVE_LAKKA
+      unsigned cpu_scaling_mode;
+      unsigned cpu_min_freq;
+      unsigned cpu_max_freq;
+#endif
    } uints;
 
    struct
@@ -387,6 +393,8 @@ typedef struct settings
       char crt_switch_timings[255];
 #ifdef HAVE_LAKKA
       char timezone[TIMEZONE_LENGTH];
+      char cpu_main_gov[32];
+      char cpu_menu_gov[32];
 #endif
    } arrays;
 

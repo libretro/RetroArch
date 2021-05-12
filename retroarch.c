@@ -228,6 +228,7 @@
 #include "gfx/video_crt_switch.h"
 #include "bluetooth/bluetooth_driver.h"
 #include "wifi/wifi_driver.h"
+#include "misc/cpufreq/cpufreq.h"
 #include "led/led_driver.h"
 #include "midi/midi_driver.h"
 #include "core.h"
@@ -13314,10 +13315,18 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
       userdata.status = DISCORD_PRESENCE_GAME_PAUSED;
       command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
 #endif
+
+#ifdef HAVE_LAKKA
+      set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
+#endif
    }
    else
    {
       RARCH_LOG("[Core]: %s\n", msg_hash_to_str(MSG_UNPAUSED));
+
+#ifdef HAVE_LAKKA
+      set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
+#endif
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -33206,6 +33215,10 @@ static void drivers_init(struct rarch_state *p_rarch,
    /* Initialize MIDI  driver */
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_init(p_rarch, settings);
+
+#ifdef HAVE_LAKKA
+   cpu_scaling_driver_init();
+#endif
 }
 
 /**
@@ -33298,6 +33311,10 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
 
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_free(p_rarch);
+
+#ifdef HAVE_LAKKA
+   cpu_scaling_driver_free();
+#endif
 }
 
 static void retroarch_deinit_drivers(
@@ -35631,6 +35648,13 @@ static void menu_driver_toggle(
       menu->driver_ctx->toggle(menu->userdata, on);
 
    p_rarch->menu_driver_alive                 = on;
+
+#ifdef HAVE_LAKKA
+   if (on)
+      set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
+   else
+      set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
+#endif
 
    /* Apply any required menu pointer input inhibits
     * (i.e. prevent phantom input when using an overlay
