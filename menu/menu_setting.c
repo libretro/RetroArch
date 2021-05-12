@@ -4628,51 +4628,47 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
       char *s, size_t len)
 {
    settings_t                       *settings = config_get_ptr();
-   bool menu_preferred_system_color_theme_set = settings->bools.menu_preferred_system_color_theme_set;
    if (!setting)
       return;
 
-   if (menu_preferred_system_color_theme_set)
-         strlcpy(s, "System default", len);
-
    switch (*setting->value.target.unsigned_integer)
    {
-      case 1:
+      case OZONE_COLOR_THEME_BASIC_BLACK:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
          break;
-      case 2:
+      case OZONE_COLOR_THEME_NORD:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD), len);
          break;
-      case 3:
+      case OZONE_COLOR_THEME_GRUVBOX_DARK:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK), len);
          break;
-      case 4:
+      case OZONE_COLOR_THEME_BOYSENBERRY:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY), len);
          break;
-      case 5:
+      case OZONE_COLOR_THEME_HACKING_THE_KERNEL:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL), len);
          break;
-      case 6:
+      case OZONE_COLOR_THEME_TWILIGHT_ZONE:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE), len);
          break;
-      case 7:
+      case OZONE_COLOR_THEME_DRACULA:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA), len);
          break;
-      case 0:
+      case OZONE_COLOR_THEME_BASIC_WHITE:
       default:
          strlcpy(s,
                msg_hash_to_str(
@@ -15913,7 +15909,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_ozone_menu_color_theme;
-            menu_settings_list_current_add_range(list, list_info, 0, 7, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, OZONE_COLOR_THEME_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_BOOL(
