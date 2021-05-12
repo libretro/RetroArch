@@ -225,6 +225,9 @@
 #define DEFAULT_FULLSCREEN_Y 0
 #endif
 
+/* Force 4k resolution */
+#define DEFAULT_FORCE_RESOLUTION false
+
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
 
