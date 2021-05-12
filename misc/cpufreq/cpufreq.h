@@ -20,6 +20,36 @@
 
 RETRO_BEGIN_DECLS
 
+#define MAX_GOV_STRLEN   32
+
+/* Events from Frontend to the driver to drive policies */
+enum cpu_scaling_event
+{
+   CPUSCALING_EVENT_FOCUS_CORE,
+   CPUSCALING_EVENT_FOCUS_MENU,
+   CPUSCALING_EVENT_FOCUS_SCREENSAVER
+};
+
+/* Scaling mode selected by the user */
+enum cpu_scaling_mode
+{
+   CPUSCALING_MANAGED_PERFORMANCE = 0, /* Performance while running core     */
+   CPUSCALING_MANAGED_PER_CONTEXT,     /* Policies for core, menu, etc.      */
+   CPUSCALING_MAX_PERFORMANCE,         /* Performance (Max Freq)             */
+   CPUSCALING_MIN_POWER,               /* Use Powersave governor             */
+   CPUSCALING_BALANCED,                /* Uses schedutil/ondemand            */
+   CPUSCALING_MANUAL,                  /* Can manually tweak stuff           */
+};
+
+typedef struct cpu_scaling_opts
+{
+   /* Max/Min frequencies */
+   uint32_t min_freq, max_freq;
+   /* Options for CPUSCALING_POLICY_PER_CONTEXT */
+   char main_policy[MAX_GOV_STRLEN];
+   char menu_policy[MAX_GOV_STRLEN];
+} cpu_scaling_opts_t;
+
 typedef struct cpu_scaling_driver
 {
    /* Policy number in the sysfs tree */
@@ -39,7 +69,10 @@ typedef struct cpu_scaling_driver
 } cpu_scaling_driver_t;
 
 /* Safely free all memory used by the driver */
-void cpu_scaling_driver_free();
+void cpu_scaling_driver_free(void);
+
+/* Signal the initialization */
+void cpu_scaling_driver_init(void);
 
 /* Get a list of the available cpu scaling drivers */
 cpu_scaling_driver_t **get_cpu_scaling_drivers(bool can_update);
@@ -53,9 +86,20 @@ bool set_cpu_scaling_max_frequency(
 /* Calculate next/previous frequencies */
 uint32_t get_cpu_scaling_next_frequency(cpu_scaling_driver_t *driver,
    uint32_t freq, int step);
+uint32_t get_cpu_scaling_next_frequency_limit(uint32_t freq, int step);
 
 /* Set the scaling governor for this scaling driver */
 bool set_cpu_scaling_governor(cpu_scaling_driver_t *driver, const char* governor);
+
+/* Signal certain events that are of interest of this driver */
+void set_cpu_scaling_signal(enum cpu_scaling_event);
+
+/* Set the base cpufreq policy mode */
+void set_cpu_scaling_mode(enum cpu_scaling_mode mode,
+                          const cpu_scaling_opts_t *opts);
+
+/* Get the base cpufreq policy mode */
+enum cpu_scaling_mode get_cpu_scaling_mode(cpu_scaling_opts_t *opts);
 
 RETRO_END_DECLS
 

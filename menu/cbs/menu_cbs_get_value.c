@@ -518,6 +518,50 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
 
 #ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
+static void menu_action_setting_disp_cpu_gov_mode(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(NULL);
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   strlcpy(s, msg_hash_to_str(
+      MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF + (int)mode), len);
+}
+
+static void menu_action_setting_disp_cpu_gov_choose(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   int fnum = atoi(list->list[i].label);
+   cpu_scaling_opts_t opts;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   if (!fnum)
+      strlcpy(s, opts.main_policy, len);
+   else
+      strlcpy(s, opts.menu_policy, len);
+}
+
 static void menu_action_setting_disp_set_label_cpu_policy(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -540,6 +584,39 @@ static void menu_action_setting_disp_set_label_cpu_policy(
    else
       snprintf(s2, len2, "%s %d", msg_hash_to_str(
          MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY), policyid);
+}
+
+static void menu_action_cpu_managed_freq_label(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   uint32_t freq = 0;
+   cpu_scaling_opts_t opts;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
+
+   switch (type) {
+   case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
+      strlcpy(s2, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ), len2);
+      freq = opts.min_freq;
+      break;
+   case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
+      strlcpy(s2, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ), len2);
+      freq = opts.max_freq;
+      break;
+   };
+
+   if (freq == 1)
+      strlcpy(s, "Min.", len);
+   else if (freq == ~0U)
+      strlcpy(s, "Max.", len);
+   else
+      snprintf(s, len, "%u MHz", freq / 1000);
 }
 
 static void menu_action_cpu_freq_label(
@@ -1786,6 +1863,15 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             break;
          #ifndef HAVE_LAKKA_SWITCH
          #ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_CPU_PERF_MODE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_cpu_gov_mode);
+            break;
+         case MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR:
+         case MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_cpu_gov_choose);
+            break;
          case MENU_ENUM_LABEL_CPU_POLICY_ENTRY:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_cpu_policy);
@@ -1793,6 +1879,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_CPU_POLICY_MIN_FREQ:
          case MENU_ENUM_LABEL_CPU_POLICY_MAX_FREQ:
             BIND_ACTION_GET_VALUE(cbs, menu_action_cpu_freq_label);
+            break;
+         case MENU_ENUM_LABEL_CPU_MANAGED_MIN_FREQ:
+         case MENU_ENUM_LABEL_CPU_MANAGED_MAX_FREQ:
+            BIND_ACTION_GET_VALUE(cbs, menu_action_cpu_managed_freq_label);
             break;
          case MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR:
             BIND_ACTION_GET_VALUE(cbs, menu_action_cpu_governor_label);

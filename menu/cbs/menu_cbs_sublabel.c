@@ -1020,14 +1020,27 @@ static int action_bind_sublabel_cpu_policy_entry_list(
 {
    /* Displays info about the Policy entry */
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
+   int idx = atoi(path);
    if (drivers)
    {
-      sprintf(s, "%s | Freq: %u MHz\n", drivers[i]->scaling_governor,
-         drivers[i]->current_frequency / 1000);
+      sprintf(s, "%s | Freq: %u MHz\n", drivers[idx]->scaling_governor,
+         drivers[idx]->current_frequency / 1000);
       return 0;
    }
 
    return -1;
+}
+static int action_bind_sublabel_cpu_perf_mode(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   /* Displays info about the mode selected */
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(NULL);
+   strlcpy(s, msg_hash_to_str(
+      MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF + (int)mode), len);
+   return 0;
 }
 #endif
 #endif
@@ -3946,6 +3959,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifndef HAVE_LAKKA_SWITCH
          case MENU_ENUM_LABEL_CPU_POLICY_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cpu_policy_entry_list);
+            break;
+         case MENU_ENUM_LABEL_CPU_PERF_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cpu_perf_mode);
             break;
 #endif
 #endif
