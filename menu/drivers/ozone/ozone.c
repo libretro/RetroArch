@@ -2704,6 +2704,7 @@ static void ozone_draw_footer(
                false);
       }
    }
+#ifdef HAVE_LIBNX
    else
    {
       if (dispctx)
@@ -2730,6 +2731,7 @@ static void ozone_draw_footer(
             dispctx->blend_end(userdata);
       }
    }
+#endif
 }
 
 static void ozone_set_thumbnail_system(void *data, char*s, size_t len)
