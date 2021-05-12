@@ -8578,9 +8578,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
 {
    union string_list_elem_attr attr;
    unsigned i;
-   core_info_list_t *core_info_list = NULL;
-   const core_info_t *core_info     = NULL;
-   struct string_list *s            = string_list_new();
+   struct string_list *s = string_list_new();
 
    if (!s || !len)
       goto error;
@@ -8764,53 +8762,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
 #endif
-      case STRING_LIST_SUPPORTED_CORES_PATHS:
-         core_info_get_list(&core_info_list);
-
-         core_info_list_get_supported_cores(core_info_list,
-               (const char*)data, &core_info, list_size);
-
-         if (!core_info)
-            goto error;
-
-         if (*list_size == 0)
-            goto error;
-
-         for (i = 0; i < *list_size; i++)
-         {
-            const core_info_t *info = (const core_info_t*)&core_info[i];
-            const char *opt = info->path;
-
-            if (!opt)
-               goto error;
-
-            *len += strlen(opt) + 1;
-            string_list_append(s, opt, attr);
-         }
-         break;
-      case STRING_LIST_SUPPORTED_CORES_NAMES:
-         core_info_get_list(&core_info_list);
-         core_info_list_get_supported_cores(core_info_list,
-               (const char*)data, &core_info, list_size);
-
-         if (!core_info)
-            goto error;
-
-         if (*list_size == 0)
-            goto error;
-
-         for (i = 0; i < *list_size; i++)
-         {
-            core_info_t *info = (core_info_t*)&core_info[i];
-            const char  *opt  = info->display_name;
-
-            if (!opt)
-               goto error;
-
-            *len            += strlen(opt) + 1;
-            string_list_append(s, opt, attr);
-         }
-         break;
       case STRING_LIST_NONE:
       default:
          goto error;
