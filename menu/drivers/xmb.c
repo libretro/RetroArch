@@ -325,6 +325,9 @@ typedef struct xmb_handle
    size_t selection_ptr_old;
    size_t fullscreen_thumbnail_selection;
 
+   /* size of the current list */
+   size_t list_size;
+
    int depth;
    int old_depth;
    int icon_size;
@@ -373,6 +376,10 @@ typedef struct xmb_handle
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
 
    char title_name[255];
+
+   /* Cached texts showing current entry index / current list size */
+   char entry_index_str[32];
+
    /* These have to be huge, because global->name.savestate
     * has a hard-coded size of 8192...
     * (the extra space here is required to silence compiler
@@ -388,10 +395,17 @@ typedef struct xmb_handle
    bool use_ps3_layout;
    bool last_use_ps3_layout;
    bool assets_missing;
+
+   /* Favorites, History, Images, Music, Videos, user generated */
    bool is_playlist;
    bool is_db_manager_list;
+
+   /* Load Content file browser */
    bool is_file_list;
    bool is_quick_menu;
+
+   /* Whether to show entry index for current list */
+   bool entry_idx_enabled;
 } xmb_handle_t;
 
 static float xmb_scale_mod[8] = {
@@ -1398,6 +1412,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    }
 }
 
+/* Is called when the pointer position changes within a list/sub-list (vertically) */
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
@@ -1439,8 +1454,17 @@ static void xmb_selection_pointer_changed(
          unsigned     depth      = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
          unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
 
+         /* Update entry index text */
+         if (xmb->entry_idx_enabled)
+         {
+            snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
+                     "%lu/%lu", (unsigned long)selection + 1,
+                                (unsigned long)xmb->list_size);
+         }
+
          ia                      = xmb->items_active_alpha;
          iz                      = xmb->items_active_zoom;
+
          if (
                gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) || 
                gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
@@ -2394,11 +2418,15 @@ static void xmb_list_open(xmb_handle_t *xmb)
    xmb->old_depth = xmb->depth;
 }
 
+/* Is called whenever the list/sub-list changes */
 static void xmb_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   xmb_handle_t *xmb    = (xmb_handle_t*)data;
+   settings_t *settings = config_get_ptr();
+   bool show_entry_idx  = settings ? settings->bools.playlist_show_entry_idx : false;
+   unsigned    depth    = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
    unsigned xmb_system_tab;
 
    if (!xmb)
@@ -2407,15 +2435,23 @@ static void xmb_populate_entries(void *data,
    /* Determine whether this is a playlist */
    xmb_system_tab   = xmb_get_system_tab(xmb,
          (unsigned)xmb->categories_selection_ptr);
-   xmb->is_playlist = (xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES) ||
-                      (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY) ||
+   xmb->is_playlist = (depth == 1
+                      && ((xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES)
+                      || (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY)
 #ifdef HAVE_IMAGEVIEWER
-                      (xmb_system_tab == XMB_SYSTEM_TAB_IMAGES) ||
+                      || (xmb_system_tab == XMB_SYSTEM_TAB_IMAGES)
 #endif
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) ||
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST));
+                      || (xmb_system_tab == XMB_SYSTEM_TAB_MUSIC)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+                      || (xmb_system_tab == XMB_SYSTEM_TAB_VIDEO)
+#endif
+                      ))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
    xmb->is_playlist = xmb->is_playlist && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL));
 
    /* Determine whether this is a database manager list */
@@ -2446,6 +2482,18 @@ static void xmb_populate_entries(void *data,
       xmb_list_switch(xmb);
    else
       xmb_list_open(xmb);
+
+   /* Determine whether to show entry index */
+   xmb->entry_idx_enabled = show_entry_idx && xmb->is_playlist;
+
+   /* Update list size & entry index texts */
+   if (xmb->entry_idx_enabled)
+   {
+      xmb->list_size = menu_entries_get_size();
+      snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
+      "%lu/%lu", (unsigned long)menu_navigation_get_selection() + 1,
+                 (unsigned long)xmb->list_size);
+   }
 
    /* By default, fullscreen thumbnails are only
     * enabled on playlists, database manager
@@ -3384,6 +3432,30 @@ static int xmb_draw_item(
                      width, height, xmb->font2);
          }
       }
+   }
+
+   /* Draw entry index of current selection */
+   if (i == current && xmb->entry_idx_enabled)
+   {
+      /* Calculate position depending on the current
+       * list and if Thumbnail Vertical Disposition
+       * is enabled (branchless version) */
+      float x_position         = (video_width - xmb->margins_title_left/4) *
+                                       !menu_xmb_vertical_thumbnails +
+                                 (node->x + xmb->margins_screen_left +
+                                 xmb->icon_spacing_horizontal -
+                                 xmb->margins_label_left) *
+                                       menu_xmb_vertical_thumbnails;
+      float y_position         = (video_height - xmb->margins_title_bottom/4) *
+                                       !menu_xmb_vertical_thumbnails +
+                                 (xmb->margins_screen_top + xmb->margins_label_top +
+                                 xmb->icon_spacing_vertical * xmb->active_item_factor) *
+                                       menu_xmb_vertical_thumbnails;
+
+      xmb_draw_text(xmb_shadows_enable, xmb, settings,
+            xmb->entry_index_str, x_position, y_position,
+            1, menu_xmb_vertical_thumbnails ? node->label_alpha : 1,
+            TEXT_ALIGN_RIGHT, width, height, xmb->font);
    }
 
    xmb_draw_text(xmb_shadows_enable, xmb, settings, tmp,
