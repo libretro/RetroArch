@@ -3981,7 +3981,7 @@ static unsigned menu_displaylist_parse_content_information(
 
    /* If content is currently running, have to make sure
     * we have a valid playlist to work with
-    * (if content is not running, than playlist will always
+    * (if content is not running, then playlist will always
     * be valid provided that playlist_get_cached() does not
     * return NULL) */
    if (content_loaded)
@@ -5392,6 +5392,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_COMPRESSION,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,      PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_PLAYLIST_SHOW_ENTRY_IDX,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,      PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, PARSE_ONLY_UINT, false},

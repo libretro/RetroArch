@@ -4595,6 +4595,10 @@ MSG_HASH(
    "playlist_show_sublabels"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "playlist_show_entry_idx"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "playlist_fuzzy_archive_match"
    )

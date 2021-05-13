@@ -265,6 +265,7 @@ struct ozone_handle
    char selection_core_name[255];
    char selection_playtime[255];
    char selection_lastplayed[255];
+   char selection_entry_enumeration[255];
 
    bool cursor_in_sidebar;
    bool cursor_in_sidebar_old;
