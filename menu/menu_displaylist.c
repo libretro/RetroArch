@@ -1094,14 +1094,78 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
    /* Fallback */
    if (!core_available)
    {
-      if (menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
-            MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
-            0, 0, 0))
-         count++;
+      /* We have to handle an annoying special case here.
+       * Some RetroArch ports (e.g. emscripten) are 'broken'
+       * by design - they do not handle cores correctly,
+       * resulting in empty core_info lists and thus no
+       * concept of supported content. These builds are
+       * typically static, such that the currently running
+       * core is the only one available. To enable the
+       * loading of *any* content on these troublesome
+       * platforms, we therefore have to:
+       *   1) Detect the presence of a running core
+       *   2) Blindly add a menu entry enabling the
+       *      selection of this core
+       *   3) Hope that the user does not attempt to
+       *      load unsupported content... */
+      char exts[32];
+      exts[0] = '\0';
 
-      info->download_core = true;
+      /* Attempt to identify 'broken' platforms by fetching
+       * the core file extension - if there is none, then
+       * it is impossible for RetroArch to populate a
+       * core_info list */
+      if (!frontend_driver_get_core_extension(exts, sizeof(exts)) ||
+          string_is_empty(exts))
+      {
+         struct retro_system_info *system = runloop_get_libretro_system_info();
+         const char *core_path            = core_path_current;
+         const char *core_name            = system ? system->library_name : NULL;
+
+         if (!string_is_empty(core_path))
+         {
+            /* If we have a valid 'currently running' core
+             * path, add an entry for this core to the list */
+            if (menu_entries_append_enum(info->list, core_path,
+                  msg_hash_to_str(current_core_enum_label),
+                  current_core_enum_label, FILE_TYPE_DIRECT_LOAD, 0, 0))
+            {
+               if (!string_is_empty(core_name))
+                  file_list_set_alt_at_offset(info->list, 0, core_name);
+               core_available = true;
+               count++;
+            }
+         }
+         else if (!string_is_empty(core_name))
+         {
+            /* If we have a valid core name, but no core
+             * path, then RetroArch on this platform is
+             * likely to be unusable. But this legacy code
+             * path has existed for many years, and since
+             * we do not know who added it, or why, we
+             * shall continue to include it lest we break
+             * an unknown platform... */
+            if (menu_entries_append_enum(info->list, core_name,
+                  msg_hash_to_str(current_core_enum_label),
+                  current_core_enum_label, FILE_TYPE_DIRECT_LOAD, 0, 0))
+            {
+               core_available = true;
+               count++;
+            }
+         }
+      }
+
+      if (!core_available)
+      {
+         if (menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
+               MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
+               0, 0, 0))
+            count++;
+
+         info->download_core = true;
+      }
    }
 
    return count;
