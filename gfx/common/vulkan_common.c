@@ -3002,11 +3002,13 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          vk->context.gpu, vk->vk_surface,
          &present_mode_count, present_modes);
 
+#ifdef VULKAN_DEBUG
    for (i = 0; i < present_mode_count; i++)
    {
-      RARCH_DBG("[Vulkan]: Swapchain supports present mode: %u.\n",
+      RARCH_LOG("[Vulkan]: Swapchain supports present mode: %u.\n",
             present_modes[i]);
    }
+#endif
 
    vk->context.swap_interval = swap_interval;
    for (i = 0; i < present_mode_count; i++)
@@ -3030,8 +3032,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
+#ifdef VULKAN_DEBUG
    RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
          (unsigned)swapchain_present_mode);
+#endif
 
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
@@ -3108,8 +3112,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       return true;
    }
 
+#ifdef VULKAN_DEBUG
    RARCH_LOG("[Vulkan]: Using swapchain size %u x %u.\n",
          swapchain_size.width, swapchain_size.height);
+#endif
 
    /* Unless we have other reasons to clamp, we should prefer 3 images.
     * We hard sync against the swapchain, so if we have 2 images,
@@ -3214,8 +3220,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
+#ifdef VULKAN_DEBUG
    RARCH_LOG("[Vulkan]: Got %u swapchain images.\n",
          vk->context.num_swapchain_images);
+#endif
 
    /* Force driver to reset swapchain image handles. */
    vk->context.invalid_swapchain      = true;

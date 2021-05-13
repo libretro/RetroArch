@@ -12649,14 +12649,25 @@ static void command_event_runtime_log_init(struct rarch_state *p_rarch)
             sizeof(p_rarch->runtime_core_path));
 }
 
-static void retroarch_set_frame_limit(
+static INLINE void retroarch_set_frame_limit(
       struct rarch_state *p_rarch,
       float fastforward_ratio)
 {
    const struct retro_system_av_info* av_info = &p_rarch->video_driver_av_info;
 
    p_rarch->frame_limit_minimum_time = (fastforward_ratio < 1.0f) ? 0.0f :
-      (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
+         (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
+}
+
+static INLINE float retroarch_get_runloop_fastforward_ratio(
+      settings_t *settings,
+      runloop_state_t *p_runloop)
+{
+   struct retro_fastforwarding_override *fastmotion_override =
+         &p_runloop->fastmotion_override;
+
+   return (fastmotion_override->fastforward && (fastmotion_override->ratio >= 0.0f)) ?
+         fastmotion_override->ratio : settings->floats.fastforward_ratio;
 }
 
 static bool command_event_init_core(
@@ -12666,12 +12677,12 @@ static bool command_event_init_core(
 {
 #ifdef HAVE_CONFIGFILE
    bool auto_overrides_enable      = settings->bools.auto_overrides_enable;
-   bool auto_remaps_enable         = settings->bools.auto_remaps_enable;
-   const char *dir_input_remapping = settings->paths.directory_input_remapping;
+   bool auto_remaps_enable         = false;
+   const char *dir_input_remapping = NULL;
 #endif
-   bool show_set_initial_disk_msg  = settings->bools.notification_show_set_initial_disk;
-   unsigned poll_type_behavior     = settings->uints.input_poll_type_behavior;
-   float fastforward_ratio         = settings->floats.fastforward_ratio;
+   bool show_set_initial_disk_msg  = false;
+   unsigned poll_type_behavior     = 0;
+   float fastforward_ratio         = 0.0f;
    rarch_system_info_t *sys_info   = &runloop_state.system;
 
    if (!init_libretro_symbols(p_rarch,
@@ -12710,6 +12721,17 @@ static bool command_event_init_core(
       runloop_state.overrides_active =
          config_load_override(&runloop_state.system);
 #endif
+
+   /* Cannot access these settings-related parameters
+    * until *after* config overrides have been loaded */
+#ifdef HAVE_CONFIGFILE
+   auto_remaps_enable        = settings->bools.auto_remaps_enable;
+   dir_input_remapping       = settings->paths.directory_input_remapping;
+#endif
+   show_set_initial_disk_msg = settings->bools.notification_show_set_initial_disk;
+   poll_type_behavior        = settings->uints.input_poll_type_behavior;
+   fastforward_ratio         = retroarch_get_runloop_fastforward_ratio(
+         settings, &runloop_state);
 
 #ifdef HAVE_CHEEVOS
    /* assume the core supports achievements unless it tells us otherwise */
@@ -13312,6 +13334,24 @@ static void retroarch_game_focus_free(struct rarch_state *p_rarch)
 
    p_rarch->game_focus_state.enabled        = false;
    p_rarch->game_focus_state.core_requested = false;
+}
+
+static void retroarch_fastmotion_override_free(struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop)
+{
+   settings_t *settings    = p_rarch->configuration_settings;
+   float fastforward_ratio = settings->floats.fastforward_ratio;
+   bool reset_frame_limit  = p_runloop->fastmotion_override.fastforward &&
+         (p_runloop->fastmotion_override.ratio >= 0.0f) &&
+         (p_runloop->fastmotion_override.ratio != fastforward_ratio);
+
+   p_runloop->fastmotion_override.ratio          = 0.0f;
+   p_runloop->fastmotion_override.fastforward    = false;
+   p_runloop->fastmotion_override.notification   = false;
+   p_runloop->fastmotion_override.inhibit_toggle = false;
+
+   if (reset_frame_limit)
+      retroarch_set_frame_limit(p_rarch, fastforward_ratio);
 }
 
 static void retroarch_system_info_free(struct rarch_state *p_rarch)
@@ -14971,7 +15011,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
          retroarch_set_frame_limit(p_rarch,
-               settings->floats.fastforward_ratio);
+               retroarch_get_runloop_fastforward_ratio(
+                     settings, &runloop_state));
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
@@ -18335,6 +18376,74 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          *(bool *)data = runloop_state.fastmotion;
          break;
 
+      case RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE:
+      {
+         struct retro_fastforwarding_override *fastforwarding_override =
+               (struct retro_fastforwarding_override *)data;
+
+         if (fastforwarding_override)
+         {
+            runloop_state_t *p_runloop                         = &runloop_state;
+            bool frame_time_counter_reset_after_fastforwarding = settings ?
+                  settings->bools.frame_time_counter_reset_after_fastforwarding : false;
+            float fastforward_ratio_default                    = settings ?
+                  settings->floats.fastforward_ratio : 0.0f;
+            float fastforward_ratio_last                       =
+                     (p_runloop->fastmotion_override.fastforward &&
+                           (p_runloop->fastmotion_override.ratio >= 0.0f)) ?
+                                 p_runloop->fastmotion_override.ratio :
+                                       fastforward_ratio_default;
+            float fastforward_ratio_current;
+
+            memcpy(&p_runloop->fastmotion_override,
+                  fastforwarding_override,
+                  sizeof(p_runloop->fastmotion_override));
+
+            /* Check if 'fastmotion' state has changed */
+            if (p_runloop->fastmotion !=
+                  p_runloop->fastmotion_override.fastforward)
+            {
+               p_runloop->fastmotion =
+                     p_runloop->fastmotion_override.fastforward;
+
+               if (p_runloop->fastmotion)
+                  p_rarch->input_driver_nonblock_state = true;
+               else
+               {
+                  p_rarch->input_driver_nonblock_state = false;
+                  p_rarch->fastforward_after_frames    = 1;
+               }
+               driver_set_nonblock_state();
+
+               /* Reset frame time counter when toggling
+                * fast-forward off, if required */
+               if (!p_runloop->fastmotion &&
+                   frame_time_counter_reset_after_fastforwarding)
+                  p_rarch->video_driver_frame_time_count = 0;
+
+               /* Ensure fast forward widget is disabled when
+                * toggling fast-forward off
+                * (required if RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
+                * is called during core de-initialisation) */
+#if defined(HAVE_GFX_WIDGETS)
+               if (p_rarch->widgets_active && !p_runloop->fastmotion)
+                  p_rarch->gfx_widgets_fast_forward = false;
+#endif
+            }
+
+            /* Update frame limit, if required */
+            fastforward_ratio_current = (p_runloop->fastmotion_override.fastforward &&
+                  (p_runloop->fastmotion_override.ratio >= 0.0f)) ?
+                        p_runloop->fastmotion_override.ratio :
+                              fastforward_ratio_default;
+
+            if (fastforward_ratio_current != fastforward_ratio_last)
+               retroarch_set_frame_limit(p_rarch, fastforward_ratio_current);
+         }
+
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
          /* Just falldown, the function will return true */
          break;
@@ -18786,6 +18895,7 @@ static void uninit_libretro_symbols(
    retroarch_frame_time_free(p_rarch);
    retroarch_audio_buffer_status_free(p_rarch);
    retroarch_game_focus_free(p_rarch);
+   retroarch_fastmotion_override_free(p_rarch, &runloop_state);
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
 
@@ -36275,6 +36385,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          retroarch_frame_time_free(p_rarch);
          retroarch_audio_buffer_status_free(p_rarch);
          retroarch_game_focus_free(p_rarch);
+         retroarch_fastmotion_override_free(p_rarch, &runloop_state);
          break;
       case RARCH_CTL_IS_IDLE:
          return runloop_state.idle;
@@ -37125,7 +37236,6 @@ static enum runloop_state runloop_check_state(
    bool focused                        = true;
    bool rarch_is_initialized           = p_rarch->rarch_is_inited;
    bool runloop_paused                 = runloop_state.paused;
-   float fastforward_ratio             = settings->floats.fastforward_ratio;
    bool pause_nonactive                = settings->bools.pause_nonactive;
 #ifdef HAVE_MENU
    menu_handle_t *menu                 = p_rarch->menu_driver_data;
@@ -37839,6 +37949,9 @@ static enum runloop_state runloop_check_state(
 
    if (p_rarch->menu_driver_alive)
    {
+      float fastforward_ratio = retroarch_get_runloop_fastforward_ratio(
+            settings, &runloop_state);
+
       if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
 
@@ -37990,8 +38103,9 @@ static enum runloop_state runloop_check_state(
    /* Check if we have pressed the fast forward button */
    /* To avoid continuous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed
-    * to be able to toggle between then.
+    * to be able to toggle between them.
     */
+   if (!runloop_state.fastmotion_override.inhibit_toggle)
    {
       static bool old_button_state            = false;
       static bool old_hold_button_state       = false;
@@ -38008,7 +38122,7 @@ static enum runloop_state runloop_check_state(
       {
          bool check1                          = p_rarch->input_driver_nonblock_state;
          p_rarch->input_driver_nonblock_state = !check1;
-         runloop_state.fastmotion          = !check1;
+         runloop_state.fastmotion             = !check1;
          if (check1)
             p_rarch->fastforward_after_frames = 1;
          driver_set_nonblock_state();
@@ -38022,9 +38136,14 @@ static enum runloop_state runloop_check_state(
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
+   }
 
-      /* Display fast-forward notification
-       * > Use widgets, if enabled */
+   /* Display fast-forward notification, unless
+    * disabled via override */
+   if (!runloop_state.fastmotion_override.fastforward ||
+       runloop_state.fastmotion_override.notification)
+   {
+      /* > Use widgets, if enabled */
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
          p_rarch->gfx_widgets_fast_forward =
@@ -38041,6 +38160,10 @@ static enum runloop_state runloop_check_state(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
+#if defined(HAVE_GFX_WIDGETS)
+   else
+      p_rarch->gfx_widgets_fast_forward = false;
+#endif
 
    /* Check if we have pressed any of the state slot buttons */
    {
@@ -38568,8 +38691,6 @@ int runloop_iterate(void)
 end:
    if (vrr_runloop_enable)
    {
-      const retro_time_t fastforward_ratio = settings->floats.fastforward_ratio;
-
       /* Sync on video only, block audio later. */
       if (p_rarch->fastforward_after_frames && audio_sync)
       {
@@ -38601,7 +38722,12 @@ end:
          }
       }
 
-      retroarch_set_frame_limit(p_rarch, runloop_state.fastmotion ? fastforward_ratio : 1.0f);
+      if (runloop_state.fastmotion)
+         retroarch_set_frame_limit(p_rarch,
+               retroarch_get_runloop_fastforward_ratio(
+                     settings, &runloop_state));
+      else
+         retroarch_set_frame_limit(p_rarch, 1.0f);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
