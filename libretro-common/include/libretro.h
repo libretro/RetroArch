@@ -1378,6 +1378,16 @@ enum retro_mod
                                             * call will target the newly initialized driver.
                                             */
 
+#define RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE 64
+                                           /* const struct retro_fastforwarding_override * --
+                                            * Used by a libretro core to override the current
+                                            * fastforwarding mode of the frontend.
+                                            * If NULL is passed to this function, the frontend
+                                            * will return true if fastforwarding override
+                                            * functionality is supported (no change in
+                                            * fastforwarding state will occur in this case).
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -2936,6 +2946,47 @@ struct retro_framebuffer
    unsigned memory_flags;           /* Flags telling core how the memory has been mapped.
                                        RETRO_MEMORY_TYPE_* flags.
                                        Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
+};
+
+/* Used by a libretro core to override the current
+ * fastforwarding mode of the frontend */
+struct retro_fastforwarding_override
+{
+   /* Specifies the runtime speed multiplier that
+    * will be applied when 'fastforward' is true.
+    * For example, a value of 5.0 when running 60 FPS
+    * content will cap the fast-forward rate at 300 FPS.
+    * Note that the target multiplier may not be achieved
+    * if the host hardware has insufficient processing
+    * power.
+    * Setting a value of 0.0 (or greater than 0.0 but
+    * less than 1.0) will result in an uncapped
+    * fast-forward rate (limited only by hardware
+    * capacity).
+    * If the value is negative, it will be ignored
+    * (i.e. the frontend will use a runtime speed
+    * multiplier of its own choosing) */
+   float ratio;
+
+   /* If true, fastforwarding mode will be enabled.
+    * If false, fastforwarding mode will be disabled. */
+   bool fastforward;
+
+   /* If true, and if supported by the frontend, an
+    * on-screen notification will be displayed while
+    * 'fastforward' is true.
+    * If false, and if supported by the frontend, any
+    * on-screen fast-forward notifications will be
+    * suppressed */
+   bool notification;
+
+   /* If true, the core will have sole control over
+    * when fastforwarding mode is enabled/disabled;
+    * the frontend will not be able to change the
+    * state set by 'fastforward' until either
+    * 'inhibit_toggle' is set to false, or the core
+    * is unloaded */
+   bool inhibit_toggle;
 };
 
 /* Callbacks */

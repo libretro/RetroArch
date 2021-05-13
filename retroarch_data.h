@@ -1682,6 +1682,8 @@ struct runloop
    unsigned max_frames;
    unsigned audio_latency;
 
+   struct retro_fastforwarding_override fastmotion_override; /* float alignment */
+
    bool missing_bios;
    bool force_nonblock;
    bool paused;

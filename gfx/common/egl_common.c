@@ -349,10 +349,9 @@ void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
    if (!_egl_get_current_context())
       return;
 
-   RARCH_LOG("[EGL]: eglSwapInterval(%u)\n", interval);
    if (!_egl_swap_interval(egl->dpy, interval))
    {
-      RARCH_ERR("[EGL]: eglSwapInterval() failed.\n");
+      RARCH_ERR("[EGL]: eglSwapInterval(%i) failed.\n", interval);
       egl_report_error();
    }
 }

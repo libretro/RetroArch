@@ -258,40 +258,30 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
    {
       if (g_pglSwapInterval)
       {
-         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->interval);
          if (g_pglSwapInterval(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+            RARCH_WARN("[GLX]: glXSwapInterval(%i) failed.\n", x->interval);
       }
       else if (g_pglSwapIntervalEXT)
-      {
-         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->interval);
          g_pglSwapIntervalEXT(g_x11_dpy, x->glx_win, x->interval);
-      }
       else if (g_pglSwapIntervalSGI)
       {
-         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->interval);
          if (g_pglSwapIntervalSGI(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+            RARCH_WARN("[GLX]: glXSwapIntervalSGI(%i) failed.\n", x->interval);
       }
    }
    else
    {
       if (g_pglSwapIntervalEXT)
-      {
-         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->interval);
          g_pglSwapIntervalEXT(g_x11_dpy, x->glx_win, x->interval);
-      }
       else if (g_pglSwapInterval)
       {
-         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->interval);
          if (g_pglSwapInterval(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+            RARCH_WARN("[GLX]: glXSwapInterval(%i) failed.\n", x->interval);
       }
       else if (g_pglSwapIntervalSGI)
       {
-         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->interval);
          if (g_pglSwapIntervalSGI(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+            RARCH_WARN("[GLX]: glXSwapIntervalSGI(%i) failed.\n", x->interval);
       }
    }
 #endif
