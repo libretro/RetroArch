@@ -249,7 +249,7 @@
 /* Specifies whether to cache core info
  * into a single (compressed) file for improved
  * load times on platforms with slow IO */
-#if defined(_3DS)
+#if defined(RARCH_CONSOLE)
 #define DEFAULT_CORE_INFO_CACHE_ENABLE true
 #else
 #define DEFAULT_CORE_INFO_CACHE_ENABLE false
