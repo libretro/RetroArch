@@ -1053,6 +1053,7 @@ typedef struct
    bool bg_modified;
    bool force_redraw;
    bool force_menu_refresh;
+   bool restore_aspect_lock;
    bool show_mouse;
    bool show_screensaver;
    bool ignore_resize_events;
@@ -6687,7 +6688,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* > Check for changes in aspect ratio lock setting */
-   if (aspect_ratio_lock != rgui->menu_aspect_ratio_lock)
+   if ((aspect_ratio_lock != rgui->menu_aspect_ratio_lock) ||
+       rgui->restore_aspect_lock)
    {
       rgui->menu_aspect_ratio_lock = aspect_ratio_lock;
 
@@ -6703,6 +6705,9 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui_update_menu_viewport(rgui, p_disp);
          rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
       }
+
+      /* Clear any pending 'restore aspect lock' flags */
+      rgui->restore_aspect_lock = false;
    }
 
    /* > Check for changes in window (display) dimensions */
@@ -6883,13 +6888,45 @@ static void rgui_context_destroy(void *data)
 }
 
 static enum menu_action rgui_parse_menu_entry_action(
-      rgui_t *rgui, enum menu_action action)
+      rgui_t *rgui, menu_entry_t *entry,
+      enum menu_action action)
 {
    enum menu_action new_action = action;
 
    /* Scan user inputs */
    switch (action)
    {
+      case MENU_ACTION_OK:
+         /* If aspect ratio lock is enabled, must restore
+          * content video settings when saving configuration
+          * files/overrides - otherwise RGUI's custom viewport
+          * parameters will be included in the generated output */
+         if ((rgui->menu_aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
+             ((entry->enum_idx == MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE) ||
+              (entry->enum_idx == MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR) ||
+              (entry->enum_idx == MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME) ||
+              (entry->enum_idx == MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG) ||
+              (entry->enum_idx == MENU_ENUM_LABEL_SAVE_NEW_CONFIG)))
+         {
+            rgui_video_settings_t current_video_settings = {{0}};
+            rgui_get_video_config(&current_video_settings);
+            if (rgui_is_video_config_equal(&current_video_settings,
+                  &rgui->menu_video_settings))
+            {
+               /* This is identical to the temporary 'aspect
+                * ratio unlock' that is applied when accessing
+                * the video settings menu. There is, however,
+                * no need in this case to ignore resize events
+                * until the menu is next toggled off; this is a
+                * one-shot 'fix' that should only be active
+                * during the config save operation */
+               rgui_set_video_config(rgui, &rgui->content_video_settings, false);
+               /* Schedule a restoration of the aspect ratio
+                * lock on the next frame */
+               rgui->restore_aspect_lock = true;
+            }
+         }
+         break;
       case MENU_ACTION_SCAN:
          /* If this is a playlist, 'scan' command is
           * used to toggle fullscreen thumbnail view */
@@ -6916,7 +6953,8 @@ static int rgui_menu_entry_action(
    rgui_t *rgui = (rgui_t*)userdata;
 
    /* Process input action */
-   enum menu_action new_action = rgui_parse_menu_entry_action(rgui, action);
+   enum menu_action new_action = rgui_parse_menu_entry_action(rgui,
+         entry, action);
 
    /* Call standard generic_menu_entry_action() function */
    return generic_menu_entry_action(userdata, entry, i, new_action);
