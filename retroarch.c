@@ -10753,8 +10753,6 @@ static bool retroarch_apply_shader(
    if (!string_is_empty(preset_path))
       preset_file = path_basename_nocompression(preset_path);
 
-   p_rarch->runtime_shader_preset[0] = '\0';
-
    /* TODO/FIXME - This loads the shader into the video driver
     * But then we load the shader from disk twice more to put it in the menu
     * We need to reconfigure this at some point to only load it once */
@@ -10775,6 +10773,8 @@ static bool retroarch_apply_shader(
                shader->modified = false;
 #endif
          }
+         else
+            p_rarch->runtime_shader_preset[0] = '\0';
 
          if (message)
          {
