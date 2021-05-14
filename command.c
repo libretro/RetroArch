@@ -166,6 +166,7 @@ static void command_network_poll(command_t *handle)
       char buf[1024];
 
       buf[0] = '\0';
+      netcmd->cmd_source_len = sizeof(struct sockaddr_storage);
       ret  = recvfrom(netcmd->net_fd, buf, sizeof(buf) - 1, 0,
             (struct sockaddr*)&netcmd->cmd_source,
             &netcmd->cmd_source_len);
