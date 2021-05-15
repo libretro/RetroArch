@@ -189,40 +189,42 @@ char *string_trim_whitespace(char *const s)
 
 char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, unsigned max_lines)
 {
-   unsigned i     = 0;
+   unsigned src_i = 0;
+   unsigned dst_i = 0;
    unsigned len   = (unsigned)strlen(string);
    unsigned lines = 1;
 
-   while (i < len)
+   while (src_i < len)
    {
       unsigned counter;
-      int pos = (int)(&buffer[i] - buffer);
+      int pos = (int)(&buffer[dst_i] - buffer);
 
       /* copy string until the end of the line is reached */
       for (counter = 1; counter <= (unsigned)line_width; counter++)
       {
          const char *character;
          unsigned char_len;
-         unsigned j = i;
+         unsigned j = dst_i;
 
          /* check if end of string reached */
-         if (i == len)
+         if (src_i == len)
          {
-            buffer[i] = 0;
+            buffer[dst_i] = 0;
             return buffer;
          }
 
-         character = utf8skip(&string[i], 1);
-         char_len  = (unsigned)(character - &string[i]);
+         character = utf8skip(&string[src_i], 1);
+         char_len  = (unsigned)(character - &string[src_i]);
 
          if (!unicode)
             counter += char_len - 1;
 
          do
          {
-            buffer[i] = string[i];
+            buffer[dst_i] = string[src_i];
             char_len--;
-            i++;
+            src_i++;
+            dst_i++;
          } while (char_len);
 
          /* check for newlines embedded in the original input
@@ -235,12 +237,13 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
       }
 
       /* check for whitespace */
-      if (string[i] == ' ')
+      if (string[src_i] == ' ')
       {
          if ((max_lines == 0 || lines < max_lines))
          {
-            buffer[i] = '\n';
-            i++;
+            buffer[dst_i] = '\n';
+            src_i++;
+            dst_i++;
             lines++;
          }
       }
@@ -248,25 +251,38 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
       {
          int k;
 
-         /* check for nearest whitespace back in string */
-         for (k = i; k > 0; k--)
+         /* check for nearest delimiter back in string */
+         if (max_lines == 0 || lines < max_lines)
          {
-            if (string[k] != ' ' || (max_lines != 0 && lines >= max_lines))
-               continue;
-
-            buffer[k] = '\n';
-            /* set string index back to character after this one */
-            i         = k + 1;
-            lines++;
-            break;
+            for (k = src_i; k > 0; k--)
+            {
+               if (string[k] == ' ')
+               {
+                  buffer[dst_i - src_i + k] = '\n';
+                  /* set string index back to character after this one */
+                  dst_i = dst_i - src_i + k + 1;
+                  src_i = k + 1;
+                  lines++;
+                  break;
+               }
+               /* first byte of character whose UTF-8 length >= 3 */
+               else if ((string[k] & 0xE0) == 0xE0)
+               {
+                  buffer[dst_i - src_i + k] = '\n';
+                  dst_i = dst_i - src_i + k + 1;
+                  src_i = k;
+                  lines++;
+                  break;
+               }
+            }
          }
 
-         if (&buffer[i] - buffer == pos)
+         if (&buffer[dst_i] - buffer == pos)
             return buffer;
       }
    }
 
-   buffer[i] = 0;
+   buffer[dst_i] = 0;
 
    return buffer;
 }
