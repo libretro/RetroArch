@@ -215,8 +215,8 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
          character = utf8skip(&string[i], 1);
          char_len  = (unsigned)(character - &string[i]);
 
-         if (!unicode)
-            counter += char_len - 1;
+         if (char_len >= 3)
+            counter++;  /* character is probably full-width */
 
          do
          {
