@@ -35551,6 +35551,9 @@ bool retroarch_main_init(int argc, char *argv[])
    menu_driver_find_driver(p_rarch, settings,
          "menu driver", verbosity_enabled);
 #endif
+   /* Enforce stored brightness if needed */
+   if (frontend_driver_can_set_screen_brightness())
+      frontend_driver_set_screen_brightness(settings->uints.screen_brightness);
 
    /* Attempt to initialize core */
    if (p_rarch->has_set_core)
