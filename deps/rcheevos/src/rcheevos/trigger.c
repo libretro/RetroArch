@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "rc_internal.h"
 
 #include <stddef.h>
 #include <string.h> /* memset */
@@ -10,11 +10,15 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
   aux = *memaddr;
   next = &self->alternative;
 
+  /* reset in case multiple triggers are parsed by the same parse_state */
+  parse->measured_target = 0;
+  parse->has_required_hits = 0;
+
   if (*aux == 's' || *aux == 'S') {
     self->requirement = 0;
   }
   else {
-    self->requirement = rc_parse_condset(&aux, parse);
+    self->requirement = rc_parse_condset(&aux, parse, 0);
 
     if (parse->offset < 0) {
       return;
@@ -25,7 +29,7 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
 
   while (*aux == 's' || *aux == 'S') {
     aux++;
-    *next = rc_parse_condset(&aux, parse);
+    *next = rc_parse_condset(&aux, parse, 0);
 
     if (parse->offset < 0) {
       return;
@@ -41,12 +45,15 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
   self->measured_target = parse->measured_target;
   self->state = RC_TRIGGER_STATE_WAITING;
   self->has_hits = 0;
+  self->has_required_hits = parse->has_required_hits;
 }
 
 int rc_trigger_size(const char* memaddr) {
   rc_trigger_t* self;
   rc_parse_state_t parse;
+  rc_memref_t* memrefs;
   rc_init_parse_state(&parse, 0, 0, 0);
+  rc_init_parse_state_memrefs(&parse, &memrefs);
 
   self = RC_ALLOC(rc_trigger_t, &parse);
   rc_parse_trigger_internal(self, &memaddr, &parse);
@@ -60,7 +67,7 @@ rc_trigger_t* rc_parse_trigger(void* buffer, const char* memaddr, lua_State* L, 
   rc_parse_state_t parse;
 
   if (!buffer || !memaddr)
-    return 0;
+    return NULL;
 
   rc_init_parse_state(&parse, buffer, L, funcs_ndx);
 
@@ -70,7 +77,7 @@ rc_trigger_t* rc_parse_trigger(void* buffer, const char* memaddr, lua_State* L, 
   rc_parse_trigger_internal(self, &memaddr, &parse);
 
   rc_destroy_parse_state(&parse);
-  return (parse.offset >= 0) ? self : 0;
+  return (parse.offset >= 0) ? self : NULL;
 }
 
 static void rc_reset_trigger_hitcounts(rc_trigger_t* self) {
@@ -95,13 +102,18 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
   char is_paused;
   char is_primed;
 
-  /* previously triggered, do nothing - return INACTIVE so caller doesn't report a repeated trigger */
+  /* previously triggered, do nothing - return INACTIVE so caller doesn't think it triggered again */
   if (self->state == RC_TRIGGER_STATE_TRIGGERED)
     return RC_TRIGGER_STATE_INACTIVE;
 
+  /* unsupported, do nothing - return INACTIVE */
+  if (self->state == RC_TRIGGER_STATE_DISABLED)
+    return RC_TRIGGER_STATE_INACTIVE;
+
+  /* update the memory references */
   rc_update_memref_values(self->memrefs, peek, ud);
 
-  /* not yet active, only update the memrefs - so deltas are correct when it becomes active */
+  /* not yet active, only update the memrefs so deltas are correct when it becomes active */
   if (self->state == RC_TRIGGER_STATE_INACTIVE)
     return RC_TRIGGER_STATE_INACTIVE;
 
@@ -192,6 +204,11 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
     self->state = RC_TRIGGER_STATE_ACTIVE;
   }
 
+  /* if an individual condition was reset, notify the caller */
+  if (eval_state.was_cond_reset)
+    return RC_TRIGGER_STATE_RESET;
+
+  /* otherwise, just return the current state */
   return self->state;
 }
 
