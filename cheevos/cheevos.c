@@ -76,8 +76,9 @@
 #include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
-#include "../deps/rcheevos/include/rcheevos.h"
-#include "../deps/rcheevos/include/rurl.h"
+#include "../deps/rcheevos/include/rc_runtime.h"
+#include "../deps/rcheevos/include/rc_runtime_types.h"
+#include "../deps/rcheevos/include/rc_url.h"
 #include "../deps/rcheevos/include/rc_hash.h"
 
 /* Define this macro to prevent cheevos from being deactivated. */
@@ -362,7 +363,7 @@ static void rcheevos_log_post_url(
 }
 
 static bool rcheevos_condset_contains_memref(const rc_condset_t* condset,
-      const rc_memref_value_t* memref)
+      const rc_memref_t* memref)
 {
    if (condset)
    {
@@ -379,7 +380,7 @@ static bool rcheevos_condset_contains_memref(const rc_condset_t* condset,
 }
 
 static bool rcheevos_trigger_contains_memref(const rc_trigger_t* trigger,
-      const rc_memref_value_t* memref)
+      const rc_memref_t* memref)
 {
    rc_condset_t* condset;
    if (!trigger)
@@ -397,6 +398,26 @@ static bool rcheevos_trigger_contains_memref(const rc_trigger_t* trigger,
    return false;
 }
 
+static void rcheevos_achievement_disabled(rcheevos_racheevo_t* cheevo, unsigned address)
+{
+   if (!cheevo)
+      return;
+
+   CHEEVOS_ERR(RCHEEVOS_TAG "Achievement disabled (invalid address %06X): %s\n", address, cheevo->title);
+   CHEEVOS_FREE(cheevo->memaddr);
+   cheevo->memaddr = NULL;
+}
+
+static void rcheevos_lboard_disabled(rcheevos_ralboard_t* lboard, unsigned address)
+{
+   if (!lboard)
+      return;
+
+   CHEEVOS_ERR(RCHEEVOS_TAG "Leaderboard disabled (invalid address %06X): %s\n", address, lboard->title);
+   CHEEVOS_FREE(lboard->mem);
+   lboard->mem = NULL;
+}
+
 static void rcheevos_invalidate_address(unsigned address)
 {
    unsigned i, count;
@@ -406,12 +427,12 @@ static void rcheevos_invalidate_address(unsigned address)
     * try to evaluate it in the future.
     * It's still there, so anything referencing it will 
     * continue to fetch 0. */
-   rc_memref_value_t **last_memref = &rcheevos_locals.runtime.memrefs;
-   rc_memref_value_t *memref       = *last_memref;
+   rc_memref_t **last_memref       = &rcheevos_locals.runtime.memrefs;
+   rc_memref_t *memref             = *last_memref;
 
    do
    {
-      if (memref->memref.address == address && !memref->memref.is_indirect)
+      if (memref->address == address && !memref->value.is_indirect)
       {
          *last_memref = memref->next;
          break;
@@ -449,12 +470,9 @@ static void rcheevos_invalidate_address(unsigned address)
 
             if (trigger && rcheevos_trigger_contains_memref(trigger, memref))
             {
-               CHEEVOS_ERR(RCHEEVOS_TAG "Achievement disabled (invalid address %06X): %s\n", address, cheevo->title);
+               rcheevos_achievement_disabled(cheevo, address);
                rc_runtime_deactivate_achievement(&rcheevos_locals.runtime,
                      cheevo->id);
-
-               CHEEVOS_FREE(cheevo->memaddr);
-               cheevo->memaddr = NULL;
             }
          }
 
@@ -479,11 +497,8 @@ static void rcheevos_invalidate_address(unsigned address)
                   memref))
             )
          {
-            CHEEVOS_ERR(RCHEEVOS_TAG "Leaderboard disabled (invalid address %06X): %s\n", address, lboard->title);
+            rcheevos_lboard_disabled(lboard, address);
             rc_runtime_deactivate_lboard(&rcheevos_locals.runtime, lboard->id);
-
-            CHEEVOS_FREE(lboard->mem);
-            lboard->mem = NULL;
          }
       }
    }
@@ -558,15 +573,17 @@ static retro_time_t rcheevos_async_send_rich_presence(
       rcheevos_async_io_request* request)
 {
    char url[256], post_data[1024];
-   settings_t *settings             = config_get_ptr();
-   const char *cheevos_username     = settings->arrays.cheevos_username;
-   bool cheevos_richpresence_enable = settings->bools.cheevos_richpresence_enable;
-   int ret                          = rc_url_ping(
-         url, sizeof(url), post_data, sizeof(post_data),
-         cheevos_username, locals->token, locals->patchdata.game_id,
-         cheevos_richpresence_enable 
-         ? rc_runtime_get_richpresence(&locals->runtime) 
-         : "");
+   char buffer[256] = "";
+   const settings_t *settings             = config_get_ptr();
+   const char *cheevos_username           = settings->arrays.cheevos_username;
+   const bool cheevos_richpresence_enable = settings->bools.cheevos_richpresence_enable;
+   int ret;
+
+   if (cheevos_richpresence_enable)
+      rcheevos_get_richpresence(buffer, sizeof(buffer));
+
+   ret = rc_url_ping(url, sizeof(url), post_data, sizeof(post_data),
+      cheevos_username, locals->token, locals->patchdata.game_id, buffer);
 
    if (ret < 0)
    {
@@ -582,12 +599,8 @@ static retro_time_t rcheevos_async_send_rich_presence(
    }
 
 #ifdef HAVE_DISCORD
-   if (locals->runtime.richpresence_display_buffer)
-   {
-      if (settings->bools.discord_enable
-            && discord_is_ready())
-         discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS);
-   }
+   if (settings->bools.discord_enable && discord_is_ready())
+      discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS);
 #endif
 
    /* Update rich presence every two minutes */
@@ -728,15 +741,16 @@ static void rcheevos_async_task_callback(
 
 static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
 {
-   rc_memref_value_t* memref = locals->runtime.memrefs;
+   rc_memref_t* memref = locals->runtime.memrefs;
+
    while (memref)
    {
-      if (!memref->memref.is_indirect)
+      if (!memref->value.is_indirect)
       {
          uint8_t* data = rcheevos_memory_find(&rcheevos_locals.memory,
-               memref->memref.address);
+               memref->address);
          if (!data)
-            rcheevos_invalidate_address(memref->memref.address);
+            rcheevos_invalidate_address(memref->address);
       }
 
       memref = memref->next;
@@ -898,22 +912,6 @@ static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          CHEEVOS_ERR(RCHEEVOS_TAG "%s\n", buffer);
-      }
-   }
-
-   if (res < 0 && locals->patchdata.title)
-   {
-      size_t len = strlen(locals->patchdata.title);
-
-      if (!locals->runtime.richpresence_display_buffer)
-         locals->runtime.richpresence_display_buffer = (char*)malloc(len + 9);
-
-      if (locals->runtime.richpresence_display_buffer)
-      {
-         memcpy(locals->runtime.richpresence_display_buffer,
-               "Playing ", 8);
-         memcpy(&locals->runtime.richpresence_display_buffer[8],
-               locals->patchdata.title, len + 1);
       }
    }
 
@@ -1193,9 +1191,14 @@ static void rcheevos_lboard_updated(rcheevos_ralboard_t* lboard, int value,
 }
 #endif
 
-const char* rcheevos_get_richpresence(void)
+int rcheevos_get_richpresence(char buffer[], int buffer_size)
 {
-   return rc_runtime_get_richpresence(&rcheevos_locals.runtime);
+   int ret = rc_runtime_get_richpresence(&rcheevos_locals.runtime, buffer, buffer_size, &rcheevos_peek, NULL, NULL);
+
+   if (ret <= 0 && rcheevos_locals.patchdata.title)
+      ret = snprintf(buffer, buffer_size, "Playing %s", rcheevos_locals.patchdata.title);
+
+   return ret;
 }
 
 void rcheevos_reset_game(bool widgets_ready)
@@ -1949,6 +1952,14 @@ static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_eve
 
       case RC_RUNTIME_EVENT_LBOARD_TRIGGERED:
          rcheevos_lboard_submit(&rcheevos_locals, rcheevos_find_lboard(runtime_event->id), runtime_event->value, widgets_ready);
+         break;
+
+      case RC_RUNTIME_EVENT_ACHIEVEMENT_DISABLED:
+         rcheevos_achievement_disabled(rcheevos_find_cheevo(runtime_event->id), runtime_event->value);
+         break;
+
+      case RC_RUNTIME_EVENT_LBOARD_DISABLED:
+         rcheevos_lboard_disabled(rcheevos_find_lboard(runtime_event->id), runtime_event->value);
          break;
 
       default:
@@ -2836,12 +2847,12 @@ static void* rc_hash_handle_file_open(const char* path)
    return intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 }
 
-static void rc_hash_handle_file_seek(void* file_handle, size_t offset, int origin)
+static void rc_hash_handle_file_seek(void* file_handle, int64_t offset, int origin)
 {
    intfstream_seek((intfstream_t*)file_handle, offset, origin);
 }
 
-static size_t rc_hash_handle_file_tell(void* file_handle)
+static int64_t rc_hash_handle_file_tell(void* file_handle)
 {
    return intfstream_tell((intfstream_t*)file_handle);
 }

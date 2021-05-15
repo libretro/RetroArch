@@ -73,7 +73,7 @@ bool rcheevos_get_support_cheevos(void);
 
 const char* rcheevos_get_hash(void);
 
-const char *rcheevos_get_richpresence(void);
+int rcheevos_get_richpresence(char buffer[], int buffer_size);
 
 uint8_t* rcheevos_patch_address(unsigned address);
 
