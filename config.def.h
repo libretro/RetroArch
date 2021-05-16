@@ -249,7 +249,7 @@
 /* Specifies whether to cache core info
  * into a single (compressed) file for improved
  * load times on platforms with slow IO */
-#if defined(RARCH_CONSOLE)
+#if defined(RARCH_CONSOLE) || defined(__WINRT__)
 #define DEFAULT_CORE_INFO_CACHE_ENABLE true
 #else
 #define DEFAULT_CORE_INFO_CACHE_ENABLE false
