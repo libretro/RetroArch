@@ -1115,13 +1115,8 @@ static bool accessibility_speak_windows(int speed,
       if (SUCCEEDED(hr))
       {
          wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
-
-         snprintf(cmd, sizeof(cmd),
-               "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
-
          if (!wc)
             return false;
-
          hr = ISpVoice_Speak(pVoice, wc, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
          free(wc);
       }
