@@ -36043,6 +36043,9 @@ static void runloop_task_msg_queue_push(
  * - src_path: in the event that 'path' file does not
  *   yet exist, provides source path from which initial
  *   options should be extracted
+ *
+ *   NOTE: caller must ensure 
+ *   path and src_path are NULL-terminated
  *  */
 static void rarch_init_core_options_path(
       struct rarch_state *p_rarch,
@@ -36054,12 +36057,6 @@ static void rarch_init_core_options_path(
 
    settings_t *settings           = p_rarch->configuration_settings;
    bool game_specific_options     = settings->bools.game_specific_options;
-
-   /* Ensure that 'input' strings are null terminated */
-   if (len > 0)
-      path[0]     = '\0';
-   if (src_len > 0)
-      src_path[0] = '\0';
 
    /* Check whether game-specific options exist */
    if (game_specific_options &&
@@ -36160,6 +36157,7 @@ static void rarch_init_core_options(
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
 
+   /* Ensure these are NULL-terminated */
    options_path[0]                = '\0';
    src_options_path[0]            = '\0';
 
@@ -36503,6 +36501,7 @@ static void retroarch_init_core_variables(
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
 
+   /* Ensure these are NULL-terminated */
    options_path[0]     = '\0';
    src_options_path[0] = '\0';
 
