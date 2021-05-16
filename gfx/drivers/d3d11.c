@@ -1811,7 +1811,7 @@ static uintptr_t d3d11_gfx_load_texture(
    switch (filter_type)
    {
       case TEXTURE_FILTER_MIPMAP_LINEAR:
-#ifdef __WINRT__
+#ifndef __WINRT__
          texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 #endif
          /* fallthrough */
@@ -1819,7 +1819,7 @@ static uintptr_t d3d11_gfx_load_texture(
          texture->sampler = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
          break;
       case TEXTURE_FILTER_MIPMAP_NEAREST:
-#ifdef __WINRT__
+#ifndef __WINRT__
          texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 #endif
          /* fallthrough */
