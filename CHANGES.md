@@ -1,4 +1,11 @@
 # Future
+- CORE INFO/FILE IO: Enable core info cache by default now for all platforms
+- LAKKA: Add brightness restore hook
+- LOCALIZATION: Fetch translations from Crowdin
+- MENU/XMB: Fix display of 'Maximum Users' menu entry dropdown list
+- PS3/PSL1GHT: Joypad driver works again
+- RPNG: Fix some memory corruption if processing broken input PNG file
+- SECURITY: Fix CVE-2021-28927
 
 # 1.9.3
 - 3DS: Disable menu screensaver animations in XMB/GLUI
