@@ -12867,7 +12867,8 @@ static bool command_event_save_config(
  **/
 static bool command_event_save_core_config(
       struct rarch_state *p_rarch,
-      const char *dir_menu_config)
+      const char *dir_menu_config,
+      const char *rarch_path_config)
 {
    char msg[128];
    char config_name[PATH_MAX_LENGTH];
@@ -12882,8 +12883,8 @@ static bool command_event_save_core_config(
 
    if (!string_is_empty(dir_menu_config))
       strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
-   else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
-      fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
+   else if (!string_is_empty(rarch_path_config)) /* Fallback */
+      fill_pathname_basedir(config_dir, rarch_path_config,
             sizeof(config_dir));
 
    if (string_is_empty(config_dir))
@@ -14393,7 +14394,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_SAVE_CONFIG:
 #ifdef HAVE_CONFIGFILE
          if (!command_event_save_core_config(p_rarch,
-                  settings->paths.directory_menu_config))
+                  settings->paths.directory_menu_config,
+                  path_get(RARCH_PATH_CONFIG)))
             return false;
 #endif
          break;
@@ -17117,7 +17119,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
          if (runloop_state.core_options)
-            retroarch_deinit_core_options(p_rarch);
+            retroarch_deinit_core_options(p_rarch,
+                  path_get(RARCH_PATH_CORE_OPTIONS)
+                  );
          retroarch_init_core_variables(
                p_rarch,
                (const struct retro_variable *)data);
@@ -17127,7 +17131,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_CORE_OPTIONS.\n");
 
          if (runloop_state.core_options)
-            retroarch_deinit_core_options(p_rarch);
+            retroarch_deinit_core_options(p_rarch,
+                  path_get(RARCH_PATH_CORE_OPTIONS)
+                  );
          rarch_init_core_options(p_rarch,
                (const struct retro_core_option_definition*)data);
 
@@ -17141,7 +17147,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                core_option_manager_get_definitions((const struct retro_core_options_intl*)data);
 
             if (runloop_state.core_options)
-               retroarch_deinit_core_options(p_rarch);
+               retroarch_deinit_core_options(p_rarch,
+                     path_get(RARCH_PATH_CORE_OPTIONS)
+                     );
 
             /* Parse core_options_intl to create option definitions array */
             if (option_defs)
@@ -18890,7 +18898,8 @@ static void uninit_libretro_symbols(
    p_rarch->core_set_shared_context   = false;
 
    if (runloop_state.core_options)
-      retroarch_deinit_core_options(p_rarch);
+      retroarch_deinit_core_options(p_rarch,
+            path_get(RARCH_PATH_CORE_OPTIONS));
    retroarch_system_info_free(p_rarch);
    retroarch_frame_time_free(p_rarch);
    retroarch_audio_buffer_status_free(p_rarch);
@@ -36445,12 +36454,12 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-static void retroarch_deinit_core_options(struct rarch_state *p_rarch)
+static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
+      const char *path_core_options)
 {
    /* Check whether game-specific options file is being used */
-   if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
+   if (!string_is_empty(path_core_options))
    {
-      const char *path        = path_get(RARCH_PATH_CORE_OPTIONS);
       config_file_t *conf_tmp = NULL;
 
       /* We only need to save configuration settings for
@@ -36460,8 +36469,8 @@ static void retroarch_deinit_core_options(struct rarch_state *p_rarch)
        *   if config values change)
        * > Otherwise, create a new, empty config_file_t
        *   object */
-      if (path_is_valid(path))
-         conf_tmp = config_file_new_from_path_to_string(path);
+      if (path_is_valid(path_core_options))
+         conf_tmp = config_file_new_from_path_to_string(path_core_options);
 
       if (!conf_tmp)
          conf_tmp = config_file_new_alloc();
@@ -36472,8 +36481,8 @@ static void retroarch_deinit_core_options(struct rarch_state *p_rarch)
                conf_tmp,
                runloop_state.core_options);
          RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
-               runloop_state.game_options_active ? "game" : "folder", path);
-         config_file_write(conf_tmp, path, true);
+               runloop_state.game_options_active ? "game" : "folder", path_core_options);
+         config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
          conf_tmp = NULL;
       }
@@ -39437,19 +39446,17 @@ bool core_options_create_override(bool game_specific)
    /* Write config file */
    core_option_manager_flush(conf, runloop_state.core_options);
 
-   if (config_file_write(conf, options_path, true))
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      path_set(RARCH_PATH_CORE_OPTIONS, options_path);
-      runloop_state.game_options_active   = game_specific;
-      runloop_state.folder_options_active = !game_specific;
-   }
-   else
+   if (!config_file_write(conf, options_path, true))
       goto error;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   path_set(RARCH_PATH_CORE_OPTIONS, options_path);
+   runloop_state.game_options_active   = game_specific;
+   runloop_state.folder_options_active = !game_specific;
 
    config_file_free(conf);
    return true;
