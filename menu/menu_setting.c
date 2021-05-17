@@ -7414,12 +7414,7 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
-         {
-            bool refresh = false;
-            command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
-            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-         }
+         command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
       case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
@@ -12150,7 +12145,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_max_users;
             (*list)[list_info->index - 1].offset_by = 1;
