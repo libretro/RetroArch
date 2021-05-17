@@ -1164,6 +1164,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Odhadovaná Miera Obnovenia Obrazovky"
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+#endif
 
 /* Settings > Video > Fullscreen Mode */
 

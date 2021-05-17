@@ -1456,6 +1456,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Fréquence de rafraîchissement détectée par le pilote d'affichage."
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Fréquence de rafraîchissement vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Définir la fréquence de rafraîchissement vertical de l'écran. '50 Hz' sera fluide pour le contenu PAL."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "Forcer la désactivation du mode sRGB FBO"
@@ -2103,6 +2113,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "Touche active par défaut pour le mode turbo 'Touche unique'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "Tir turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Modifier les réglages de tir turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2799,6 +2817,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Vérifie que tous les firmwares requis sont présents avant de tenter le chargement du contenu sélectionné."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "Mettre en cache les fichiers d'information de cœurs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "Conserve un cache local persistant des informations de cœurs installés. Réduit considérablement les temps de chargement sur les plates-formes avec un accès lent au disque."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -3633,6 +3659,14 @@ MSG_HASH(
    "Afficher un message à l'écran lorsque des codes de cheat sont appliqués."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Notifications de patchs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Affiche un message à l'écran lors de l'application de patches logiciels sur des ROM."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "Afficher un message à l'écran lors de la connexion/déconnexion de périphériques d'entrées."
    )
@@ -3872,6 +3906,38 @@ MSG_HASH(
    "Quitter automatiquement RetroArch lors de la fermeture du contenu. 'CLI' quitte uniquement lorsque le contenu est lancé via la ligne de commande."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "Délai d'activation de l'économiseur d'écran du menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "Lorsque le menu est actif, un économiseur d'écran s'affichera après la période d'inactivité spécifiée."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "Animation de l'économiseur d'écran du menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   "Activer un effet d'animation lorsque l'économiseur d'écran du menu est actif. A un impact modeste sur les performances."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Neige"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "Ciel étoilé"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "Vitesse d'animation de l'économiseur d'écran de menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "Ajuster la vitesse de l'effet d'animation de l'économiseur d'écran du menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Prise en charge de la souris"
    )
@@ -3918,6 +3984,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Vitesse de déplacement maximale du curseur lors d'un défilement prolongé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Délai de défilement du menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Délai initial en millisecondes lors du maintien d'une direction de défilement."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -7609,6 +7683,14 @@ MSG_HASH(
    "Selectionner un fichier de préréglages de thème du menu depuis le navigateur de fichiers."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Transparence du menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Activer l'affichage en arrière-plan du contenu en cours d'exécution lorsque le Menu rapide est actif. Désactiver la transparence peut modifier les couleurs du thème."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Effet d'ombres"
    )
@@ -7631,6 +7713,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    "Ajuste la vitesse des effets d'animation de particules en arrière-plan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Animation de fond pour l'économiseur d'écran"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Afficher un effet d'animation de particules en arrière-plan lorsque l'économiseur d'écran du menu est actif."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
@@ -9893,6 +9983,10 @@ MSG_HASH(
    "Appliquer les changements aux cheats."
    )
 MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "Application du patch : %s"
+   )
+MSG_HASH(
    MSG_APPLYING_SHADER,
    "Appliquer le shader"
    )
@@ -11247,6 +11341,94 @@ MSG_HASH(
    "Mode de performances soutenues"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+   "Performance et puissance du processeur (CPU)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
+   "Politique de gestion du processeur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
+   "Mode de gouvernance"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Manuel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Permet de modifier manuellement chaque détail dans chaque CPU : gouverneur, fréquences, etc. Recommandé uniquement pour les utilisateurs avancés."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Performance (géré)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Mode par défaut et recommandé. Performances maximales lors du jeu en économisant l'énergie lors de la pause ou de la navigation dans les menus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Gestion personnalisée"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Permet de choisir quels gouverneurs utiliser dans les menus et pendant le jeu. Les modes Performances, Ondemand (à la demande) ou Schedutil (intelligent) sont recommandés pendant le jeu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Performance maximale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Toujours utiliser les performances maximales : les plus hautes fréquences pour une meilleure expérience."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Puissance minimale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Utiliser la fréquence la plus basse disponible pour économiser de l'énergie. Utile sur les appareils alimentés par batterie, mais les performances seront considérablement réduites."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Equilibré"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "S'adapte à la charge de travail actuelle. Fonctionne bien avec la plupart des appareils et émulateurs et aide à économiser l'énergie. Des jeux et des cœurs exigeants pourraient subir une baisse des performances sur certains appareils."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   "Fréquence minimale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   "Fréquence maximale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   "Fréquence minimale pour le coeur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   "Fréquence maximale pour le coeur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
+   "Gouverneur performance"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
+   "Gouverneur du cœur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
+   "Gouverneur du menu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Utiliser le mode PAL60"
    )
@@ -11373,6 +11555,14 @@ MSG_HASH(
    "Activer ou désactiver le point d'accès Wi-Fi."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Fuseau horaire"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Sélectionnez votre fuseau horaire pour ajuster la date et l'heure à votre emplacement."
+   )
+MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Désactivation du point d'accès Wi-Fi."
    )
@@ -11419,6 +11609,14 @@ MSG_HASH(
    "Ajuste l'échelle x/y pour la vitesse du pointeur Wiimote."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Échelle du tactile"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Ajuster l'échelle x/y des coordonnées de l'écran tactile pour s'adapter à la mise à l'échelle de l'écran au niveau du système d'exploitation."
+   )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
