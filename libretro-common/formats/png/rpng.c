@@ -1035,7 +1035,9 @@ bool rpng_iterate_image(rpng_t *rpng)
          rpng->ihdr.interlace    = buf[12];
 
          if (     rpng->ihdr.width  == 0 
-               || rpng->ihdr.height == 0)
+               || rpng->ihdr.height == 0 
+               /* ensure multiplications don't overflow and wrap around, that'd give buffer overflow crashes */
+               || (uint64_t)rpng->ihdr.width*rpng->ihdr.height*sizeof(uint32_t) >= 0x80000000)
             return false;
 
          if (!png_process_ihdr(&rpng->ihdr))
@@ -1169,6 +1171,7 @@ error:
       if (rpng->process->stream)
          rpng->process->stream_backend->stream_free(rpng->process->stream);
       free(rpng->process);
+      rpng->process = NULL;
    }
    return IMAGE_PROCESS_ERROR;
 }
