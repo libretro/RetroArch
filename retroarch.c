@@ -2676,8 +2676,10 @@ int generic_menu_entry_action(
 
       if (!string_is_empty(title_name))
          snprintf(speak_string, sizeof(speak_string),
-               "%s ", title_name); 
-      strlcat(speak_string, current_label, sizeof(speak_string));
+               "%s %s", title_name, current_label); 
+      else
+         strlcpy(speak_string, current_label, sizeof(speak_string));
+
       if (!string_is_equal(current_value, "..."))
       {
          strlcat(speak_string, " ", sizeof(speak_string));
