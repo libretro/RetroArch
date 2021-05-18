@@ -116,7 +116,6 @@ bool core_backup_get_backup_path(
       const char *core_path, uint32_t crc, enum core_backup_mode backup_mode,
       const char *dir_core_assets, char *backup_path, size_t len)
 {
-   int n;
    time_t current_time;
    struct tm time_info;
    const char *core_filename = NULL;
@@ -152,7 +151,7 @@ bool core_backup_get_backup_path(
    rtime_localtime(&current_time, &time_info);
 
    /* Generate backup filename */
-   n = snprintf(backup_filename, sizeof(backup_filename),
+   snprintf(backup_filename, sizeof(backup_filename),
          "%s.%04u%02u%02uT%02u%02u%02u.%08x.%u%s",
          core_filename,
          (unsigned)time_info.tm_year + 1900,
@@ -165,10 +164,6 @@ bool core_backup_get_backup_path(
          (unsigned)backup_mode,
          FILE_PATH_CORE_BACKUP_EXTENSION);
 
-   if ((n < 0) || (n >= 128))
-      n = 0; /* Silence GCC warnings... */
-
-   (void)n;
    /* Build final path */
    fill_pathname_join(backup_path, backup_dir,
          backup_filename, len);
@@ -712,7 +707,6 @@ bool core_backup_list_get_entry_timestamp_str(
       enum core_backup_date_separator_type date_separator,
       char *timestamp, size_t len)
 {
-   int n;
    const char *format_str = "";
 
    if (!entry || (len < 20))
@@ -732,7 +726,7 @@ bool core_backup_list_get_entry_timestamp_str(
          break;
    }
 
-   n = snprintf(timestamp, len,
+   snprintf(timestamp, len,
          format_str,
          entry->date.year,
          entry->date.month,
@@ -741,9 +735,6 @@ bool core_backup_list_get_entry_timestamp_str(
          entry->date.minute,
          entry->date.second);
 
-   if ((n < 0) || (n >= 32))
-      n = 0; /* Silence GCC warnings... */
-   (void)n;
    return true;
 }
 
@@ -754,15 +745,9 @@ bool core_backup_list_get_entry_crc_str(
       const core_backup_list_entry_t *entry,
       char *crc, size_t len)
 {
-   int n;
-
    if (!entry || (len < 9))
       return false;
 
-   n = snprintf(crc, len, "%08x", entry->crc);
-
-   if ((n < 0) || (n >= 32))
-      n = 0; /* Silence GCC warnings... */
-   (void)n;
+   snprintf(crc, len, "%08x", entry->crc);
    return true;
 }
