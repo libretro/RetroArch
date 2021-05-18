@@ -23,7 +23,7 @@
 #include <string/stdstring.h>
 #include <gfx/math/matrix_4x4.h>
 
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../video_coord_array.h"

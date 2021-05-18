@@ -35,7 +35,7 @@
 #include "../../config.h"
 #endif
 
-#include "../../defines/d3d_defines.h"
+#include <defines/d3d_defines.h>
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 #include "../video_coord_array.h"

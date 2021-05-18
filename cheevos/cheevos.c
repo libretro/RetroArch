@@ -200,73 +200,79 @@ void rcheevos_log(const char *fmt, ...)
 }
 #endif
 
+static int append_no_spaces(char* buffer, char* stop, const char* text)
+{
+   char* ptr = buffer;
+
+   while (ptr < stop && *text)
+   {
+      if (*text == ' ')
+      {
+         *ptr++ = '_';
+         ++text;
+      }
+      else
+      {
+         *ptr++ = *text++;
+      }
+   }
+
+   *ptr = '\0';
+   return (ptr - buffer);
+}
+
 static void rcheevos_get_user_agent(
       rcheevos_locals_t *locals,
       char *buffer, size_t len)
 {
    struct retro_system_info *system = runloop_get_libretro_system_info();
-   const char* scan;
    char* ptr;
 
+   /* if we haven't calculated the non-changing portion yet, do so now [retroarch version + os version] */
    if (!locals->user_agent_prefix[0])
    {
       const frontend_ctx_driver_t *frontend = frontend_get_ptr();
       int major, minor;
       char tmp[64];
 
-      ptr = locals->user_agent_prefix + snprintf(locals->user_agent_prefix, sizeof(locals->user_agent_prefix), "RetroArch/%s", PACKAGE_VERSION);
-
       if (frontend && frontend->get_os)
       {
          frontend->get_os(tmp, sizeof(tmp), &major, &minor);
-         ptr += sprintf(ptr, " (%s %d.%d)", tmp, major, minor);
-         (void)ptr;
+         snprintf(locals->user_agent_prefix, sizeof(locals->user_agent_prefix),
+            "RetroArch/%s (%s %d.%d)", PACKAGE_VERSION, tmp, major, minor);
+      }
+      else
+      {
+         snprintf(locals->user_agent_prefix, sizeof(locals->user_agent_prefix),
+            "RetroArch/%s", PACKAGE_VERSION);
       }
    }
 
-   ptr = buffer + snprintf(buffer, len, "%s", locals->user_agent_prefix);
+   /* append the non-changing portion */
+   ptr = buffer + strlcpy(buffer, locals->user_agent_prefix, len);
 
+   /* if a core is loaded, append its information */
    if (system && !string_is_empty(system->library_name))
    {
+      char* stop = buffer + len - 1;
       const char* path = path_get(RARCH_PATH_CORE);
+      *ptr++ = ' ';
+
       if (!string_is_empty(path))
       {
-         sprintf(ptr, " %s", path_basename(path));
+         append_no_spaces(ptr, stop, path_basename(path));
          path_remove_extension(ptr);
          ptr += strlen(ptr);
       }
       else
       {
-         *ptr++ = ' ';
-
-         scan = system->library_name;
-         while (*scan)
-         {
-            if (*scan == ' ')
-            {
-               *ptr++ = '_';
-               ++scan;
-            }
-            else
-               *ptr++ = *scan++;
-         }
+         ptr += append_no_spaces(ptr, stop, system->library_name);
       }
 
       if (system->library_version)
       {
          *ptr++ = '/';
-
-         scan = system->library_version;
-         while (*scan)
-         {
-            if (*scan == ' ')
-            {
-               *ptr++ = '_';
-               ++scan;
-            }
-            else
-               *ptr++ = *scan++;
-         }
+         ptr += append_no_spaces(ptr, stop, system->library_version);
       }
    }
 

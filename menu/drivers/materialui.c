@@ -3381,7 +3381,6 @@ static bool materialui_render_process_entry_playlist_desktop(
             const char *core_name              = NULL;
             const char *runtime_str            = NULL;
             const char *last_played_str        = NULL;
-            int n;
 
             /* Read playlist entry */
             playlist_get_index(mui->playlist, playlist_idx, &entry);
@@ -3433,7 +3432,7 @@ static bool materialui_render_process_entry_playlist_desktop(
                last_played_str = mui->status_bar.last_played_fallback_str;
 
             /* Generate metadata string */
-            n = snprintf(mui->status_bar.str, sizeof(mui->status_bar.str),
+            snprintf(mui->status_bar.str, sizeof(mui->status_bar.str),
                   "%s %s%s%s%s%s",
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
                   core_name,
@@ -3442,10 +3441,6 @@ static bool materialui_render_process_entry_playlist_desktop(
                   MUI_TICKER_SPACER,
                   last_played_str);
 
-            if ((n < 0) || (n >= 255))
-               n = 0; /* Silence GCC warnings... */
-            (void)n;
-            
             /* All metadata is cached */
             mui->status_bar.cached = true;
 
@@ -7236,8 +7231,6 @@ static void materialui_status_bar_init(
 
    if (mui->status_bar.enabled)
    {
-      int n;
-
       /* Determine status bar height */
       mui->status_bar.height = (unsigned)(((float)mui->font_data.hint.line_height * 1.6f) + 0.5f);
 
@@ -7246,22 +7239,15 @@ static void materialui_status_bar_init(
        *  materialui_init()? Because re-caching the
        *  values each time allows us to handle changes
        *  in user interface language settings) */
-      n = snprintf(mui->status_bar.runtime_fallback_str,
+      snprintf(mui->status_bar.runtime_fallback_str,
             sizeof(mui->status_bar.runtime_fallback_str), "%s %s",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
 
-      if ((n < 0) || (n >= 255))
-            n = 0; /* Silence GCC warnings... */
-      (void)n;
-      n = snprintf(mui->status_bar.last_played_fallback_str,
+      snprintf(mui->status_bar.last_played_fallback_str,
             sizeof(mui->status_bar.last_played_fallback_str), "%s %s",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
-
-      if ((n < 0) || (n >= 255))
-            n = 0; /* Silence GCC warnings... */
-      (void)n;
    }
 }
 

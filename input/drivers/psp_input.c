@@ -47,7 +47,7 @@
 #include "../../bootstrap/psp1/kernel_functions.h"
 #endif
 
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 
 #include "../input_driver.h"
 

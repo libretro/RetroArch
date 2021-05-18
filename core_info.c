@@ -1357,8 +1357,8 @@ static bool core_info_path_is_locked(core_lock_file_path_list_t *lock_list,
    if (lock_list->size < 1)
       return false;
 
-   strlcpy(lock_filename, core_file_name, sizeof(lock_filename));
-   strlcat(lock_filename, FILE_PATH_LOCK_EXTENSION, sizeof(lock_filename));
+   snprintf(lock_filename, sizeof(lock_filename),
+         "%s" FILE_PATH_LOCK_EXTENSION, core_file_name);
 
    hash = core_info_hash_string(lock_filename);
 
@@ -1490,15 +1490,16 @@ static config_file_t *core_info_get_config_file(
 {
    char info_path[PATH_MAX_LENGTH];
 
-   info_path[0] = '\0';
-
    if (string_is_empty(info_dir))
-      strlcpy(info_path, core_file_id, sizeof(info_path));
+      snprintf(info_path, sizeof(info_path),
+            "%s" ".info", core_file_id);
    else
+   {
+      info_path[0] = '\0';
       fill_pathname_join(info_path, info_dir, core_file_id,
             sizeof(info_path));
-
-   strlcat(info_path, ".info", sizeof(info_path));
+      strlcat(info_path, ".info", sizeof(info_path));
+   }
 
    return config_file_new_from_path_to_string(info_path);
 }
@@ -2818,8 +2819,6 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
    bool lock_file_exists  = false;
    char lock_file_path[PATH_MAX_LENGTH];
 
-   lock_file_path[0] = '\0';
-
 #if defined(ANDROID)
    /* Play Store builds do not support
     * core locking */
@@ -2838,10 +2837,8 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
       return false;
 
    /* Get lock file path */
-   strlcpy(lock_file_path, core_info->path,
-         sizeof(lock_file_path));
-   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION,
-         sizeof(lock_file_path));
+   snprintf(lock_file_path, sizeof(lock_file_path),
+         "%s" FILE_PATH_LOCK_EXTENSION, core_info->path);
 
    /* Check whether lock file exists */
    lock_file_exists = path_is_valid(lock_file_path);
@@ -2894,8 +2891,6 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    bool is_locked             = false;
    char lock_file_path[PATH_MAX_LENGTH];
 
-   lock_file_path[0] = '\0';
-
 #if defined(ANDROID)
    /* Play Store builds do not support
     * core locking */
@@ -2921,10 +2916,8 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       return false;
 
    /* Get lock file path */
-   strlcpy(lock_file_path, core_file_path,
-         sizeof(lock_file_path));
-   strlcat(lock_file_path, FILE_PATH_LOCK_EXTENSION,
-         sizeof(lock_file_path));
+   snprintf(lock_file_path, sizeof(lock_file_path),
+         "%s" FILE_PATH_LOCK_EXTENSION, core_file_path);
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);

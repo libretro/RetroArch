@@ -25,7 +25,7 @@
 
 #include "../../configuration.h"
 
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"

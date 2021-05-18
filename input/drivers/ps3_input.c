@@ -28,7 +28,7 @@
 #include "../../config.h"
 #endif
 
-#include "../../defines/ps3_defines.h"
+#include <defines/ps3_defines.h>
 
 #include "../input_driver.h"
 

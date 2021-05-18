@@ -39,7 +39,7 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 

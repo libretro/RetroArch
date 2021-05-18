@@ -684,6 +684,9 @@ static bool win32_browser(
 
       result = browser->open(&browser_state);
 
+      /* TODO/FIXME - this is weird - why is this called
+       * after the browser->open call? Seems to have no effect
+       * anymore here */
       if (filename && browser_state.path)
          strlcpy(filename, browser_state.path, filename_size);
 
@@ -1909,15 +1912,15 @@ static void win32_localize_menu(HMENU menu)
       {
          int len;
 #ifndef LEGACY_WIN32
-         wchar_t* newLabel_unicode;
+         wchar_t* newLabel_unicode = NULL;
 #else
-         char* newLabel_ansi;
+         char* newLabel_ansi       = NULL;
 #endif
-         const char* newLabel    = msg_hash_to_str(label_enum);
-         unsigned int metaKey    = menu_id_to_meta_key(menuItemInfo.wID);
-         const char* metaKeyName = meta_key_to_name(metaKey);
-         const char* newLabel2   = newLabel;
-         char* newLabelText      = NULL;
+         const char* newLabel      = msg_hash_to_str(label_enum);
+         unsigned int metaKey      = menu_id_to_meta_key(menuItemInfo.wID);
+         const char* newLabel2     = newLabel;
+         const char* metaKeyName   = NULL;
+         char* newLabelText        = NULL;
 
          /* specific replacements:
             Load Content = "Ctrl+O"
@@ -1928,9 +1931,11 @@ static void win32_localize_menu(HMENU menu)
          else if (label_enum == 
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
             metaKeyName = "Alt+Enter";
+         else
+            metaKeyName = meta_key_to_name(metaKey);
 
          /* Append localized name, tab character, and Shortcut Key */
-         if (metaKeyName && 0 != strcmp(metaKeyName, "nul"))
+         if (metaKeyName && string_is_not_equal(metaKeyName, "nul"))
          {
             int len1     = strlen(newLabel);
             int len2     = strlen(metaKeyName);
@@ -1939,10 +1944,8 @@ static void win32_localize_menu(HMENU menu)
 
             if (newLabelText)
             {
-               newLabel2 = newLabelText;
-               strcpy(newLabelText, newLabel);
-               strcat(newLabelText, "\t");
-               strcat(newLabelText, metaKeyName);
+               newLabel2              = newLabelText;
+               snprintf(newLabelText, bufSize, "%s\t%s", newLabel, metaKeyName);
                /* Make first character of shortcut name uppercase */
                newLabelText[len1 + 1] = toupper(newLabelText[len1 + 1]);
             }

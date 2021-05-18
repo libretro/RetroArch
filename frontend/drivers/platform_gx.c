@@ -34,7 +34,7 @@
 #include "../../memory/wii/mem2_manager.h"
 #endif
 
-#include "../../defines/gx_defines.h"
+#include <defines/gx_defines.h>
 
 #include <boolean.h>
 

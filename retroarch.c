@@ -2634,9 +2634,12 @@ int generic_menu_entry_action(
       char title_name[255];
       char speak_string[512];
 
-      strlcpy(title_name, "", sizeof(title_name));
-      strlcpy(current_label, "", sizeof(current_label));
-      get_current_menu_value(&p_rarch->menu_driver_state, current_value, sizeof(current_value));
+      speak_string[0]  = '\0';
+      title_name  [0]  = '\0';
+      current_label[0] = '\0';
+
+      get_current_menu_value(&p_rarch->menu_driver_state,
+            current_value, sizeof(current_value));
 
       switch (action)
       {
@@ -2671,20 +2674,19 @@ int generic_menu_entry_action(
             break;
       }
 
-      strlcpy(speak_string, "", sizeof(speak_string));
-      if (!string_is_equal(title_name, ""))
-      {
-         strlcpy(speak_string, title_name, sizeof(speak_string));
-         strlcat(speak_string, " ", sizeof(speak_string));
-      }
-      strlcat(speak_string, current_label, sizeof(speak_string));
+      if (!string_is_empty(title_name))
+         snprintf(speak_string, sizeof(speak_string),
+               "%s %s", title_name, current_label); 
+      else
+         strlcpy(speak_string, current_label, sizeof(speak_string));
+
       if (!string_is_equal(current_value, "..."))
       {
          strlcat(speak_string, " ", sizeof(speak_string));
          strlcat(speak_string, current_value, sizeof(speak_string));
       }
 
-      if (!string_is_equal(speak_string, ""))
+      if (!string_is_empty(speak_string))
          accessibility_speak_priority(p_rarch,
                accessibility_enable,
                accessibility_narrator_speech_speed,
@@ -5899,11 +5901,8 @@ static bool menu_shader_manager_save_preset_internal(
       }
    }
    else
-   {
-      strcpy_literal(fullname, "retroarch");
-      strlcat(fullname,
-            video_shader_get_preset_extension(type), sizeof(fullname));
-   }
+      snprintf(fullname, sizeof(fullname), "retroarch%s",
+            video_shader_get_preset_extension(type));
 
    if (path_is_absolute(fullname))
    {
@@ -7648,7 +7647,8 @@ static void netplay_announce(struct rarch_state *p_rarch)
    uint32_t content_crc             = content_get_crc();
    struct string_list *subsystem    = path_get_subsystem_list();
 
-   buf[0] = '\0';
+   frontend_architecture[0]         = '\0';
+   buf[0]                           = '\0';
 
    if (subsystem)
    {
@@ -7677,12 +7677,11 @@ static void netplay_announce(struct rarch_state *p_rarch)
    frontend_drv =
       (const frontend_ctx_driver_t*)frontend_driver_get_cpu_architecture_str(
             frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
-   strlcpy(frontend_architecture, frontend_drv->ident,
-         sizeof(frontend_architecture));
-   strlcat(frontend_architecture, " ",
-         sizeof(frontend_architecture));
-   strlcat(frontend_architecture, frontend_architecture_tmp,
-         sizeof(frontend_architecture));
+   snprintf(frontend_architecture, 
+         sizeof(frontend_architecture),
+         "%s %s",
+         frontend_drv->ident,
+         frontend_architecture_tmp);
 
 #ifdef HAVE_DISCORD
    if (discord_is_ready())
@@ -10790,11 +10789,11 @@ static bool retroarch_apply_shader(
                      msg_hash_to_str(MSG_SHADER),
                      preset_file);
             else
-            {
-               strlcpy(msg, msg_hash_to_str(MSG_SHADER), sizeof(msg));
-               strlcat(msg, ": ", sizeof(msg));
-               strlcat(msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), sizeof(msg));
-            }
+               snprintf(msg, sizeof(msg),
+                     "%s: %s", 
+                     msg_hash_to_str(MSG_SHADER),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)
+                     );
 #ifdef HAVE_GFX_WIDGETS
             if (p_rarch->widgets_active)
                gfx_widget_set_generic_message(&p_rarch->dispwidget_st,
@@ -12831,7 +12830,6 @@ static bool command_event_save_config(
       const char *config_path,
       char *s, size_t len)
 {
-   char log[PATH_MAX_LENGTH];
    bool path_exists = !string_is_empty(config_path);
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
@@ -12841,10 +12839,7 @@ static bool command_event_save_config(
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
-
-      strcpy_literal(log, "[Config]: ");
-      strlcat(log, s, sizeof(log));
-      RARCH_LOG("%s\n", log);
+      RARCH_LOG("[Config]: %s\n", s);
       return true;
    }
 
@@ -12853,10 +12848,7 @@ static bool command_event_save_config(
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
-
-      strcpy_literal(log, "[Config]: ");
-      strlcat(log, s, sizeof(log));
-      RARCH_ERR("%s\n", log);
+      RARCH_ERR("[Config]: %s\n", s);
    }
 
    return false;
@@ -20866,11 +20858,8 @@ static bool runloop_check_movie_init(struct rarch_state *p_rarch,
             p_rarch->bsv_movie_state.movie_path,
             state_slot);
    else
-   {
-      strlcpy(path, p_rarch->bsv_movie_state.movie_path, sizeof(path));
-      strlcat(path, ".bsv", sizeof(path));
-   }
-
+      snprintf(path, sizeof(path), "%s.bsv",
+            p_rarch->bsv_movie_state.movie_path);
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -30902,8 +30891,7 @@ static void video_driver_lock_new(struct rarch_state *p_rarch)
 void video_driver_set_cached_frame_ptr(const void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (data)
-      p_rarch->frame_cache_data = data;
+   p_rarch->frame_cache_data = data;
 }
 
 void video_driver_set_stub_frame(void)
@@ -34265,7 +34253,7 @@ static void retroarch_print_features(void)
    buf[0] = '\0';
    frontend_driver_attach_console();
 
-   strlcat(buf, "\nFeatures:\n", sizeof(buf));
+   strlcpy(buf, "\nFeatures:\n", sizeof(buf));
 
    _PSUPP_BUF(buf, SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
    _PSUPP_BUF(buf, SUPPORTS_COMMAND,         "Command",         "Command interface support");
@@ -35449,7 +35437,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
          cpu_model     = frontend_driver_get_cpu_model_name();
 
-         strlcat(str_output,
+         strlcpy(str_output,
                "=== Build =======================================\n",
                sizeof(str_output));
 
@@ -35469,10 +35457,10 @@ bool retroarch_main_init(int argc, char *argv[])
 
          retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
-         strlcat(str_output, msg_hash_to_str(MSG_CAPABILITIES),
-               sizeof(str_output));
-         strlcat(str_output, ": ", sizeof(str_output));
-         strlcat(str_output, str,  sizeof(str_output));
+         snprintf(str_output, sizeof(str_output),
+               "%s: %s",
+               msg_hash_to_str(MSG_CAPABILITIES),
+               str);
          strlcat(str_output, "\n" FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n", sizeof(str_output));
 #ifdef HAVE_GIT_VERSION
          strlcat(str_output, FILE_PATH_LOG_INFO " Git: ", sizeof(str_output));

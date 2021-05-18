@@ -57,7 +57,7 @@
 #endif
 
 #ifdef VITA
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 static bool vgl_inited = false;
 #endif
 
