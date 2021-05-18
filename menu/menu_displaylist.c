@@ -10047,7 +10047,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                while (*drivers)
                {
                   char policyid[16];
-                  sprintf(policyid, "%u", count++);
+                  snprintf(policyid, sizeof(policyid), "%u", count++);
                   menu_entries_append_enum(info->list,
                      policyid,
                      policyid,

@@ -1235,7 +1235,13 @@ chd_error chd_get_metadata(chd_file *chd, UINT32 searchtag, UINT32 searchindex, 
 			UINT32 faux_length;
 
 			/* fill in the faux metadata */
-			sprintf(faux_metadata, HARD_DISK_METADATA_FORMAT, chd->header.obsolete_cylinders, chd->header.obsolete_heads, chd->header.obsolete_sectors, chd->header.hunkbytes / chd->header.obsolete_hunksize);
+			snprintf(faux_metadata,
+               sizeof(faux_metadata),
+               HARD_DISK_METADATA_FORMAT,
+               chd->header.obsolete_cylinders,
+               chd->header.obsolete_heads,
+               chd->header.obsolete_sectors,
+               chd->header.hunkbytes / chd->header.obsolete_hunksize);
 			faux_length = (UINT32)strlen(faux_metadata) + 1;
 
 			/* copy the metadata itself */

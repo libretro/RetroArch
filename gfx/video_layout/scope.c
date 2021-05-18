@@ -129,7 +129,7 @@ void scope_repeat(scope_t *scope)
                gen->value.val_dec = (float)((int)gen->value.val_dec << gen->shift);
             else if (gen->shift < 0)
                gen->value.val_dec = (float)((int)gen->value.val_dec >> -gen->shift);
-            sprintf(tmp, "%f", gen->value.val_dec);
+            snprintf(tmp, sizeof(tmp), "%f", gen->value.val_dec);
          }
          else
          {
@@ -138,7 +138,7 @@ void scope_repeat(scope_t *scope)
                gen->value.val_int <<= gen->shift;
             else if (gen->shift < 0)
                gen->value.val_int >>= -gen->shift;
-            sprintf(tmp, "%d", gen->value.val_int);
+            snprintf(tmp, sizeof(tmp), "%d", gen->value.val_int);
          }
 
          string_set(&param->value, tmp);

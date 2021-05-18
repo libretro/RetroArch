@@ -1025,7 +1025,7 @@ static int action_bind_sublabel_cpu_policy_entry_list(
    int idx = atoi(path);
    if (drivers)
    {
-      sprintf(s, "%s | Freq: %u MHz\n", drivers[idx]->scaling_governor,
+      snprintf(s, len, "%s | Freq: %u MHz\n", drivers[idx]->scaling_governor,
          drivers[idx]->current_frequency / 1000);
       return 0;
    }
