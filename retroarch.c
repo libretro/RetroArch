@@ -30897,8 +30897,7 @@ static void video_driver_lock_new(struct rarch_state *p_rarch)
 void video_driver_set_cached_frame_ptr(const void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (data)
-      p_rarch->frame_cache_data = data;
+   p_rarch->frame_cache_data = data;
 }
 
 void video_driver_set_stub_frame(void)
