@@ -2,6 +2,7 @@
 - CORE INFO/FILE IO: Enable core info cache by default now for all platforms
 - LAKKA: Add brightness restore hook
 - LOCALIZATION: Fetch translations from Crowdin
+- MENU/OZONE: Added simple playlist entry enumeration
 - MENU/XMB: Fix display of 'Maximum Users' menu entry dropdown list
 - PS3/PSL1GHT: Joypad driver works again
 - RPNG: Fix some memory corruption if processing broken input PNG file
