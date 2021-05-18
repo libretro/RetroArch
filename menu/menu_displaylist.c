@@ -4015,7 +4015,6 @@ static unsigned menu_displaylist_parse_content_information(
       content_path   = loaded_content_path;
       core_path      = loaded_core_path;
 
-      if (core_info_find(core_path, &core_info))
          if (!string_is_empty(core_info->display_name))
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
    }
@@ -4654,20 +4653,18 @@ static int menu_displaylist_parse_input_description_kbd_list(
       const char *key_label = key_descriptors[i].desc;
       char input_description[256];
 
-      input_description[0] = '\0';
-
       if (string_is_empty(key_label))
          continue;
 
       /* TODO/FIXME: Localise 'Keyboard' */
       if (key_id == RETROK_FIRST)
-         strcpy_literal(input_description, "---");
-      else
       {
-         strcpy_literal(input_description, "Keyboard ");
-         strlcat(input_description, key_label,
-               sizeof(input_description));
+         input_description[0] = '\0';
+         strcpy_literal(input_description, "---");
       }
+      else
+         snprintf(input_description, sizeof(input_description),
+               "Keyboard %s", key_label);
 
       /* Add menu entry */
       if (menu_entries_append_enum(info->list,
@@ -9287,15 +9284,11 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    {
       for (i = 0; i < netplay_room_count; i++)
       {
-         char country[PATH_MAX_LENGTH] = {0};
+         char country[PATH_MAX_LENGTH];
 
          if (*netplay_room_list[i].country)
-         {
-            strcpy_literal(country, "(");
-            strlcat(country, netplay_room_list[i].country,
-                  sizeof(country));
-            strlcat(country, ")", sizeof(country));
-         }
+            snprintf(country, sizeof(country),
+                  "(%s)", netplay_room_list[i].country);
 
          /* Uncomment this to debug mismatched room parameters*/
 #if 0
@@ -9734,11 +9727,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.title))
                   {
                      char title[256];
-
-                     title[0] = '\0';
-
-                     strcpy_literal(title, "Title: ");
-                     strlcat(title, cd_info.title, sizeof(title));
+                     snprintf(title, sizeof(title), "Title: %s", cd_info.title);
 
                      if (menu_entries_append_enum(info->list,
                            title,
@@ -9751,11 +9740,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.system))
                   {
                      char system[256];
-
-                     system[0] = '\0';
-
-                     strcpy_literal(system, "System: ");
-                     strlcat(system, cd_info.system, sizeof(system));
+                     snprintf(system, sizeof(system), "System: %s", cd_info.system);
 
                      if (menu_entries_append_enum(info->list,
                            system,
@@ -9768,12 +9753,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.serial))
                   {
                      char serial[256];
-
-                     serial[0] = '\0';
-
                      snprintf(serial, sizeof(serial),
-                           "%s#: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL));
-                     strlcat(serial, cd_info.serial, sizeof(serial));
+                           "%s#: %s",
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
+                           cd_info.serial
+                           );
 
                      if (menu_entries_append_enum(info->list,
                            serial,
@@ -9786,9 +9770,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.version))
                   {
                      char version[256];
-
-                     version[0] = '\0';
-
                      snprintf(version, sizeof(version),
                            "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION), cd_info.version);
 
@@ -9803,11 +9784,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (!string_is_empty(cd_info.release_date))
                   {
                      char release_date[256];
-
-                     release_date[0] = '\0';
-
-                     strcpy_literal(release_date, "Release Date: ");
-                     strlcat(release_date, cd_info.release_date, sizeof(release_date));
+                     snprintf(release_date, sizeof(release_date),
+                           "Release Date: %s", cd_info.release_date);
 
                      if (menu_entries_append_enum(info->list,
                            release_date,
@@ -9817,19 +9795,24 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         count++;
                   }
 
+                  if (atip)
                   {
-                     char atip_string[32] = {"Genuine Disc: "};
-
-                     if (atip)
-                        strlcat(atip_string, "No", sizeof(atip_string));
-                     else
-                        strlcat(atip_string, "Yes", sizeof(atip_string));
-
+                     const char *atip_string = "Genuine Disc: No";
                      if (menu_entries_append_enum(info->list,
-                           atip_string,
-                           "",
-                           MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0))
+                              atip_string,
+                              "",
+                              MSG_UNKNOWN,
+                              FILE_TYPE_NONE, 0, 0))
+                        count++;
+                  }
+                  else
+                  {
+                     const char *atip_string = "Genuine Disc: Yes";
+                     if (menu_entries_append_enum(info->list,
+                              atip_string,
+                              "",
+                              MSG_UNKNOWN,
+                              FILE_TYPE_NONE, 0, 0))
                         count++;
                   }
 
@@ -10079,8 +10062,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          fgets(current_profile, PATH_MAX_LENGTH, profile);
          pclose(profile);
 
-         strcpy_literal(text, "Current profile : ");
-         strlcat(text, current_profile, sizeof(text));
+         snprintf(text, sizeof(text),
+               "Current profile: %s", current_profile);
 #else
          u32 currentClock = 0;
          if (hosversionBefore(8, 0, 0))
@@ -10103,10 +10086,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          for (i = 0; i < profiles_count; i++)
          {
+            char title[PATH_MAX_LENGTH];
             char* profile               = SWITCH_CPU_PROFILES[i];
             char* speed                 = SWITCH_CPU_SPEEDS[i];
-
-            char title[PATH_MAX_LENGTH] = {0};
 
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
 
@@ -10141,17 +10123,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         strcpy_literal(text, "Current profile : ");
-         strlcat(text, current_profile, sizeof(text));
+         snprintf(text, sizeof(text),
+               "Current profile : %s", current_profile);
 
          if (menu_entries_append_enum(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0))
             count++;
 
          for (i = 0; i < profiles_count; i++)
          {
+            char title[PATH_MAX_LENGTH];
             char* profile               = SWITCH_GPU_PROFILES[i];
             char* speed                 = SWITCH_GPU_SPEEDS[i];
-            char title[PATH_MAX_LENGTH] = {0};
 
             snprintf(title, sizeof(title), "%s (%s)", profile, speed);
 
