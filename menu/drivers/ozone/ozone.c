@@ -3963,6 +3963,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
    playlist_t *playlist              = playlist_get_cached();
    settings_t *settings              = config_get_ptr();
    bool scroll_content_metadata      = settings->bools.ozone_scroll_content_metadata;
+   bool show_entry_idx               = settings->bools.playlist_show_entry_idx;
    bool content_runtime_log          = settings->bools.content_runtime_log;
    bool content_runtime_log_aggr     = settings->bools.content_runtime_log_aggregate;
    const char *directory_runtime_log = settings->paths.directory_runtime_log;
@@ -4005,6 +4006,14 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          playlist_valid = true;
          playlist_index = list->list[selection].entry_idx;
       }
+
+      /* Fill entry enumeration */
+      if (show_entry_idx)
+         snprintf(ozone->selection_entry_enumeration, sizeof(ozone->selection_entry_enumeration),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX),
+            (unsigned long)(playlist_index + 1), (unsigned long)list_size);
+      else
+         ozone->selection_entry_enumeration[0] = '\0';
 
       /* Fill core name */
       if (!core_name || string_is_equal(core_name, "DETECT"))

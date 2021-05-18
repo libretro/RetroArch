@@ -1155,6 +1155,7 @@ void ozone_draw_thumbnail_bar(
       enum gfx_animation_ticker_type 
          menu_ticker_type                    = (enum gfx_animation_ticker_type)
                settings->uints.menu_ticker_type;
+      bool show_entry_idx                    = settings->bools.playlist_show_entry_idx;
       unsigned y                             = (unsigned)bottom_row_y_position;
       unsigned separator_padding             = ozone->dimensions.sidebar_entry_icon_padding*2;
       unsigned column_x                      = x_position + separator_padding;
@@ -1218,6 +1219,33 @@ void ozone_draw_thumbnail_bar(
 
       if (scroll_content_metadata)
       {
+         /* Entry enumeration */
+         if (show_entry_idx)
+         {
+            ticker_buf[0] = '\0';
+
+            if (use_smooth_ticker)
+            {
+               ticker_smooth.src_str = ozone->selection_entry_enumeration;
+               gfx_animation_ticker_smooth(&ticker_smooth);
+            }
+            else
+            {
+               ticker.str = ozone->selection_entry_enumeration;
+               gfx_animation_ticker(&ticker);
+            }
+
+            ozone_content_metadata_line(
+                  video_width,
+                  video_height,
+                  ozone,
+                  &y,
+                  ticker_x_offset + column_x,
+                  ticker_buf,
+                  text_color,
+                  1);
+         }
+
          /* Core association */
          ticker_buf[0] = '\0';
 
@@ -1296,6 +1324,18 @@ void ozone_draw_thumbnail_bar(
       }
       else
       {
+         /* Entry enumeration */
+         if (show_entry_idx)
+            ozone_content_metadata_line(
+                  video_width,
+                  video_height,
+                  ozone,
+                  &y,
+                  column_x,
+                  ozone->selection_entry_enumeration,
+                  text_color,
+                  1);
+
          /* Core association */
          ozone_content_metadata_line(
                video_width,
