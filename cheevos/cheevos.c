@@ -199,10 +199,9 @@ void rcheevos_log(const char *fmt, ...)
 }
 #endif
 
-static int append_no_spaces(char* buffer, size_t len, const char* text)
+static int append_no_spaces(char* buffer, char* stop, const char* text)
 {
    char* ptr = buffer;
-   char* stop = buffer + len - 1;
 
    while (ptr < stop && *text)
    {
@@ -235,14 +234,16 @@ static void rcheevos_get_user_agent(
       int major, minor;
       char tmp[64];
 
-      ptr = locals->user_agent_prefix +
-         strlcpy(locals->user_agent_prefix, "RetroArch/" PACKAGE_VERSION,
-                 sizeof(locals->user_agent_prefix));
-
       if (frontend && frontend->get_os)
       {
          frontend->get_os(tmp, sizeof(tmp), &major, &minor);
-         snprintf(ptr, len - (ptr - locals->user_agent_prefix), " (%s %d.%d)", tmp, major, minor);
+         snprintf(locals->user_agent_prefix, sizeof(locals->user_agent_prefix),
+            "RetroArch/%s (%s %d.%d)", PACKAGE_VERSION, tmp, major, minor);
+      }
+      else
+      {
+         snprintf(locals->user_agent_prefix, sizeof(locals->user_agent_prefix),
+            "RetroArch/%s", PACKAGE_VERSION);
       }
    }
 
@@ -252,24 +253,25 @@ static void rcheevos_get_user_agent(
    /* if a core is loaded, append its information */
    if (system && !string_is_empty(system->library_name))
    {
+      char* stop = buffer + len - 1;
       *ptr++ = ' ';
 
       const char* path = path_get(RARCH_PATH_CORE);
       if (!string_is_empty(path))
       {
-         append_no_spaces(ptr, len - (ptr - buffer), path_basename(path));
+         append_no_spaces(ptr, stop, path_basename(path));
          path_remove_extension(ptr);
          ptr += strlen(ptr);
       }
       else
       {
-         ptr += append_no_spaces(ptr, len - (ptr - buffer), system->library_name);
+         ptr += append_no_spaces(ptr, stop, system->library_name);
       }
 
       if (system->library_version)
       {
          *ptr++ = '/';
-         ptr += append_no_spaces(ptr, len - (ptr - buffer), system->library_version);
+         ptr += append_no_spaces(ptr, stop, system->library_version);
       }
    }
 
