@@ -300,6 +300,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined(DINGUX) && defined(DINGUX_BETA)
+#endif
 
 /* Settings > Video > Fullscreen Mode */
 

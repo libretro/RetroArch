@@ -94,18 +94,71 @@ extern int audioAddData(uint32_t portNum, float *data,
 
 #ifdef __PSL1GHT__
 #include <io/pad.h>
+#define CELL_PAD_CAPABILITY_SENSOR_MODE      4
+#define CELL_PAD_SETTING_SENSOR_ON           4
+#define CELL_PAD_STATUS_ASSIGN_CHANGES       2
+#define CELL_PAD_BTN_OFFSET_DIGITAL1         2
+#define CELL_PAD_BTN_OFFSET_DIGITAL2         3
+#define CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X   4
+#define CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y   5
+#define CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X    6
+#define CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y    7
+#define CELL_PAD_BTN_OFFSET_PRESS_RIGHT      8
+#define CELL_PAD_BTN_OFFSET_PRESS_LEFT       9
+#define CELL_PAD_BTN_OFFSET_PRESS_UP         10
+#define CELL_PAD_BTN_OFFSET_PRESS_DOWN       11
+#define CELL_PAD_BTN_OFFSET_PRESS_TRIANGLE   12
+#define CELL_PAD_BTN_OFFSET_PRESS_CIRCLE     13
+#define CELL_PAD_BTN_OFFSET_PRESS_CROSS      14
+#define CELL_PAD_BTN_OFFSET_PRESS_SQUARE     15
+#define CELL_PAD_BTN_OFFSET_PRESS_L1         16
+#define CELL_PAD_BTN_OFFSET_PRESS_R1         17
+#define CELL_PAD_BTN_OFFSET_PRESS_L2         18
+#define CELL_PAD_BTN_OFFSET_PRESS_R2         19
+#define CELL_PAD_BTN_OFFSET_SENSOR_X         20
+#define CELL_PAD_BTN_OFFSET_SENSOR_Y         21
+#define CELL_PAD_BTN_OFFSET_SENSOR_Z         22
+#define CELL_PAD_BTN_OFFSET_SENSOR_G         23
+#define CELL_PAD_CTRL_LEFT          (128)
+#define CELL_PAD_CTRL_DOWN          (64)
+#define CELL_PAD_CTRL_RIGHT         (32)
+#define CELL_PAD_CTRL_UP            (16)
+#define CELL_PAD_CTRL_START         (8)
+#define CELL_PAD_CTRL_R3            (4)
+#define CELL_PAD_CTRL_L3            (2)
+#define CELL_PAD_CTRL_SELECT        (1)
+#define CELL_PAD_CTRL_SQUARE        (128)
+#define CELL_PAD_CTRL_CROSS         (64)
+#define CELL_PAD_CTRL_CIRCLE        (32)
+#define CELL_PAD_CTRL_TRIANGLE      (16)
+#define CELL_PAD_CTRL_R1            (8)
+#define CELL_PAD_CTRL_L1            (4)
+#define CELL_PAD_CTRL_R2            (2)
+#define CELL_PAD_CTRL_L2            (1)
+#define CELL_PAD_CTRL_LDD_PS        (1)
+#define CELL_PAD_STATUS_CONNECTED   (1)
+#define CELL_SYSUTIL_SYSTEMPARAM_ID_ENTER_BUTTON_ASSIGN SYSUTIL_SYSTEMPARAM_ID_ENTER_BUTTON_ASSIGN
+#define CELL_SYSUTIL_ENTER_BUTTON_ASSIGN_CROSS  (1)
+#define CELL_SYSUTIL_ENTER_BUTTON_ASSIGN_CIRCLE (0)
 #define now_connect connected
+#define CellPadActParam padActParam
+#define cellPadSetPortSetting ioPadSetPortSetting
+#define cellSysutilGetSystemParamInt sysUtilGetSystemParamInt
+#define cellPadSetActDirect ioPadSetActDirect
+#define CellPadInfo2 padInfo2
+#define cellPadGetInfo2 ioPadGetInfo2
+#define CellPadData padData
+#define cellPadGetData ioPadGetData
+#define cellPadInit ioPadInit 
+#define cellPadEnd ioPadEnd
 #else
 #include <cell/pad.h>
-
 #define padInfo2 CellPadInfo2
 #define padData CellPadData
-
 #define ioPadGetInfo2 cellPadGetInfo2 
 #define ioPadGetData cellPadGetData
 #define ioPadInit cellPadInit
 #define ioPadEnd cellPadEnd
-
 #endif
 
 /*============================================================
