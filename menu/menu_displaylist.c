@@ -3955,6 +3955,8 @@ static unsigned menu_displaylist_parse_content_information(
       settings_t *settings,
       menu_displaylist_info_t *info)
 {
+   char tmp[8192];
+   char core_name[PATH_MAX_LENGTH];
    playlist_t *playlist                = playlist_get_cached();
    unsigned idx                        = menu->rpl_entry_selection_ptr;
    const struct playlist_entry *entry  = NULL;
@@ -3964,20 +3966,12 @@ static unsigned menu_displaylist_parse_content_information(
    const char *content_path            = NULL;
    const char *core_path               = NULL;
    const char *db_name                 = NULL;
-   bool content_loaded                 = false;
    bool playlist_valid                 = false;
    unsigned count                      = 0;
-   size_t n                            = 0;
-   char core_name[PATH_MAX_LENGTH];
-   char tmp[8192];
+   bool content_loaded                 = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+      && string_is_equal(menu->deferred_path, loaded_content_path);
 
-   core_name[0] = '\0';
-
-   if (!settings)
-      return count;
-
-   content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         && string_is_equal(menu->deferred_path, loaded_content_path);
+   core_name[0]                        = '\0';
 
    /* If content is currently running, have to make sure
     * we have a valid playlist to work with
@@ -4030,17 +4024,11 @@ static unsigned menu_displaylist_parse_content_information(
    if (!string_is_empty(content_label))
    {
       tmp[0]   = '\0';
-
-      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL), sizeof(tmp));
-      (void)n;
-      strlcat(tmp, ": ", sizeof(tmp));
-      n        = strlcat(tmp, content_label, sizeof(tmp));
-
-      /* Silence gcc compiler warning
-       * (getting so sick of these...) */
-      if (n >= PATH_MAX_LENGTH)
-         n = 0;
-      (void)n;
+      snprintf(tmp, sizeof(tmp),
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
+            content_label
+            );
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
             MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
@@ -4052,19 +4040,11 @@ static unsigned menu_displaylist_parse_content_information(
    if (!string_is_empty(content_path))
    {
       tmp[0]   = '\0';
-
-      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH), sizeof(tmp));
-      (void)n;
-      n        = strlcat(tmp, ": ", sizeof(tmp));
-      (void)n;
-      n        = strlcat(tmp, content_path, sizeof(tmp));
-      
-      /* Silence gcc compiler warning
-       * (getting so sick of these...) */
-      if (n >= PATH_MAX_LENGTH)
-         n = 0;
-      (void)n;
-      
+      snprintf(tmp, sizeof(tmp),
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
+            content_path
+            );
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
             MENU_ENUM_LABEL_CONTENT_INFO_PATH,
@@ -4077,19 +4057,11 @@ static unsigned menu_displaylist_parse_content_information(
        !string_is_equal(core_name, "DETECT"))
    {
       tmp[0]   = '\0';
-
-      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME), sizeof(tmp));
-      (void)n;
-      n        = strlcat(tmp, ": ", sizeof(tmp));
-      (void)n;
-      n        = strlcat(tmp, core_name, sizeof(tmp));
-
-      /* Silence gcc compiler warning
-       * (getting so sick of these...) */
-      if (n >= PATH_MAX_LENGTH)
-         n = 0;
-      (void)n;
-      
+      snprintf(tmp, sizeof(tmp),
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
+            core_name
+            );
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
             MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME,
@@ -4149,19 +4121,11 @@ static unsigned menu_displaylist_parse_content_information(
       !string_is_empty(loaded_content_path))
    {
       tmp[0]   = '\0';
-
-      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH), sizeof(tmp));
-      (void)n;
-      n        = strlcat(tmp, ": ", sizeof(tmp));
-      (void)n;
-      n        = strlcat(tmp, rcheevos_get_hash(), sizeof(tmp));
-
-      /* Silence gcc compiler warning
-      * (getting so sick of these...) */
-      if (n >= PATH_MAX_LENGTH)
-         n = 0;
-      (void)n;
-      
+      snprintf(tmp, sizeof(tmp),
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
+            rcheevos_get_hash()
+            );
       if (menu_entries_append_enum(info->list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
             MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
@@ -4187,19 +4151,11 @@ static unsigned menu_displaylist_parse_content_information(
       if (!string_is_empty(db_name_no_ext))
       {
          tmp[0]   = '\0';
-
-         n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
-         (void)n;
-         n        = strlcat(tmp, ": ", sizeof(tmp));
-         (void)n;
-         n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
-
-         /* Silence gcc compiler warning
-         * (getting so sick of these...) */
-         if (n >= PATH_MAX_LENGTH)
-            n = 0;
-         (void)n;
-         
+         snprintf(tmp, sizeof(tmp),
+               "%s: %s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE),
+               db_name_no_ext
+               );
          if (menu_entries_append_enum(info->list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
                MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
@@ -10365,8 +10321,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_INFORMATION:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_content_information(menu,
-               settings, info);
+         if (settings)
+            count = menu_displaylist_parse_content_information(menu,
+                  settings, info);
 
          if (count == 0)
             menu_entries_append_enum(info->list,
