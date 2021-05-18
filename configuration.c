@@ -3656,20 +3656,23 @@ bool config_load_override(void *data)
    {
       char temp_path[PATH_MAX_LENGTH];
 
-      temp_path[0]    = '\0';
-
       RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
             content_path);
 
       if (should_append)
       {
          RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
-         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
-         strlcat(temp_path, "|", sizeof(temp_path));
-         strlcat(temp_path, content_path, sizeof(temp_path));
+         snprintf(temp_path, sizeof(temp_path),
+               "%s|%s", 
+               path_get(RARCH_PATH_CONFIG_APPEND),
+               content_path
+               );
       }
       else
+      {
+         temp_path[0]    = '\0';
          strlcpy(temp_path, content_path, sizeof(temp_path));
+      }
 
       path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
 
@@ -3685,20 +3688,23 @@ bool config_load_override(void *data)
    {
       char temp_path[PATH_MAX_LENGTH];
 
-      temp_path[0]    = '\0';
-
       RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
             game_path);
 
       if (should_append)
       {
          RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
-         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
-         strlcat(temp_path, "|", sizeof(temp_path));
-         strlcat(temp_path, game_path, sizeof(temp_path));
+         snprintf(temp_path, sizeof(temp_path),
+               "%s|%s", 
+               path_get(RARCH_PATH_CONFIG_APPEND),
+               game_path
+               );
       }
       else
+      {
+         temp_path[0]    = '\0';
          strlcpy(temp_path, game_path, sizeof(temp_path));
+      }
 
       path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
 

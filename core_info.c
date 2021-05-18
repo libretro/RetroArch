@@ -1490,15 +1490,16 @@ static config_file_t *core_info_get_config_file(
 {
    char info_path[PATH_MAX_LENGTH];
 
-   info_path[0] = '\0';
-
    if (string_is_empty(info_dir))
-      strlcpy(info_path, core_file_id, sizeof(info_path));
+      snprintf(info_path, sizeof(info_path),
+            "%s" ".info", core_file_id);
    else
+   {
+      info_path[0] = '\0';
       fill_pathname_join(info_path, info_dir, core_file_id,
             sizeof(info_path));
-
-   strlcat(info_path, ".info", sizeof(info_path));
+      strlcat(info_path, ".info", sizeof(info_path));
+   }
 
    return config_file_new_from_path_to_string(info_path);
 }
