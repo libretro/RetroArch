@@ -254,9 +254,9 @@ static void rcheevos_get_user_agent(
    if (system && !string_is_empty(system->library_name))
    {
       char* stop = buffer + len - 1;
+      const char* path = path_get(RARCH_PATH_CORE);
       *ptr++ = ' ';
 
-      const char* path = path_get(RARCH_PATH_CORE);
       if (!string_is_empty(path))
       {
          append_no_spaces(ptr, stop, path_basename(path));
