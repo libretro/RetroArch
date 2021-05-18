@@ -684,6 +684,9 @@ static bool win32_browser(
 
       result = browser->open(&browser_state);
 
+      /* TODO/FIXME - this is weird - why is this called
+       * after the browser->open call? Seems to have no effect
+       * anymore here */
       if (filename && browser_state.path)
          strlcpy(filename, browser_state.path, filename_size);
 
@@ -1932,7 +1935,7 @@ static void win32_localize_menu(HMENU menu)
             metaKeyName = meta_key_to_name(metaKey);
 
          /* Append localized name, tab character, and Shortcut Key */
-         if (metaKeyName && 0 != strcmp(metaKeyName, "nul"))
+         if (metaKeyName && string_is_not_equal(metaKeyName, "nul"))
          {
             int len1     = strlen(newLabel);
             int len2     = strlen(metaKeyName);
