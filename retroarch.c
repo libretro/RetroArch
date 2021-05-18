@@ -2634,9 +2634,12 @@ int generic_menu_entry_action(
       char title_name[255];
       char speak_string[512];
 
-      strlcpy(title_name, "", sizeof(title_name));
-      strlcpy(current_label, "", sizeof(current_label));
-      get_current_menu_value(&p_rarch->menu_driver_state, current_value, sizeof(current_value));
+      speak_string[0]  = '\0';
+      title_name  [0]  = '\0';
+      current_label[0] = '\0';
+
+      get_current_menu_value(&p_rarch->menu_driver_state,
+            current_value, sizeof(current_value));
 
       switch (action)
       {
@@ -2671,12 +2674,9 @@ int generic_menu_entry_action(
             break;
       }
 
-      strlcpy(speak_string, "", sizeof(speak_string));
-      if (!string_is_equal(title_name, ""))
-      {
-         strlcpy(speak_string, title_name, sizeof(speak_string));
-         strlcat(speak_string, " ", sizeof(speak_string));
-      }
+      if (!string_is_empty(title_name))
+         snprintf(speak_string, sizeof(speak_string),
+               "%s ", title_name); 
       strlcat(speak_string, current_label, sizeof(speak_string));
       if (!string_is_equal(current_value, "..."))
       {
@@ -2684,7 +2684,7 @@ int generic_menu_entry_action(
          strlcat(speak_string, current_value, sizeof(speak_string));
       }
 
-      if (!string_is_equal(speak_string, ""))
+      if (!string_is_empty(speak_string))
          accessibility_speak_priority(p_rarch,
                accessibility_enable,
                accessibility_narrator_speech_speed,
