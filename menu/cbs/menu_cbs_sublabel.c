@@ -68,12 +68,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
 {
    core_info_t *core_info = NULL;
 
-   /* Set sublabel prefix */
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-   strlcat(s, ": ", len);
-
    /* Search for specified core */
-
    if (core_info_find(path, &core_info) &&
        core_info->licenses_list)
    {
@@ -83,12 +78,17 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
-      strlcat(s, tmp, len);
+      snprintf(s, len, "%s: %s", 
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+            tmp);
       return 1;
    }
 
    /* No license found - set to N/A */
-   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   snprintf(s, len, "%s: %s", 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         );
    return 1;
 }
 
@@ -1400,10 +1400,10 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
 
    /* Add core name */
-   strlcpy(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
-   strlcat(s, " ", len);
-   strlcat(s, entry->core_name, len);
+   snprintf(s, len, "%s %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
+         entry->core_name
+         );
 
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
@@ -1491,10 +1491,6 @@ static int action_bind_sublabel_core_updater_entry(
    core_updater_list_t *core_list         = core_updater_list_get_cached();
    const core_updater_list_entry_t *entry = NULL;
 
-   /* Set sublabel prefix */
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-   strlcat(s, ": ", len);
-
    /* Search for specified core */
    if (core_list &&
        core_updater_list_get_filename(core_list, path, &entry) &&
@@ -1506,12 +1502,20 @@ static int action_bind_sublabel_core_updater_entry(
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             entry->licenses_list, ", ");
-      strlcat(s, tmp, len);
+      snprintf(s, len,
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+            tmp
+            );
       return 1;
    }
 
    /* No license found - set to N/A */
-   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   snprintf(s, len,
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         );
    return 1;
 }
 #endif
