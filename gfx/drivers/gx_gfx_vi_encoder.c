@@ -45,7 +45,7 @@
 
 #include <retro_miscellaneous.h>
 
-#include "../../defines/gx_defines.h"
+#include <defines/gx_defines.h>
 
 void udelay(int us);
 

@@ -55,7 +55,7 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../file_path_special.h"
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 #include "../../retroarch.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
