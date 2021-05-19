@@ -517,7 +517,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(__PSL1GHT__)
-#include "../gfx/drivers/gcm_gfx.c"
+#include "../gfx/drivers/rsx_gfx.c"
 #elif defined(GEKKO)
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)

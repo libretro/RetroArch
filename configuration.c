@@ -93,6 +93,7 @@ enum video_driver_enum
    VIDEO_GDI,
    VIDEO_VGA,
    VIDEO_FPGA,
+   VIDEO_RSX,
    VIDEO_NULL
 };
 
@@ -265,7 +266,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL1;
 #elif defined(HAVE_VITA2D)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
-#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL) || defined(__PSL1GHT__)
+#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
@@ -315,6 +316,8 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_FPGA;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
+#elif defined(__PSL1GHT__)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_RSX;
 #else
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #endif
@@ -867,6 +870,8 @@ const char *config_get_default_video(void)
          return "vga";
       case VIDEO_FPGA:
          return "fpga";
+      case VIDEO_RSX:
+         return "rsx";
       case VIDEO_NULL:
          break;
    }
