@@ -1937,15 +1937,15 @@ static void win32_localize_menu(HMENU menu)
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
-            int len1     = strlen(new_label);
-            int len2     = strlen(meta_key_name);
-            int bufSize  = len1 + len2 + 2;
-            new_label_text = (char*)malloc(bufSize);
+            int len1       = strlen(new_label);
+            int len2       = strlen(meta_key_name);
+            int buf_size   = len1 + len2 + 2;
+            new_label_text = (char*)malloc(buf_size);
 
             if (new_label_text)
             {
                new_label2              = new_label_text;
-               snprintf(new_label_text, bufSize, "%s\t%s", new_label, meta_key_name);
+               snprintf(new_label_text, buf_size, "%s\t%s", new_label, meta_key_name);
                /* Make first character of shortcut name uppercase */
                new_label_text[len1 + 1] = toupper(new_label_text[len1 + 1]);
             }
