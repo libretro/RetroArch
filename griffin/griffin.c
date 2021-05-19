@@ -1313,6 +1313,9 @@ DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_powerstate.c"
 #include "../tasks/task_content.c"
+#ifdef HAVE_CDROM
+#include "../tasks/task_content_disc.c"
+#endif
 #ifdef HAVE_PATCH
 #include "../tasks/task_patch.c"
 #endif
