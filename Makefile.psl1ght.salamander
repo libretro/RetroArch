@@ -27,13 +27,14 @@ ELF_TARGET := retroarch_psl1ght_salamander.elf
 ELF_TARGET_NONSTRIPPED := retroarch_psl1ght_salamander_nonstripped.elf
 EBOOT_PATH		= pkg/psl1ght/pkg/USRDIR/EBOOT.BIN
 
-INCLUDE += -I. -Ips3/gcmgl/include/export -Ips3/include -Ideps -Ideps/stb -Ilibretro-common/include/compat/zlib -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude
+INCLUDE += -I. -Ips3/gcmgl/include/export -Ips3/include -Ideps -Ideps/stb -Ilibretro-common/include/compat/zlib \
+			-Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines
 LIBDIRS += -L.
 
-MACHDEP := -D__PSL1GHT__ -mcpu=cell -mhard-float -fmodulo-sched -ffunction-sections -fdata-sections
+MACHDEP := -D__PS3__ -D__PSL1GHT__ -mcpu=cell -mhard-float -fmodulo-sched -ffunction-sections -fdata-sections
 CFLAGS += -Wall $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS :=  -lgcm_sys -lrsx -lsysutil -lio -lnet -lsysmodule -lrt -llv2 -lm
+LIBS :=  -lgcm_sys -lrsx -lsysutil -lio -lnet -lsysmodule -lrt -llv2 -lm -lsysfs
 
 # system platform
 system_platform = unix
