@@ -195,11 +195,11 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
 
    while (i < len)
    {
-      unsigned counter;
+      unsigned counter = 0;
       int pos = (int)(&buffer[i] - buffer);
 
       /* copy string until the end of the line is reached */
-      for (counter = 1; counter <= (unsigned)line_width; counter++)
+      while (counter <= (unsigned)line_width * 10)
       {
          const char *character;
          unsigned char_len;
@@ -215,8 +215,8 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
          character = utf8skip(&string[i], 1);
          char_len  = (unsigned)(character - &string[i]);
 
-         if (char_len >= 3)
-            counter++;  /* character is probably full-width */
+         /* the width of CJK-chars is approximately 2.6 times the width of alphabet-chars */
+         counter += (char_len < 2) ? 10 : 26;
 
          do
          {
@@ -230,7 +230,7 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
          if (buffer[j] == '\n')
          {
             lines++;
-            counter = 1;
+            counter = 0;
          }
       }
 
