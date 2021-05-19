@@ -742,15 +742,17 @@ static bool content_file_load(
    if (!special)
    {
       const char *content_path     = content->elems[0].data;
-      enum rarch_content_type type = path_is_media_type(content_path);
-
-      if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
-         rcheevos_load(info);
-      else
-         rcheevos_pause_hardcore();
+      if (!string_is_empty(content_path))
+      {
+         enum rarch_content_type type = path_is_media_type(content_path);
+         if (type == RARCH_CONTENT_NONE)
+         {
+            rcheevos_load(info);
+            return true;
+         }
+      }
    }
-   else
-      rcheevos_pause_hardcore();
+   rcheevos_pause_hardcore();
 #endif
 
    return true;
