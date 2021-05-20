@@ -370,8 +370,7 @@ int file_archive_parse_file_progress(file_archive_transfer_t *state)
 
 /**
  * file_archive_extract_file:
- * @archive_path                    : filename path to archive.
- * @archive_path_size               : size of archive.
+ * @archive_path                : filename path to archive.
  * @valid_exts                  : valid extensions for the file.
  * @extraction_directory        : the directory to extract temporary
  *                                file to.
@@ -382,8 +381,7 @@ int file_archive_parse_file_progress(file_archive_transfer_t *state)
  * Returns : true (1) on success, otherwise false (0).
  **/
 bool file_archive_extract_file(
-      char *archive_path,
-      size_t archive_path_size,
+      const char *archive_path,
       const char *valid_exts,
       const char *extraction_directory,
       char *out_path, size_t len)
@@ -396,7 +394,6 @@ bool file_archive_extract_file(
    userdata.current_file_path[0]            = '\0';
    userdata.first_extracted_file_path       = NULL;
    userdata.extraction_directory            = extraction_directory;
-   userdata.archive_path_size               = archive_path_size;
    userdata.ext                             = list;
    userdata.list                            = NULL;
    userdata.found_file                      = false;
@@ -454,7 +451,6 @@ bool file_archive_get_file_list_noalloc(struct string_list *list,
    userdata.current_file_path[0]            = '\0';
    userdata.first_extracted_file_path       = NULL;
    userdata.extraction_directory            = NULL;
-   userdata.archive_path_size               = 0;
    userdata.ext                             = NULL;
    userdata.list                            = list;
    userdata.found_file                      = false;
@@ -484,7 +480,6 @@ struct string_list *file_archive_get_file_list(const char *path,
    userdata.current_file_path[0]            = '\0';
    userdata.first_extracted_file_path       = NULL;
    userdata.extraction_directory            = NULL;
-   userdata.archive_path_size               = 0;
    userdata.ext                             = NULL;
    userdata.list                            = string_list_new();
    userdata.found_file                      = false;

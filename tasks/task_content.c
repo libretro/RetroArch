@@ -25,10 +25,6 @@
 #include <time.h>
 #include <errno.h>
 
-#include <file/file_path.h>
-#include <queues/task_queue.h>
-#include <string/stdstring.h>
-
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -56,16 +52,14 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
-
+#include <lists/string_list.h>
+#include <lists/dir_list.h>
 #include <vfs/vfs_implementation.h>
 
 #include <retro_miscellaneous.h>
-#include <streams/file_stream.h>
 #include <retro_assert.h>
-
-#include <lists/string_list.h>
-#include <string/stdstring.h>
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
@@ -157,15 +151,620 @@ struct content_information_ctx
    bool check_firmware_before_loading;
 };
 
-static int64_t content_file_read(const char *path, void **buf, int64_t *length)
+/********************************/
+/* Content file functions START */
+/********************************/
+
+#define CONTENT_FILE_ATTR_RESET(attr) (attr.i = 0)
+
+#define CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, block_extract) (attr.i |= ((block_extract) ? 1 : 0))
+#define CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, need_fullpath) (attr.i |= ((need_fullpath) ? 2 : 0))
+#define CONTENT_FILE_ATTR_SET_REQUIRED(attr, required)           (attr.i |= ((required)      ? 4 : 0))
+
+#define CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(attr) ((attr.i & 1) != 0)
+#define CONTENT_FILE_ATTR_GET_NEED_FULLPATH(attr) ((attr.i & 2) != 0)
+#define CONTENT_FILE_ATTR_GET_REQUIRED(attr)      ((attr.i & 4) != 0)
+
+/**
+ * content_file_load_into_memory:
+ * @path         : path of the content file.
+ * @buf          : buffer into which the content file will be read.
+ * @length       : size of the resultant content buffer.
+ *
+ * Reads the content file into memory. Also performs soft patching
+ * (see patch_content function) if soft patching has not been
+ * blocked by the user.
+ *
+ * Returns: true if successful, false on error.
+ **/
+static bool content_file_load_into_memory(
+      content_information_ctx_t *content_ctx,
+      content_state_t *p_content,
+      struct retro_game_info *info,
+      size_t idx, bool content_compressed,
+      enum rarch_content_type first_content_type)
 {
+   struct retro_game_info *content_info = &info[idx];
+   const char *content_path             = content_info->path;
+   uint8_t *content_data                = NULL;
+   int64_t length                       = 0;
+
+   content_info->data = NULL;
+   content_info->size = 0;
+
+   RARCH_LOG("[CONTENT LOAD]: %s: %s\n",
+         msg_hash_to_str(MSG_LOADING_CONTENT_FILE), content_path);
+
+   /* Read content from file into memory buffer */
 #ifdef HAVE_COMPRESSION
-   if (     path_contains_compressed_file(path)
-         && file_archive_compressed_read(path, buf, NULL, length))
-      return 1;
+   if (content_compressed)
+   {
+      if (!file_archive_compressed_read(content_path,
+            (void**)&content_data, NULL, &length))
+         return false;
+   }
+   else
 #endif
-   return filestream_read_file(path, buf, length);
+      if (!filestream_read_file(content_path,
+            (void**)&content_data, &length))
+         return false;
+
+   if (length < 0)
+      return false;
+
+   /* First content file is significant: attempt to do
+    * soft patching, CRC checking, etc. */
+   if (idx == 0)
+   {
+      /* If we have a media type, ignore CRC32 calculation. */
+      if (first_content_type == RARCH_CONTENT_NONE)
+      {
+         bool has_patch = false;
+
+#ifdef HAVE_PATCH
+         /* Attempt to apply a patch. */
+         if (!content_ctx->patch_is_blocked)
+            has_patch = patch_content(
+                  content_ctx->is_ips_pref,
+                  content_ctx->is_bps_pref,
+                  content_ctx->is_ups_pref,
+                  content_ctx->name_ips,
+                  content_ctx->name_bps,
+                  content_ctx->name_ups,
+                  (uint8_t**)&content_data,
+                  (void*)&length);
+#endif
+         /* If content is compressed or a patch has been
+          * applied, must determine CRC value using the
+          * actual data buffer, since the content path
+          * cannot be used for this purpose...
+          * In all other cases, cache the content path
+          * and defer CRC calculation until the value is
+          * actually needed */
+         if (content_compressed || has_patch)
+         {
+            p_content->rom_crc = encoding_crc32(0, content_data,
+                  (size_t)length);
+            RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x\n",
+                  (unsigned)p_content->rom_crc);
+         }
+         else
+         {
+            strlcpy(p_content->pending_rom_crc_path, content_path,
+                  sizeof(p_content->pending_rom_crc_path));
+            p_content->pending_rom_crc = true;
+         }
+      }
+      else
+         p_content->rom_crc = 0;
+   }
+
+   content_info->data = content_data;
+   content_info->size = length;
+
+   return true;
 }
+
+#ifdef HAVE_COMPRESSION
+static bool content_file_extract_from_archive(
+      content_information_ctx_t *content_ctx,
+      struct retro_game_info *info,
+      size_t idx, const char *valid_exts,
+      char **error_string)
+{
+   struct retro_game_info *content_info = &info[idx];
+   const char *content_path             = content_info->path;
+   union string_list_elem_attr attr;
+   char temp_path[PATH_MAX_LENGTH];
+   char msg[1024];
+
+   attr.i       = 0;
+   temp_path[0] = '\0';
+   msg[0]       = '\0';
+
+   RARCH_LOG("[CONTENT LOAD]: Core requires uncompressed content - "
+         "extracting archive to temporary directory.\n");
+
+   /* Attempt to extract file  */
+   if (!file_archive_extract_file(
+         content_path, valid_exts,
+         string_is_empty(content_ctx->directory_cache) ?
+               NULL : content_ctx->directory_cache,
+         temp_path, sizeof(temp_path)))
+   {
+      snprintf(msg, sizeof(msg), "%s: %s\n",
+            msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+            content_path);
+      *error_string = strdup(msg);
+      return false;
+   }
+
+   /* Add path of extracted file to temporary content
+    * list (so it can be deleted when deinitialising
+    * the core) */
+   if (!string_list_append(content_ctx->temporary_content,
+         temp_path, attr))
+      return false;
+
+   /* Assign extracted file path to info struct */
+   content_info->path = content_ctx->temporary_content->elems[
+         content_ctx->temporary_content->size - 1].data;
+
+   RARCH_LOG("[CONTENT LOAD]: Content successfully extracted to: %s\n",
+         temp_path);
+
+   return true;
+}
+#endif
+
+static void content_file_set_info_path(
+      struct string_list *content,
+      struct retro_game_info *info,
+      size_t idx,
+      const char *valid_exts,
+      bool *path_is_compressed)
+{
+   const char *content_path             = content->elems[idx].data;
+   struct retro_game_info *content_info = &info[idx];
+   bool path_is_archive;
+   bool path_is_inside_archive;
+
+   content_info->path  = NULL;
+   *path_is_compressed = false;
+
+   if (string_is_empty(content_path))
+      return;
+
+#ifdef HAVE_COMPRESSION
+   /* Check whether we are dealing with a
+    * compressed file */
+   path_is_archive        = path_is_compressed_file(content_path);
+   path_is_inside_archive = path_contains_compressed_file(content_path);
+   *path_is_compressed    = path_is_archive || path_is_inside_archive;
+
+   /* If extraction is permitted and content is a
+    * 'parent' archive file, must determine which
+    * internal file to load
+    * > file_archive_compressed_read() requires
+    *   a 'complete' file path:
+    *   <parent_archive>#<internal_file> */
+   if (!CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[idx].attr) &&
+       path_is_archive &&
+       !path_is_inside_archive)
+   {
+      /* Get internal archive file list */
+      struct string_list *archive_list =
+            file_archive_get_file_list(content_path, valid_exts);
+
+      if (archive_list &&
+          (archive_list->size > 0))
+      {
+         const char *archive_file = NULL;
+
+         /* Ensure that list is sorted alphabetically */
+         if (archive_list->size > 1)
+            dir_list_sort(archive_list, true);
+
+         archive_file = archive_list->elems[0].data;
+
+         if (!string_is_empty(archive_file))
+         {
+            char info_path[PATH_MAX_LENGTH];
+            info_path[0] = '\n';
+
+            /* Build 'complete' archive file path */
+            snprintf(info_path, sizeof(info_path), "%s#%s",
+                  content_path, archive_file);
+
+            /* Update 'content' string_list */
+            string_list_set(content, idx, info_path);
+            content_path = content->elems[idx].data;
+
+            string_list_free(archive_list);
+         }
+      }
+   }
+#endif
+
+   content_info->path = content_path;
+}
+
+/**
+ * content_file_load:
+ * @special          : subsystem of content to be loaded. Can be NULL.
+ *
+ * Load content file (for libretro core).
+ *
+ * Returns : true if successful, otherwise false.
+ **/
+static bool content_file_load(
+      struct retro_game_info *info,
+      content_state_t *p_content,
+      struct string_list *content,
+      content_information_ctx_t *content_ctx,
+      enum msg_hash_enums *error_enum,
+      char **error_string,
+      const struct retro_subsystem_info *special)
+{
+   size_t i;
+   char msg[1024];
+   retro_ctx_load_content_info_t load_info;
+   bool used_vfs_fallback_copy                = false;
+#ifdef __WINRT__
+   rarch_system_info_t *system                = runloop_get_system_info();
+#endif
+   enum rarch_content_type first_content_type = RARCH_CONTENT_NONE;
+
+   msg[0] = '\0';
+
+   for (i = 0; i < content->size; i++)
+   {
+      const char *valid_exts  = special ?
+            special->roms[i].valid_extensions :
+                  content_ctx->valid_extensions;
+      bool content_compressed = false;
+
+      /* Get content path (note that this is always
+       * assigned to the info struct, regardless of
+       * whether the core requests it) */
+      content_file_set_info_path(content, info, i,
+            valid_exts, &content_compressed);
+
+      /* If content is missing and core requires content,
+       * return an error */
+      if (string_is_empty(info[i].path))
+      {
+         if (CONTENT_FILE_ATTR_GET_REQUIRED(content->elems[i].attr))
+         {
+            *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
+            return false;
+         }
+      }
+      else
+      {
+         /* If this is the first item of content,
+          * get content type */
+         if (i == 0)
+            first_content_type = path_is_media_type(info[i].path);
+
+         /* If core does not require 'fullpath', load
+          * the content into memory */
+         if (!CONTENT_FILE_ATTR_GET_NEED_FULLPATH(content->elems[i].attr))
+         {
+            if (!content_file_load_into_memory(
+                  content_ctx, p_content, info, i,
+                  content_compressed, first_content_type))
+            {
+               snprintf(msg, sizeof(msg), "%s \"%s\".\n",
+                     msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                     info[i].path);
+               *error_string = strdup(msg);
+               return false;
+            }
+         }
+         else
+         {
+#ifdef HAVE_COMPRESSION
+            /* If this is compressed content and need_fullpath
+             * is true, extract it to a temporary file */
+            if (content_compressed &&
+                !CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[i].attr) &&
+                !content_file_extract_from_archive(content_ctx,
+                     info, i, valid_exts, error_string))
+               return false;
+#endif
+#ifdef __WINRT__
+            /* TODO: When support for the 'actual' VFS is added,
+             * there will need to be some more logic here */
+            if (!system->supports_vfs &&
+                !is_path_accessible_using_standard_io(info[i].path))
+            {
+               /* Fallback to a file copy into an accessible directory */
+               char *buf;
+               int64_t len;
+               union string_list_elem_attr attr;
+               char new_basedir[PATH_MAX_LENGTH];
+               char new_path[PATH_MAX_LENGTH];
+
+               new_path[0]    = '\0';
+               new_basedir[0] = '\0';
+               attr.i         = 0;
+
+               RARCH_LOG("[CONTENT LOAD]: Core does not support VFS"
+                     " - copying to cache directory\n");
+
+               if (!string_is_empty(content_ctx->directory_cache))
+                  strlcpy(new_basedir, content_ctx->directory_cache,
+                        sizeof(new_basedir));
+
+               if (string_is_empty(new_basedir) ||
+                   !path_is_directory(new_basedir) ||
+                  !is_path_accessible_using_standard_io(new_basedir))
+               {
+                  RARCH_WARN("[CONTENT LOAD]: Tried copying to cache directory, "
+                        "but cache directory was not set or found. "
+                        "Setting cache directory to root of writable app directory...\n");
+                  strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
+               }
+
+               fill_pathname_join(new_path, new_basedir,
+                     path_basename(info[i].path), sizeof(new_path));
+
+               /* TODO: This may fail on very large files...
+                * but copying large files is not a good idea anyway */
+               if (!filestream_read_file(info[i].path, &buf, &len))
+               {
+                  snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read)\n",
+                        msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                        info[i].path);
+                  *error_string = strdup(msg);
+                  return false;
+               }
+
+               if (!filestream_write_file(new_path, buf, len))
+               {
+                  free(buf);
+                  snprintf(msg, sizeof(msg), "%s \"%s\". (during copy write)\n",
+                        msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                        info[i].path);
+                  *error_string = strdup(msg);
+                  return false;
+               }
+
+               free(buf);
+
+               string_list_append(content_ctx->temporary_content,
+                     new_path, attr);
+
+               info[i].path = content_ctx->temporary_content->elems[
+                     content_ctx->temporary_content->size - 1].data;
+
+               used_vfs_fallback_copy = true;
+            }
+#endif
+            RARCH_LOG("[CONTENT LOAD]: %s\n", msg_hash_to_str(
+                  MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
+
+            /* First content file is significant: need to
+             * perform CRC calculation, but defer this
+             * until value is used */
+            if (i == 0)
+            {
+               /* If we have a media type, ignore CRC32 calculation. */
+               if (first_content_type == RARCH_CONTENT_NONE)
+               {
+                  strlcpy(p_content->pending_rom_crc_path, info[i].path,
+                        sizeof(p_content->pending_rom_crc_path));
+                  p_content->pending_rom_crc = true;
+               }
+               else
+                  p_content->rom_crc = 0;
+            }
+         }
+      }
+   }
+
+   /* Load content into core */
+   load_info.content = content;
+   load_info.special = special;
+   load_info.info    = info;
+
+   if (!core_load_game(&load_info))
+   {
+      /* This is probably going to fail on multifile ROMs etc.
+       * so give a visible explanation of what is likely wrong */
+      if (used_vfs_fallback_copy)
+         *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS;
+      else
+         *error_enum = MSG_FAILED_TO_LOAD_CONTENT;
+
+      return false;
+   }
+
+#ifdef HAVE_CHEEVOS
+   if (!special)
+   {
+      const char *first_content_path = info[0].path;
+      if (!string_is_empty(first_content_path))
+      {
+         if (first_content_type == RARCH_CONTENT_NONE)
+         {
+            rcheevos_load(info);
+            return true;
+         }
+      }
+   }
+   rcheevos_pause_hardcore();
+#endif
+
+   return true;
+}
+
+static const struct retro_subsystem_info *content_file_init_subsystem(
+      const struct retro_subsystem_info *subsystem_data,
+      size_t subsystem_current_count,
+      enum msg_hash_enums *error_enum,
+      char **error_string,
+      bool *ret)
+{
+   struct string_list *subsystem              = path_get_subsystem_list();
+   const struct retro_subsystem_info *special = libretro_find_subsystem_info(
+            subsystem_data, (unsigned)subsystem_current_count,
+            path_get(RARCH_PATH_SUBSYSTEM));
+   char msg[1024];
+
+   msg[0] = '\0';
+
+   if (!special)
+   {
+      snprintf(msg, sizeof(msg),
+            "Failed to find subsystem \"%s\" in libretro implementation.\n",
+            path_get(RARCH_PATH_SUBSYSTEM));
+      *error_string = strdup(msg);
+      goto error;
+   }
+
+   if (special->num_roms)
+   {
+      if (!subsystem)
+      {
+         *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT;
+         goto error;
+      }
+
+      if (special->num_roms != subsystem->size)
+      {
+         snprintf(msg, sizeof(msg),
+               "Libretro core requires %u content files for "
+               "subsystem \"%s\", but %u content files were provided.\n",
+               special->num_roms, special->desc,
+               (unsigned)subsystem->size);
+         *error_string = strdup(msg);
+         goto error;
+      }
+   }
+   else if (subsystem && subsystem->size)
+   {
+      snprintf(msg, sizeof(msg),
+            "Libretro core takes no content for subsystem \"%s\", "
+            "but %u content files were provided.\n",
+            special->desc,
+            (unsigned)subsystem->size);
+      *error_string = strdup(msg);
+      goto error;
+   }
+
+   *ret = true;
+   return special;
+
+error:
+   *ret = false;
+   return NULL;
+}
+
+static void content_file_set_attributes(
+      struct string_list *content,
+      const struct retro_subsystem_info *special,
+      content_information_ctx_t *content_ctx,
+      char **error_string)
+{
+   struct string_list *subsystem = path_get_subsystem_list();
+
+   if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && special)
+   {
+      size_t i;
+
+      for (i = 0; i < subsystem->size; i++)
+      {
+         union string_list_elem_attr attr;
+
+         CONTENT_FILE_ATTR_RESET(attr);
+         CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, special->roms[i].block_extract);
+         CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, special->roms[i].need_fullpath);
+         CONTENT_FILE_ATTR_SET_REQUIRED(attr, special->roms[i].required);
+
+         string_list_append(content, subsystem->elems[i].data, attr);
+      }
+   }
+   else
+   {
+      const char *content_path = path_get(RARCH_PATH_CONTENT);
+      bool contentless         = false;
+      bool is_inited           = false;
+      union string_list_elem_attr attr;
+
+      content_get_status(&contentless, &is_inited);
+
+      CONTENT_FILE_ATTR_RESET(attr);
+      CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, content_ctx->block_extract);
+      CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, content_ctx->need_fullpath);
+      CONTENT_FILE_ATTR_SET_REQUIRED(attr, !contentless);
+
+      if (string_is_empty(content_path))
+      {
+         if (contentless &&
+             content_ctx->set_supports_no_game_enable)
+            string_list_append(content, "", attr);
+      }
+      else
+         string_list_append(content, content_path, attr);
+   }
+}
+
+/**
+ * content_init_file:
+ *
+ * Initializes and loads a content file for the currently
+ * selected libretro core.
+ *
+ * Returns : true if successful, otherwise false.
+ **/
+static bool content_file_init(
+      content_information_ctx_t *content_ctx,
+      content_state_t *p_content,
+      struct string_list *content,
+      enum msg_hash_enums *error_enum,
+      char **error_string)
+{
+   struct retro_game_info *info               = NULL;
+   bool subsystem_path_is_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
+   bool ret                                   = subsystem_path_is_empty;
+   const struct retro_subsystem_info *special = subsystem_path_is_empty ?
+         NULL : content_file_init_subsystem(content_ctx->subsystem.data,
+               content_ctx->subsystem.size, error_enum, error_string, &ret);
+
+   if (!ret)
+      return false;
+
+   content_file_set_attributes(content, special, content_ctx, error_string);
+
+   if (content->size > 0)
+      info = (struct retro_game_info*)calloc(content->size, sizeof(*info));
+
+   if (info)
+   {
+      size_t i;
+
+      ret = content_file_load(info, p_content, content,
+            content_ctx, error_enum, error_string, special);
+
+      for (i = 0; i < content->size; i++)
+         free((void*)info[i].data);
+
+      free(info);
+   }
+   else if (!special)
+   {
+      *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
+      ret         = false;
+   }
+
+   return ret;
+}
+
+/******************************/
+/* Content file functions END */
+/******************************/
 
 /**
  * content_load_init_wrap:
@@ -340,599 +939,6 @@ static bool content_load(content_ctx_info_t *info,
    frontend_driver_content_loaded();
 
    return true;
-}
-
-/**
- * load_content_into_memory:
- * @path         : buffer of the content file.
- * @buf          : size   of the content file.
- * @length       : size of the content file that has been read from.
- *
- * Read the content file. If read into memory, also performs soft patching
- * (see patch_content function) in case soft patching has not been
- * blocked by the enduser.
- *
- * Returns: true if successful, false on error.
- **/
-static bool load_content_into_memory(
-      content_information_ctx_t *content_ctx,
-      content_state_t *p_content,
-      unsigned i, const char *path, void **buf,
-      int64_t *length)
-{
-   uint8_t *ret_buf           = NULL;
-
-   RARCH_LOG("[CONTENT LOAD]: %s: %s.\n",
-         msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
-
-   if (!content_file_read(path, (void**) &ret_buf, length))
-      return false;
-
-   if (*length < 0)
-      return false;
-
-   if (i == 0)
-   {
-      enum rarch_content_type type = path_is_media_type(path);
-
-      /* If we have a media type, ignore CRC32 calculation. */
-      if (type == RARCH_CONTENT_NONE)
-      {
-#ifdef HAVE_PATCH
-         bool has_patch = false;
-
-         /* First content file is significant, attempt to do patching,
-          * CRC checking, etc. */
-
-         /* Attempt to apply a patch. */
-         if (!content_ctx->patch_is_blocked)
-            has_patch = patch_content(
-                  content_ctx->is_ips_pref,
-                  content_ctx->is_bps_pref,
-                  content_ctx->is_ups_pref,
-                  content_ctx->name_ips,
-                  content_ctx->name_bps,
-                  content_ctx->name_ups,
-                  (uint8_t**)&ret_buf,
-                  (void*)length);
-
-         if (has_patch)
-         {
-            p_content->rom_crc = encoding_crc32(0, ret_buf, (size_t)*length);
-            RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x .\n", (unsigned)p_content->rom_crc);
-         }
-         else
-#endif
-         {
-            strlcpy(p_content->pending_rom_crc_path,
-                  path, sizeof(p_content->pending_rom_crc_path));
-            p_content->pending_rom_crc      = true;
-         }
-      }
-      else
-         p_content->rom_crc = 0;
-   }
-
-   *buf = ret_buf;
-
-   return true;
-}
-
-#ifdef HAVE_COMPRESSION
-static bool load_content_from_compressed_archive(
-      content_information_ctx_t *content_ctx,
-      struct retro_game_info *info,
-      unsigned i,
-      struct string_list* additional_path_allocs,
-      bool need_fullpath,
-      const char *path,
-      enum msg_hash_enums *error_enum,
-      char **error_string)
-{
-   union string_list_elem_attr attr;
-   int64_t new_path_len              = 0;
-   char new_basedir[PATH_MAX_LENGTH];
-   char new_path[PATH_MAX_LENGTH];
-
-   new_path[0]                       = '\0';
-   new_basedir[0]                    = '\0';
-   attr.i                            = 0;
-
-   RARCH_LOG("[CONTENT LOAD]: Compressed file in case of need_fullpath."
-         " Now extracting to temporary directory.\n");
-
-   if (!string_is_empty(content_ctx->directory_cache))
-      strlcpy(new_basedir, content_ctx->directory_cache,
-            sizeof(new_basedir));
-
-   if (!path_is_directory(new_basedir))
-   {
-      RARCH_WARN("[CONTENT LOAD]: Tried extracting to cache directory, but "
-            "cache directory was not set or found. "
-            "Setting cache directory to directory "
-            "derived by basename...\n");
-      fill_pathname_basedir(new_basedir, path, sizeof(new_basedir));
-   }
-
-   fill_pathname_join(new_path, new_basedir,
-         path_basename(path), sizeof(new_path));
-
-   if (!file_archive_compressed_read(path,
-         NULL, new_path, &new_path_len) || new_path_len < 0)
-   {
-      char str[1024];
-      str[0] = '\0';
-      snprintf(str, sizeof(str),
-            "%s \"%s\".\n",
-            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-            path);
-      *error_string = strdup(str);
-      return false;
-   }
-
-   string_list_append(additional_path_allocs, new_path, attr);
-   info[i].path =
-      additional_path_allocs->elems[additional_path_allocs->size - 1].data;
-
-   return string_list_append(content_ctx->temporary_content,
-            new_path, attr);
-}
-
-/* Try to extract all content we're going to load if appropriate. */
-
-static bool content_file_init_extract(
-      struct string_list *content,
-      content_information_ctx_t *content_ctx,
-      const struct retro_subsystem_info *special,
-      enum msg_hash_enums *error_enum,
-      char **error_string,
-      union string_list_elem_attr *attr
-      )
-{
-   unsigned i;
-
-   for (i = 0; i < content->size; i++)
-   {
-      bool block_extract                 = content->elems[i].attr.i & 1;
-      const char *path                   = content->elems[i].data;
-      bool contains_compressed           = path_contains_compressed_file(path);
-
-      /* Block extract check. */
-      if (block_extract)
-         continue;
-
-      /* just use the first file in the archive */
-      if (!contains_compressed && !path_is_compressed_file(path))
-         continue;
-
-      {
-         char temp_content[PATH_MAX_LENGTH];
-         char new_path    [PATH_MAX_LENGTH];
-         const char *valid_ext    = special ?
-            special->roms[i].valid_extensions :
-            content_ctx->valid_extensions;
-
-         temp_content[0]          = new_path[0] = '\0';
-
-         if (!string_is_empty(path))
-            strlcpy(temp_content, path, sizeof(temp_content));
-
-         if (!valid_ext || !file_archive_extract_file(
-                  temp_content,
-                  sizeof(temp_content),
-                  valid_ext,
-                  !string_is_empty(content_ctx->directory_cache) ?
-                  content_ctx->directory_cache : NULL,
-                  new_path,
-                  sizeof(new_path) 
-                  ))
-         {
-            char str[1024];
-            str[0] = '\0';
-
-            snprintf(str, sizeof(str),
-                  "%s: %s.\n",
-                  msg_hash_to_str(
-                     MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-                  temp_content);
-            *error_string = strdup(str);
-            return false;
-         }
-
-         string_list_set(content, i, new_path);
-
-         if (!string_list_append(
-                  content_ctx->temporary_content,
-                  new_path, *attr))
-            return false;
-      }
-   }
-
-   return true;
-}
-#endif
-
-/**
- * content_file_load:
- * @special          : subsystem of content to be loaded. Can be NULL.
- * content           :
- *
- * Load content file (for libretro core).
- *
- * Returns : true if successful, otherwise false.
- **/
-static bool content_file_load(
-      struct retro_game_info *info,
-      content_state_t *p_content,
-      const struct string_list *content,
-      content_information_ctx_t *content_ctx,
-      enum msg_hash_enums *error_enum,
-      char **error_string,
-      const struct retro_subsystem_info *special,
-      struct string_list *additional_path_allocs
-      )
-{
-   unsigned i;
-   retro_ctx_load_content_info_t load_info;
-   bool used_vfs_fallback_copy = false;
-#ifdef __WINRT__
-   rarch_system_info_t *system = runloop_get_system_info();
-#endif
-
-   for (i = 0; i < content->size; i++)
-   {
-      int         attr     = content->elems[i].attr.i;
-      const char *path     = content->elems[i].data;
-      bool need_fullpath   = attr & 2;
-      bool require_content = attr & 4;
-      bool path_empty      = string_is_empty(path);
-
-      if (require_content && path_empty)
-      {
-         *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
-         return false;
-      }
-
-      info[i].path = NULL;
-
-      if (!path_empty)
-         info[i].path = path;
-
-      if (!need_fullpath && !path_empty)
-      {
-         /* Load the content into memory. */
-
-         int64_t len = 0;
-
-         if (!load_content_into_memory(
-                  content_ctx, p_content,
-                  i, path, (void**)&info[i].data, &len))
-         {
-            char msg[1024];
-            msg[0]          = '\0';
-
-            snprintf(msg, sizeof(msg),
-                  "%s \"%s\".\n",
-                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                  path);
-            *error_string = strdup(msg);
-            return false;
-         }
-
-         info[i].size = len;
-      }
-      else
-      {
-#ifdef HAVE_COMPRESSION
-         if (     !content_ctx->block_extract
-               && need_fullpath
-               && path_contains_compressed_file(path)
-               && !load_content_from_compressed_archive(
-                  content_ctx,
-                  &info[i], i,
-                  additional_path_allocs, need_fullpath, path,
-                  error_enum,
-                  error_string))
-            return false;
-#endif
-
-#ifdef __WINRT__
-         /* TODO: When support for the 'actual' VFS is added, there will need to be some more logic here */
-         if (!system->supports_vfs && !is_path_accessible_using_standard_io(path))
-         {
-            /* Fallback to a file copy into an accessible directory */
-            char* buf;
-            int64_t len;
-            union string_list_elem_attr attr;
-            char new_basedir[PATH_MAX_LENGTH];
-            char new_path[PATH_MAX_LENGTH];
-
-            new_path[0]             = '\0';
-            new_basedir[0]          = '\0';
-            attr.i                  = 0;
-
-            RARCH_LOG("[CONTENT LOAD]: Core does not support VFS - copying to cache directory\n");
-
-            if (!string_is_empty(content_ctx->directory_cache))
-               strlcpy(new_basedir, content_ctx->directory_cache, sizeof(new_basedir));
-            if (   string_is_empty(new_basedir)   || 
-                  !path_is_directory(new_basedir) || 
-                  !is_path_accessible_using_standard_io(new_basedir))
-            {
-               RARCH_WARN("[CONTENT LOAD]: Tried copying to cache directory"
-                     ", but "
-                     "cache directory was not set or found. "
-                     "Setting cache directory to root of "
-                     "writable app directory...\n");
-               strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-            }
-
-            fill_pathname_join(new_path, new_basedir,
-                  path_basename(path), sizeof(new_path));
-
-            /* TODO: This may fail on very large files...
-             * but copying large files is not a good idea anyway */
-            if (!filestream_read_file(path, &buf, &len))
-            {
-               char msg[1024];
-               msg[0]          = '\0';
-
-               snprintf(msg,
-                     sizeof(msg),
-                     "%s \"%s\". (during copy read)\n",
-                     msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                     path);
-               *error_string = strdup(msg);
-               return false;
-            }
-
-            if (!filestream_write_file(new_path, buf, len))
-            {
-               char msg[1024];
-               msg[0]          = '\0';
-
-               free(buf);
-               snprintf(msg,
-                     sizeof(msg),
-                     "%s \"%s\". (during copy write)\n",
-                     msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                     path);
-               *error_string = strdup(msg);
-               return false;
-            }
-
-            free(buf);
-
-            string_list_append(additional_path_allocs, new_path, attr);
-            info[i].path =
-               additional_path_allocs->elems[additional_path_allocs->size - 1].data;
-
-            string_list_append(content_ctx->temporary_content,
-                  new_path, attr);
-
-            used_vfs_fallback_copy = true;
-         }
-#endif
-
-         RARCH_LOG("[CONTENT LOAD]: %s\n", msg_hash_to_str(
-                  MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
-         strlcpy(p_content->pending_rom_crc_path,
-               path, sizeof(p_content->pending_rom_crc_path));
-         p_content->pending_rom_crc      = true;
-      }
-   }
-
-   load_info.content = content;
-   load_info.special = special;
-   load_info.info    = info;
-
-   if (!core_load_game(&load_info))
-   {
-      /* This is probably going to fail on multifile ROMs etc.
-       * so give a visible explanation of what is likely wrong */
-      if (used_vfs_fallback_copy)
-         *error_enum   = MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS;
-      else
-         *error_enum   = MSG_FAILED_TO_LOAD_CONTENT;
-
-      return false;
-   }
-
-#ifdef HAVE_CHEEVOS
-   if (!special)
-   {
-      const char *content_path     = content->elems[0].data;
-      if (!string_is_empty(content_path))
-      {
-         enum rarch_content_type type = path_is_media_type(content_path);
-         if (type == RARCH_CONTENT_NONE)
-         {
-            rcheevos_load(info);
-            return true;
-         }
-      }
-   }
-   rcheevos_pause_hardcore();
-#endif
-
-   return true;
-}
-
-static const struct
-retro_subsystem_info *content_file_init_subsystem(
-      const struct retro_subsystem_info *subsystem_data,
-      size_t subsystem_current_count,
-      enum msg_hash_enums *error_enum,
-      char **error_string,
-      bool *ret)
-{
-   struct string_list *subsystem              = path_get_subsystem_list();
-   const struct retro_subsystem_info *special = libretro_find_subsystem_info(
-            subsystem_data, (unsigned)subsystem_current_count,
-            path_get(RARCH_PATH_SUBSYSTEM));
-
-   if (!special)
-   {
-      char msg[1024];
-      msg[0] = '\0';
-      snprintf(msg, sizeof(msg),
-            "Failed to find subsystem \"%s\" in libretro implementation.\n",
-            path_get(RARCH_PATH_SUBSYSTEM));
-      *error_string = strdup(msg);
-      goto error;
-   }
-
-   if (special->num_roms)
-   {
-      if (!subsystem)
-      {
-         *error_enum   = MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT;
-         goto error;
-      }
-
-      if (special->num_roms != subsystem->size)
-      {
-         char msg[1024];
-         msg[0] = '\0';
-         snprintf(msg,
-               sizeof(msg),
-               "Libretro core requires %u content files for "
-               "subsystem \"%s\", but %u content files were provided.\n",
-               special->num_roms, special->desc,
-               (unsigned)subsystem->size);
-         *error_string = strdup(msg);
-         goto error;
-      }
-   }
-   else if (subsystem && subsystem->size)
-   {
-      char msg[1024];
-      msg[0] = '\0';
-      snprintf(msg,
-            sizeof(msg),
-            "Libretro core takes no content for subsystem \"%s\", "
-            "but %u content files were provided.\n",
-            special->desc,
-            (unsigned)subsystem->size);
-      *error_string = strdup(msg);
-      goto error;
-   }
-
-   *ret = true;
-   return special;
-
-error:
-   *ret = false;
-   return NULL;
-}
-
-static void content_file_init_set_attribs(
-      struct string_list *content,
-      const struct retro_subsystem_info *special,
-      content_information_ctx_t *content_ctx,
-      char **error_string,
-      union string_list_elem_attr *attr)
-{
-   struct string_list *subsystem    = path_get_subsystem_list();
-
-   attr->i                          = 0;
-
-   if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && special)
-   {
-      unsigned i;
-
-      for (i = 0; i < subsystem->size; i++)
-      {
-         attr->i            = special->roms[i].block_extract;
-         attr->i           |= special->roms[i].need_fullpath << 1;
-         attr->i           |= special->roms[i].required      << 2;
-
-         string_list_append(content, subsystem->elems[i].data, *attr);
-      }
-   }
-   else
-   {
-      bool contentless           = false;
-      bool is_inited             = false;
-      bool content_path_is_empty = path_is_empty(RARCH_PATH_CONTENT);
-
-      content_get_status(&contentless, &is_inited);
-
-      attr->i               = content_ctx->block_extract;
-      attr->i              |= content_ctx->need_fullpath << 1;
-      attr->i              |= (!contentless)  << 2;
-
-      if (content_path_is_empty
-            && contentless
-            && content_ctx->set_supports_no_game_enable)
-         string_list_append(content, "", *attr);
-      else if (!content_path_is_empty)
-         string_list_append(content, path_get(RARCH_PATH_CONTENT), *attr);
-   }
-}
-
-/**
- * content_init_file:
- *
- * Initializes and loads a content file for the currently
- * selected libretro core.
- *
- * Returns : true if successful, otherwise false.
- **/
-static bool content_file_init(
-      content_information_ctx_t *content_ctx,
-      content_state_t *p_content,
-      struct string_list *content,
-      enum msg_hash_enums *error_enum,
-      char **error_string)
-{
-   union string_list_elem_attr attr;
-   struct retro_game_info               *info = NULL;
-   bool subsystem_path_is_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
-   bool ret                                   = subsystem_path_is_empty;
-   const struct retro_subsystem_info *special =
-     subsystem_path_is_empty 
-     ? NULL : content_file_init_subsystem(content_ctx->subsystem.data,
-           content_ctx->subsystem.size, error_enum, error_string, &ret);
-
-   if (!ret)
-      return false;
-
-   content_file_init_set_attribs(content, special, content_ctx, error_string, &attr);
-#ifdef HAVE_COMPRESSION
-   content_file_init_extract(content, content_ctx, special, error_enum, error_string, &attr);
-#endif
-
-   if (content->size > 0)
-      info                   = (struct retro_game_info*)
-         calloc(content->size, sizeof(*info));
-
-   if (info)
-   {
-      unsigned i;
-      struct string_list additional_path_allocs;
-      
-      if (string_list_initialize(&additional_path_allocs))
-      {
-         ret = content_file_load(info, p_content,
-               content, content_ctx, error_enum,
-               error_string,
-               special, &additional_path_allocs);
-         string_list_deinitialize(&additional_path_allocs);
-      }
-
-      for (i = 0; i < content->size; i++)
-         free((void*)info[i].data);
-
-      free(info);
-   }
-   else if (!special)
-   {
-      *error_enum   = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
-      return false;
-   }
-
-   return ret;
 }
 
 void menu_content_environment_get(int *argc, char *argv[],
