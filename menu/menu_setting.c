@@ -4668,6 +4668,11 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA), len);
          break;
+      case OZONE_COLOR_THEME_OCEAN_BLUE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_OCEAN_BLUE), len);
+         break;
       case OZONE_COLOR_THEME_BASIC_WHITE:
       default:
          strlcpy(s,
@@ -7414,7 +7419,12 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
-         command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+         {
+            bool refresh = false;
+            command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+         }
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
       case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
@@ -12145,9 +12155,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_max_users;
             (*list)[list_info->index - 1].offset_by = 1;
@@ -17645,27 +17653,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-
-         /* Playlist entry index display is currently
-          * supported only by Ozone */
-         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
-         {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.playlist_show_entry_idx,
-                  MENU_ENUM_LABEL_PLAYLIST_SHOW_ENTRY_IDX,
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
-                  DEFAULT_PLAYLIST_SHOW_ENTRY_IDX,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-         }
 
          CONFIG_UINT(
                list, list_info,
