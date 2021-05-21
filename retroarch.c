@@ -39431,7 +39431,6 @@ bool core_options_create_override(bool game_specific)
 {
    char options_path[PATH_MAX_LENGTH];
    config_file_t *conf         = NULL;
-   struct rarch_state *p_rarch = &rarch_st;
 
    options_path[0] = '\0';
 
