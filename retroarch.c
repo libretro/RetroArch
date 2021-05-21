@@ -22767,12 +22767,14 @@ static int16_t input_state_device(
             else
 #endif
             {
-               bool bind_valid = p_rarch->libretro_input_binds[port]
+               bool bind_valid       = p_rarch->libretro_input_binds[port]
                   && p_rarch->libretro_input_binds[port][id].valid;
+               unsigned remap_button = settings->uints.input_remap_ids[port][id];
 
+               /* TODO/FIXME: What on earth is this code doing...? */
                if (!
                      (      bind_valid
-                            && id != settings->uints.input_remap_ids[port][id]
+                            && id != remap_button
                      )
                   )
                {
@@ -22790,11 +22792,31 @@ static int16_t input_state_device(
                   res = 1;
 
 #ifdef HAVE_OVERLAY
-               if (port == 0)
+               /* Check if overlay is active and button
+                * corresponding to 'id' has been pressed */
+               if ((port == 0) &&
+                   p_rarch->overlay_ptr &&
+                   p_rarch->overlay_ptr->alive &&
+                   BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, id))
                {
-                  if (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive)
-                     if ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, id)))
-                        res |= 1;
+#ifdef HAVE_MENU
+                  bool menu_driver_alive        = p_rarch->menu_driver_alive;
+#else
+                  bool menu_driver_alive        = false;
+#endif
+                  bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
+
+                  /* This button has already been processed
+                   * inside input_driver_poll() if all the
+                   * following are true:
+                   * > Menu driver is not running
+                   * > Input remaps are enabled
+                   * > 'id' is not equal to remapped button index
+                   * If these conditions are met, input here
+                   * is ignored */
+                  if ((menu_driver_alive || !input_remap_binds_enable) ||
+                      (id == remap_button))
+                     res |= 1;
                }
 #endif
             }
