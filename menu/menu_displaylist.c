@@ -4781,7 +4781,6 @@ static void wifi_scan_callback(retro_task_t *task,
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
    size_t                              idx   = 0;
-   struct menu_displaylist_state *p_displist = &menu_displist_st;
 #if defined(HAVE_NETWORKING)
    settings_t              *settings         = config_get_ptr();
 #endif

@@ -10477,7 +10477,6 @@ bool command_get_status(command_t *cmd, const char* arg)
    char reply[4096]            = {0};
    bool contentless            = false;
    bool is_inited              = false;
-   struct rarch_state *p_rarch = &rarch_st;
 
    content_get_status(&contentless, &is_inited);
 
@@ -10649,7 +10648,6 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
 static uint8_t* command_memory_get_pointer(unsigned address,
       unsigned int* max_bytes, int for_write, char* reply_at, size_t len)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
    const rarch_system_info_t* system = &runloop_state.system;
    if (!system || system->mmaps.num_descriptors == 0)
       strlcpy(reply_at, " -1 no memory map defined\n", len);

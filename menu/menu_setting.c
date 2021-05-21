@@ -4627,7 +4627,6 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
-   settings_t                       *settings = config_get_ptr();
    if (!setting)
       return;
 
