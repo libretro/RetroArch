@@ -12675,7 +12675,7 @@ static INLINE void retroarch_set_frame_limit(
          (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
 }
 
-static INLINE float retroarch_get_runloop_fastforward_ratio(
+static INLINE float runloop_get_fastforward_ratio(
       settings_t *settings,
       runloop_state_t *p_runloop)
 {
@@ -12746,8 +12746,7 @@ static bool command_event_init_core(
 #endif
    show_set_initial_disk_msg = settings->bools.notification_show_set_initial_disk;
    poll_type_behavior        = settings->uints.input_poll_type_behavior;
-   fastforward_ratio         = retroarch_get_runloop_fastforward_ratio(
-         settings, &runloop_state);
+   fastforward_ratio         = runloop_get_fastforward_ratio(settings, &runloop_state);
 
 #ifdef HAVE_CHEEVOS
    /* assume the core supports achievements unless it tells us otherwise */
@@ -15022,8 +15021,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
          retroarch_set_frame_limit(p_rarch,
-               retroarch_get_runloop_fastforward_ratio(
-                     settings, &runloop_state));
+               runloop_get_fastforward_ratio(settings, &runloop_state));
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
@@ -37977,7 +37975,7 @@ static enum runloop_state runloop_check_state(
 
    if (p_rarch->menu_driver_alive)
    {
-      float fastforward_ratio = retroarch_get_runloop_fastforward_ratio(
+      float fastforward_ratio = runloop_get_fastforward_ratio(
             settings, &runloop_state);
 
       if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
@@ -38752,7 +38750,7 @@ end:
 
       if (runloop_state.fastmotion)
          retroarch_set_frame_limit(p_rarch,
-               retroarch_get_runloop_fastforward_ratio(
+               runloop_get_fastforward_ratio(
                      settings, &runloop_state));
       else
          retroarch_set_frame_limit(p_rarch, 1.0f);
