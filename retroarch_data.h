@@ -108,7 +108,7 @@
 #define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
 
 #ifdef HAVE_THREADS
-#define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
+#define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && runloop_state.video_driver_threaded) ? true : false)
 #else
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL() (false)
 #endif
@@ -195,7 +195,7 @@
 #if HAVE_DYNAMIC
 #define RUNAHEAD_RUN_SECONDARY(p_rarch) \
    if (!secondary_core_run_use_last_input(p_rarch)) \
-      p_rarch->runahead_secondary_core_available = false
+      runloop_state.runahead_secondary_core_available = false
 #endif
 
 #define _PSUPP_BUF(buf, var, name, desc) \
@@ -1704,6 +1704,9 @@ struct runloop
    size_t audio_rewind_ptr;
    size_t audio_rewind_size;
 #endif
+#ifdef HAVE_RUNAHEAD
+   size_t runahead_save_state_size;
+#endif
    size_t audio_buffer_size;
    size_t audio_data_ptr;
    size_t audio_chunk_size;
@@ -1769,6 +1772,148 @@ struct runloop
 #ifdef HAVE_SCREENSHOTS
    bool max_frames_screenshot;
    char max_frames_screenshot_path[PATH_MAX_LENGTH];
+#endif
+#ifdef HAVE_NETWORKING
+/* Only used before init_netplay */
+   bool netplay_enabled;
+   bool netplay_is_client;
+   /* Used to avoid recursive netplay calls */
+   bool in_netplay;
+   bool netplay_client_deferred;
+   bool is_mitm;
+#endif
+   bool has_set_username;
+   bool rarch_error_on_init;
+   bool rarch_force_fullscreen;
+   bool has_set_core;
+   bool has_set_verbosity;
+   bool has_set_libretro;
+   bool has_set_libretro_directory;
+   bool has_set_save_path;
+   bool has_set_state_path;
+#ifdef HAVE_PATCH
+   bool has_set_ups_pref;
+   bool has_set_bps_pref;
+   bool has_set_ips_pref;
+#endif
+#ifdef HAVE_QT
+   bool qt_is_inited;
+#endif
+   bool has_set_log_to_file;
+   bool rarch_is_inited;
+   bool rarch_is_switching_display_mode;
+   bool rarch_is_sram_load_disabled;
+   bool rarch_is_sram_save_disabled;
+   bool rarch_use_sram;
+   bool rarch_ups_pref;
+   bool rarch_bps_pref;
+   bool rarch_ips_pref;
+#ifdef HAVE_PATCH
+   bool rarch_patch_blocked;
+#endif
+   bool video_driver_window_title_update;
+
+   /**
+    * dynamic.c:dynamic_request_hw_context will try to set
+    * flag data when the context
+    * is in the middle of being rebuilt; in these cases we will save flag
+    * data and set this to true.
+    * When the context is reinit, it checks this, reads from
+    * deferred_flag_data and cleans it.
+    *
+    * TODO - Dirty hack, fix it better
+    */
+   bool deferred_video_context_driver_set_flags;
+   bool ignore_environment_cb;
+   bool core_set_shared_context;
+
+   /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
+    * for 32-bit.
+    * This takes effect for overlay and shader cores that wants to load
+    * data into graphics driver. Kinda hackish to place it here, it is only
+    * used for GLES.
+    * TODO: Refactor this better. */
+   bool video_driver_use_rgba;
+
+   /* If set during context deinit, the driver should keep
+    * graphics context alive to avoid having to reset all
+    * context state. */
+   bool video_driver_cache_context;
+
+   /* Set to true by driver if context caching succeeded. */
+   bool video_driver_cache_context_ack;
+
+#ifdef HAVE_ACCESSIBILITY
+   /* Is text-to-speech accessibility turned on? */
+   bool accessibility_enabled;
+#endif
+#ifdef HAVE_CONFIGFILE
+   bool rarch_block_config_read;
+#endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   bool cli_shader_disable;
+#endif
+
+   bool location_driver_active;
+   bool bluetooth_driver_active;
+   bool wifi_driver_active;
+   bool camera_driver_active;
+#ifdef HAVE_VIDEO_FILTER
+   bool video_driver_state_out_rgb32;
+#endif
+   bool video_driver_crt_switching_active;
+   bool video_driver_crt_dynamic_super_width;
+   bool video_driver_threaded;
+
+#ifdef HAVE_RUNAHEAD
+   bool has_variable_update;
+   bool runahead_save_state_size_known;
+   bool request_fast_savestate;
+   bool hard_disable_audio;
+
+   bool input_is_dirty;
+#endif
+
+#if defined(HAVE_NETWORKING)
+   bool has_set_netplay_mode;
+   bool has_set_netplay_ip_address;
+   bool has_set_netplay_ip_port;
+   bool has_set_netplay_stateless_mode;
+   bool has_set_netplay_check_frames;
+#endif
+
+   bool input_driver_keyboard_linefeed_enable;
+
+   bool input_driver_block_hotkey;
+   bool input_driver_block_libretro_input;
+   bool input_driver_nonblock_state;
+   bool input_driver_grab_mouse_state;
+
+#ifdef HAVE_MENU
+   bool menu_input_dialog_keyboard_display;
+   /* Is the menu driver still running? */
+   bool menu_driver_alive;
+   /* Are we binding a button inside the menu? */
+   bool menu_driver_is_binding;
+#endif
+
+   bool recording_enable;
+   bool streaming_enable;
+
+   bool midi_drv_input_enabled;
+   bool midi_drv_output_enabled;
+
+   bool midi_drv_output_pending;
+
+   bool main_ui_companion_is_on_foreground;
+   bool keyboard_mapping_blocked;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   bool shader_presets_need_reload;
+#endif
+#ifdef HAVE_RUNAHEAD
+   bool runahead_available;
+   bool runahead_secondary_core_available;
+   bool runahead_force_input_dirty;
 #endif
 };
 
@@ -2010,10 +2155,6 @@ struct rarch_state
 
    size_t frame_cache_pitch;
 
-#ifdef HAVE_RUNAHEAD
-   size_t runahead_save_state_size;
-#endif
-
    jmp_buf error_sjlj_context;              /* 4-byte alignment, 
                                                put it right before long */
 
@@ -2166,151 +2307,8 @@ struct rarch_state
    char current_savefile_dir[PATH_MAX_LENGTH];
    char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
-
-#ifdef HAVE_NETWORKING
-/* Only used before init_netplay */
-   bool netplay_enabled;
-   bool netplay_is_client;
-   /* Used to avoid recursive netplay calls */
-   bool in_netplay;
-   bool netplay_client_deferred;
-   bool is_mitm;
-#endif
-   bool has_set_username;
-   bool rarch_error_on_init;
-   bool rarch_force_fullscreen;
-   bool has_set_core;
-   bool has_set_verbosity;
-   bool has_set_libretro;
-   bool has_set_libretro_directory;
-   bool has_set_save_path;
-   bool has_set_state_path;
-#ifdef HAVE_PATCH
-   bool has_set_ups_pref;
-   bool has_set_bps_pref;
-   bool has_set_ips_pref;
-#endif
-#ifdef HAVE_QT
-   bool qt_is_inited;
-#endif
-   bool has_set_log_to_file;
-   bool rarch_is_inited;
-   bool rarch_is_switching_display_mode;
-   bool rarch_is_sram_load_disabled;
-   bool rarch_is_sram_save_disabled;
-   bool rarch_use_sram;
-   bool rarch_ups_pref;
-   bool rarch_bps_pref;
-   bool rarch_ips_pref;
-#ifdef HAVE_PATCH
-   bool rarch_patch_blocked;
-#endif
-   bool video_driver_window_title_update;
-
-   /**
-    * dynamic.c:dynamic_request_hw_context will try to set
-    * flag data when the context
-    * is in the middle of being rebuilt; in these cases we will save flag
-    * data and set this to true.
-    * When the context is reinit, it checks this, reads from
-    * deferred_flag_data and cleans it.
-    *
-    * TODO - Dirty hack, fix it better
-    */
-   bool deferred_video_context_driver_set_flags;
-   bool ignore_environment_cb;
-   bool core_set_shared_context;
-
-   /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
-    * for 32-bit.
-    * This takes effect for overlay and shader cores that wants to load
-    * data into graphics driver. Kinda hackish to place it here, it is only
-    * used for GLES.
-    * TODO: Refactor this better. */
-   bool video_driver_use_rgba;
-
-   /* If set during context deinit, the driver should keep
-    * graphics context alive to avoid having to reset all
-    * context state. */
-   bool video_driver_cache_context;
-
-   /* Set to true by driver if context caching succeeded. */
-   bool video_driver_cache_context_ack;
-
-#ifdef HAVE_ACCESSIBILITY
-   /* Is text-to-speech accessibility turned on? */
-   bool accessibility_enabled;
-#endif
-#ifdef HAVE_CONFIGFILE
-   bool rarch_block_config_read;
-#endif
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   bool cli_shader_disable;
-#endif
-
-   bool location_driver_active;
-   bool bluetooth_driver_active;
-   bool wifi_driver_active;
-   bool camera_driver_active;
-#ifdef HAVE_VIDEO_FILTER
-   bool video_driver_state_out_rgb32;
-#endif
-   bool video_driver_crt_switching_active;
-   bool video_driver_crt_dynamic_super_width;
-   bool video_driver_threaded;
-
-#ifdef HAVE_RUNAHEAD
-   bool has_variable_update;
-   bool runahead_save_state_size_known;
-   bool request_fast_savestate;
-   bool hard_disable_audio;
-
-   bool input_is_dirty;
-#endif
-
-#if defined(HAVE_NETWORKING)
-   bool has_set_netplay_mode;
-   bool has_set_netplay_ip_address;
-   bool has_set_netplay_ip_port;
-   bool has_set_netplay_stateless_mode;
-   bool has_set_netplay_check_frames;
-#endif
-
-   bool input_driver_keyboard_linefeed_enable;
-
-   bool input_driver_block_hotkey;
-   bool input_driver_block_libretro_input;
-   bool input_driver_nonblock_state;
-   bool input_driver_grab_mouse_state;
-
-#ifdef HAVE_MENU
-   bool menu_input_dialog_keyboard_display;
-   /* Is the menu driver still running? */
-   bool menu_driver_alive;
-   /* Are we binding a button inside the menu? */
-   bool menu_driver_is_binding;
-#endif
-
-   bool recording_enable;
-   bool streaming_enable;
-
-   bool midi_drv_input_enabled;
-   bool midi_drv_output_enabled;
-
-   bool midi_drv_output_pending;
-
-   bool main_ui_companion_is_on_foreground;
-   bool keyboard_mapping_blocked;
    retro_bits_512_t keyboard_mapping_bits;
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   bool shader_presets_need_reload;
-#endif
-#ifdef HAVE_RUNAHEAD
-   bool runahead_available;
-   bool runahead_secondary_core_available;
-   bool runahead_force_input_dirty;
-#endif
 
 };
 
