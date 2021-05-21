@@ -379,8 +379,7 @@ struct retro_hw_render_callback *video_driver_get_hw_context(void)
 
 struct retro_system_av_info *video_viewport_get_system_av_info(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   return &p_rarch->video_driver_av_info;
+   return &runloop_state.av_info;
 }
 
 gfx_display_t *disp_get_ptr(void)
@@ -5860,7 +5859,6 @@ clear:
 }
 
 static bool menu_shader_manager_save_preset_internal(
-      struct rarch_state *p_rarch,
       bool save_reference,
       const struct video_shader *shader,
       const char *basename,
@@ -5988,7 +5986,6 @@ static bool menu_shader_manager_save_preset_internal(
 }
 
 static bool menu_shader_manager_operate_auto_preset(
-      struct rarch_state *p_rarch,
       struct retro_system_info *system,
       settings_t *settings,
       enum auto_shader_operation op,
@@ -6062,7 +6059,6 @@ static bool menu_shader_manager_operate_auto_preset(
    {
       case AUTO_SHADER_OP_SAVE:
          return menu_shader_manager_save_preset_internal(
-               p_rarch,
                settings->bools.video_shader_preset_save_reference_enable,
                shader, file,
                dir_video_shader,
@@ -6180,7 +6176,7 @@ bool menu_shader_manager_save_auto_preset(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         p_rarch, system, settings,
+         system, settings,
          AUTO_SHADER_OP_SAVE, shader,
          dir_video_shader,
          dir_menu_config,
@@ -6220,7 +6216,6 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    preset_dirs[2] = config_directory;
 
    return menu_shader_manager_save_preset_internal(
-         p_rarch,
          settings->bools.video_shader_preset_save_reference_enable,
          shader, basename,
          dir_video_shader,
@@ -6244,7 +6239,7 @@ bool menu_shader_manager_remove_auto_preset(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         p_rarch, system, settings,
+         system, settings,
          AUTO_SHADER_OP_REMOVE, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -6266,7 +6261,7 @@ bool menu_shader_manager_auto_preset_exists(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         p_rarch, system, settings,
+         system, settings,
          AUTO_SHADER_OP_EXISTS, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -12665,13 +12660,11 @@ static void command_event_runtime_log_init(struct rarch_state *p_rarch)
             sizeof(p_rarch->runtime_core_path));
 }
 
-static INLINE void retroarch_set_frame_limit(
-      struct rarch_state *p_rarch,
+static INLINE retro_time_t runloop_set_frame_limit(
       float fastforward_ratio)
 {
-   const struct retro_system_av_info* av_info = &p_rarch->video_driver_av_info;
-
-   p_rarch->frame_limit_minimum_time = (fastforward_ratio < 1.0f) ? 0.0f :
+   const struct retro_system_av_info* av_info = &runloop_state.av_info;
+   return (fastforward_ratio < 1.0f) ? 0.0f :
          (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
 }
 
@@ -12794,8 +12787,8 @@ static bool command_event_init_core(
    if (!core_load(p_rarch, poll_type_behavior))
       return false;
 
-   retroarch_set_frame_limit(p_rarch, fastforward_ratio);
-   p_rarch->frame_limit_last_time = cpu_features_get_time_usec();
+   runloop_state.frame_limit_minimum_time = runloop_set_frame_limit(fastforward_ratio);
+   runloop_state.frame_limit_last_time    = cpu_features_get_time_usec();
 
    command_event_runtime_log_init(p_rarch);
    return true;
@@ -13120,7 +13113,7 @@ static bool command_event_main_state(
                         );
 
                if (frame_time_counter_reset_after_save_state)
-                  p_rarch->video_driver_frame_time_count = 0;
+                  runloop_state.frame_time_count = 0;
 
                ret      = true;
                push_msg = false;
@@ -13144,7 +13137,7 @@ static bool command_event_main_state(
                   bool frame_time_counter_reset_after_load_state =
                      settings->bools.frame_time_counter_reset_after_load_state;
                   if (frame_time_counter_reset_after_load_state)
-                     p_rarch->video_driver_frame_time_count = 0;
+                     runloop_state.frame_time_count = 0;
                }
             }
             push_msg = false;
@@ -13360,7 +13353,7 @@ static void retroarch_fastmotion_override_free(struct rarch_state *p_rarch,
    p_runloop->fastmotion_override.inhibit_toggle = false;
 
    if (reset_frame_limit)
-      retroarch_set_frame_limit(p_rarch, fastforward_ratio);
+      runloop_state.frame_limit_minimum_time     = runloop_set_frame_limit(fastforward_ratio);
 }
 
 static void retroarch_system_info_free(struct rarch_state *p_rarch)
@@ -13412,7 +13405,7 @@ static void runahead_clear_variables(struct rarch_state *p_rarch)
    p_rarch->runahead_available                = true;
    p_rarch->runahead_secondary_core_available = true;
    p_rarch->runahead_force_input_dirty        = true;
-   p_rarch->runahead_last_frame_count         = 0;
+   runloop_state.last_frame_count_runahead    = 0;
 }
 #endif
 
@@ -15020,7 +15013,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event_set_mixer_volume(settings, -0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
-         retroarch_set_frame_limit(p_rarch,
+         runloop_state.frame_limit_minimum_time = runloop_set_frame_limit(
                runloop_get_fastforward_ratio(settings, &runloop_state));
          break;
       case CMD_EVENT_DISCORD_INIT:
@@ -17291,7 +17284,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                            msg->msg, msg->duration);
                   else
                      runloop_core_msg_queue_push(
-                           &p_rarch->video_driver_av_info, msg);
+                           &runloop_state.av_info, msg);
 
                   break;
 
@@ -17303,7 +17296,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                            msg->priority, msg->progress);
                   else
                      runloop_core_msg_queue_push(
-                           &p_rarch->video_driver_av_info, msg);
+                           &runloop_state.av_info, msg);
 
                   break;
 #endif
@@ -17311,7 +17304,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                case RETRO_MESSAGE_TYPE_NOTIFICATION:
                default:
                   runloop_core_msg_queue_push(
-                        &p_rarch->video_driver_av_info, msg);
+                        &runloop_state.av_info, msg);
                   break;
             }
          }
@@ -17970,7 +17963,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
        **/
       {
          const struct retro_system_av_info **info = (const struct retro_system_av_info**)&data;
-         struct retro_system_av_info *av_info     = &p_rarch->video_driver_av_info;
+         struct retro_system_av_info *av_info     = &runloop_state.av_info;
          if (data)
          {
             settings_t *settings                  = p_rarch->configuration_settings;
@@ -18188,7 +18181,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_GEOMETRY:
       {
-         struct retro_system_av_info *av_info      = &p_rarch->video_driver_av_info;
+         struct retro_system_av_info *av_info      = &runloop_state.av_info;
          struct retro_game_geometry  *geom         = (struct retro_game_geometry*)&av_info->geometry;
          const struct retro_game_geometry *in_geom = (const struct retro_game_geometry*)data;
 
@@ -18433,7 +18426,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                 * fast-forward off, if required */
                if (!p_runloop->fastmotion &&
                    frame_time_counter_reset_after_fastforwarding)
-                  p_rarch->video_driver_frame_time_count = 0;
+                  p_runloop->frame_time_count = 0;
 
                /* Ensure fast forward widget is disabled when
                 * toggling fast-forward off
@@ -18452,7 +18445,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                               fastforward_ratio_default;
 
             if (fastforward_ratio_current != fastforward_ratio_last)
-               retroarch_set_frame_limit(p_rarch, fastforward_ratio_current);
+               runloop_state.frame_limit_minimum_time = runloop_set_frame_limit(fastforward_ratio_current);
          }
 
          break;
@@ -20252,7 +20245,7 @@ static bool recording_init(
    char output[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
    struct record_params params          = {0};
-   struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
+   struct retro_system_av_info *av_info = &runloop_state.av_info;
    global_t *global                     = &p_rarch->g_extern;
    bool video_gpu_record                = settings->bools.video_gpu_record;
    bool video_force_aspect              = settings->bools.video_force_aspect;
@@ -27915,14 +27908,14 @@ static bool audio_compute_buffer_statistics(
    unsigned low_water_count      = 0;
    unsigned high_water_count     = 0;
    unsigned samples              = MIN(
-         (unsigned)p_rarch->audio_driver_free_samples_count,
+         (unsigned)runloop_state.free_audio_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
    if (samples < 3)
       return false;
 
    stats->samples                = (unsigned)
-      p_rarch->audio_driver_free_samples_count;
+      runloop_state.free_audio_samples_count;
 
 #ifdef WARPUP
    /* uint64 to double not implemented, fair chance
@@ -27935,13 +27928,13 @@ static bool audio_compute_buffer_statistics(
    (void)stddev;
 #else
    for (i = 1; i < samples; i++)
-      accum += p_rarch->audio_driver_free_samples_buf[i];
+      accum += runloop_state.free_audio_samples_buf[i];
 
    avg = (unsigned)accum / (samples - 1);
 
    for (i = 1; i < samples; i++)
    {
-      int diff     = avg - p_rarch->audio_driver_free_samples_buf[i];
+      int diff     = avg - runloop_state.free_audio_samples_buf[i];
       accum_var   += diff * diff;
    }
 
@@ -27949,19 +27942,19 @@ static bool audio_compute_buffer_statistics(
       sqrt((double)accum_var / (samples - 2));
 
    stats->average_buffer_saturation      = (1.0f - (float)avg
-         / p_rarch->audio_driver_buffer_size) * 100.0;
+         / runloop_state.audio_buffer_size) * 100.0;
    stats->std_deviation_percentage       = ((float)stddev
-         / p_rarch->audio_driver_buffer_size)  * 100.0;
+         / runloop_state.audio_buffer_size)  * 100.0;
 #endif
 
-   low_water_size  = (unsigned)(p_rarch->audio_driver_buffer_size * 3 / 4);
-   high_water_size = (unsigned)(p_rarch->audio_driver_buffer_size     / 4);
+   low_water_size  = (unsigned)(runloop_state.audio_buffer_size * 3 / 4);
+   high_water_size = (unsigned)(runloop_state.audio_buffer_size     / 4);
 
    for (i = 1; i < samples; i++)
    {
-      if (p_rarch->audio_driver_free_samples_buf[i] >= low_water_size)
+      if (runloop_state.free_audio_samples_buf[i] >= low_water_size)
          low_water_count++;
-      else if (p_rarch->audio_driver_free_samples_buf[i] <= high_water_size)
+      else if (runloop_state.free_audio_samples_buf[i] <= high_water_size)
          high_water_count++;
    }
 
@@ -28021,28 +28014,26 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch,
 {
    if (p_rarch->current_audio && p_rarch->current_audio->free)
    {
-      if (p_rarch->audio_driver_context_audio_data)
+      if (runloop_state.audio_context_audio_data)
          p_rarch->current_audio->free(
-               p_rarch->audio_driver_context_audio_data);
-      p_rarch->audio_driver_context_audio_data = NULL;
+               runloop_state.audio_context_audio_data);
+      runloop_state.audio_context_audio_data = NULL;
    }
 
-   if (p_rarch->audio_driver_output_samples_conv_buf)
-      memalign_free(p_rarch->audio_driver_output_samples_conv_buf);
-   p_rarch->audio_driver_output_samples_conv_buf     = NULL;
+   if (runloop_state.audio_output_samples_conv_buf)
+      memalign_free(runloop_state.audio_output_samples_conv_buf);
+   runloop_state.audio_output_samples_conv_buf     = NULL;
 
-   if (p_rarch->audio_driver_input_data)
-      memalign_free(p_rarch->audio_driver_input_data);
-   p_rarch->audio_driver_input_data = NULL;
-
-   p_rarch->audio_driver_data_ptr           = 0;
+   if (runloop_state.audio_input_data)
+      memalign_free(runloop_state.audio_input_data);
+   runloop_state.audio_input_data           = NULL;
+   runloop_state.audio_data_ptr             = 0;
 
 #ifdef HAVE_REWIND
-   if (p_rarch->audio_driver_rewind_buf)
-      memalign_free(p_rarch->audio_driver_rewind_buf);
-   p_rarch->audio_driver_rewind_buf         = NULL;
-
-   p_rarch->audio_driver_rewind_size        = 0;
+   if (runloop_state.audio_rewind_buf)
+      memalign_free(runloop_state.audio_rewind_buf);
+   runloop_state.audio_rewind_buf           = NULL;
+   runloop_state.audio_rewind_size          = 0;
 #endif
 
    if (!audio_enable)
@@ -28053,9 +28044,9 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch,
 
    audio_driver_deinit_resampler(p_rarch);
 
-   if (p_rarch->audio_driver_output_samples_buf)
-      memalign_free(p_rarch->audio_driver_output_samples_buf);
-   p_rarch->audio_driver_output_samples_buf = NULL;
+   if (runloop_state.audio_output_samples_buf)
+      memalign_free(runloop_state.audio_output_samples_buf);
+   runloop_state.audio_output_samples_buf = NULL;
 
 #ifdef HAVE_DSP_FILTER
    audio_driver_dsp_filter_free();
@@ -28070,10 +28061,10 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch,
 static bool audio_driver_free_devices_list(struct rarch_state *p_rarch)
 {
    if (!p_rarch->current_audio || !p_rarch->current_audio->device_list_free
-         || !p_rarch->audio_driver_context_audio_data)
+         || !runloop_state.audio_context_audio_data)
       return false;
    p_rarch->current_audio->device_list_free(
-         p_rarch->audio_driver_context_audio_data,
+         runloop_state.audio_context_audio_data,
          p_rarch->audio_driver_devices_list);
    p_rarch->audio_driver_devices_list = NULL;
    return true;
@@ -28164,11 +28155,11 @@ static bool audio_driver_init_internal(
 
    memset(audio_buf, 0, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
 
-   p_rarch->audio_driver_input_data              = audio_buf;
-   p_rarch->audio_driver_output_samples_conv_buf = conv_buf;
-   p_rarch->audio_driver_chunk_block_size        = AUDIO_CHUNK_SIZE_BLOCKING;
-   p_rarch->audio_driver_chunk_nonblock_size     = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   p_rarch->audio_driver_chunk_size              = p_rarch->audio_driver_chunk_block_size;
+   runloop_state.audio_input_data                = audio_buf;
+   runloop_state.audio_output_samples_conv_buf   = conv_buf;
+   runloop_state.audio_chunk_block_size          = AUDIO_CHUNK_SIZE_BLOCKING;
+   runloop_state.audio_chunk_nonblock_size       = AUDIO_CHUNK_SIZE_NONBLOCKING;
+   runloop_state.audio_chunk_size                = AUDIO_CHUNK_SIZE_BLOCKING;
 
 #ifdef HAVE_REWIND
    /* Needs to be able to hold full content of a full max_bufsamples
@@ -28179,8 +28170,8 @@ static bool audio_driver_init_internal(
    if (!rewind_buf)
       goto error;
 
-   p_rarch->audio_driver_rewind_buf              = rewind_buf;
-   p_rarch->audio_driver_rewind_size             = max_bufsamples;
+   runloop_state.audio_rewind_buf                = rewind_buf;
+   runloop_state.audio_rewind_size               = max_bufsamples;
 #endif
 
    if (!audio_enable)
@@ -28205,7 +28196,7 @@ static bool audio_driver_init_internal(
       RARCH_LOG("[Audio]: Starting threaded audio driver ...\n");
       if (!audio_init_thread(
                &p_rarch->current_audio,
-               &p_rarch->audio_driver_context_audio_data,
+               &runloop_state.audio_context_audio_data,
                *settings->arrays.audio_device
                ? settings->arrays.audio_device : NULL,
                settings->uints.audio_out_rate, &new_rate,
@@ -28220,7 +28211,7 @@ static bool audio_driver_init_internal(
    else
 #endif
    {
-      p_rarch->audio_driver_context_audio_data =
+      runloop_state.audio_context_audio_data =
          p_rarch->current_audio->init(*settings->arrays.audio_device ?
                settings->arrays.audio_device : NULL,
                settings->uints.audio_out_rate,
@@ -28232,7 +28223,7 @@ static bool audio_driver_init_internal(
    if (new_rate != 0)
       configuration_set_int(settings, settings->uints.audio_out_rate, new_rate);
 
-   if (!p_rarch->audio_driver_context_audio_data)
+   if (!runloop_state.audio_context_audio_data)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
       p_rarch->audio_driver_active    = false;
@@ -28241,18 +28232,18 @@ static bool audio_driver_init_internal(
    p_rarch->audio_driver_use_float    = false;
    if (     p_rarch->audio_driver_active
          && p_rarch->current_audio->use_float(
-            p_rarch->audio_driver_context_audio_data))
+            runloop_state.audio_context_audio_data))
       p_rarch->audio_driver_use_float = true;
 
    if (!audio_sync && p_rarch->audio_driver_active)
    {
       if (p_rarch->audio_driver_active &&
-            p_rarch->audio_driver_context_audio_data)
+            runloop_state.audio_context_audio_data)
          p_rarch->current_audio->set_nonblock_state(
-               p_rarch->audio_driver_context_audio_data, true);
+               runloop_state.audio_context_audio_data, true);
 
-      p_rarch->audio_driver_chunk_size =
-         p_rarch->audio_driver_chunk_nonblock_size;
+      runloop_state.audio_chunk_size =
+         runloop_state.audio_chunk_nonblock_size;
    }
 
    if (p_rarch->audio_driver_input <= 0.0f)
@@ -28281,7 +28272,7 @@ static bool audio_driver_init_internal(
       p_rarch->audio_driver_active = false;
    }
 
-   p_rarch->audio_driver_data_ptr   = 0;
+   runloop_state.audio_data_ptr    = 0;
 
    retro_assert(settings->uints.audio_out_rate <
          p_rarch->audio_driver_input * AUDIO_MAX_RATIO);
@@ -28293,7 +28284,7 @@ static bool audio_driver_init_internal(
    if (!samples_buf)
       goto error;
 
-   p_rarch->audio_driver_output_samples_buf = (float*)samples_buf;
+   runloop_state.audio_output_samples_buf   = (float*)samples_buf;
    p_rarch->audio_driver_control            = false;
 
    if (
@@ -28306,9 +28297,9 @@ static bool audio_driver_init_internal(
        * and buffer_size to be implemented. */
       if (p_rarch->current_audio->buffer_size)
       {
-         p_rarch->audio_driver_buffer_size =
+         runloop_state.audio_buffer_size =
             p_rarch->current_audio->buffer_size(
-                  p_rarch->audio_driver_context_audio_data);
+                  runloop_state.audio_context_audio_data);
          p_rarch->audio_driver_control     = true;
       }
       else
@@ -28317,7 +28308,7 @@ static bool audio_driver_init_internal(
 
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
-   p_rarch->audio_driver_free_samples_count = 0;
+   runloop_state.free_audio_samples_count = 0;
 
 #ifdef HAVE_AUDIOMIXER
    audio_mixer_init(settings->uints.audio_out_rate);
@@ -28360,10 +28351,10 @@ static void audio_driver_flush(
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
 
-   convert_s16_to_float(p_rarch->audio_driver_input_data, data, samples,
+   convert_s16_to_float(runloop_state.audio_input_data, data, samples,
          audio_volume_gain);
 
-   src_data.data_in                  = p_rarch->audio_driver_input_data;
+   src_data.data_in                  = runloop_state.audio_input_data;
    src_data.input_frames             = samples >> 1;
 
 #ifdef HAVE_DSP_FILTER
@@ -28376,7 +28367,7 @@ static void audio_driver_flush(
       dsp_data.output                = NULL;
       dsp_data.output_frames         = 0;
 
-      dsp_data.input                 = p_rarch->audio_driver_input_data;
+      dsp_data.input                 = runloop_state.audio_input_data;
       dsp_data.input_frames          = (unsigned)(samples >> 1);
 
       retro_dsp_filter_process(p_rarch->audio_driver_dsp, &dsp_data);
@@ -28389,25 +28380,25 @@ static void audio_driver_flush(
    }
 #endif
 
-   src_data.data_out                 = p_rarch->audio_driver_output_samples_buf;
+   src_data.data_out                 = runloop_state.audio_output_samples_buf;
 
    if (p_rarch->audio_driver_control)
    {
       /* Readjust the audio input rate. */
       int      half_size           =
-         (int)(p_rarch->audio_driver_buffer_size / 2);
+         (int)(runloop_state.audio_buffer_size / 2);
       int      avail               =
          (int)p_rarch->current_audio->write_avail(
-               p_rarch->audio_driver_context_audio_data);
+               runloop_state.audio_context_audio_data);
       int      delta_mid           = avail - half_size;
       double   direction           = (double)delta_mid / half_size;
       double   adjust              = 1.0 +
          p_rarch->audio_driver_rate_control_delta * direction;
       unsigned write_idx           =
-         p_rarch->audio_driver_free_samples_count++ &
+         runloop_state.free_audio_samples_count++ &
          (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
 
-      p_rarch->audio_driver_free_samples_buf
+      runloop_state.free_audio_samples_buf
          [write_idx]                        = avail;
       p_rarch->audio_source_ratio_current   =
          p_rarch->audio_source_ratio_original * adjust;
@@ -28417,7 +28408,7 @@ static void audio_driver_flush(
       {
          RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
                (unsigned)(100 - (avail * 100) /
-                  p_rarch->audio_driver_buffer_size));
+                  runloop_state.audio_buffer_size));
          RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
                p_rarch->audio_source_ratio_current,
                p_rarch->audio_source_ratio_original);
@@ -28466,28 +28457,28 @@ static void audio_driver_flush(
             p_rarch->audio_driver_mixer_volume_gain;
       }
       audio_mixer_mix(
-            p_rarch->audio_driver_output_samples_buf,
+            runloop_state.audio_output_samples_buf,
             src_data.output_frames, mixer_gain, override);
    }
 #endif
 
    {
-      const void *output_data = p_rarch->audio_driver_output_samples_buf;
+      const void *output_data = runloop_state.audio_output_samples_buf;
       unsigned output_frames  = (unsigned)src_data.output_frames;
 
       if (p_rarch->audio_driver_use_float)
          output_frames       *= sizeof(float);
       else
       {
-         convert_float_to_s16(p_rarch->audio_driver_output_samples_conv_buf,
+         convert_float_to_s16(runloop_state.audio_output_samples_conv_buf,
                (const float*)output_data, output_frames * 2);
 
-         output_data          = p_rarch->audio_driver_output_samples_conv_buf;
+         output_data          = runloop_state.audio_output_samples_conv_buf;
          output_frames       *= sizeof(int16_t);
       }
 
       if (p_rarch->current_audio->write(
-               p_rarch->audio_driver_context_audio_data,
+               runloop_state.audio_context_audio_data,
                output_data, output_frames * 2) < 0)
          p_rarch->audio_driver_active = false;
    }
@@ -28506,10 +28497,10 @@ static void audio_driver_sample(int16_t left, int16_t right)
    if (p_rarch->audio_suspended)
       return;
 
-   p_rarch->audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = left;
-   p_rarch->audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = right;
+   runloop_state.audio_output_samples_conv_buf[runloop_state.audio_data_ptr++] = left;
+   runloop_state.audio_output_samples_conv_buf[runloop_state.audio_data_ptr++] = right;
 
-   if (p_rarch->audio_driver_data_ptr < p_rarch->audio_driver_chunk_size)
+   if (runloop_state.audio_data_ptr < runloop_state.audio_chunk_size)
       return;
 
    if (  p_rarch->recording_data     &&
@@ -28518,25 +28509,25 @@ static void audio_driver_sample(int16_t left, int16_t right)
    {
       struct record_audio_data ffemu_data;
 
-      ffemu_data.data                    = p_rarch->audio_driver_output_samples_conv_buf;
-      ffemu_data.frames                  = p_rarch->audio_driver_data_ptr / 2;
+      ffemu_data.data                    = runloop_state.audio_output_samples_conv_buf;
+      ffemu_data.frames                  = runloop_state.audio_data_ptr / 2;
 
       p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
    }
 
    if (!(runloop_state.paused           ||
 		   !p_rarch->audio_driver_active     ||
-		   !p_rarch->audio_driver_output_samples_buf))
+		   !runloop_state.audio_output_samples_buf))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
             p_rarch->configuration_settings->bools.audio_fastforward_mute,
-            p_rarch->audio_driver_output_samples_conv_buf,
-            p_rarch->audio_driver_data_ptr,
+            runloop_state.audio_output_samples_conv_buf,
+            runloop_state.audio_data_ptr,
             runloop_state.slowmotion,
             runloop_state.fastmotion);
 
-   p_rarch->audio_driver_data_ptr = 0;
+   runloop_state.audio_data_ptr = 0;
 }
 
 #ifdef HAVE_MENU
@@ -28544,14 +28535,14 @@ static void audio_driver_menu_sample(void)
 {
    static int16_t samples_buf[1024]       = {0};
    struct rarch_state          *p_rarch   = &rarch_st;
-   struct retro_system_av_info *av_info   = &p_rarch->video_driver_av_info;
+   struct retro_system_av_info *av_info   = &runloop_state.av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    bool check_flush                       = !(
          runloop_state.paused           ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_output_samples_buf);
+         !runloop_state.audio_output_samples_buf);
 
    while (sample_count > 1024)
    {
@@ -28637,7 +28628,7 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    if (!(
          runloop_state.paused           ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_output_samples_buf))
+         !runloop_state.audio_output_samples_buf))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
@@ -28662,12 +28653,11 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
  **/
 static void audio_driver_sample_rewind(int16_t left, int16_t right)
 {
-   struct rarch_state *p_rarch   = &rarch_st;
-   if (p_rarch->audio_driver_rewind_ptr == 0)
+   if (runloop_state.audio_rewind_ptr == 0)
       return;
 
-   p_rarch->audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] = right;
-   p_rarch->audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] = left;
+   runloop_state.audio_rewind_buf[--runloop_state.audio_rewind_ptr] = right;
+   runloop_state.audio_rewind_buf[--runloop_state.audio_rewind_ptr] = left;
 }
 
 /**
@@ -28687,13 +28677,12 @@ static size_t audio_driver_sample_batch_rewind(
       const int16_t *data, size_t frames)
 {
    size_t i;
-   struct rarch_state *p_rarch   = &rarch_st;
    size_t              samples   = frames << 1;
 
    for (i = 0; i < samples; i++)
    {
-      if (p_rarch->audio_driver_rewind_ptr > 0)
-         p_rarch->audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] = data[i];
+      if (runloop_state.audio_rewind_ptr > 0)
+         runloop_state.audio_rewind_buf[--runloop_state.audio_rewind_ptr] = data[i];
    }
 
    return frames;
@@ -28742,8 +28731,7 @@ bool audio_driver_dsp_filter_init(const char *device)
 
 void audio_driver_set_buffer_size(size_t bufsize)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
-   p_rarch->audio_driver_buffer_size = bufsize;
+   runloop_state.audio_buffer_size = bufsize;
 }
 
 static float audio_driver_monitor_adjust_system_rates(
@@ -28767,24 +28755,22 @@ static float audio_driver_monitor_adjust_system_rates(
 void audio_driver_setup_rewind(void)
 {
    unsigned i;
-   struct rarch_state *p_rarch      = &rarch_st;
-
    /* Push audio ready to be played. */
-   p_rarch->audio_driver_rewind_ptr = p_rarch->audio_driver_rewind_size;
+   runloop_state.audio_rewind_ptr = runloop_state.audio_rewind_size;
 
-   for (i = 0; i < p_rarch->audio_driver_data_ptr; i += 2)
+   for (i = 0; i < runloop_state.audio_data_ptr; i += 2)
    {
-      if (p_rarch->audio_driver_rewind_ptr > 0)
-         p_rarch->audio_driver_rewind_buf[
-            --p_rarch->audio_driver_rewind_ptr] =
-            p_rarch->audio_driver_output_samples_conv_buf[i + 1];
+      if (runloop_state.audio_rewind_ptr > 0)
+         runloop_state.audio_rewind_buf[
+            --runloop_state.audio_rewind_ptr] =
+            runloop_state.audio_output_samples_conv_buf[i + 1];
 
-      if (p_rarch->audio_driver_rewind_ptr > 0)
-         p_rarch->audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] =
-            p_rarch->audio_driver_output_samples_conv_buf[i + 0];
+      if (runloop_state.audio_rewind_ptr > 0)
+         runloop_state.audio_rewind_buf[--runloop_state.audio_rewind_ptr] =
+            runloop_state.audio_output_samples_conv_buf[i + 0];
    }
 
-   p_rarch->audio_driver_data_ptr = 0;
+   runloop_state.audio_data_ptr = 0;
 }
 #endif
 
@@ -29447,8 +29433,8 @@ static INLINE bool audio_driver_alive(struct rarch_state *p_rarch)
 {
    if (     p_rarch->current_audio
          && p_rarch->current_audio->alive
-         && p_rarch->audio_driver_context_audio_data)
-      return p_rarch->current_audio->alive(p_rarch->audio_driver_context_audio_data);
+         && runloop_state.audio_context_audio_data)
+      return p_rarch->current_audio->alive(runloop_state.audio_context_audio_data);
    return false;
 }
 
@@ -29456,10 +29442,10 @@ static bool audio_driver_start(struct rarch_state *p_rarch,
       bool is_shutdown)
 {
    if (!p_rarch->current_audio || !p_rarch->current_audio->start
-         || !p_rarch->audio_driver_context_audio_data)
+         || !runloop_state.audio_context_audio_data)
       goto error;
    if (!p_rarch->current_audio->start(
-            p_rarch->audio_driver_context_audio_data, is_shutdown))
+            runloop_state.audio_context_audio_data, is_shutdown))
       goto error;
 
    return true;
@@ -29475,12 +29461,12 @@ static bool audio_driver_stop(struct rarch_state *p_rarch)
 {
    if (     !p_rarch->current_audio
          || !p_rarch->current_audio->stop
-         || !p_rarch->audio_driver_context_audio_data
+         || !runloop_state.audio_context_audio_data
          || !audio_driver_alive(p_rarch)
       )
       return false;
    return p_rarch->current_audio->stop(
-         p_rarch->audio_driver_context_audio_data);
+         runloop_state.audio_context_audio_data);
 }
 
 #ifdef HAVE_REWIND
@@ -29494,10 +29480,10 @@ void audio_driver_frame_is_reverse(void)
    {
       struct record_audio_data ffemu_data;
 
-      ffemu_data.data                    = p_rarch->audio_driver_rewind_buf +
-         p_rarch->audio_driver_rewind_ptr;
-      ffemu_data.frames                  = (p_rarch->audio_driver_rewind_size -
-            p_rarch->audio_driver_rewind_ptr) / 2;
+      ffemu_data.data                    = runloop_state.audio_rewind_buf +
+         runloop_state.audio_rewind_ptr;
+      ffemu_data.frames                  = (runloop_state.audio_rewind_size -
+            runloop_state.audio_rewind_ptr) / 2;
 
       p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
    }
@@ -29505,15 +29491,15 @@ void audio_driver_frame_is_reverse(void)
    if (!(
           runloop_state.paused          ||
          !p_rarch->audio_driver_active     ||
-         !p_rarch->audio_driver_output_samples_buf))
+         !runloop_state.audio_output_samples_buf))
       audio_driver_flush(
             p_rarch,
             p_rarch->configuration_settings->floats.slowmotion_ratio,
             p_rarch->configuration_settings->bools.audio_fastforward_mute,
-            p_rarch->audio_driver_rewind_buf  +
-            p_rarch->audio_driver_rewind_ptr,
-            p_rarch->audio_driver_rewind_size -
-            p_rarch->audio_driver_rewind_ptr,
+            runloop_state.audio_rewind_buf  +
+            runloop_state.audio_rewind_ptr,
+            runloop_state.audio_rewind_size -
+            runloop_state.audio_rewind_ptr,
             runloop_state.slowmotion,
             runloop_state.fastmotion);
 }
@@ -29936,7 +29922,7 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    unsigned pow2_x, pow2_y, maxsize;
    void *buf                            = NULL;
    struct rarch_state          *p_rarch = &rarch_st;
-   struct retro_game_geometry *geom     = &p_rarch->video_driver_av_info.geometry;
+   struct retro_game_geometry *geom     = &runloop_state.av_info.geometry;
    unsigned width                       = geom->max_width;
    unsigned height                      = geom->max_height;
    /* Deprecated format. Gets pre-converted. */
@@ -30052,7 +30038,7 @@ static void video_driver_monitor_compute_fps_statistics(struct rarch_state *p_ra
    double        stddev        = 0.0;
    unsigned        samples     = 0;
 
-   if (p_rarch->video_driver_frame_time_count <
+   if (runloop_state.frame_time_count <
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
       RARCH_LOG(
@@ -30290,7 +30276,7 @@ static bool video_driver_init_internal(
    video_viewport_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
    static uint16_t dummy_pixels[32]       = {0};
-   struct retro_game_geometry *geom       = &p_rarch->video_driver_av_info.geometry;
+   struct retro_game_geometry *geom       = &runloop_state.av_info.geometry;
    const enum retro_pixel_format
       video_driver_pix_fmt                = p_rarch->video_driver_pix_fmt;
 #ifdef HAVE_VIDEO_FILTER
@@ -30424,7 +30410,7 @@ static bool video_driver_init_internal(
    p_rarch->video_started_fullscreen = video.fullscreen;
 
    /* Reset video frame count */
-   p_rarch->video_driver_frame_count = 0;
+   runloop_state.frame_count         = 0;
 
    tmp                               = p_rarch->current_input;
    /* Need to grab the "real" video driver interface on a reinit. */
@@ -30804,7 +30790,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 #endif
 
    samples = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         (unsigned)p_rarch->video_driver_frame_time_count);
+         (unsigned)runloop_state.frame_time_count);
 
    if (samples < 2)
       return false;
@@ -30812,10 +30798,10 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    /* Measure statistics on frame time (microsecs), *not* FPS. */
    for (i = 0; i < samples; i++)
    {
-      accum += p_rarch->video_driver_frame_time_samples[i];
+      accum += runloop_state.frame_time_samples[i];
 #if 0
       RARCH_LOG("[Video]: Interval #%u: %d usec / frame.\n",
-            i, (int)frame_time_samples[i]);
+            i, (int)runloop_state.frame_time_samples[i]);
 #endif
    }
 
@@ -30824,7 +30810,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    /* Drop first measurement. It is likely to be bad. */
    for (i = 0; i < samples; i++)
    {
-      retro_time_t diff = p_rarch->video_driver_frame_time_samples[i] - avg;
+      retro_time_t diff = runloop_state.frame_time_samples[i] - avg;
       accum_var         += diff * diff;
    }
 
@@ -30974,8 +30960,7 @@ bool video_driver_supports_read_frame_raw(void)
 
 void video_driver_set_viewport_core(void)
 {
-   struct rarch_state        *p_rarch   = &rarch_st;
-   struct retro_game_geometry *geom     = &p_rarch->video_driver_av_info.geometry;
+   struct retro_game_geometry *geom     = &runloop_state.av_info.geometry;
 
    if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
@@ -31055,8 +31040,7 @@ bool video_driver_get_prev_video_out(void)
 
 void video_driver_monitor_reset(void)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
-   p_rarch->video_driver_frame_time_count = 0;
+   runloop_state.frame_time_count = 0;
 }
 
 void video_driver_set_aspect_ratio(void)
@@ -31068,7 +31052,7 @@ void video_driver_set_aspect_ratio(void)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel(&p_rarch->video_driver_av_info.geometry);
+         video_driver_set_viewport_square_pixel(&runloop_state.av_info.geometry);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -31077,7 +31061,7 @@ void video_driver_set_aspect_ratio(void)
 
       case ASPECT_RATIO_CONFIG:
          video_driver_set_viewport_config(
-               &p_rarch->video_driver_av_info.geometry,
+               &runloop_state.av_info.geometry,
                settings->floats.video_aspect_ratio,
                settings->bools.video_aspect_ratio_auto);
          break;
@@ -31450,11 +31434,11 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       /* Use system reported sizes as these define the
        * geometry for the "normal" case. */
       unsigned base_height  =
-         p_rarch->video_driver_av_info.geometry.base_height;
+         runloop_state.av_info.geometry.base_height;
       unsigned int rotation = retroarch_get_rotation();
 
       if (rotation % 2)
-         base_height = p_rarch->video_driver_av_info.geometry.base_width;
+         base_height = runloop_state.av_info.geometry.base_width;
 
       if (base_height == 0)
          base_height = 1;
@@ -31564,21 +31548,20 @@ static void video_driver_frame(const void *data, unsigned width,
    video_driver_build_info(&video_info);
 
    /* Get the amount of frames per seconds. */
-   if (p_rarch->video_driver_frame_count)
+   if (runloop_state.frame_count)
    {
-      unsigned fps_update_interval                 =
+      unsigned fps_update_interval                  =
          video_info.fps_update_interval;
-      unsigned memory_update_interval              =
+      unsigned memory_update_interval               =
          video_info.memory_update_interval;
-      size_t buf_pos                               = 1;
+      size_t buf_pos                                = 1;
       /* set this to 1 to avoid an offset issue */
-      unsigned write_index                         =
-         p_rarch->video_driver_frame_time_count++ &
+      unsigned write_index                          =
+         runloop_state.frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      frame_time                                   = new_time - fps_time;
-      p_rarch->video_driver_frame_time_samples
-         [write_index]                             = frame_time;
-      fps_time                                     = new_time;
+      frame_time                                    = new_time - fps_time;
+      runloop_state.frame_time_samples[write_index] = frame_time;
+      fps_time                                      = new_time;
 
       if (video_info.fps_show)
          buf_pos = snprintf(
@@ -31593,7 +31576,7 @@ static void video_driver_frame(const void *data, unsigned width,
          snprintf(frames_text,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
-               (uint64_t)p_rarch->video_driver_frame_count);
+               (uint64_t)runloop_state.frame_count);
          buf_pos = strlcat(status_text, frames_text, sizeof(status_text));
       }
 
@@ -31601,7 +31584,7 @@ static void video_driver_frame(const void *data, unsigned width,
       {
          char mem[128];
 
-         if ((p_rarch->video_driver_frame_count % memory_update_interval) == 0)
+         if ((runloop_state.frame_count % memory_update_interval) == 0)
          {
             last_total_memory = frontend_driver_get_total_memory();
             last_used_memory  = last_total_memory - frontend_driver_get_free_memory();
@@ -31616,7 +31599,7 @@ static void video_driver_frame(const void *data, unsigned width,
          strlcat(status_text, mem, sizeof(status_text));
       }
 
-      if ((p_rarch->video_driver_frame_count % fps_update_interval) == 0)
+      if ((runloop_state.frame_count % fps_update_interval) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time,
                fps_update_interval);
@@ -31807,7 +31790,7 @@ static void video_driver_frame(const void *data, unsigned width,
    {
       audio_statistics_t audio_stats;
       double stddev                          = 0.0;
-      struct retro_system_av_info *av_info   = &p_rarch->video_driver_av_info;
+      struct retro_system_av_info *av_info   = &runloop_state.av_info;
       unsigned red                           = 255;
       unsigned green                         = 255;
       unsigned blue                          = 255;
@@ -31843,7 +31826,7 @@ static void video_driver_frame(const void *data, unsigned width,
             last_fps,
             frame_time / 1000.0f,
             100.0f * stddev,
-            p_rarch->video_driver_frame_count,
+            runloop_state.frame_count,
             video_info.width,
             video_info.height,
             video_info.refresh_rate,
@@ -31866,11 +31849,11 @@ static void video_driver_frame(const void *data, unsigned width,
    if (p_rarch->current_video && p_rarch->current_video->frame)
       p_rarch->video_driver_active = p_rarch->current_video->frame(
             p_rarch->video_driver_data, data, width, height,
-            p_rarch->video_driver_frame_count, (unsigned)pitch,
+            runloop_state.frame_count, (unsigned)pitch,
             video_info.menu_screensaver_active ? "" : video_driver_msg,
             &video_info);
 
-   p_rarch->video_driver_frame_count++;
+   runloop_state.frame_count++;
 
    /* Display the status text, with a higher priority. */
    if (  (   video_info.fps_show
@@ -33005,7 +32988,7 @@ static void driver_adjust_system_rates(
       bool video_adaptive_vsync,
       unsigned video_swap_interval)
 {
-   struct retro_system_av_info *av_info   = &p_rarch->video_driver_av_info;
+   struct retro_system_av_info *av_info   = &runloop_state.av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    double input_sample_rate               = info->sample_rate;
@@ -33103,14 +33086,14 @@ void driver_set_nonblock_state(void)
       }
    }
 
-   if (audio_driver_active && p_rarch->audio_driver_context_audio_data)
+   if (audio_driver_active && runloop_state.audio_context_audio_data)
       p_rarch->current_audio->set_nonblock_state(
-            p_rarch->audio_driver_context_audio_data,
+            runloop_state.audio_context_audio_data,
             audio_sync ? enable : true);
 
-   p_rarch->audio_driver_chunk_size = enable
-      ? p_rarch->audio_driver_chunk_nonblock_size
-      : p_rarch->audio_driver_chunk_block_size;
+   runloop_state.audio_chunk_size = enable
+      ? runloop_state.audio_chunk_nonblock_size
+      : runloop_state.audio_chunk_block_size;
 }
 
 /**
@@ -33159,7 +33142,7 @@ static void drivers_init(struct rarch_state *p_rarch,
       struct retro_hw_render_callback *hwr   =
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch);
 
-      p_rarch->video_driver_frame_time_count = 0;
+      runloop_state.frame_time_count = 0;
 
       video_driver_lock_new(p_rarch);
 #ifdef HAVE_VIDEO_FILTER
@@ -33184,10 +33167,10 @@ static void drivers_init(struct rarch_state *p_rarch,
             p_rarch->audio_callback.callback != NULL);
       if (  p_rarch->current_audio &&
             p_rarch->current_audio->device_list_new &&
-            p_rarch->audio_driver_context_audio_data)
+            runloop_state.audio_context_audio_data)
          p_rarch->audio_driver_devices_list = (struct string_list*)
             p_rarch->current_audio->device_list_new(
-                  p_rarch->audio_driver_context_audio_data);
+                  runloop_state.audio_context_audio_data);
    }
 
    if (flags & DRIVER_CAMERA_MASK)
@@ -33409,7 +33392,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
       p_rarch->current_input_data = NULL;
 
    if ((flags & DRIVER_AUDIO_MASK))
-      p_rarch->audio_driver_context_audio_data = NULL;
+      runloop_state.audio_context_audio_data = NULL;
 
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_free(p_rarch);
@@ -34114,7 +34097,7 @@ static void do_runahead(
 #else
    const bool have_dynamic = false;
 #endif
-   uint64_t frame_count    = p_rarch->video_driver_frame_count;
+   uint64_t frame_count    = runloop_state.frame_count;
 
    if (runahead_count <= 0 || !p_rarch->runahead_available)
       goto force_input_dirty;
@@ -34131,10 +34114,10 @@ static void do_runahead(
 
    /* Check for GUI */
    /* Hack: If we were in the GUI, force a resync. */
-   if (frame_count != p_rarch->runahead_last_frame_count + 1)
+   if (frame_count != runloop_state.last_frame_count_runahead + 1)
       p_rarch->runahead_force_input_dirty = true;
 
-   p_rarch->runahead_last_frame_count     = frame_count;
+   runloop_state.last_frame_count_runahead     = frame_count;
 
    if (     !use_secondary
          || !have_dynamic
@@ -34249,7 +34232,7 @@ static retro_time_t rarch_core_runtime_tick(
       retro_time_t current_time)
 {
    retro_time_t frame_time              =
-      (1.0 / p_rarch->video_driver_av_info.timing.fps) * 1000000;
+      (1.0 / runloop_state.av_info.timing.fps) * 1000000;
    bool runloop_slowmotion              = runloop_state.slowmotion;
    bool runloop_fastmotion              = runloop_state.fastmotion;
 
@@ -37498,7 +37481,7 @@ static enum runloop_state runloop_check_state(
          application->process_events();
    }
 
-   frame_count = p_rarch->video_driver_frame_count;
+   frame_count = runloop_state.frame_count;
    is_alive    = p_rarch->current_video
       ? p_rarch->current_video->alive(p_rarch->video_driver_data)
       : true;
@@ -38157,7 +38140,7 @@ static enum runloop_state runloop_check_state(
           * fast-forward off, if required */
          if (!runloop_state.fastmotion &&
              settings->bools.frame_time_counter_reset_after_fastforwarding)
-            p_rarch->video_driver_frame_time_count = 0;
+            runloop_state.frame_time_count = 0;
       }
 
       old_button_state                  = new_button_state;
@@ -38490,21 +38473,21 @@ int runloop_iterate(void)
       unsigned audio_buf_occupancy = 0;
       bool audio_buf_underrun      = false;
 
-      if (!(runloop_state.paused       ||
-            !p_rarch->audio_driver_active ||
-            !p_rarch->audio_driver_output_samples_buf) &&
-          p_rarch->current_audio->write_avail &&
-          p_rarch->audio_driver_context_audio_data &&
-          p_rarch->audio_driver_buffer_size)
+      if (!(runloop_state.paused                     ||
+            !p_rarch->audio_driver_active            ||
+            !runloop_state.audio_output_samples_buf) &&
+          p_rarch->current_audio->write_avail        &&
+          runloop_state.audio_context_audio_data     &&
+          runloop_state.audio_buffer_size)
       {
          size_t audio_buf_avail;
 
          if ((audio_buf_avail = p_rarch->current_audio->write_avail(
-               p_rarch->audio_driver_context_audio_data)) > p_rarch->audio_driver_buffer_size)
-            audio_buf_avail = p_rarch->audio_driver_buffer_size;
+               runloop_state.audio_context_audio_data)) > runloop_state.audio_buffer_size)
+            audio_buf_avail = runloop_state.audio_buffer_size;
 
          audio_buf_occupancy = (unsigned)(100 - (audio_buf_avail * 100) /
-               p_rarch->audio_driver_buffer_size);
+               runloop_state.audio_buffer_size);
 
          /* Elsewhere, we standardise on a 'low water mark'
           * of 25% of the total audio buffer size - use
@@ -38526,7 +38509,7 @@ int runloop_iterate(void)
             settings, current_time))
    {
       case RUNLOOP_STATE_QUIT:
-         p_rarch->frame_limit_last_time = 0.0;
+         runloop_state.frame_limit_last_time = 0.0;
          runloop_state.core_running  = false;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
@@ -38724,11 +38707,11 @@ end:
          {
             /* Nonblocking audio */
             if (p_rarch->audio_driver_active &&
-                  p_rarch->audio_driver_context_audio_data)
+                  runloop_state.audio_context_audio_data)
                p_rarch->current_audio->set_nonblock_state(
-                     p_rarch->audio_driver_context_audio_data, true);
-            p_rarch->audio_driver_chunk_size =
-               p_rarch->audio_driver_chunk_nonblock_size;
+                     runloop_state.audio_context_audio_data, true);
+            runloop_state.audio_chunk_size =
+               runloop_state.audio_chunk_nonblock_size;
          }
 
          p_rarch->fastforward_after_frames++;
@@ -38737,31 +38720,31 @@ end:
          {
             /* Blocking audio */
             if (p_rarch->audio_driver_active &&
-                  p_rarch->audio_driver_context_audio_data)
+                  runloop_state.audio_context_audio_data)
                p_rarch->current_audio->set_nonblock_state(
-                     p_rarch->audio_driver_context_audio_data,
+                     runloop_state.audio_context_audio_data,
                      audio_sync ? false : true);
 
-            p_rarch->audio_driver_chunk_size  =
-               p_rarch->audio_driver_chunk_block_size;
+            runloop_state.audio_chunk_size  =
+               runloop_state.audio_chunk_block_size;
             p_rarch->fastforward_after_frames = 0;
          }
       }
 
       if (runloop_state.fastmotion)
-         retroarch_set_frame_limit(p_rarch,
+         runloop_state.frame_limit_minimum_time = runloop_set_frame_limit( 
                runloop_get_fastforward_ratio(
                      settings, &runloop_state));
       else
-         retroarch_set_frame_limit(p_rarch, 1.0f);
+         runloop_state.frame_limit_minimum_time = runloop_set_frame_limit(1.0f);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
-   if (p_rarch->frame_limit_minimum_time)
+   if (runloop_state.frame_limit_minimum_time)
    {
       const retro_time_t end_frame_time = cpu_features_get_time_usec();
       const retro_time_t to_sleep_ms = (
-            (p_rarch->frame_limit_last_time + p_rarch->frame_limit_minimum_time)
+            (runloop_state.frame_limit_last_time + runloop_state.frame_limit_minimum_time)
             - end_frame_time) / 1000;
 
       if (to_sleep_ms > 0)
@@ -38769,7 +38752,7 @@ end:
          unsigned               sleep_ms = (unsigned)to_sleep_ms;
 
          /* Combat jitter a bit. */
-         p_rarch->frame_limit_last_time += p_rarch->frame_limit_minimum_time;
+         runloop_state.frame_limit_last_time += runloop_state.frame_limit_minimum_time;
 
          if (sleep_ms > 0)
          {
@@ -38782,7 +38765,7 @@ end:
          return 1;
       }
 
-      p_rarch->frame_limit_last_time = end_frame_time;
+      runloop_state.frame_limit_last_time = end_frame_time;
    }
 
    return 0;
@@ -39335,7 +39318,7 @@ static bool core_load(
       return false;
 
    p_rarch->current_core.retro_get_system_av_info(
-         &p_rarch->video_driver_av_info);
+         &runloop_state.av_info);
 
    return true;
 }

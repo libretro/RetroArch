@@ -1663,13 +1663,35 @@ typedef struct discord_state discord_state_t;
 
 struct runloop
 { 
+   struct retro_system_av_info av_info; /* double alignment */
+
+   retro_time_t frame_limit_minimum_time;
+   retro_time_t frame_limit_last_time;
+   retro_time_t frame_time_samples[
+      MEASURE_FRAME_TIME_SAMPLES_COUNT];
+
    retro_usec_t frame_time_last;        /* int64_t alignment */
 
-   msg_queue_t msg_queue;                        /* ptr alignment */
+   uint64_t frame_time_count;
+   uint64_t frame_count;
+#ifdef HAVE_RUNAHEAD
+   uint64_t last_frame_count_runahead;
+#endif
+
+   uint64_t free_audio_samples_count;
+
+   float   *audio_output_samples_buf;
+   float   *audio_input_data;
+
+   int16_t *audio_output_samples_conv_buf;
+#ifdef HAVE_REWIND
+   int16_t *audio_rewind_buf;
+#endif
+
+   msg_queue_t msg_queue;               /* ptr alignment */
 #ifdef HAVE_THREADS
    slock_t *msg_queue_lock;
 #endif
-   size_t msg_queue_size;
 
    core_option_manager_t *core_options;
    retro_keyboard_event_t key_event;             /* ptr alignment */
@@ -1678,9 +1700,25 @@ struct runloop
    rarch_system_info_t system;                   /* ptr alignment */
    struct retro_frame_time_callback frame_time;  /* ptr alignment */
    struct retro_audio_buffer_status_callback audio_buffer_status; /* ptr alignment */
+
+   void *audio_context_audio_data;
+
+#ifdef HAVE_REWIND
+   size_t audio_rewind_ptr;
+   size_t audio_rewind_size;
+#endif
+   size_t audio_buffer_size;
+   size_t audio_data_ptr;
+   size_t audio_chunk_size;
+   size_t audio_chunk_nonblock_size;
+   size_t audio_chunk_block_size;
+   size_t msg_queue_size;
+
    unsigned pending_windowed_scale;
    unsigned max_frames;
    unsigned audio_latency;
+   unsigned free_audio_samples_buf[
+      AUDIO_BUFFER_FREE_SAMPLES_COUNT];
 
    struct retro_fastforwarding_override fastmotion_override; /* float alignment */
 
@@ -1715,15 +1753,10 @@ struct rarch_state
 {
    double audio_source_ratio_original;
    double audio_source_ratio_current;
-   struct retro_system_av_info video_driver_av_info; /* double alignment */
    videocrt_switch_t crt_switch_st;                  /* double alignment */
 
-   retro_time_t frame_limit_minimum_time;
-   retro_time_t frame_limit_last_time;
    retro_time_t libretro_core_runtime_last;
    retro_time_t libretro_core_runtime_usec;
-   retro_time_t video_driver_frame_time_samples[
-      MEASURE_FRAME_TIME_SAMPLES_COUNT];
    struct global              g_extern;         /* retro_time_t alignment */
 #ifdef HAVE_MENU
    menu_input_t menu_input_state;               /* retro_time_t alignment */
@@ -1753,14 +1786,6 @@ struct rarch_state
 #endif
 #endif
 
-   uint64_t audio_driver_free_samples_count;
-
-#ifdef HAVE_RUNAHEAD
-   uint64_t runahead_last_frame_count;
-#endif
-
-   uint64_t video_driver_frame_time_count;
-   uint64_t video_driver_frame_count;
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
    gfx_animation_t anim;                      /* uint64_t alignment */
    gfx_thumbnail_state_t gfx_thumb_state;     /* uint64_t alignment */
@@ -1777,7 +1802,6 @@ struct rarch_state
    uint8_t *midi_drv_input_buffer;
    uint8_t *midi_drv_output_buffer;
    bool    *load_no_content_hook;
-   float   *audio_driver_output_samples_buf;
    char    *osk_grid[45];
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
@@ -1843,11 +1867,6 @@ struct rarch_state
 
    void *video_context_data;
 
-#ifdef HAVE_REWIND
-   int16_t *audio_driver_rewind_buf;
-#endif
-   int16_t *audio_driver_output_samples_conv_buf;
-
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *audio_driver_dsp;
 #endif
@@ -1855,7 +1874,6 @@ struct rarch_state
 
    void *audio_driver_resampler_data;
    const audio_driver_t *current_audio;
-   void *audio_driver_context_audio_data;
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
 #endif
@@ -1970,17 +1988,6 @@ struct rarch_state
 
    size_t frame_cache_pitch;
 
-   size_t audio_driver_chunk_size;
-   size_t audio_driver_chunk_nonblock_size;
-   size_t audio_driver_chunk_block_size;
-
-#ifdef HAVE_REWIND
-   size_t audio_driver_rewind_ptr;
-   size_t audio_driver_rewind_size;
-#endif
-   size_t audio_driver_buffer_size;
-   size_t audio_driver_data_ptr;
-
 #ifdef HAVE_RUNAHEAD
    size_t runahead_save_state_size;
 #endif
@@ -2051,12 +2058,9 @@ struct rarch_state
    unsigned server_port_deferred;
 #endif
 
-   unsigned audio_driver_free_samples_buf[
-      AUDIO_BUFFER_FREE_SAMPLES_COUNT];
    unsigned perf_ptr_rarch;
    unsigned perf_ptr_libretro;
 
-   float *audio_driver_input_data;
    float video_driver_core_hz;
    float video_driver_aspect_ratio;
 
