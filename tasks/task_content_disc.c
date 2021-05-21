@@ -38,10 +38,6 @@
 #endif
 #endif
 
-#ifdef __WINRT__
-#include <uwp/uwp_func.h>
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -59,9 +55,7 @@
 
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
-#include <retro_assert.h>
 
-#include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #include "task_content.h"
