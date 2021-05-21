@@ -330,7 +330,6 @@ static void content_file_set_info_path(
    bool path_is_inside_archive;
 
    content_info->path  = NULL;
-   *path_is_compressed = false;
 
    if (string_is_empty(content_path))
       return;
@@ -907,6 +906,7 @@ static bool content_load(content_ctx_info_t *info,
    }
 
 #ifdef HAVE_GFX_WIDGETS
+#ifdef HAVE_CONFIGFILE
    /* If retroarch_main_init() returned true, we
     * can safely trigger a load content animation */
    if (gfx_widgets_ready())
@@ -914,16 +914,12 @@ static bool content_load(content_ctx_info_t *info,
       /* Note: Have to read settings value here
        * (It will be invalid if we try to read
        *  it earlier...) */
-#ifdef HAVE_CONFIGFILE
       settings_t *settings              = config_get_ptr();
       bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
-#else
-      bool show_load_content_animation  = false;
-#endif
-
       if (show_load_content_animation)
          gfx_widget_start_load_content_animation();
    }
+#endif
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
