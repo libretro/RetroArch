@@ -3176,37 +3176,61 @@ int menu_entries_get_core_title(char *s, size_t len)
       ? system->library_name
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
    const char *core_version            = (system && system->library_version) ? system->library_version : "";
-#if _MSC_VER == 1200
-   strcpy_literal(s, PACKAGE_VERSION " msvc6" " - ");
-#elif _MSC_VER == 1300
-   strcpy_literal(s, PACKAGE_VERSION " msvc2002" " - ");
-#elif _MSC_VER == 1310
-   strcpy_literal(s, PACKAGE_VERSION " msvc2003" " - ");
-#elif _MSC_VER == 1400
-   strcpy_literal(s, PACKAGE_VERSION " msvc2005" " - ");
-#elif _MSC_VER == 1500
-   strcpy_literal(s, PACKAGE_VERSION " msvc2008" " - ");
-#elif _MSC_VER == 1600
-   strcpy_literal(s, PACKAGE_VERSION " msvc2010" " - ");
-#elif _MSC_VER == 1700
-   strcpy_literal(s, PACKAGE_VERSION " msvc2012" " - ");
-#elif _MSC_VER == 1800
-   strcpy_literal(s, PACKAGE_VERSION " msvc2013" " - ");
-#elif _MSC_VER == 1900
-   strcpy_literal(s, PACKAGE_VERSION " msvc2015" " - ");
-#elif _MSC_VER >= 1910 && _MSC_VER < 1920
-   strcpy_literal(s, PACKAGE_VERSION " msvc2017" " - ");
-#elif _MSC_VER >= 1920 && _MSC_VER < 2000
-   strcpy_literal(s, PACKAGE_VERSION " msvc2019" " - ");
-#else
-   strcpy_literal(s, PACKAGE_VERSION " - ");
-#endif
-   strlcat(s, core_name, len);
    if (!string_is_empty(core_version))
    {
-      strlcat(s, " (", len);
-      strlcat(s, core_version, len);
-      strlcat(s, ")", len);
+#if _MSC_VER == 1200
+      snprintf(s, len, PACKAGE_VERSION " msvc6"    " - %s (%s)", core_name, core_version);
+#elif _MSC_VER == 1300
+      snprintf(s, len, PACKAGE_VERSION " msvc2002" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER == 1310
+      snprintf(s, len, PACKAGE_VERSION " msvc2003" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER == 1400
+      snprintf(s, len, PACKAGE_VERSION " msvc2005" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER == 1500
+      snprintf(s, len, PACKAGE_VERSION " msvc2008" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER == 1600
+      snprintf(s, len, PACKAGE_VERSION " msvc2010" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER == 1700
+      snprintf(s, len, PACKAGE_VERSION " msvc2012" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER == 1800
+      snprintf(s, len, PACKAGE_VERSION " msvc2013" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER == 1900
+      snprintf(s, len, PACKAGE_VERSION " msvc2015" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER >= 1910 && _MSC_VER < 1920
+      snprintf(s, len, PACKAGE_VERSION " msvc2017" " - %s (%s)", core_name, core_version);
+#elif _MSC_VER >= 1920 && _MSC_VER < 2000
+      snprintf(s, len, PACKAGE_VERSION " msvc2019" " - %s (%s)", core_name, core_version);
+#else
+      snprintf(s, len, PACKAGE_VERSION             " - %s (%s)", core_name, core_version);
+#endif
+   }
+   else
+   {
+#if _MSC_VER == 1200
+      snprintf(s, len, PACKAGE_VERSION " msvc6" " - %s", core_name);
+#elif _MSC_VER == 1300
+      snprintf(s, len, PACKAGE_VERSION " msvc2002" " - %s", core_name);
+#elif _MSC_VER == 1310
+      snprintf(s, len, PACKAGE_VERSION " msvc2003" " - %s", core_name);
+#elif _MSC_VER == 1400
+      snprintf(s, len, PACKAGE_VERSION " msvc2005" " - %s", core_name);
+#elif _MSC_VER == 1500
+      snprintf(s, len, PACKAGE_VERSION " msvc2008" " - %s", core_name);
+#elif _MSC_VER == 1600
+      snprintf(s, len, PACKAGE_VERSION " msvc2010" " - %s", core_name);
+#elif _MSC_VER == 1700
+      snprintf(s, len, PACKAGE_VERSION " msvc2012" " - %s", core_name);
+#elif _MSC_VER == 1800
+      snprintf(s, len, PACKAGE_VERSION " msvc2013" " - %s", core_name);
+#elif _MSC_VER == 1900
+      snprintf(s, len, PACKAGE_VERSION " msvc2015" " - %s", core_name);
+#elif _MSC_VER >= 1910 && _MSC_VER < 1920
+      snprintf(s, len, PACKAGE_VERSION " msvc2017" " - %s", core_name);
+#elif _MSC_VER >= 1920 && _MSC_VER < 2000
+      snprintf(s, len, PACKAGE_VERSION " msvc2019" " - %s", core_name);
+#else
+      snprintf(s, len, PACKAGE_VERSION " - %s", core_name);
+#endif
    }
 
    return 0;
