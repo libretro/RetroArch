@@ -1,10 +1,13 @@
 # Future
+- CONTENT LOADING/FILE IO: Prevent unnecessary extraction (to disk) of compressed content files when need_fullpath is false
 - CORE INFO/FILE IO: Enable core info cache by default now for all platforms
+- FILE IO/COMPRESSED: Ability to load content inside ZIP files directly into RAM
 - LAKKA: Add brightness restore hook
 - LOCALIZATION: Fetch translations from Crowdin
 - MENU/OZONE: Added simple playlist entry enumeration
 - MENU/XMB: Fix display of 'Maximum Users' menu entry dropdown list
 - PS3/PSL1GHT: Joypad driver works again
+- PSTV: Fix Vita input driver for PSTV
 - RPNG: Fix some memory corruption if processing broken input PNG file
 - SECURITY: Fix CVE-2021-28927
 
