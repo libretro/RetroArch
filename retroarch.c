@@ -29529,8 +29529,6 @@ void audio_set_float(enum audio_action action, float val)
 
 float *audio_get_float_ptr(enum audio_action action)
 {
-   struct rarch_state *p_rarch     = &rarch_st;
-
    switch (action)
    {
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
