@@ -10322,10 +10322,10 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
 bool menu_input_dialog_get_display_kb(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_LIBNX
    SwkbdConfig kbd;
    Result rc;
+   struct rarch_state *p_rarch = &rarch_st;
    /* Indicates that we are "typing" from the swkbd
     * result to RetroArch with repeated calls to input_keyboard_event
     * This prevents input_keyboard_event from calling back
@@ -10411,7 +10411,6 @@ bool menu_input_dialog_get_display_kb(void)
 /* Checks if the menu is still running */
 bool menu_driver_is_alive(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    return runloop_state.menu_driver_alive;
 }
 #endif
@@ -18866,9 +18865,7 @@ static bool init_libretro_symbols(
 
 bool libretro_get_shared_context(void)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
-   bool core_set_shared_context = runloop_state.core_set_shared_context;
-   return core_set_shared_context;
+   return runloop_state.core_set_shared_context;
 }
 
 /**
@@ -19294,7 +19291,6 @@ end:
 static bool rarch_environment_secondary_core_hook(
       unsigned cmd, void *data)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    bool                 result = rarch_environment_cb(cmd, data);
 
    if (runloop_state.has_variable_update)
@@ -19765,13 +19761,11 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 
 void ui_companion_set_foreground(unsigned enable)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
    runloop_state.main_ui_companion_is_on_foreground = enable;
 }
 
 bool ui_companion_is_on_foreground(void)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
    return runloop_state.main_ui_companion_is_on_foreground;
 }
 
@@ -20206,19 +20200,16 @@ static bool recording_deinit(struct rarch_state *p_rarch)
 
 bool recording_is_enabled(void)
 {
-   struct rarch_state *p_rarch          = &rarch_st;
    return runloop_state.recording_enable;
 }
 
 bool streaming_is_enabled(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    return runloop_state.streaming_enable;
 }
 
 void streaming_set_state(bool state)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    runloop_state.streaming_enable = state;
 }
 
@@ -25120,13 +25111,11 @@ static bool input_driver_find_driver(
 
 void input_driver_set_nonblock_state(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    runloop_state.input_driver_nonblock_state = true;
 }
 
 void input_driver_unset_nonblock_state(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    runloop_state.input_driver_nonblock_state = false;
 }
 
@@ -25350,7 +25339,6 @@ bool input_key_pressed(int key, bool keyboard_pressed)
 
 bool input_mouse_grabbed(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    return runloop_state.input_driver_grab_mouse_state;
 }
 
@@ -27619,13 +27607,11 @@ bool midi_driver_set_output(const char *output)
 
 static bool midi_driver_input_enabled(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    return runloop_state.midi_drv_input_enabled;
 }
 
 static bool midi_driver_output_enabled(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    return runloop_state.midi_drv_output_enabled;
 }
 
@@ -29749,9 +29735,6 @@ const char* config_get_video_driver_options(void)
 
 bool video_driver_is_threaded(void)
 {
-#ifdef HAVE_THREADS
-   struct rarch_state *p_rarch = &rarch_st;
-#endif
    return VIDEO_DRIVER_IS_THREADED_INTERNAL();
 }
 
@@ -29767,7 +29750,6 @@ bool *video_driver_get_threaded(void)
 
 void video_driver_set_threaded(bool val)
 {
-   struct rarch_state *p_rarch = &rarch_st;
 #if defined(__MACH__) && defined(__APPLE__)
    /* TODO/FIXME - force threaded video to disabled on Apple for now
     * until NSWindow/UIWindow concurrency issues are taken care of */
@@ -30774,7 +30756,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    retro_time_t avg            = 0;
    retro_time_t accum_var      = 0;
    unsigned samples            = 0;
-   struct rarch_state *p_rarch = &rarch_st;
 
 #ifdef HAVE_THREADS
    if (VIDEO_DRIVER_IS_THREADED_INTERNAL())
@@ -31367,13 +31348,11 @@ const struct retro_hw_render_context_negotiation_interface *
 
 bool video_driver_is_video_cache_context(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    return runloop_state.video_driver_cache_context;
 }
 
 void video_driver_set_video_cache_context_ack(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    runloop_state.video_driver_cache_context_ack = true;
 }
 
@@ -32195,8 +32174,6 @@ bool video_driver_has_focus(void)
 
 void video_driver_get_window_title(char *buf, unsigned len)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
-
    if (buf && runloop_state.video_driver_window_title_update)
    {
       struct rarch_state *p_rarch = &rarch_st;
@@ -33841,7 +33818,6 @@ static void remove_input_state_hook(struct rarch_state *p_rarch)
 
 static void *runahead_save_state_alloc(void)
 {
-   struct rarch_state *p_rarch           = &rarch_st;
    retro_ctx_serialize_info_t *savestate = (retro_ctx_serialize_info_t*)
       malloc(sizeof(retro_ctx_serialize_info_t));
 
