@@ -13401,7 +13401,7 @@ static void runahead_clear_variables(struct rarch_state *p_rarch)
 {
    p_rarch->runahead_save_state_size          = 0;
    p_rarch->runahead_save_state_size_known    = false;
-   p_rarch->runahead_video_driver_is_active   = true;
+   runloop_state.runahead_video_active        = true;
    p_rarch->runahead_available                = true;
    p_rarch->runahead_secondary_core_available = true;
    p_rarch->runahead_force_input_dirty        = true;
@@ -13949,14 +13949,14 @@ bool command_event(enum event_command cmd, void *data)
                msg_hash_to_str(MSG_AUDIO_MUTED):
                msg_hash_to_str(MSG_AUDIO_UNMUTED);
 
-            p_rarch->audio_driver_mute_enable  =
-               !p_rarch->audio_driver_mute_enable;
+            runloop_state.audio_mute_enable    =
+               !runloop_state.audio_mute_enable;
 
 #if defined(HAVE_GFX_WIDGETS)
             if (p_rarch->widgets_active)
                gfx_widget_volume_update_and_show(
                      settings->floats.audio_volume,
-                     p_rarch->audio_driver_mute_enable);
+                     runloop_state.audio_mute_enable);
             else
 #endif
                runloop_msg_queue_push(msg, 1, 180, true, NULL,
@@ -14994,7 +14994,7 @@ bool command_event(enum event_command cmd, void *data)
 #else
                false,
 #endif
-               p_rarch->audio_driver_mute_enable);
+               runloop_state.audio_mute_enable);
          break;
       case CMD_EVENT_VOLUME_DOWN:
          command_event_set_volume(settings, -0.5f,
@@ -15003,7 +15003,7 @@ bool command_event(enum event_command cmd, void *data)
 #else
                false,
 #endif
-               p_rarch->audio_driver_mute_enable
+               runloop_state.audio_mute_enable
                );
          break;
       case CMD_EVENT_MIXER_VOLUME_UP:
@@ -15450,7 +15450,7 @@ int rarch_main(int argc, char *argv[], void *data)
    p_rarch->shader_presets_need_reload                           = true;
 #endif
 #ifdef HAVE_RUNAHEAD
-   p_rarch->runahead_video_driver_is_active                      = true;
+   runloop_state.runahead_video_active                           = true;
    p_rarch->runahead_available                                   = true;
    p_rarch->runahead_secondary_core_available                    = true;
    p_rarch->runahead_force_input_dirty                           = true;
@@ -15488,8 +15488,8 @@ int rarch_main(int argc, char *argv[], void *data)
    sthread_tls_create(&p_rarch->rarch_tls);
    sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
 #endif
-   p_rarch->video_driver_active = true;
-   p_rarch->audio_driver_active = true;
+   runloop_state.video_active        = true;
+   runloop_state.audio_active        = true;
 
    {
       uint8_t i;
@@ -18337,10 +18337,10 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
       {
          int result = 0;
-         if ( !p_rarch->audio_suspended &&
-               p_rarch->audio_driver_active)
+         if ( !runloop_state.audio_suspended &&
+               runloop_state.audio_active)
             result |= 2;
-         if (p_rarch->video_driver_active
+         if (runloop_state.video_active
                && !(p_rarch->current_video->frame == video_null.frame))
             result |= 1;
 #ifdef HAVE_RUNAHEAD
@@ -27880,7 +27880,7 @@ static void audio_driver_mixer_deinit(struct rarch_state *p_rarch)
 {
    unsigned i;
 
-   p_rarch->audio_mixer_active = false;
+   runloop_state.audio_mixer_active = false;
 
    for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
    {
@@ -28002,10 +28002,10 @@ const char *config_get_audio_driver_options(void)
 
 static void audio_driver_deinit_resampler(struct rarch_state *p_rarch)
 {
-   if (p_rarch->audio_driver_resampler && p_rarch->audio_driver_resampler_data)
-      p_rarch->audio_driver_resampler->free(p_rarch->audio_driver_resampler_data);
-   p_rarch->audio_driver_resampler      = NULL;
-   p_rarch->audio_driver_resampler_data = NULL;
+   if (p_rarch->audio_driver_resampler && runloop_state.audio_resampler_data)
+      p_rarch->audio_driver_resampler->free(runloop_state.audio_resampler_data);
+   p_rarch->audio_driver_resampler           = NULL;
+   runloop_state.audio_resampler_data        = NULL;
 }
 
 
@@ -28038,7 +28038,7 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch,
 
    if (!audio_enable)
    {
-      p_rarch->audio_driver_active          = false;
+      runloop_state.audio_active            = false;
       return false;
    }
 
@@ -28176,7 +28176,7 @@ static bool audio_driver_init_internal(
 
    if (!audio_enable)
    {
-      p_rarch->audio_driver_active = false;
+      runloop_state.audio_active                 = false;
       return false;
    }
 
@@ -28186,7 +28186,7 @@ static bool audio_driver_init_internal(
    if (!p_rarch->current_audio || !p_rarch->current_audio->init)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
-      p_rarch->audio_driver_active = false;
+      runloop_state.audio_active                 = false;
       return false;
    }
 
@@ -28226,18 +28226,18 @@ static bool audio_driver_init_internal(
    if (!runloop_state.audio_context_audio_data)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
-      p_rarch->audio_driver_active    = false;
+      runloop_state.audio_active      = false;
    }
 
-   p_rarch->audio_driver_use_float    = false;
-   if (     p_rarch->audio_driver_active
+   runloop_state.audio_use_float      = false;
+   if (     runloop_state.audio_active
          && p_rarch->current_audio->use_float(
             runloop_state.audio_context_audio_data))
-      p_rarch->audio_driver_use_float = true;
+      runloop_state.audio_use_float   = true;
 
-   if (!audio_sync && p_rarch->audio_driver_active)
+   if (!audio_sync && runloop_state.audio_active)
    {
-      if (p_rarch->audio_driver_active &&
+      if (runloop_state.audio_active &&
             runloop_state.audio_context_audio_data)
          p_rarch->current_audio->set_nonblock_state(
                runloop_state.audio_context_audio_data, true);
@@ -28246,36 +28246,37 @@ static bool audio_driver_init_internal(
          runloop_state.audio_chunk_nonblock_size;
    }
 
-   if (p_rarch->audio_driver_input <= 0.0f)
+   if (runloop_state.audio_input_sample_rate <= 0.0f)
    {
       /* Should never happen. */
-      RARCH_WARN("[Audio]: Input rate is invalid (%.3f Hz)."
-            " Using output rate (%u Hz).\n",
-            p_rarch->audio_driver_input, settings->uints.audio_out_rate);
+      RARCH_WARN("[Audio]: Input samplerate is invalid (%.3f Hz)."
+            " Using output samplerate (%u Hz).\n",
+            runloop_state.audio_input_sample_rate,
+            settings->uints.audio_out_rate);
 
-      p_rarch->audio_driver_input = settings->uints.audio_out_rate;
+      runloop_state.audio_input_sample_rate = settings->uints.audio_out_rate;
    }
 
-   p_rarch->audio_source_ratio_original   =
-      p_rarch->audio_source_ratio_current =
-      (double)settings->uints.audio_out_rate / p_rarch->audio_driver_input;
+   runloop_state.audio_source_ratio_original   =
+      runloop_state.audio_source_ratio_current =
+      (double)settings->uints.audio_out_rate / runloop_state.audio_input_sample_rate;
 
    if (!retro_resampler_realloc(
-            &p_rarch->audio_driver_resampler_data,
+            &runloop_state.audio_resampler_data,
             &p_rarch->audio_driver_resampler,
             settings->arrays.audio_resampler,
             audio_driver_get_resampler_quality(settings),
-            p_rarch->audio_source_ratio_original))
+            runloop_state.audio_source_ratio_original))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             settings->arrays.audio_resampler);
-      p_rarch->audio_driver_active = false;
+      runloop_state.audio_active = false;
    }
 
    runloop_state.audio_data_ptr    = 0;
 
    retro_assert(settings->uints.audio_out_rate <
-         p_rarch->audio_driver_input * AUDIO_MAX_RATIO);
+         runloop_state.audio_input_sample_rate * AUDIO_MAX_RATIO);
 
    samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
 
@@ -28285,11 +28286,11 @@ static bool audio_driver_init_internal(
       goto error;
 
    runloop_state.audio_output_samples_buf   = (float*)samples_buf;
-   p_rarch->audio_driver_control            = false;
+   runloop_state.audio_control              = false;
 
    if (
-         !audio_cb_inited
-         && p_rarch->audio_driver_active
+           !audio_cb_inited
+         && runloop_state.audio_active
          && audio_rate_control
          )
    {
@@ -28300,7 +28301,7 @@ static bool audio_driver_init_internal(
          runloop_state.audio_buffer_size =
             p_rarch->current_audio->buffer_size(
                   runloop_state.audio_context_audio_data);
-         p_rarch->audio_driver_control     = true;
+         runloop_state.audio_control     = true;
       }
       else
          RARCH_WARN("[Audio]: Rate control was desired, but driver does not support needed features.\n");
@@ -28316,7 +28317,7 @@ static bool audio_driver_init_internal(
 
    /* Threaded driver is initially stopped. */
    if (
-         p_rarch->audio_driver_active
+            runloop_state.audio_active
          && audio_cb_inited
          )
       audio_driver_start(p_rarch,
@@ -28344,9 +28345,9 @@ static void audio_driver_flush(
       bool is_slowmotion, bool is_fastmotion)
 {
    struct resampler_data src_data;
-   float audio_volume_gain           = (p_rarch->audio_driver_mute_enable ||
+   float audio_volume_gain           = (runloop_state.audio_mute_enable ||
          (audio_fastforward_mute && is_fastmotion)) ?
-               0.0f : p_rarch->audio_driver_volume_gain;
+               0.0f : runloop_state.audio_volume_gain;
 
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
@@ -28382,7 +28383,7 @@ static void audio_driver_flush(
 
    src_data.data_out                 = runloop_state.audio_output_samples_buf;
 
-   if (p_rarch->audio_driver_control)
+   if (runloop_state.audio_control)
    {
       /* Readjust the audio input rate. */
       int      half_size           =
@@ -28392,16 +28393,17 @@ static void audio_driver_flush(
                runloop_state.audio_context_audio_data);
       int      delta_mid           = avail - half_size;
       double   direction           = (double)delta_mid / half_size;
-      double   adjust              = 1.0 +
-         p_rarch->audio_driver_rate_control_delta * direction;
+      double   adjust              = 1.0 
+         + runloop_state.audio_rate_control_delta
+         * direction;
       unsigned write_idx           =
          runloop_state.free_audio_samples_count++ &
          (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
 
       runloop_state.free_audio_samples_buf
-         [write_idx]                        = avail;
-      p_rarch->audio_source_ratio_current   =
-         p_rarch->audio_source_ratio_original * adjust;
+         [write_idx]                             = avail;
+      runloop_state.audio_source_ratio_current   =
+         runloop_state.audio_source_ratio_original * adjust;
 
 #if 0
       if (verbosity_is_enabled())
@@ -28410,13 +28412,13 @@ static void audio_driver_flush(
                (unsigned)(100 - (avail * 100) /
                   runloop_state.audio_buffer_size));
          RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
-               p_rarch->audio_source_ratio_current,
-               p_rarch->audio_source_ratio_original);
+               runloop_state.audio_source_ratio_current,
+               runloop_state.audio_source_ratio_original);
       }
 #endif
    }
 
-   src_data.ratio           = p_rarch->audio_source_ratio_current;
+   src_data.ratio           = runloop_state.audio_source_ratio_current;
 
    if (is_slowmotion)
       src_data.ratio       *= slowmotion_ratio;
@@ -28439,17 +28441,17 @@ static void audio_driver_flush(
     * and hope for the best... */
 
    p_rarch->audio_driver_resampler->process(
-         p_rarch->audio_driver_resampler_data, &src_data);
+         runloop_state.audio_resampler_data, &src_data);
 
 #ifdef HAVE_AUDIOMIXER
-   if (p_rarch->audio_mixer_active)
+   if (runloop_state.audio_mixer_active)
    {
       bool override                       = true;
       float mixer_gain                    = 0.0f;
-      bool audio_driver_mixer_mute_enable =
-         p_rarch->audio_driver_mixer_mute_enable;
+      bool audio_mixer_mute_enable        =
+         runloop_state.audio_mixer_mute_enable;
 
-      if (!audio_driver_mixer_mute_enable)
+      if (!audio_mixer_mute_enable)
       {
          if (p_rarch->audio_driver_mixer_volume_gain == 1.0f)
             override                      = false;
@@ -28466,7 +28468,7 @@ static void audio_driver_flush(
       const void *output_data = runloop_state.audio_output_samples_buf;
       unsigned output_frames  = (unsigned)src_data.output_frames;
 
-      if (p_rarch->audio_driver_use_float)
+      if (runloop_state.audio_use_float)
          output_frames       *= sizeof(float);
       else
       {
@@ -28480,7 +28482,7 @@ static void audio_driver_flush(
       if (p_rarch->current_audio->write(
                runloop_state.audio_context_audio_data,
                output_data, output_frames * 2) < 0)
-         p_rarch->audio_driver_active = false;
+         runloop_state.audio_active = false;
    }
 }
 
@@ -28494,7 +28496,7 @@ static void audio_driver_flush(
 static void audio_driver_sample(int16_t left, int16_t right)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (p_rarch->audio_suspended)
+   if (runloop_state.audio_suspended)
       return;
 
    runloop_state.audio_output_samples_conv_buf[runloop_state.audio_data_ptr++] = left;
@@ -28515,8 +28517,8 @@ static void audio_driver_sample(int16_t left, int16_t right)
       p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
    }
 
-   if (!(runloop_state.paused           ||
-		   !p_rarch->audio_driver_active     ||
+   if (!( runloop_state.paused           ||
+		   !runloop_state.audio_active     ||
 		   !runloop_state.audio_output_samples_buf))
       audio_driver_flush(
             p_rarch,
@@ -28540,8 +28542,8 @@ static void audio_driver_menu_sample(void)
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    bool check_flush                       = !(
-         runloop_state.paused           ||
-         !p_rarch->audio_driver_active     ||
+          runloop_state.paused           ||
+         !runloop_state.audio_active     ||
          !runloop_state.audio_output_samples_buf);
 
    while (sample_count > 1024)
@@ -28609,7 +28611,7 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
-   if (p_rarch->audio_suspended)
+   if (runloop_state.audio_suspended)
       return frames;
 
    if (  p_rarch->recording_data   &&
@@ -28626,8 +28628,8 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    }
 
    if (!(
-         runloop_state.paused           ||
-         !p_rarch->audio_driver_active     ||
+          runloop_state.paused           ||
+         !runloop_state.audio_active     ||
          !runloop_state.audio_output_samples_buf))
       audio_driver_flush(
             p_rarch,
@@ -28719,7 +28721,7 @@ bool audio_driver_dsp_filter_init(const char *device)
       return false;
 #endif
    audio_driver_dsp = retro_dsp_filter_new(
-         device, plugs, p_rarch->audio_driver_input);
+         device, plugs, runloop_state.audio_input_sample_rate);
    if (!audio_driver_dsp)
       return false;
 
@@ -29066,7 +29068,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          break;
    }
 
-   p_rarch->audio_mixer_active                         = true;
+   runloop_state.audio_mixer_active                    = true;
 
    p_rarch->audio_mixer_streams[free_slot].name        =
       !string_is_empty(params->basename) ? strdup(params->basename) : NULL;
@@ -29422,9 +29424,8 @@ bool audio_driver_has_callback(void)
 #ifdef HAVE_AUDIOMIXER
 bool audio_driver_mixer_toggle_mute(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->audio_driver_mixer_mute_enable  =
-      !p_rarch->audio_driver_mixer_mute_enable;
+   runloop_state.audio_mixer_mute_enable = 
+      !runloop_state.audio_mixer_mute_enable;
    return true;
 }
 #endif
@@ -29453,7 +29454,7 @@ static bool audio_driver_start(struct rarch_state *p_rarch,
 error:
    RARCH_ERR("%s\n",
          msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
-   p_rarch->audio_driver_active = false;
+   runloop_state.audio_active = false;
    return false;
 }
 
@@ -29489,8 +29490,8 @@ void audio_driver_frame_is_reverse(void)
    }
 
    if (!(
-          runloop_state.paused          ||
-         !p_rarch->audio_driver_active     ||
+          runloop_state.paused           ||
+         !runloop_state.audio_active     ||
          !runloop_state.audio_output_samples_buf))
       audio_driver_flush(
             p_rarch,
@@ -29512,7 +29513,7 @@ void audio_set_float(enum audio_action action, float val)
    switch (action)
    {
       case AUDIO_ACTION_VOLUME_GAIN:
-         p_rarch->audio_driver_volume_gain        = DB_TO_GAIN(val);
+         runloop_state.audio_volume_gain          = DB_TO_GAIN(val);
          break;
       case AUDIO_ACTION_MIXER_VOLUME_GAIN:
 #ifdef HAVE_AUDIOMIXER
@@ -29520,7 +29521,7 @@ void audio_set_float(enum audio_action action, float val)
 #endif
          break;
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
-         p_rarch->audio_driver_rate_control_delta = val;
+         runloop_state.audio_rate_control_delta = val;
          break;
       case AUDIO_ACTION_NONE:
       default:
@@ -29535,7 +29536,7 @@ float *audio_get_float_ptr(enum audio_action action)
    switch (action)
    {
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
-         return &p_rarch->audio_driver_rate_control_delta;
+         return &runloop_state.audio_rate_control_delta;
       case AUDIO_ACTION_NONE:
       default:
          break;
@@ -29546,18 +29547,16 @@ float *audio_get_float_ptr(enum audio_action action)
 
 bool *audio_get_bool_ptr(enum audio_action action)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    switch (action)
    {
       case AUDIO_ACTION_MIXER_MUTE_ENABLE:
 #ifdef HAVE_AUDIOMIXER
-         return &p_rarch->audio_driver_mixer_mute_enable;
+         return &runloop_state.audio_mixer_mute_enable;
 #else
          break;
 #endif
       case AUDIO_ACTION_MUTE_ENABLE:
-         return &p_rarch->audio_driver_mute_enable;
+         return &runloop_state.audio_mute_enable;
       case AUDIO_ACTION_NONE:
       default:
          break;
@@ -29733,8 +29732,7 @@ bool video_display_server_get_flags(gfx_ctx_flags_t *flags)
 
 bool video_driver_started_fullscreen(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->video_started_fullscreen;
+   return runloop_state.video_started_fullscreen;
 }
 
 /* Stub functions */
@@ -30407,7 +30405,7 @@ static bool video_driver_init_internal(
 #endif
    video.parent                      = 0;
 
-   p_rarch->video_started_fullscreen = video.fullscreen;
+   runloop_state.video_started_fullscreen = video.fullscreen;
 
    /* Reset video frame count */
    runloop_state.frame_count         = 0;
@@ -31511,7 +31509,7 @@ static void video_driver_frame(const void *data, unsigned width,
    const enum retro_pixel_format
       video_driver_pix_fmt      = p_rarch->video_driver_pix_fmt;
    bool runloop_idle            = runloop_state.idle;
-   bool video_driver_active     = p_rarch->video_driver_active;
+   bool video_driver_active     = runloop_state.video_active;
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active          = p_rarch->widgets_active;
 #endif
@@ -31847,7 +31845,7 @@ static void video_driver_frame(const void *data, unsigned width,
    }
 
    if (p_rarch->current_video && p_rarch->current_video->frame)
-      p_rarch->video_driver_active = p_rarch->current_video->frame(
+      runloop_state.video_active = p_rarch->current_video->frame(
             p_rarch->video_driver_data, data, width, height,
             runloop_state.frame_count, (unsigned)pitch,
             video_info.menu_screensaver_active ? "" : video_driver_msg,
@@ -32997,9 +32995,9 @@ static void driver_adjust_system_rates(
    if (input_sample_rate > 0.0)
    {
       if (vrr_runloop_enable)
-         p_rarch->audio_driver_input = input_sample_rate;
+         runloop_state.audio_input_sample_rate = input_sample_rate;
       else
-         p_rarch->audio_driver_input =
+         runloop_state.audio_input_sample_rate =
             audio_driver_monitor_adjust_system_rates(
                   input_sample_rate,
                   input_fps,
@@ -33008,7 +33006,7 @@ static void driver_adjust_system_rates(
                   audio_max_timing_skew);
 
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
-            p_rarch->audio_driver_input);
+            runloop_state.audio_input_sample_rate);
    }
 
    runloop_state.force_nonblock = false;
@@ -33067,8 +33065,8 @@ void driver_set_nonblock_state(void)
    bool video_vsync            = settings->bools.video_vsync;
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
    unsigned swap_interval      = settings->uints.video_swap_interval;
-   bool video_driver_active    = p_rarch->video_driver_active;
-   bool audio_driver_active    = p_rarch->audio_driver_active;
+   bool video_driver_active    = runloop_state.video_active;
+   bool audio_driver_active    = runloop_state.audio_active;
    bool runloop_force_nonblock = runloop_state.force_nonblock;
 
    /* Only apply non-block-state for video if we're using vsync. */
@@ -33422,7 +33420,7 @@ static void retroarch_deinit_drivers(
    video_display_server_destroy();
 
    p_rarch->video_driver_use_rgba                   = false;
-   p_rarch->video_driver_active                     = false;
+   runloop_state.video_active                       = false;
    p_rarch->video_driver_cache_context              = false;
    p_rarch->video_driver_cache_context_ack          = false;
    p_rarch->video_driver_record_gpu_buffer          = NULL;
@@ -33430,7 +33428,7 @@ static void retroarch_deinit_drivers(
    video_driver_set_cached_frame_ptr(NULL);
 
    /* Audio */
-   p_rarch->audio_driver_active                     = false;
+   runloop_state.audio_active                       = false;
    p_rarch->current_audio                           = NULL;
 
    /* Input */
@@ -33488,9 +33486,10 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             video_monitor_set_refresh_rate(*hz);
 
             /* Sets audio monitor rate to new value. */
-            p_rarch->audio_source_ratio_original   =
-            p_rarch->audio_source_ratio_current    = (double)audio_out_rate
-                                                     / p_rarch->audio_driver_input;
+            runloop_state.audio_source_ratio_original   =
+            runloop_state.audio_source_ratio_current    = 
+            (double)audio_out_rate
+            / runloop_state.audio_input_sample_rate;
 
             driver_adjust_system_rates(p_rarch,
                                        vrr_runloop_enable,
@@ -33974,8 +33973,7 @@ static bool runahead_create(struct rarch_state *p_rarch)
    p_rarch->request_fast_savestate          = false;
 
    runahead_save_state_list_init(p_rarch, info.size);
-   p_rarch->runahead_video_driver_is_active =
-      p_rarch->video_driver_active;
+   runloop_state.runahead_video_active      = runloop_state.video_active;
 
    if (  (p_rarch->runahead_save_state_size == 0) ||
          !p_rarch->runahead_save_state_size_known)
@@ -34132,8 +34130,8 @@ static void do_runahead(
 
          if (suspended_frame)
          {
-            p_rarch->audio_suspended     = true;
-            p_rarch->video_driver_active = false;
+            runloop_state.audio_suspended = true;
+            runloop_state.video_active    = false;
          }
 
          if (frame_number == 0)
@@ -34143,8 +34141,8 @@ static void do_runahead(
 
          if (suspended_frame)
          {
-            RUNAHEAD_RESUME_VIDEO(p_rarch);
-            p_rarch->audio_suspended     = false;
+            runloop_state.video_active     = runloop_state.runahead_video_active;
+            runloop_state.audio_suspended  = false;
          }
 
          if (frame_number == 0)
@@ -34178,14 +34176,14 @@ static void do_runahead(
       }
 
       /* run main core with video suspended */
-      p_rarch->video_driver_active     = false;
+      runloop_state.video_active = false;
       core_run();
-      RUNAHEAD_RESUME_VIDEO(p_rarch);
+      runloop_state.video_active = runloop_state.runahead_video_active;
 
       if (     p_rarch->input_is_dirty
             || p_rarch->runahead_force_input_dirty)
       {
-         p_rarch->input_is_dirty       = false;
+         p_rarch->input_is_dirty        = false;
 
          if (!runahead_save_state(p_rarch))
          {
@@ -34201,20 +34199,20 @@ static void do_runahead(
 
          for (frame_number = 0; frame_number < runahead_count - 1; frame_number++)
          {
-            p_rarch->video_driver_active = false;
-            p_rarch->audio_suspended     = true;
-            p_rarch->hard_disable_audio  = true;
+            runloop_state.video_active         = false;
+            runloop_state.audio_suspended      = true;
+            p_rarch->hard_disable_audio        = true;
             RUNAHEAD_RUN_SECONDARY(p_rarch);
-            p_rarch->hard_disable_audio  = false;
-            p_rarch->audio_suspended     = false;
-            RUNAHEAD_RESUME_VIDEO(p_rarch);
+            p_rarch->hard_disable_audio        = false;
+            runloop_state.audio_suspended      = false;
+            runloop_state.video_active         = runloop_state.runahead_video_active;
          }
       }
-      p_rarch->audio_suspended           = true;
-      p_rarch->hard_disable_audio        = true;
+      runloop_state.audio_suspended            = true;
+      p_rarch->hard_disable_audio              = true;
       RUNAHEAD_RUN_SECONDARY(p_rarch);
-      p_rarch->hard_disable_audio        = false;
-      p_rarch->audio_suspended           = false;
+      p_rarch->hard_disable_audio              = false;
+      runloop_state.audio_suspended            = false;
 #endif
    }
    p_rarch->runahead_force_input_dirty   = false;
@@ -35399,17 +35397,17 @@ bool retroarch_main_init(int argc, char *argv[])
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
    char log_file_name[128];
 #endif
-   bool verbosity_enabled       = false;
-   bool           init_failed   = false;
-   struct rarch_state *p_rarch  = &rarch_st;
-   settings_t *settings         = p_rarch->configuration_settings;
-   global_t            *global  = &p_rarch->g_extern;
-   bool accessibility_enable    = false;
+   bool verbosity_enabled            = false;
+   bool           init_failed        = false;
+   struct rarch_state *p_rarch       = &rarch_st;
+   settings_t *settings              = p_rarch->configuration_settings;
+   global_t            *global       = &p_rarch->g_extern;
+   bool accessibility_enable         = false;
    unsigned accessibility_narrator_speech_speed = 0;
 
-   p_rarch->osk_idx             = OSK_LOWERCASE_LATIN;
-   p_rarch->video_driver_active = true;
-   p_rarch->audio_driver_active = true;
+   p_rarch->osk_idx                  = OSK_LOWERCASE_LATIN;
+   runloop_state.video_active        = true;
+   runloop_state.audio_active        = true;
 
    if (setjmp(p_rarch->error_sjlj_context) > 0)
    {
@@ -38473,8 +38471,8 @@ int runloop_iterate(void)
       unsigned audio_buf_occupancy = 0;
       bool audio_buf_underrun      = false;
 
-      if (!(runloop_state.paused                     ||
-            !p_rarch->audio_driver_active            ||
+      if (!( runloop_state.paused                    ||
+            !runloop_state.audio_active              ||
             !runloop_state.audio_output_samples_buf) &&
           p_rarch->current_audio->write_avail        &&
           runloop_state.audio_context_audio_data     &&
@@ -38706,7 +38704,8 @@ end:
          if (p_rarch->fastforward_after_frames == 1)
          {
             /* Nonblocking audio */
-            if (p_rarch->audio_driver_active &&
+            if (
+                  runloop_state.audio_active &&
                   runloop_state.audio_context_audio_data)
                p_rarch->current_audio->set_nonblock_state(
                      runloop_state.audio_context_audio_data, true);
@@ -38719,7 +38718,8 @@ end:
          if (p_rarch->fastforward_after_frames == 6)
          {
             /* Blocking audio */
-            if (p_rarch->audio_driver_active &&
+            if (
+                  runloop_state.audio_active &&
                   runloop_state.audio_context_audio_data)
                p_rarch->current_audio->set_nonblock_state(
                      runloop_state.audio_context_audio_data,

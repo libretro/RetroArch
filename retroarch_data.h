@@ -198,12 +198,6 @@
       p_rarch->runahead_secondary_core_available = false
 #endif
 
-#define RUNAHEAD_RESUME_VIDEO(p_rarch) \
-   if (p_rarch->runahead_video_driver_is_active) \
-      p_rarch->video_driver_active = true; \
-   else \
-      p_rarch->video_driver_active = false
-
 #define _PSUPP_BUF(buf, var, name, desc) \
    strlcat(buf, "  ", sizeof(buf)); \
    strlcat(buf, name, sizeof(buf)); \
@@ -1663,6 +1657,8 @@ typedef struct discord_state discord_state_t;
 
 struct runloop
 { 
+   double audio_source_ratio_original;
+   double audio_source_ratio_current;
    struct retro_system_av_info av_info; /* double alignment */
 
    retro_time_t frame_limit_minimum_time;
@@ -1702,6 +1698,7 @@ struct runloop
    struct retro_audio_buffer_status_callback audio_buffer_status; /* ptr alignment */
 
    void *audio_context_audio_data;
+   void *audio_resampler_data;
 
 #ifdef HAVE_REWIND
    size_t audio_rewind_ptr;
@@ -1721,7 +1718,19 @@ struct runloop
       AUDIO_BUFFER_FREE_SAMPLES_COUNT];
 
    struct retro_fastforwarding_override fastmotion_override; /* float alignment */
+   float audio_rate_control_delta;
+   float audio_input_sample_rate;
+   float audio_volume_gain;
 
+   bool audio_active;
+   bool audio_use_float;
+   bool audio_suspended;
+   bool audio_control;
+   bool audio_mute_enable;
+#ifdef HAVE_AUDIOMIXER
+   bool audio_mixer_mute_enable;
+   bool audio_mixer_active;
+#endif
    bool missing_bios;
    bool force_nonblock;
    bool paused;
@@ -1732,6 +1741,11 @@ struct runloop
    bool core_shutdown_initiated;
    bool core_running;
    bool perfcnt_enable;
+   bool video_active;
+   bool video_started_fullscreen;
+#ifdef HAVE_RUNAHEAD
+   bool runahead_video_active;
+#endif
    bool game_options_active;
    bool folder_options_active;
    bool autosave;
@@ -1751,8 +1765,6 @@ typedef struct runloop runloop_state_t;
 
 struct rarch_state
 {
-   double audio_source_ratio_original;
-   double audio_source_ratio_current;
    videocrt_switch_t crt_switch_st;                  /* double alignment */
 
    retro_time_t libretro_core_runtime_last;
@@ -1872,7 +1884,6 @@ struct rarch_state
 #endif
    const retro_resampler_t *audio_driver_resampler;
 
-   void *audio_driver_resampler_data;
    const audio_driver_t *current_audio;
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
@@ -2068,10 +2079,6 @@ struct rarch_state
    float audio_driver_mixer_volume_gain;
 #endif
 
-   float audio_driver_rate_control_delta;
-   float audio_driver_input;
-   float audio_driver_volume_gain;
-
    float input_driver_axis_threshold;
 
    enum osk_type osk_idx;
@@ -2112,7 +2119,6 @@ struct rarch_state
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
    input_mapper_t input_driver_mapper;          /* uint32_t alignment */
-
 
 #ifdef HAVE_BSV_MOVIE
    struct bsv_state bsv_movie_state;            /* char alignment */
@@ -2247,8 +2253,6 @@ struct rarch_state
    bool location_driver_active;
    bool bluetooth_driver_active;
    bool wifi_driver_active;
-   bool video_driver_active;
-   bool audio_driver_active;
    bool camera_driver_active;
 #ifdef HAVE_VIDEO_FILTER
    bool video_driver_state_out_rgb32;
@@ -2256,14 +2260,6 @@ struct rarch_state
    bool video_driver_crt_switching_active;
    bool video_driver_crt_dynamic_super_width;
    bool video_driver_threaded;
-
-   bool video_started_fullscreen;
-
-   bool audio_driver_control;
-   bool audio_driver_mute_enable;
-   bool audio_driver_use_float;
-
-   bool audio_suspended;
 
 #ifdef HAVE_RUNAHEAD
    bool has_variable_update;
@@ -2315,16 +2311,11 @@ struct rarch_state
    bool shader_presets_need_reload;
 #endif
 #ifdef HAVE_RUNAHEAD
-   bool runahead_video_driver_is_active;
    bool runahead_available;
    bool runahead_secondary_core_available;
    bool runahead_force_input_dirty;
 #endif
 
-#ifdef HAVE_AUDIOMIXER
-   bool audio_driver_mixer_mute_enable;
-   bool audio_mixer_active;
-#endif
 };
 
 static struct rarch_state         rarch_st;
