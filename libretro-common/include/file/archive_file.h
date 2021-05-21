@@ -96,7 +96,6 @@ struct archive_extract_userdata
    /* Not used by the processing, free to use outside or in iterate callback */
    decompress_state_t *dec;
    void* cb_data;
-   size_t archive_path_size;
    uint32_t crc;
    char archive_path[PATH_MAX_LENGTH];
    char current_file_path[PATH_MAX_LENGTH];
@@ -149,8 +148,7 @@ int file_archive_parse_file_progress(file_archive_transfer_t *state);
 
 /**
  * file_archive_extract_file:
- * @archive_path                    : filename path to ZIP archive.
- * @archive_path_size               : size of ZIP archive.
+ * @archive_path                : filename path to ZIP archive.
  * @valid_exts                  : valid extensions for a file.
  * @extraction_directory        : the directory to extract the temporary
  *                                file to.
@@ -160,7 +158,7 @@ int file_archive_parse_file_progress(file_archive_transfer_t *state);
  *
  * Returns : true (1) on success, otherwise false (0).
  **/
-bool file_archive_extract_file(char *archive_path, size_t archive_path_size,
+bool file_archive_extract_file(const char *archive_path,
       const char *valid_exts, const char *extraction_dir,
       char *out_path, size_t len);
 
