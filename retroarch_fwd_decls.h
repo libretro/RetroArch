@@ -44,13 +44,11 @@ static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
-static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
-      const char *p);
-static void retroarch_init_core_variables(
-      struct rarch_state *p_rarch,
+static void retroarch_deinit_core_options(const char *p);
+static void retroarch_init_core_variables(settings_t *settings,
       const struct retro_variable *vars);
 static void rarch_init_core_options(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       const struct retro_core_option_definition *option_defs);
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)

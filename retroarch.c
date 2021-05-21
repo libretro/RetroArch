@@ -10424,7 +10424,7 @@ bool menu_driver_is_alive(void)
 
 /* MESSAGE QUEUE */
 
-static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
+static void retroarch_msg_queue_deinit(void)
 {
    RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
 
@@ -10439,9 +10439,9 @@ static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
    runloop_state.msg_queue_size = 0;
 }
 
-static void retroarch_msg_queue_init(struct rarch_state *p_rarch)
+static void retroarch_msg_queue_init(void)
 {
-   retroarch_msg_queue_deinit(p_rarch);
+   retroarch_msg_queue_deinit();
    msg_queue_initialize(&runloop_state.msg_queue, 8);
 
 #ifdef HAVE_THREADS
@@ -13318,7 +13318,7 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
 #endif
 }
 
-static void retroarch_frame_time_free(struct rarch_state *p_rarch)
+static void retroarch_frame_time_free(void)
 {
    memset(&runloop_state.frame_time, 0,
          sizeof(struct retro_frame_time_callback));
@@ -13326,7 +13326,7 @@ static void retroarch_frame_time_free(struct rarch_state *p_rarch)
    runloop_state.max_frames       = 0;
 }
 
-static void retroarch_audio_buffer_status_free(struct rarch_state *p_rarch)
+static void retroarch_audio_buffer_status_free(void)
 {
    memset(&runloop_state.audio_buffer_status, 0,
          sizeof(struct retro_audio_buffer_status_callback));
@@ -15405,7 +15405,7 @@ void main_exit(void *args)
    p_rarch->rarch_block_config_read = false;
 #endif
 
-   retroarch_msg_queue_deinit(p_rarch);
+   retroarch_msg_queue_deinit();
    driver_uninit(p_rarch, DRIVERS_CMD_ALL);
 
    retro_main_log_file_deinit();
@@ -15506,7 +15506,7 @@ int rarch_main(int argc, char *argv[], void *data)
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
 
-   retroarch_msg_queue_init(p_rarch);
+   retroarch_msg_queue_init();
 
    if (p_rarch->current_frontend_ctx)
    {
@@ -17128,11 +17128,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
          if (runloop_state.core_options)
-            retroarch_deinit_core_options(p_rarch,
+            retroarch_deinit_core_options(
                   path_get(RARCH_PATH_CORE_OPTIONS)
                   );
          retroarch_init_core_variables(
-               p_rarch,
+               settings,
                (const struct retro_variable *)data);
          break;
 
@@ -17140,10 +17140,10 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_CORE_OPTIONS.\n");
 
          if (runloop_state.core_options)
-            retroarch_deinit_core_options(p_rarch,
+            retroarch_deinit_core_options(
                   path_get(RARCH_PATH_CORE_OPTIONS)
                   );
-         rarch_init_core_options(p_rarch,
+         rarch_init_core_options(settings,
                (const struct retro_core_option_definition*)data);
 
          break;
@@ -17156,7 +17156,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                core_option_manager_get_definitions((const struct retro_core_options_intl*)data);
 
             if (runloop_state.core_options)
-               retroarch_deinit_core_options(p_rarch,
+               retroarch_deinit_core_options(
                      path_get(RARCH_PATH_CORE_OPTIONS)
                      );
 
@@ -17164,7 +17164,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             if (option_defs)
             {
                /* Initialise core options */
-               rarch_init_core_options(p_rarch, option_defs);
+               rarch_init_core_options(settings, option_defs);
 
                /* Clean up */
                free(option_defs);
@@ -17218,7 +17218,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          /* Log message, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_OSD)
          {
-            settings_t *settings = p_rarch->configuration_settings;
             unsigned log_level   = settings->uints.frontend_log_level;
             switch (msg->level)
             {
@@ -18907,11 +18906,11 @@ static void uninit_libretro_symbols(
    p_rarch->core_set_shared_context   = false;
 
    if (runloop_state.core_options)
-      retroarch_deinit_core_options(p_rarch,
+      retroarch_deinit_core_options(
             path_get(RARCH_PATH_CORE_OPTIONS));
    retroarch_system_info_free(p_rarch);
-   retroarch_frame_time_free(p_rarch);
-   retroarch_audio_buffer_status_free(p_rarch);
+   retroarch_frame_time_free();
+   retroarch_audio_buffer_status_free();
    retroarch_game_focus_free(p_rarch);
    retroarch_fastmotion_override_free(p_rarch, &runloop_state);
    p_rarch->camera_driver_active      = false;
@@ -35288,7 +35287,6 @@ static bool retroarch_validate_per_core_options(char *s,
 }
 
 static bool retroarch_validate_game_options(
-      struct rarch_state *p_rarch,
       char *s, size_t len, bool mkdir)
 {
    const char *core_name       = runloop_state.system.info.library_name;
@@ -35299,7 +35297,6 @@ static bool retroarch_validate_game_options(
 }
 
 static bool retroarch_validate_folder_options(
-      struct rarch_state *p_rarch,
       char *s, size_t len, bool mkdir)
 {
    char folder_name[PATH_MAX_LENGTH];
@@ -35979,13 +35976,12 @@ void retroarch_menu_running_finished(bool quit)
  * options path has been found,
  * otherwise false (0).
  **/
-static bool rarch_game_specific_options(struct rarch_state *p_rarch,
-      char **output)
+static bool rarch_game_specific_options(char **output)
 {
    char game_options_path[PATH_MAX_LENGTH];
    game_options_path[0] ='\0';
 
-   if (!retroarch_validate_game_options(p_rarch,
+   if (!retroarch_validate_game_options(
             game_options_path,
             sizeof(game_options_path), false) ||
        !path_is_valid(game_options_path))
@@ -36005,14 +36001,12 @@ static bool rarch_game_specific_options(struct rarch_state *p_rarch,
  * options path has been found,
  * otherwise false (0).
  **/
-static bool rarch_folder_specific_options(
-      struct rarch_state *p_rarch,
-      char **output)
+static bool rarch_folder_specific_options(char **output)
 {
    char folder_options_path[PATH_MAX_LENGTH];
    folder_options_path[0] ='\0';
 
-   if (!retroarch_validate_folder_options(p_rarch,
+   if (!retroarch_validate_folder_options(
             folder_options_path,
             sizeof(folder_options_path), false) ||
        !path_is_valid(folder_options_path))
@@ -36087,19 +36081,17 @@ static void runloop_task_msg_queue_push(
  *   path and src_path are NULL-terminated
  *  */
 static void rarch_init_core_options_path(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       char *path, size_t len,
       char *src_path, size_t src_len)
 {
    char *game_options_path        = NULL;
    char *folder_options_path      = NULL;
-
-   settings_t *settings           = p_rarch->configuration_settings;
    bool game_specific_options     = settings->bools.game_specific_options;
 
    /* Check whether game-specific options exist */
    if (game_specific_options &&
-       rarch_game_specific_options(p_rarch, &game_options_path))
+       rarch_game_specific_options(&game_options_path))
    {
       /* Notify system that we have a valid core options
        * override */
@@ -36114,8 +36106,7 @@ static void rarch_init_core_options_path(
    }
    /* Check whether folder-specific options exist */
    else if (game_specific_options &&
-            rarch_folder_specific_options(p_rarch,
-               &folder_options_path))
+            rarch_folder_specific_options(&folder_options_path))
    {
       /* Notify system that we have a valid core options
        * override */
@@ -36190,7 +36181,7 @@ static void rarch_init_core_options_path(
 }
 
 static void rarch_init_core_options(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       const struct retro_core_option_definition *option_defs)
 {
    char options_path[PATH_MAX_LENGTH];
@@ -36201,7 +36192,7 @@ static void rarch_init_core_options(
    src_options_path[0]            = '\0';
 
    /* Get core options file path */
-   rarch_init_core_options_path(p_rarch,
+   rarch_init_core_options_path(settings,
       options_path, sizeof(options_path),
       src_options_path, sizeof(src_options_path));
 
@@ -36419,8 +36410,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_state.overrides_active = false;
 #endif
          runloop_state.autosave         = false;
-         retroarch_frame_time_free(p_rarch);
-         retroarch_audio_buffer_status_free(p_rarch);
+         retroarch_frame_time_free();
+         retroarch_audio_buffer_status_free();
          retroarch_game_focus_free(p_rarch);
          retroarch_fastmotion_override_free(p_rarch, &runloop_state);
          break;
@@ -36481,8 +36472,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
-      const char *path_core_options)
+static void retroarch_deinit_core_options(const char *path_core_options)
 {
    /* Check whether game-specific options file is being used */
    if (!string_is_empty(path_core_options))
@@ -36534,7 +36524,7 @@ static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
 }
 
 static void retroarch_init_core_variables(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       const struct retro_variable *vars)
 {
    char options_path[PATH_MAX_LENGTH];
@@ -36545,7 +36535,7 @@ static void retroarch_init_core_variables(
    src_options_path[0] = '\0';
 
    /* Get core options file path */
-   rarch_init_core_options_path(p_rarch,
+   rarch_init_core_options_path(settings,
          options_path, sizeof(options_path),
          src_options_path, sizeof(src_options_path));
 
@@ -39454,13 +39444,13 @@ bool core_options_create_override(bool game_specific)
    /* Get options file path (either game-specific or folder-specific) */
    if (game_specific)
    {
-      if (!retroarch_validate_game_options(p_rarch,
+      if (!retroarch_validate_game_options(
                options_path,
             sizeof(options_path), true))
          goto error;
    }
    else
-      if (!retroarch_validate_folder_options(p_rarch,
+      if (!retroarch_validate_folder_options(
                options_path,
                sizeof(options_path), true))
          goto error;
@@ -39540,7 +39530,7 @@ bool core_options_remove_override(bool game_specific)
     *   check whether a folder-specific config
     *   exists */
    if (game_specific &&
-       retroarch_validate_folder_options(p_rarch,
+       retroarch_validate_folder_options(
           new_options_path,
           sizeof(new_options_path), false) &&
        path_is_valid(new_options_path))
