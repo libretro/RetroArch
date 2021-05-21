@@ -12037,7 +12037,7 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
-               &settings->uints.audio_out_rate,
+               &settings->uints.audio_output_sample_rate,
                MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
                MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
                DEFAULT_OUTPUT_RATE,

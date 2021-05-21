@@ -134,7 +134,7 @@ typedef struct settings
 
       unsigned led_map[MAX_LEDS];
 
-      unsigned audio_out_rate;
+      unsigned audio_output_sample_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
 

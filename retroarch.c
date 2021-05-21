@@ -28175,10 +28175,7 @@ static bool audio_driver_init_internal(
 #endif
 
    if (!audio_enable)
-   {
-      runloop_state.audio_active                 = false;
-      return false;
-   }
+      goto audio_not_active;
 
    audio_driver_find_driver(p_rarch, settings,
          "audio driver", verbosity_enabled);
@@ -28186,8 +28183,7 @@ static bool audio_driver_init_internal(
    if (!p_rarch->current_audio || !p_rarch->current_audio->init)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
-      runloop_state.audio_active                 = false;
-      return false;
+      goto audio_not_active;
    }
 
 #ifdef HAVE_THREADS
@@ -28199,7 +28195,7 @@ static bool audio_driver_init_internal(
                &runloop_state.audio_context_audio_data,
                *settings->arrays.audio_device
                ? settings->arrays.audio_device : NULL,
-               settings->uints.audio_out_rate, &new_rate,
+               settings->uints.audio_output_sample_rate, &new_rate,
                audio_latency,
                settings->uints.audio_block_frames,
                p_rarch->current_audio))
@@ -28214,14 +28210,14 @@ static bool audio_driver_init_internal(
       runloop_state.audio_context_audio_data =
          p_rarch->current_audio->init(*settings->arrays.audio_device ?
                settings->arrays.audio_device : NULL,
-               settings->uints.audio_out_rate,
+               settings->uints.audio_output_sample_rate,
                audio_latency,
                settings->uints.audio_block_frames,
                &new_rate);
    }
 
    if (new_rate != 0)
-      configuration_set_int(settings, settings->uints.audio_out_rate, new_rate);
+      configuration_set_int(settings, settings->uints.audio_output_sample_rate, new_rate);
 
    if (!runloop_state.audio_context_audio_data)
    {
@@ -28253,14 +28249,14 @@ static bool audio_driver_init_internal(
       RARCH_WARN("[Audio]: Input samplerate is invalid (%.3f Hz)."
             " Using output samplerate (%u Hz).\n",
             runloop_state.audio_input_sample_rate,
-            settings->uints.audio_out_rate);
+            settings->uints.audio_output_sample_rate);
 
-      runloop_state.audio_input_sample_rate = settings->uints.audio_out_rate;
+      runloop_state.audio_input_sample_rate = settings->uints.audio_output_sample_rate;
    }
 
    runloop_state.audio_source_ratio_original   =
       runloop_state.audio_source_ratio_current =
-      (double)settings->uints.audio_out_rate / runloop_state.audio_input_sample_rate;
+      (double)settings->uints.audio_output_sample_rate / runloop_state.audio_input_sample_rate;
 
    if (!retro_resampler_realloc(
             &runloop_state.audio_resampler_data,
@@ -28276,7 +28272,7 @@ static bool audio_driver_init_internal(
 
    runloop_state.audio_data_ptr    = 0;
 
-   retro_assert(settings->uints.audio_out_rate <
+   retro_assert(settings->uints.audio_output_sample_rate <
          runloop_state.audio_input_sample_rate * AUDIO_MAX_RATIO);
 
    samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
@@ -28313,7 +28309,7 @@ static bool audio_driver_init_internal(
    runloop_state.free_audio_samples_count = 0;
 
 #ifdef HAVE_AUDIOMIXER
-   audio_mixer_init(settings->uints.audio_out_rate);
+   audio_mixer_init(settings->uints.audio_output_sample_rate);
 #endif
 
    /* Threaded driver is initially stopped. */
@@ -28328,6 +28324,10 @@ static bool audio_driver_init_internal(
 
 error:
    return audio_driver_deinit(p_rarch, settings);
+
+audio_not_active:
+   runloop_state.audio_active                 = false;
+   return false;
 }
 
 /**
@@ -33473,7 +33473,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          {
             float *hz                    = (float*)data;
             settings_t *settings         = p_rarch->configuration_settings;
-            unsigned audio_out_rate      = settings->uints.audio_out_rate;
+            unsigned audio_output_sample_rate      = settings->uints.audio_output_sample_rate;
             bool vrr_runloop_enable      = settings->bools.vrr_runloop_enable;
             float video_refresh_rate     = settings->floats.video_refresh_rate;
             float audio_max_timing_skew  = settings->floats.audio_max_timing_skew;
@@ -33485,7 +33485,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             /* Sets audio monitor rate to new value. */
             runloop_state.audio_source_ratio_original   =
             runloop_state.audio_source_ratio_current    = 
-            (double)audio_out_rate
+            (double)audio_output_sample_rate
             / runloop_state.audio_input_sample_rate;
 
             driver_adjust_system_rates(p_rarch,
