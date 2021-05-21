@@ -1725,6 +1725,14 @@ struct runloop
    float audio_mixer_volume_gain;
 #endif
 
+   input_game_focus_state_t game_focus_state; /* bool alignment */
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_active;
+   bool widgets_persisting;
+   bool widgets_paused;
+   bool widgets_fast_forward;
+   bool widgets_rewinding;
+#endif
    bool audio_active;
    bool audio_use_float;
    bool audio_suspended;
@@ -2159,10 +2167,6 @@ struct rarch_state
    char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
 
-#ifdef HAVE_GFX_WIDGETS
-   bool widgets_active;
-   bool widgets_persisting;
-#endif
 #ifdef HAVE_NETWORKING
 /* Only used before init_netplay */
    bool netplay_enabled;
@@ -2233,11 +2237,6 @@ struct rarch_state
    /* Set to true by driver if context caching succeeded. */
    bool video_driver_cache_context_ack;
 
-#ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused;
-   bool gfx_widgets_fast_forward;
-   bool gfx_widgets_rewinding;
-#endif
 #ifdef HAVE_ACCESSIBILITY
    /* Is text-to-speech accessibility turned on? */
    bool accessibility_enabled;
@@ -2283,8 +2282,6 @@ struct rarch_state
    bool input_driver_block_libretro_input;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
-
-   input_game_focus_state_t game_focus_state; /* bool alignment */
 
 #ifdef HAVE_MENU
    bool menu_input_dialog_keyboard_display;

@@ -10094,8 +10094,7 @@ static bool is_accessibility_enabled(bool accessibility_enable,
 bool gfx_widgets_ready(void)
 {
 #ifdef HAVE_GFX_WIDGETS
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->widgets_active;
+   return runloop_state.widgets_active;
 #else
    return false;
 #endif
@@ -10802,7 +10801,7 @@ static bool retroarch_apply_shader(
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)
                      );
 #ifdef HAVE_GFX_WIDGETS
-            if (p_rarch->widgets_active)
+            if (runloop_state.widgets_active)
                gfx_widget_set_generic_message(&p_rarch->dispwidget_st,
                      msg, 2000);
             else
@@ -11000,7 +10999,7 @@ static void handle_translation_cb(
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
 #ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused           = p_rarch->gfx_widgets_paused;
+   bool widgets_paused               = runloop_state.widgets_paused;
 
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
@@ -11098,7 +11097,7 @@ static void handle_translation_cb(
 
       strlcpy(text_string, err_string, 15);
 #ifdef HAVE_GFX_WIDGETS
-      if (gfx_widgets_paused)
+      if (widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
          p_rarch->dispwidget_st.ai_service_overlay_state = 2;
@@ -11163,7 +11162,7 @@ static void handle_translation_cb(
                1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
-         else if (gfx_widgets_paused)
+         else if (widgets_paused)
          {
             /* In this case we have to unpause and then repause for a frame */
 #ifdef HAVE_TRANSLATE
@@ -13262,13 +13261,13 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
 #ifdef HAVE_DISCORD
    discord_userdata_t userdata;
 #endif
-   bool is_paused                 = runloop_state.paused;
-   bool is_idle                   = runloop_state.idle;
+   bool is_paused                      = runloop_state.paused;
+   bool is_idle                        = runloop_state.idle;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active            = p_rarch->widgets_active;
+   bool widgets_active                 = runloop_state.widgets_active;
 
    if (widgets_active)
-      p_rarch->gfx_widgets_paused = is_paused;
+      runloop_state.widgets_paused     = is_paused;
 #endif
 
    if (is_paused)
@@ -13325,23 +13324,22 @@ static void retroarch_audio_buffer_status_free(void)
    runloop_state.audio_latency = 0;
 }
 
-static void retroarch_game_focus_free(struct rarch_state *p_rarch)
+static void retroarch_game_focus_free(void)
 {
    /* Ensure that game focus mode is disabled */
-   if (p_rarch->game_focus_state.enabled)
+   if (runloop_state.game_focus_state.enabled)
    {
       enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
       command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
    }
 
-   p_rarch->game_focus_state.enabled        = false;
-   p_rarch->game_focus_state.core_requested = false;
+   runloop_state.game_focus_state.enabled        = false;
+   runloop_state.game_focus_state.core_requested = false;
 }
 
-static void retroarch_fastmotion_override_free(struct rarch_state *p_rarch,
+static void retroarch_fastmotion_override_free(settings_t *settings,
       runloop_state_t *p_runloop)
 {
-   settings_t *settings    = p_rarch->configuration_settings;
    float fastforward_ratio = settings->floats.fastforward_ratio;
    bool reset_frame_limit  = p_runloop->fastmotion_override.fastforward &&
          (p_runloop->fastmotion_override.ratio >= 0.0f) &&
@@ -13700,7 +13698,7 @@ bool command_event(enum event_command cmd, void *data)
          core_reset();
 #ifdef HAVE_CHEEVOS
 #ifdef HAVE_GFX_WIDGETS
-         rcheevos_reset_game(p_rarch->widgets_active);
+         rcheevos_reset_game(runloop_state.widgets_active);
 #else
          rcheevos_reset_game(false);
 #endif
@@ -13953,7 +13951,7 @@ bool command_event(enum event_command cmd, void *data)
                !runloop_state.audio_mute_enable;
 
 #if defined(HAVE_GFX_WIDGETS)
-            if (p_rarch->widgets_active)
+            if (runloop_state.widgets_active)
                gfx_widget_volume_update_and_show(
                      settings->floats.audio_volume,
                      runloop_state.audio_mute_enable);
@@ -14903,7 +14901,7 @@ bool command_event(enum event_command cmd, void *data)
             bool video_fullscreen                         =
                settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
-            bool current_enable_state                     = p_rarch->game_focus_state.enabled;
+            bool current_enable_state                     = runloop_state.game_focus_state.enabled;
             bool apply_update                             = false;
             bool show_message                             = false;
 
@@ -14914,8 +14912,8 @@ bool command_event(enum event_command cmd, void *data)
             {
                case GAME_FOCUS_CMD_OFF:
                   /* Force game focus off */
-                  p_rarch->game_focus_state.enabled = false;
-                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  runloop_state.game_focus_state.enabled = false;
+                  if (runloop_state.game_focus_state.enabled != current_enable_state)
                   {
                      apply_update = true;
                      show_message = true;
@@ -14923,8 +14921,8 @@ bool command_event(enum event_command cmd, void *data)
                   break;
                case GAME_FOCUS_CMD_ON:
                   /* Force game focus on */
-                  p_rarch->game_focus_state.enabled = true;
-                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  runloop_state.game_focus_state.enabled = false;
+                  if (runloop_state.game_focus_state.enabled != current_enable_state)
                   {
                      apply_update = true;
                      show_message = true;
@@ -14932,14 +14930,14 @@ bool command_event(enum event_command cmd, void *data)
                   break;
                case GAME_FOCUS_CMD_TOGGLE:
                   /* Invert current game focus state */
-                  p_rarch->game_focus_state.enabled = !p_rarch->game_focus_state.enabled;
+                  runloop_state.game_focus_state.enabled = !runloop_state.game_focus_state.enabled;
 #ifdef HAVE_MENU
                   /* If menu is currently active, disable
                    * 'toggle on' functionality */
                   if (p_rarch->menu_driver_alive)
-                     p_rarch->game_focus_state.enabled = false;
+                     runloop_state.game_focus_state.enabled = false;
 #endif
-                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  if (runloop_state.game_focus_state.enabled != current_enable_state)
                   {
                      apply_update = true;
                      show_message = true;
@@ -14956,7 +14954,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (apply_update)
             {
-               if (p_rarch->game_focus_state.enabled)
+               if (runloop_state.game_focus_state.enabled)
                {
                   input_driver_grab_mouse(p_rarch);
                   video_driver_hide_mouse();
@@ -14968,13 +14966,13 @@ bool command_event(enum event_command cmd, void *data)
                }
 
                p_rarch->input_driver_block_hotkey =
-                  p_rarch->game_focus_state.enabled;
+                  runloop_state.game_focus_state.enabled;
                p_rarch->keyboard_mapping_blocked  =
-                  p_rarch->game_focus_state.enabled;
+                  runloop_state.game_focus_state.enabled;
 
                if (show_message)
                   runloop_msg_queue_push(
-                        p_rarch->game_focus_state.enabled ?
+                        runloop_state.game_focus_state.enabled ?
                         msg_hash_to_str(MSG_GAME_FOCUS_ON) :
                         msg_hash_to_str(MSG_GAME_FOCUS_OFF),
                         1, 60, true,
@@ -14983,14 +14981,14 @@ bool command_event(enum event_command cmd, void *data)
 
                RARCH_LOG("[Input]: %s => %s\n",
                      "Game Focus",
-                     p_rarch->game_focus_state.enabled ? "ON" : "OFF");
+                     runloop_state.game_focus_state.enabled ? "ON" : "OFF");
             }
          }
          break;
       case CMD_EVENT_VOLUME_UP:
          command_event_set_volume(settings, 0.5f,
 #if defined(HAVE_GFX_WIDGETS)
-               p_rarch->widgets_active,
+               runloop_state.widgets_active,
 #else
                false,
 #endif
@@ -14999,7 +14997,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_VOLUME_DOWN:
          command_event_set_volume(settings, -0.5f,
 #if defined(HAVE_GFX_WIDGETS)
-               p_rarch->widgets_active,
+               runloop_state.widgets_active,
 #else
                false,
 #endif
@@ -15364,7 +15362,7 @@ void main_exit(void *args)
 
 #if defined(HAVE_GFX_WIDGETS)
    /* Do not want display widgets to live any more. */
-   p_rarch->widgets_persisting = false;
+   runloop_state.widgets_persisting = false;
 #endif
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */
@@ -17189,7 +17187,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #if defined(HAVE_GFX_WIDGETS)
-         if (p_rarch->widgets_active)
+         if (runloop_state.widgets_active)
             gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
                   msg->msg,
                   roundf((float)msg->frames / 60.0f * 1000.0f));
@@ -17279,7 +17277,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 #if defined(HAVE_GFX_WIDGETS)
                /* Handle 'alternate' non-queued notifications */
                case RETRO_MESSAGE_TYPE_NOTIFICATION_ALT:
-                  if (p_rarch->widgets_active)
+                  if (runloop_state.widgets_active)
                      gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
                            msg->msg, msg->duration);
                   else
@@ -17290,7 +17288,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
                /* Handle 'progress' messages */
                case RETRO_MESSAGE_TYPE_PROGRESS:
-                  if (p_rarch->widgets_active)
+                  if (runloop_state.widgets_active)
                      gfx_widget_set_progress_message(&p_rarch->dispwidget_st,
                            msg->msg, msg->duration,
                            msg->priority, msg->progress);
@@ -17560,7 +17558,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          /* If a core calls RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK,
           * then it is assumed that game focus mode is desired */
-         p_rarch->game_focus_state.core_requested = true;
+         runloop_state.game_focus_state.core_requested = true;
 
          break;
       }
@@ -18433,8 +18431,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                 * (required if RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
                 * is called during core de-initialisation) */
 #if defined(HAVE_GFX_WIDGETS)
-               if (p_rarch->widgets_active && !p_runloop->fastmotion)
-                  p_rarch->gfx_widgets_fast_forward = false;
+               if (runloop_state.widgets_active && !p_runloop->fastmotion)
+                  runloop_state.widgets_fast_forward = false;
 #endif
             }
 
@@ -18902,8 +18900,8 @@ static void uninit_libretro_symbols(
    retroarch_system_info_free(p_rarch);
    retroarch_frame_time_free();
    retroarch_audio_buffer_status_free();
-   retroarch_game_focus_free(p_rarch);
-   retroarch_fastmotion_override_free(p_rarch, &runloop_state);
+   retroarch_game_focus_free();
+   retroarch_fastmotion_override_free(p_rarch->configuration_settings, &runloop_state);
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
 
@@ -26087,7 +26085,7 @@ void input_keyboard_event(bool down, unsigned code,
       /* Block hotkey + RetroPad mapped keyboard key events,
        * but not with game focus, and from keyboard device type,
        * and with 'enable_hotkey' modifier set and unpressed */
-      if (!p_rarch->game_focus_state.enabled &&
+      if (!runloop_state.game_focus_state.enabled &&
             BIT512_GET(p_rarch->keyboard_mapping_bits, code))
       {
          input_mapper_t *handle      = &p_rarch->input_driver_mapper;
@@ -31508,7 +31506,7 @@ static void video_driver_frame(const void *data, unsigned width,
    bool runloop_idle            = runloop_state.idle;
    bool video_driver_active     = runloop_state.video_active;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active          = p_rarch->widgets_active;
+   bool widgets_active          = runloop_state.widgets_active;
 #endif
 
    status_text[0]                  = '\0';
@@ -32007,7 +32005,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
    custom_vp                               = &settings->video_viewport_custom;
 #ifdef HAVE_GFX_WIDGETS
-   video_info->widgets_active              = p_rarch->widgets_active;
+   video_info->widgets_active              = runloop_state.widgets_active;
 #else
    video_info->widgets_active              = false;
 #endif
@@ -32049,9 +32047,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_userdata            = &p_rarch->dispwidget_st;
-   video_info->widgets_is_paused           = p_rarch->gfx_widgets_paused;
-   video_info->widgets_is_fast_forwarding  = p_rarch->gfx_widgets_fast_forward;
-   video_info->widgets_is_rewinding        = p_rarch->gfx_widgets_rewinding;
+   video_info->widgets_is_paused           = runloop_state.widgets_paused;
+   video_info->widgets_is_fast_forwarding  = runloop_state.widgets_fast_forward;
+   video_info->widgets_is_rewinding        = runloop_state.widgets_rewinding;
 #else
    video_info->widgets_userdata            = NULL;
    video_info->widgets_is_paused           = false;
@@ -33113,7 +33111,7 @@ static void drivers_init(struct rarch_state *p_rarch,
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
 
    /* By default, we want display widgets to persist through driver reinits. */
-   p_rarch->widgets_persisting = true;
+   runloop_state.widgets_persisting = true;
 #endif
 
 #ifdef HAVE_MENU
@@ -33227,16 +33225,16 @@ static void drivers_init(struct rarch_state *p_rarch,
        menu_enable_widgets &&
        video_driver_has_widgets())
    {
-      bool rarch_force_fullscreen = p_rarch->rarch_force_fullscreen;
-      bool video_is_fullscreen    = settings->bools.video_fullscreen ||
+      bool rarch_force_fullscreen   = p_rarch->rarch_force_fullscreen;
+      bool video_is_fullscreen      = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      p_rarch->widgets_active     = gfx_widgets_init(
+      runloop_state.widgets_active  = gfx_widgets_init(
             &p_rarch->dispwidget_st,
             &p_rarch->dispgfx,
             &p_rarch->anim,
             settings,
-            (uintptr_t)&p_rarch->widgets_active,
+            (uintptr_t)&runloop_state.widgets_active,
             video_is_threaded,
             p_rarch->video_driver_width,
             p_rarch->video_driver_height,
@@ -33327,8 +33325,8 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
     * (e.g. Vulkan) will segfault */
    if (p_rarch->dispwidget_st.widgets_inited)
    {
-      gfx_widgets_deinit(&p_rarch->dispwidget_st, p_rarch->widgets_persisting);
-      p_rarch->widgets_active = false;
+      gfx_widgets_deinit(&p_rarch->dispwidget_st, runloop_state.widgets_persisting);
+      runloop_state.widgets_active = false;
    }
 #endif
 
@@ -33408,8 +33406,8 @@ static void retroarch_deinit_drivers(
    if (p_rarch->dispwidget_st.widgets_inited)
    {
       gfx_widgets_deinit(&p_rarch->dispwidget_st,
-            p_rarch->widgets_persisting);
-      p_rarch->widgets_active = false;
+            runloop_state.widgets_persisting);
+      runloop_state.widgets_active = false;
    }
 #endif
 
@@ -35854,7 +35852,7 @@ void retroarch_menu_running(void)
     * running the menu (note: it is not currently
     * possible for game focus to be enabled at this
     * point, but must safeguard against future changes) */
-   if (p_rarch->game_focus_state.enabled)
+   if (runloop_state.game_focus_state.enabled)
    {
       enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
       command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
@@ -35918,7 +35916,7 @@ void retroarch_menu_running_finished(bool quit)
 
          if ((auto_game_focus_type == AUTO_GAME_FOCUS_ON) ||
                ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT) &&
-                p_rarch->game_focus_state.core_requested))
+                runloop_state.game_focus_state.core_requested))
          {
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_ON;
             command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
@@ -36007,7 +36005,7 @@ static void runloop_task_msg_queue_push(
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
-   bool widgets_active         = p_rarch->widgets_active;
+   bool widgets_active         = runloop_state.widgets_active;
 
    if (widgets_active && task->title && !task->mute)
    {
@@ -36388,8 +36386,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_state.autosave         = false;
          retroarch_frame_time_free();
          retroarch_audio_buffer_status_free();
-         retroarch_game_focus_free(p_rarch);
-         retroarch_fastmotion_override_free(p_rarch, &runloop_state);
+         retroarch_game_focus_free();
+         retroarch_fastmotion_override_free(p_rarch->configuration_settings, &runloop_state);
          break;
       case RARCH_CTL_IS_IDLE:
          return runloop_state.idle;
@@ -36983,7 +36981,7 @@ void runloop_msg_queue_push(const char *msg,
 {
    struct rarch_state *p_rarch = &rarch_st;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active         = p_rarch->widgets_active;
+   bool widgets_active         = runloop_state.widgets_active;
 #endif
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = p_rarch->configuration_settings;
@@ -37249,7 +37247,7 @@ static enum runloop_state runloop_check_state(
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active                 = p_rarch->widgets_active;
+   bool widgets_active                 = runloop_state.widgets_active;
 #endif
 #ifdef HAVE_CHEEVOS
    bool cheevos_hardcore_active        = rcheevos_hardcore_active();
@@ -38150,7 +38148,7 @@ static enum runloop_state runloop_check_state(
       /* > Use widgets, if enabled */
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
-         p_rarch->gfx_widgets_fast_forward =
+         runloop_state.widgets_fast_forward =
                settings->bools.notification_show_fast_forward ?
                      runloop_state.fastmotion : false;
       else
@@ -38166,7 +38164,7 @@ static enum runloop_state runloop_check_state(
    }
 #if defined(HAVE_GFX_WIDGETS)
    else
-      p_rarch->gfx_widgets_fast_forward = false;
+      runloop_state.widgets_fast_forward = false;
 #endif
 
    /* Check if we have pressed any of the state slot buttons */
@@ -38237,7 +38235,7 @@ static enum runloop_state runloop_check_state(
 
 #if defined(HAVE_GFX_WIDGETS)
          if (widgets_active)
-            p_rarch->gfx_widgets_rewinding = rewinding;
+            runloop_state.widgets_rewinding = rewinding;
          else
 #endif
          {
