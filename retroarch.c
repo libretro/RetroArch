@@ -28230,20 +28230,21 @@ static bool audio_driver_init_internal(
    }
 
    runloop_state.audio_use_float      = false;
-   if (     runloop_state.audio_active
-         && p_rarch->current_audio->use_float(
-            runloop_state.audio_context_audio_data))
-      runloop_state.audio_use_float   = true;
 
-   if (!audio_sync && runloop_state.audio_active)
+   if (runloop_state.audio_active)
    {
-      if (runloop_state.audio_active &&
-            runloop_state.audio_context_audio_data)
-         p_rarch->current_audio->set_nonblock_state(
-               runloop_state.audio_context_audio_data, true);
+      runloop_state.audio_use_float   = p_rarch->current_audio->use_float(
+            runloop_state.audio_context_audio_data);
 
-      runloop_state.audio_chunk_size =
-         runloop_state.audio_chunk_nonblock_size;
+      if (!audio_sync)
+      {
+         if (runloop_state.audio_context_audio_data)
+            p_rarch->current_audio->set_nonblock_state(
+                  runloop_state.audio_context_audio_data, true);
+
+         runloop_state.audio_chunk_size =
+            runloop_state.audio_chunk_nonblock_size;
+      }
    }
 
    if (runloop_state.audio_input_sample_rate <= 0.0f)
