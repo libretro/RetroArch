@@ -361,7 +361,8 @@ void gfx_widgets_msg_queue_push(
             /* Single line text > two lines text > two lines
              * text with expanded width */
             unsigned title_length               = (unsigned)strlen(title);
-            char *msg                           = strdup(title);
+            unsigned msg_length                 = title_length + 1 + 1; /* '\0' and additional '\n' */
+            char *msg;
             unsigned width                      = menu_is_alive
                ? p_dispwidget->msg_queue_default_rect_width_menu_alive
                : p_dispwidget->msg_queue_default_rect_width;
@@ -372,6 +373,10 @@ void gfx_widgets_msg_queue_push(
                   1);
             msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
 
+            msg = (char *)malloc(msg_length);
+            if (!msg)
+               return;
+
             /* Text is too wide, split it into two lines */
             if (text_width > width)
             {
@@ -381,8 +386,7 @@ void gfx_widgets_msg_queue_push(
                if ((text_width - (text_width >> 2)) < width)
                   width = text_width - (text_width >> 2);
 
-               /* CAUTION: input and output buffers shouldn't be the same */
-               word_wrap(msg, strlen(msg) + 1, msg, (title_length * width) / text_width,
+               word_wrap(msg, msg_length, title, (title_length * width) / text_width,
                      false, 2);
 
                msg_widget->text_height *= 2;
