@@ -3167,6 +3167,41 @@ int menu_entries_get_title(char *s, size_t len)
    return 0;
 }
 
+#if defined(_MSC_VER)
+static const char * msvc_vercode_to_str(const unsigned vercode)
+{
+   switch (vercode)
+   {
+      case 1200:
+         return " msvc6";
+      case 1300:
+         return " msvc2002";
+      case 1310:
+         return " msvc2003";
+      case 1400:
+         return " msvc2005";
+      case 1500:
+         return " msvc2008";
+      case 1600:
+         return " msvc2010";
+      case 1700:
+         return " msvc2012";
+      case 1800:
+         return " msvc2013";
+      case 1900:
+         return " msvc2015";
+      default:
+         if (vercode >= 1910 && vercode < 1920)
+            return " msvc2017";
+         else if (vercode >= 1920 && vercode < 2000)
+            return " msvc2019";
+         break;
+   }
+
+   return "";
+}
+#endif
+
 /* Sets 's' to the name of the current core
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
@@ -3178,58 +3213,18 @@ int menu_entries_get_core_title(char *s, size_t len)
    const char *core_version            = (system && system->library_version) ? system->library_version : "";
    if (!string_is_empty(core_version))
    {
-#if _MSC_VER == 1200
-      snprintf(s, len, PACKAGE_VERSION " msvc6"    " - %s (%s)", core_name, core_version);
-#elif _MSC_VER == 1300
-      snprintf(s, len, PACKAGE_VERSION " msvc2002" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER == 1310
-      snprintf(s, len, PACKAGE_VERSION " msvc2003" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER == 1400
-      snprintf(s, len, PACKAGE_VERSION " msvc2005" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER == 1500
-      snprintf(s, len, PACKAGE_VERSION " msvc2008" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER == 1600
-      snprintf(s, len, PACKAGE_VERSION " msvc2010" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER == 1700
-      snprintf(s, len, PACKAGE_VERSION " msvc2012" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER == 1800
-      snprintf(s, len, PACKAGE_VERSION " msvc2013" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER == 1900
-      snprintf(s, len, PACKAGE_VERSION " msvc2015" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER >= 1910 && _MSC_VER < 1920
-      snprintf(s, len, PACKAGE_VERSION " msvc2017" " - %s (%s)", core_name, core_version);
-#elif _MSC_VER >= 1920 && _MSC_VER < 2000
-      snprintf(s, len, PACKAGE_VERSION " msvc2019" " - %s (%s)", core_name, core_version);
+#if defined(_MSC_VER)
+      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s (%s)", msvc_vercode_to_str(_MSC_VER), core_name, core_version);
 #else
-      snprintf(s, len, PACKAGE_VERSION             " - %s (%s)", core_name, core_version);
+      snprintf(s, len, PACKAGE_VERSION             " - %s (%s)",                                core_name, core_version);
 #endif
    }
    else
    {
-#if _MSC_VER == 1200
-      snprintf(s, len, PACKAGE_VERSION " msvc6" " - %s", core_name);
-#elif _MSC_VER == 1300
-      snprintf(s, len, PACKAGE_VERSION " msvc2002" " - %s", core_name);
-#elif _MSC_VER == 1310
-      snprintf(s, len, PACKAGE_VERSION " msvc2003" " - %s", core_name);
-#elif _MSC_VER == 1400
-      snprintf(s, len, PACKAGE_VERSION " msvc2005" " - %s", core_name);
-#elif _MSC_VER == 1500
-      snprintf(s, len, PACKAGE_VERSION " msvc2008" " - %s", core_name);
-#elif _MSC_VER == 1600
-      snprintf(s, len, PACKAGE_VERSION " msvc2010" " - %s", core_name);
-#elif _MSC_VER == 1700
-      snprintf(s, len, PACKAGE_VERSION " msvc2012" " - %s", core_name);
-#elif _MSC_VER == 1800
-      snprintf(s, len, PACKAGE_VERSION " msvc2013" " - %s", core_name);
-#elif _MSC_VER == 1900
-      snprintf(s, len, PACKAGE_VERSION " msvc2015" " - %s", core_name);
-#elif _MSC_VER >= 1910 && _MSC_VER < 1920
-      snprintf(s, len, PACKAGE_VERSION " msvc2017" " - %s", core_name);
-#elif _MSC_VER >= 1920 && _MSC_VER < 2000
-      snprintf(s, len, PACKAGE_VERSION " msvc2019" " - %s", core_name);
+#if defined(_MSC_VER)
+      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s", msvc_vercode_to_str(_MSC_VER), core_name);
 #else
-      snprintf(s, len, PACKAGE_VERSION " - %s", core_name);
+      snprintf(s, len, PACKAGE_VERSION             " - %s",                                core_name);
 #endif
    }
 
