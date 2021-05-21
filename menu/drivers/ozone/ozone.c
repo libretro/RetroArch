@@ -219,12 +219,12 @@ static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone)
     * only 'ozone->is_playlist' will be evaluated,
     * so this isn't too much of a performance hog... */
    return ozone->is_playlist
-      &&  ozone->show_thumbnail_bar 
-      && !ozone->selection_core_is_viewer 
+      &&  ozone->show_thumbnail_bar
+      && !ozone->selection_core_is_viewer
       && (ozone->thumbnails.left.status != GFX_THUMBNAIL_STATUS_MISSING)
       && gfx_thumbnail_is_enabled(ozone->thumbnail_path_data,
             GFX_THUMBNAIL_LEFT)
-      && (ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_MISSING) 
+      && (ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_MISSING)
       && gfx_thumbnail_is_enabled(ozone->thumbnail_path_data,
             GFX_THUMBNAIL_RIGHT);
 }
@@ -757,7 +757,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone->system_tab_end                        = 0;
    ozone->tabs[ozone->system_tab_end]           = OZONE_SYSTEM_TAB_MAIN;
-   if (      settings->bools.menu_content_show_settings 
+   if (      settings->bools.menu_content_show_settings
          && !settings->bools.kiosk_mode_enable)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_SETTINGS;
    if (settings->bools.menu_content_show_favorites)
@@ -779,7 +779,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_NETPLAY;
 #endif
 
-   if (      settings->bools.menu_content_show_add 
+   if (      settings->bools.menu_content_show_add
          && !settings->bools.kiosk_mode_enable)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_ADD;
 
@@ -998,7 +998,7 @@ static bool ozone_init_font(
    font_data->glyph_width = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
 
    /* Create font */
-   font_data->font = gfx_display_font_file(p_disp, 
+   font_data->font = gfx_display_font_file(p_disp,
          font_path, font_size, is_threaded);
 
    if (!font_data->font)
@@ -1063,7 +1063,7 @@ static void ozone_cache_footer_labels(ozone_handle_t *ozone)
 
 /* Determines the size of all menu elements */
 static void ozone_set_layout(
-      ozone_handle_t *ozone, 
+      ozone_handle_t *ozone,
       settings_t *settings,
       bool is_threaded)
 {
@@ -1885,7 +1885,7 @@ static void ozone_render(void *data,
       if ((ozone->pointer.type == MENU_POINTER_MOUSE) ||
            ozone->pointer.pressed)
          ozone->pointer_in_sidebar   = ozone->draw_sidebar &&
-               (ozone->pointer.x < ozone->dimensions_sidebar_width 
+               (ozone->pointer.x < ozone->dimensions_sidebar_width
                 + ozone->sidebar_offset);
 
       /* If pointer has switched from entries to sidebar
@@ -2214,7 +2214,7 @@ static void ozone_draw_header(
          ozone->fonts.title.font,
          title,
          ticker_x_offset + 128 * scale_factor,
-           ozone->dimensions.header_height / 2 
+           ozone->dimensions.header_height / 2
          + ozone->fonts.title.line_centre_offset,
          video_width,
          video_height,
@@ -2288,7 +2288,7 @@ static void ozone_draw_header(
                ozone->fonts.time.font,
                msg,
                video_width - 85 * scale_factor,
-                 ozone->dimensions.header_height / 2 
+                 ozone->dimensions.header_height / 2
                + ozone->fonts.time.line_centre_offset,
                video_width,
                video_height,
@@ -2342,7 +2342,7 @@ static void ozone_draw_header(
             ozone->fonts.time.font,
             timedate,
             video_width - (85 * scale_factor) - timedate_offset,
-              ozone->dimensions.header_height / 2 
+              ozone->dimensions.header_height / 2
             + ozone->fonts.time.line_centre_offset,
             video_width,
             video_height,
@@ -3044,7 +3044,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          video_height,
          ozone->sidebar_offset + (unsigned) ozone->dimensions_sidebar_width,
          ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
-         video_width - (unsigned) ozone->dimensions_sidebar_width 
+         video_width - (unsigned) ozone->dimensions_sidebar_width
          + (-ozone->sidebar_offset),
          video_height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px);
 
@@ -3781,7 +3781,7 @@ static int ozone_pointer_up(void *userdata,
             return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_CANCEL);
          /* Tap/press entries: Activate and/or select item */
          else if ((ptr < entries_end) &&
-                  (x > ozone->dimensions_sidebar_width 
+                  (x > ozone->dimensions_sidebar_width
                    + ozone->sidebar_offset) &&
                   (x < width - ozone->animations.thumbnail_bar_position))
          {
@@ -3855,7 +3855,7 @@ static int ozone_pointer_up(void *userdata,
                ozone_go_to_sidebar(ozone, settings, sidebar_tag);
             /* Otherwise, select current category */
             else if (
-                     ozone->pointer_categories_selection 
+                     ozone->pointer_categories_selection
                   != ozone->categories_selection_ptr)
             {
                unsigned horizontal_list_size = (unsigned)ozone->horizontal_list.size;
@@ -3996,6 +3996,8 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
       file_list_t *list                  = menu_entries_get_selection_buf_ptr(0);
       bool playlist_valid                = false;
       size_t playlist_index              = selection;
+      char selection_core_name[sizeof(ozone->selection_core_name)];
+      char selection_lastplayed[sizeof(ozone->selection_lastplayed)];
 
       /* Get playlist index corresponding
        * to the selected entry */
@@ -4021,7 +4023,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
       else
          core_label = core_name;
 
-      snprintf(ozone->selection_core_name, sizeof(ozone->selection_core_name),
+      snprintf(selection_core_name, sizeof(selection_core_name),
          "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), core_label);
 
       /* Word wrap core name string, if required */
@@ -4030,11 +4032,14 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          unsigned metadata_len =
                (ozone->dimensions.thumbnail_bar_width - ((ozone->dimensions.sidebar_entry_icon_padding * 2) * 2)) /
                      ozone->fonts.footer.glyph_width;
-         word_wrap(ozone->selection_core_name, ozone->selection_core_name, metadata_len, true, 0);
+         word_wrap(ozone->selection_core_name, sizeof(ozone->selection_core_name), selection_core_name, metadata_len, true, 0);
          ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
       }
       else
+      {
+         strlcpy(ozone->selection_core_name, selection_core_name, sizeof(ozone->selection_core_name));
          ozone->selection_core_name_lines = 1;
+      }
 
       /* Fill play time if applicable */
       if (playlist_valid &&
@@ -4055,7 +4060,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          if (!string_is_empty(entry->runtime_str))
             strlcpy(ozone->selection_playtime, entry->runtime_str, sizeof(ozone->selection_playtime));
          if (!string_is_empty(entry->last_played_str))
-            strlcpy(ozone->selection_lastplayed, entry->last_played_str, sizeof(ozone->selection_lastplayed));
+            strlcpy(selection_lastplayed, entry->last_played_str, sizeof(selection_lastplayed));
       }
       else
       {
@@ -4063,7 +4068,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
 
-         snprintf(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), "%s %s",
+         snprintf(selection_lastplayed, sizeof(selection_lastplayed), "%s %s",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED));
       }
@@ -4076,11 +4081,14 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
           * formats. Last played strings are well defined, however
           * (unlike core names), so this should never overflow the
           * side bar */
-         word_wrap(ozone->selection_lastplayed, ozone->selection_lastplayed, 30, true, 0);
+         word_wrap(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), selection_lastplayed, 30, true, 0);
          ozone->selection_lastplayed_lines = ozone_count_lines(ozone->selection_lastplayed);
       }
       else
+      {
+         strlcpy(ozone->selection_lastplayed, selection_lastplayed, sizeof(ozone->selection_lastplayed));
          ozone->selection_lastplayed_lines = 1;
+      }
    }
 }
 

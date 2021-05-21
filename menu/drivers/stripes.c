@@ -1452,7 +1452,7 @@ static void stripes_list_switch_new(stripes_handle_t *stripes,
          free(tmp);
       }
 
-      strlcat(path, ".png", sizeof(path)); 
+      strlcat(path, ".png", sizeof(path));
 
       if (!path_is_valid(path))
          fill_pathname_application_special(path, sizeof(path),
@@ -2301,7 +2301,7 @@ static int stripes_draw_item(
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
       char entry_path[PATH_MAX_LENGTH];
-      
+
       entry_path[0] = '\0';
       strlcpy(entry_path, entry->path, sizeof(entry_path));
 
@@ -2406,7 +2406,7 @@ static int stripes_draw_item(
 
       label_offset      = - stripes->margins_label_top;
 
-      word_wrap(entry_sublabel, entry->sublabel, 50 * stripes_scale_mod[3], true, 0);
+      word_wrap(entry_sublabel, sizeof(entry_sublabel), entry->sublabel, 50 * stripes_scale_mod[3], true, 0);
 
       stripes_draw_text(xmb_shadows_enable, stripes, entry_sublabel,
             node->x + stripes->margins_screen_left +

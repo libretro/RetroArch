@@ -75,7 +75,7 @@ static void ozone_cursor_animation_cb(void *userdata)
          break;
    }
 
-   ozone->theme_dynamic_cursor_state = 
+   ozone->theme_dynamic_cursor_state =
       (ozone->theme_dynamic_cursor_state + 1) % 2;
 
    ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, target);
@@ -96,9 +96,9 @@ static void ozone_draw_cursor_slice(
    int slice_y           = (int)y + 8 * scale_factor;
    unsigned slice_new_w  = width + (24 + 1) * scale_factor;
    unsigned slice_new_h  = height + 20 * scale_factor;
-   gfx_display_ctx_driver_t 
+   gfx_display_ctx_driver_t
       *dispctx           = p_disp->dispctx;
-   static float 
+   static float
       last_alpha         = 0.0f;
 
    if (alpha != last_alpha)
@@ -280,7 +280,7 @@ void ozone_draw_cursor(
 
    /* Draw the cursor */
    if (ozone->has_all_assets)
-      ozone_draw_cursor_slice(ozone, 
+      ozone_draw_cursor_slice(ozone,
             p_disp,
             userdata,
             video_width, video_height,
@@ -311,7 +311,7 @@ void ozone_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   gfx_display_ctx_driver_t 
+   gfx_display_ctx_driver_t
       *dispctx              = p_disp->dispctx;
 
    rotate_draw.matrix       = &mymat;
@@ -360,7 +360,7 @@ void ozone_draw_backdrop(
    };
    static float last_alpha           = 0.0f;
 
-   /* TODO: Replace this backdrop by a blur shader 
+   /* TODO: Replace this backdrop by a blur shader
     * on the whole screen if available */
    if (alpha != last_alpha)
    {
@@ -495,7 +495,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
-   word_wrap(message, text, (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width, true, 0);
+   word_wrap(message, sizeof(message), text, (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width, true, 0);
 
    string_list_initialize(&list);
    string_split_noalloc(&list, message, "\n");
@@ -508,8 +508,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
             ozone->fonts.entries_label.font,
             msg,
             margin + padding * 2,       /* x */
-            margin + padding + 
-            ozone->fonts.entries_label.line_height 
+            margin + padding +
+            ozone->fonts.entries_label.line_height
             + y_offset,                /* y */
             video_width, video_height,
             text_color,
@@ -524,8 +524,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       {
          if (ozone->osk_cursor)
          {
-            unsigned cursor_x = draw_placeholder 
-               ? 0 
+            unsigned cursor_x = draw_placeholder
+               ? 0
                : font_driver_get_message_width(
                      ozone->fonts.entries_label.font, msg,
                      (unsigned)strlen(msg), 1);
@@ -534,14 +534,14 @@ void ozone_draw_osk(ozone_handle_t *ozone,
                   userdata,
                   video_width,
                   video_height,
-                    margin 
-                  + padding * 2 
+                    margin
+                  + padding * 2
                   + cursor_x,
-                    margin 
-                  + padding 
-                  + y_offset 
-                  + ozone->fonts.entries_label.line_height 
-                  - ozone->fonts.entries_label.line_ascender 
+                    margin
+                  + padding
+                  + y_offset
+                  + ozone->fonts.entries_label.line_height
+                  - ozone->fonts.entries_label.line_ascender
                   + ozone->dimensions.spacer_3px,
                   ozone->dimensions.spacer_1px,
                   ozone->fonts.entries_label.line_ascender,
@@ -585,7 +585,7 @@ void ozone_draw_messagebox(
    float scale_factor       = 0.0f;
    unsigned width           = video_width;
    unsigned height          = video_height;
-   gfx_display_ctx_driver_t 
+   gfx_display_ctx_driver_t
       *dispctx              = p_disp->dispctx;
 
    wrapped_message[0]       = '\0';
@@ -603,7 +603,7 @@ void ozone_draw_messagebox(
 
    /* Split message into lines */
    word_wrap(
-         wrapped_message, message,
+         wrapped_message, sizeof(wrapped_message), message,
          usable_width / (int)ozone->fonts.footer.glyph_width,
          true, 0);
 
@@ -621,7 +621,7 @@ void ozone_draw_messagebox(
       y_position    = height / 4;
 
    x                = width  / 2;
-   y                = y_position - (list.size 
+   y                = y_position - (list.size
          * ozone->fonts.footer.line_height) / 2;
 
    /* find the longest line width */
@@ -656,8 +656,8 @@ void ozone_draw_messagebox(
       unsigned slice_new_h = ozone->fonts.footer.line_height * (list.size + 2);
       int slice_x          = x - longest_width/2 - 48 * scale_factor;
       int slice_y          = y - ozone->fonts.footer.line_height +
-            ((slice_new_h >= 256) 
-             ? (16.0f * scale_factor) 
+            ((slice_new_h >= 256)
+             ? (16.0f * scale_factor)
              : (16.0f * ((float)slice_new_h / 256.0f)));
 
       gfx_display_draw_texture_slice(
@@ -686,7 +686,7 @@ void ozone_draw_messagebox(
                ozone->fonts.footer.font,
                msg,
                x - longest_width/2.0,
-               y + (i * ozone->fonts.footer.line_height) + 
+               y + (i * ozone->fonts.footer.line_height) +
                ozone->fonts.footer.line_ascender,
                width,
                height,

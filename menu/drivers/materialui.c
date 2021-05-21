@@ -2344,7 +2344,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
             materialui_texture_path(i), icon_path, &mui->textures.list[i],
             TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
-         RARCH_WARN("[GLUI] Asset missing: %s%s%s\n", icon_path, 
+         RARCH_WARN("[GLUI] Asset missing: %s%s%s\n", icon_path,
                PATH_DEFAULT_SLASH(), materialui_texture_path(i));
          has_all_assets = false;
       }
@@ -2592,7 +2592,7 @@ static void materialui_render_messagebox(
 
    /* Split message into lines */
    word_wrap(
-         wrapped_message, message,
+         wrapped_message, sizeof(wrapped_message), message,
          usable_width / (int)mui->font_data.list.glyph_width,
          true, 0);
 
@@ -2754,7 +2754,7 @@ static unsigned materialui_count_sublabel_lines(
          (has_icon ? (int)mui->icon_size : 0);
 
    word_wrap(
-         wrapped_sublabel_str, entry.sublabel,
+         wrapped_sublabel_str, sizeof(wrapped_sublabel_str), entry.sublabel,
          sublabel_width_max / (int)mui->font_data.hint.glyph_width,
          true, 0);
 
@@ -3515,9 +3515,9 @@ static void materialui_render(void *data,
                             = settings->uints.menu_materialui_landscape_layout_optimization;
    bool show_nav_bar        = settings->bools.menu_materialui_show_nav_bar;
    bool auto_rotate_nav_bar = settings->bools.menu_materialui_auto_rotate_nav_bar;
-   unsigned thumbnail_upscale_threshold = 
+   unsigned thumbnail_upscale_threshold =
       settings->uints.gfx_thumbnail_upscale_threshold;
-   bool network_on_demand_thumbnails    = 
+   bool network_on_demand_thumbnails    =
       settings->bools.network_on_demand_thumbnails;
 
    if (!mui || !list)
@@ -4039,7 +4039,7 @@ static void materialui_render_menu_entry_default(
       sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
 
       /* Wrap sublabel string */
-      word_wrap(wrapped_sublabel, entry->sublabel,
+      word_wrap(wrapped_sublabel, sizeof(wrapped_sublabel), entry->sublabel,
             (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
             true, 0);
 
@@ -4368,7 +4368,7 @@ static void materialui_render_menu_entry_playlist_list(
       sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
 
       /* Wrap sublabel string */
-      word_wrap(wrapped_sublabel, entry->sublabel,
+      word_wrap(wrapped_sublabel, sizeof(wrapped_sublabel), entry->sublabel,
             (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
             true, 0);
 
@@ -5032,7 +5032,7 @@ static void materialui_render_menu_list(
    file_list_t *list           = NULL;
    size_t entries_end          = menu_entries_get_size();
    size_t selection            = menu_navigation_get_selection();
-   unsigned header_height      = p_disp->header_height; 
+   unsigned header_height      = p_disp->header_height;
    bool touch_feedback_enabled =
          !mui->scrollbar.dragged &&
          !mui->show_fullscreen_thumbnails &&
@@ -5374,7 +5374,7 @@ static void materialui_render_entry_touch_feedback(
    else if (mui->touch_feedback_alpha > 0.0f)
    {
       gfx_animation_t *p_anim    = anim_get_ptr();
-      mui->touch_feedback_alpha -= (p_anim->delta_time * 1000.0f) 
+      mui->touch_feedback_alpha -= (p_anim->delta_time * 1000.0f)
          / (float)MENU_INPUT_PRESS_TIME_SHORT;
       mui->touch_feedback_alpha = (mui->touch_feedback_alpha < 0.0f) ? 0.0f : mui->touch_feedback_alpha;
    }
@@ -5524,7 +5524,7 @@ static void materialui_render_header(
                   MUI_BATTERY_PERCENT_MAX_LENGTH * sizeof(char));
 
             /* Cache width */
-            mui->sys_bar_cache.battery_percent_width = 
+            mui->sys_bar_cache.battery_percent_width =
                font_driver_get_message_width(
                   mui->font_data.hint.font,
                   mui->sys_bar_cache.battery_percent_str,
@@ -5536,7 +5536,7 @@ static void materialui_render_header(
          {
             /* Set critical by default, to ensure texture_battery
              * is always valid */
-            uintptr_t texture_battery = 
+            uintptr_t texture_battery =
                mui->textures.list[MUI_TEXTURE_BATTERY_CRITICAL];
 
             /* Draw battery icon */
@@ -5568,8 +5568,8 @@ static void materialui_render_header(
                   (uintptr_t)texture_battery,
                   (int)video_width - (
                      (int)mui->sys_bar_cache.battery_percent_width +
-                     (int)mui->sys_bar_margin                      + 
-                     (int)mui->sys_bar_icon_size                   + 
+                     (int)mui->sys_bar_margin                      +
+                     (int)mui->sys_bar_icon_size                   +
                      (int)mui->nav_bar_layout_width),
                   0,
                   0,
@@ -5635,8 +5635,8 @@ static void materialui_render_header(
          gfx_display_draw_text(mui->font_data.hint.font,
                mui->sys_bar_cache.timedate_str,
                (int)video_width - (
-                    (int)sys_bar_clock_width 
-                  + (int)sys_bar_battery_width 
+                    (int)sys_bar_clock_width
+                  + (int)sys_bar_battery_width
                   + (int)mui->nav_bar_layout_width),
                sys_bar_text_y,
                video_width, video_height, mui->colors.sys_bar_text,
@@ -5647,8 +5647,8 @@ static void materialui_render_header(
    }
 
    usable_sys_bar_width -= (2 * mui->sys_bar_margin);
-   usable_sys_bar_width  = (usable_sys_bar_width > 0) 
-      ? usable_sys_bar_width 
+   usable_sys_bar_width  = (usable_sys_bar_width > 0)
+      ? usable_sys_bar_width
       : 0;
 
    /* > Draw core name, if required */
@@ -6747,7 +6747,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    void *userdata                 = video_info->userdata;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
-   unsigned 
+   unsigned
       materialui_color_theme      = video_info->materialui_color_theme;
    bool video_fullscreen          = video_info->fullscreen;
    bool mouse_grabbed             = video_info->input_driver_grab_mouse_state;
@@ -6873,7 +6873,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_width, video_height);
 
    /* Draw navigation bar */
-   materialui_render_nav_bar(mui, p_disp, userdata, 
+   materialui_render_nav_bar(mui, p_disp, userdata,
          video_width, video_height);
 
    /* Flush second layer of text
@@ -6944,7 +6944,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             mui->colors.screen_fade);
 
       /* Draw message box */
-      materialui_render_messagebox(mui, 
+      materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
             video_height / 2, mui->msgbox);
@@ -6999,7 +6999,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
  * whether current menu is a playlist, and whether
  * user has enabled playlist thumbnails */
 static void materialui_set_list_view_type(
-      materialui_handle_t *mui, 
+      materialui_handle_t *mui,
       unsigned thumbnail_view_portrait,
       unsigned thumbnail_view_landscape)
 {
@@ -7531,7 +7531,7 @@ static void materialui_set_secondary_thumbnail_enable(
  * populating menu lists. */
 static void materialui_update_list_view(materialui_handle_t *mui, settings_t *settings)
 {
-   materialui_set_list_view_type(mui, 
+   materialui_set_list_view_type(mui,
          settings->uints.menu_materialui_thumbnail_view_portrait,
          settings->uints.menu_materialui_thumbnail_view_landscape);
    materialui_set_landscape_optimisations_enable(mui);
@@ -7820,7 +7820,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->last_height                       = height;
    mui->last_scale_factor                 = gfx_display_get_dpi_scale(
                                             p_disp, settings, width, height);
-   mui->dip_base_unit_size                = mui->last_scale_factor 
+   mui->dip_base_unit_size                = mui->last_scale_factor
       * MUI_DIP_BASE_UNIT_SIZE;
 
    mui->last_show_nav_bar                 = settings->bools.menu_materialui_show_nav_bar;
@@ -8075,7 +8075,7 @@ static void materialui_navigation_set(void *data, bool scroll)
 {
    materialui_handle_t *mui = (materialui_handle_t*)data;
    gfx_display_t *p_disp    = disp_get_ptr();
-    
+
    if (!mui || !scroll)
       return;
 
@@ -8124,7 +8124,7 @@ static void materialui_populate_nav_bar(
       materialui_handle_t *mui, const char *label, settings_t *settings)
 {
    unsigned menu_tab_index          = 0;
-   bool menu_content_show_playlists = 
+   bool menu_content_show_playlists =
       settings->bools.menu_content_show_playlists;
 
    /* Cache last active menu tab index */
@@ -8192,7 +8192,7 @@ static void materialui_init_transition_animation(
 {
    gfx_animation_ctx_entry_t alpha_entry;
    gfx_animation_ctx_entry_t x_offset_entry;
-   size_t stack_size                   = 
+   size_t stack_size                   =
       materialui_list_get_size(mui, MENU_LIST_PLAIN);
    uintptr_t             alpha_tag     = (uintptr_t)&mui->transition_alpha;
    uintptr_t             x_offset_tag  = (uintptr_t)&mui->transition_x_offset;
@@ -10452,7 +10452,7 @@ static void materialui_list_insert(
                      node->icon_texture_index = MUI_TEXTURE_SETTINGS;
                      node->icon_type          = MUI_ICON_TYPE_INTERNAL;
                   }
-            else if (type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN && 
+            else if (type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN &&
                   type <= MENU_SETTINGS_REMAPPING_PORT_END)
             {
                node->icon_texture_index = MUI_TEXTURE_SETTINGS;

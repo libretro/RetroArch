@@ -187,7 +187,7 @@ char *string_trim_whitespace(char *const s)
    return s;
 }
 
-char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, unsigned max_lines)
+char *word_wrap(char* buffer, size_t bufsize, const char *string, int line_width, bool unicode, unsigned max_lines)
 {
    unsigned src_i = 0;
    unsigned dst_i = 0;
@@ -215,6 +215,13 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, 
 
          character = utf8skip(&string[src_i], 1);
          char_len  = (unsigned)(character - &string[src_i]);
+
+         /* prevent buffer overrun */
+         if (dst_i + char_len >= bufsize)
+         {
+            buffer[dst_i] = 0;
+            return buffer;
+         }
 
          if (!unicode)
             counter += char_len - 1;

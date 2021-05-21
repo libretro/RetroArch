@@ -48,7 +48,7 @@ RETRO_BEGIN_DECLS
 #define TOUPPER(c)   ((c) & ~(lr_char_props[(unsigned char)(c)] & 0x20))
 
 /* C standard says \f \v are space, but this one disagrees */
-#define ISSPACE(c)   (lr_char_props[(unsigned char)(c)] & 0x80) 
+#define ISSPACE(c)   (lr_char_props[(unsigned char)(c)] & 0x80)
 
 #define ISDIGIT(c)   (lr_char_props[(unsigned char)(c)] & 0x40)
 #define ISALPHA(c)   (lr_char_props[(unsigned char)(c)] & 0x20)
@@ -149,7 +149,7 @@ char *string_trim_whitespace_right(char *const s);
 char *string_trim_whitespace(char *const s);
 
 /* max_lines == 0 means no limit */
-char *word_wrap(char *buffer, const char *string,
+char *word_wrap(char *buffer, size_t bufsize, const char *string,
       int line_width, bool unicode, unsigned max_lines);
 
 /* Splits string into tokens seperated by 'delim'

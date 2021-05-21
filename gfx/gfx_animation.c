@@ -34,7 +34,7 @@
 
 /* Pixel ticker nominally increases by one after each
  * TICKER_PIXEL_PERIOD ms (actual increase depends upon
- * ticker speed setting and display resolution) 
+ * ticker speed setting and display resolution)
  *
  * Formula is: (1.0f / 60.0f) * 1000.0f
  * */
@@ -313,45 +313,45 @@ static void gfx_animation_ticker_loop(uint64_t idx,
 {
    int ticker_period     = (int)(str_width + spacer_width);
    int phase             = idx % ticker_period;
-   
+
    /* Output offsets/widths are unsigned size_t, but it's
     * easier to perform the required calculations with ints,
     * so create some temporary variables... */
    /* Looping text is composed of up to three strings,
     * where string 1 and 2 are different regions of the
     * source text and string 2 is a spacer:
-    * 
+    *
     *     |-----max_width-----|
     * [string 1][string 2][string 3]
-    * 
+    *
     * The following implementation could probably be optimised,
     * but any performance gains would be trivial compared with
     * all the string manipulation that has to happen afterwards...
     */
-   
+
    /* String 1 */
    int offset = (phase < (int)str_width) ? phase : 0;
    int width  = (int)(str_width - phase);
    width      = (width < 0) ? 0 : width;
    width      = (width > (int)max_width) ? (int)max_width : width;
-   
+
    *offset1   = offset;
    *width1    = width;
-   
+
    /* String 2 */
    offset     = (int)(phase - str_width);
    offset     = offset < 0 ? 0 : offset;
    width      = (int)(max_width - *width1);
    width      = (width > (int)spacer_width) ? (int)spacer_width : width;
    width      = width - offset;
-   
+
    *offset2   = offset;
    *width2    = width;
-   
+
    /* String 3 */
    width      = (int)(max_width - (*width1 + *width2));
    width      = width < 0 ? 0 : width;
-   
+
    /* Note: offset is always zero here so offset3 is
     * unnecessary - but include it anyway to preserve
     * symmetry... */
@@ -467,7 +467,7 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
    /* Looping text is composed of up to three strings,
     * where string 1 and 2 are different regions of the
     * source text and string 2 is a spacer:
-    * 
+    *
     *     |----field_width----|
     * [string 1][string 2][string 3]
     */
@@ -665,7 +665,7 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
    /* Looping text is composed of up to three strings,
     * where string 1 and 2 are different regions of the
     * source text and string 2 is a spacer:
-    * 
+    *
     *     |----field_width----|
     * [string 1][string 2][string 3]
     */
@@ -966,7 +966,7 @@ static void gfx_animation_line_ticker_smooth_loop(uint64_t idx,
 
 static void gfx_delayed_animation_cb(void *userdata)
 {
-   gfx_delayed_animation_t *delayed_animation = 
+   gfx_delayed_animation_t *delayed_animation =
       (gfx_delayed_animation_t*) userdata;
 
    gfx_animation_push(&delayed_animation->entry);
@@ -1167,8 +1167,8 @@ bool gfx_animation_update(
    /* Note: cur_time & old_time are in us (microseconds),
     * delta_time is in ms */
    p_anim->cur_time                            = current_time;
-   p_anim->delta_time                          = (p_anim->old_time == 0) 
-      ? 0.0f 
+   p_anim->delta_time                          = (p_anim->old_time == 0)
+      ? 0.0f
       : (float)(p_anim->cur_time - p_anim->old_time) / 1000.0f;
    p_anim->old_time                            = p_anim->cur_time;
 
@@ -1837,6 +1837,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
    bool success                 = false;
    bool is_active               = false;
    gfx_animation_t *p_anim      = anim_get_ptr();
+   size_t wrapped_str_len       = 0;
 
    /* Sanity check */
    if (!line_ticker)
@@ -1848,12 +1849,13 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
       goto end;
 
    /* Line wrap input string */
-   wrapped_str = (char*)malloc((strlen(line_ticker->str) + 1) * sizeof(char));
+   wrapped_str_len = strlen(line_ticker->str) + 1 + 10; /* 10 uses additional '\n' */
+   wrapped_str = (char*)malloc(wrapped_str_len);
    if (!wrapped_str)
       goto end;
 
    word_wrap(
-         wrapped_str,
+         wrapped_str, wrapped_str_len,
          line_ticker->str,
          (int)line_ticker->line_len,
          true, 0);
@@ -1932,6 +1934,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    size_t line_offset             = 0;
    size_t top_fade_line_offset    = 0;
    size_t bottom_fade_line_offset = 0;
+   size_t wrapped_str_len         = 0;
    bool fade_active               = false;
    bool success                   = false;
    bool is_active                 = false;
@@ -1977,12 +1980,14 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
       goto end;
 
    /* Line wrap input string */
-   wrapped_str = (char*)malloc((strlen(line_ticker->src_str) + 1) * sizeof(char));
+   wrapped_str_len = strlen(line_ticker->src_str) + 1 + 10; /* 10 uses additional '\n' */
+   wrapped_str = (char*)malloc(wrapped_str_len);
    if (!wrapped_str)
       goto end;
 
    word_wrap(
          wrapped_str,
+         wrapped_str_len,
          line_ticker->src_str,
          (int)line_len,
          true, 0);

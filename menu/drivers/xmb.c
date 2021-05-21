@@ -746,15 +746,15 @@ static float *xmb_gradient_ident(unsigned xmb_color_theme)
 	  case XMB_THEME_MIDGAR:
          return &gradient_midgar[0];
 	  case XMB_THEME_PIKACHU_YELLOW:
-         return &gradient_pikachu_yellow[0];    
+         return &gradient_pikachu_yellow[0];
 	  case XMB_THEME_GAMECUBE_PURPLE:
-         return &gradient_gamecube_purple[0];  
+         return &gradient_gamecube_purple[0];
 	  case XMB_THEME_FAMICOM_RED:
-         return &gradient_famicom_red[0];  
+         return &gradient_famicom_red[0];
 	  case XMB_THEME_FLAMING_HOT:
-         return &gradient_flaming_hot[0];  
+         return &gradient_flaming_hot[0];
 	  case XMB_THEME_ICE_COLD:
-         return &gradient_ice_cold[0];    		 
+         return &gradient_ice_cold[0];
       case XMB_THEME_LEGACY_RED:
       default:
          break;
@@ -977,7 +977,7 @@ static void xmb_render_messagebox_internal(
 
    /* Split message into lines */
    word_wrap(
-         wrapped_message, message,
+         wrapped_message, sizeof(wrapped_message), message,
          usable_width / (xmb->font_size * 0.6f),
          true, 0);
 
@@ -1067,7 +1067,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    settings_t *settings = config_get_ptr();
    xmb_handle_t *xmb    = (xmb_handle_t*)data;
    int state_slot       = settings->ints.state_slot;
-   bool savestate_thumbnail_enable 
+   bool savestate_thumbnail_enable
                         = settings->bools.savestate_thumbnail_enable;
    if (!xmb)
       return;
@@ -1214,7 +1214,7 @@ static void xmb_refresh_thumbnail_image(void *data, unsigned i)
       return;
 
    /* Only refresh thumbnails if thumbnails are enabled */
-   if (  gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) || 
+   if (  gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
          gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
    {
       unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
@@ -1341,7 +1341,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          entry.value_enabled      = false;
          entry.sublabel_enabled   = false;
          menu_entry_get(&entry, 0, selection, NULL, true);
-         if (  !string_is_empty(entry.path) && 
+         if (  !string_is_empty(entry.path) &&
                !string_is_empty(node->fullpath))
          {
             gfx_thumbnail_set_content_image(xmb->thumbnail_path_data,
@@ -1438,7 +1438,7 @@ static void xmb_selection_pointer_changed(
          ia                      = xmb->items_active_alpha;
          iz                      = xmb->items_active_zoom;
          if (
-               gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) || 
+               gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
                gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
             )
          {
@@ -1693,7 +1693,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
    if (xmb_system_tab <= XMB_SYSTEM_TAB_SETTINGS)
    {
-      if (  gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) || 
+      if (  gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
             gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
       {
          /* This code is horrible, full of hacks...
@@ -2322,8 +2322,8 @@ static void xmb_list_open(xmb_handle_t *xmb)
    gfx_animation_ctx_entry_t entry;
 
    settings_t *settings       = config_get_ptr();
-   unsigned 
-      menu_xmb_animation_opening_main_menu = 
+   unsigned
+      menu_xmb_animation_opening_main_menu =
       settings->uints.menu_xmb_animation_opening_main_menu;
    int                    dir = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -3085,7 +3085,7 @@ static int xmb_draw_item(
    bool use_smooth_ticker              = settings->bools.menu_ticker_smooth;
    enum gfx_animation_ticker_type
       menu_ticker_type                 = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   unsigned xmb_thumbnail_scale_factor = 
+   unsigned xmb_thumbnail_scale_factor =
       settings->uints.menu_xmb_thumbnail_scale_factor;
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
@@ -3194,7 +3194,7 @@ static int xmb_draw_item(
                )
                found = true;
          }
-         
+
          if (!found)
             do_draw_text = true;
       }
@@ -3873,7 +3873,7 @@ static int xmb_menu_entry_action(
 }
 
 
-static void xmb_render(void *data, 
+static void xmb_render(void *data,
       unsigned width, unsigned height, bool is_idle)
 {
    /* 'i' must be of 'size_t', since it is passed
@@ -4076,7 +4076,7 @@ static bool xmb_shader_pipeline_active(unsigned menu_shader_pipeline)
       return false;
    return true;
 }
- 
+
 static void xmb_draw_bg(
       void *userdata,
       gfx_display_t *p_disp,
@@ -4325,7 +4325,7 @@ static void xmb_draw_fullscreen_thumbnails(
       int header_height                 = show_header ? (int)((float)xmb->font_size * 1.2f) + (frame_width * 2) : 0;
       bool xmb_vertical_thumbnails      = settings->bools.menu_xmb_vertical_thumbnails;
       bool menu_ticker_smooth           = settings->bools.menu_ticker_smooth;
-      enum gfx_animation_ticker_type 
+      enum gfx_animation_ticker_type
          menu_ticker_type               = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
 
       /* Sanity check: Return immediately if this is
@@ -4759,8 +4759,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
        * than for text/icons, and also needs to scale
        * with screen dimensions */
       float shadow_offset = xmb->shadow_offset * 1.5f * xmb->last_scale_factor;
-      shadow_offset       = (shadow_offset > xmb->shadow_offset) 
-         ? shadow_offset 
+      shadow_offset       = (shadow_offset > xmb->shadow_offset)
+         ? shadow_offset
          : xmb->shadow_offset;
 
       thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
@@ -5716,7 +5716,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 
-   if (      settings->bools.menu_content_show_add 
+   if (      settings->bools.menu_content_show_add
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 
@@ -6778,7 +6778,7 @@ static int xmb_list_push(void *data, void *userdata,
    bool kiosk_mode_enable          = settings->bools.kiosk_mode_enable;
 #ifdef HAVE_QT
    bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
-#endif	
+#endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
    bool menu_show_online_updater   = settings->bools.menu_show_online_updater;
 #endif
@@ -6935,7 +6935,7 @@ static int xmb_list_push(void *data, void *userdata,
             }
 #endif
 #endif
-            if (  !menu_content_show_settings && 
+            if (  !menu_content_show_settings &&
                   !string_is_empty(menu_content_show_settings_password))
             {
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
@@ -7217,7 +7217,7 @@ static int xmb_pointer_up(void *userdata,
              * selection... */
             for (;;)
             {
-               float top = xmb_item_y(xmb, bottom_idx, selection) 
+               float top = xmb_item_y(xmb, bottom_idx, selection)
                   + xmb->margins_screen_top;
 
                if (top > height)
