@@ -973,7 +973,8 @@ MY_NO_INLINE static void MY_FAST_CALL LenPriceEnc_UpdateTables(
   printf("\n MovePos %u", num);
   #endif
 */
-  
+
+#undef  MOVE_POS
 #define MOVE_POS(p, num) { \
     p->additionalOffset += (num); \
     p->matchFinder.Skip(p->matchFinderObj, (UInt32)(num)); }

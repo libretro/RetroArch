@@ -108,7 +108,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
 
-      for (i = 0; i < state->count; ++i)
+      for (i = 0; i < (unsigned)state->count; ++i)
       {
          const unsigned widget_width = state->info[i].width;
          x                           = video_width - widget_width - spacing;
