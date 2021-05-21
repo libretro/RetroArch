@@ -68,12 +68,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
 {
    core_info_t *core_info = NULL;
 
-   /* Set sublabel prefix */
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-   strlcat(s, ": ", len);
-
    /* Search for specified core */
-
    if (core_info_find(path, &core_info) &&
        core_info->licenses_list)
    {
@@ -83,12 +78,17 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
-      strlcat(s, tmp, len);
+      snprintf(s, len, "%s: %s", 
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+            tmp);
       return 1;
    }
 
    /* No license found - set to N/A */
-   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   snprintf(s, len, "%s: %s", 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         );
    return 1;
 }
 
@@ -914,6 +914,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_overscan_correction_bottom, ME
 #endif
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_show_sublabels,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_show_entry_idx,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_rgui_border_filler_enable,                MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_rgui_border_filler_thickness_enable,      MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_rgui_background_filler_thickness_enable,  MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE)
@@ -1024,7 +1025,7 @@ static int action_bind_sublabel_cpu_policy_entry_list(
    int idx = atoi(path);
    if (drivers)
    {
-      sprintf(s, "%s | Freq: %u MHz\n", drivers[idx]->scaling_governor,
+      snprintf(s, len, "%s | Freq: %u MHz\n", drivers[idx]->scaling_governor,
          drivers[idx]->current_frequency / 1000);
       return 0;
    }
@@ -1399,10 +1400,10 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
 
    /* Add core name */
-   strlcpy(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
-   strlcat(s, " ", len);
-   strlcat(s, entry->core_name, len);
+   snprintf(s, len, "%s %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
+         entry->core_name
+         );
 
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
@@ -1490,10 +1491,6 @@ static int action_bind_sublabel_core_updater_entry(
    core_updater_list_t *core_list         = core_updater_list_get_cached();
    const core_updater_list_entry_t *entry = NULL;
 
-   /* Set sublabel prefix */
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-   strlcat(s, ": ", len);
-
    /* Search for specified core */
    if (core_list &&
        core_updater_list_get_filename(core_list, path, &entry) &&
@@ -1505,12 +1502,20 @@ static int action_bind_sublabel_core_updater_entry(
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             entry->licenses_list, ", ");
-      strlcat(s, tmp, len);
+      snprintf(s, len,
+            "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+            tmp
+            );
       return 1;
    }
 
    /* No license found - set to N/A */
-   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   snprintf(s, len,
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         );
    return 1;
 }
 #endif
@@ -4081,6 +4086,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_show_sublabels);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_SHOW_ENTRY_IDX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_show_entry_idx);
             break;
          case MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_border_filler_enable);

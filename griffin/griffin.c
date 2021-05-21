@@ -517,7 +517,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(__PSL1GHT__)
-#include "../gfx/drivers/gcm_gfx.c"
+#include "../gfx/drivers/rsx_gfx.c"
 #elif defined(GEKKO)
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
@@ -683,13 +683,9 @@ INPUT
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
 #include "../input/drivers_joypad/ps2_joypad.c"
-#elif defined(__PS3__)
-#if defined(__PSL1GHT__)
-#include "../input/drivers/psl1ght_input.c"
-#else
+#elif defined(__PS3__) || defined(__PSL1GHT__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
-#endif
 #elif defined(ORBIS)
 #include "../input/drivers/ps4_input.c"
 #include "../input/drivers_joypad/ps4_joypad.c"
@@ -894,7 +890,7 @@ RSOUND
 /*============================================================
 AUDIO
 ============================================================ */
-#if defined(__PS3__)
+#if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
 #include "../audio/drivers/xenon360_audio.c"
@@ -1317,6 +1313,9 @@ DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_powerstate.c"
 #include "../tasks/task_content.c"
+#ifdef HAVE_CDROM
+#include "../tasks/task_content_disc.c"
+#endif
 #ifdef HAVE_PATCH
 #include "../tasks/task_patch.c"
 #endif

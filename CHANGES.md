@@ -1,4 +1,29 @@
 # Future
+- CORE INFO/FILE IO: Enable core info cache by default now for all platforms
+- LAKKA: Add brightness restore hook
+- LOCALIZATION: Fetch translations from Crowdin
+- MENU/OZONE: Added simple playlist entry enumeration
+- MENU/XMB: Fix display of 'Maximum Users' menu entry dropdown list
+- PS3/PSL1GHT: Joypad driver works again
+- RPNG: Fix some memory corruption if processing broken input PNG file
+- SECURITY: Fix CVE-2021-28927
+
+# 1.9.3
+- 3DS: Disable menu screensaver animations in XMB/GLUI
+- COMMAND: Initialize netcmd->cmd_source_len before recvfrom()
+- CONTENT LOADING/STATICALLY LINKED: Ensure 'Always Reload Core on Run Content' setting is applied when loading content via the file browser
+- CONTENT LOADING/EMSCRIPTEN: Fix content loading via file browser on platforms with 'broken' core handling (i.e. emscripten)
+- CORE INFO: Skip whitespace when writing compressed core info cache files
+- CORE INFO/FILE IO: Core Info cache; significant file I/O performance improvements on systems with slow disk file I/O
+- CORE INFO/FILE IO: Enable core info cache by default on all 'console' platforms
+- FREEBSD: FreeBSD build fix
+- LAKKA: Support for tweaking CPU governors/scaling policies 
+- LAKKA: This adds managed policies and settings to store them and reload them at startup
+- LIBRETRO API: Add API extension for cores to override frontend fast-forward state
+- MENU/RGUI: Fix saving of config files/overrides when 'Lock Menu Aspect Ratio' is enabled
+- SHADERS: Fix 'Auto-Shader Delay' functionality
+- UWP/D3D11: Disable mipmap generation
+- UWP/XBOX: Add 'Force 4K resolution' option (Force the resolution to the fullscreen size on Xbox, if set to 0, a fixed value of 3840 x 2160 will be used)
 
 # 1.9.2
 - 3DS: Enable graphics widgets / overlays

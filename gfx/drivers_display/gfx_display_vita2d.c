@@ -26,7 +26,7 @@
 #include "../../retroarch.h"
 #include "../font_driver.h"
 #include "../common/vita2d_common.h"
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 
 static const float vita2d_vertexes[] = {
    0, 0,

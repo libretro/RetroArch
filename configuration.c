@@ -93,6 +93,7 @@ enum video_driver_enum
    VIDEO_GDI,
    VIDEO_VGA,
    VIDEO_FPGA,
+   VIDEO_RSX,
    VIDEO_NULL
 };
 
@@ -315,6 +316,8 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_FPGA;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
+#elif defined(__PSL1GHT__)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_RSX;
 #else
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #endif
@@ -465,7 +468,7 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 #elif defined(PS2)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
-#elif defined(__PS3__) && !defined(__PSL1GHT__)
+#elif defined(__PS3__) || defined(__PSL1GHT__)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
 #elif defined(ORBIS)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
@@ -867,6 +870,8 @@ const char *config_get_default_video(void)
          return "vga";
       case VIDEO_FPGA:
          return "fpga";
+      case VIDEO_RSX:
+         return "rsx";
       case VIDEO_NULL:
          break;
    }
@@ -1818,6 +1823,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("content_runtime_log",           &settings->bools.content_runtime_log, true, DEFAULT_CONTENT_RUNTIME_LOG, false);
    SETTING_BOOL("content_runtime_log_aggregate", &settings->bools.content_runtime_log_aggregate, true, DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE, false);
    SETTING_BOOL("playlist_show_sublabels",       &settings->bools.playlist_show_sublabels, true, DEFAULT_PLAYLIST_SHOW_SUBLABELS, false);
+   SETTING_BOOL("playlist_show_entry_idx",       &settings->bools.playlist_show_entry_idx, true, DEFAULT_PLAYLIST_SHOW_ENTRY_IDX, false);
    SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, DEFAULT_PLAYLIST_SORT_ALPHABETICAL, false);
    SETTING_BOOL("playlist_fuzzy_archive_match",  &settings->bools.playlist_fuzzy_archive_match, true, DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH, false);
    SETTING_BOOL("playlist_portable_paths",       &settings->bools.playlist_portable_paths, true, DEFAULT_PLAYLIST_PORTABLE_PATHS, false);
@@ -3655,20 +3661,23 @@ bool config_load_override(void *data)
    {
       char temp_path[PATH_MAX_LENGTH];
 
-      temp_path[0]    = '\0';
-
       RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
             content_path);
 
       if (should_append)
       {
          RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
-         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
-         strlcat(temp_path, "|", sizeof(temp_path));
-         strlcat(temp_path, content_path, sizeof(temp_path));
+         snprintf(temp_path, sizeof(temp_path),
+               "%s|%s", 
+               path_get(RARCH_PATH_CONFIG_APPEND),
+               content_path
+               );
       }
       else
+      {
+         temp_path[0]    = '\0';
          strlcpy(temp_path, content_path, sizeof(temp_path));
+      }
 
       path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
 
@@ -3684,20 +3693,23 @@ bool config_load_override(void *data)
    {
       char temp_path[PATH_MAX_LENGTH];
 
-      temp_path[0]    = '\0';
-
       RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
             game_path);
 
       if (should_append)
       {
          RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
-         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
-         strlcat(temp_path, "|", sizeof(temp_path));
-         strlcat(temp_path, game_path, sizeof(temp_path));
+         snprintf(temp_path, sizeof(temp_path),
+               "%s|%s", 
+               path_get(RARCH_PATH_CONFIG_APPEND),
+               game_path
+               );
       }
       else
+      {
+         temp_path[0]    = '\0';
          strlcpy(temp_path, game_path, sizeof(temp_path));
+      }
 
       path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
 

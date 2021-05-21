@@ -197,9 +197,9 @@ bool set_cpu_scaling_min_frequency(
 {
    char fpath[PATH_MAX_LENGTH];
    char value[16];
-   sprintf(fpath, CPU_POLICIES_DIR "policy%u/scaling_min_freq",
+   snprintf(fpath, sizeof(fpath), CPU_POLICIES_DIR "policy%u/scaling_min_freq",
       driver->policy_id);
-   sprintf(value, "%" PRIu32 "\n", min_freq);
+   snprintf(value, sizeof(value), "%" PRIu32 "\n", min_freq);
    if (filestream_write_file(fpath, value, strlen(value)))
    {
       driver->min_policy_freq = min_freq;
@@ -215,9 +215,9 @@ bool set_cpu_scaling_max_frequency(
 {
    char fpath[PATH_MAX_LENGTH];
    char value[16];
-   sprintf(fpath, CPU_POLICIES_DIR "policy%u/scaling_max_freq",
+   snprintf(fpath, sizeof(fpath), CPU_POLICIES_DIR "policy%u/scaling_max_freq",
       driver->policy_id);
-   sprintf(value, "%" PRIu32 "\n", max_freq);
+   snprintf(value, sizeof(value), "%" PRIu32 "\n", max_freq);
    if (filestream_write_file(fpath, value, strlen(value)))
    {
       driver->max_policy_freq = max_freq;
@@ -294,7 +294,7 @@ uint32_t get_cpu_scaling_next_frequency_limit(uint32_t freq, int step)
 bool set_cpu_scaling_governor(cpu_scaling_driver_t *driver, const char* governor)
 {
    char fpath[PATH_MAX_LENGTH];
-   sprintf(fpath, CPU_POLICIES_DIR "policy%u/scaling_governor",
+   snprintf(fpath, sizeof(fpath), CPU_POLICIES_DIR "policy%u/scaling_governor",
       driver->policy_id);
    if (filestream_write_file(fpath, governor, strlen(governor)))
    {

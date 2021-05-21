@@ -684,6 +684,9 @@ static bool win32_browser(
 
       result = browser->open(&browser_state);
 
+      /* TODO/FIXME - this is weird - why is this called
+       * after the browser->open call? Seems to have no effect
+       * anymore here */
       if (filename && browser_state.path)
          strlcpy(filename, browser_state.path, filename_size);
 
@@ -1872,100 +1875,100 @@ static const char *meta_key_to_name(unsigned int meta_key)
  * and displays the current shortcut key */
 static void win32_localize_menu(HMENU menu)
 {
-   int index = 0;
 #ifndef LEGACY_WIN32
-   MENUITEMINFOW menuItemInfo;
+   MENUITEMINFOW menu_item_info;
 #else
-   MENUITEMINFOA menuItemInfo;
+   MENUITEMINFOA menu_item_info;
 #endif
+   int index = 0;
 
    for (;;)
    {
       BOOL okay;
       enum msg_hash_enums label_enum;
-      memset(&menuItemInfo, 0, sizeof(menuItemInfo));
-      menuItemInfo.cbSize     = sizeof(menuItemInfo);
-      menuItemInfo.dwTypeData = NULL;
+      memset(&menu_item_info, 0, sizeof(menu_item_info));
+      menu_item_info.cbSize     = sizeof(menu_item_info);
+      menu_item_info.dwTypeData = NULL;
 #if(WINVER >= 0x0500)
-      menuItemInfo.fMask      = MIIM_STRING | MIIM_FTYPE | MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
+      menu_item_info.fMask      = MIIM_STRING | MIIM_FTYPE | MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
 #else
-      menuItemInfo.fMask      =                            MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
+      menu_item_info.fMask      =                            MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
 #endif
 
 #ifndef LEGACY_WIN32
-      okay                    = GetMenuItemInfoW(menu, index, true, &menuItemInfo);
+      okay                    = GetMenuItemInfoW(menu, index, true, &menu_item_info);
 #else
-      okay                    = GetMenuItemInfoA(menu, index, true, &menuItemInfo);
+      okay                    = GetMenuItemInfoA(menu, index, true, &menu_item_info);
 #endif
       if (!okay)
          break;
 
       /* Recursion - call this on submenu items too */
-      if (menuItemInfo.hSubMenu)
-         win32_localize_menu(menuItemInfo.hSubMenu);
+      if (menu_item_info.hSubMenu)
+         win32_localize_menu(menu_item_info.hSubMenu);
 
-      label_enum = menu_id_to_label_enum(menuItemInfo.wID);
+      label_enum = menu_id_to_label_enum(menu_item_info.wID);
       if (label_enum != MSG_UNKNOWN)
       {
          int len;
 #ifndef LEGACY_WIN32
-         wchar_t* newLabel_unicode;
+         wchar_t* new_label_unicode = NULL;
 #else
-         char* newLabel_ansi;
+         char* new_label_ansi       = NULL;
 #endif
-         const char* newLabel    = msg_hash_to_str(label_enum);
-         unsigned int metaKey    = menu_id_to_meta_key(menuItemInfo.wID);
-         const char* metaKeyName = meta_key_to_name(metaKey);
-         const char* newLabel2   = newLabel;
-         char* newLabelText      = NULL;
+         const char* new_label      = msg_hash_to_str(label_enum);
+         unsigned int meta_key      = menu_id_to_meta_key(menu_item_info.wID);
+         const char* new_label2     = new_label;
+         const char* meta_key_name  = NULL;
+         char* new_label_text       = NULL;
 
          /* specific replacements:
             Load Content = "Ctrl+O"
             Fullscreen = "Alt+Enter" */
          if (label_enum == 
                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
-            metaKeyName = "Ctrl+O";
+            meta_key_name = "Ctrl+O";
          else if (label_enum == 
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
-            metaKeyName = "Alt+Enter";
+            meta_key_name = "Alt+Enter";
+         else
+            meta_key_name = meta_key_to_name(meta_key);
 
          /* Append localized name, tab character, and Shortcut Key */
-         if (metaKeyName && 0 != strcmp(metaKeyName, "nul"))
+         if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
-            int len1     = strlen(newLabel);
-            int len2     = strlen(metaKeyName);
-            int bufSize  = len1 + len2 + 2;
-            newLabelText = (char*)malloc(bufSize);
+            int len1       = strlen(new_label);
+            int len2       = strlen(meta_key_name);
+            int buf_size   = len1 + len2 + 2;
+            new_label_text = (char*)malloc(buf_size);
 
-            if (newLabelText)
+            if (new_label_text)
             {
-               newLabel2 = newLabelText;
-               strcpy(newLabelText, newLabel);
-               strcat(newLabelText, "\t");
-               strcat(newLabelText, metaKeyName);
+               new_label2              = new_label_text;
+               snprintf(new_label_text, buf_size, "%s\t%s", new_label, meta_key_name);
                /* Make first character of shortcut name uppercase */
-               newLabelText[len1 + 1] = toupper(newLabelText[len1 + 1]);
+               new_label_text[len1 + 1] = toupper(new_label_text[len1 + 1]);
             }
          }
 
 #ifndef LEGACY_WIN32
          /* Convert string from UTF-8, then assign menu text */
-         newLabel_unicode        = utf8_to_utf16_string_alloc(newLabel2);
-         len                     = wcslen(newLabel_unicode);
-         menuItemInfo.cch        = len;
-         menuItemInfo.dwTypeData = newLabel_unicode;
-         SetMenuItemInfoW(menu, index, true, &menuItemInfo);
-         free(newLabel_unicode);
+         new_label_unicode         = utf8_to_utf16_string_alloc(new_label2);
+         len                       = wcslen(new_label_unicode);
+         menu_item_info.cch        = len;
+         menu_item_info.dwTypeData = new_label_unicode;
+         SetMenuItemInfoW(menu, index, true, &menu_item_info);
+         free(new_label_unicode);
 #else
-         newLabel_ansi           = utf8_to_local_string_alloc(newLabel2);
-         len                     = strlen(newLabel_ansi);
-         menuItemInfo.cch        = len;
-         menuItemInfo.dwTypeData = newLabel_ansi;
-         SetMenuItemInfoA(menu, index, true, &menuItemInfo);
-         free(newLabel_ansi);
+         new_label_ansi            = utf8_to_local_string_alloc(new_label2);
+         len                       = strlen(new_label_ansi);
+         menu_item_info.cch        = len;
+         menu_item_info.dwTypeData = new_label_ansi;
+         SetMenuItemInfoA(menu, index, true, &menu_item_info);
+         free(new_label_ansi);
 #endif
-         if (newLabelText)
-            free(newLabelText);
+         if (new_label_text)
+            free(new_label_text);
       }
       index++;
    }

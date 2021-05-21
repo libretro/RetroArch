@@ -1336,6 +1336,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "與顯示驅動回報相同的更新率。"
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "強制禁止sRGB幀緩衝"

@@ -1408,6 +1408,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Vom Displaytreiber angegebene Bildwiederholfrequenz."
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Vertikale Signalfrequenz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Vertikale Signalfrequenz des Bildschirms setzen. '50 Hz' ermöglicht glatte Videowiedergabe von PAL-Inhalten."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "Deaktivierung des sRGB FBO erzwingen"
@@ -1970,7 +1980,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "Den 'Spielfokus'-Modus aktivieren, wenn Inhalte gestartet oder fortgesetzt werden. Wenn diese Option auf 'Erkennen' gesetzt ist, wird sie aktiviert, wenn der aktuelle Kern über die Frontend-Tastaturrückruffunktion verfügt."
+   "Den 'Spielfokus'-Modus aktivieren, wenn Inhalte gestartet oder fortgesetzt werden. Wenn diese Option auf 'Erkennen' gesetzt ist, wird sie aktiviert, wenn der aktuelle Core über die Frontend-Tastaturrückruffunktion verfügt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -2740,6 +2750,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Überprüfen, ob benötigte Firmware vorhanden ist, bevor versucht wird, Inhalte zu laden."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "Core-Infodateien-Cache"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "Einen dauerhaften lokalen Cache der Informationen installierter Cores anlegen. Reduziert erheblich die Ladezeiten auf Plattformen mit langsamem Festplattenzugriff."
+   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -3098,7 +3116,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "Zu einem vorherigen Punkt des Spiels zurückkehren. Dies verursacht einen schweren Performance-Einbruch beim Spielen."
+   "Zu einem vorherigen Punkt des Spiels zurückkehren. Dies verursacht einen schweren Leistungseinbruch beim Spielen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -3565,6 +3583,14 @@ MSG_HASH(
    "Eine Meldung auf dem Bildschirm anzeigen, wenn Cheat-Codes angewendet werden."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Patch-Benachrichtigungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Eine Meldung auf dem Bildschirm anzeigen, wenn Soft-Patches angewendet werden."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "Eine Bildschirmmeldung anzeigen, wenn Eingabegeräte angeschlossen/getrennt werden."
    )
@@ -3800,6 +3826,38 @@ MSG_HASH(
    "RetroArch automatisch beenden, wenn Inhalte geschlossen werden. 'CLI' wird nur beendet, wenn der Inhalt über die Befehlszeile gestartet wird."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "Menü-Bildschirmschoner-Timeout"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "Wenn das Menü aktiv ist, wird bei Inaktivität nach der angegebenen Zeit ein Bildschirmschoner angezeigt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "Menü-Bildschirmschoner-Animation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   "Animationseffekt anzeigen, während der Menü-Bildschirmschoner aktiv ist. Hat mäßige Performance-Kosten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Schnee"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "Sternenfeld"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "Menü-Bildschirmschoner-Animationsgeschwindigkeit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "Geschwindigkeit des Animationseffekts des Menü-Bildschirmschoners anpassen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Maus-Unterstützung"
    )
@@ -3846,6 +3904,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Maximale Geschwindigkeit des Cursors beim Halten einer Bildlaufrichtung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Menü Scroll-Verzögerung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Initiale Verzögerung in Millisekunden, wenn eine Richtung zum Scrollen gedrückt gehalten wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -3965,7 +4031,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
-   "Hitergrundbild"
+   "Hintergrundbild"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
@@ -4033,7 +4099,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
-   "Eine geglättete Bildlaufanimation verwenden, wenn langer Menütext angezeigt wird. Hat einen geringen Einfluss auf die Leistung."
+   "Eine flüssige Bildlaufanimation verwenden, wenn langer Menütext angezeigt wird. Hat einen geringen Einfluss auf die Leistung."
    )
 
 /* Settings > AI Service */
@@ -6873,6 +6939,14 @@ MSG_HASH(
    "Im Dateibrowser ein voreingestelltes Menüthema auswählen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Menütransparenz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Laufende Inhalte im Hintergrund anzeigen, während das Schnellmenü aktiv ist. Das Deaktivieren der Transparenz kann die Themafarbe ändern."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Schatteneffekte"
    )
@@ -6895,6 +6969,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    "Geschwindigkeit der Hintergrundpartikelanimation anpassen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Bildschirmschoner-Hintergrund-Animation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Einen Hintergrundpartikel-Effekt anzeigen, während der Menü-Bildschirmschoner aktiv ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
@@ -8250,7 +8332,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
-   "Keine Leistungszähler."
+   "Keine Leistungsindikatoren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
@@ -9055,6 +9137,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_APPLYING_CHEAT,
    "Änderungen an Cheats werden übernommen."
+   )
+MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "Patch angewandt: %s"
    )
 MSG_HASH(
    MSG_APPLYING_SHADER,
@@ -10415,6 +10501,90 @@ MSG_HASH(
    "Dauerleistungsmodus"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
+   "Richtlinie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
+   "Reglermodus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Manuell"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Ermöglicht das manuelle Anpassen aller Details in jeder CPU: Regler, Frequenzen usw. Nur für fortgeschrittene Benutzer empfohlen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Leistung (verwaltet)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Standard- und empfohlener Modus. Maximale Leistung während der Wiedergabe und Stromsparmodus beim Pausieren oder Betrachten der Menüs."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Individuell verwaltet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Ermöglicht die Auswahl der Regler, die in Menüs und während des Spiels verwendet werden sollen. Performance, Ondemand oder Schedutil werden während des Spiels empfohlen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Maximale Leistung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Immer maximale Leistung: höchste Frequenzen für bestes Erlebnis."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Minimaler Verbrauch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Die niedrigste verfügbare Frequenz verwenden, um Strom zu sparen. Nützlich bei batteriebetriebenen Geräten, aber die Leistung wird deutlich reduziert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Ausgewogen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Passt sich an die aktuelle Arbeitsbelastung an. Funktioniert gut mit den meisten Geräten und Emulatoren und hilft Energie zu sparen. Anspruchsvolle Spiele und Cores könnten auf einigen Geräten einen Leistungsverlust erleiden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   "Minimale Frequenz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   "Maximale Frequenz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   "Minimale Kern-Frequenz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   "Maximale Kern-Frequenz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
+   "CPU-Regler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
+   "Kern-Regler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
+   "Menü-Regler"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Verwende PAL60-Modus"
    )
@@ -10557,6 +10727,14 @@ MSG_HASH(
    "Wi-Fi Access Point aktivieren oder deaktivieren."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Zeitzone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Zeitzone wählen, um Datum und Zeit an Ihren Standort anzupassen."
+   )
+MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Wi-Fi Access Point wird ausgeschaltet."
    )
@@ -10603,6 +10781,14 @@ MSG_HASH(
    "X/Y-Skala für Wiimote Lichtpistolengeschwindigkeit anpassen."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Touchscreen-Skalierung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Die x/y-Skalierung der Touchscreen-Koordinaten an die Anzeigenskalierung des Betriebssystems anpassen."
+   )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

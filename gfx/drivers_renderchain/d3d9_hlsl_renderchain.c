@@ -28,7 +28,7 @@
 
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
 
-#include "../../defines/d3d_defines.h"
+#include <defines/d3d_defines.h>
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 

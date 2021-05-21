@@ -1484,6 +1484,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "디스플레이 드라이버가 보고한 화면 주사율입니다."
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "주사율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "디스플레이의 주사율을 설정합니다. '50 Hz'로 설정하면 PAL 컨텐츠를 실행할 때 부드럽게 표시할 수 있습니다."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "sRGB FBO 강제 사용해제"
@@ -2143,6 +2153,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "'단일 버튼' 터보 모드의 기본 터보 활성화 버튼을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "터보 입력"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "터보 입력 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2843,6 +2861,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "콘텐츠를 불러오기 전에 필요한 펌웨어가 모두 있는지 확인합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "코어 정보 파일 캐싱하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "설치된 코어 정보에 대한 로컬 캐시를 구축합니다. 디스크 성능이 좋지 않은 플랫폼에서 불러오는 시간을 크게 줄일 수 있습니다."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -3677,6 +3703,14 @@ MSG_HASH(
    "치트코드가 적용되었을 때 화면상에 메시지를 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "패치 알림"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "ROM을 소프트 패치할 때 알림을 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "입력 장치가 연결/해제 되었을 때 온스크린 메시지를 표시합니다."
    )
@@ -3916,6 +3950,42 @@ MSG_HASH(
    "컨텐츠 종료 시 RetroArch를 자동으로 종료시킵니다. 'CLI' 종료는 명령줄 실행시에만 적용됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "메뉴 화면 보호기 대기 시간"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "메뉴에서 이 시간만큼 활동이 없으면 화면 보호기를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "메뉴 화면 보호기 애니메이션"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   "화면 보호기가 작동 중일 때 애니메이션을 표시합니다. 약간의 성능 저하가 생깁니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "눈"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "별"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   "소용돌이"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "메뉴 화면 보호기 애니메이션 속도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "메뉴 화면 보호기 애니메이션 효과의 속도를 조정합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "마우스 지원"
    )
@@ -3962,6 +4032,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "한 방향으로 스크롤할 때 커서의 최대 속도를 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "메뉴 스크롤 지연 시간"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "메뉴를 누르는 방향으로 빠르게 스크롤하기 전에 기다릴 지연 시간(밀리초)입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -4788,7 +4866,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "고전 게임에서 도전과제를 하십시오. 자세한 정보는 https://retroachievements.org를 찾아주세요."
+   "고전 게임에서 도전과제를 사용할 수 있습니다. 자세한 정보는 https://retroachievements.org에서 확인하세요."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -5349,7 +5427,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "고전 게임에서 도전과제를 하십시오. 자세한 정보는 https://retroachievements.org를 찾아주세요."
+   "고전 게임에서 도전과제를 사용할 수 있습니다. 자세한 정보는 https://retroachievements.org에서 확인하세요."
    )
 
 /* Settings > User > Accounts > RetroAchievements */
@@ -7613,6 +7691,14 @@ MSG_HASH(
    "파일 탐색기에서 테마 프리셋을 선택하십시오."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "반투명 메뉴"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "빠른 메뉴 활성 시 실행 중인 컨텐츠를 배경 화면으로 표시합니다. 이 설정을 변경하면 테마 색상이 달라질 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "그림자 효과"
    )
@@ -7635,6 +7721,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    "배경 입자 애니메이션 효과의 속도를 조정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "화면 보호기 배경 애니메이션"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "화면 보호기가 작동중일 때 배경 입자 효과를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
@@ -8187,7 +8281,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PIKACHU_YELLOW,
-   "피카추 옐로우"
+   "피카츄 옐로우"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE,
@@ -8207,7 +8301,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
-   "미드가"
+   "미드가르"
    )
 
 /* Ozone: Settings > User Interface > Appearance */
@@ -9966,7 +10060,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
-   "실생목록 정리됨: "
+   "실행목록 정리됨: "
    )
 MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
@@ -9999,6 +10093,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_APPLYING_CHEAT,
    "치트 변경 적용."
+   )
+MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "패치 적용 중: %s"
    )
 MSG_HASH(
    MSG_APPLYING_SHADER,
@@ -10138,7 +10236,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
-   "올바른 컨텐츠 경로를 찾지 못했습니다."
+   "올바른 컨텐츠 패치를 찾지 못했습니다."
    )
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -11371,6 +11469,94 @@ MSG_HASH(
    "지속적 성능 모드"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+   "CPU 성능 및 전력"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
+   "정책"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
+   "가버너 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "수동"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "가버너, 클럭 속도 등 CPU의 모든 부분을 직접 설정합니다. 전문가가 아니라면 권장하지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "성능 (관리)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "추천하는 기본 모드입니다. 게임 플레이 중에는 최고 성능, 일시 정지 중이거나 메뉴 탐색 중에는 전원 절약 모드로 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "사용자 정의 관리"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "메뉴와 게임 플레이 중에 어떤 가버너를 사용할 것인지 직접 선택합니다. 게임 플레이 중에는 Performance, Ondemand, Schedutil을 사용할 것을 권장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "최고 성능"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "최상의 경험을 위해 항상 최고 성능을 유지합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "전원 절약"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "가장 낮은 속도로 작동하여 전원을 절약합니다. 배터리를 사용하는 기기에서 유용하지만 성능이 크게 감소됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "균형"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "작업량에 따라 성능을 유동적으로 조정합니다. 대부분의 기기와 에뮬레이터에서 잘 작동하고 전원을 절약할 수 있습니다. 높은 성능을 필요로 하는 게임이나 코어에서는 성능 문제가 일어날 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   "최저 속도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   "최고 속도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   "최저 코어 속도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   "최고 코어 속도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
+   "CPU 가버너"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
+   "코어 가버너"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
+   "메뉴 가버너"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60 모드 사용"
    )
@@ -11521,6 +11707,14 @@ MSG_HASH(
    "Wi-Fi 액세스 포인트를 사용합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "시간대"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "시간대를 설정하여 날짜와 시간을 현재 위치에 맞게 조정합니다."
+   )
+MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Wi-Fi 액세스 포인트를 종료합니다."
    )
@@ -11567,6 +11761,14 @@ MSG_HASH(
    "Wii 리모컨의 x/y 속도 배율을 조정합니다."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "터치 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "운영체제 단의 화면 크기 배율에 맞게 터치 입력의 X/Y 좌표 배율을 조정합니다."
+   )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

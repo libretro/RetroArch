@@ -28,7 +28,7 @@
 #include <retro_inline.h>
 
 #include "../../retroarch.h"
-#include "../../defines/gx_defines.h"
+#include <defines/gx_defines.h>
 
 typedef struct
 {

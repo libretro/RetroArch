@@ -26,7 +26,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
-#include "../../defines/cocoa_defines.h"
+#include <defines/cocoa_defines.h>
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
 

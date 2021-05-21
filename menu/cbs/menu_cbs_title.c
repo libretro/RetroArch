@@ -100,14 +100,10 @@ static void action_get_title_fill_path_search_filter_default(
 {
    const char *title = msg_hash_to_str(lbl);
 
-   if (!string_is_empty(title))
-      strlcpy(s, title, len);
-
-   if (!string_is_empty(path))
-   {
-      strlcat(s, " ", len);
-      strlcat(s, path, len);
-   }
+   snprintf(s, len, "%s %s", 
+         string_is_empty(title) ? "" : title,
+         string_is_empty(path)  ? "" : path
+         );
 
    menu_entries_search_append_terms_string(s, len);
 }
@@ -413,22 +409,21 @@ static int action_get_title_deferred_core_backup_list(
    if (string_is_empty(core_path) || string_is_empty(prefix))
       return 0;
 
-   /* Set title prefix */
-   strlcpy(s, prefix, len);
-   strlcat(s, ": ", len);
-
    /* Search for specified core
     * > If core is found, add display name */
    if (core_info_find(core_path, &core_info) &&
        core_info->display_name)
-      strlcat(s, core_info->display_name, len);
+      snprintf(s, len, "%s: %s", prefix,
+            core_info->display_name);
    else
    {
       /* > If not, use core file name */
       const char *core_filename = path_basename_nocompression(core_path);
-
       if (!string_is_empty(core_filename))
-         strlcat(s, core_filename, len);
+         snprintf(s, len, "%s: %s", prefix,
+               core_filename);
+      else
+         snprintf(s, len, "%s: ", prefix);
    }
 
    return 1;
@@ -755,37 +750,35 @@ DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load,        
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load_append, MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND)
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_overlay,                MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET)
 
-static int action_get_title_generic(char *s, size_t len, const char *path,
-      const char *text)
+static int action_get_title_generic(char *s, size_t len,
+      const char *path, const char *text)
 {
-   bool ret                     = false;
-   struct string_list list_path = {0};
-
    if (!string_is_empty(path))
    {
+      bool ret                     = false;
+      struct string_list list_path = {0};
       string_list_initialize(&list_path);
-      ret = string_split_noalloc(&list_path, path, "|");
-   }
-
-   if (ret)
-   {
-      char elem0_path[255];
-
-      elem0_path[0] = '\0';
-
-      if (list_path.size > 0)
-         strlcpy(elem0_path, list_path.elems[0].data, sizeof(elem0_path));
-      string_list_deinitialize(&list_path);
-      strlcpy(s, text, len);
-
-      if (!string_is_empty(elem0_path))
+      if ((ret = string_split_noalloc(&list_path, path, "|")))
       {
-         strlcat(s, "- ", len);
-         strlcat(s, path_basename(elem0_path), len);
+         char elem0_path[255];
+         elem0_path[0] = '\0';
+
+         if (list_path.size > 0)
+            strlcpy(elem0_path, list_path.elems[0].data,
+                  sizeof(elem0_path));
+         string_list_deinitialize(&list_path);
+
+         if (!string_is_empty(elem0_path))
+            snprintf(s, len, "%s- %s",
+                  text,
+                  path_basename(elem0_path));
+         else
+            strlcpy(s, text, len);
+         return 0;
       }
    }
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
    return 0;
 }
@@ -811,23 +804,22 @@ DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_database_info,MENU_E
 static int action_get_sideload_core_list(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST), len);
-   strlcat(s, " ", len);
-   if (!string_is_empty(path))
-      strlcat(s, path, len);
+   snprintf(s, len,
+         "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
+         string_is_empty(path) ? "" : path
+         );
    return 0;
 }
 
 static int action_get_title_default(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
-
    if (!string_is_empty(path))
-   {
-      strlcat(s, " ", len);
-      strlcat(s, path, len);
-   }
+      snprintf(s, len, "%s %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE),
+            path);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
 
    menu_entries_search_append_terms_string(s, len);
 
@@ -894,13 +886,10 @@ static int action_get_title_group_settings(const char *path, const char *label,
       }
       string_list_deinitialize(&list_label);
 
-      strlcpy(s, elem0, len);
-
       if (!string_is_empty(elem1))
-      {
-         strlcat(s, " - ", len);
-         strlcat(s, elem1, len);
-      }
+         snprintf(s, len, "%s - %s", elem0, elem1);
+      else
+         strlcpy(s, elem0, len);
    }
 
    return 0;

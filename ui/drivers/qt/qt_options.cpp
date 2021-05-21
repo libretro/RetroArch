@@ -12,12 +12,12 @@ extern "C" {
 
 #include <string/stdstring.h>
 
-#include "../../../../gfx/video_display_server.h"
-#include "../../input/input_driver.h"
-#include "../../network/netplay/netplay.h"
-#include "../../../../retroarch.h"
+#include "../../../gfx/video_display_server.h"
+#include "../../../input/input_driver.h"
+#include "../../../network/netplay/netplay.h"
+#include "../../../retroarch.h"
 
-#include "../../verbosity.h"
+#include "../../../verbosity.h"
 
 #ifndef CXX_BUILD
 }

@@ -2634,9 +2634,12 @@ int generic_menu_entry_action(
       char title_name[255];
       char speak_string[512];
 
-      strlcpy(title_name, "", sizeof(title_name));
-      strlcpy(current_label, "", sizeof(current_label));
-      get_current_menu_value(&p_rarch->menu_driver_state, current_value, sizeof(current_value));
+      speak_string[0]  = '\0';
+      title_name  [0]  = '\0';
+      current_label[0] = '\0';
+
+      get_current_menu_value(&p_rarch->menu_driver_state,
+            current_value, sizeof(current_value));
 
       switch (action)
       {
@@ -2671,20 +2674,19 @@ int generic_menu_entry_action(
             break;
       }
 
-      strlcpy(speak_string, "", sizeof(speak_string));
-      if (!string_is_equal(title_name, ""))
-      {
-         strlcpy(speak_string, title_name, sizeof(speak_string));
-         strlcat(speak_string, " ", sizeof(speak_string));
-      }
-      strlcat(speak_string, current_label, sizeof(speak_string));
+      if (!string_is_empty(title_name))
+         snprintf(speak_string, sizeof(speak_string),
+               "%s %s", title_name, current_label); 
+      else
+         strlcpy(speak_string, current_label, sizeof(speak_string));
+
       if (!string_is_equal(current_value, "..."))
       {
          strlcat(speak_string, " ", sizeof(speak_string));
          strlcat(speak_string, current_value, sizeof(speak_string));
       }
 
-      if (!string_is_equal(speak_string, ""))
+      if (!string_is_empty(speak_string))
          accessibility_speak_priority(p_rarch,
                accessibility_enable,
                accessibility_narrator_speech_speed,
@@ -5899,11 +5901,8 @@ static bool menu_shader_manager_save_preset_internal(
       }
    }
    else
-   {
-      strcpy_literal(fullname, "retroarch");
-      strlcat(fullname,
-            video_shader_get_preset_extension(type), sizeof(fullname));
-   }
+      snprintf(fullname, sizeof(fullname), "retroarch%s",
+            video_shader_get_preset_extension(type));
 
    if (path_is_absolute(fullname))
    {
@@ -7643,7 +7642,8 @@ static void netplay_announce(struct rarch_state *p_rarch)
    uint32_t content_crc             = content_get_crc();
    struct string_list *subsystem    = path_get_subsystem_list();
 
-   buf[0] = '\0';
+   frontend_architecture[0]         = '\0';
+   buf[0]                           = '\0';
 
    if (subsystem)
    {
@@ -7672,12 +7672,11 @@ static void netplay_announce(struct rarch_state *p_rarch)
    frontend_drv =
       (const frontend_ctx_driver_t*)frontend_driver_get_cpu_architecture_str(
             frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
-   strlcpy(frontend_architecture, frontend_drv->ident,
-         sizeof(frontend_architecture));
-   strlcat(frontend_architecture, " ",
-         sizeof(frontend_architecture));
-   strlcat(frontend_architecture, frontend_architecture_tmp,
-         sizeof(frontend_architecture));
+   snprintf(frontend_architecture, 
+         sizeof(frontend_architecture),
+         "%s %s",
+         frontend_drv->ident,
+         frontend_architecture_tmp);
 
 #ifdef HAVE_DISCORD
    if (discord_is_ready())
@@ -10785,11 +10784,11 @@ static bool retroarch_apply_shader(
                      msg_hash_to_str(MSG_SHADER),
                      preset_file);
             else
-            {
-               strlcpy(msg, msg_hash_to_str(MSG_SHADER), sizeof(msg));
-               strlcat(msg, ": ", sizeof(msg));
-               strlcat(msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), sizeof(msg));
-            }
+               snprintf(msg, sizeof(msg),
+                     "%s: %s", 
+                     msg_hash_to_str(MSG_SHADER),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)
+                     );
 #ifdef HAVE_GFX_WIDGETS
             if (p_rarch->widgets_active)
                gfx_widget_set_generic_message(&p_rarch->dispwidget_st,
@@ -12826,7 +12825,6 @@ static bool command_event_save_config(
       const char *config_path,
       char *s, size_t len)
 {
-   char log[PATH_MAX_LENGTH];
    bool path_exists = !string_is_empty(config_path);
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
@@ -12836,10 +12834,7 @@ static bool command_event_save_config(
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
-
-      strcpy_literal(log, "[Config]: ");
-      strlcat(log, s, sizeof(log));
-      RARCH_LOG("%s\n", log);
+      RARCH_LOG("[Config]: %s\n", s);
       return true;
    }
 
@@ -12848,10 +12843,7 @@ static bool command_event_save_config(
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
-
-      strcpy_literal(log, "[Config]: ");
-      strlcat(log, s, sizeof(log));
-      RARCH_ERR("%s\n", log);
+      RARCH_ERR("[Config]: %s\n", s);
    }
 
    return false;
@@ -12867,7 +12859,8 @@ static bool command_event_save_config(
  **/
 static bool command_event_save_core_config(
       struct rarch_state *p_rarch,
-      const char *dir_menu_config)
+      const char *dir_menu_config,
+      const char *rarch_path_config)
 {
    char msg[128];
    char config_name[PATH_MAX_LENGTH];
@@ -12882,8 +12875,8 @@ static bool command_event_save_core_config(
 
    if (!string_is_empty(dir_menu_config))
       strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
-   else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
-      fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
+   else if (!string_is_empty(rarch_path_config)) /* Fallback */
+      fill_pathname_basedir(config_dir, rarch_path_config,
             sizeof(config_dir));
 
    if (string_is_empty(config_dir))
@@ -14393,7 +14386,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_SAVE_CONFIG:
 #ifdef HAVE_CONFIGFILE
          if (!command_event_save_core_config(p_rarch,
-                  settings->paths.directory_menu_config))
+                  settings->paths.directory_menu_config,
+                  path_get(RARCH_PATH_CONFIG)))
             return false;
 #endif
          break;
@@ -17117,7 +17111,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
          if (runloop_state.core_options)
-            retroarch_deinit_core_options(p_rarch);
+            retroarch_deinit_core_options(p_rarch,
+                  path_get(RARCH_PATH_CORE_OPTIONS)
+                  );
          retroarch_init_core_variables(
                p_rarch,
                (const struct retro_variable *)data);
@@ -17127,7 +17123,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_CORE_OPTIONS.\n");
 
          if (runloop_state.core_options)
-            retroarch_deinit_core_options(p_rarch);
+            retroarch_deinit_core_options(p_rarch,
+                  path_get(RARCH_PATH_CORE_OPTIONS)
+                  );
          rarch_init_core_options(p_rarch,
                (const struct retro_core_option_definition*)data);
 
@@ -17141,7 +17139,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                core_option_manager_get_definitions((const struct retro_core_options_intl*)data);
 
             if (runloop_state.core_options)
-               retroarch_deinit_core_options(p_rarch);
+               retroarch_deinit_core_options(p_rarch,
+                     path_get(RARCH_PATH_CORE_OPTIONS)
+                     );
 
             /* Parse core_options_intl to create option definitions array */
             if (option_defs)
@@ -18890,7 +18890,8 @@ static void uninit_libretro_symbols(
    p_rarch->core_set_shared_context   = false;
 
    if (runloop_state.core_options)
-      retroarch_deinit_core_options(p_rarch);
+      retroarch_deinit_core_options(p_rarch,
+            path_get(RARCH_PATH_CORE_OPTIONS));
    retroarch_system_info_free(p_rarch);
    retroarch_frame_time_free(p_rarch);
    retroarch_audio_buffer_status_free(p_rarch);
@@ -20852,11 +20853,8 @@ static bool runloop_check_movie_init(struct rarch_state *p_rarch,
             p_rarch->bsv_movie_state.movie_path,
             state_slot);
    else
-   {
-      strlcpy(path, p_rarch->bsv_movie_state.movie_path, sizeof(path));
-      strlcat(path, ".bsv", sizeof(path));
-   }
-
+      snprintf(path, sizeof(path), "%s.bsv",
+            p_rarch->bsv_movie_state.movie_path);
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
@@ -30888,8 +30886,7 @@ static void video_driver_lock_new(struct rarch_state *p_rarch)
 void video_driver_set_cached_frame_ptr(const void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (data)
-      p_rarch->frame_cache_data = data;
+   p_rarch->frame_cache_data = data;
 }
 
 void video_driver_set_stub_frame(void)
@@ -34251,7 +34248,7 @@ static void retroarch_print_features(void)
    buf[0] = '\0';
    frontend_driver_attach_console();
 
-   strlcat(buf, "\nFeatures:\n", sizeof(buf));
+   strlcpy(buf, "\nFeatures:\n", sizeof(buf));
 
    _PSUPP_BUF(buf, SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
    _PSUPP_BUF(buf, SUPPORTS_COMMAND,         "Command",         "Command interface support");
@@ -35435,7 +35432,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
          cpu_model     = frontend_driver_get_cpu_model_name();
 
-         strlcat(str_output,
+         strlcpy(str_output,
                "=== Build =======================================\n",
                sizeof(str_output));
 
@@ -35455,10 +35452,10 @@ bool retroarch_main_init(int argc, char *argv[])
 
          retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
-         strlcat(str_output, msg_hash_to_str(MSG_CAPABILITIES),
-               sizeof(str_output));
-         strlcat(str_output, ": ", sizeof(str_output));
-         strlcat(str_output, str,  sizeof(str_output));
+         snprintf(str_output, sizeof(str_output),
+               "%s: %s",
+               msg_hash_to_str(MSG_CAPABILITIES),
+               str);
          strlcat(str_output, "\n" FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n", sizeof(str_output));
 #ifdef HAVE_GIT_VERSION
          strlcat(str_output, FILE_PATH_LOG_INFO " Git: ", sizeof(str_output));
@@ -35551,6 +35548,9 @@ bool retroarch_main_init(int argc, char *argv[])
    menu_driver_find_driver(p_rarch, settings,
          "menu driver", verbosity_enabled);
 #endif
+   /* Enforce stored brightness if needed */
+   if (frontend_driver_can_set_screen_brightness())
+      frontend_driver_set_screen_brightness(settings->uints.screen_brightness);
 
    /* Attempt to initialize core */
    if (p_rarch->has_set_core)
@@ -36043,6 +36043,9 @@ static void runloop_task_msg_queue_push(
  * - src_path: in the event that 'path' file does not
  *   yet exist, provides source path from which initial
  *   options should be extracted
+ *
+ *   NOTE: caller must ensure 
+ *   path and src_path are NULL-terminated
  *  */
 static void rarch_init_core_options_path(
       struct rarch_state *p_rarch,
@@ -36054,12 +36057,6 @@ static void rarch_init_core_options_path(
 
    settings_t *settings           = p_rarch->configuration_settings;
    bool game_specific_options     = settings->bools.game_specific_options;
-
-   /* Ensure that 'input' strings are null terminated */
-   if (len > 0)
-      path[0]     = '\0';
-   if (src_len > 0)
-      src_path[0] = '\0';
 
    /* Check whether game-specific options exist */
    if (game_specific_options &&
@@ -36160,6 +36157,7 @@ static void rarch_init_core_options(
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
 
+   /* Ensure these are NULL-terminated */
    options_path[0]                = '\0';
    src_options_path[0]            = '\0';
 
@@ -36444,12 +36442,12 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-static void retroarch_deinit_core_options(struct rarch_state *p_rarch)
+static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
+      const char *path_core_options)
 {
    /* Check whether game-specific options file is being used */
-   if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
+   if (!string_is_empty(path_core_options))
    {
-      const char *path        = path_get(RARCH_PATH_CORE_OPTIONS);
       config_file_t *conf_tmp = NULL;
 
       /* We only need to save configuration settings for
@@ -36459,8 +36457,8 @@ static void retroarch_deinit_core_options(struct rarch_state *p_rarch)
        *   if config values change)
        * > Otherwise, create a new, empty config_file_t
        *   object */
-      if (path_is_valid(path))
-         conf_tmp = config_file_new_from_path_to_string(path);
+      if (path_is_valid(path_core_options))
+         conf_tmp = config_file_new_from_path_to_string(path_core_options);
 
       if (!conf_tmp)
          conf_tmp = config_file_new_alloc();
@@ -36471,8 +36469,8 @@ static void retroarch_deinit_core_options(struct rarch_state *p_rarch)
                conf_tmp,
                runloop_state.core_options);
          RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
-               runloop_state.game_options_active ? "game" : "folder", path);
-         config_file_write(conf_tmp, path, true);
+               runloop_state.game_options_active ? "game" : "folder", path_core_options);
+         config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
          conf_tmp = NULL;
       }
@@ -36503,6 +36501,7 @@ static void retroarch_init_core_variables(
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
 
+   /* Ensure these are NULL-terminated */
    options_path[0]     = '\0';
    src_options_path[0] = '\0';
 
@@ -39435,19 +39434,17 @@ bool core_options_create_override(bool game_specific)
    /* Write config file */
    core_option_manager_flush(conf, runloop_state.core_options);
 
-   if (config_file_write(conf, options_path, true))
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      path_set(RARCH_PATH_CORE_OPTIONS, options_path);
-      runloop_state.game_options_active   = game_specific;
-      runloop_state.folder_options_active = !game_specific;
-   }
-   else
+   if (!config_file_write(conf, options_path, true))
       goto error;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   path_set(RARCH_PATH_CORE_OPTIONS, options_path);
+   runloop_state.game_options_active   = game_specific;
+   runloop_state.folder_options_active = !game_specific;
 
    config_file_free(conf);
    return true;

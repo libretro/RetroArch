@@ -108,6 +108,18 @@ MSG_HASH(
    "Visa skrivbordsmeny"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Öppnar den traditionella skrivbordsmenyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Inaktivera Kiosk-läge (Omstart krävs)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Visa alla konfigurationsrelaterade inställningar."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "Online-uppdaterare"
    )
@@ -268,6 +280,14 @@ MSG_HASH(
    "Uppdatera alla installerade kärnor till den senaste tillgängliga versionen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "Ändra Kärnor till Play Butikens versioner"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "Byt ut alla gamla och manuellt installerade kärnor med de senaste versionerna från Play Butiken, om möjligt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Uppdatera miniatyrbilder"
    )
@@ -347,8 +367,16 @@ MSG_HASH(
    "Nätverksinformation"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "Visa nätverksgränssnitt och tillhörande IP-adresser."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    "Systeminformation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "Visa information som är specifik för enheten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -799,6 +827,14 @@ MSG_HASH(
    "Edge Magazine-nummer"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Publiceringsdatum Månad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Publiceringsdatum År"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "BBFC-klassificering"
    )
@@ -931,6 +967,10 @@ MSG_HASH(
    "Inmatning"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   "Ändra inställningar för handkontroller, tangentbord och mus."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    "Latens"
    )
@@ -973,6 +1013,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Filhanterare"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Ändra inställningar för filhanteraren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1041,6 +1085,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    "Nätverk"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "Ändra server- och nätverksinställningar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1205,30 +1253,86 @@ MSG_HASH(
    "Stäng av skärmsläckare"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   "Förhindra systemets skärmsläckare från att bli aktiv."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Trådad bildrendering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "Förbättrar prestanda på bekostnad av latens och hackig videouppspelning. Använd bara om det är enda sättet att uppnå full hastighet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Infoga svart bildruta"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Infogar en svart bildruta mellan de vanliga bildrutorna. Användbart för vissa skärmar med hög uppdateringsfrekvens för att undvika ghosting."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU-screenshot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Skärmdump från GPU: n, om det är tillgängligt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilinjär filtrering"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Lägg till en liten oskärpa till bilden för att mjuka upp hårda pixelkanter. Detta har mycket liten inverkan på prestanda."
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Interpolering av bilder"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Ange bildinterpoleringsmetod vid skalning av innehåll via den interna IPU. 'Bicubic' eller 'Bilinear' rekommenderas när du använder CPU-drivna videofilter. Det här alternativet påverkar inte prestandan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "Bikubisk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Bilinjär"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "Närmaste granne"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    "Autoshader-fördröjning"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Fördröjning (i ms) innan automatisk inladdning av shaders. Kan avhjälpa grafikproblem när du använder program för skärminspelning."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Videofilter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Tillämpa ett CPU-drivet videofilter. Kan innebära en stor prestandakostnad. Vissa videofilter kanske bara fungerar för kärnor som använder 16- eller 32-bits färgdjup."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Ta bort videofilter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Stäng av alla aktiva CPU-drivna videofilter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
@@ -1281,6 +1385,10 @@ MSG_HASH(
    "Skärmindex"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   "Välj vilken skärm som ska användas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Bildrotation"
    )
@@ -1305,6 +1413,10 @@ MSG_HASH(
    "Vertikal uppdateringsfrekvens"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Din skärms vertikala uppdateringsfrekvens. Används för att beräkna en lämplig ljudinmatningshastighet.\nDetta kommer att ignoreras om 'Trådad bildrendering' är aktiverat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    "Estimerad uppdateringsfrekvens"
    )
@@ -1320,9 +1432,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Uppdateringsfrekvensen som rapporterats från bilddrivrutinen."
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "Tvångs-avaktivera sRGB FBO"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   "Tvinga sRGB FBO-stödet att vara inaktivt. Vissa Intel OpenGL-drivrutiner i Windows har bildproblem med sRGB FBOn. Denna inställning kan avhjälpa detta."
    )
 
 /* Settings > Video > Fullscreen Mode */
@@ -1338,6 +1456,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Fönster-helskärmsläge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "Om helskärm, föredra att använda ett fullskärmsfönster för att förhindra att visningsläget växlar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -1362,18 +1484,90 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    "Fönsterskalning"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Ange fönsterstorlek i förhållande till kärnans visningsstorlek. Alternativt kan en fönsterbredd och höjd ställas in nedan för en fast fönsterstorlek."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   "Fönster Opacitet"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Visa Fönsterdekorationer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "Kom ihåg Fönsterposition och Storlek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Kom ihåg fönsterstorlek och position, vilket gör att detta har företräde framför Fönsterskala."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   "Fönsterbredd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   "Ange den anpassade bredden för visningsfönstret."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   "Fönsterhöjd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   "Ange den anpassade höjden för visningsfönstret."
+   )
 
 /* Settings > Video > Scaling */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   "Heltalsskala"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Skala video enbart i heltalssteg. Basstorleken beror på systemrapporterad geometri och bildförhållande. Om 'Tvinga Bildförhållande' inte är inställt, kommer X/Y att vara heltal skalat oberoende."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   "Bildförhållande"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "Anpassat Bildförhållande"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Flytpunktsvärde för bildförhållande (bredd / höjd), används om Bildförhållandet är satt till \"Anpassat Bildförhållande \"."
+   )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Behåll bildförhållande"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Upprätthåll 1:1 pixel bildförhållanden vid skalning av innehåll via den interna IPUn. Om inaktiverat kommer bilder att sträckas ut för att fylla hela skärmen."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "Anpassad bildproportion (X-position)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Anpassad offset för visningsytans X-position.\nDessa ignoreras om \"Heltal-skalning\" är aktiverat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Anpassad bildproportion (Y-position)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Anpassad offset för visningsytans Y-position.\nDessa ignoreras om \"Heltal-skalning\" är aktiverat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -1390,6 +1584,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Anpassad offset för visningsytans höjd, som används om bildproportionerna är inställda på 'Anpassade bildproportioner'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Beskär Överskanning (Omstart krävs)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "Klipp bort några pixlar runt skärmens kant, som vanligen lämnas tomma av utvecklare och som ibland också innehåller skräppixlar."
    )
 
 /* Settings > Video > Synchronization */
@@ -1550,7 +1752,39 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Maximalt antal användare som stöds av RetroArch."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Pollingbeteende"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "Påverka hur inmatning görs i RetroArch. Att ställa in det till \"Tidigt\" eller \"Sent\" kan resultera i mindre fördröjning, beroende på din konfiguration."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   "Ändra Styrenheter för denna Kärna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   "Åsidosätt kontrollerna med de ändrade kontrollerna för den aktuella kärnan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+   "Autokonfigurera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   "Konfigurerar automatiskt styrenheter som har en profil, Plug-and-Play stil."
+   )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Inaktivera Windows Snabbtangenter (Omstart krävs)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Håll Win-key kombinationer inuti programmet."
+   )
 #endif
 
 /* Settings > Input > Haptic Feedback/Vibration */

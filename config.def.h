@@ -249,11 +249,7 @@
 /* Specifies whether to cache core info
  * into a single (compressed) file for improved
  * load times on platforms with slow IO */
-#if defined(RARCH_CONSOLE)
 #define DEFAULT_CORE_INFO_CACHE_ENABLE true
-#else
-#define DEFAULT_CORE_INFO_CACHE_ENABLE false
-#endif
 
 /* Specifies whether to 'reload' (fork and quit)
  * RetroArch when launching content with the
@@ -1196,6 +1192,10 @@ static const int default_content_favorites_size = 200;
 #else
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
+
+/* Show the indices of playlist entries in
+ * a menu-driver-specific fashion */
+#define DEFAULT_PLAYLIST_SHOW_ENTRY_IDX true
 
 #define DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH false
 

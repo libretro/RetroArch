@@ -35,7 +35,7 @@
 
 #include "../font_driver.h"
 
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 
 #ifndef SCEGU_SCR_WIDTH
 #define SCEGU_SCR_WIDTH 480
