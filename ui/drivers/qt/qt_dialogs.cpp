@@ -182,8 +182,8 @@ void PlaylistEntryDialog::loadPlaylistOptions()
    m_coreComboBox->addItem(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK));
    m_databaseComboBox->addItem(
-           QString("<") 
-         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) 
+           QString("<")
+         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
          + ">",
          QFileInfo(m_mainwindow->getCurrentPlaylistPath()).fileName().remove(".lpl"));
 
@@ -390,7 +390,7 @@ void CoreInfoDialog::showCoreInfo()
    int      row  = 0;
    int row_count = m_formLayout->rowCount();
    int       i   = 0;
-   QVector<QHash<QString, QString> > info_list 
+   QVector<QHash<QString, QString> > info_list
                  = m_mainwindow->getCoreInfo();
 
    if (row_count > 0)
@@ -401,7 +401,7 @@ void CoreInfoDialog::showCoreInfo()
          /* removeRow() and takeRow() was only added in 5.8! */
          m_formLayout->removeRow(0);
 #else
-         /* something is buggy here... 
+         /* something is buggy here...
           * sometimes items appear duplicated, and other times not */
          QLayoutItem *item = m_formLayout->itemAt(0);
          QWidget        *w = NULL;
@@ -491,7 +491,7 @@ private:
 
          /* Widget wants to be bigger than available space */
          if (innerSizeHint.height() > innerSize.height())
-         { 
+         {
             innerSize.setWidth(innerSize.width() - scrollBarWidth());
             innerSize.setHeight(innerSizeHint.height());
          }
@@ -545,7 +545,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    int width;
    QGridLayout        *layout = new QGridLayout(this);
    QLabel      *m_headerLabel = new QLabel(this);
-   /* Header label with large font and a bit of spacing 
+   /* Header label with large font and a bit of spacing
     * (align with group boxes) */
    QFont      headerLabelFont = m_headerLabel->font();
    const int        pointSize = headerLabelFont.pointSize();
@@ -585,9 +585,9 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    addCategory(new UserCategory(this));
    addCategory(new DirectoryCategory(this));
 
-   width  = 
-        m_optionsList->sizeHintForColumn(0) 
-      + m_optionsList->frameWidth() * 2 
+   width  =
+        m_optionsList->sizeHintForColumn(0)
+      + m_optionsList->frameWidth() * 2
       + 5;
    width += m_optionsList->verticalScrollBar()->sizeHint().width();
 
@@ -610,9 +610,9 @@ QIcon getIcon(OptionsCategory *category)
 {
    settings_t *settings        = config_get_ptr();
    const char *path_dir_assets = settings->paths.directory_assets;
-   QPixmap pixmap              = QPixmap(QString(path_dir_assets) 
-         + "/xmb/monochrome/png/" 
-         + category->categoryIconName() 
+   QPixmap pixmap              = QPixmap(QString(path_dir_assets)
+         + "/xmb/monochrome/png/"
+         + category->categoryIconName()
          + ".png");
    return QIcon(getColorizedPixmap(pixmap, getLabelColor("iconColor")));
 }
@@ -737,7 +737,7 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
 
    m_thumbnailCacheSpinBox->setSuffix(" MB");
    m_thumbnailCacheSpinBox->setRange(0, 99999);
-   
+
    m_thumbnailDropSizeSpinBox->setSuffix(" px");
    m_thumbnailDropSizeSpinBox->setRange(0, 99999);
 
@@ -834,7 +834,7 @@ void ViewOptionsWidget::loadViewOptions()
    int i;
    int themeIndex    = 0;
    int playlistIndex = 0;
-   QColor highlightColor                       = 
+   QColor highlightColor                       =
       m_settings->value("highlight_color",
             QApplication::palette().highlight().color()).value<QColor>();
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
@@ -1162,9 +1162,9 @@ void CoreOptionsDialog::buildLayout()
 
             for (j = 0; j < opts; j++)
             {
-               QString desc               = 
+               QString desc               =
                   core_option_manager_get_desc(coreopts, j);
-               QString val                = 
+               QString val                =
                   core_option_manager_get_val(coreopts, j);
                QComboBox *combo_box       = NULL;
                QLabel *descLabel          = NULL;
@@ -1195,8 +1195,14 @@ void CoreOptionsDialog::buildLayout()
 
                if (!string_is_empty(option->info))
                {
-                  char *new_info = strdup(option->info);
-                  word_wrap(new_info, new_info, 50, true, 0);
+                  size_t new_info_len = strlen(option->info) + 1 + 10; /* 10 uses additional '\n' */
+                  char *new_info;
+
+                  new_info = (char *)malloc(new_info_len);
+                  if (!new_info)
+                     return;
+
+                  word_wrap(new_info, new_info_len, option->info, 50, true, 0);
                   descLabel->setToolTip(new_info);
                   combo_box->setToolTip(new_info);
                   free(new_info);
@@ -1492,7 +1498,7 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
    if (!ok)
       return;
 
-   if (     menu_shader 
+   if (     menu_shader
          && (pass >= 0)
          && (pass < static_cast<int>(menu_shader->passes)))
    {
@@ -1747,7 +1753,7 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
 
    filter.append("Shader Preset (");
 
-   /* NOTE: Maybe we should have a way to get a list 
+   /* NOTE: Maybe we should have a way to get a list
     * of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
    {
@@ -1906,7 +1912,7 @@ void ShaderParamsDialog::onShaderAddPassClicked()
 
    filter.append("Shader (");
 
-   /* NOTE: Maybe we should have a way to get a list 
+   /* NOTE: Maybe we should have a way to get a list
     * of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
       filter.append(QLatin1Literal(" *.cg"));
@@ -2190,28 +2196,28 @@ void ShaderParamsDialog::updateRemovePresetButtonsState()
             menu_shader_manager_auto_preset_exists(
                SHADER_PRESET_GLOBAL,
                path_dir_video_shader,
-               path_dir_menu_config 
+               path_dir_menu_config
                ));
    if (removeCorePresetAction)
       removeCorePresetAction->setEnabled(
             menu_shader_manager_auto_preset_exists(
                SHADER_PRESET_CORE,
                path_dir_video_shader,
-               path_dir_menu_config 
+               path_dir_menu_config
                ));
    if (removeParentPresetAction)
       removeParentPresetAction->setEnabled(
             menu_shader_manager_auto_preset_exists(
                SHADER_PRESET_PARENT,
                path_dir_video_shader,
-               path_dir_menu_config 
+               path_dir_menu_config
                ));
    if (removeGamePresetAction)
       removeGamePresetAction->setEnabled(
             menu_shader_manager_auto_preset_exists(
                SHADER_PRESET_GAME,
                path_dir_video_shader,
-               path_dir_menu_config 
+               path_dir_menu_config
                ));
 }
 
@@ -2244,14 +2250,14 @@ void ShaderParamsDialog::buildLayout()
 
    getShaders(&menu_shader, &video_shader);
 
-   /* NOTE: For some reason, menu_shader_get() returns a COPY 
+   /* NOTE: For some reason, menu_shader_get() returns a COPY
     * of what get_current_shader() gives us.
-    * And if you want to be able to change shader settings/parameters 
+    * And if you want to be able to change shader settings/parameters
     * from both the raster menu and
-    * Qt at the same time... you must change BOTH or one will 
+    * Qt at the same time... you must change BOTH or one will
     * overwrite the other.
     *
-    * AND, during a context reset, video_shader will be NULL 
+    * AND, during a context reset, video_shader will be NULL
     * but not menu_shader, so don't totally bail
     * just because video_shader is NULL.
     *
@@ -2265,7 +2271,7 @@ void ShaderParamsDialog::buildLayout()
       if (video_shader->passes == 0)
          setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
    }
-   /* Normally we'd only use video_shader, 
+   /* Normally we'd only use video_shader,
     * but the Vulkan driver returns a NULL shader when there
     * are zero passes, so just fall back to menu_shader.
     */
@@ -2287,7 +2293,7 @@ void ShaderParamsDialog::buildLayout()
 
    clearLayout();
 
-   /* Only check video_shader for the path, menu_shader seems stale... 
+   /* Only check video_shader for the path, menu_shader seems stale...
     * e.g. if you remove all the shader passes,
     * it still has the old path in it, but video_shader does not
     */
