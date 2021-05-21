@@ -28453,10 +28453,10 @@ static void audio_driver_flush(
 
       if (!audio_mixer_mute_enable)
       {
-         if (p_rarch->audio_driver_mixer_volume_gain == 1.0f)
+         if (runloop_state.audio_mixer_volume_gain == 1.0f)
             override                      = false;
          mixer_gain                       =
-            p_rarch->audio_driver_mixer_volume_gain;
+            runloop_state.audio_mixer_volume_gain;
       }
       audio_mixer_mix(
             runloop_state.audio_output_samples_buf,
@@ -29508,8 +29508,6 @@ void audio_driver_frame_is_reverse(void)
 
 void audio_set_float(enum audio_action action, float val)
 {
-   struct rarch_state *p_rarch                    = &rarch_st;
-
    switch (action)
    {
       case AUDIO_ACTION_VOLUME_GAIN:
@@ -29517,11 +29515,11 @@ void audio_set_float(enum audio_action action, float val)
          break;
       case AUDIO_ACTION_MIXER_VOLUME_GAIN:
 #ifdef HAVE_AUDIOMIXER
-         p_rarch->audio_driver_mixer_volume_gain  = DB_TO_GAIN(val);
+         runloop_state.audio_mixer_volume_gain    = DB_TO_GAIN(val);
 #endif
          break;
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
-         runloop_state.audio_rate_control_delta = val;
+         runloop_state.audio_rate_control_delta   = val;
          break;
       case AUDIO_ACTION_NONE:
       default:

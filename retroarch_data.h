@@ -1721,6 +1721,9 @@ struct runloop
    float audio_rate_control_delta;
    float audio_input_sample_rate;
    float audio_volume_gain;
+#ifdef HAVE_AUDIOMIXER
+   float audio_mixer_volume_gain;
+#endif
 
    bool audio_active;
    bool audio_use_float;
@@ -2074,10 +2077,6 @@ struct rarch_state
 
    float video_driver_core_hz;
    float video_driver_aspect_ratio;
-
-#ifdef HAVE_AUDIOMIXER
-   float audio_driver_mixer_volume_gain;
-#endif
 
    float input_driver_axis_threshold;
 
