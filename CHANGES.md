@@ -1,6 +1,7 @@
 # Future
 - CONTENT LOADING/FILE IO: Prevent unnecessary extraction (to disk) of compressed content files when need_fullpath is false
 - CORE INFO/FILE IO: Enable core info cache by default now for all platforms
+- CORE INFO/REGRESSION FIX: Fix regression caused by core info file caching - Downloads was no longer showing up in Load Content
 - FILE IO/COMPRESSED: Ability to load content inside ZIP files directly into RAM
 - INPUT REMAPPING/OVERLAYS: Prevent duplicate inputs when using remaps with input overlays
 - LAKKA: Add brightness restore hook
