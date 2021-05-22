@@ -9,6 +9,7 @@
 - MENU/XMB: Fix display of 'Maximum Users' menu entry dropdown list
 - PS3/PSL1GHT: Joypad driver works again
 - PSTV: Fix Vita input driver for PSTV
+- PSTV: Support for 720p on PSTV when using 'Unlock framebuffer' in Sharpscale plugin
 - RPNG: Fix some memory corruption if processing broken input PNG file
 - SECURITY: Fix CVE-2021-28927
 
