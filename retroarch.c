@@ -12551,7 +12551,7 @@ static void update_runtime_log(
 
    /* Add additional runtime */
    runtime_log_add_runtime_usec(runtime_log,
-         p_rarch->libretro_core_runtime_usec);
+         runloop_state.libretro_core_runtime_usec);
 
    /* Update 'last played' entry */
    runtime_log_set_last_played_now(runtime_log);
@@ -12573,29 +12573,24 @@ static void command_event_runtime_log_deinit(
 {
    if (verbosity_is_enabled())
    {
-      int n;
       char log[PATH_MAX_LENGTH] = {0};
       unsigned hours            = 0;
       unsigned minutes          = 0;
       unsigned seconds          = 0;
 
       runtime_log_convert_usec2hms(
-            p_rarch->libretro_core_runtime_usec,
+            runloop_state.libretro_core_runtime_usec,
             &hours, &minutes, &seconds);
 
-      n                         =
-         snprintf(log, sizeof(log),
-               "[Core]: Content ran for a total of:"
-               " %02u hours, %02u minutes, %02u seconds.",
-               hours, minutes, seconds);
-      if ((n < 0) || (n >= PATH_MAX_LENGTH))
-         n = 0; /* Just silence any potential gcc warnings... */
-      (void)n;
+      snprintf(log, sizeof(log),
+            "[Core]: Content ran for a total of:"
+            " %02u hours, %02u minutes, %02u seconds.",
+            hours, minutes, seconds);
       RARCH_LOG("%s\n",log);
    }
 
    /* Only write to file if content has run for a non-zero length of time */
-   if (p_rarch->libretro_core_runtime_usec > 0)
+   if (runloop_state.libretro_core_runtime_usec > 0)
    {
       /* Per core logging */
       if (content_runtime_log)
@@ -12608,18 +12603,18 @@ static void command_event_runtime_log_deinit(
 
    /* Reset runtime + content/core paths, to prevent any
     * possibility of duplicate logging */
-   p_rarch->libretro_core_runtime_usec = 0;
+   runloop_state.libretro_core_runtime_usec = 0;
    memset(p_rarch->runtime_content_path, 0, sizeof(p_rarch->runtime_content_path));
    memset(p_rarch->runtime_core_path,    0, sizeof(p_rarch->runtime_core_path));
 }
 
 static void command_event_runtime_log_init(struct rarch_state *p_rarch)
 {
-   const char *content_path            = path_get(RARCH_PATH_CONTENT);
-   const char *core_path               = path_get(RARCH_PATH_CORE);
+   const char *content_path                 = path_get(RARCH_PATH_CONTENT);
+   const char *core_path                    = path_get(RARCH_PATH_CORE);
 
-   p_rarch->libretro_core_runtime_last = cpu_features_get_time_usec();
-   p_rarch->libretro_core_runtime_usec = 0;
+   runloop_state.libretro_core_runtime_last = cpu_features_get_time_usec();
+   runloop_state.libretro_core_runtime_usec = 0;
 
    /* Have to cache content and core path here, otherwise
     * logging fails if new content is loaded without
@@ -30847,17 +30842,17 @@ static bool video_driver_monitor_adjust_system_rates(
    return input_fps <= timing_skew_hz;
 }
 
-static void video_driver_lock_new(struct rarch_state *p_rarch)
+static void video_driver_lock_new(void)
 {
    VIDEO_DRIVER_LOCK_FREE();
 #ifdef HAVE_THREADS
-   if (!p_rarch->display_lock)
-      p_rarch->display_lock = slock_new();
-   retro_assert(p_rarch->display_lock);
+   if (!runloop_state.display_lock)
+      runloop_state.display_lock = slock_new();
+   retro_assert(runloop_state.display_lock);
 
-   if (!p_rarch->context_lock)
-      p_rarch->context_lock = slock_new();
-   retro_assert(p_rarch->context_lock);
+   if (!runloop_state.context_lock)
+      runloop_state.context_lock = slock_new();
+   retro_assert(runloop_state.context_lock);
 #endif
 }
 
@@ -30943,7 +30938,6 @@ void video_driver_reset_custom_viewport(void)
 
 void video_driver_set_rgba(void)
 {
-   struct rarch_state *p_rarch    = &rarch_st;
    VIDEO_DRIVER_LOCK();
    runloop_state.video_driver_use_rgba = true;
    VIDEO_DRIVER_UNLOCK();
@@ -30951,7 +30945,6 @@ void video_driver_set_rgba(void)
 
 void video_driver_unset_rgba(void)
 {
-   struct rarch_state *p_rarch    = &rarch_st;
    VIDEO_DRIVER_LOCK();
    runloop_state.video_driver_use_rgba = false;
    VIDEO_DRIVER_UNLOCK();
@@ -30960,7 +30953,6 @@ void video_driver_unset_rgba(void)
 bool video_driver_supports_rgba(void)
 {
    bool tmp;
-   struct rarch_state *p_rarch = &rarch_st;
    VIDEO_DRIVER_LOCK();
    tmp = runloop_state.video_driver_use_rgba;
    VIDEO_DRIVER_UNLOCK();
@@ -33092,7 +33084,7 @@ static void drivers_init(struct rarch_state *p_rarch,
 
       runloop_state.frame_time_count = 0;
 
-      video_driver_lock_new(p_rarch);
+      video_driver_lock_new();
 #ifdef HAVE_VIDEO_FILTER
       video_driver_filter_free();
 #endif
@@ -34174,7 +34166,6 @@ force_input_dirty:
 #endif
 
 static retro_time_t rarch_core_runtime_tick(
-      struct rarch_state *p_rarch,
       float slowmotion_ratio,
       retro_time_t current_time)
 {
@@ -34196,10 +34187,10 @@ static retro_time_t rarch_core_runtime_tick(
        *    retro_time_t current_usec = cpu_features_get_time_usec();
        *    libretro_core_runtime_last = current_usec;
        * every frame when fast forward is off. */
-      retro_time_t current_usec           = current_time;
-      retro_time_t potential_frame_time   = current_usec -
-         p_rarch->libretro_core_runtime_last;
-      p_rarch->libretro_core_runtime_last = current_usec;
+      retro_time_t current_usec                = current_time;
+      retro_time_t potential_frame_time        = current_usec -
+         runloop_state.libretro_core_runtime_last;
+      runloop_state.libretro_core_runtime_last = current_usec;
 
       if (potential_frame_time < frame_time)
          return potential_frame_time;
@@ -37150,8 +37141,8 @@ static bool menu_display_libretro(
          runloop_state.input_driver_block_libretro_input = true;
 
       core_run();
-      p_rarch->libretro_core_runtime_usec        +=
-         rarch_core_runtime_tick(p_rarch, slowmotion_ratio, current_time);
+      runloop_state.libretro_core_runtime_usec        +=
+         rarch_core_runtime_tick(slowmotion_ratio, current_time);
       runloop_state.input_driver_block_libretro_input  = false;
 
       return false;
@@ -38586,8 +38577,7 @@ int runloop_iterate(void)
 
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
-   p_rarch->libretro_core_runtime_usec += rarch_core_runtime_tick(
-         p_rarch,
+   runloop_state.libretro_core_runtime_usec += rarch_core_runtime_tick(
          slowmotion_ratio,
          current_time);
 

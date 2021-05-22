@@ -115,26 +115,26 @@
 
 #ifdef HAVE_THREADS
 #define VIDEO_DRIVER_LOCK() \
-   if (p_rarch->display_lock) \
-      slock_lock(p_rarch->display_lock)
+   if (runloop_state.display_lock) \
+      slock_lock(runloop_state.display_lock)
 
 #define VIDEO_DRIVER_UNLOCK() \
-   if (p_rarch->display_lock) \
-      slock_unlock(p_rarch->display_lock)
+   if (runloop_state.display_lock) \
+      slock_unlock(runloop_state.display_lock)
 
 #define VIDEO_DRIVER_CONTEXT_LOCK() \
-   if (p_rarch->context_lock) \
-      slock_lock(p_rarch->context_lock)
+   if (runloop_state.context_lock) \
+      slock_lock(runloop_state.context_lock)
 
 #define VIDEO_DRIVER_CONTEXT_UNLOCK() \
-   if (p_rarch->context_lock) \
-      slock_unlock(p_rarch->context_lock)
+   if (runloop_state.context_lock) \
+      slock_unlock(runloop_state.context_lock)
 
 #define VIDEO_DRIVER_LOCK_FREE() \
-   slock_free(p_rarch->display_lock); \
-   slock_free(p_rarch->context_lock); \
-   p_rarch->display_lock = NULL; \
-   p_rarch->context_lock = NULL
+   slock_free(runloop_state.display_lock); \
+   slock_free(runloop_state.context_lock); \
+   runloop_state.display_lock = NULL; \
+   runloop_state.context_lock = NULL
 
 #define VIDEO_DRIVER_THREADED_LOCK(is_threaded) \
    if (is_threaded) \
@@ -1656,11 +1656,13 @@ typedef struct discord_state discord_state_t;
 #endif
 
 struct runloop
-{ 
+{
    double audio_source_ratio_original;
    double audio_source_ratio_current;
    struct retro_system_av_info av_info; /* double alignment */
 
+   retro_time_t libretro_core_runtime_last;
+   retro_time_t libretro_core_runtime_usec;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_time_t frame_time_samples[
@@ -1687,6 +1689,8 @@ struct runloop
    msg_queue_t msg_queue;               /* ptr alignment */
 #ifdef HAVE_THREADS
    slock_t *msg_queue_lock;
+   slock_t *display_lock;
+   slock_t *context_lock;
 #endif
 
    core_option_manager_t *core_options;
@@ -1923,8 +1927,6 @@ struct rarch_state
 {
    videocrt_switch_t crt_switch_st;                  /* double alignment */
 
-   retro_time_t libretro_core_runtime_last;
-   retro_time_t libretro_core_runtime_usec;
    struct global              g_extern;         /* retro_time_t alignment */
 #ifdef HAVE_MENU
    menu_input_t menu_input_state;               /* retro_time_t alignment */
@@ -1984,10 +1986,6 @@ struct rarch_state
    const record_driver_t *recording_driver;
    void *recording_data;
 
-#ifdef HAVE_THREADS
-   slock_t *display_lock;
-   slock_t *context_lock;
-#endif
 
    const camera_driver_t *camera_driver;
    void *camera_data;
