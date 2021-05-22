@@ -25046,8 +25046,7 @@ static bool input_driver_init(struct rarch_state *p_rarch,
    return (p_rarch->current_input_data != NULL);
 }
 
-static bool input_driver_find_driver(
-      struct rarch_state *p_rarch,
+static input_driver_t *input_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled)
@@ -25057,34 +25056,20 @@ static bool input_driver_find_driver(
          settings->arrays.input_driver);
 
    if (i >= 0)
-   {
-      p_rarch->current_input = (input_driver_t*)input_drivers[i];
-      RARCH_LOG("[Input]: Found %s: \"%s\".\n", prefix,
-            p_rarch->current_input->ident);
-   }
-   else
-   {
-      if (verbosity_enabled)
-      {
-         unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.input_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; input_drivers[d]; d++)
-            RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
-         RARCH_WARN("Going to default to first %s...\n", prefix);
-      }
+      return (input_driver_t*)input_drivers[i];
 
-      p_rarch->current_input = (input_driver_t*)input_drivers[0];
-
-      if (!p_rarch->current_input)
-      {
-         retroarch_fail(p_rarch, 1, "find_input_driver()");
-         return false;
-      }
+   if (verbosity_enabled)
+   {
+      unsigned d;
+      RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
+            settings->arrays.input_driver);
+      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+      for (d = 0; input_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
+      RARCH_WARN("Going to default to first %s...\n", prefix);
    }
 
-   return true;
+   return (input_driver_t*)input_drivers[0];
 }
 
 void input_driver_set_nonblock_state(void)
@@ -28044,7 +28029,7 @@ static bool audio_driver_deinit(struct rarch_state *p_rarch,
          settings->bools.audio_enable);
 }
 
-static bool audio_driver_find_driver(struct rarch_state *p_rarch,
+static const audio_driver_t *audio_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled)
@@ -28054,32 +28039,23 @@ static bool audio_driver_find_driver(struct rarch_state *p_rarch,
          settings->arrays.audio_driver);
 
    if (i >= 0)
-      p_rarch->current_audio = (const audio_driver_t*)
-         audio_drivers[i];
-   else
+      return (const audio_driver_t*)audio_drivers[i];
+
+   if (verbosity_enabled)
    {
-      if (verbosity_enabled)
+      unsigned d;
+      RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
+            settings->arrays.audio_driver);
+      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+      for (d = 0; audio_drivers[d]; d++)
       {
-         unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.audio_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; audio_drivers[d]; d++)
-         {
-            if (audio_drivers[d])
-               RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
-         }
-         RARCH_WARN("Going to default to first %s...\n", prefix);
+         if (audio_drivers[d])
+            RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
       }
-
-      p_rarch->current_audio = (const audio_driver_t*)
-         audio_drivers[0];
-
-      if (!p_rarch->current_audio)
-         retroarch_fail(p_rarch, 1, "audio_driver_find()");
+      RARCH_WARN("Going to default to first %s...\n", prefix);
    }
 
-   return true;
+   return (const audio_driver_t*)audio_drivers[0];
 }
 
 static bool audio_driver_init_internal(
@@ -28139,7 +28115,7 @@ static bool audio_driver_init_internal(
    if (!audio_enable)
       goto audio_not_active;
 
-   audio_driver_find_driver(p_rarch, settings,
+   p_rarch->current_audio = audio_driver_find_driver(settings,
          "audio driver", verbosity_enabled);
 
    if (!p_rarch->current_audio || !p_rarch->current_audio->init)
@@ -29966,8 +29942,15 @@ static void video_driver_init_input(
    if (tmp)
       *input = tmp;
    else
-      input_driver_find_driver(p_rarch, settings, "input driver",
-            verbosity_enabled);
+   {
+      if (!(p_rarch->current_input = input_driver_find_driver(
+            settings, "input driver",
+            verbosity_enabled)))
+         retroarch_fail(p_rarch, 1, "input_driver_find_driver()");
+
+      RARCH_LOG("[Input]: Found input driver: \"%s\".\n",
+            p_rarch->current_input->ident);
+   }
 
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
@@ -32672,7 +32655,7 @@ const char *config_get_location_driver_options(void)
    return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
 }
 
-static void location_driver_find_driver(struct rarch_state *p_rarch,
+static const location_driver_t *location_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled)
@@ -32682,26 +32665,21 @@ static void location_driver_find_driver(struct rarch_state *p_rarch,
          settings->arrays.location_driver);
 
    if (i >= 0)
-      p_rarch->location_driver  = (const location_driver_t*)location_drivers[i];
-   else
+      return (const location_driver_t*)location_drivers[i];
+
+   if (verbosity_enabled)
    {
-      if (verbosity_enabled)
-      {
-         unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.location_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; location_drivers[d]; d++)
-            RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
+      unsigned d;
+      RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
+            settings->arrays.location_driver);
+      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+      for (d = 0; location_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
 
-         RARCH_WARN("Going to default to first %s...\n", prefix);
-      }
-
-      p_rarch->location_driver = (const location_driver_t*)location_drivers[0];
-
-      if (!p_rarch->location_driver)
-         retroarch_fail(p_rarch, 1, "find_location_driver()");
+      RARCH_WARN("Going to default to first %s...\n", prefix);
    }
+
+   return (const location_driver_t*)location_drivers[0];
 }
 
 /**
@@ -32807,8 +32785,9 @@ static void init_location(
    if (p_rarch->location_data)
       return;
 
-   location_driver_find_driver(p_rarch, settings,
-         "location driver", verbosity_enabled);
+   if (!(p_rarch->location_driver = location_driver_find_driver(
+               settings, "location driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "location_driver_find_driver()");
 
    p_rarch->location_data = p_rarch->location_driver->init();
 
@@ -32883,7 +32862,7 @@ static void driver_camera_stop(void)
       p_rarch->camera_driver->stop(p_rarch->camera_data);
 }
 
-static void camera_driver_find_driver(struct rarch_state *p_rarch,
+static const camera_driver_t *camera_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled)
@@ -32893,31 +32872,26 @@ static void camera_driver_find_driver(struct rarch_state *p_rarch,
          settings->arrays.camera_driver);
 
    if (i >= 0)
-      p_rarch->camera_driver = (const camera_driver_t*)camera_drivers[i];
-   else
-   {
-      if (verbosity_enabled)
-      {
-         unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.camera_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; camera_drivers[d]; d++)
-         {
-            if (camera_drivers[d])
-            {
-               RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
-            }
-         }
+      return (const camera_driver_t*)camera_drivers[i];
 
-         RARCH_WARN("Going to default to first %s...\n", prefix);
+   if (verbosity_enabled)
+   {
+      unsigned d;
+      RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
+            settings->arrays.camera_driver);
+      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+      for (d = 0; camera_drivers[d]; d++)
+      {
+         if (camera_drivers[d])
+         {
+            RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
+         }
       }
 
-      p_rarch->camera_driver = (const camera_driver_t*)camera_drivers[0];
-
-      if (!p_rarch->camera_driver)
-         retroarch_fail(p_rarch, 1, "find_camera_driver()");
+      RARCH_WARN("Going to default to first %s...\n", prefix);
    }
+
+   return (const camera_driver_t*)camera_drivers[0];
 }
 
 static void driver_adjust_system_rates(
@@ -33121,8 +33095,10 @@ static void drivers_init(struct rarch_state *p_rarch,
          /* Resource leaks will follow if camera is initialized twice. */
          if (!p_rarch->camera_data)
          {
-            camera_driver_find_driver(p_rarch, settings, "camera driver",
-                  verbosity_enabled);
+            if (!(p_rarch->camera_driver = camera_driver_find_driver(
+                        settings, "camera driver",
+                        verbosity_enabled)))
+               retroarch_fail(p_rarch, 1, "camera_driver_find_driver()");
 
             if (p_rarch->camera_driver)
             {
@@ -35262,8 +35238,7 @@ static void retroarch_validate_cpu_features(struct rarch_state *p_rarch)
 }
 
 #ifdef HAVE_MENU
-static void menu_driver_find_driver(
-      struct rarch_state *p_rarch,
+static const menu_ctx_driver_t *menu_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled)
@@ -35273,32 +35248,25 @@ static void menu_driver_find_driver(
          settings->arrays.menu_driver);
 
    if (i >= 0)
-      p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
-         menu_ctx_drivers[i];
-   else
+      return (const menu_ctx_driver_t*)menu_ctx_drivers[i];
+
+   if (verbosity_enabled)
    {
-      if (verbosity_enabled)
+      unsigned d;
+      RARCH_WARN("Couldn't find any %s named \"%s\"\n", prefix,
+            settings->arrays.menu_driver);
+      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+      for (d = 0; menu_ctx_drivers[d]; d++)
       {
-         unsigned d;
-         RARCH_WARN("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.menu_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; menu_ctx_drivers[d]; d++)
+         if (menu_ctx_drivers[d])
          {
-            if (menu_ctx_drivers[d])
-            {
-               RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
-            }
+            RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
          }
-         RARCH_WARN("Going to default to first %s...\n", prefix);
       }
-
-      p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
-         menu_ctx_drivers[0];
-
-      if (!p_rarch->menu_driver_ctx)
-         retroarch_fail(p_rarch, 1, "find_menu_driver()");
+      RARCH_WARN("Going to default to first %s...\n", prefix);
    }
+
+   return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
 }
 #endif
 
@@ -35487,21 +35455,36 @@ bool retroarch_main_init(int argc, char *argv[])
     * Attempts to find a default driver for
     * all driver types.
     */
-   audio_driver_find_driver(p_rarch, settings,
-         "audio driver", verbosity_enabled);
+   if (!(p_rarch->current_audio = audio_driver_find_driver(settings,
+         "audio driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "audio_driver_find_driver()");
+
    video_driver_find_driver(p_rarch, settings,
          "video driver", verbosity_enabled);
-   input_driver_find_driver(p_rarch, settings,
-         "input driver", verbosity_enabled);
-   camera_driver_find_driver(p_rarch, settings,
-         "camera driver", verbosity_enabled);
+
+   if (!(p_rarch->current_input = input_driver_find_driver(settings,
+         "input driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "input_driver_find_driver()");
+
+   RARCH_LOG("[Input]: Found input driver: \"%s\".\n",
+         p_rarch->current_input->ident);
+
+   if (!(p_rarch->camera_driver = camera_driver_find_driver(settings,
+         "camera driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "camera_driver_find_driver()");
+
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
+
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
-   location_driver_find_driver(p_rarch, settings,
-         "location driver", verbosity_enabled);
+
+   if (!(p_rarch->location_driver = location_driver_find_driver(
+               settings, "location driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "location_driver_find_driver()");
+
 #ifdef HAVE_MENU
-   menu_driver_find_driver(p_rarch, settings,
-         "menu driver", verbosity_enabled);
+   if (!(p_rarch->menu_driver_ctx = menu_driver_find_driver(settings,
+         "menu driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "menu_driver_find_driver()");
 #endif
    /* Enforce stored brightness if needed */
    if (frontend_driver_can_set_screen_brightness())
