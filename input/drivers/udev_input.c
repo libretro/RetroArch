@@ -47,11 +47,13 @@
 #include <poll.h>
 
 #include <libudev.h>
-#ifdef __linux__
+#if defined(__linux__)
 #include <linux/types.h>
-#endif
 #include <linux/input.h>
 #include <linux/kd.h>
+#elif defined(__FreeBSD__)
+#include <dev/evdev/input.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -965,33 +967,38 @@ static int16_t udev_pointer_state(udev_input_t *udev,
    return 0;
 }
 
-static int16_t udev_input_lightgun_state(
-      udev_input_t *udev,
-      const input_device_driver_t *joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
+static unsigned udev_retro_id_to_rarch(unsigned id)
 {
-   if (!keyboard_mapping_blocked)
-      if ((binds[port][id].key < RETROK_LAST) 
-            && udev_keyboard_pressed(udev, binds[port]
-               [id].key) )
-         return 1;
-   if (binds[port][id].valid)
+   switch (id)
    {
-      unsigned new_id = id;
-      if (button_is_pressed(joypad,
-               joypad_info, binds[port],
-               port, new_id)
-            || udev_mouse_button_pressed(udev, port,
-               binds[port][new_id].mbutton)
-         )
-         return 1;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+         return RARCH_LIGHTGUN_DPAD_RIGHT;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+         return RARCH_LIGHTGUN_DPAD_LEFT;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+         return RARCH_LIGHTGUN_DPAD_UP;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+         return RARCH_LIGHTGUN_DPAD_DOWN;
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+         return RARCH_LIGHTGUN_SELECT;
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return RARCH_LIGHTGUN_START;
+      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+         return RARCH_LIGHTGUN_RELOAD;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return RARCH_LIGHTGUN_TRIGGER;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+         return RARCH_LIGHTGUN_AUX_A;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+         return RARCH_LIGHTGUN_AUX_B;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+         return RARCH_LIGHTGUN_AUX_C;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return RARCH_LIGHTGUN_START;
+      default:
+         break;
    }
+
    return 0;
 }
 
@@ -1118,71 +1125,49 @@ static int16_t udev_input_state(
 
                /*buttons*/
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_TRIGGER);
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_RELOAD);
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_AUX_A);
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_AUX_B);
             case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_AUX_C);
             case RETRO_DEVICE_ID_LIGHTGUN_START:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_START);
             case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_SELECT);
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_DPAD_UP);
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_DPAD_DOWN);
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_DPAD_LEFT);
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-               return udev_input_lightgun_state(udev, joypad,
-                     joypad_info,
-                     binds,
-                     keyboard_mapping_blocked,
-                     port, device, idx, RARCH_LIGHTGUN_DPAD_RIGHT);
+            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
+               {
+                  unsigned new_id                = udev_retro_id_to_rarch(id);
+                  const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
+                  const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
+                  const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
+                  const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
+                  uint16_t port                  = joypad_info->joy_idx;
+                  float axis_threshold           = joypad_info->axis_threshold;
+                  const uint64_t joykey          = (bind_joykey != NO_BTN)
+                     ? bind_joykey  : autobind_joykey;
+                  const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+                     ? bind_joyaxis : autobind_joyaxis;
+                  if (!keyboard_mapping_blocked)
+                     if ((binds[port][new_id].key < RETROK_LAST) 
+                           && udev_keyboard_pressed(udev, binds[port]
+                              [new_id].key))
+                        return 1;
+                  if (binds[port][new_id].valid)
+                  {
+                     if ((uint16_t)joykey != NO_BTN && joypad->button(
+                              port, (uint16_t)joykey))
+                        return 1;
+                     if (joyaxis != AXIS_NONE &&
+                           ((float)abs(joypad->axis(port, joyaxis)) 
+                            / 0x8000) > axis_threshold)
+                        return 1;
+                     if (udev_mouse_button_pressed(udev, port,
+                              binds[port][new_id].mbutton))
+                        return 1;
+                  }
+               }
+               break;
                /*deprecated*/
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                {
@@ -1196,19 +1181,6 @@ static int16_t udev_input_state(
                   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
                   if (mouse)
                      return udev_mouse_get_y(mouse);
-               }
-               break;
-            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-               if (binds[port][RARCH_LIGHTGUN_START].valid)
-               {
-                  unsigned new_id = RARCH_LIGHTGUN_START;
-                  if (button_is_pressed(joypad,
-                           joypad_info, binds[port],
-                           port, new_id)
-                        || udev_mouse_button_pressed(udev, port,
-                           binds[port][new_id].mbutton)
-                     )
-                     return 1;
                }
                break;
          }

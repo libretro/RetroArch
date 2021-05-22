@@ -31,7 +31,7 @@
 
 #include <d3d8.h>
 
-#include "../../defines/d3d_defines.h"
+#include <defines/d3d_defines.h>
 #include "../common/d3d8_common.h"
 #include "../common/d3d_common.h"
 #include "../video_coord_array.h"

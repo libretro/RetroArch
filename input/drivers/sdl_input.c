@@ -142,14 +142,12 @@ static int16_t sdl_input_state(
 
             if (id_plus_valid && id_plus_key < RETROK_LAST)
             {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-               if (sdl_key_pressed(sym))
+               if (sdl_key_pressed(id_plus_key))
                   ret = 0x7fff;
             }
             if (id_minus_valid && id_minus_key < RETROK_LAST)
             {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-               if (sdl_key_pressed(sym))
+               if (sdl_key_pressed(id_minus_key))
                   ret += -0x7fff;
             }
 

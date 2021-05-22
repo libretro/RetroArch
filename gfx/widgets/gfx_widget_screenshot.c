@@ -27,6 +27,8 @@
 struct gfx_widget_screenshot_state
 {
    uintptr_t texture;
+   gfx_animation_t *p_anim;
+
    unsigned texture_width;
    unsigned texture_height;
 
@@ -50,6 +52,7 @@ typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
 
 static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    0,             /* texture */
+   NULL,          /* p_anim */
    0,             /* texture_width */
    0,             /* texture_height */
    0,             /* height */
@@ -204,8 +207,8 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    unsigned video_height                = video_info->height;
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_display_t            *p_disp     = (gfx_display_t*)video_info->disp_userdata;
-   gfx_animation_t          *p_anim     = anim_get_ptr();
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
+   gfx_animation_t          *p_anim     = state->p_anim;
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
    int padding                          = (state->height - (font_regular->line_height * 2.0f)) / 2.0f;
 
@@ -353,8 +356,20 @@ static void gfx_widget_screenshot_iterate(
    }
 }
 
+static bool gfx_widget_screenshot_init(
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      bool video_is_threaded, bool fullscreen)
+{
+   gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
+
+   state->p_anim = p_anim;
+
+   return false;
+}
+
 const gfx_widget_t gfx_widget_screenshot = {
-   NULL, /* init */
+   gfx_widget_screenshot_init,
    gfx_widget_screenshot_free,
    NULL, /* context_reset*/
    NULL, /* context_destroy */

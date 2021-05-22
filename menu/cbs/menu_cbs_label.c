@@ -61,7 +61,7 @@ static int action_bind_label_playlist_collection_entry(
    if (string_is_empty(path))
       return 0;
 
-   playlist_file = path_basename(path);
+   playlist_file = path_basename_nocompression(path);
 
    if (string_is_empty(playlist_file))
       return 0;

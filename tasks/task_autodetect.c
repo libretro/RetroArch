@@ -166,7 +166,7 @@ static void input_autoconfigure_set_config_file(
    /* > Extract config file path + name */
    if (!string_is_empty(config->path))
    {
-      const char *config_file_name = path_basename(config->path);
+      const char *config_file_name = path_basename_nocompression(config->path);
 
       strlcpy(autoconfig_handle->device_info.config_path,
             config->path,

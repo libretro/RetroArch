@@ -57,7 +57,7 @@
 #endif
 
 #ifdef VITA
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 static bool vgl_inited = false;
 #endif
 
@@ -973,8 +973,6 @@ static void gl1_gfx_set_nonblock_state(void *data, bool state,
 
    if (!gl1)
       return;
-
-   RARCH_LOG("[GL1]: VSync => %s\n", state ? "OFF" : "ON");
 
    gl1_context_bind_hw_render(gl1, false);
 

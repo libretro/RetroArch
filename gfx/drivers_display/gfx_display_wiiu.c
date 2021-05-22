@@ -207,11 +207,12 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
          sizeof(*wiiu->vertex_cache.v), wiiu->vertex_cache.v);
 }
 
-static void gfx_display_wiiu_draw_pipeline(gfx_display_ctx_draw_t *draw,
+static void gfx_display_wiiu_draw_pipeline(
+      gfx_display_ctx_draw_t *draw,
+      gfx_display_t *p_disp,
       void *data, unsigned video_width, unsigned video_height)
 {
    video_coord_array_t *ca        = NULL;
-   gfx_display_t *p_disp          = disp_get_ptr();
    wiiu_video_t             *wiiu = (wiiu_video_t*)data;
 
    if (!wiiu || !draw)

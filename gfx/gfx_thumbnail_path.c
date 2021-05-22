@@ -126,11 +126,11 @@ bool gfx_thumbnail_get_sub_directory(
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
 static const char *gfx_thumbnail_get_type(
+      settings_t *settings,
       gfx_thumbnail_path_data_t *path_data,
       enum gfx_thumbnail_id thumbnail_id)
 {
    unsigned        type          = 0;
-   settings_t *settings          = config_get_ptr();
    unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
    unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
    
@@ -272,7 +272,7 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
       if (string_is_empty(playlist_path))
          return true;
       
-      playlist_file = path_basename(playlist_path);
+      playlist_file = path_basename_nocompression(playlist_path);
       
       /* Note: This is not considered an error
        * (just means that input playlist is ignored) */
@@ -559,7 +559,8 @@ bool gfx_thumbnail_update_path(
 {
    char content_dir[PATH_MAX_LENGTH];
    settings_t *settings       = config_get_ptr();
-   const char *type           = gfx_thumbnail_get_type(path_data, thumbnail_id);
+   const char *type           = gfx_thumbnail_get_type(settings,
+         path_data, thumbnail_id);
    const char *system_name    = NULL;
    char *thumbnail_path       = NULL;
    const char *dir_thumbnails = settings ? settings->paths.directory_thumbnails : NULL;
@@ -810,7 +811,7 @@ bool gfx_thumbnail_get_content_dir(
    tmp_buf[0] = '\0';
    
    strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
-   strlcpy(content_dir, path_basename(tmp_buf), len);
+   strlcpy(content_dir, path_basename_nocompression(tmp_buf), len);
    
    return !string_is_empty(content_dir);
 }

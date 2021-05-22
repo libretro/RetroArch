@@ -1368,6 +1368,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "معدل التحديث كما أبلغ عنه مشغل العرض."
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "تعطيل القوة sRGB FBO"
@@ -9079,10 +9081,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "تبديل GPU على مدار الساعة أو تحت الساعة."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
-   "إعادة التشغيل إلى RCM"
    )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)

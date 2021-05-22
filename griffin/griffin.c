@@ -517,7 +517,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(__PSL1GHT__)
-#include "../gfx/drivers/gcm_gfx.c"
+#include "../gfx/drivers/rsx_gfx.c"
 #elif defined(GEKKO)
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
@@ -683,13 +683,9 @@ INPUT
 #elif defined(PS2)
 #include "../input/drivers/ps2_input.c"
 #include "../input/drivers_joypad/ps2_joypad.c"
-#elif defined(__PS3__)
-#if defined(__PSL1GHT__)
-#include "../input/drivers/psl1ght_input.c"
-#else
+#elif defined(__PS3__) || defined(__PSL1GHT__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
-#endif
 #elif defined(ORBIS)
 #include "../input/drivers/ps4_input.c"
 #include "../input/drivers_joypad/ps4_joypad.c"
@@ -894,7 +890,7 @@ RSOUND
 /*============================================================
 AUDIO
 ============================================================ */
-#if defined(__PS3__)
+#if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
 #include "../audio/drivers/xenon360_audio.c"
@@ -1292,14 +1288,9 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_handshake.c"
-#include "../network/netplay/netplay_init.c"
 #include "../network/netplay/netplay_io.c"
-#include "../network/netplay/netplay_keyboard.c"
-#include "../network/netplay/netplay_sync.c"
 #include "../network/netplay/netplay_discovery.c"
-#include "../network/netplay/netplay_buf.c"
 #include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
@@ -1322,6 +1313,9 @@ DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_powerstate.c"
 #include "../tasks/task_content.c"
+#ifdef HAVE_CDROM
+#include "../tasks/task_content_disc.c"
+#endif
 #ifdef HAVE_PATCH
 #include "../tasks/task_patch.c"
 #endif
@@ -1375,6 +1369,9 @@ MENU
 
 #ifdef HAVE_MENU
 #include "../menu/menu_setting.c"
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+#include "../menu/menu_screensaver.c"
+#endif
 
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
@@ -1493,20 +1490,23 @@ DEPENDENCIES
 #endif
 
 #ifdef HAVE_7ZIP
-#include "../deps/7zip/7zIn.c"
+#include "../deps/7zip/7zArcIn.c"
+#include "../deps/7zip/7zBuf.c"
+#include "../deps/7zip/7zCrc.c"
+#include "../deps/7zip/7zCrcOpt.c"
+#include "../deps/7zip/7zDec.c"
+#include "../deps/7zip/CpuArch.c"
+#include "../deps/7zip/Delta.c"
+#include "../deps/7zip/LzFind.c"
+#include "../deps/7zip/LzmaDec.c"
+#include "../deps/7zip/Lzma2Dec.c"
+#include "../deps/7zip/LzmaEnc.c"
+#include "../deps/7zip/Bra.c"
 #include "../deps/7zip/Bra86.c"
+#include "../deps/7zip/BraIA64.c"
+#include "../deps/7zip/Bcj2.c"
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"
-#include "../deps/7zip/LzmaDec.c"
-#include "../deps/7zip/LzmaEnc.c"
-#include "../deps/7zip/7zCrcOpt.c"
-#include "../deps/7zip/Bra.c"
-#include "../deps/7zip/7zDec.c"
-#include "../deps/7zip/Bcj2.c"
-#include "../deps/7zip/7zCrc.c"
-#include "../deps/7zip/Lzma2Dec.c"
-#include "../deps/7zip/LzFind.c"
-#include "../deps/7zip/7zBuf.c"
 #endif
 
 #ifdef WANT_LIBFAT

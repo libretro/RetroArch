@@ -151,7 +151,7 @@ static float ozone_sidebar_gradient_top_boysenberry[16] = {
       0.27058823529, 0.09803921568, 0.14117647058, 1.00,
       0.27058823529, 0.09803921568, 0.14117647058, 1.00,
       0.19215686274, 0.0, 0.04705882352, 1.00,
-      0.19215686274, 0.0, 0.04705882352, 1.00,     
+      0.19215686274, 0.0, 0.04705882352, 1.00,
 };
 
 static float ozone_sidebar_gradient_bottom_boysenberry[16] = {
@@ -179,7 +179,7 @@ static float ozone_sidebar_gradient_top_hacking_the_kernel[16] = {
       0.0, 0.13333333, 0.0, 1.0f,
       0.0, 0.13333333, 0.0, 1.0f,
       0.0, 0.13333333, 0.0, 1.0f,
-      0.0, 0.13333333, 0.0, 1.0f,    
+      0.0, 0.13333333, 0.0, 1.0f,
 };
 
 static float ozone_sidebar_gradient_bottom_hacking_the_kernel[16] = {
@@ -207,7 +207,7 @@ static float ozone_sidebar_gradient_top_twilight_zone[16] = {
       0.0078431, 0.0, 0.0156862, 1.0f,
       0.0078431, 0.0, 0.0156862, 1.0f,
       0.0078431, 0.0, 0.0156862, 1.0f,
-      0.0078431, 0.0, 0.0156862, 1.0f,    
+      0.0078431, 0.0, 0.0156862, 1.0f,
 };
 
 static float ozone_sidebar_gradient_bottom_twilight_zone[16] = {
@@ -215,6 +215,34 @@ static float ozone_sidebar_gradient_bottom_twilight_zone[16] = {
       0.0078431, 0.0, 0.0156862, 1.0f,
       0.0078431, 0.0, 0.0156862, 1.0f,
       0.0078431, 0.0, 0.0156862, 1.0f,
+};
+
+static float ozone_background_libretro_running_dracula[16] = {
+      0.1568627, 0.1647058, 0.2117647, 0.75f,
+      0.1568627, 0.1647058, 0.2117647, 0.75f,
+      0.1568627, 0.1647058, 0.2117647, 1.0f,
+      0.1568627, 0.1647058, 0.2117647, 1.0f,
+};
+
+static float ozone_sidebar_background_dracula[16] = {
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+};
+
+static float ozone_sidebar_gradient_top_dracula[16] = {
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+};
+
+static float ozone_sidebar_gradient_bottom_dracula[16] = {
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
+      0.2666666, 0.2784314, 0.3529412, 1.0f,
 };
 
 
@@ -239,165 +267,183 @@ static float ozone_border_1_hacking_the_kernel[16] = COLOR_HEX_TO_FLOAT(0x00E000
 static float ozone_border_0_twilight_zone[16] = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
 static float ozone_border_1_twilight_zone[16] = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
 
+static float ozone_border_0_dracula[16] = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
+static float ozone_border_1_dracula[16] = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
+
 
 ozone_theme_t ozone_theme_light = {
-   COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),
-   ozone_background_libretro_running_light,
+   COLOR_HEX_TO_FLOAT(0xEBEBEB, 1.00),                   /* background */
+   ozone_background_libretro_running_light,              /* background_libretro_running */
 
-   COLOR_HEX_TO_FLOAT(0x2B2B2B, 1.00),
-   COLOR_HEX_TO_FLOAT(0x333333, 1.00),
-   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
-   COLOR_HEX_TO_FLOAT(0x10BEC5, 1.00),
-   COLOR_HEX_TO_FLOAT(0xCDCDCD, 1.00),
-   COLOR_HEX_TO_FLOAT(0x333333, 1.00),
-   COLOR_HEX_TO_FLOAT(0x374CFF, 1.00),
-   COLOR_HEX_TO_FLOAT(0xF0F0F0, 1.00),
+   COLOR_HEX_TO_FLOAT(0x2B2B2B, 1.00),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0x333333, 1.00),                   /* text */
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0x10BEC5, 1.00),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0xCDCDCD, 1.00),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0x333333, 1.00),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0x374CFF, 1.00),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0xF0F0F0, 1.00),                   /* message_background */
 
-   0x333333FF,
-   0x374CFFFF,
-   0x878787FF,
+   0x333333FF,                                           /* text_rgba */
+   0x374CFFFF,                                           /* text_selected_rgba */
+   0x878787FF,                                           /* text_sublabel_rgba */
 
-   ozone_sidebar_background_light,
-   ozone_sidebar_gradient_top_light,
-   ozone_sidebar_gradient_bottom_light,
+   /* Screensaver 'tint' (RGB24) */
+   0xEBEBEB,                                             /* screensaver_tint */
 
-   ozone_border_0_light,
-   ozone_border_1_light,
+   ozone_sidebar_background_light,                       /* sidebar_background */
+   ozone_sidebar_gradient_top_light,                     /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_light,                  /* sidebar_bottom_gradient */
 
-   {0},
+   ozone_border_0_light,                                 /* cursor_border_0 */
+   ozone_border_1_light,                                 /* cursor_border_1 */
 
-   "light"
+   {0},                                                  /* textures */
+
+   "light"                                               /* name */
 };
 
 ozone_theme_t ozone_theme_dark = {
-   COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00),
-   ozone_background_libretro_running_dark,
+   COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00),                   /* background */
+   ozone_background_libretro_running_dark,               /* background_libretro_running */
 
-   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
-   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
-   COLOR_HEX_TO_FLOAT(0x212227, 1.00),
-   COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00),
-   COLOR_HEX_TO_FLOAT(0x51514F, 1.00),
-   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),
-   COLOR_HEX_TO_FLOAT(0x00D9AE, 1.00),
-   COLOR_HEX_TO_FLOAT(0x464646, 1.00),
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x212227, 1.00),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x51514F, 1.00),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0x00D9AE, 1.00),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x464646, 1.00),                   /* message_background */
 
-   0xFFFFFFFF,
-   0x00FFC5FF,
-   0x9F9FA1FF,
+   0xFFFFFFFF,                                           /* text_rgba */
+   0x00FFC5FF,                                           /* text_selected_rgba */
+   0x9F9FA1FF,                                           /* text_sublabel_rgba */
 
-   ozone_sidebar_background_dark,
-   ozone_sidebar_gradient_top_dark,
-   ozone_sidebar_gradient_bottom_dark,
+   /* Screensaver 'tint' (RGB24) */
+   0xFFFFFF,                                             /* screensaver_tint */
 
-   ozone_border_0_dark,
-   ozone_border_1_dark,
+   ozone_sidebar_background_dark,                        /* sidebar_background */
+   ozone_sidebar_gradient_top_dark,                      /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_dark,                   /* sidebar_bottom_gradient */
 
-   {0},
+   ozone_border_0_dark,                                  /* cursor_border_0 */
+   ozone_border_1_dark,                                  /* cursor_border_1 */
 
-   "dark"
+   {0},                                                  /* textures */
+
+   "dark"                                                /* name */
 };
 
 ozone_theme_t ozone_theme_nord = {
    /* Background color */
-   COLOR_HEX_TO_FLOAT(0x2E3440, 1.0f),     /* background */
-   ozone_background_libretro_running_nord, /* background_libretro_running */
+   COLOR_HEX_TO_FLOAT(0x2E3440, 1.0f),                   /* background */
+   ozone_background_libretro_running_nord,               /* background_libretro_running */
 
    /* Float colors for quads and icons */
-   COLOR_HEX_TO_FLOAT(0xD8DEE9, 1.0f),     /* header_footer_separator */
-   COLOR_HEX_TO_FLOAT(0xECEFF4, 1.0f),     /* text */
-   COLOR_HEX_TO_FLOAT(0x232730, 1.0f),     /* selection */
-   COLOR_HEX_TO_FLOAT(0x73A1BE, 1.0f),     /* selection_border */
-   COLOR_HEX_TO_FLOAT(0x4C566A, 1.0f),     /* entries_border */
-   COLOR_HEX_TO_FLOAT(0xE5E9F0, 1.0f),     /* entries_icon */
-   COLOR_HEX_TO_FLOAT(0xA9C791, 1.0f),     /* text_selected */
-   COLOR_HEX_TO_FLOAT(0x434C5E, 1.0f),     /* message_background */
+   COLOR_HEX_TO_FLOAT(0xD8DEE9, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xECEFF4, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x232730, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0x73A1BE, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x4C566A, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xE5E9F0, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0xA9C791, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x434C5E, 1.0f),                   /* message_background */
 
    /* RGBA colors for text */
-   0xECEFF4FF,                             /* text_rgba */
-   0xA9C791FF,                             /* text_selected_rgba */
-   0x8FBCBBFF,                             /* text_sublabel_rgba */
+   0xECEFF4FF,                                           /* text_rgba */
+   0xA9C791FF,                                           /* text_selected_rgba */
+   0x8FBCBBFF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xECEFF4,                                             /* screensaver_tint */
 
    /* Sidebar color */
-   ozone_sidebar_background_nord,          /* sidebar_background */
-   ozone_sidebar_gradient_top_nord,        /* sidebar_top_gradient */
-   ozone_sidebar_gradient_bottom_nord,     /* sidebar_bottom_gradient */
+   ozone_sidebar_background_nord,                        /* sidebar_background */
+   ozone_sidebar_gradient_top_nord,                      /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_nord,                   /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
-   ozone_border_0_nord,                    /* cursor_border_0 */
-   ozone_border_1_nord,                    /* cursor_border_1 */
+   ozone_border_0_nord,                                  /* cursor_border_0 */
+   ozone_border_1_nord,                                  /* cursor_border_1 */
 
-   {0},                                    /* textures */
+   {0},                                                  /* textures */
 
-   "nord"                                  /* name */
+   "nord"                                                /* name */
 };
 
 ozone_theme_t ozone_theme_gruvbox_dark = {
    /* Background color */
-   COLOR_HEX_TO_FLOAT(0x282828, 1.0f),             /* background */
-   ozone_background_libretro_running_gruvbox_dark, /* background_libretro_running */
+   COLOR_HEX_TO_FLOAT(0x282828, 1.0f),                   /* background */
+   ozone_background_libretro_running_gruvbox_dark,       /* background_libretro_running */
 
    /* Float colors for quads and icons */
-   COLOR_HEX_TO_FLOAT(0xD5C4A1, 1.0f),             /* header_footer_separator */
-   COLOR_HEX_TO_FLOAT(0xEBDBB2, 1.0f),             /* text */
-   COLOR_HEX_TO_FLOAT(0x1D2021, 1.0f),             /* selection */
-   COLOR_HEX_TO_FLOAT(0xD75D0E, 1.0f),             /* selection_border */
-   COLOR_HEX_TO_FLOAT(0x665C54, 1.0f),             /* entries_border */
-   COLOR_HEX_TO_FLOAT(0xEBDBB2, 1.0f),             /* entries_icon */
-   COLOR_HEX_TO_FLOAT(0x8EC07C, 1.0f),             /* text_selected */
-   COLOR_HEX_TO_FLOAT(0x32302F, 1.0f),             /* message_background */
+   COLOR_HEX_TO_FLOAT(0xD5C4A1, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xEBDBB2, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x1D2021, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0xD75D0E, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x665C54, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xEBDBB2, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0x8EC07C, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x32302F, 1.0f),                   /* message_background */
 
    /* RGBA colors for text */
-   0xEBDBB2FF,                                     /* text_rgba */
-   0x8EC07CFF,                                     /* text_selected_rgba */
-   0xD79921FF,                                     /* text_sublabel_rgba */
+   0xEBDBB2FF,                                           /* text_rgba */
+   0x8EC07CFF,                                           /* text_selected_rgba */
+   0xD79921FF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xEBDBB2,                                             /* screensaver_tint */
 
    /* Sidebar color */
-   ozone_sidebar_background_gruvbox_dark,          /* sidebar_background */
-   ozone_sidebar_gradient_top_gruvbox_dark,        /* sidebar_top_gradient */
-   ozone_sidebar_gradient_bottom_gruvbox_dark,     /* sidebar_bottom_gradient */
+   ozone_sidebar_background_gruvbox_dark,                /* sidebar_background */
+   ozone_sidebar_gradient_top_gruvbox_dark,              /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_gruvbox_dark,           /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
-   ozone_border_0_gruvbox_dark,                    /* cursor_border_0 */
-   ozone_border_1_gruvbox_dark,                    /* cursor_border_1 */
+   ozone_border_0_gruvbox_dark,                          /* cursor_border_0 */
+   ozone_border_1_gruvbox_dark,                          /* cursor_border_1 */
 
-   {0},                                            /* textures */
+   {0},                                                  /* textures */
 
-   "gruvbox_dark"                                  /* name */
+   "gruvbox_dark"                                        /* name */
 };
 
 ozone_theme_t ozone_theme_boysenberry = {
    /* Background color */
-   COLOR_HEX_TO_FLOAT(0x31000C, 1.0f),            /* background */
-   ozone_background_libretro_running_boysenberry, /* background_libretro_running */
+   COLOR_HEX_TO_FLOAT(0x31000C, 1.0f),                   /* background */
+   ozone_background_libretro_running_boysenberry,        /* background_libretro_running */
 
    /* Float colors for quads and icons */
-   COLOR_HEX_TO_FLOAT(0x85535F, 1.0f),            /* header_footer_separator */
-   COLOR_HEX_TO_FLOAT(0xEBDBB2, 1.0f),            /* text */
-   COLOR_HEX_TO_FLOAT(0x4E2A35, 1.0f),            /* selection */
-   COLOR_HEX_TO_FLOAT(0xD599FF, 1.0f),            /* selection_border */
-   COLOR_HEX_TO_FLOAT(0x73434C, 1.0f),            /* entries_border */
-   COLOR_HEX_TO_FLOAT(0xFEBCFF, 1.0f),            /* entries_icon */
-   COLOR_HEX_TO_FLOAT(0xD599FF, 1.0f),            /* text_selected */
-   COLOR_HEX_TO_FLOAT(0x32302F, 1.0f),            /* message_background */
+   COLOR_HEX_TO_FLOAT(0x85535F, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xEBDBB2, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x4E2A35, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0xD599FF, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x73434C, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xFEBCFF, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0xD599FF, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x32302F, 1.0f),                   /* message_background */
 
    /* RGBA colors for text */
-   0xFEBCFFFF,                                    /* text_rgba */
-   0xFEBCFFFF,                                    /* text_selected_rgba */
-   0xD599FFFF,                                    /* text_sublabel_rgba */
+   0xFEBCFFFF,                                           /* text_rgba */
+   0xFEBCFFFF,                                           /* text_selected_rgba */
+   0xD599FFFF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xFEBCFF,                                             /* screensaver_tint */
 
    /* Sidebar color */
-   ozone_sidebar_background_boysenberry,          /* sidebar_background */
-   ozone_sidebar_gradient_top_boysenberry,        /* sidebar_top_gradient */
-   ozone_sidebar_gradient_bottom_boysenberry,     /* sidebar_bottom_gradient */
+   ozone_sidebar_background_boysenberry,                 /* sidebar_background */
+   ozone_sidebar_gradient_top_boysenberry,               /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_boysenberry,            /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
-   ozone_border_0_boysenberry,                    /* cursor_border_0 */
-   ozone_border_1_boysenberry,                    /* cursor_border_1 */
+   ozone_border_0_boysenberry,                           /* cursor_border_0 */
+   ozone_border_1_boysenberry,                           /* cursor_border_1 */
 
-   {0},                                           /* textures */
+   {0},                                                  /* textures */
 
-   "boysenberry"                                  /* name */
+   "boysenberry"                                         /* name */
 };
 
 ozone_theme_t ozone_theme_hacking_the_kernel = {
@@ -420,6 +466,9 @@ ozone_theme_t ozone_theme_hacking_the_kernel = {
    0x83FF83FF,                                           /* text_selected_rgba */
    0x53E63DFF,                                           /* text_sublabel_rgba */
 
+   /* Screensaver 'tint' (RGB24) */
+   0x00E528,                                             /* screensaver_tint */
+
    /* Sidebar color */
    ozone_sidebar_background_hacking_the_kernel,          /* sidebar_background */
    ozone_sidebar_gradient_top_hacking_the_kernel,        /* sidebar_top_gradient */
@@ -436,36 +485,76 @@ ozone_theme_t ozone_theme_hacking_the_kernel = {
 
 ozone_theme_t ozone_theme_twilight_zone = {
    /* Background color */
-   COLOR_HEX_TO_FLOAT(0x020004, 1.0f),              /* background */
-   ozone_background_libretro_running_twilight_zone, /* background_libretro_running */
+   COLOR_HEX_TO_FLOAT(0x020004, 1.0f),                   /* background */
+   ozone_background_libretro_running_twilight_zone,      /* background_libretro_running */
 
    /* Float colors for quads and icons */
-   COLOR_HEX_TO_FLOAT(0x5B5069, 1.0f),              /* header_footer_separator */
-   COLOR_HEX_TO_FLOAT(0xF7F0FA, 1.0f),              /* text */
-   COLOR_HEX_TO_FLOAT(0x232038, 1.0f),              /* selection */
-   COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f),              /* selection_border */
-   COLOR_HEX_TO_FLOAT(0xC27AFF, 1.0f),              /* entries_border */
-   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),              /* entries_icon */
-   COLOR_HEX_TO_FLOAT(0xB78CC8, 1.0f),              /* text_selected */
-   COLOR_HEX_TO_FLOAT(0xB78CC8, 1.0f),              /* message_background */
+   COLOR_HEX_TO_FLOAT(0x5B5069, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xF7F0FA, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x232038, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0xC27AFF, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0xB78CC8, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0xB78CC8, 1.0f),                   /* message_background */
 
    /* RGBA colors for text */
-   0xFDFCFEFF,                                      /* text_rgba */
-   0xB78CC8FF,                                      /* text_selected_rgba */
-   0x9A6C99FF,                                      /* text_sublabel_rgba */
+   0xFDFCFEFF,                                           /* text_rgba */
+   0xB78CC8FF,                                           /* text_selected_rgba */
+   0x9A6C99FF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xFDFCFE,                                             /* screensaver_tint */
 
    /* Sidebar color */
-   ozone_sidebar_background_twilight_zone,          /* sidebar_background */
-   ozone_sidebar_gradient_top_twilight_zone,        /* sidebar_top_gradient */
-   ozone_sidebar_gradient_bottom_twilight_zone,     /* sidebar_bottom_gradient */
+   ozone_sidebar_background_twilight_zone,               /* sidebar_background */
+   ozone_sidebar_gradient_top_twilight_zone,             /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_twilight_zone,          /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
-   ozone_border_0_twilight_zone,                    /* cursor_border_0 */
-   ozone_border_1_twilight_zone,                    /* cursor_border_1 */
+   ozone_border_0_twilight_zone,                         /* cursor_border_0 */
+   ozone_border_1_twilight_zone,                         /* cursor_border_1 */
 
-   {0},                                             /* textures */
+   {0},                                                  /* textures */
 
-   "twilight_zone"                                  /* name */
+   "twilight_zone"                                       /* name */
+};
+
+ozone_theme_t ozone_theme_dracula = {
+   /* Background color */
+   COLOR_HEX_TO_FLOAT(0x282A36, 1.0f),                   /* background */
+   ozone_background_libretro_running_dracula,            /* background_libretro_running */
+
+   /* Float colors for quads and icons */
+   COLOR_HEX_TO_FLOAT(0x44475A, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xF8F8F2, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x44475A, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0xBD93F9, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x44475A, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xF8F8F2, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0xF8F8F2, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x6272A4, 1.0f),                   /* message_background */
+
+   /* RGBA colors for text */
+   0xF8F8F2FF,                                           /* text_rgba */
+   0xFF79C6FF,                                           /* text_selected_rgba */
+   0xBD93F9FF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xF8F8F2,                                             /* screensaver_tint */
+
+   /* Sidebar color */
+   ozone_sidebar_background_dracula,                     /* sidebar_background */
+   ozone_sidebar_gradient_top_dracula,                   /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_dracula,                /* sidebar_bottom_gradient */
+
+   /* Fancy cursor colors */
+   ozone_border_0_dracula,                               /* cursor_border_0 */
+   ozone_border_1_dracula,                               /* cursor_border_1 */
+
+   {0},                                                  /* textures */
+
+   "dracula"                                             /* name */
 };
 
 
@@ -476,7 +565,8 @@ ozone_theme_t *ozone_themes[] = {
    &ozone_theme_gruvbox_dark,
    &ozone_theme_boysenberry,
    &ozone_theme_hacking_the_kernel,
-   &ozone_theme_twilight_zone
+   &ozone_theme_twilight_zone,
+   &ozone_theme_dracula
 
 };
 
@@ -498,26 +588,29 @@ void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 
    switch (color_theme)
    {
-      case 0:
+      case OZONE_COLOR_THEME_BASIC_WHITE:
          theme = &ozone_theme_light;
          break;
-      case 1:
+      case OZONE_COLOR_THEME_BASIC_BLACK:
          theme = &ozone_theme_dark;
          break;
-      case 2:
+      case OZONE_COLOR_THEME_NORD:
          theme = &ozone_theme_nord;
          break;
-      case 3:
+      case OZONE_COLOR_THEME_GRUVBOX_DARK:
          theme = &ozone_theme_gruvbox_dark;
          break;
-      case 4:
+      case OZONE_COLOR_THEME_BOYSENBERRY:
          theme = &ozone_theme_boysenberry;
          break;
-      case 5:
+      case OZONE_COLOR_THEME_HACKING_THE_KERNEL:
          theme = &ozone_theme_hacking_the_kernel;
          break;
-      case 6:
+      case OZONE_COLOR_THEME_TWILIGHT_ZONE:
          theme = &ozone_theme_twilight_zone;
+         break;
+      case OZONE_COLOR_THEME_DRACULA:
+         theme = &ozone_theme_dracula;
          break;
       default:
          break;

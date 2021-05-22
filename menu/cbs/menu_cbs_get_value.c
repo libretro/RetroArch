@@ -46,6 +46,7 @@
 #include "../../wifi/wifi_driver.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
+#include "../misc/cpufreq/cpufreq.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -451,19 +452,16 @@ static void menu_action_setting_disp_set_label_core_updater_entry(
        core_updater_list_get_filename(core_list, path, &entry) &&
        !string_is_empty(entry->local_core_path))
    {
-      core_info_ctx_find_t core_info;
+      core_info_t *core_info = NULL;
 
       /* Check whether core is installed
        * > Note: We search core_info here instead
        *   of calling path_is_valid() since we don't
        *   want to perform disk access every frame */
-      core_info.inf  = NULL;
-      core_info.path = entry->local_core_path;
-
-      if (core_info_find(&core_info))
+      if (core_info_find(entry->local_core_path, &core_info))
       {
          /* Highlight locked cores */
-         if (core_info.inf->is_locked)
+         if (core_info->is_locked)
          {
             s[0] = '[';
             s[1] = '#';
@@ -493,12 +491,12 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
       const char *path,
       char *s2, size_t len2)
 {
-   core_info_ctx_find_t core_info;
-   const char *alt = list->list[i].alt
-      ? list->list[i].alt
-      : list->list[i].path;
-   *s              = '\0';
-   *w              = 0;
+   core_info_t *core_info = NULL;
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   *s                     = '\0';
+   *w                     = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -507,11 +505,8 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   core_info.inf  = NULL;
-   core_info.path = path;
-
-   if (core_info_find(&core_info) &&
-       core_info.inf->is_locked)
+   if (core_info_find(path, &core_info) &&
+       core_info->is_locked)
    {
       s[0] = '[';
       s[1] = '!';
@@ -521,6 +516,159 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
    }
 }
 
+#ifndef HAVE_LAKKA_SWITCH
+#ifdef HAVE_LAKKA
+static void menu_action_setting_disp_cpu_gov_mode(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(NULL);
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   strlcpy(s, msg_hash_to_str(
+      MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF + (int)mode), len);
+}
+
+static void menu_action_setting_disp_cpu_gov_choose(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   int fnum = atoi(list->list[i].label);
+   cpu_scaling_opts_t opts;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   if (!fnum)
+      strlcpy(s, opts.main_policy, len);
+   else
+      strlcpy(s, opts.menu_policy, len);
+}
+
+static void menu_action_setting_disp_set_label_cpu_policy(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned policyid = atoi(path);
+   cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
+   cpu_scaling_driver_t *d = drivers[policyid];
+
+   *s = '\0';
+   *w = 0;
+
+   if (d->affected_cpus)
+      snprintf(s2, len2, "%s %d [CPU(s) %s]", msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY), policyid,
+         d->affected_cpus);
+   else
+      snprintf(s2, len2, "%s %d", msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY), policyid);
+}
+
+static void menu_action_cpu_managed_freq_label(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   uint32_t freq = 0;
+   cpu_scaling_opts_t opts;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
+
+   switch (type) {
+   case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
+      strlcpy(s2, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ), len2);
+      freq = opts.min_freq;
+      break;
+   case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
+      strlcpy(s2, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ), len2);
+      freq = opts.max_freq;
+      break;
+   };
+
+   if (freq == 1)
+      strlcpy(s, "Min.", len);
+   else if (freq == ~0U)
+      strlcpy(s, "Max.", len);
+   else
+      snprintf(s, len, "%u MHz", freq / 1000);
+}
+
+static void menu_action_cpu_freq_label(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned policyid = atoi(path);
+   cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
+   cpu_scaling_driver_t *d = drivers[policyid];
+
+   switch (type) {
+   case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
+      strlcpy(s2, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ), len2);
+      snprintf(s, len, "%u MHz", d->min_policy_freq / 1000);
+      break;
+   case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
+      strlcpy(s2, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ), len2);
+      snprintf(s, len, "%u MHz", d->max_policy_freq / 1000);
+      break;
+   case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
+      strlcpy(s2, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR), len2);
+      strlcpy(s, d->scaling_governor, len);
+      break;
+   };
+}
+
+static void menu_action_cpu_governor_label(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned policyid = atoi(path);
+   cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
+   cpu_scaling_driver_t *d = drivers[policyid];
+
+   strlcpy(s2, msg_hash_to_str(
+      MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR), len2);
+   strlcpy(s, d->scaling_governor, len);
+}
+#endif
+#endif
+
 static void menu_action_setting_disp_set_label_core_lock(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -529,12 +677,12 @@ static void menu_action_setting_disp_set_label_core_lock(
       const char *path,
       char *s2, size_t len2)
 {
-   core_info_ctx_find_t core_info;
-   const char *alt = list->list[i].alt
-      ? list->list[i].alt
-      : list->list[i].path;
-   *s              = '\0';
-   *w              = 0;
+   core_info_t *core_info = NULL;
+   const char *alt        = list->list[i].alt
+         ? list->list[i].alt
+         : list->list[i].path;
+   *s                     = '\0';
+   *w                     = 0;
 
    if (alt)
       strlcpy(s2, alt, len2);
@@ -543,11 +691,8 @@ static void menu_action_setting_disp_set_label_core_lock(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   core_info.inf  = NULL;
-   core_info.path = path;
-
-   if (core_info_find(&core_info) &&
-       core_info.inf->is_locked)
+   if (core_info_find(path, &core_info) &&
+       core_info->is_locked)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -1152,12 +1297,12 @@ static void menu_action_setting_disp_set_label_core_option_override_info(
    *w = 19;
 
    if (!string_is_empty(override_path))
-      options_file = path_basename(override_path);
+      options_file = path_basename_nocompression(override_path);
    else if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       const char *options_path = coreopts->conf_path;
       if (!string_is_empty(options_path))
-         options_file = path_basename(options_path);
+         options_file = path_basename_nocompression(options_path);
    }
 
    if (!string_is_empty(options_file))
@@ -1572,6 +1717,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_BLUETOOTH_DRIVER:
          case MENU_ENUM_LABEL_WIFI_DRIVER:
          case MENU_ENUM_LABEL_MENU_DRIVER:
+#ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_TIMEZONE:
+#endif
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
             break;
          case MENU_ENUM_LABEL_CONNECT_BLUETOOTH:
@@ -1713,6 +1861,34 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_core_option_override_info);
             break;
+         #ifndef HAVE_LAKKA_SWITCH
+         #ifdef HAVE_LAKKA
+         case MENU_ENUM_LABEL_CPU_PERF_MODE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_cpu_gov_mode);
+            break;
+         case MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR:
+         case MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_cpu_gov_choose);
+            break;
+         case MENU_ENUM_LABEL_CPU_POLICY_ENTRY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_cpu_policy);
+            break;
+         case MENU_ENUM_LABEL_CPU_POLICY_MIN_FREQ:
+         case MENU_ENUM_LABEL_CPU_POLICY_MAX_FREQ:
+            BIND_ACTION_GET_VALUE(cbs, menu_action_cpu_freq_label);
+            break;
+         case MENU_ENUM_LABEL_CPU_MANAGED_MIN_FREQ:
+         case MENU_ENUM_LABEL_CPU_MANAGED_MAX_FREQ:
+            BIND_ACTION_GET_VALUE(cbs, menu_action_cpu_managed_freq_label);
+            break;
+         case MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR:
+            BIND_ACTION_GET_VALUE(cbs, menu_action_cpu_governor_label);
+            break;
+         #endif
+         #endif
          default:
             return -1;
       }

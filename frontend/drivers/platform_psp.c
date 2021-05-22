@@ -55,7 +55,7 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../file_path_special.h"
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 #include "../../retroarch.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
@@ -365,7 +365,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
             param1 += 7;
             memcpy(core_name, param1, param2 - param1);
             core_name[param2-param1] = 0;
-            sprintf(argp, param2 + 8);
+            strlcpy(argp, param2 + 8, sizeof(argp));
             args = strlen(argp);
          }
          else if (param1 > param2 && (param1 - (param2+8) < sizeof(argp)) && strlen(param1+7) < sizeof(core_name))
@@ -374,7 +374,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
             param2 += 8;
             memcpy(argp, param2, param1 - param2);
             argp[param1-param2] = 0;
-            sprintf(core_name, param1 + 7);
+            strlcpy(core_name, param1 + 7, sizeof(core_name));
             args = strlen(argp);
          }
          else

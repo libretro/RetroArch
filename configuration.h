@@ -29,6 +29,10 @@
 #include "input/input_defines.h"
 #include "led/led_defines.h"
 
+#ifdef HAVE_LAKKA
+#include "lakka.h"
+#endif
+
 #define configuration_set_float(settings, var, newvar) \
 { \
    settings->modified = true; \
@@ -130,7 +134,7 @@ typedef struct settings
 
       unsigned led_map[MAX_LEDS];
 
-      unsigned audio_out_rate;
+      unsigned audio_output_sample_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
 
@@ -252,6 +256,7 @@ typedef struct settings
       unsigned menu_scroll_delay;
       unsigned menu_content_show_add_entry;
       unsigned menu_screensaver_timeout;
+      unsigned menu_screensaver_animation;
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
@@ -283,6 +288,12 @@ typedef struct settings
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
       unsigned quit_on_close_content;
+
+#ifdef HAVE_LAKKA
+      unsigned cpu_scaling_mode;
+      unsigned cpu_min_freq;
+      unsigned cpu_max_freq;
+#endif
    } uints;
 
    struct
@@ -309,6 +320,7 @@ typedef struct settings
       float menu_header_opacity;
       float menu_ticker_speed;
       float menu_rgui_particle_effect_speed;
+      float menu_screensaver_animation_speed;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -379,6 +391,11 @@ typedef struct settings
       char ai_service_url[PATH_MAX_LENGTH];
 
       char crt_switch_timings[255];
+#ifdef HAVE_LAKKA
+      char timezone[TIMEZONE_LENGTH];
+      char cpu_main_gov[32];
+      char cpu_menu_gov[32];
+#endif
    } arrays;
 
    struct
@@ -499,6 +516,7 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif
+      bool video_force_resolution;
 
       /* Accessibility */
       bool accessibility_enable;
@@ -550,6 +568,7 @@ typedef struct settings
       bool menu_show_load_content_animation;
       bool notification_show_autoconfig;
       bool notification_show_cheats_applied;
+      bool notification_show_patch_applied;
       bool notification_show_remap_load;
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
@@ -608,6 +627,7 @@ typedef struct settings
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
       bool menu_rgui_full_width_layout;
+      bool menu_rgui_transparency;
       bool menu_rgui_shadows;
       bool menu_rgui_inline_thumbnails;
       bool menu_rgui_swap_thumbnails;
@@ -766,6 +786,7 @@ typedef struct settings
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
       bool check_firmware_before_loading;
+      bool core_info_cache_enable;
 #ifndef HAVE_DYNAMIC
       bool always_reload_core_on_run_content;
 #endif
@@ -805,6 +826,7 @@ typedef struct settings
 
       bool playlist_sort_alphabetical;
       bool playlist_show_sublabels;
+      bool playlist_show_entry_idx;
       bool playlist_fuzzy_archive_match;
       bool playlist_portable_paths;
 
@@ -1007,6 +1029,11 @@ void config_save_file_salamander(void);
 #endif
 
 settings_t *config_get_ptr(void);
+
+#ifdef HAVE_LAKKA
+const char *config_get_all_timezones(void);
+void config_set_timezone(char *timezone);
+#endif
 
 RETRO_END_DECLS
 

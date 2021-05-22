@@ -350,6 +350,12 @@
 #define SUPPORTS_CORETEXT false
 #endif
 
+#ifdef HAVE_CHECK
+#define SUPPORTS_CHECK true
+#else
+#define SUPPORTS_CHECK false
+#endif
+
 #if !defined(_WIN32) && !defined(GLOBAL_CONFIG_DIR)
 #if defined(__HAIKU__)
 #define GLOBAL_CONFIG_DIR "/system/settings"

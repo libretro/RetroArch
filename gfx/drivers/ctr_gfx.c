@@ -153,7 +153,7 @@ static void ctr_free_overlay(ctr_video_t *ctr)
    for (i = 0; i < ctr->overlays; i++)
    {
       linearFree(ctr->overlay[i].frame_coords);
-	  linearFree(ctr->overlay[i].texture.data);
+      linearFree(ctr->overlay[i].texture.data);
    }
 
    free(ctr->overlay);
@@ -512,10 +512,6 @@ static void* ctr_init(const video_info_t* video,
    ctr->smooth        = video->smooth;
    ctr->vsync         = video->vsync;
    ctr->current_buffer_top = 0;
-
-#ifdef HAVE_OVERLAY
-   video_driver_set_rgba();
-#endif
 
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
     * mode with the parallax barrier disabled
@@ -1218,10 +1214,10 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
          {
             ((uint32_t*)texture->data)[ctrgu_swizzle_coords(i, j,
                texture->width)] =
-                    ((*src >> 8)  & 0x00FF00) 
-                  | ((*src >> 24) & 0xFF)
-                  | ((*src << 8)  & 0xFF0000)
-                  | ((*src << 24) & 0xFF000000);
+                    ((*src << 8)  & 0xFF000000) 
+                  | ((*src << 8)  & 0x00FF0000)
+                  | ((*src << 8)  & 0x0000FF00)
+                  | ((*src >> 24) & 0x000000FF);
             src++;
          }
       GSPGPU_FlushDataCache(texture->data, texture->width 
@@ -1248,10 +1244,10 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
       for (i = 0; i < image->width * image->height; i++)
       {
          *dst = 
-              ((*src >> 8)  & 0x00FF00) 
-            | ((*src >> 24) & 0xFF)
-            | ((*src << 8)  & 0xFF0000)
-            | ((*src << 24) & 0xFF000000);
+              ((*src << 8)  & 0xFF000000) 
+            | ((*src << 8)  & 0x00FF0000)
+            | ((*src << 8)  & 0x0000FF00)
+            | ((*src >> 24) & 0x000000FF);
          dst++;
          src++;
       }
@@ -1295,7 +1291,7 @@ static void ctr_unload_texture(void *data, bool threaded,
 static void ctr_overlay_tex_geom(void *data,
             unsigned image, float x, float y, float w, float h)
 {
-   ctr_video_t             *ctr = (ctr_video_t *)data;
+   ctr_video_t           *ctr = (ctr_video_t *)data;
    struct ctr_overlay_data *o = NULL;
 
    if (ctr)
@@ -1320,7 +1316,7 @@ static void ctr_overlay_tex_geom(void *data,
 static void ctr_overlay_vertex_geom(void *data,
             unsigned image, float x, float y, float w, float h)
 {
-   ctr_video_t             *ctr = (ctr_video_t *)data;
+   ctr_video_t           *ctr = (ctr_video_t *)data;
    struct ctr_overlay_data *o = NULL;
 
    if (ctr)
@@ -1398,11 +1394,11 @@ static bool ctr_overlay_load(void *data,
 
       for (j = 0; j < images[i].width * images[i].height; j++)
       {
-         *dst =
-              ((*src >> 8)  & 0x00FF00)
-            | ((*src >> 24) & 0xFF)
-            | ((*src << 8)  & 0xFF0000)
-            | ((*src << 24) & 0xFF000000);
+         *dst = 
+              ((*src << 8)  & 0xFF000000) 
+            | ((*src << 8)  & 0x00FF0000)
+            | ((*src << 8)  & 0x0000FF00)
+            | ((*src >> 24) & 0x000000FF);
          dst++;
          src++;
       }

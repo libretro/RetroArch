@@ -43,7 +43,7 @@ static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
 
-   sprintf(user_path, "%sretroarch", cwd);
+   snprintf(user_path, sizeof(user_path), "%sretroarch", cwd);
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], cwd, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    /* Content in the same folder */

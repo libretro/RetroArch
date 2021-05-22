@@ -221,9 +221,8 @@ static void frontend_orbis_deinit(void *data)
 #ifndef IS_SALAMANDER
    verbosity_disable();
 #ifdef HAVE_FILE_LOGGER
-   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
+   retro_main_log_file_deinit();
 #endif
-
 #endif
 	ps4LinkFinish();
 }

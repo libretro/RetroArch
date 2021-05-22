@@ -1,6 +1,6 @@
 #include <errno.h>
 #include <reent.h>
-#include "../../defines/psp_defines.h"
+#include <defines/psp_defines.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
 

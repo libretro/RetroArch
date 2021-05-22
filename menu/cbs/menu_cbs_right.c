@@ -44,6 +44,7 @@
 #include "../../network/netplay/netplay.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
+#include "../misc/cpufreq/cpufreq.h"
 
 #ifndef BIND_ACTION_RIGHT
 #define BIND_ACTION_RIGHT(cbs, name) (cbs)->action_right = (name)
@@ -788,6 +789,122 @@ static int manual_content_scan_core_name_right(unsigned type, const char *label,
    return 0;
 }
 
+#ifndef HAVE_LAKKA_SWITCH
+#ifdef HAVE_LAKKA
+static int cpu_policy_mode_change(unsigned type, const char *label,
+      bool wraparound)
+{
+   bool refresh = false;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(NULL);
+   if (mode != CPUSCALING_MANUAL)
+      mode++;
+   set_cpu_scaling_mode(mode, NULL);
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   return 0;
+}
+
+static int cpu_policy_freq_managed_tweak(unsigned type, const char *label,
+      bool wraparound)
+{
+   bool refresh = false;
+   cpu_scaling_opts_t opts;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
+
+   switch (type) {
+   case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
+      opts.min_freq = get_cpu_scaling_next_frequency_limit(
+         opts.min_freq, 1);
+      set_cpu_scaling_mode(mode, &opts);
+      break;
+   case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
+      opts.max_freq = get_cpu_scaling_next_frequency_limit(
+         opts.max_freq, 1);
+      set_cpu_scaling_mode(mode, &opts);
+      break;
+   };
+
+   return 0;
+}
+
+static int cpu_policy_freq_managed_gov(unsigned type, const char *label,
+      bool wraparound)
+{
+   int pidx;
+   bool refresh = false;
+   cpu_scaling_opts_t opts;
+   enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
+   cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
+
+   /* Using drivers[0] governors, should be improved */
+   if (!drivers || !drivers[0])
+      return -1;
+
+   switch (atoi(label)) {
+   case 0:
+      pidx = string_list_find_elem(drivers[0]->available_governors,
+         opts.main_policy);
+      if (pidx && pidx + 1 < drivers[0]->available_governors->size)
+      {
+         strlcpy(opts.main_policy,
+            drivers[0]->available_governors->elems[pidx].data,
+            sizeof(opts.main_policy));
+         set_cpu_scaling_mode(mode, &opts);
+      }
+      break;
+   case 1:
+      pidx = string_list_find_elem(drivers[0]->available_governors,
+         opts.menu_policy);
+      if (pidx && pidx + 1 < drivers[0]->available_governors->size)
+      {
+         strlcpy(opts.menu_policy,
+            drivers[0]->available_governors->elems[pidx].data,
+            sizeof(opts.menu_policy));
+         set_cpu_scaling_mode(mode, &opts);
+      }
+      break;
+   };
+
+   return 0;
+}
+
+static int cpu_policy_freq_tweak(unsigned type, const char *label,
+      bool wraparound)
+{
+   bool refresh = false;
+   cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
+   unsigned policyid = atoi(label);
+   uint32_t next_freq;
+   if (!drivers)
+     return 0;
+
+   switch (type) {
+   case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
+      next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
+         drivers[policyid]->min_policy_freq, 1);
+      set_cpu_scaling_min_frequency(drivers[policyid], next_freq);
+      break;
+   case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
+      next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
+         drivers[policyid]->max_policy_freq, 1);
+      set_cpu_scaling_max_frequency(drivers[policyid], next_freq);
+      break;
+   case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
+   {
+      int pidx = string_list_find_elem(drivers[policyid]->available_governors,
+         drivers[policyid]->scaling_governor);
+      if (pidx && pidx + 1 < drivers[policyid]->available_governors->size)
+      {
+         set_cpu_scaling_governor(drivers[policyid],
+            drivers[policyid]->available_governors->elems[pidx].data);
+      }
+      break;
+   }
+   };
+
+   return 0;
+}
+#endif
+#endif
 int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1089,6 +1206,26 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_RIGHT(cbs, manual_content_scan_core_name_right);
                break;
+            #ifndef HAVE_LAKKA_SWITCH
+            #ifdef HAVE_LAKKA
+            case MENU_ENUM_LABEL_CPU_PERF_MODE:
+               BIND_ACTION_RIGHT(cbs, cpu_policy_mode_change);
+               break;
+            case MENU_ENUM_LABEL_CPU_POLICY_MAX_FREQ:
+            case MENU_ENUM_LABEL_CPU_POLICY_MIN_FREQ:
+            case MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR:
+               BIND_ACTION_RIGHT(cbs, cpu_policy_freq_tweak);
+               break;
+            case MENU_ENUM_LABEL_CPU_MANAGED_MIN_FREQ:
+            case MENU_ENUM_LABEL_CPU_MANAGED_MAX_FREQ:
+               BIND_ACTION_RIGHT(cbs, cpu_policy_freq_managed_tweak);
+               break;
+            case MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR:
+            case MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR:
+               BIND_ACTION_RIGHT(cbs, cpu_policy_freq_managed_gov);
+               break;
+            #endif
+            #endif
             default:
                return -1;
          }

@@ -93,6 +93,7 @@ enum video_driver_enum
    VIDEO_GDI,
    VIDEO_VGA,
    VIDEO_FPGA,
+   VIDEO_RSX,
    VIDEO_NULL
 };
 
@@ -315,6 +316,8 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_FPGA;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
+#elif defined(__PSL1GHT__)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_RSX;
 #else
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #endif
@@ -465,7 +468,7 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 #elif defined(PS2)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
-#elif defined(__PS3__) && !defined(__PSL1GHT__)
+#elif defined(__PS3__) || defined(__PSL1GHT__)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
 #elif defined(ORBIS)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
@@ -660,10 +663,6 @@ static void config_parse_file(global_t *global);
 #endif
 
 struct defaults g_defaults;
-
-/* TODO/FIXME - static public global variables */
-static unsigned old_analog_dpad_mode[MAX_USERS];
-static unsigned old_libretro_device[MAX_USERS];
 
 /**
  * config_get_default_audio:
@@ -871,6 +870,8 @@ const char *config_get_default_video(void)
          return "vga";
       case VIDEO_FPGA:
          return "fpga";
+      case VIDEO_RSX:
+         return "rsx";
       case VIDEO_NULL:
          break;
    }
@@ -1189,6 +1190,47 @@ const char *config_get_midi_driver_options(void)
    return char_list_new_special(STRING_LIST_MIDI_DRIVERS, NULL);
 }
 
+#ifdef HAVE_LAKKA
+void config_set_timezone(char *timezone)
+{
+   setenv("TZ", timezone, 1);
+   tzset();
+}
+
+const char *config_get_all_timezones(void)
+{
+   return char_list_new_special(STRING_LIST_TIMEZONES, NULL);
+}
+
+static void load_timezone(char *setting)
+{
+   char haystack[TIMEZONE_LENGTH+32];
+   static char *needle = "TIMEZONE=";
+   size_t needle_len = strlen(needle);
+
+   RFILE *tzfp = filestream_open(LAKKA_TIMEZONE_PATH,
+                       RETRO_VFS_FILE_ACCESS_READ,
+                       RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (tzfp != NULL)
+   {
+      filestream_gets(tzfp, haystack, sizeof(haystack)-1);
+      filestream_close(tzfp);
+
+      char *start = strstr(haystack, needle);
+
+      if (start != NULL)
+         snprintf(setting, TIMEZONE_LENGTH, "%s", start + needle_len);
+      else
+         snprintf(setting, TIMEZONE_LENGTH, "%s", DEFAULT_TIMEZONE);
+   }
+   else
+      snprintf(setting, TIMEZONE_LENGTH, "%s", DEFAULT_TIMEZONE);
+
+   config_set_timezone(setting);
+}
+#endif
+
 bool config_overlay_enable_default(void)
 {
    if (g_defaults.overlay_set)
@@ -1242,6 +1284,10 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
    SETTING_ARRAY("ai_service_url",           settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
    SETTING_ARRAY("crt_switch_timings",       settings->arrays.crt_switch_timings, false, NULL, true);
+#ifdef HAVE_LAKKA
+   SETTING_ARRAY("cpu_main_gov",             settings->arrays.cpu_main_gov, false, NULL, true);
+   SETTING_ARRAY("cpu_menu_gov",             settings->arrays.cpu_menu_gov, false, NULL, true);
+#endif
 
    *size = count;
 
@@ -1448,6 +1494,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->bools.load_dummy_on_core_shutdown, true, DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN, false);
    SETTING_BOOL("check_firmware_before_loading", &settings->bools.check_firmware_before_loading, true, DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING, false);
+   SETTING_BOOL("core_info_cache_enable",        &settings->bools.core_info_cache_enable, true, DEFAULT_CORE_INFO_CACHE_ENABLE, false);
 #ifndef HAVE_DYNAMIC
    SETTING_BOOL("always_reload_core_on_run_content", &settings->bools.always_reload_core_on_run_content, true, DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT, false);
 #endif
@@ -1490,6 +1537,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);
    SETTING_BOOL("video_force_srgb_disable",      &settings->bools.video_force_srgb_disable, true, false, false);
    SETTING_BOOL("video_fullscreen",              &settings->bools.video_fullscreen, true, DEFAULT_FULLSCREEN, false);
+#ifdef __WINRT__
+   SETTING_BOOL("video_force_resolution",         &settings->bools.video_force_resolution, true, DEFAULT_FORCE_RESOLUTION, false);
+#endif
    SETTING_BOOL("bundle_assets_extract_enable",  &settings->bools.bundle_assets_extract_enable, true, DEFAULT_BUNDLE_ASSETS_EXTRACT_ENABLE, false);
    SETTING_BOOL("video_vsync",                   &settings->bools.video_vsync, true, DEFAULT_VSYNC, false);
    SETTING_BOOL("video_adaptive_vsync",          &settings->bools.video_adaptive_vsync, true, DEFAULT_ADAPTIVE_VSYNC, false);
@@ -1506,6 +1556,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_show_load_content_animation", &settings->bools.menu_show_load_content_animation, true, DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION, false);
    SETTING_BOOL("notification_show_autoconfig", &settings->bools.notification_show_autoconfig, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, false);
    SETTING_BOOL("notification_show_cheats_applied", &settings->bools.notification_show_cheats_applied, true, DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED, false);
+   SETTING_BOOL("notification_show_patch_applied", &settings->bools.notification_show_patch_applied, true, DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED, false);
    SETTING_BOOL("notification_show_remap_load", &settings->bools.notification_show_remap_load, true, DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD, false);
    SETTING_BOOL("notification_show_config_override_load", &settings->bools.notification_show_config_override_load, true, DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD, false);
    SETTING_BOOL("notification_show_set_initial_disk", &settings->bools.notification_show_set_initial_disk, true, DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK, false);
@@ -1670,6 +1721,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("rgui_background_filler_thickness_enable", &settings->bools.menu_rgui_background_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_thickness_enable",     &settings->bools.menu_rgui_border_filler_thickness_enable, true, true, false);
    SETTING_BOOL("rgui_border_filler_enable",               &settings->bools.menu_rgui_border_filler_enable, true, true, false);
+   SETTING_BOOL("menu_rgui_transparency",                  &settings->bools.menu_rgui_transparency, true, DEFAULT_RGUI_TRANSPARENCY, false);
    SETTING_BOOL("menu_rgui_shadows",                       &settings->bools.menu_rgui_shadows, true, rgui_shadows, false);
    SETTING_BOOL("menu_rgui_full_width_layout",             &settings->bools.menu_rgui_full_width_layout, true, rgui_full_width_layout, false);
    SETTING_BOOL("rgui_inline_thumbnails",                  &settings->bools.menu_rgui_inline_thumbnails, true, rgui_inline_thumbnails, false);
@@ -1771,6 +1823,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("content_runtime_log",           &settings->bools.content_runtime_log, true, DEFAULT_CONTENT_RUNTIME_LOG, false);
    SETTING_BOOL("content_runtime_log_aggregate", &settings->bools.content_runtime_log_aggregate, true, DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE, false);
    SETTING_BOOL("playlist_show_sublabels",       &settings->bools.playlist_show_sublabels, true, DEFAULT_PLAYLIST_SHOW_SUBLABELS, false);
+   SETTING_BOOL("playlist_show_entry_idx",       &settings->bools.playlist_show_entry_idx, true, DEFAULT_PLAYLIST_SHOW_ENTRY_IDX, false);
    SETTING_BOOL("playlist_sort_alphabetical",    &settings->bools.playlist_sort_alphabetical, true, DEFAULT_PLAYLIST_SORT_ALPHABETICAL, false);
    SETTING_BOOL("playlist_fuzzy_archive_match",  &settings->bools.playlist_fuzzy_archive_match, true, DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH, false);
    SETTING_BOOL("playlist_portable_paths",       &settings->bools.playlist_portable_paths, true, DEFAULT_PLAYLIST_PORTABLE_PATHS, false);
@@ -1843,6 +1896,9 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("menu_header_opacity",      &settings->floats.menu_header_opacity,    true, menu_header_opacity, false);
    SETTING_FLOAT("menu_ticker_speed",        &settings->floats.menu_ticker_speed,      true, menu_ticker_speed,   false);
    SETTING_FLOAT("rgui_particle_effect_speed", &settings->floats.menu_rgui_particle_effect_speed, true, DEFAULT_RGUI_PARTICLE_EFFECT_SPEED, false);
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+   SETTING_FLOAT("menu_screensaver_animation_speed", &settings->floats.menu_screensaver_animation_speed, true, DEFAULT_MENU_SCREENSAVER_ANIMATION_SPEED, false);
+#endif
 #endif
    SETTING_FLOAT("video_message_pos_x",      &settings->floats.video_msg_pos_x,      true, message_pos_offset_x, false);
    SETTING_FLOAT("video_message_pos_y",      &settings->floats.video_msg_pos_y,      true, message_pos_offset_y, false);
@@ -1936,6 +1992,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_scroll_delay",            &settings->uints.menu_scroll_delay, true, DEFAULT_MENU_SCROLL_DELAY, false);
    SETTING_UINT("content_show_add_entry",       &settings->uints.menu_content_show_add_entry, true, DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY, false);
    SETTING_UINT("menu_screensaver_timeout",     &settings->uints.menu_screensaver_timeout, true, DEFAULT_MENU_SCREENSAVER_TIMEOUT, false);
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+   SETTING_UINT("menu_screensaver_animation",   &settings->uints.menu_screensaver_animation, true, DEFAULT_MENU_SCREENSAVER_ANIMATION, false);
+#endif
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_menu_color_theme",        &settings->uints.menu_rgui_color_theme, true, DEFAULT_RGUI_COLOR_THEME, false);
    SETTING_UINT("rgui_thumbnail_downscaler",    &settings->uints.menu_rgui_thumbnail_downscaler, true, rgui_thumbnail_downscaler, false);
@@ -1978,7 +2037,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, DEFAULT_OZONE_COLOR_THEME, false);
 #endif
 #endif
-   SETTING_UINT("audio_out_rate",               &settings->uints.audio_out_rate, true, DEFAULT_OUTPUT_RATE, false);
+   SETTING_UINT("audio_out_rate",               &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);
    SETTING_UINT("crt_switch_resolution_super",  &settings->uints.crt_switch_resolution_super,      true, DEFAULT_CRT_SWITCH_RESOLUTION_SUPER, false);
    SETTING_UINT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */, false);
@@ -2067,6 +2126,12 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("video_black_frame_insertion",   &settings->uints.video_black_frame_insertion, true, DEFAULT_BLACK_FRAME_INSERTION, false);
 
+#ifdef HAVE_LAKKA
+   SETTING_UINT("cpu_scaling_mode",            &settings->uints.cpu_scaling_mode,    true,   0, false);
+   SETTING_UINT("cpu_min_freq",                &settings->uints.cpu_min_freq,        true,   1, false);
+   SETTING_UINT("cpu_max_freq",                &settings->uints.cpu_max_freq,        true, ~0U, false);
+#endif
+
    *size = count;
 
    return tmp;
@@ -2126,10 +2191,8 @@ static struct config_int_setting *populate_settings_int(
    return tmp;
 }
 
-static void video_driver_default_settings(void)
+static void video_driver_default_settings(global_t *global)
 {
-   global_t                             *global  = global_get_ptr();
-
    if (!global)
       return;
 
@@ -2346,6 +2409,7 @@ void config_set_defaults(void *data)
    configuration_set_bool(settings,
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
    configuration_set_bool(settings, settings->bools.localap_enable, false);
+   load_timezone(settings->arrays.timezone);
 #endif
 
 #ifdef HAVE_MENU
@@ -2363,7 +2427,8 @@ void config_set_defaults(void *data)
 
    input_config_reset();
 #ifdef HAVE_CONFIGFILE
-   input_remapping_set_defaults(true);
+   input_remapping_deinit();
+   input_remapping_set_defaults();
 #endif
 
    /* Verify that binds are in proper order. */
@@ -2473,7 +2538,7 @@ void config_set_defaults(void *data)
 
    *settings->paths.log_dir = '\0';
 
-   video_driver_default_settings();
+   video_driver_default_settings(global);
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]))
       configuration_set_string(settings,
@@ -2933,13 +2998,10 @@ error:
 }
 
 #ifdef RARCH_CONSOLE
-static void video_driver_load_settings(config_file_t *conf)
+static void video_driver_load_settings(global_t *global, 
+      config_file_t *conf)
 {
    bool               tmp_bool = false;
-   global_t            *global = global_get_ptr();
-
-   if (!conf)
-      return;
 
    CONFIG_GET_INT_BASE(conf, global,
          console.screen.gamma_correction, "gamma_correction");
@@ -3192,7 +3254,8 @@ static bool config_load_file(global_t *global,
             settings->paths.directory_libretro, tmp_str);
 
 #ifdef RARCH_CONSOLE
-   video_driver_load_settings(conf);
+   if (conf)
+      video_driver_load_settings(global, conf);
 #endif
 
    /* Post-settings load */
@@ -3598,20 +3661,23 @@ bool config_load_override(void *data)
    {
       char temp_path[PATH_MAX_LENGTH];
 
-      temp_path[0]    = '\0';
-
       RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
             content_path);
 
       if (should_append)
       {
          RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
-         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
-         strlcat(temp_path, "|", sizeof(temp_path));
-         strlcat(temp_path, content_path, sizeof(temp_path));
+         snprintf(temp_path, sizeof(temp_path),
+               "%s|%s", 
+               path_get(RARCH_PATH_CONFIG_APPEND),
+               content_path
+               );
       }
       else
+      {
+         temp_path[0]    = '\0';
          strlcpy(temp_path, content_path, sizeof(temp_path));
+      }
 
       path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
 
@@ -3627,20 +3693,23 @@ bool config_load_override(void *data)
    {
       char temp_path[PATH_MAX_LENGTH];
 
-      temp_path[0]    = '\0';
-
       RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
             game_path);
 
       if (should_append)
       {
          RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
-         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
-         strlcat(temp_path, "|", sizeof(temp_path));
-         strlcat(temp_path, game_path, sizeof(temp_path));
+         snprintf(temp_path, sizeof(temp_path),
+               "%s|%s", 
+               path_get(RARCH_PATH_CONFIG_APPEND),
+               game_path
+               );
       }
       else
+      {
+         temp_path[0]    = '\0';
          strlcpy(temp_path, game_path, sizeof(temp_path));
+      }
 
       path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
 
@@ -3723,7 +3792,7 @@ bool config_unload_override(void)
 bool config_load_remap(const char *directory_input_remapping,
       void *data)
 {
-   char content_dir_name[PATH_MAX_LENGTH];
+   char content_dir_name[PATH_MAX_LENGTH] = { 0 };
    /* path to the directory containing retroarch.cfg (prefix)    */
    char remap_directory[PATH_MAX_LENGTH];
    /* final path for core-specific configuration (prefix+suffix) */
@@ -3779,14 +3848,17 @@ bool config_load_remap(const char *directory_input_remapping,
          sizeof(game_path));
 
 #ifdef HAVE_CONFIGFILE
-   input_remapping_set_defaults(false);
+   input_remapping_set_defaults();
 #endif
 
    /* If a game remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(game_path)))
    {
+      bool ret = input_remapping_load_file(new_conf, game_path);
+      config_file_free(new_conf);
+      new_conf = NULL;
       RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
-      if (input_remapping_load_file(new_conf, game_path))
+      if (ret)
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          /* msg_remap_loaded is set to MSG_GAME_REMAP_FILE_LOADED
@@ -3798,8 +3870,11 @@ bool config_load_remap(const char *directory_input_remapping,
    /* If a content-dir remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(content_path)))
    {
+      bool ret = input_remapping_load_file(new_conf, content_path);
+      config_file_free(new_conf);
+      new_conf = NULL;
       RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
-      if (input_remapping_load_file(new_conf, content_path))
+      if (ret)
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          msg_remap_loaded = MSG_DIRECTORY_REMAP_FILE_LOADED;
@@ -3810,8 +3885,11 @@ bool config_load_remap(const char *directory_input_remapping,
    /* If a core remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(core_path)))
    {
+      bool ret = input_remapping_load_file(new_conf, core_path);
+      config_file_free(new_conf);
+      new_conf = NULL;
       RARCH_LOG("[Remaps]: Core-specific remap found at \"%s\".\n", core_path);
-      if (input_remapping_load_file(new_conf, core_path))
+      if (ret)
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          msg_remap_loaded = MSG_CORE_REMAP_FILE_LOADED;
@@ -3819,6 +3897,8 @@ bool config_load_remap(const char *directory_input_remapping,
       }
    }
 
+   if (new_conf)
+      config_file_free(new_conf);
    new_conf = NULL;
 
    return false;
@@ -3856,12 +3936,8 @@ static void config_parse_file(global_t *global)
    }
 }
 
-static void video_driver_save_settings(config_file_t *conf)
+static void video_driver_save_settings(global_t *global, config_file_t *conf)
 {
-   global_t            *global = global_get_ptr();
-   if (!conf)
-      return;
-
    config_set_int(conf, "gamma_correction",
          global->console.screen.gamma_correction);
    config_set_bool(conf, "flicker_filter_enable",
@@ -3946,23 +4022,11 @@ bool config_save_autoconf_profile(const
    fill_pathname_join(buf, autoconf_dir, joypad_driver, sizeof(buf));
 
    if (path_is_directory(buf))
-   {
-      char buf_new[PATH_MAX_LENGTH];
-
-      buf_new[0] = '\0';
-
-      fill_pathname_join(buf_new, buf,
-            sanitised_name, sizeof(buf_new));
-      fill_pathname_noext(autoconf_file,
-            buf_new, ".cfg", sizeof(autoconf_file));
-   }
+      fill_pathname_join_concat(autoconf_file, buf,
+            sanitised_name, ".cfg", sizeof(autoconf_file));
    else
-   {
-      fill_pathname_join(buf, autoconf_dir,
-            sanitised_name, sizeof(buf));
-      fill_pathname_noext(autoconf_file,
-            buf, ".cfg", sizeof(autoconf_file));
-   }
+      fill_pathname_join_concat(autoconf_file, autoconf_dir,
+            sanitised_name, ".cfg", sizeof(autoconf_file));
 
    /* Open config file */
    conf = config_file_new_from_path_to_string(autoconf_file);
@@ -4035,6 +4099,7 @@ bool config_save_file(const char *path)
    struct config_path_setting     *path_settings     = NULL;
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_get_ptr();
+   global_t *global                                  = global_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
    int int_settings_size                             = sizeof(settings->ints)  / sizeof(settings->ints.placeholder);
@@ -4202,7 +4267,8 @@ bool config_save_file(const char *path)
    /* Hexadecimal settings */
    config_set_hex(conf, "video_message_color", msg_color);
 
-   video_driver_save_settings(conf);
+   if (conf)
+      video_driver_save_settings(global, conf);
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
@@ -4518,33 +4584,32 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
  **/
 bool input_remapping_load_file(void *data, const char *path)
 {
-   unsigned i, j, k;
-   config_file_t *conf  = (config_file_t*)data;
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
+   unsigned i, j;
+   config_file_t *conf                              = (config_file_t*)data;
+   settings_t *settings                             = config_get_ptr();
+   global_t *global                                 = global_get_ptr();
+   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
+      "b", "y", "select", "start",
+      "up", "down", "left", "right",
+      "a", "x", "l", "r", "l2", "r2",
+      "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
 
-   if (!conf ||  string_is_empty(path))
+   if (!conf || string_is_empty(path))
       return false;
 
    if (!string_is_empty(global->name.remapfile))
-      input_remapping_set_defaults(true);
+   {
+      input_remapping_deinit();
+      input_remapping_set_defaults();
+   }
    global->name.remapfile = strdup(path);
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char s1[64], s2[64], s3[64];
-      char btn_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char key_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char stk_ident[8][4096]                            = {{0}};
+      char s1[32], s2[32], s3[32];
 
-      char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][128] = {
-         "b", "y", "select", "start",
-         "up", "down", "left", "right",
-         "a", "x", "l", "r", "l2", "r2",
-         "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
-
-      old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
-      old_libretro_device[i]  = settings->uints.input_libretro_device[i];
+      global->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      global->old_libretro_device[i]  = settings->uints.input_libretro_device[i];
 
       s1[0] = '\0';
       s2[0] = '\0';
@@ -4556,49 +4621,57 @@ bool input_remapping_load_file(void *data, const char *path)
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
+         const char *key_string = key_strings[j];
+         
          if (j < RARCH_FIRST_CUSTOM_BIND)
          {
             int btn_remap = -1;
             int key_remap = -1;
+            char btn_ident[128];
+            char key_ident[128];
+                           
+            btn_ident[0] = key_ident[0] = '\0';
 
-            fill_pathname_join_delim(btn_ident[j], s1,
-                  key_strings[j], '_', sizeof(btn_ident[j]));
-            fill_pathname_join_delim(key_ident[j], s2,
-                  key_strings[j], '_', sizeof(btn_ident[j]));
+            fill_pathname_join_delim(btn_ident, s1,
+                  key_string, '_', sizeof(btn_ident));
+            fill_pathname_join_delim(key_ident, s2,
+                  key_string, '_', sizeof(key_ident));
 
-            if (config_get_int(conf, btn_ident[j], &btn_remap))
+            if (config_get_int(conf, btn_ident, &btn_remap))
             {
                if (btn_remap == -1)
-                  btn_remap                           = RARCH_UNMAPPED;
+                  btn_remap = RARCH_UNMAPPED;
 
                configuration_set_uint(settings,
                      settings->uints.input_remap_ids[i][j], btn_remap);
             }
 
-            if (!config_get_int(conf, key_ident[j], &key_remap))
-               key_remap                              = RETROK_UNKNOWN;
+            if (!config_get_int(conf, key_ident, &key_remap))
+               key_remap = RETROK_UNKNOWN;
 
             configuration_set_uint(settings,
                   settings->uints.input_keymapper_ids[i][j], key_remap);
          }
          else
          {
+            char stk_ident[128];
             int stk_remap = -1;
-            k             = j - RARCH_FIRST_CUSTOM_BIND;
+            
+            stk_ident[0]  = '\0';
 
-            fill_pathname_join_delim(stk_ident[k], s3,
-                  key_strings[j], '$', sizeof(stk_ident[k]));
+            fill_pathname_join_delim(stk_ident, s3,
+                  key_string, '$', sizeof(stk_ident));
 
-            snprintf(stk_ident[k],
-                  sizeof(stk_ident[k]),
+            snprintf(stk_ident,
+                  sizeof(stk_ident),
                   "%s_%s",
                   s3,
-                  key_strings[j]);
+                  key_string);
 
-            if (config_get_int(conf, stk_ident[k], &stk_remap))
+            if (config_get_int(conf, stk_ident, &stk_remap))
             {
                if (stk_remap == -1)
-                  stk_remap                          = RARCH_UNMAPPED;
+                  stk_remap = RARCH_UNMAPPED;
 
                configuration_set_uint(settings,
                      settings->uints.input_remap_ids[i][j], stk_remap);
@@ -4612,8 +4685,6 @@ bool input_remapping_load_file(void *data, const char *path)
       snprintf(s1, sizeof(s1), "input_libretro_device_p%u", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
    }
-
-   config_file_free(conf);
 
    return true;
 }
@@ -4629,19 +4700,23 @@ bool input_remapping_load_file(void *data, const char *path)
 bool input_remapping_save_file(const char *path)
 {
    bool ret;
-   unsigned i, j, k;
-   char buf[PATH_MAX_LENGTH];
+   unsigned i, j;
    char remap_file[PATH_MAX_LENGTH];
+   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
+      "b", "y", "select", "start",
+      "up", "down", "left", "right",
+      "a", "x", "l", "r", "l2", "r2",
+      "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
    config_file_t               *conf = NULL;
    unsigned max_users                = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    settings_t              *settings = config_get_ptr();
    const char *dir_input_remapping   = settings->paths.directory_input_remapping;
 
-   buf[0] = remap_file[0]            = '\0';
+   remap_file[0]                     = '\0';
 
-   fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
-   fill_pathname_noext(remap_file, buf,
-         FILE_PATH_REMAP_EXTENSION, sizeof(remap_file));
+   fill_pathname_join_concat(remap_file, dir_input_remapping, path, 
+         FILE_PATH_REMAP_EXTENSION,
+         sizeof(remap_file));
 
    if (!(conf = config_file_new_from_path_to_string(remap_file)))
    {
@@ -4651,62 +4726,68 @@ bool input_remapping_save_file(const char *path)
 
    for (i = 0; i < max_users; i++)
    {
-      char s1[64], s2[64], s3[64];
-      char btn_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char key_ident[RARCH_FIRST_CUSTOM_BIND][128]       = {{0}};
-      char stk_ident[8][128]                             = {{0}};
-
-      char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][128] = {
-         "b", "y", "select", "start",
-         "up", "down", "left", "right",
-         "a", "x", "l", "r", "l2", "r2",
-         "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
+      char s1[32], s2[32], s3[32];
 
       s1[0] = '\0';
       s2[0] = '\0';
+      s3[0] = '\0';
 
       snprintf(s1, sizeof(s1), "input_player%u_btn", i + 1);
       snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
-      snprintf(s3, sizeof(s1), "input_player%u_stk", i + 1);
+      snprintf(s3, sizeof(s3), "input_player%u_stk", i + 1);
 
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
+      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
-         unsigned remap_id  = settings->uints.input_remap_ids[i][j];
-         unsigned keymap_id = settings->uints.input_keymapper_ids[i][j];
+         char btn_ident[128];
+         unsigned remap_id      = settings->uints.input_remap_ids[i][j];
+         unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
+         const char *key_string = key_strings[j];
+         btn_ident[0]           = '\0';
+         fill_pathname_join_delim(btn_ident, s1,
+               key_string, '_', sizeof(btn_ident));
 
-         if (j < RARCH_FIRST_CUSTOM_BIND)
-         {
-            fill_pathname_join_delim(btn_ident[j], s1,
-               key_strings[j], '_', sizeof(btn_ident[j]));
-            fill_pathname_join_delim(key_ident[j], s2,
-               key_strings[j], '_', sizeof(btn_ident[j]));
-
-            /* only save values that have been modified */
-            if (remap_id != j && remap_id != RARCH_UNMAPPED)
-               config_set_int(conf, btn_ident[j],
-                     settings->uints.input_remap_ids[i][j]);
-            else if (remap_id != j && remap_id == RARCH_UNMAPPED)
-               config_set_int(conf, btn_ident[j], -1);
-            else
-               config_unset(conf, btn_ident[j]);
-
-            if (keymap_id != RETROK_UNKNOWN)
-               config_set_int(conf, key_ident[j],
-                  settings->uints.input_keymapper_ids[i][j]);
-         }
+         /* only save values that have been modified */
+         if (remap_id == j)
+            config_unset(conf, btn_ident);
          else
          {
-            k = j - RARCH_FIRST_CUSTOM_BIND;
-            fill_pathname_join_delim(stk_ident[k], s3,
-               key_strings[j], '_', sizeof(stk_ident[k]));
-            if (remap_id != j && remap_id != RARCH_UNMAPPED)
-               config_set_int(conf, stk_ident[k],
-                  settings->uints.input_remap_ids[i][j]);
-            else if (remap_id != j && remap_id == RARCH_UNMAPPED)
-               config_set_int(conf, stk_ident[k],
+            if (remap_id == RARCH_UNMAPPED)
+               config_set_int(conf, btn_ident, -1);
+            else
+               config_set_int(conf, btn_ident,
+                     settings->uints.input_remap_ids[i][j]);
+         }
+
+         if (keymap_id != RETROK_UNKNOWN)
+         {
+            char key_ident[128];
+            key_ident[0] = '\0';
+            fill_pathname_join_delim(key_ident, s2,
+                  key_string, '_', sizeof(key_ident));
+            config_set_int(conf, key_ident,
+                  settings->uints.input_keymapper_ids[i][j]);
+         }
+      }
+
+      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+      {
+         char stk_ident[128];
+         unsigned remap_id      = settings->uints.input_remap_ids[i][j];
+         const char *key_string = key_strings[j];
+         stk_ident[0]           = '\0';
+         fill_pathname_join_delim(stk_ident, s3,
+               key_string, '_', sizeof(stk_ident));
+
+         if (remap_id == j)
+            config_unset(conf, stk_ident);
+         else
+         {
+            if (remap_id == RARCH_UNMAPPED)
+               config_set_int(conf, stk_ident,
                      -1);
             else
-               config_unset(conf, stk_ident[k]);
+               config_set_int(conf, stk_ident,
+                     settings->uints.input_remap_ids[i][j]);
          }
       }
 
@@ -4725,62 +4806,12 @@ bool input_remapping_save_file(const char *path)
 bool input_remapping_remove_file(const char *path,
       const char *dir_input_remapping)
 {
-   char buf[PATH_MAX_LENGTH];
    char remap_file[PATH_MAX_LENGTH];
-   buf[0] = remap_file[0]  = '\0';
-
-   fill_pathname_join(buf, dir_input_remapping, path, sizeof(buf));
-   fill_pathname_noext(remap_file, buf,
+   remap_file[0]  = '\0';
+   fill_pathname_join_concat(remap_file, dir_input_remapping, path,
          FILE_PATH_REMAP_EXTENSION,
          sizeof(remap_file));
-
    return filestream_delete(remap_file) == 0 ? true : false;
-}
-
-void input_remapping_set_defaults(bool deinit)
-{
-   unsigned i, j;
-   settings_t *settings = config_get_ptr();
-   global_t     *global = global_get_ptr();
-
-   if (!global)
-      return;
-
-   if (deinit)
-   {
-      if (!string_is_empty(global->name.remapfile))
-         free(global->name.remapfile);
-      global->name.remapfile = NULL;
-      rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
-      rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
-      rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
-   }
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
-      {
-         if (j < RARCH_FIRST_CUSTOM_BIND)
-         {
-            const struct  retro_keybind *keybind = &input_config_binds[i][j];
-            if (keybind)
-               configuration_set_uint(settings,
-                     settings->uints.input_remap_ids[i][j], keybind->id);
-            configuration_set_uint(settings,
-                  settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
-         }
-         else
-            configuration_set_uint(settings,
-                  settings->uints.input_remap_ids[i][j], j);
-      }
-
-      if (old_analog_dpad_mode[i])
-         configuration_set_uint(settings,
-               settings->uints.input_analog_dpad_mode[i], old_analog_dpad_mode[i]);
-      if (old_libretro_device[i])
-         configuration_set_uint(settings,
-               settings->uints.input_libretro_device[i], old_libretro_device[i]);
-   }
 }
 #endif
 

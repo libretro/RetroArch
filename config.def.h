@@ -43,6 +43,11 @@
 #include "dingux/dingux_utils.h"
 #endif
 
+/* Required for menu screensaver animation */
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+#include "menu/menu_screensaver.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -220,6 +225,9 @@
 #define DEFAULT_FULLSCREEN_Y 0
 #endif
 
+/* Force 4k resolution */
+#define DEFAULT_FORCE_RESOLUTION false
+
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
 
@@ -237,6 +245,11 @@
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
 #define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
+
+/* Specifies whether to cache core info
+ * into a single (compressed) file for improved
+ * load times on platforms with slow IO */
+#define DEFAULT_CORE_INFO_CACHE_ENABLE true
 
 /* Specifies whether to 'reload' (fork and quit)
  * RetroArch when launching content with the
@@ -588,6 +601,13 @@ static const bool menu_savestate_resume     = false;
  * the screensaver */
 #define DEFAULT_MENU_SCREENSAVER_TIMEOUT 0
 
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
+/* When menu screensaver is enabled, specifies
+ * animation effect and animation speed */
+#define DEFAULT_MENU_SCREENSAVER_ANIMATION MENU_SCREENSAVER_BLANK
+#define DEFAULT_MENU_SCREENSAVER_ANIMATION_SPEED 1.0f
+#endif
+
 static const bool content_show_settings     = true;
 static const bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER
@@ -657,6 +677,7 @@ static const float menu_header_opacity = 1.000;
 #define DEFAULT_SHOW_ADVANCED_SETTINGS false
 
 #define DEFAULT_RGUI_COLOR_THEME RGUI_THEME_CLASSIC_GREEN
+#define DEFAULT_RGUI_TRANSPARENCY true
 
 static const bool rgui_inline_thumbnails = false;
 static const bool rgui_swap_thumbnails = false;
@@ -853,6 +874,10 @@ static const bool audio_enable_menu_bgm    = false;
  * applied */
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
 
+/* Display a notification when applying an
+ * IPS/BPS/UPS patch file */
+#define DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED true
+
 /* Display a notification when loading an
  * input remap file */
 #define DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD true
@@ -997,7 +1022,7 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
-#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS)
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS) || defined(DINGUX)
 /* Flush to file every 10 seconds on modern platforms by default */
 #define DEFAULT_AUTOSAVE_INTERVAL 10
 #else
@@ -1167,6 +1192,10 @@ static const int default_content_favorites_size = 200;
 #else
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
+
+/* Show the indices of playlist entries in
+ * a menu-driver-specific fashion */
+#define DEFAULT_PLAYLIST_SHOW_ENTRY_IDX true
 
 #define DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH false
 

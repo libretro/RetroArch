@@ -112,6 +112,7 @@ typedef struct gfx_display_frame_info
 
 typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
 
+typedef struct gfx_display gfx_display_t;
 
 typedef struct gfx_display_ctx_driver
 {
@@ -120,6 +121,7 @@ typedef struct gfx_display_ctx_driver
          void *data, unsigned video_width, unsigned video_height);
    /* Draw one of the menu pipeline shaders. */
    void (*draw_pipeline)(gfx_display_ctx_draw_t *draw,
+         gfx_display_t *p_disp,
          void *data, unsigned video_width, unsigned video_height);
    /* Start blending operation. */
    void (*blend_begin)(void *data);
@@ -220,8 +222,6 @@ struct gfx_display
    bool msg_force;
    bool framebuf_dirty;
 };
-
-typedef struct gfx_display gfx_display_t;
 
 void gfx_display_free(void);
 

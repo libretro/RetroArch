@@ -696,6 +696,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
    "Orientación de la pantalla"
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+#endif
 
 /* Settings > Video > Fullscreen Mode */
 
@@ -914,10 +916,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    "Guarda un puntu de guardáu na ralura que s'esbillare anguaño."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   "Zarrar el conteníu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
@@ -1383,14 +1381,6 @@ MSG_HASH(
    "Información de nucelos"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-   "Asolombradores de videu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-   "Captures de pantalla"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Llistes"
    )
@@ -1618,6 +1608,10 @@ MSG_HASH(
    "Númberu de repiticiones"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
+   "Fuercia del vibrador primariu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
    "Duración del vibrador primariu (ms)"
    )
@@ -1646,22 +1640,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    "Asolombradores de videu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Cargar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Guardar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Quitar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
-   "Aplicar los cambeos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
@@ -2116,6 +2094,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
    "Escuridá Gruvbox"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Segunda miniatura"
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -2330,10 +2312,6 @@ MSG_HASH(
    "Nun amosar más"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_STOP,
-   "Parar"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
    "Llistes anubríes"
    )
@@ -2356,10 +2334,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
    "Suxerir un nucleu cargáu primero:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_VIEW,
-   "Ver"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
@@ -2541,14 +2515,6 @@ MSG_HASH(
    "Menú horizontal"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "Historial"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Executar"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "segundos"
    )
@@ -2596,10 +2562,6 @@ MSG_HASH(
    "Xuegu en llinia"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP,
-   "Ayuda"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
    "¿Qué ye un nucleu?"
    )
@@ -2611,28 +2573,8 @@ MSG_HASH(
 /* Unused (Needs Confirmation) */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIG,
-   "Configuración"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
    "Información"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-   "Colar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "Desplazase p'arriba"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-   "Alternar el tecláu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "Alternar el menú"
    )
 
 /* Discord Status */
@@ -2693,6 +2635,10 @@ MSG_HASH(
    "Diendo en cata de la llista de nucleos…"
    )
 MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "Estrayendo'l nucleu "
+   )
+MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
    "Tolos nucleos sofitaos cambiaron a les versiones de la Play Store"
    )
@@ -2711,6 +2657,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR,
    "Fallu"
+   )
+MSG_HASH(
+   MSG_EXTRACTING,
+   "Estrayendo"
+   )
+MSG_HASH(
+   MSG_EXTRACTING_FILE,
+   "Estrayendo'l ficheru"
    )
 MSG_HASH(
    MSG_FILE_NOT_FOUND,
@@ -2777,10 +2731,6 @@ MSG_HASH(
    "La contraseña ye incorreuta."
    )
 MSG_HASH(
-   MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-   "La contraseña ye incorreuta."
-   )
-MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Desaniciáronse toles trampes."
    )
@@ -2811,8 +2761,12 @@ MSG_HASH(
 /* Environment Specific Settings */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "Reaniciar Retroarch"
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Rindimientu máximu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Potencia mínima"
    )
 MSG_HASH(
    MSG_LOCAL,

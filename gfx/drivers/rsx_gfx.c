@@ -42,7 +42,7 @@
 #include "../../tasks/tasks_internal.h"
 #endif
 
-#include "../../defines/ps3_defines.h"
+#include <defines/ps3_defines.h>
 
 #include <rsx/rsx.h>
 #include <rsx/nv40.h>

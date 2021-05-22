@@ -298,7 +298,7 @@ static int rc_url_append_unum(char* buffer, size_t buffer_size, size_t* buffer_o
   int written = rc_url_append_param_equals(buffer, buffer_size, *buffer_offset, param);
   if (written > 0) {
     char num[16];
-    int chars = sprintf(num, "%u", value);
+    int chars = snprintf(num, sizeof(num), "%u", value);
 
     if (chars + written < (int)buffer_size)
     {

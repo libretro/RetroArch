@@ -350,6 +350,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
    "Manajer Kursor"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   "Lihat pencarian sebelumnya."
+   )
 
 /* Main Menu > Information > Core Information */
 
@@ -640,6 +644,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined(DINGUX) && defined(DINGUX_BETA)
+#endif
 
 /* Settings > Video > Fullscreen Mode */
 

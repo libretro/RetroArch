@@ -57,7 +57,10 @@ static void gfx_widget_achievement_popup_start(
 static void gfx_widget_achievement_popup_free_current(
    gfx_widget_achievement_popup_state_t* state);
 
-static bool gfx_widget_achievement_popup_init(bool video_is_threaded, bool fullscreen)
+static bool gfx_widget_achievement_popup_init(
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      bool video_is_threaded, bool fullscreen)
 {
    gfx_widget_achievement_popup_state_t* state = &p_w_achievement_popup_st;
    memset(state, 0, sizeof(*state));

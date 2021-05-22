@@ -195,6 +195,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_BLUETOOTH_ENABLE,
    "bluetooth_enable"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_TIMEZONE,
+   "timezone"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
@@ -893,6 +897,14 @@ MSG_HASH(
    "deferred_power_management_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CPU_PERFPOWER_LIST,
+   "deferred_cpu_perfpower_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CPU_POLICY_ENTRY,
+   "deferred_cpu_policy_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST,
    "deferred_lakka_list"
    )
@@ -1159,6 +1171,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,
    "check_for_missing_firmware"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,
+   "core_info_cache_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
@@ -2169,6 +2185,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,
    "menu_screensaver_timeout"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION,
+   "menu_screensaver_animation"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "menu_screensaver_animation_speed"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PERFCNT_ENABLE,
@@ -3475,6 +3499,10 @@ MSG_HASH(
    "video_fullscreen_y"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION,
+   "video_force_resolution"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE,
    "video_layout_enable"
    )
@@ -4141,6 +4169,10 @@ MSG_HASH(
    "menu_rgui_full_width_layout"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY,
+   "menu_rgui_transparency"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_SHADOWS,
    "menu_rgui_shadows"
    )
@@ -4563,6 +4595,10 @@ MSG_HASH(
    "playlist_show_sublabels"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "playlist_show_entry_idx"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "playlist_fuzzy_archive_match"
    )
@@ -4609,6 +4645,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "notification_show_cheats_applied"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "notification_show_patch_applied"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,
@@ -4701,6 +4741,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,
    "power_management_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CPU_PERFPOWER,
+   "cpu_perfpower_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,

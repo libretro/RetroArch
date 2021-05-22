@@ -45,25 +45,19 @@ typedef struct
 
 /* Simple container/convenience struct for
  * holding the 'id' of a core file
- * > 'id' is the filename without extension or
+ * > 'str' is the filename without extension or
  *   platform-specific suffix
- * > 'id' is used for core info searches - enables
- *   matching regardless of core file base path,
- *   and is platform-independent (e.g. an Android
- *   core file will be correctly identified on Linux)
- * > 'len' is used to cache the length of 'str', for
- *   improved performance when performing string
- *   comparisons */
+ * > 'hash' is a hash key used for efficient core
+ *   list searches */
 typedef struct
 {
    char *str;
-   size_t len;
+   uint32_t hash;
 } core_file_id_t;
 
 typedef struct
 {
    char *path;
-   void *config_data;
    char *display_name;
    char *display_version;
    char *core_name;
@@ -89,12 +83,13 @@ typedef struct
    struct string_list *required_hw_api_list;
    core_info_firmware_t *firmware;
    core_file_id_t core_file_id; /* ptr alignment */
-   void *userdata;
    size_t firmware_count;
+   bool has_info;
    bool supports_no_game;
    bool database_match_archive_member;
    bool is_experimental;
    bool is_locked;
+   bool is_installed;
 } core_info_t;
 
 /* A subset of core_info parameters required for
@@ -112,6 +107,7 @@ typedef struct
    core_info_t *list;
    char *all_ext;
    size_t count;
+   size_t info_count;
 } core_info_list_t;
 
 typedef struct core_info_ctx_firmware
@@ -122,12 +118,6 @@ typedef struct core_info_ctx_firmware
       const char *system;
    } directory;
 } core_info_ctx_firmware_t;
-
-typedef struct core_info_ctx_find
-{
-   core_info_t *inf;
-   const char *path;
-} core_info_ctx_find_t;
 
 struct core_info_state
 {
@@ -141,29 +131,20 @@ struct core_info_state
 
 typedef struct core_info_state core_info_state_t;
 
-size_t core_info_list_num_info_files(core_info_list_t *list);
-
 /* Non-reentrant, does not allocate. Returns pointer to internal state. */
 void core_info_list_get_supported_cores(core_info_list_t *list,
       const char *path, const core_info_t **infos, size_t *num_infos);
 
 bool core_info_list_get_display_name(core_info_list_t *list,
-      const char *path, char *s, size_t len);
-
-bool core_info_get_display_name(const char *path, char *s, size_t len);
+      const char *core_path, char *s, size_t len);
 
 /* Returns core_info parameters required for
  * core updater tasks, read from specified file.
  * Returned core_updater_info_t object must be
  * freed using core_info_free_core_updater_info().
  * Returns NULL if 'path' is invalid. */
-core_updater_info_t *core_info_get_core_updater_info(const char *path);
+core_updater_info_t *core_info_get_core_updater_info(const char *info_path);
 void core_info_free_core_updater_info(core_updater_info_t *info);
-
-void core_info_get_name(const char *path, char *s, size_t len,
-      const char *path_info, const char *dir_cores,
-      const char *exts, bool show_hidden_files,
-      bool get_display_name);
 
 core_info_t *core_info_get(core_info_list_t *list, size_t i);
 
@@ -176,7 +157,7 @@ bool core_info_get_current_core(core_info_t **core);
 void core_info_deinit_list(void);
 
 bool core_info_init_list(const char *path_info, const char *dir_cores,
-      const char *exts, bool show_hidden_files);
+      const char *exts, bool show_hidden_files, bool enable_cache);
 
 bool core_info_get_list(core_info_list_t **core);
 
@@ -186,22 +167,20 @@ size_t core_info_count(void);
 bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
       bool *set_missing_bios);
 
-bool core_info_find(core_info_ctx_find_t *info);
+bool core_info_find(const char *core_path,
+      core_info_t **core_info);
 
-bool core_info_load(
-      core_info_ctx_find_t *info,
+bool core_info_load(const char *core_path,
       core_info_state_t *p_coreinfo);
 
 bool core_info_database_supports_content_path(const char *database_path, const char *path);
 
 bool core_info_database_match_archive_member(const char *database_path);
 
-bool core_info_unsupported_content_path(const char *path);
-
 void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort_type qsort_type);
 
 bool core_info_list_get_info(core_info_list_t *core_info_list,
-      core_info_t *out_info, const char *path);
+      core_info_t *out_info, const char *core_path);
 
 bool core_info_hw_api_supported(core_info_t *info);
 
@@ -223,7 +202,13 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path);
 
 core_info_state_t *coreinfo_get_ptr(void);
 
-bool core_info_core_file_id_is_equal(const char* core_path_a, const char* core_path_b);
+bool core_info_core_file_id_is_equal(const char *core_path_a, const char *core_path_b);
+
+/* When called, generates a temporary file
+ * that will force an info cache refresh the
+ * next time that core info is initialised with
+ * caching enabled */
+bool core_info_cache_force_refresh(const char *path_info);
 
 RETRO_END_DECLS
 

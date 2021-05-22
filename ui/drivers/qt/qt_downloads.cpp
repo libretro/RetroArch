@@ -945,9 +945,10 @@ void MainWindow::downloadNextPlaylistThumbnail(
    m_playlistThumbnailDownloadProgressDialog->setValue(m_playlistThumbnailDownloadProgressDialog->maximum() - m_pendingPlaylistThumbnails.count());
 
    {
-      QString labelText = QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...\n";
+      QString labelText  = QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...\n";
+      QString labelText2 = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS)).arg(m_downloadedThumbnails).arg(m_failedThumbnails);
 
-      labelText += QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS)).arg(m_downloadedThumbnails).arg(m_failedThumbnails);
+      labelText.append(labelText2);
 
       m_playlistThumbnailDownloadProgressDialog->setLabelText(labelText);
    }

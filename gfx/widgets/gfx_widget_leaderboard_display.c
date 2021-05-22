@@ -50,9 +50,13 @@ typedef struct gfx_widget_leaderboard_display_state gfx_widget_leaderboard_displ
 
 static gfx_widget_leaderboard_display_state_t p_w_leaderboard_display_st;
 
-static bool gfx_widget_leaderboard_display_init(bool video_is_threaded, bool fullscreen)
+static bool gfx_widget_leaderboard_display_init(
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      bool video_is_threaded, bool fullscreen)
 {
-   gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
+   gfx_widget_leaderboard_display_state_t *state = 
+      &p_w_leaderboard_display_st;
    memset(state, 0, sizeof(*state));
 
    return true;
@@ -104,7 +108,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
 
-      for (i = 0; i < state->count; ++i)
+      for (i = 0; i < (unsigned)state->count; ++i)
       {
          const unsigned widget_width = state->info[i].width;
          x                           = video_width - widget_width - spacing;

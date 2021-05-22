@@ -200,7 +200,6 @@ enum event_command
    CMD_EVENT_AUDIO_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */
    CMD_EVENT_RESIZE_WINDOWED_SCALE,
-   CMD_EVENT_LOG_FILE_DEINIT,
    /* Toggles disk eject. */
    CMD_EVENT_DISK_EJECT_TOGGLE,
    /* Cycle to next disk. */

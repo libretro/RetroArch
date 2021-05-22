@@ -3252,8 +3252,6 @@ static void gl2_set_nonblock_state(
    if (!gl)
       return;
 
-   RARCH_LOG("[GL]: VSync => %s\n", state ? "OFF" : "ON");
-
    gl2_context_bind_hw_render(gl, false);
 
    if (!state)

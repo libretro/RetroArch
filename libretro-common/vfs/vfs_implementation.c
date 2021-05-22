@@ -130,8 +130,11 @@
 #include <pspkernel.h>
 #endif
 
+#if defined(__PS3__) || defined(__PSL1GHT__)
+#include <defines/ps3_defines.h>
 #if defined(__PSL1GHT__)
 #include <lv2/sysfs.h>
+#endif
 #endif
 
 #if defined(VITA)

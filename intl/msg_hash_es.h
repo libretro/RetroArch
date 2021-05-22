@@ -89,7 +89,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Vuelca los contenidos del medio físico al almacenamiento interno. Se guardarán como un archivo de imagen."
+   "Vuelca los contenidos del disco físico al almacenamiento interno. Se guardarán como un archivo de imagen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -1464,6 +1464,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Muestra la frecuencia de actualización que declara el controlador de vídeo."
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Frecuencia de actualización vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Ajusta la frecuencia de actualización vertical de la imagen. La opción 50 Hz mostrará una imagen más fluida al ejecutar contenidos en formato PAL."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "Forzar desactivación del FBO sRGB"
@@ -2115,6 +2125,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "Asigna el botón individual predeterminado para el modo turbo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "Modo de turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Cambia los ajustes del modo turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2811,6 +2829,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Verifica que el firmware necesario esté disponible antes de cargar el contenido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "Caché de archivos de información de núcleos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "Guarda una caché local con la información de los núcleos instalados. Reduce en gran medida los tiempos de carga en aquellas plataformas que tengan un acceso a disco lento."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -3645,6 +3671,14 @@ MSG_HASH(
    "Muestra un mensaje en pantalla al aplicar trucos."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Notificaciones de parches"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Muestra un mensaje en pantalla al parchear ROMs al vuelo."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "Muestra un mensaje en pantalla al conectar o desconectar dispositivos de entrada."
    )
@@ -3880,6 +3914,42 @@ MSG_HASH(
    "Cierra RetroArch automáticamente en cuanto se cierre un contenido. Al seleccionar «CLI», el programa se cerrará solo cuando el contenido haya sido iniciado mediante línea de comandos."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "Tiempo de espera del salvapantallas del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "Cuando el menú esté activo, se mostrará un salvapantallas una vez pase el periodo de inactividad especificado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "Animación del salvapantallas del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   "Cuando el salvapantallas del menú está activado, lo muestra con una animación. Esta opción afecta levemente al rendimiento."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Nieve"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "Estrellas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   "Vórtice"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "Velocidad de animación del salvapantallas del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "Ajusta la velocidad de la animación del salvapantallas del menú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Soporte para ratón"
    )
@@ -3926,6 +3996,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Ajusta la velocidad máxima del cursor cuando se mantiene pulsada una dirección para desplazarse por un menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Retraso al desplazar el menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Indica el retraso inicial (en milisegundos) entre que se pulsa un botón de dirección y el desplazamiento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -7589,6 +7667,14 @@ MSG_HASH(
    "Selecciona un preajuste de tema del menú en el explorador de archivos."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Transparencia del menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Muestra el contenido ejecutado en el fondo del menú rápido. Desactivar la transparencia podría alterar los colores del tema."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Efecto de sombreado"
    )
@@ -7611,6 +7697,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    "Ajusta la velocidad de los efectos de partículas de la animación de fondo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Animación de fondo del salvapantallas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Cuando el salvapantallas del menú esté activo, se mostrarán partículas animadas en el fondo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
@@ -8191,6 +8285,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL,
    "Hackeando el kernel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
+   "Drácula"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -9893,6 +9991,10 @@ MSG_HASH(
    "Aplicando cambios de los trucos."
    )
 MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "Aplicando parche: %s"
+   )
+MSG_HASH(
    MSG_APPLYING_SHADER,
    "Aplicando shader"
    )
@@ -11243,6 +11345,90 @@ MSG_HASH(
    "Modo de rendimiento sostenido"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+   "Rendimiento y potencia de la CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
+   "Directiva"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
+   "Modo de regulación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Permite ajustar de forma manual toda la CPU: regulador, frecuencias, etc. Recomendado solo para usuarios avanzados."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Rendimiento (administrado)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "El modo predeterminado y recomendado. Da un rendimiento total en juegos mientras ahorra energía al pausar la partida o navegar por los menús."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Administración personalizada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "Permite elegir qué reguladores se utilizarán dentro de los menús y durante una partida. Se recomienda usar rendimiento, Ondemand o Schedutil en partidas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Rendimiento máximo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Ofrece siempre el máximo rendimiento: las frecuencias más altas para una mejor experiencia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Potencia mínima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   "Utiliza la frecuencia más baja disponible para ahorrar energía. Ideal para dispositivos que usen baterías, pero reducirá el rendimiento significativamente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Equilibrado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Se adapta a la carga de trabajo actual. Ahorra energía y funciona bien con la mayoría de dispositivos y emuladores. Los juegos y núcleos más exigentes podrían sufrir bajadas de rendimiento en algunos dispositivos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   "Frecuencia mínima"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   "Frecuencia máxima"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   "Frecuencia mínima del núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   "Frecuencia máxima del núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
+   "Regulador de la CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
+   "Regulador de núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
+   "Regulador de menús"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Usar modo PAL60"
    )
@@ -11332,10 +11518,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
    "Aumenta o reduce la velocidad de la GPU de Switch."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
-   "Reiniciar al RCM"
-   )
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
 MSG_HASH(
@@ -11379,6 +11561,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
    "Activa o desactiva el punto de acceso wifi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Zona horaria"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Selecciona tu zona horaria para ajustar la fecha y hora a tu ubicación."
    )
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
@@ -11427,6 +11617,14 @@ MSG_HASH(
    "Ajusta la escala X/Y para la velocidad de las «lightguns» o pistolas usando el mando de Wii."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Escala del sensor táctil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Ajusta la escala X/Y de las coordenadas de la pantalla táctil para adaptarlas al escalado de la pantalla del SO."
+   )
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

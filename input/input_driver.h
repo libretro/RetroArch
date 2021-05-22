@@ -594,12 +594,6 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line);
 
 void menu_input_dialog_end(void);
 
-int16_t button_is_pressed(
-      const input_device_driver_t *joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id);
-
 RETRO_END_DECLS
 
 #endif

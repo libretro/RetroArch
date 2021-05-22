@@ -454,7 +454,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    if (selectedDatabase.isEmpty())
       selectedDatabase = QFileInfo(currentPlaylistPath).fileName();
    else
-      selectedDatabase += ".lpl";
+      selectedDatabase.append(".lpl");
 
    dialog.reset(new QProgressDialog(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES), "Cancel", 0, 0, this));
    dialog->setWindowModality(Qt::ApplicationModal);
@@ -981,7 +981,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    if (!specialPlaylist && selectedAction->parent() == associateMenu.data())
    {
-      core_info_ctx_find_t coreInfo;
+      core_info_t *coreInfo                   = NULL;
       playlist_t *cachedPlaylist              = playlist_get_cached();
       playlist_t *playlist                    = NULL;
       bool loadPlaylist                       = true;
@@ -1010,14 +1010,11 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       if (playlist)
       {
          /* Get core info */
-         coreInfo.inf  = NULL;
-         coreInfo.path = corePath;
-
-         if (core_info_find(&coreInfo))
+         if (core_info_find(corePath, &coreInfo))
          {
             /* Set new core association */
-            playlist_set_default_core_path(playlist, coreInfo.inf->path);
-            playlist_set_default_core_name(playlist, coreInfo.inf->display_name);
+            playlist_set_default_core_path(playlist, coreInfo->path);
+            playlist_set_default_core_name(playlist, coreInfo->display_name);
          }
          else
          {

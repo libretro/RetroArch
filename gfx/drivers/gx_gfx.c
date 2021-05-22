@@ -39,7 +39,7 @@
 #include "../font_driver.h"
 
 #include "../drivers_font_renderer/bitmap.h"
-#include "../../defines/gx_defines.h"
+#include <defines/gx_defines.h>
 #include "../../configuration.h"
 #include "../../driver.h"
 

@@ -275,6 +275,10 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o
 
+OBJ += \
+       $(LIBRETRO_COMM_DIR)/lists/linked_list.o \
+       $(LIBRETRO_COMM_DIR)/queues/generic_queue.o
+
 ifneq ($(findstring Linux,$(OS)),)
 	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o
 endif
@@ -764,6 +768,7 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += wifi/drivers/connmanctl.o
+   OBJ += misc/cpufreq/cpufreq.o
 endif
 
 # Audio
@@ -988,12 +993,14 @@ ifeq ($(HAVE_MENU), 1)
       OBJ += menu/drivers/materialui.o
       DEFINES += -DHAVE_MATERIALUI
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_XMB), 1)
       OBJ += menu/drivers/xmb.o
       DEFINES += -DHAVE_XMB
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_OZONE), 1)
@@ -1005,11 +1012,16 @@ ifeq ($(HAVE_MENU), 1)
              menu/drivers/ozone/ozone_sidebar.o
       DEFINES += -DHAVE_OZONE
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_STRIPES), 1)
       OBJ += menu/drivers/stripes.o
       DEFINES += -DHAVE_STRIPES
+   endif
+
+   ifeq ($(HAVE_MENU_SCREENSAVER), 1)
+      OBJ += menu/menu_screensaver.o
    endif
 endif
 
@@ -1863,20 +1875,24 @@ ifeq ($(HAVE_7ZIP),1)
    INCLUDE_DIRS += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
-   7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
-           $(DEPS_DIR)/7zip/Bra86.o \
-           $(DEPS_DIR)/7zip/7zFile.o \
-           $(DEPS_DIR)/7zip/7zStream.o \
+   7ZOBJ = $(DEPS_DIR)/7zip/7zArcIn.o \
+           $(DEPS_DIR)/7zip/7zBuf.o \
+           $(DEPS_DIR)/7zip/7zCrc.o \
+           $(DEPS_DIR)/7zip/7zCrcOpt.o \
+           $(DEPS_DIR)/7zip/7zDec.o \
+           $(DEPS_DIR)/7zip/CpuArch.o \
+           $(DEPS_DIR)/7zip/Delta.o \
            $(DEPS_DIR)/7zip/LzFind.o \
            $(DEPS_DIR)/7zip/LzmaDec.o \
-           $(DEPS_DIR)/7zip/LzmaEnc.o \
-           $(DEPS_DIR)/7zip/7zCrcOpt.o \
-           $(DEPS_DIR)/7zip/Bra.o \
-           $(DEPS_DIR)/7zip/7zDec.o \
-           $(DEPS_DIR)/7zip/Bcj2.o \
-           $(DEPS_DIR)/7zip/7zCrc.o \
            $(DEPS_DIR)/7zip/Lzma2Dec.o \
-           $(DEPS_DIR)/7zip/7zBuf.o
+           $(DEPS_DIR)/7zip/LzmaEnc.o \
+           $(DEPS_DIR)/7zip/Bra.o \
+           $(DEPS_DIR)/7zip/Bra86.o \
+           $(DEPS_DIR)/7zip/BraIA64.o \
+           $(DEPS_DIR)/7zip/Bcj2.o \
+           $(DEPS_DIR)/7zip/7zFile.o \
+           $(DEPS_DIR)/7zip/7zStream.o
+
    OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_7z.o \
            $(7ZOBJ)
 endif
@@ -1974,7 +1990,8 @@ ifeq ($(HAVE_CDROM), 1)
    DEFINES += -DHAVE_CDROM
    OBJ += $(LIBRETRO_COMM_DIR)/cdrom/cdrom.o \
 			 $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.o \
-			 $(LIBRETRO_COMM_DIR)/media/media_detect_cd.o
+			 $(LIBRETRO_COMM_DIR)/media/media_detect_cd.o \
+			 tasks/task_content_disc.o
 endif
 
 ifeq ($(HAVE_RTGA), 1)
@@ -2079,14 +2096,9 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
-   OBJ += network/netplay/netplay_delta.o \
-			 network/netplay/netplay_handshake.o \
-			 network/netplay/netplay_init.o \
+   OBJ += network/netplay/netplay_handshake.o \
 			 network/netplay/netplay_io.o \
-			 network/netplay/netplay_keyboard.o \
-			 network/netplay/netplay_sync.o \
 			 network/netplay/netplay_discovery.o \
-			 network/netplay/netplay_buf.o \
 			 network/netplay/netplay_room_parse.o
 
    # RetroAchievements

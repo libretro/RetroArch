@@ -15,7 +15,7 @@
  */
 
 #if defined(__PSL1GHT__) || defined(__PS3__)
-#include "../defines/ps3_defines.h"
+#include <defines/ps3_defines.h>
 #endif
 
 #include <stdio.h>

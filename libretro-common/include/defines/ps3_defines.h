@@ -1,17 +1,23 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+/* Copyright (C) 2010-2021 The RetroArch team
  *
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (ps3_defines.h).
+ * ---------------------------------------------------------------------------------------
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef _PS3_DEFINES_H
@@ -94,18 +100,71 @@ extern int audioAddData(uint32_t portNum, float *data,
 
 #ifdef __PSL1GHT__
 #include <io/pad.h>
+#define CELL_PAD_CAPABILITY_SENSOR_MODE      4
+#define CELL_PAD_SETTING_SENSOR_ON           4
+#define CELL_PAD_STATUS_ASSIGN_CHANGES       2
+#define CELL_PAD_BTN_OFFSET_DIGITAL1         2
+#define CELL_PAD_BTN_OFFSET_DIGITAL2         3
+#define CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X   4
+#define CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y   5
+#define CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X    6
+#define CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y    7
+#define CELL_PAD_BTN_OFFSET_PRESS_RIGHT      8
+#define CELL_PAD_BTN_OFFSET_PRESS_LEFT       9
+#define CELL_PAD_BTN_OFFSET_PRESS_UP         10
+#define CELL_PAD_BTN_OFFSET_PRESS_DOWN       11
+#define CELL_PAD_BTN_OFFSET_PRESS_TRIANGLE   12
+#define CELL_PAD_BTN_OFFSET_PRESS_CIRCLE     13
+#define CELL_PAD_BTN_OFFSET_PRESS_CROSS      14
+#define CELL_PAD_BTN_OFFSET_PRESS_SQUARE     15
+#define CELL_PAD_BTN_OFFSET_PRESS_L1         16
+#define CELL_PAD_BTN_OFFSET_PRESS_R1         17
+#define CELL_PAD_BTN_OFFSET_PRESS_L2         18
+#define CELL_PAD_BTN_OFFSET_PRESS_R2         19
+#define CELL_PAD_BTN_OFFSET_SENSOR_X         20
+#define CELL_PAD_BTN_OFFSET_SENSOR_Y         21
+#define CELL_PAD_BTN_OFFSET_SENSOR_Z         22
+#define CELL_PAD_BTN_OFFSET_SENSOR_G         23
+#define CELL_PAD_CTRL_LEFT          (128)
+#define CELL_PAD_CTRL_DOWN          (64)
+#define CELL_PAD_CTRL_RIGHT         (32)
+#define CELL_PAD_CTRL_UP            (16)
+#define CELL_PAD_CTRL_START         (8)
+#define CELL_PAD_CTRL_R3            (4)
+#define CELL_PAD_CTRL_L3            (2)
+#define CELL_PAD_CTRL_SELECT        (1)
+#define CELL_PAD_CTRL_SQUARE        (128)
+#define CELL_PAD_CTRL_CROSS         (64)
+#define CELL_PAD_CTRL_CIRCLE        (32)
+#define CELL_PAD_CTRL_TRIANGLE      (16)
+#define CELL_PAD_CTRL_R1            (8)
+#define CELL_PAD_CTRL_L1            (4)
+#define CELL_PAD_CTRL_R2            (2)
+#define CELL_PAD_CTRL_L2            (1)
+#define CELL_PAD_CTRL_LDD_PS        (1)
+#define CELL_PAD_STATUS_CONNECTED   (1)
+#define CELL_SYSUTIL_SYSTEMPARAM_ID_ENTER_BUTTON_ASSIGN SYSUTIL_SYSTEMPARAM_ID_ENTER_BUTTON_ASSIGN
+#define CELL_SYSUTIL_ENTER_BUTTON_ASSIGN_CROSS  (1)
+#define CELL_SYSUTIL_ENTER_BUTTON_ASSIGN_CIRCLE (0)
 #define now_connect connected
+#define CellPadActParam padActParam
+#define cellPadSetPortSetting ioPadSetPortSetting
+#define cellSysutilGetSystemParamInt sysUtilGetSystemParamInt
+#define cellPadSetActDirect ioPadSetActDirect
+#define CellPadInfo2 padInfo2
+#define cellPadGetInfo2 ioPadGetInfo2
+#define CellPadData padData
+#define cellPadGetData ioPadGetData
+#define cellPadInit ioPadInit 
+#define cellPadEnd ioPadEnd
 #else
 #include <cell/pad.h>
-
 #define padInfo2 CellPadInfo2
 #define padData CellPadData
-
 #define ioPadGetInfo2 cellPadGetInfo2 
 #define ioPadGetData cellPadGetData
 #define ioPadInit cellPadInit
 #define ioPadEnd cellPadEnd
-
 #endif
 
 /*============================================================

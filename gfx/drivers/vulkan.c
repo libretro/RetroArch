@@ -57,6 +57,8 @@
 
 static void vulkan_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
+static bool vulkan_is_mapped_swapchain_texture_ptr(const vk_t* vk,
+      const void* ptr);
 
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_free(vk_t *vk);
@@ -681,6 +683,12 @@ static void vulkan_init_textures(vk_t *vk)
 static void vulkan_deinit_textures(vk_t *vk)
 {
    unsigned i;
+
+   /* Avoid memcpying from a destroyed/unmapped texture later on. */
+   const void* cached_frame;
+   video_driver_cached_frame_get(&cached_frame, NULL, NULL, NULL);
+   if (vulkan_is_mapped_swapchain_texture_ptr(vk, cached_frame))
+      video_driver_set_cached_frame_ptr(NULL);
 
    vulkan_deinit_samplers(vk);
 
@@ -1344,8 +1352,6 @@ static void vulkan_set_nonblock_state(void *data, bool state,
 
    if (!vk)
       return;
-
-   RARCH_LOG("[Vulkan]: VSync => %s\n", state ? "OFF" : "ON");
 
    if (!state)
       interval = swap_interval;
@@ -2389,6 +2395,18 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       framebuffer->memory_flags |= RETRO_MEMORY_TYPE_CACHED;
 
    return true;
+}
+
+static bool vulkan_is_mapped_swapchain_texture_ptr(const vk_t* vk,
+      const void* ptr)
+{
+   for (unsigned i = 0; i < vk->num_swapchain_images; i++)
+   {
+      if (ptr == vk->swapchain[i].texture.mapped)
+         return true;
+   }
+
+   return false;
 }
 
 static bool vulkan_get_hw_render_interface(void *data,
