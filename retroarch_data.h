@@ -1686,7 +1686,8 @@ struct runloop
    int16_t *audio_rewind_buf;
 #endif
 
-   msg_queue_t msg_queue;               /* ptr alignment */
+   struct retro_audio_callback audio_callback;   /* ptr alignment */
+   msg_queue_t msg_queue;                        /* ptr alignment */
 #ifdef HAVE_THREADS
    slock_t *msg_queue_lock;
    slock_t *display_lock;
@@ -2107,7 +2108,6 @@ struct rarch_state
    gfx_display_t              dispgfx;                   /* ptr alignment */
    input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
-   struct retro_audio_callback audio_callback;           /* ptr alignment */
    video_driver_frame_t frame_bak;                       /* ptr alignment */
    struct rarch_dir_shader_list dir_shader_list;         /* ptr alignment */
 #ifdef HAVE_RUNAHEAD

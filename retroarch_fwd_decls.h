@@ -44,10 +44,15 @@ static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
-static void retroarch_deinit_core_options(const char *p);
-static void retroarch_init_core_variables(settings_t *settings,
+static void runloop_deinit_core_options(
+      runloop_state_t *p_runloop,
+      const char *path_core_options);
+static core_option_manager_t *runloop_init_core_variables(
+      runloop_state_t *p_runloop,
+      settings_t *settings,
       const struct retro_variable *vars);
-static void rarch_init_core_options(
+static core_option_manager_t *runloop_init_core_options(
+      runloop_state_t *p_runloop,
       settings_t *settings,
       const struct retro_core_option_definition *option_defs);
 #ifdef HAVE_RUNAHEAD
