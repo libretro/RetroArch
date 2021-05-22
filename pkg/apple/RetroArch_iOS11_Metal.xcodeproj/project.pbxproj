@@ -1112,13 +1112,13 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					9204BE091D319EF300BD49DB = {
-						DevelopmentTeam = UK699V5ZS8;
+						DevelopmentTeam = R72X3BF4KE;
 						DevelopmentTeamName = RetroArch;
 						LastSwiftMigration = 1240;
 					};
 					926C77D621FD1E6500103EDE = {
 						CreatedOnToolsVersion = 10.1;
-						DevelopmentTeam = UK699V5ZS8;
+						DevelopmentTeam = R72X3BF4KE;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -1290,7 +1290,7 @@
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				CURRENT_PROJECT_VERSION = 1.9.3;
 				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -1413,7 +1413,7 @@
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				CURRENT_PROJECT_VERSION = 1.9.3;
 				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -1469,7 +1469,7 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES3",
+					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -1524,7 +1524,6 @@
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES3",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -1568,6 +1567,7 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_RWAV",
 					"-DHAVE_BTSTACK",
+					"-DHAVE_OPENGLES2",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
@@ -1615,7 +1615,7 @@
 				CURRENT_PROJECT_VERSION = 1.9.3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1752,7 +1752,7 @@
 				CURRENT_PROJECT_VERSION = 1.9.3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1811,7 +1811,7 @@
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES3",
+					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -1997,7 +1997,6 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES3",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",

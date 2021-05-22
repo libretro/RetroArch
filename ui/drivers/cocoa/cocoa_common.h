@@ -49,8 +49,10 @@
 @interface CocoaView : GCEventViewController
 #endif
 
+#if TARGET_OS_IOS
 @property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
 @property(nonatomic,assign) unsigned int keyboardModifierState;
+#endif
 
 + (CocoaView*)get;
 @end

@@ -26,7 +26,9 @@
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
+#if TARGET_OS_IOS
 #import "RetroArch-Swift.h"
+#endif
 #endif
 
 #include "../../../configuration.h"
@@ -287,12 +289,12 @@ void *glkitview_init(void);
 
 -(void)viewDidLoad {
     [super viewDidLoad];
+#if TARGET_OS_IOS
     UISwipeGestureRecognizer *swipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showNativeMenu)];
     swipe.numberOfTouchesRequired = 4;
     swipe.delegate = self;
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
-#if TARGET_OS_IOS
     [self setupEmulatorKeyboard];
     self.keyboardController.leftKeyboardModel.delegate = self;
     self.keyboardController.rightKeyboardModel.delegate = self;
