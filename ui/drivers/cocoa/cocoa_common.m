@@ -26,7 +26,7 @@
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
 #import "RetroArch-Swift.h"
 #endif
 #endif
@@ -152,6 +152,7 @@ void *glkitview_init(void);
 
 -(void) toggleCustomKeyboard
 {
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
     [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
     int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
@@ -160,6 +161,7 @@ void *glkitview_init(void);
     } else {
         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
     }
+#endif
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
@@ -237,7 +239,9 @@ void *glkitview_init(void);
    }
 
    [self adjustViewFrameForSafeArea];
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
    [self.view bringSubviewToFront:self.keyboardController.view];
+#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -295,6 +299,7 @@ void *glkitview_init(void);
     swipe.delegate = self;
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
     [self setupEmulatorKeyboard];
     self.keyboardController.leftKeyboardModel.delegate = self;
     self.keyboardController.rightKeyboardModel.delegate = self;
@@ -303,6 +308,7 @@ void *glkitview_init(void);
     showKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionUp;
     showKeyboardSwipe.delegate = self;
     [self.view addGestureRecognizer:showKeyboardSwipe];
+#endif
 #endif
 }
 

@@ -49,7 +49,7 @@
 @interface CocoaView : GCEventViewController
 #endif
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
 @property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
 @property(nonatomic,assign) unsigned int keyboardModifierState;
 #endif
