@@ -31,6 +31,8 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include <streams/interface_stream.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -86,6 +88,16 @@ RETRO_BEGIN_DECLS
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT  (8 * 1024)
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MAGIC          0x42535631
+
+#define BSV_MOVIE_IS_PLAYBACK_ON(runloop) (runloop->bsv_movie_state_handle && runloop->bsv_movie_state.movie_playback)
+#define BSV_MOVIE_IS_PLAYBACK_OFF(runloop) (runloop->bsv_movie_state_handle && !runloop->bsv_movie_state.movie_playback)
+#define BSV_MOVIE_IS_EOF(runloop) || (runloop->bsv_movie_state.movie_end && runloop->bsv_movie_state.eof_exit)
+#else
+#define BSV_MOVIE_IS_EOF(runloop)
+#endif
 
 enum rarch_ctl_state
 {
@@ -207,6 +219,42 @@ enum runloop_action
    RUNLOOP_ACTION_NONE = 0,
    RUNLOOP_ACTION_AUTOSAVE
 };
+
+#ifdef HAVE_BSV_MOVIE
+struct bsv_state
+{
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+
+   bool movie_start_recording;
+   bool movie_start_playback;
+   bool movie_playback;
+   bool eof_exit;
+   bool movie_end;
+
+};
+
+struct bsv_movie
+{
+   intfstream_t *file;
+   uint8_t *state;
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
+   size_t frame_mask;
+   size_t frame_ptr;
+   size_t min_file_pos;
+   size_t state_size;
+
+   bool playback;
+   bool first_rewind;
+   bool did_rewind;
+};
+
+typedef struct bsv_movie bsv_movie_t;
+#endif
 
 struct rarch_main_wrap
 {
@@ -2088,6 +2136,9 @@ struct runloop
    rarch_system_info_t system;                   /* ptr alignment */
    struct retro_frame_time_callback frame_time;  /* ptr alignment */
    struct retro_audio_buffer_status_callback audio_buffer_status; /* ptr alignment */
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
+#endif
 
    void *audio_context_audio_data;
    void *audio_resampler_data;
@@ -2118,6 +2169,10 @@ struct runloop
    float audio_volume_gain;
 #ifdef HAVE_AUDIOMIXER
    float audio_mixer_volume_gain;
+#endif
+
+#ifdef HAVE_BSV_MOVIE
+   struct bsv_state bsv_movie_state;            /* char alignment */
 #endif
 
    input_game_focus_state_t game_focus_state; /* bool alignment */

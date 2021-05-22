@@ -67,12 +67,6 @@
 #define CRC_INDEX          2
 #define STATE_SIZE_INDEX   3
 
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MAGIC          0x42535631
-
-#define BSV_MOVIE_IS_PLAYBACK_ON() (p_rarch->bsv_movie_state_handle && p_rarch->bsv_movie_state.movie_playback)
-#define BSV_MOVIE_IS_PLAYBACK_OFF() (p_rarch->bsv_movie_state_handle && !p_rarch->bsv_movie_state.movie_playback)
-#endif
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
@@ -165,12 +159,6 @@
 #define RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop)
 #endif
 
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF(p_rarch) || (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
-#else
-#define BSV_MOVIE_IS_EOF(p_rarch)
-#endif
-
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -179,7 +167,7 @@
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define TIME_TO_EXIT(quit_key_pressed) (runloop_state.shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF(p_rarch) || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
+#define TIME_TO_EXIT(quit_key_pressed) (runloop_state.shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF(p_runloop) || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
@@ -1315,40 +1303,6 @@ struct rarch_dir_shader_list
    bool remember_last_preset_dir;
 };
 
-#ifdef HAVE_BSV_MOVIE
-struct bsv_state
-{
-   /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
-   /* Immediate playback/recording. */
-   char movie_start_path[PATH_MAX_LENGTH];
-
-   bool movie_start_recording;
-   bool movie_start_playback;
-   bool movie_playback;
-   bool eof_exit;
-   bool movie_end;
-
-};
-
-struct bsv_movie
-{
-   intfstream_t *file;
-   uint8_t *state;
-   /* A ring buffer keeping track of positions
-    * in the file for each frame. */
-   size_t *frame_pos;
-   size_t frame_mask;
-   size_t frame_ptr;
-   size_t min_file_pos;
-   size_t state_size;
-
-   bool playback;
-   bool first_rewind;
-   bool did_rewind;
-};
-#endif
-
 typedef struct video_pixel_scaler
 {
    struct scaler_ctx *scaler;
@@ -1377,10 +1331,6 @@ struct input_remote
 #endif
    bool state[RARCH_BIND_LIST_END];
 };
-
-#ifdef HAVE_BSV_MOVIE
-typedef struct bsv_movie bsv_movie_t;
-#endif
 
 typedef struct input_remote input_remote_t;
 
@@ -1823,9 +1773,6 @@ struct rarch_state
 #ifdef HAVE_MFI
    const input_device_driver_t *sec_joypad;              /* ptr alignment */
 #endif
-#ifdef HAVE_BSV_MOVIE
-   bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
-#endif
    gfx_display_t              dispgfx;                   /* ptr alignment */
    input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
@@ -1987,9 +1934,6 @@ struct rarch_state
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
    input_mapper_t input_driver_mapper;          /* uint32_t alignment */
 
-#ifdef HAVE_BSV_MOVIE
-   struct bsv_state bsv_movie_state;            /* char alignment */
-#endif
    char cached_video_driver[32];
    char video_driver_title_buf[64];
    char video_driver_gpu_device_string[128];
