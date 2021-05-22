@@ -40,6 +40,7 @@
 #include "../../configuration.h"
 
 #include <defines/psp_defines.h>
+#include <psp2/kernel/sysmem.h>
 
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 
@@ -50,8 +51,9 @@ static void *vita2d_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    vita_video_t *vita   = (vita_video_t *)calloc(1, sizeof(vita_video_t));
-   unsigned temp_width                = PSP_FB_WIDTH;
-   unsigned temp_height               = PSP_FB_HEIGHT;
+   unsigned temp_width                    = PSP_FB_WIDTH;
+   unsigned temp_height                   = PSP_FB_HEIGHT;
+   vita2d_video_mode_data video_mode_data = {0};
 
    if (!vita)
       return NULL;
@@ -63,7 +65,9 @@ static void *vita2d_gfx_init(const video_info_t *video,
    RARCH_LOG("RARCH_SCALE_BASE: %i input_scale: %i = %i\n",
 	 RARCH_SCALE_BASE, video->input_scale, RARCH_SCALE_BASE * video->input_scale);
 
-   vita2d_init();
+
+   vita2d_init_advanced_with_msaa((1 * 1024 * 1024), SCE_GXM_MULTISAMPLE_4X, 
+    sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITATV? VITA2D_VIDEO_MODE_1280x720 : VITA2D_VIDEO_MODE_960x544 );
    vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
    vita2d_set_vblank_wait(video->vsync);
 
@@ -77,6 +81,10 @@ static void *vita2d_gfx_init(const video_info_t *video,
       RARCH_LOG("Format: SCE_GXM_TEXTURE_FORMAT_R5G6B5\n");
       vita->format = SCE_GXM_TEXTURE_FORMAT_R5G6B5;
    }
+
+   video_mode_data = vita2d_get_video_mode_data();
+   temp_width = video_mode_data.width;
+   temp_height = video_mode_data.height;
 
    vita->fullscreen = video->fullscreen;
 
@@ -146,6 +154,9 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 {
    void *tex_p;
    vita_video_t *vita     = (vita_video_t *)data;
+   unsigned temp_width                    = PSP_FB_WIDTH;
+   unsigned temp_height                   = PSP_FB_HEIGHT;
+   vita2d_video_mode_data video_mode_data = {0};
 #ifdef HAVE_MENU
    bool menu_is_alive     = video_info->menu_is_alive;
 #endif
@@ -208,17 +219,21 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    if (vita->should_resize)
       vita2d_gfx_update_viewport(vita, video_info);
 
+   video_mode_data = vita2d_get_video_mode_data();
+   temp_width = video_mode_data.width;
+   temp_height = video_mode_data.height;
+
    vita2d_start_drawing();
 
-   vita2d_draw_rectangle(0,0,PSP_FB_WIDTH,PSP_FB_HEIGHT,vita2d_get_clear_color());
+   vita2d_draw_rectangle(0,0,temp_width,temp_height,vita2d_get_clear_color());
 
    if (vita->texture)
    {
       if (vita->fullscreen)
          vita2d_draw_texture_scale(vita->texture,
                0, 0,
-               PSP_FB_WIDTH  / (float)vita->width,
-               PSP_FB_HEIGHT / (float)vita->height);
+               temp_width  / (float)vita->width,
+               temp_height / (float)vita->height);
       else
       {
          const float radian = 270 * 0.0174532925f;
@@ -241,24 +256,24 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          if (vita->fullscreen)
             vita2d_draw_texture_scale(vita->menu.texture,
                   0, 0,
-                  PSP_FB_WIDTH  / (float)vita->menu.width,
-                  PSP_FB_HEIGHT / (float)vita->menu.height);
+                  temp_width  / (float)vita->menu.width,
+                  temp_height / (float)vita->menu.height);
          else
          {
             if (vita->menu.width > vita->menu.height)
             {
-               float scale = PSP_FB_HEIGHT / (float)vita->menu.height;
+               float scale = temp_height / (float)vita->menu.height;
                float w = vita->menu.width * scale;
                vita2d_draw_texture_scale(vita->menu.texture,
-                     PSP_FB_WIDTH / 2.0f - w/2.0f, 0.0f,
+                     temp_width / 2.0f - w/2.0f, 0.0f,
                      scale, scale);
             }
             else
             {
-               float scale = PSP_FB_WIDTH / (float)vita->menu.width;
+               float scale = temp_width / (float)vita->menu.width;
                float h = vita->menu.height * scale;
                vita2d_draw_texture_scale(vita->menu.texture,
-                     0.0f, PSP_FB_HEIGHT / 2.0f - h/2.0f,
+                     0.0f, temp_height / 2.0f - h/2.0f,
                      scale, scale);
             }
          }
@@ -373,19 +388,23 @@ static void vita2d_set_projection(vita_video_t *vita,
 static void vita2d_gfx_update_viewport(vita_video_t* vita,
       video_frame_info_t *video_info)
 {
+
+   vita2d_video_mode_data video_mode_data = vita2d_get_video_mode_data();
+   unsigned temp_width                    = video_mode_data.width;
+   unsigned temp_height                   = video_mode_data.height;
    int x                     = 0;
    int y                     = 0;
-   float device_aspect       = ((float)PSP_FB_WIDTH) / PSP_FB_HEIGHT;
-   float width               = PSP_FB_WIDTH;
-   float height              = PSP_FB_HEIGHT;
+   float device_aspect       = ((float)temp_width) / temp_height;
+   float width               = temp_width;
+   float height              = temp_height;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (video_scale_integer)
    {
-      video_viewport_get_scaled_integer(&vita->vp, PSP_FB_WIDTH,
-            PSP_FB_HEIGHT, video_driver_get_aspect_ratio(), vita->keep_aspect);
+      video_viewport_get_scaled_integer(&vita->vp, temp_width,
+            temp_height, video_driver_get_aspect_ratio(), vita->keep_aspect);
       width  = vita->vp.width;
       height = vita->vp.height;
    }
@@ -396,8 +415,8 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita,
            (vita->rotation == ORIENTATION_FLIPPED_ROTATED))
       {
          device_aspect = 1.0 / device_aspect;
-         width = PSP_FB_HEIGHT;
-         height = PSP_FB_WIDTH;
+         width = temp_height;
+         height = temp_width;
       }
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -438,8 +457,8 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita,
               (vita->rotation == ORIENTATION_FLIPPED_ROTATED)
             )
          {
-            x = (PSP_FB_WIDTH - width) * 0.5f;
-            y = (PSP_FB_HEIGHT - height) * 0.5f;
+            x = (temp_width - width) * 0.5f;
+            y = (temp_height - height) * 0.5f;
          }
       }
 
@@ -896,11 +915,11 @@ static void vita2d_overlay_vertex_geom(void *data, unsigned image,
 
    if (o)
    {
-
-      o->w = w*PSP_FB_WIDTH/o->width;
-      o->h = h*PSP_FB_HEIGHT/o->height;
-      o->x = PSP_FB_WIDTH*(1-w)/2+x;
-      o->y = PSP_FB_HEIGHT*(1-h)/2+y;
+      vita2d_video_mode_data video_mode_data = vita2d_get_video_mode_data();
+      o->w = w*video_mode_data.width/o->width;
+      o->h = h*video_mode_data.height/o->height;
+      o->x = video_mode_data.width*(1-w)/2+x;
+      o->y = video_mode_data.height*(1-h)/2+y;
    }
 }
 
