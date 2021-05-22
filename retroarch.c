@@ -2382,7 +2382,6 @@ static bool menu_driver_displaylist_push_internal(
 }
 
 static bool menu_driver_displaylist_push(
-      struct rarch_state *p_rarch,
       struct menu_state *menu_st,
       settings_t *settings,
       file_list_t *entry_list,
@@ -2613,7 +2612,6 @@ int generic_menu_entry_action(
    {
       bool refresh            = false;
       menu_driver_displaylist_push(
-            p_rarch,
             menu_st,
             settings,
             selection_buf,
@@ -4666,7 +4664,6 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
    menu_st->selection_ptr         = 0;
 
    if (!menu_driver_displaylist_push(
-            p_rarch,
             menu_st,
             settings,
             list,
@@ -13039,14 +13036,13 @@ static void command_event_undo_load_state(char *s, size_t len)
 }
 
 static bool command_event_main_state(
-      struct rarch_state *p_rarch,
+      const global_t *global,
+      settings_t *settings,
       unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char msg[128];
    char state_path[16384];
-   const global_t *global      = &p_rarch->g_extern;
-   settings_t *settings        = p_rarch->configuration_settings;
    bool ret                    = false;
    bool push_msg               = true;
 
@@ -13647,15 +13643,15 @@ bool command_event(enum event_command cmd, void *data)
          if (rcheevos_hardcore_active())
             return false;
 #endif
-         if (!command_event_main_state(p_rarch, cmd))
+         if (!command_event_main_state(&p_rarch->g_extern, settings, cmd))
             return false;
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
-         if (!command_event_main_state(p_rarch, cmd))
+         if (!command_event_main_state(&p_rarch->g_extern, settings, cmd))
             return false;
          break;
       case CMD_EVENT_UNDO_SAVE_STATE:
-         if (!command_event_main_state(p_rarch, cmd))
+         if (!command_event_main_state(&p_rarch->g_extern, settings, cmd))
             return false;
          break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
@@ -13697,7 +13693,7 @@ bool command_event(enum event_command cmd, void *data)
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
-         if (!command_event_main_state(p_rarch, cmd))
+         if (!command_event_main_state(&p_rarch->g_extern, settings, cmd))
             return false;
          break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
