@@ -1846,6 +1846,12 @@ static core_info_list_t *core_info_list_new(const char *path,
              * cannot be cached */
             info->is_locked = core_info_path_is_locked(path_list->lock_list,
                   core_filename);
+            /* 'info_count' is normally incremented inside
+             * core_info_parse_config_file(). If core entry
+             * is cached, must instead increment the value
+             * here */
+            if (info->has_info)
+               core_info_list->info_count++;
             continue;
          }
       }
