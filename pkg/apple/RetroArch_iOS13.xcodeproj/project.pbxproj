@@ -113,7 +113,7 @@
 		926C77EC21FD261600103EDE /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = DEVELOPER_DIR; };
 		926C77EE21FD263800103EDE /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/AudioToolbox.framework; sourceTree = DEVELOPER_DIR; };
 		926C77F021FD26E800103EDE /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/GameController.framework; sourceTree = DEVELOPER_DIR; };
-		9289D20825E40D7A004B5D52 /* RetroArchiOS11-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RetroArchiOS11-Bridging-Header.h"; sourceTree = "<group>"; };
+		9289D20825E40D7A004B5D52 /* RetroArch-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RetroArch-Bridging-Header.h"; sourceTree = "<group>"; };
 		9289D20925E40D7B004B5D52 /* EmulatorKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorKeyboard.swift; sourceTree = "<group>"; };
 		9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CocoaView+KeyboardSupport.swift"; sourceTree = "<group>"; };
 		92B9EB5724E0518700E6CFB2 /* base64.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = base64.h; sourceTree = "<group>"; };
@@ -418,7 +418,7 @@
 				92B9EAE524E0518600E6CFB2 /* libretro-common */,
 				9289D20925E40D7B004B5D52 /* EmulatorKeyboard.swift */,
 				9289D22725E88A63004B5D52 /* CocoaView+KeyboardSupport.swift */,
-				9289D20825E40D7A004B5D52 /* RetroArchiOS11-Bridging-Header.h */,
+				9289D20825E40D7A004B5D52 /* RetroArch-Bridging-Header.h */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -1344,6 +1344,7 @@
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
+					"-DHAVE_IOS_CUSTOMKEYBOARD",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
@@ -1391,7 +1392,7 @@
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
-				SWIFT_OBJC_BRIDGING_HEADER = "RetroArchiOS11-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VALID_ARCHS = "armv7 arm64";
@@ -1493,6 +1494,7 @@
 					"-DHAVE_SCREENSHOTS",
 					"-DHAVE_REWIND",
 					"-DHAVE_PATCH",
+					"-DHAVE_IOS_CUSTOMKEYBOARD",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1568,12 +1570,13 @@
 					"-DHAVE_RWAV",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_OPENGLES2",
+					"-DHAVE_IOS_CUSTOMKEYBOARD",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				SRCBASE = "$(SRCROOT)/../..";
-				SWIFT_OBJC_BRIDGING_HEADER = "RetroArchiOS11-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";

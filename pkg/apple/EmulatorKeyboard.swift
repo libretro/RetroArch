@@ -51,17 +51,17 @@ class KeyboardButton: UIButton {
     }
 }
 
-@objc protocol EmulatorKeyboardKeyPressedDelegate: class {
+@objc protocol EmulatorKeyboardKeyPressedDelegate: AnyObject {
     func keyDown(_ key: KeyCoded)
     func keyUp(_ key: KeyCoded)
 }
 
-@objc protocol EmulatorKeyboardModifierPressedDelegate: class {
+@objc protocol EmulatorKeyboardModifierPressedDelegate: AnyObject {
     func modifierPressedWithKey(_ key: KeyCoded, enable: Bool)
     func isModifierEnabled(key: KeyCoded) -> Bool
 }
 
-protocol EmulatorKeyboardViewDelegate: class {
+protocol EmulatorKeyboardViewDelegate: AnyObject {
     func toggleAlternateKeys()
     func refreshModifierStates()
     func updateTransparency(toAlpha alpha: Float)
@@ -162,7 +162,7 @@ class EmulatorKeyboardView: UIView {
             label.backgroundColor = .white
             label.textColor = .black
             label.frame = labelFrame
-            label.font = UIFont(name: "Print Char 21", size: 12)
+            label.font = UIFont.systemFont(ofSize: 12)
             label.textAlignment = .center
             addSubview(label)
             pressedKeyLabels[label.text ?? "😭"] = label
@@ -236,7 +236,7 @@ class EmulatorKeyboardView: UIView {
             }
         } else {
             key.setTitle(keyCoded.keyLabel, for: .normal)
-            key.titleLabel?.font = UIFont(name: "Print Char 21", size: 12)
+            key.titleLabel?.font = UIFont.systemFont(ofSize: 12)
             key.setTitleColor(.white, for: .normal)
             key.setTitleColor(.black, for: .highlighted)
         }
@@ -444,8 +444,6 @@ struct KeyPosition {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
-//        setupViewFrames()
-//        setupKeyModels()
         
         let panGesture = UIPanGestureRecognizer(target: self, action: #selector(draggedView(_:)))
         leftKeyboardView.dragMeView.isUserInteractionEnabled = true
@@ -499,27 +497,6 @@ struct KeyPosition {
         rightKeyboardView.frame = bottomRightFrame
     }
     
-    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-        // get relative positions of frames to size
-//        for v in [leftKeyboardView, rightKeyboardView] {
-//            let xPercent = v.frame.origin.x / view.frame.size.width
-//            let yPercent = v.frame.origin.y / view.frame.size.height
-//            var newX = size.width * xPercent
-//            var newY = size.height * yPercent
-//            // mmm need to check if the views fit within the frame and adjust
-//            if newX + v.bounds.size.width > size.width {
-//                newX = size.width - v.bounds.size.width
-//            } else if newX < 0 {
-//                newX = 0
-//            }
-//            if newY + v.bounds.size.height > size.height {
-//                newY = size.height - v.bounds.size.height
-//            }
-//            let newFrame = CGRect(x: newX, y: newY, width: v.bounds.size.width, height: v.bounds.size.height)
-//            v.frame = newFrame
-//        }
-    }
-    
     func setupKeyModels() {
         leftKeyboardView.setupWithModel(leftKeyboardModel)
         rightKeyboardView.setupWithModel(rightKeyboardModel)
@@ -529,8 +506,6 @@ struct KeyPosition {
         guard let keyboardView = sender.view?.superview else {
             return
         }
-//        NSLayoutConstraint.deactivate(keyboardConstraints)
-//        self.view.bringSubviewToFront(keyboardView)
         let translation = sender.translation(in: self.view)
         keyboardView.center = CGPoint(x: keyboardView.center.x + translation.x, y: keyboardView.center.y + translation.y)
         sender.setTranslation(CGPoint.zero, in: self.view)

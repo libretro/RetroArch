@@ -168,7 +168,7 @@ extension CocoaView {
       keyboardController.rightKeyboardModel.modifierDelegate = self
       keyboardController.view.isHidden = true
       keyboardModifierState = 0
-   }
+   }   
 }
 
 extension CocoaView: EmulatorKeyboardKeyPressedDelegate {

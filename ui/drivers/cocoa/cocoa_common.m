@@ -150,10 +150,24 @@ void *glkitview_init(void);
     });
 }
 
--(void) toggleCustomKeyboard
+-(void) showCustomKeyboard
 {
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
-    [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
+    [self.keyboardController.view setHidden:false];
+    [self updateOverlayAndFocus];
+#endif
+}
+
+-(void) hideCustomKeyboard
+{
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
+    [self.keyboardController.view setHidden:true];
+    [self updateOverlayAndFocus];
+#endif
+}
+
+-(void) updateOverlayAndFocus
+{
     int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
     if ( self.keyboardController.view.isHidden ) {
@@ -161,7 +175,6 @@ void *glkitview_init(void);
     } else {
         command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
     }
-#endif
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
@@ -239,7 +252,7 @@ void *glkitview_init(void);
    }
 
    [self adjustViewFrameForSafeArea];
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
    [self.view bringSubviewToFront:self.keyboardController.view];
 #endif
 }
@@ -299,15 +312,20 @@ void *glkitview_init(void);
     swipe.delegate = self;
     swipe.direction = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#ifdef HAVE_IOS_CUSTOMKEYBOARD
     [self setupEmulatorKeyboard];
     self.keyboardController.leftKeyboardModel.delegate = self;
     self.keyboardController.rightKeyboardModel.delegate = self;
-    UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboard)];
+    UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(showCustomKeyboard)];
     showKeyboardSwipe.numberOfTouchesRequired = 3;
     showKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionUp;
     showKeyboardSwipe.delegate = self;
     [self.view addGestureRecognizer:showKeyboardSwipe];
+    UISwipeGestureRecognizer *hideKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(hideCustomKeyboard)];
+    hideKeyboardSwipe.numberOfTouchesRequired = 3;
+    hideKeyboardSwipe.direction = UISwipeGestureRecognizerDirectionDown;
+    hideKeyboardSwipe.delegate = self;
+    [self.view addGestureRecognizer:hideKeyboardSwipe];
 #endif
 #endif
 }
