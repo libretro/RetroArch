@@ -2446,6 +2446,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       }
       else
       {
+#ifndef IOS
          core_info = playlist_entry_get_core_info(entry);
 
          if (core_info && !string_is_empty(core_info->path))
@@ -2457,6 +2458,10 @@ static int action_ok_playlist_entry_collection(const char *path,
             strlcpy(core_path, entry->core_path, sizeof(core_path));
             playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
          }
+#else
+         strlcpy(core_path, entry->core_path, sizeof(core_path));
+         playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
+#endif
       }
    }
 
