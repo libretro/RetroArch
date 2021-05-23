@@ -266,17 +266,17 @@ static float ozone_sidebar_background_ocean_blue[16] = {
 };
 
 static float ozone_sidebar_gradient_top_ocean_blue[16] = {
-      0.05, 0.79, 0.87, 1.0f,
-      0.05, 0.79, 0.87, 1.0f,
       0.04, 0.64, 0.71, 1.0f,
       0.04, 0.64, 0.71, 1.0f,
+      0.05, 0.79, 0.87, 1.0f,
+      0.05, 0.79, 0.87, 1.0f,
 };
 
 static float ozone_sidebar_gradient_bottom_ocean_blue[16] = {
-      0.04, 0.64, 0.71, 1.0f,
-      0.04, 0.64, 0.71, 1.0f,
       0.05, 0.79, 0.87, 1.0f,
       0.05, 0.79, 0.87, 1.0f,
+      0.04, 0.64, 0.71, 1.0f,
+      0.04, 0.64, 0.71, 1.0f,
 };
 
 static float ozone_border_0_light[16] = COLOR_HEX_TO_FLOAT(0x50EFD9, 1.00);
@@ -597,18 +597,18 @@ ozone_theme_t ozone_theme_ocean_blue = {
    COLOR_HEX_TO_FLOAT(0x0DC9DE, 1.0f),                   /* background */
    ozone_background_libretro_running_ocean_blue,         /* background_libretro_running */
 
-   COLOR_HEX_TO_FLOAT(0x087D8A, 1.0f),                   /* header_footer_separator */
-   COLOR_HEX_TO_FLOAT(0x087D8A, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x065E69, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0x065E69, 1.0f),                   /* text */
    COLOR_HEX_TO_FLOAT(0x17E8FF, 1.0f),                   /* selection */
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 0.5f),                   /* selection_border */
-   COLOR_HEX_TO_FLOAT(0x076A75, 1.0f),                   /* entries_border */
-   COLOR_HEX_TO_FLOAT(0x087D8A, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0x054C54, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0x065E69, 1.0f),                   /* entries_icon */
    COLOR_HEX_TO_FLOAT(0x000000, 1.0f),                   /* text_selected */
    COLOR_HEX_TO_FLOAT(0x0A9BAB, 1.0f),                   /* message_background */
 
-   0x087D8AFF,                                           /* text_rgba */
+   0x065E69FF,                                           /* text_rgba */
    0x000000FF,                                           /* text_selected_rgba */
-   0x076A75FF,                                           /* text_sublabel_rgba */
+   0x054C54FF,                                           /* text_sublabel_rgba */
 
    /* Screensaver 'tint' (RGB24) */
    0xAEE5EB,                                             /* screensaver_tint */
