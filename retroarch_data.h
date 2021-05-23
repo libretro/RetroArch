@@ -62,12 +62,6 @@
 
 #define DEBUG_INFO_FILENAME "debug_info.txt"
 
-#define MAGIC_INDEX        0
-#define SERIALIZER_INDEX   1
-#define CRC_INDEX          2
-#define STATE_SIZE_INDEX   3
-
-
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
 #define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac|wav"
@@ -1247,12 +1241,6 @@ enum  runloop_state
    RUNLOOP_STATE_MENU_ITERATE,
    RUNLOOP_STATE_END,
    RUNLOOP_STATE_QUIT
-};
-
-enum rarch_movie_type
-{
-   RARCH_MOVIE_PLAYBACK = 0,
-   RARCH_MOVIE_RECORD
 };
 
 enum poll_type_override_t

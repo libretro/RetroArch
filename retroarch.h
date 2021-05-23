@@ -47,6 +47,7 @@
 #include "audio/audio_defines.h"
 #include "gfx/video_shader_parse.h"
 
+#include "configuration.h"
 #include "core_type.h"
 #include "core.h"
 #include "core_option_manager.h"
@@ -88,6 +89,11 @@ RETRO_BEGIN_DECLS
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT  (8 * 1024)
+
+#define MAGIC_INDEX        0
+#define SERIALIZER_INDEX   1
+#define CRC_INDEX          2
+#define STATE_SIZE_INDEX   3
 
 #ifdef HAVE_BSV_MOVIE
 #define BSV_MAGIC          0x42535631
@@ -221,6 +227,12 @@ enum runloop_action
 };
 
 #ifdef HAVE_BSV_MOVIE
+enum rarch_movie_type
+{
+   RARCH_MOVIE_PLAYBACK = 0,
+   RARCH_MOVIE_RECORD
+};
+
 struct bsv_state
 {
    /* Movie playback/recording support. */
@@ -2371,6 +2383,14 @@ bool retroarch_validate_per_core_options(char *s,
 void core_option_manager_flush(
       config_file_t *conf,
       core_option_manager_t *opt);
+
+#ifdef HAVE_BSV_MOVIE
+bool bsv_movie_check(
+      runloop_state_t *p_runloop,
+      settings_t *settings);
+void bsv_movie_deinit(runloop_state_t *p_runloop);
+bool bsv_movie_init(runloop_state_t *p_runloop);
+#endif
 
 RETRO_END_DECLS
 

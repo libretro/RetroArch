@@ -130,13 +130,6 @@ static bool video_driver_find_driver(
       settings_t *settings,
       const char *prefix, bool verbosity_enabled);
 
-#ifdef HAVE_BSV_MOVIE
-static void bsv_movie_deinit(runloop_state_t *p_runloop);
-static bool bsv_movie_init(runloop_state_t *p_runloop);
-static bool bsv_movie_check(runloop_state_t *p_runloop,
-      settings_t *settings);
-#endif
-
 static void driver_uninit(struct rarch_state *p_rarch, int flags);
 static void drivers_init(struct rarch_state *p_rarch,
       settings_t *settings,
