@@ -9396,6 +9396,11 @@ static bool setting_append_list(
 #endif
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
+#if defined(IOS)
+               if (bool_entries[i].name_enum_idx ==
+                     MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE)
+                  continue;
+#endif
                CONFIG_BOOL(
                      list, list_info,
                      bool_entries[i].target,
