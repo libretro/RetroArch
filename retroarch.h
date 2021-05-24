@@ -51,6 +51,7 @@
 #include "core_type.h"
 #include "core.h"
 #include "core_option_manager.h"
+#include "performance_counters.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_defines.h"
@@ -2131,6 +2132,9 @@ struct runloop
    retro_time_t frame_time_samples[
       MEASURE_FRAME_TIME_SAMPLES_COUNT];
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   rarch_timer_t shader_delay_timer;            /* int64_t alignment */
+#endif
    retro_usec_t frame_time_last;        /* int64_t alignment */
 
    uint64_t frame_time_count;
@@ -2156,6 +2160,7 @@ struct runloop
    slock_t *display_lock;
    slock_t *context_lock;
 #endif
+   struct string_list *subsystem_fullpaths;
 
    core_option_manager_t *core_options;
    retro_keyboard_event_t key_event;             /* ptr alignment */
@@ -2167,6 +2172,7 @@ struct runloop
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
 #endif
+   bool    *load_no_content_hook;
 
    void *audio_context_audio_data;
    void *audio_resampler_data;
@@ -2202,6 +2208,25 @@ struct runloop
 #ifdef HAVE_BSV_MOVIE
    struct bsv_state bsv_movie_state;            /* char alignment */
 #endif
+   char current_savefile_dir[PATH_MAX_LENGTH];
+   char current_savestate_dir[PATH_MAX_LENGTH];
+   char path_default_shader_preset[PATH_MAX_LENGTH];
+   char subsystem_path[PATH_MAX_LENGTH];
+   char runtime_content_path[PATH_MAX_LENGTH];
+   char runtime_core_path[PATH_MAX_LENGTH];
+   char path_content[PATH_MAX_LENGTH];
+   char path_libretro[PATH_MAX_LENGTH];
+   char path_config_file[PATH_MAX_LENGTH];
+   char path_config_append_file[PATH_MAX_LENGTH];
+   char path_core_options_file[PATH_MAX_LENGTH];
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   char cli_shader[PATH_MAX_LENGTH];
+   char runtime_shader_preset[PATH_MAX_LENGTH];
+#endif
+   char path_main_basename[8192];
+   char current_library_name[256];
+   char current_library_version[256];
+   char current_valid_extensions[256];
 
    input_game_focus_state_t game_focus_state; /* bool alignment */
 #ifdef HAVE_GFX_WIDGETS

@@ -1576,11 +1576,6 @@ struct rarch_state
    menu_input_t menu_input_state;               /* retro_time_t alignment */
 #endif
 
-   
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   rarch_timer_t shader_delay_timer;            /* int64_t alignment */
-#endif
 #ifdef HAVE_DISCORD
    discord_state_t discord_st;                  /* int64_t alignment */
 #endif
@@ -1607,7 +1602,6 @@ struct rarch_state
    input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
 #endif
 
-   struct string_list *subsystem_fullpaths;
    struct string_list *midi_drv_inputs;
    struct string_list *midi_drv_outputs;
    struct string_list *audio_driver_devices_list;
@@ -1615,7 +1609,6 @@ struct rarch_state
    uint8_t *video_driver_record_gpu_buffer;
    uint8_t *midi_drv_input_buffer;
    uint8_t *midi_drv_output_buffer;
-   bool    *load_no_content_hook;
    char    *osk_grid[45];
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
@@ -1919,32 +1912,11 @@ struct rarch_state
 #ifdef HAVE_NETWORKING
    char server_address_deferred[512];
 #endif
-   char current_library_name[256];
-   char current_library_version[256];
-   char current_valid_extensions[256];
    char launch_arguments[4096];
-   char path_main_basename[8192];
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   char cli_shader[PATH_MAX_LENGTH];
-   char runtime_shader_preset[PATH_MAX_LENGTH];
-#endif
-   char runtime_content_path[PATH_MAX_LENGTH];
-   char runtime_core_path[PATH_MAX_LENGTH];
-   char subsystem_path[PATH_MAX_LENGTH];
-   char path_default_shader_preset[PATH_MAX_LENGTH];
-   char path_content[PATH_MAX_LENGTH];
-   char path_libretro[PATH_MAX_LENGTH];
-   char path_config_file[PATH_MAX_LENGTH];
-   char path_config_append_file[PATH_MAX_LENGTH];
-   char path_core_options_file[PATH_MAX_LENGTH];
    char dir_system[PATH_MAX_LENGTH];
    char dir_savefile[PATH_MAX_LENGTH];
-   char current_savefile_dir[PATH_MAX_LENGTH];
-   char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
    retro_bits_512_t keyboard_mapping_bits;
-
-
 };
 
 static struct rarch_state         rarch_st;

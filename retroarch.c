@@ -2450,8 +2450,8 @@ int generic_menu_entry_action(
    const menu_ctx_driver_t
       *menu_driver_ctx            = p_rarch->menu_driver_ctx;
    settings_t   *settings         = p_rarch->configuration_settings;
-   bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
    size_t scroll_accel            = menu_st->scroll.acceleration;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
@@ -5810,9 +5810,10 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
    bool refresh                  = false;
    bool ret                      = false;
    struct rarch_state  *p_rarch  = &rarch_st;
+   runloop_state_t *p_runloop    = &runloop_state;
    settings_t *settings          = p_rarch->configuration_settings;
 
-   if (apply && !retroarch_apply_shader(p_rarch, settings,
+   if (apply && !retroarch_apply_shader(p_rarch, p_runloop, settings,
             type, preset_path, true))
       goto clear;
 
@@ -8806,10 +8807,11 @@ static void path_set_redirect(struct rarch_state *p_rarch,
    char content_dir_name[PATH_MAX_LENGTH];
    char new_savefile_dir[PATH_MAX_LENGTH];
    char new_savestate_dir[PATH_MAX_LENGTH];
+   runloop_state_t *p_runloop                  = &runloop_state;
    global_t   *global                          = &p_rarch->g_extern;
    const char *old_savefile_dir                = p_rarch->dir_savefile;
    const char *old_savestate_dir               = p_rarch->dir_savestate;
-   struct retro_system_info *system            = &runloop_state.system.info;
+   struct retro_system_info *system            = &p_runloop->system.info;
    bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
    bool sort_savefiles_by_content_enable       = settings->bools.sort_savefiles_by_content_enable;
    bool sort_savestates_enable                 = settings->bools.sort_savestates_enable;
@@ -8830,9 +8832,9 @@ static void path_set_redirect(struct rarch_state *p_rarch,
     * saves/states are enabled */
    if ((sort_savefiles_by_content_enable ||
          sort_savestates_by_content_enable) &&
-       !string_is_empty(p_rarch->path_main_basename))
+       !string_is_empty(p_runloop->path_main_basename))
       fill_pathname_parent_dir_name(content_dir_name,
-            p_rarch->path_main_basename, sizeof(content_dir_name));
+            p_runloop->path_main_basename, sizeof(content_dir_name));
 
    if (system && !string_is_empty(system->library_name))
    {
@@ -8915,7 +8917,8 @@ static void path_set_redirect(struct rarch_state *p_rarch,
    /* Set savefile directory if empty to content directory */
    if (string_is_empty(new_savefile_dir) || savefiles_in_content_dir)
    {
-      strlcpy(new_savefile_dir, p_rarch->path_main_basename,
+      strlcpy(new_savefile_dir,
+            p_runloop->path_main_basename,
             sizeof(new_savefile_dir));
       path_basedir(new_savefile_dir);
 
@@ -8930,7 +8933,8 @@ static void path_set_redirect(struct rarch_state *p_rarch,
    /* Set savestate directory if empty based on content directory */
    if (string_is_empty(new_savestate_dir) || savestates_in_content_dir)
    {
-      strlcpy(new_savestate_dir, p_rarch->path_main_basename,
+      strlcpy(new_savestate_dir,
+            p_runloop->path_main_basename,
             sizeof(new_savestate_dir));
       path_basedir(new_savestate_dir);
 
@@ -8961,8 +8965,8 @@ static void path_set_redirect(struct rarch_state *p_rarch,
       if (savefile_is_dir)
       {
          fill_pathname_dir(global->name.savefile,
-               !string_is_empty(p_rarch->path_main_basename)
-               ? p_rarch->path_main_basename
+               !string_is_empty(p_runloop->path_main_basename)
+               ? p_runloop->path_main_basename
                : system->library_name,
                FILE_PATH_SRM_EXTENSION,
                sizeof(global->name.savefile));
@@ -8974,8 +8978,8 @@ static void path_set_redirect(struct rarch_state *p_rarch,
       if (savestate_is_dir)
       {
          fill_pathname_dir(global->name.savestate,
-               !string_is_empty(p_rarch->path_main_basename)
-               ? p_rarch->path_main_basename
+               !string_is_empty(p_runloop->path_main_basename)
+               ? p_runloop->path_main_basename
                : system->library_name,
                FILE_PATH_STATE_EXTENSION,
                sizeof(global->name.savestate));
@@ -8988,8 +8992,8 @@ static void path_set_redirect(struct rarch_state *p_rarch,
       if (path_is_directory(global->name.cheatfile))
       {
          fill_pathname_dir(global->name.cheatfile,
-               !string_is_empty(p_rarch->path_main_basename)
-               ? p_rarch->path_main_basename
+               !string_is_empty(p_runloop->path_main_basename)
+               ? p_runloop->path_main_basename
                : system->library_name,
                FILE_PATH_CHT_EXTENSION,
                sizeof(global->name.cheatfile));
@@ -9005,7 +9009,7 @@ static void path_set_redirect(struct rarch_state *p_rarch,
 }
 
 static void path_set_basename(
-      struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop,
       const char *path)
 {
    char *dst                   = NULL;
@@ -9033,19 +9037,20 @@ static void path_set_basename(
     * directory then and the name of srm and states are meaningful.
     *
     */
-   path_basedir_wrapper(p_rarch->path_main_basename);
-   if (!string_is_empty(p_rarch->path_main_basename))
-      fill_pathname_dir(p_rarch->path_main_basename, path, "", sizeof(p_rarch->path_main_basename));
+   path_basedir_wrapper(p_runloop->path_main_basename);
+   if (!string_is_empty(p_runloop->path_main_basename))
+      fill_pathname_dir(p_runloop->path_main_basename, path, "",
+            sizeof(p_runloop->path_main_basename));
 #endif
 
-   if ((dst = strrchr(p_rarch->path_main_basename, '.')))
+   if ((dst = strrchr(p_runloop->path_main_basename, '.')))
       *dst = '\0';
 }
 
 struct string_list *path_get_subsystem_list(void)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
-   return p_rarch->subsystem_fullpaths;
+   runloop_state_t *p_runloop = &runloop_state;
+   return p_runloop->subsystem_fullpaths;
 }
 
 void path_set_special(char **argv, unsigned num_content)
@@ -9055,23 +9060,23 @@ void path_set_special(char **argv, unsigned num_content)
    union string_list_elem_attr attr;
    struct string_list subsystem_paths  = {0};
    struct rarch_state         *p_rarch = &rarch_st;
+   runloop_state_t          *p_runloop = &runloop_state;
    global_t   *global                  = &p_rarch->g_extern;
-   const char *savestate_dir           = p_rarch->current_savestate_dir;
-
+   const char *savestate_dir           = p_runloop->current_savestate_dir;
 
    /* First content file is the significant one. */
-   path_set_basename(p_rarch, argv[0]);
+   path_set_basename(p_runloop, argv[0]);
 
    string_list_initialize(&subsystem_paths);
 
-   p_rarch->subsystem_fullpaths        = string_list_new();
-   retro_assert(p_rarch->subsystem_fullpaths);
+   p_runloop->subsystem_fullpaths      = string_list_new();
+   retro_assert(p_runloop->subsystem_fullpaths);
 
    attr.i = 0;
 
    for (i = 0; i < num_content; i++)
    {
-      string_list_append(p_rarch->subsystem_fullpaths, argv[i], attr);
+      string_list_append(p_runloop->subsystem_fullpaths, argv[i], attr);
       strlcpy(str, argv[i], sizeof(str));
       path_remove_extension(str);
       string_list_append(&subsystem_paths, path_basename(str), attr);
@@ -9110,10 +9115,11 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
 {
    unsigned i, j;
    const struct retro_subsystem_info *info = NULL;
+   runloop_state_t *p_runloop              = &runloop_state;
    global_t   *global                      = &p_rarch->g_extern;
-   rarch_system_info_t             *system = &runloop_state.system;
+   rarch_system_info_t             *system = &p_runloop->system;
    bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
-   const char                *savefile_dir = p_rarch->current_savefile_dir;
+   const char                *savefile_dir = p_runloop->current_savefile_dir;
 
 
    if (!system || subsystem_path_empty)
@@ -9130,7 +9136,7 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
    {
       unsigned num_content = MIN(info->num_roms,
             subsystem_path_empty ?
-            0 : (unsigned)p_rarch->subsystem_fullpaths->size);
+            0 : (unsigned)p_runloop->subsystem_fullpaths->size);
 
       for (i = 0; i < num_content; i++)
       {
@@ -9149,7 +9155,7 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
             ext[1]  = '\0';
             strlcat(ext, mem->extension, sizeof(ext));
             strlcpy(savename,
-                  p_rarch->subsystem_fullpaths->elems[i].data,
+                  p_runloop->subsystem_fullpaths->elems[i].data,
                   sizeof(savename));
             path_remove_extension(savename);
 
@@ -9180,14 +9186,14 @@ static bool path_init_subsystem(struct rarch_state *p_rarch)
       if (!retroarch_override_setting_is_set(
                RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile,
-               p_rarch->path_main_basename,
+               p_runloop->path_main_basename,
                ".srm",
                sizeof(global->name.savefile));
 
       if (path_is_directory(global->name.savefile))
       {
          fill_pathname_dir(global->name.savefile,
-               p_rarch->path_main_basename,
+               p_runloop->path_main_basename,
                ".srm",
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
@@ -9237,26 +9243,26 @@ static void path_fill_names(
             sizeof(p_runloop->bsv_movie_state.movie_path));
 #endif
 
-   if (string_is_empty(p_rarch->path_main_basename))
+   if (string_is_empty(p_runloop->path_main_basename))
       return;
 
    if (global)
    {
       if (string_is_empty(global->name.ups))
          fill_pathname_noext(global->name.ups,
-               p_rarch->path_main_basename,
+               p_runloop->path_main_basename,
                ".ups",
                sizeof(global->name.ups));
 
       if (string_is_empty(global->name.bps))
          fill_pathname_noext(global->name.bps,
-               p_rarch->path_main_basename,
+               p_runloop->path_main_basename,
                ".bps",
                sizeof(global->name.bps));
 
       if (string_is_empty(global->name.ips))
          fill_pathname_noext(global->name.ips,
-               p_rarch->path_main_basename,
+               p_runloop->path_main_basename,
                ".ips",
                sizeof(global->name.ips));
    }
@@ -9264,32 +9270,32 @@ static void path_fill_names(
 
 char *path_get_ptr(enum rarch_path_type type)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *p_runloop  = &runloop_state;
 
    switch (type)
    {
       case RARCH_PATH_CONTENT:
-         return p_rarch->path_content;
+         return p_runloop->path_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         return p_rarch->path_default_shader_preset;
+         return p_runloop->path_default_shader_preset;
       case RARCH_PATH_BASENAME:
-         return p_rarch->path_main_basename;
+         return p_runloop->path_main_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
-            return p_rarch->path_core_options_file;
+            return p_runloop->path_core_options_file;
          break;
       case RARCH_PATH_SUBSYSTEM:
-         return p_rarch->subsystem_path;
+         return p_runloop->subsystem_path;
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
-            return p_rarch->path_config_file;
+            return p_runloop->path_config_file;
          break;
       case RARCH_PATH_CONFIG_APPEND:
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
-            return p_rarch->path_config_append_file;
+            return p_runloop->path_config_append_file;
          break;
       case RARCH_PATH_CORE:
-         return p_rarch->path_libretro;
+         return p_runloop->path_libretro;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -9300,32 +9306,32 @@ char *path_get_ptr(enum rarch_path_type type)
 
 const char *path_get(enum rarch_path_type type)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *p_runloop  = &runloop_state;
 
    switch (type)
    {
       case RARCH_PATH_CONTENT:
-         return p_rarch->path_content;
+         return p_runloop->path_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         return p_rarch->path_default_shader_preset;
+         return p_runloop->path_default_shader_preset;
       case RARCH_PATH_BASENAME:
-         return p_rarch->path_main_basename;
+         return p_runloop->path_main_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
-            return p_rarch->path_core_options_file;
+            return p_runloop->path_core_options_file;
          break;
       case RARCH_PATH_SUBSYSTEM:
-         return p_rarch->subsystem_path;
+         return p_runloop->subsystem_path;
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
-            return p_rarch->path_config_file;
+            return p_runloop->path_config_file;
          break;
       case RARCH_PATH_CONFIG_APPEND:
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
-            return p_rarch->path_config_append_file;
+            return p_runloop->path_config_append_file;
          break;
       case RARCH_PATH_CORE:
-         return p_rarch->path_libretro;
+         return p_runloop->path_libretro;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -9336,26 +9342,26 @@ const char *path_get(enum rarch_path_type type)
 
 size_t path_get_realsize(enum rarch_path_type type)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *p_runloop  = &runloop_state;
 
    switch (type)
    {
       case RARCH_PATH_CONTENT:
-         return sizeof(p_rarch->path_content);
+         return sizeof(p_runloop->path_content);
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         return sizeof(p_rarch->path_default_shader_preset);
+         return sizeof(p_runloop->path_default_shader_preset);
       case RARCH_PATH_BASENAME:
-         return sizeof(p_rarch->path_main_basename);
+         return sizeof(p_runloop->path_main_basename);
       case RARCH_PATH_CORE_OPTIONS:
-         return sizeof(p_rarch->path_core_options_file);
+         return sizeof(p_runloop->path_core_options_file);
       case RARCH_PATH_SUBSYSTEM:
-         return sizeof(p_rarch->subsystem_path);
+         return sizeof(p_runloop->subsystem_path);
       case RARCH_PATH_CONFIG:
-         return sizeof(p_rarch->path_config_file);
+         return sizeof(p_runloop->path_config_file);
       case RARCH_PATH_CONFIG_APPEND:
-         return sizeof(p_rarch->path_config_append_file);
+         return sizeof(p_runloop->path_config_append_file);
       case RARCH_PATH_CORE:
-         return sizeof(p_rarch->path_libretro);
+         return sizeof(p_runloop->path_libretro);
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -9364,7 +9370,7 @@ size_t path_get_realsize(enum rarch_path_type type)
    return 0;
 }
 
-static void path_set_names(struct rarch_state *p_rarch,
+static void path_set_names(runloop_state_t *p_runloop,
       global_t *global)
 {
    if (global)
@@ -9372,19 +9378,19 @@ static void path_set_names(struct rarch_state *p_rarch,
       if (!retroarch_override_setting_is_set(
                RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile,
-               p_rarch->path_main_basename,
+               p_runloop->path_main_basename,
                ".srm", sizeof(global->name.savefile));
 
       if (!retroarch_override_setting_is_set(
                RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
          fill_pathname_noext(global->name.savestate,
-               p_rarch->path_main_basename,
+               p_runloop->path_main_basename,
                ".state", sizeof(global->name.savestate));
 
 #ifdef HAVE_CHEATS
-      if (!string_is_empty(p_rarch->path_main_basename))
+      if (!string_is_empty(p_runloop->path_main_basename))
          fill_pathname_noext(global->name.cheatfile,
-               p_rarch->path_main_basename,
+               p_runloop->path_main_basename,
                ".cht", sizeof(global->name.cheatfile));
 #endif
    }
@@ -9392,6 +9398,7 @@ static void path_set_names(struct rarch_state *p_rarch,
 
 bool path_set(enum rarch_path_type type, const char *path)
 {
+   runloop_state_t  *p_runloop = &runloop_state;
    struct rarch_state *p_rarch = &rarch_st;
 
    if (!path)
@@ -9400,41 +9407,41 @@ bool path_set(enum rarch_path_type type, const char *path)
    switch (type)
    {
       case RARCH_PATH_BASENAME:
-         strlcpy(p_rarch->path_main_basename, path,
-               sizeof(p_rarch->path_main_basename));
+         strlcpy(p_runloop->path_main_basename, path,
+               sizeof(p_runloop->path_main_basename));
          break;
       case RARCH_PATH_NAMES:
-         path_set_basename(p_rarch, path);
-         path_set_names(p_rarch, &p_rarch->g_extern);
+         path_set_basename(p_runloop, path);
+         path_set_names(p_runloop, &p_rarch->g_extern);
          path_set_redirect(p_rarch, p_rarch->configuration_settings);
          break;
       case RARCH_PATH_CORE:
-         strlcpy(p_rarch->path_libretro, path,
-               sizeof(p_rarch->path_libretro));
+         strlcpy(p_runloop->path_libretro, path,
+               sizeof(p_runloop->path_libretro));
          break;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         strlcpy(p_rarch->path_default_shader_preset, path,
-               sizeof(p_rarch->path_default_shader_preset));
+         strlcpy(p_runloop->path_default_shader_preset, path,
+               sizeof(p_runloop->path_default_shader_preset));
          break;
       case RARCH_PATH_CONFIG_APPEND:
-         strlcpy(p_rarch->path_config_append_file, path,
-               sizeof(p_rarch->path_config_append_file));
+         strlcpy(p_runloop->path_config_append_file, path,
+               sizeof(p_runloop->path_config_append_file));
          break;
       case RARCH_PATH_CONFIG:
-         strlcpy(p_rarch->path_config_file, path,
-               sizeof(p_rarch->path_config_file));
+         strlcpy(p_runloop->path_config_file, path,
+               sizeof(p_runloop->path_config_file));
          break;
       case RARCH_PATH_SUBSYSTEM:
-         strlcpy(p_rarch->subsystem_path, path,
-               sizeof(p_rarch->subsystem_path));
+         strlcpy(p_runloop->subsystem_path, path,
+               sizeof(p_runloop->subsystem_path));
          break;
       case RARCH_PATH_CORE_OPTIONS:
-         strlcpy(p_rarch->path_core_options_file, path,
-               sizeof(p_rarch->path_core_options_file));
+         strlcpy(p_runloop->path_core_options_file, path,
+               sizeof(p_runloop->path_core_options_file));
          break;
       case RARCH_PATH_CONTENT:
-         strlcpy(p_rarch->path_content, path,
-               sizeof(p_rarch->path_content));
+         strlcpy(p_runloop->path_content, path,
+               sizeof(p_runloop->path_content));
          break;
       case RARCH_PATH_NONE:
          break;
@@ -9445,40 +9452,40 @@ bool path_set(enum rarch_path_type type, const char *path)
 
 bool path_is_empty(enum rarch_path_type type)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *p_runloop  = &runloop_state;
 
    switch (type)
    {
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         if (string_is_empty(p_rarch->path_default_shader_preset))
+         if (string_is_empty(p_runloop->path_default_shader_preset))
             return true;
          break;
       case RARCH_PATH_SUBSYSTEM:
-         if (string_is_empty(p_rarch->subsystem_path))
+         if (string_is_empty(p_runloop->subsystem_path))
             return true;
          break;
       case RARCH_PATH_CONFIG:
-         if (string_is_empty(p_rarch->path_config_file))
+         if (string_is_empty(p_runloop->path_config_file))
             return true;
          break;
       case RARCH_PATH_CORE_OPTIONS:
-         if (string_is_empty(p_rarch->path_core_options_file))
+         if (string_is_empty(p_runloop->path_core_options_file))
             return true;
          break;
       case RARCH_PATH_CONFIG_APPEND:
-         if (string_is_empty(p_rarch->path_config_append_file))
+         if (string_is_empty(p_runloop->path_config_append_file))
             return true;
          break;
       case RARCH_PATH_CONTENT:
-         if (string_is_empty(p_rarch->path_content))
+         if (string_is_empty(p_runloop->path_content))
             return true;
          break;
       case RARCH_PATH_CORE:
-         if (string_is_empty(p_rarch->path_libretro))
+         if (string_is_empty(p_runloop->path_libretro))
             return true;
          break;
       case RARCH_PATH_BASENAME:
-         if (string_is_empty(p_rarch->path_main_basename))
+         if (string_is_empty(p_runloop->path_main_basename))
             return true;
          break;
       case RARCH_PATH_NONE:
@@ -9491,33 +9498,33 @@ bool path_is_empty(enum rarch_path_type type)
 
 void path_clear(enum rarch_path_type type)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *p_runloop  = &runloop_state;
 
    switch (type)
    {
       case RARCH_PATH_SUBSYSTEM:
-         *p_rarch->subsystem_path = '\0';
+         *p_runloop->subsystem_path = '\0';
          break;
       case RARCH_PATH_CORE:
-         *p_rarch->path_libretro = '\0';
+         *p_runloop->path_libretro = '\0';
          break;
       case RARCH_PATH_CONFIG:
-         *p_rarch->path_config_file = '\0';
+         *p_runloop->path_config_file = '\0';
          break;
       case RARCH_PATH_CONTENT:
-         *p_rarch->path_content = '\0';
+         *p_runloop->path_content = '\0';
          break;
       case RARCH_PATH_BASENAME:
-         *p_rarch->path_main_basename = '\0';
+         *p_runloop->path_main_basename = '\0';
          break;
       case RARCH_PATH_CORE_OPTIONS:
-         *p_rarch->path_core_options_file = '\0';
+         *p_runloop->path_core_options_file = '\0';
          break;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         *p_rarch->path_default_shader_preset = '\0';
+         *p_runloop->path_default_shader_preset = '\0';
          break;
       case RARCH_PATH_CONFIG_APPEND:
-         *p_rarch->path_config_append_file = '\0';
+         *p_runloop->path_config_append_file = '\0';
          break;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
@@ -9613,11 +9620,11 @@ enum rarch_content_type path_is_media_type(const char *path)
    return RARCH_CONTENT_NONE;
 }
 
-static void path_deinit_subsystem(struct rarch_state *p_rarch)
+static void path_deinit_subsystem(runloop_state_t *p_runloop)
 {
-   if (p_rarch->subsystem_fullpaths)
-      string_list_free(p_rarch->subsystem_fullpaths);
-   p_rarch->subsystem_fullpaths = NULL;
+   if (p_runloop->subsystem_fullpaths)
+      string_list_free(p_runloop->subsystem_fullpaths);
+   p_runloop->subsystem_fullpaths = NULL;
 }
 
 static void dir_free_shader(
@@ -9932,6 +9939,7 @@ static void dir_check_shader(
 
 size_t dir_get_size(enum rarch_dir_type type)
 {
+   runloop_state_t *p_runloop  = &runloop_state;
    struct rarch_state *p_rarch = &rarch_st;
 
    switch (type)
@@ -9941,11 +9949,11 @@ size_t dir_get_size(enum rarch_dir_type type)
       case RARCH_DIR_SAVESTATE:
          return sizeof(p_rarch->dir_savestate);
       case RARCH_DIR_CURRENT_SAVESTATE:
-         return sizeof(p_rarch->current_savestate_dir);
+         return sizeof(p_runloop->current_savestate_dir);
       case RARCH_DIR_SAVEFILE:
          return sizeof(p_rarch->dir_savefile);
       case RARCH_DIR_CURRENT_SAVEFILE:
-         return sizeof(p_rarch->current_savefile_dir);
+         return sizeof(p_runloop->current_savefile_dir);
       case RARCH_DIR_NONE:
          break;
    }
@@ -9957,6 +9965,7 @@ size_t dir_get_size(enum rarch_dir_type type)
 
 void dir_clear(enum rarch_dir_type type)
 {
+   runloop_state_t *p_runloop  = &runloop_state;
    struct rarch_state *p_rarch = &rarch_st;
 
    switch (type)
@@ -9965,13 +9974,13 @@ void dir_clear(enum rarch_dir_type type)
          *p_rarch->dir_savefile = '\0';
          break;
       case RARCH_DIR_CURRENT_SAVEFILE:
-         *p_rarch->current_savefile_dir = '\0';
+         *p_runloop->current_savefile_dir = '\0';
          break;
       case RARCH_DIR_SAVESTATE:
          *p_rarch->dir_savestate = '\0';
          break;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         *p_rarch->current_savestate_dir = '\0';
+         *p_runloop->current_savestate_dir = '\0';
          break;
       case RARCH_DIR_SYSTEM:
          *p_rarch->dir_system = '\0';
@@ -9992,6 +10001,7 @@ static void dir_clear_all(void)
 
 char *dir_get_ptr(enum rarch_dir_type type)
 {
+   runloop_state_t *p_runloop  = &runloop_state;
    struct rarch_state *p_rarch = &rarch_st;
 
    switch (type)
@@ -9999,11 +10009,11 @@ char *dir_get_ptr(enum rarch_dir_type type)
       case RARCH_DIR_SAVEFILE:
          return p_rarch->dir_savefile;
       case RARCH_DIR_CURRENT_SAVEFILE:
-         return p_rarch->current_savefile_dir;
+         return p_runloop->current_savefile_dir;
       case RARCH_DIR_SAVESTATE:
          return p_rarch->dir_savestate;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         return p_rarch->current_savestate_dir;
+         return p_runloop->current_savestate_dir;
       case RARCH_DIR_SYSTEM:
          return p_rarch->dir_system;
       case RARCH_DIR_NONE:
@@ -10015,21 +10025,22 @@ char *dir_get_ptr(enum rarch_dir_type type)
 
 void dir_set(enum rarch_dir_type type, const char *path)
 {
+   runloop_state_t  *p_runloop = &runloop_state;  
    struct rarch_state *p_rarch = &rarch_st;
 
    switch (type)
    {
       case RARCH_DIR_CURRENT_SAVEFILE:
-         strlcpy(p_rarch->current_savefile_dir, path,
-               sizeof(p_rarch->current_savefile_dir));
+         strlcpy(p_runloop->current_savefile_dir, path,
+               sizeof(p_runloop->current_savefile_dir));
          break;
       case RARCH_DIR_SAVEFILE:
          strlcpy(p_rarch->dir_savefile, path,
                sizeof(p_rarch->dir_savefile));
          break;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         strlcpy(p_rarch->current_savestate_dir, path,
-               sizeof(p_rarch->current_savestate_dir));
+         strlcpy(p_runloop->current_savestate_dir, path,
+               sizeof(p_runloop->current_savestate_dir));
          break;
       case RARCH_DIR_SAVESTATE:
          strlcpy(p_rarch->dir_savestate, path,
@@ -10694,6 +10705,7 @@ bool command_write_memory(command_t *cmd, const char *arg)
 
 static bool retroarch_apply_shader(
       struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop,
       settings_t *settings,
       enum rarch_shader_type type,
       const char *preset_path, bool message)
@@ -10724,8 +10736,8 @@ static bool retroarch_apply_shader(
          configuration_set_bool(settings, settings->bools.video_shader_enable, true);
          if (!string_is_empty(preset_path))
          {
-            strlcpy(p_rarch->runtime_shader_preset, preset_path,
-                  sizeof(p_rarch->runtime_shader_preset));
+            strlcpy(p_runloop->runtime_shader_preset, preset_path,
+                  sizeof(p_runloop->runtime_shader_preset));
 #ifdef HAVE_MENU
             /* reflect in shader manager */
             if (menu_shader_manager_set_preset(
@@ -10734,7 +10746,7 @@ static bool retroarch_apply_shader(
 #endif
          }
          else
-            p_rarch->runtime_shader_preset[0] = '\0';
+            p_runloop->runtime_shader_preset[0] = '\0';
 
          if (message)
          {
@@ -10813,7 +10825,8 @@ bool command_set_shader(command_t *cmd, const char *arg)
       }
    }
 
-   return retroarch_apply_shader(p_rarch, settings, type, arg, true);
+   return retroarch_apply_shader(p_rarch, &runloop_state,
+         settings, type, arg, true);
 }
 #endif
 
@@ -12169,6 +12182,7 @@ void input_remapping_set_defaults(void)
 
 static void command_event_deinit_core(
       struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop,
       bool reinit)
 {
    core_unload_game(p_rarch);
@@ -12193,7 +12207,7 @@ static void command_event_deinit_core(
       command_event_disable_overrides(p_rarch);
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   p_rarch->runtime_shader_preset[0] = '\0';
+   p_runloop->runtime_shader_preset[0] = '\0';
 #endif
 
 #ifdef HAVE_CONFIGFILE
@@ -12495,15 +12509,15 @@ static bool event_init_content(
 }
 
 static void update_runtime_log(
-      struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop,
       const char *dir_runtime_log,
       const char *dir_playlist,
       bool log_per_core)
 {
    /* Initialise runtime log file */
    runtime_log_t *runtime_log   = runtime_log_init(
-         p_rarch->runtime_content_path,
-         p_rarch->runtime_core_path,
+         p_runloop->runtime_content_path,
+         p_runloop->runtime_core_path,
          dir_runtime_log,
          dir_playlist,
          log_per_core);
@@ -12525,9 +12539,8 @@ static void update_runtime_log(
    free(runtime_log);
 }
 
-
 static void command_event_runtime_log_deinit(
-      struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop,
       bool content_runtime_log,
       bool content_runtime_log_aggregate,
       const char *dir_runtime_log,
@@ -12556,21 +12569,23 @@ static void command_event_runtime_log_deinit(
    {
       /* Per core logging */
       if (content_runtime_log)
-         update_runtime_log(p_rarch, dir_runtime_log, dir_playlist, true);
+         update_runtime_log(p_runloop, dir_runtime_log, dir_playlist, true);
 
       /* Aggregate logging */
       if (content_runtime_log_aggregate)
-         update_runtime_log(p_rarch, dir_runtime_log, dir_playlist, false);
+         update_runtime_log(p_runloop, dir_runtime_log, dir_playlist, false);
    }
 
    /* Reset runtime + content/core paths, to prevent any
     * possibility of duplicate logging */
    runloop_state.libretro_core_runtime_usec = 0;
-   memset(p_rarch->runtime_content_path, 0, sizeof(p_rarch->runtime_content_path));
-   memset(p_rarch->runtime_core_path,    0, sizeof(p_rarch->runtime_core_path));
+   memset(p_runloop->runtime_content_path,
+         0, sizeof(p_runloop->runtime_content_path));
+   memset(p_runloop->runtime_core_path,
+         0, sizeof(p_runloop->runtime_core_path));
 }
 
-static void command_event_runtime_log_init(struct rarch_state *p_rarch)
+static void command_event_runtime_log_init(runloop_state_t *p_runloop)
 {
    const char *content_path                 = path_get(RARCH_PATH_CONTENT);
    const char *core_path                    = path_get(RARCH_PATH_CORE);
@@ -12589,20 +12604,20 @@ static void command_event_runtime_log_init(struct rarch_state *p_rarch)
     *    can therefore lead to the runtime of the currently
     *    loaded content getting written to the *new*
     *    content's log file... */
-   memset(p_rarch->runtime_content_path,
-         0, sizeof(p_rarch->runtime_content_path));
-   memset(p_rarch->runtime_core_path,
-         0, sizeof(p_rarch->runtime_core_path));
+   memset(p_runloop->runtime_content_path,
+         0, sizeof(p_runloop->runtime_content_path));
+   memset(p_runloop->runtime_core_path,
+         0, sizeof(p_runloop->runtime_core_path));
 
    if (!string_is_empty(content_path))
-      strlcpy(p_rarch->runtime_content_path,
+      strlcpy(p_runloop->runtime_content_path,
             content_path,
-            sizeof(p_rarch->runtime_content_path));
+            sizeof(p_runloop->runtime_content_path));
 
    if (!string_is_empty(core_path))
-      strlcpy(p_rarch->runtime_core_path,
+      strlcpy(p_runloop->runtime_core_path,
             core_path,
-            sizeof(p_rarch->runtime_core_path));
+            sizeof(p_runloop->runtime_core_path));
 }
 
 static bool command_event_init_core(
@@ -12675,9 +12690,9 @@ static bool command_event_init_core(
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   p_runloop->shader_presets_need_reload   = true;
-   p_rarch->shader_delay_timer.timer_begin = false; /* not initialized */
-   p_rarch->shader_delay_timer.timer_end   = false; /* not expired */
+   p_runloop->shader_presets_need_reload     = true;
+   p_runloop->shader_delay_timer.timer_begin = false; /* not initialized */
+   p_runloop->shader_delay_timer.timer_end   = false; /* not expired */
 #endif
 
    /* reset video format to libretro's default */
@@ -12702,7 +12717,7 @@ static bool command_event_init_core(
    disk_control_set_initial_index(
          &sys_info->disk_control,
          path_get(RARCH_PATH_CONTENT),
-         p_rarch->current_savefile_dir);
+         p_runloop->current_savefile_dir);
 
    if (!event_init_content(settings, p_rarch,
             p_runloop))
@@ -12718,7 +12733,7 @@ static bool command_event_init_core(
    p_runloop->frame_limit_minimum_time = runloop_set_frame_limit(&p_runloop->av_info, fastforward_ratio);
    p_runloop->frame_limit_last_time    = cpu_features_get_time_usec();
 
-   command_event_runtime_log_init(p_rarch);
+   command_event_runtime_log_init(p_runloop);
    return true;
 }
 
@@ -13234,7 +13249,7 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
 }
 
 static bool libretro_get_system_info(
-      struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop,
       const char *path,
       struct retro_system_info *info,
       bool *load_no_content);
@@ -13449,7 +13464,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
-            rarch_system_info_t *system_info = &runloop_state.system;
+            runloop_state_t *p_runloop       = &runloop_state;
+            rarch_system_info_t *system_info = &p_runloop->system;
             struct retro_system_info *system = &system_info->info;
             const char *core_path            = path_get(RARCH_PATH_CORE);
 
@@ -13459,7 +13475,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             if (!libretro_get_system_info(
-                     p_rarch,
+                     p_runloop,
                      core_path,
                      system,
                      &system_info->load_no_content))
@@ -13588,8 +13604,9 @@ bool command_event(enum event_command cmd, void *data)
             bool contentless                = false;
             bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
+            runloop_state_t *p_runloop      = &runloop_state;
             global_t   *global              = &p_rarch->g_extern;
-            rarch_system_info_t *sys_info   = &runloop_state.system;
+            rarch_system_info_t *sys_info   = &p_runloop->system;
 
             content_get_status(&contentless, &is_inited);
 
@@ -13599,7 +13616,7 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
 
-            command_event_runtime_log_deinit(p_rarch,
+            command_event_runtime_log_deinit(p_runloop,
                   settings->bools.content_runtime_log,
                   settings->bools.content_runtime_log_aggregate,
                   settings->paths.directory_runtime_log,
@@ -13620,7 +13637,7 @@ bool command_event(enum event_command cmd, void *data)
             }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            p_rarch->runtime_shader_preset[0] = '\0';
+            p_runloop->runtime_shader_preset[0] = '\0';
 #endif
 
             video_driver_restore_cached(p_rarch, settings);
@@ -13985,13 +14002,14 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CORE_DEINIT:
          {
             struct retro_hw_render_callback *hwr = NULL;
-            rarch_system_info_t *sys_info        = &runloop_state.system;
+            runloop_state_t *p_runloop           = &runloop_state;
+            rarch_system_info_t *sys_info        = &p_runloop->system;
 
             /* Save last selected disk index, if required */
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
 
-            command_event_runtime_log_deinit(p_rarch,
+            command_event_runtime_log_deinit(p_runloop,
                   settings->bools.content_runtime_log,
                   settings->bools.content_runtime_log_aggregate,
                   settings->paths.directory_runtime_log,
@@ -14001,7 +14019,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
             rcheevos_unload();
 #endif
-            command_event_deinit_core(p_rarch, true);
+            command_event_deinit_core(p_rarch, p_runloop, true);
 
 #ifdef HAVE_RUNAHEAD
             /* If 'runahead_available' is false, then
@@ -15120,7 +15138,7 @@ static void global_free(struct rarch_state *p_rarch)
 
    content_deinit();
 
-   path_deinit_subsystem(p_rarch);
+   path_deinit_subsystem(&runloop_state);
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
 
    retro_main_log_file_deinit();
@@ -15845,13 +15863,14 @@ void libretro_free_system_info(struct retro_system_info *info)
 
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
+   runloop_state_t *p_runloop   = &runloop_state;
    struct rarch_state *p_rarch  = &rarch_st;
-   rarch_system_info_t *system  = &runloop_state.system;
+   rarch_system_info_t *system  = &p_runloop->system;
 
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
-         *p_rarch->load_no_content_hook = *(const bool*)data;
+         *p_runloop->load_no_content_hook = *(const bool*)data;
          break;
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
@@ -16738,6 +16757,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
+      {
+         runloop_state_t *p_runloop           = &runloop_state;
          RARCH_LOG("[Environ]: SHUTDOWN.\n");
 
          /* This case occurs when a core (internally) requests
@@ -16745,7 +16766,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
           * since normal command.c CMD_EVENT_CORE_DEINIT event
           * will not occur until after the current content has
           * been cleared (causing log to be skipped) */
-         command_event_runtime_log_deinit(p_rarch,
+         command_event_runtime_log_deinit(p_runloop,
                settings->bools.content_runtime_log,
                settings->bools.content_runtime_log_aggregate,
                settings->paths.directory_runtime_log,
@@ -16753,6 +16774,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          runloop_state.shutdown_initiated      = true;
          runloop_state.core_shutdown_initiated = true;
+      }
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
@@ -16797,8 +16819,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         RARCH_LOG("[Environ]: GET_SAVE_DIRECTORY.\n");
-         *(const char**)data = p_rarch->current_savefile_dir;
+         {
+            runloop_state_t *p_runloop = &runloop_state;
+
+            RARCH_LOG("[Environ]: GET_SAVE_DIRECTORY.\n");
+
+            *(const char**)data = p_runloop->current_savefile_dir;
+         }
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -17950,9 +17977,9 @@ static void libretro_get_environment_info(
       void (*func)(retro_environment_t),
       bool *load_no_content)
 {
-   struct rarch_state *p_rarch   = &rarch_st;
+   runloop_state_t *p_runloop      = &runloop_state;
 
-   p_rarch->load_no_content_hook = load_no_content;
+   p_runloop->load_no_content_hook = load_no_content;
 
    /* load_no_content gets set in this callback. */
    func(environ_cb_get_system_info);
@@ -18053,7 +18080,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool libretro_get_system_info(
-      struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop,
       const char *path,
       struct retro_system_info *info,
       bool *load_no_content)
@@ -18088,7 +18115,7 @@ static bool libretro_get_system_info(
 #else
    if (load_no_content)
    {
-      p_rarch->load_no_content_hook = load_no_content;
+      p_runloop->load_no_content_hook = load_no_content;
 
       /* load_no_content gets set in this callback. */
       retro_set_environment(environ_cb_get_system_info);
@@ -18109,23 +18136,26 @@ static bool libretro_get_system_info(
 
    memcpy(info, &dummy_info, sizeof(*info));
 
-   p_rarch->current_library_name[0]    = '\0';
-   p_rarch->current_library_version[0] = '\0';
-   p_rarch->current_valid_extensions[0] = '\0';
+   p_runloop->current_library_name[0]    = '\0';
+   p_runloop->current_library_version[0] = '\0';
+   p_runloop->current_valid_extensions[0] = '\0';
 
    if (!string_is_empty(dummy_info.library_name))
-      strlcpy(p_rarch->current_library_name,
-            dummy_info.library_name, sizeof(p_rarch->current_library_name));
+      strlcpy(p_runloop->current_library_name,
+            dummy_info.library_name,
+            sizeof(p_runloop->current_library_name));
    if (!string_is_empty(dummy_info.library_version))
-      strlcpy(p_rarch->current_library_version,
-            dummy_info.library_version, sizeof(p_rarch->current_library_version));
+      strlcpy(p_runloop->current_library_version,
+            dummy_info.library_version,
+            sizeof(p_runloop->current_library_version));
    if (dummy_info.valid_extensions)
-      strlcpy(p_rarch->current_valid_extensions,
-            dummy_info.valid_extensions, sizeof(p_rarch->current_valid_extensions));
+      strlcpy(p_runloop->current_valid_extensions,
+            dummy_info.valid_extensions,
+            sizeof(p_runloop->current_valid_extensions));
 
-   info->library_name     = p_rarch->current_library_name;
-   info->library_version  = p_rarch->current_library_version;
-   info->valid_extensions = p_rarch->current_valid_extensions;
+   info->library_name     = p_runloop->current_library_name;
+   info->library_version  = p_runloop->current_library_version;
+   info->valid_extensions = p_runloop->current_valid_extensions;
 
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
@@ -33815,24 +33845,30 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_SET_SHADER:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               /* disable auto-shaders */
-               if (string_is_empty(optarg))
                {
-                  runloop_state.cli_shader_disable = true;
-                  break;
-               }
+                  runloop_state_t *p_runloop = &runloop_state;
 
-               /* rebase on shader directory */
-               if (!path_is_absolute(optarg))
-               {
-                  settings_t *settings = p_rarch->configuration_settings;
-                  char       *ref_path = settings->paths.directory_video_shader;
-                  fill_pathname_join(p_rarch->cli_shader,
-                        ref_path, optarg, sizeof(p_rarch->cli_shader));
-                  break;
-               }
+                  /* disable auto-shaders */
+                  if (string_is_empty(optarg))
+                  {
+                     runloop_state.cli_shader_disable = true;
+                     break;
+                  }
 
-               strlcpy(p_rarch->cli_shader, optarg, sizeof(p_rarch->cli_shader));
+                  /* rebase on shader directory */
+                  if (!path_is_absolute(optarg))
+                  {
+                     settings_t *settings = p_rarch->configuration_settings;
+                     char       *ref_path = settings->paths.directory_video_shader;
+                     fill_pathname_join(p_runloop->cli_shader,
+                           ref_path, optarg,
+                           sizeof(p_runloop->cli_shader));
+                     break;
+                  }
+
+                  strlcpy(p_runloop->cli_shader, optarg,
+                        sizeof(p_runloop->cli_shader));
+               }
 #endif
                break;
 
@@ -35085,7 +35121,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          content_deinit();
 
-         path_deinit_subsystem(p_rarch);
+         path_deinit_subsystem(&runloop_state);
          path_deinit_savefile();
 
          runloop_state.rarch_is_inited         = false;
@@ -35327,7 +35363,8 @@ static bool retroarch_load_shader_preset_internal(
  *
  * Returns: false if there was an error or no action was performed.
  */
-static bool retroarch_load_shader_preset(struct rarch_state *p_rarch,
+static bool retroarch_load_shader_preset(
+      runloop_state_t *p_runloop,
       settings_t *settings)
 {
    const char *video_shader_directory = settings->paths.directory_video_shader;
@@ -35410,9 +35447,9 @@ success:
    RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
          shader_path);
    strlcpy(
-         p_rarch->runtime_shader_preset,
+         p_runloop->runtime_shader_preset,
          shader_path,
-         sizeof(p_rarch->runtime_shader_preset));
+         sizeof(p_runloop->runtime_shader_preset));
    return true;
 }
 #endif
@@ -35422,38 +35459,40 @@ const char *retroarch_get_shader_preset(void)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t *p_runloop  = &runloop_state;
    settings_t *settings        = p_rarch->configuration_settings;
-   const char *core_name       = runloop_state.system.info.library_name;
+   const char *core_name       = p_runloop->system.info.library_name;
    bool video_shader_enable    = settings->bools.video_shader_enable;
    unsigned video_shader_delay = settings->uints.video_shader_delay;
    bool auto_shaders_enable    = settings->bools.auto_shaders_enable;
-   bool cli_shader_disable     = runloop_state.cli_shader_disable;
+   bool cli_shader_disable     = p_runloop->cli_shader_disable;
 
    if (!video_shader_enable)
       return NULL;
 
-   if (video_shader_delay && !p_rarch->shader_delay_timer.timer_end)
+   if (video_shader_delay && !p_runloop->shader_delay_timer.timer_end)
       return NULL;
 
    /* disallow loading auto-shaders when no core is loaded */
    if (string_is_empty(core_name))
       return NULL;
 
-   if (!string_is_empty(p_rarch->runtime_shader_preset))
-      return p_rarch->runtime_shader_preset;
+   if (!string_is_empty(p_runloop->runtime_shader_preset))
+      return p_runloop->runtime_shader_preset;
 
    /* load auto-shader once, --set-shader works like a global auto-shader */
    if (runloop_state.shader_presets_need_reload && !cli_shader_disable)
    {
       runloop_state.shader_presets_need_reload = false;
-      if (video_shader_is_supported(video_shader_parse_type(p_rarch->cli_shader)))
-         strlcpy(p_rarch->runtime_shader_preset,
-               p_rarch->cli_shader,
-               sizeof(p_rarch->runtime_shader_preset));
+      if (video_shader_is_supported(video_shader_parse_type(
+                  p_runloop->cli_shader)))
+         strlcpy(p_runloop->runtime_shader_preset,
+               p_runloop->cli_shader,
+               sizeof(p_runloop->runtime_shader_preset));
       else
          if (auto_shaders_enable) /* sets runtime_shader_preset */
-            retroarch_load_shader_preset(p_rarch, settings);
-      return p_rarch->runtime_shader_preset;
+            retroarch_load_shader_preset(p_runloop, settings);
+      return p_runloop->runtime_shader_preset;
    }
 #endif
 
@@ -35642,6 +35681,7 @@ static void retroarch_fail(struct rarch_state *p_rarch,
 bool retroarch_main_quit(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
+   runloop_state_t  *p_runloop = &runloop_state;
    global_t            *global = &p_rarch->g_extern;
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st = &p_rarch->discord_st;
@@ -35663,7 +35703,7 @@ bool retroarch_main_quit(void)
    discord_is_inited          = false;
 #endif
 
-   if (!runloop_state.shutdown_initiated)
+   if (!p_runloop->shutdown_initiated)
    {
       command_event_save_auto_state(
             p_rarch->configuration_settings->bools.savestate_auto_save,
@@ -35676,17 +35716,17 @@ bool retroarch_main_quit(void)
       content_wait_for_save_state_task();
 
 #ifdef HAVE_CONFIGFILE
-      if (runloop_state.overrides_active)
+      if (p_runloop->overrides_active)
          command_event_disable_overrides(p_rarch);
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      p_rarch->runtime_shader_preset[0] = '\0';
+      p_runloop->runtime_shader_preset[0] = '\0';
 #endif
 
 #ifdef HAVE_CONFIGFILE
-      if (     runloop_state.remaps_core_active
-            || runloop_state.remaps_content_dir_active
-            || runloop_state.remaps_game_active
+      if (     p_runloop->remaps_core_active
+            || p_runloop->remaps_content_dir_active
+            || p_runloop->remaps_game_active
          )
       {
          input_remapping_deinit();
@@ -35695,7 +35735,7 @@ bool retroarch_main_quit(void)
 #endif
    }
 
-   runloop_state.shutdown_initiated = true;
+   p_runloop->shutdown_initiated = true;
    retroarch_menu_running_finished(true);
 
    return true;
@@ -37086,30 +37126,31 @@ static enum runloop_state runloop_check_state(
    }
 
    if (   settings->uints.video_shader_delay &&
-         !p_rarch->shader_delay_timer.timer_end)
+         !p_runloop->shader_delay_timer.timer_end)
    {
-      if (!p_rarch->shader_delay_timer.timer_begin)
+      if (!p_runloop->shader_delay_timer.timer_begin)
       {
          uint64_t current_usec = cpu_features_get_time_usec();
          RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-               p_rarch->shader_delay_timer,
+               p_runloop->shader_delay_timer,
                current_usec,
                settings->uints.video_shader_delay * 1000);
-         p_rarch->shader_delay_timer.timer_begin = true;
-         p_rarch->shader_delay_timer.timer_end   = false;
+         p_runloop->shader_delay_timer.timer_begin = true;
+         p_runloop->shader_delay_timer.timer_end   = false;
       }
       else
       {
-         RARCH_TIMER_TICK(p_rarch->shader_delay_timer, current_time);
+         RARCH_TIMER_TICK(p_runloop->shader_delay_timer, current_time);
 
-         if (RARCH_TIMER_HAS_EXPIRED(p_rarch->shader_delay_timer))
+         if (RARCH_TIMER_HAS_EXPIRED(p_runloop->shader_delay_timer))
          {
-            RARCH_TIMER_END(p_rarch->shader_delay_timer);
+            RARCH_TIMER_END(p_runloop->shader_delay_timer);
 
             {
                const char *preset = retroarch_get_shader_preset();
                enum rarch_shader_type type = video_shader_parse_type(preset);
-               retroarch_apply_shader(p_rarch, settings, type, preset, false);
+               retroarch_apply_shader(p_rarch, p_runloop,
+                     settings, type, preset, false);
             }
          }
       }

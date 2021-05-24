@@ -207,6 +207,7 @@ static int menu_input_post_iterate(
 
 static bool retroarch_apply_shader(
       struct rarch_state *p_rarch,
+      runloop_state_t *p_runloop,
       settings_t *settings,
       enum rarch_shader_type type, const char *preset_path,
       bool message);
