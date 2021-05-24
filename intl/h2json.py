@@ -23,11 +23,13 @@ p = re.compile(
 
 
 def parse_message(message):
+    # remove all comments before the value (= the string)
     a = message.find('/*')
     b = message.find('*/')
     c = message.find('"')
     new_msg = message
-    while (a >= 0 and b >= 0) and (a < c < b or b < c):
+    while 0 <= a <= b and not (0 <= c < a):
+        # cut out the comment
         new_msg = new_msg[:a] + new_msg[b + 2:]
         c = new_msg.find('"', a)
         b = new_msg.find('*/', a)
@@ -35,10 +37,12 @@ def parse_message(message):
     # get key word
     word = new_msg[new_msg.find('(') + 1:new_msg.find(',')].strip()
 
+    # remove all comments after the value (= the string)
     a = new_msg.rfind('/*')
     b = new_msg.rfind('*/')
     d = new_msg.rfind('"')
-    while (a >= 0 and b >= 0) and (a < d < b or a > d):
+    while 0 <= a <= b and not (0 <= b < d):
+        # cut off the comment
         new_msg = new_msg[:a]
         a = new_msg.rfind('/*')
         b = new_msg.rfind('*/')

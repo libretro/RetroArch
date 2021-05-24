@@ -39,7 +39,8 @@ def parse_message(message):
     b = message.find('*/')
     c = message.find('"')
     new_msg = message
-    while (a >= 0 and b >= 0) and (a < c < b or b < c):
+    while 0 <= a <= b and not (0 <= c < a):
+        # cut out the comment
         new_msg = new_msg[:a] + new_msg[b + 2:]
         c = new_msg.find('"', a)
         b = new_msg.find('*/', a)
@@ -51,7 +52,8 @@ def parse_message(message):
     a = new_msg.rfind('/*')
     b = new_msg.rfind('*/')
     d = new_msg.rfind('"')
-    while (a >= 0 and b >= 0) and (a < d < b or a > d):
+    while 0 <= a <= b and not (0 <= b < d):
+        # cut off the comment
         new_msg = new_msg[:a]
         a = new_msg.rfind('/*')
         b = new_msg.rfind('*/')
