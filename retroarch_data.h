@@ -138,9 +138,9 @@
 #endif
 
 #ifdef HAVE_THREADS
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch) ((VIDEO_DRIVER_IS_THREADED_INTERNAL()) ? video_thread_get_ptr(p_rarch) : p_rarch->video_driver_data)
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(video_driver_data) ((VIDEO_DRIVER_IS_THREADED_INTERNAL()) ? video_thread_get_ptr(video_driver_data) : video_driver_data)
 #else
-#define VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch) (p_rarch->video_driver_data)
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(video_driver_data) (video_driver_data)
 #endif
 
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch) (&p_rarch->hw_render)

@@ -421,9 +421,8 @@ global_t *global_get_ptr(void)
  * with the threaded wrapper (if successful). If not successful,
  * NULL.
  **/
-static void *video_thread_get_ptr(struct rarch_state *p_rarch)
+static void *video_thread_get_ptr(const thread_video_t *thr)
 {
-   const thread_video_t *thr   = (const thread_video_t*)p_rarch->video_driver_data;
    if (thr)
       return thr->driver_data;
    return NULL;
@@ -441,7 +440,7 @@ static void *video_thread_get_ptr(struct rarch_state *p_rarch)
 void *video_driver_get_ptr(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
+   return VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch->video_driver_data);
 }
 
 void *video_driver_get_data(void)
@@ -9621,7 +9620,7 @@ static void path_deinit_subsystem(struct rarch_state *p_rarch)
    p_rarch->subsystem_fullpaths = NULL;
 }
 
-static void dir_free_shader(struct rarch_state *p_rarch,
+static void dir_free_shader(
       struct rarch_dir_shader_list *dir_list,
       bool shader_remember_last_dir)
 {
@@ -9726,7 +9725,7 @@ static void dir_init_shader(
 #endif
 
    /* Always free existing shader list */
-   dir_free_shader(p_rarch, dir_list,
+   dir_free_shader(dir_list,
          video_shader_remember_last_dir);
 
    /* Try directory of last selected shader preset */
@@ -29155,7 +29154,7 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
-   dir_free_shader(p_rarch,
+   dir_free_shader(
          (struct rarch_dir_shader_list*)&p_rarch->dir_shader_list,
          p_rarch->configuration_settings->bools.video_shader_remember_last_dir);
 
@@ -31140,7 +31139,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_grab_mouse_state = p_runloop->input_driver_grab_mouse_state;
    video_info->disp_userdata                 = &p_rarch->dispgfx;
 
-   video_info->userdata                      = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
+   video_info->userdata                      = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch->video_driver_data);
 
 #ifdef HAVE_THREADS
    VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
@@ -32035,7 +32034,7 @@ static void driver_adjust_system_rates(
          runloop_state.force_nonblock = true;
          RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 
-         if (VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
+         if (VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch->video_driver_data))
          {
             if (p_rarch->current_video->set_nonblock_state)
                p_rarch->current_video->set_nonblock_state(
@@ -32049,7 +32048,7 @@ static void driver_adjust_system_rates(
       }
    }
 
-   if (VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
+   if (VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch->video_driver_data))
       driver_set_nonblock_state();
 }
 
@@ -32075,7 +32074,8 @@ void driver_set_nonblock_state(void)
    bool runloop_force_nonblock = runloop_state.force_nonblock;
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_active && VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch))
+   if (     video_driver_active 
+         && VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch->video_driver_data))
    {
       if (p_rarch->current_video->set_nonblock_state)
       {
