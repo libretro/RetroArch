@@ -9226,13 +9226,11 @@ static void path_init_savefile_internal(
       path_init_savefile_rtc(global->name.savefile);
 }
 
-static void path_fill_names(struct rarch_state *p_rarch,
+static void path_fill_names(
+      global_t *global,
+      struct rarch_state *p_rarch,
       runloop_state_t *p_runloop)
 {
-   global_t            *global = &p_rarch->g_extern;
-
-   path_init_savefile_internal(global, p_rarch);
-
 #ifdef HAVE_BSV_MOVIE
    if (global)
       strlcpy(p_runloop->bsv_movie_state.movie_path,
@@ -10406,45 +10404,9 @@ bool menu_driver_is_alive(void)
 }
 #endif
 
-/* MESSAGE QUEUE */
-
-static void runloop_msg_queue_deinit(runloop_state_t *p_runloop)
-{
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
-
-   msg_queue_deinitialize(&p_runloop->msg_queue);
-
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
-#ifdef HAVE_THREADS
-   slock_free(p_runloop->msg_queue_lock);
-   p_runloop->msg_queue_lock = NULL;
-#endif
-
-   p_runloop->msg_queue_size = 0;
-}
-
-static void runloop_msg_queue_init(runloop_state_t *p_runloop)
-{
-   runloop_msg_queue_deinit(p_runloop);
-   msg_queue_initialize(&p_runloop->msg_queue, 8);
-
-#ifdef HAVE_THREADS
-   p_runloop->msg_queue_lock   = slock_new();
-#endif
-}
-
-#ifdef HAVE_THREADS
-static void runloop_autosave_deinit(runloop_state_t *p_runloop)
-{
-   if (p_runloop->rarch_use_sram)
-      autosave_deinit();
-}
-#endif
-
 /* COMMAND */
 
 #ifdef HAVE_COMMAND
-
 bool command_version(command_t *cmd, const char* arg)
 {
    char reply[256]             = {0};
@@ -12016,6 +11978,7 @@ finish:
  * Appends disk image to disk image list.
  **/
 static bool command_event_disk_control_append_image(
+      global_t *global,
       struct rarch_state *p_rarch,
       rarch_system_info_t *sys_info,
       const char *path)
@@ -12036,7 +11999,8 @@ static bool command_event_disk_control_append_image(
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       path_set(RARCH_PATH_NAMES, path);
-      path_fill_names(p_rarch, &runloop_state);
+      path_init_savefile_internal(global, p_rarch);
+      path_fill_names(global, p_rarch, &runloop_state);
    }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
@@ -12487,7 +12451,10 @@ static bool event_init_content(
    content_get_status(&contentless, &is_inited);
 
    if (!contentless)
-      path_fill_names(p_rarch, p_runloop);
+   {
+      path_init_savefile_internal(global, p_rarch);
+      path_fill_names(global, p_rarch, p_runloop);
+   }
 
    if (!content_init())
    {
@@ -13285,6 +13252,7 @@ bool command_event(enum event_command cmd, void *data)
 {
    bool boolean                = false;
    struct rarch_state *p_rarch = &rarch_st;
+   global_t *global            = &p_rarch->g_extern;
    settings_t *settings        = p_rarch->configuration_settings;
 
    switch (cmd)
@@ -14597,7 +14565,7 @@ bool command_event(enum event_command cmd, void *data)
                rarch_system_info_t *
                   sys_info                = &runloop_state.system;
                /* Append disk image */
-               bool success               = command_event_disk_control_append_image(p_rarch, sys_info, path);
+               bool success               = command_event_disk_control_append_image(global, p_rarch, sys_info, path);
 
 #if defined(HAVE_MENU)
                /* Appending a disk image may or may not affect
@@ -16671,6 +16639,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          /* Display message via OSD, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_LOG)
          {
+            runloop_state_t *p_runloop = &runloop_state;                   
+
             switch (msg->type)
             {
                /* Handle 'status' messages */
@@ -16685,7 +16655,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                    *   _runloop_msg_queue_lock is already available
                    * We therefore just call runloop_msg_queue_lock()/
                    * runloop_msg_queue_unlock() in this case */
-                  RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+                  RUNLOOP_MSG_QUEUE_LOCK(p_runloop);
 
                   /* If a message is already set, only overwrite
                    * it if the new message has the same or higher
@@ -16712,7 +16682,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                      }
                   }
 
-                  RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+                  RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop);
                   break;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -30554,12 +30524,13 @@ static void video_driver_frame(const void *data, unsigned width,
    retro_time_t new_time;
    video_frame_info_t video_info;
    struct rarch_state *p_rarch  = &rarch_st;
+   runloop_state_t *p_runloop   = &runloop_state;                   
    const enum retro_pixel_format
       video_driver_pix_fmt      = p_rarch->video_driver_pix_fmt;
-   bool runloop_idle            = runloop_state.idle;
-   bool video_driver_active     = runloop_state.video_active;
+   bool runloop_idle            = p_runloop->idle;
+   bool video_driver_active     = p_runloop->video_active;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active          = runloop_state.widgets_active;
+   bool widgets_active          = p_runloop->widgets_active;
 #endif
 
    status_text[0]                  = '\0';
@@ -30594,7 +30565,7 @@ static void video_driver_frame(const void *data, unsigned width,
    video_driver_build_info(&video_info);
 
    /* Get the amount of frames per seconds. */
-   if (runloop_state.frame_count)
+   if (p_runloop->frame_count)
    {
       unsigned fps_update_interval                  =
          video_info.fps_update_interval;
@@ -30603,10 +30574,10 @@ static void video_driver_frame(const void *data, unsigned width,
       size_t buf_pos                                = 1;
       /* set this to 1 to avoid an offset issue */
       unsigned write_index                          =
-         runloop_state.frame_time_count++ &
+         p_runloop->frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
       frame_time                                    = new_time - fps_time;
-      runloop_state.frame_time_samples[write_index] = frame_time;
+      p_runloop->frame_time_samples[write_index] = frame_time;
       fps_time                                      = new_time;
 
       if (video_info.fps_show)
@@ -30622,7 +30593,7 @@ static void video_driver_frame(const void *data, unsigned width,
          snprintf(frames_text,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
-               (uint64_t)runloop_state.frame_count);
+               (uint64_t)p_runloop->frame_count);
          buf_pos = strlcat(status_text, frames_text, sizeof(status_text));
       }
 
@@ -30630,7 +30601,7 @@ static void video_driver_frame(const void *data, unsigned width,
       {
          char mem[128];
 
-         if ((runloop_state.frame_count % memory_update_interval) == 0)
+         if ((p_runloop->frame_count % memory_update_interval) == 0)
          {
             last_total_memory = frontend_driver_get_total_memory();
             last_used_memory  = last_total_memory - frontend_driver_get_free_memory();
@@ -30645,7 +30616,7 @@ static void video_driver_frame(const void *data, unsigned width,
          strlcat(status_text, mem, sizeof(status_text));
       }
 
-      if ((runloop_state.frame_count % fps_update_interval) == 0)
+      if ((p_runloop->frame_count % fps_update_interval) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time,
                fps_update_interval);
@@ -30662,8 +30633,8 @@ static void video_driver_frame(const void *data, unsigned width,
                   status_text, sizeof(p_rarch->video_driver_window_title));
          }
 
-         curr_time                                 = new_time;
-         runloop_state.video_driver_window_title_update = true;
+         curr_time                                   = new_time;
+         p_runloop->video_driver_window_title_update = true;
       }
    }
    else
@@ -30679,7 +30650,7 @@ static void video_driver_frame(const void *data, unsigned width,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                sizeof(status_text));
 
-      runloop_state.video_driver_window_title_update = true;
+      p_runloop->video_driver_window_title_update = true;
    }
 
    /* Add core status message to status text */
@@ -30694,7 +30665,7 @@ static void video_driver_frame(const void *data, unsigned width,
        *   _runloop_msg_queue_lock is already available
        * We therefore just call runloop_msg_queue_lock()/
        * runloop_msg_queue_unlock() in this case */
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_LOCK(p_runloop);
 
       /* Check whether duration timer has elapsed */
       runloop_core_status_msg.duration -= p_rarch->anim.delta_time;
@@ -30722,7 +30693,7 @@ static void video_driver_frame(const void *data, unsigned width,
                   sizeof(status_text));
       }
 
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop);
    }
 
    /* Slightly messy code,
@@ -30776,7 +30747,7 @@ static void video_driver_frame(const void *data, unsigned width,
    }
 #endif
 
-   if (runloop_state.msg_queue_size > 0)
+   if (p_runloop->msg_queue_size > 0)
    {
       /* If widgets are currently enabled, then
        * messages were pushed to the queue before
@@ -30790,12 +30761,12 @@ static void video_driver_frame(const void *data, unsigned width,
          msg_queue_entry_t msg_entry;
          bool msg_found = false;
 
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+         RUNLOOP_MSG_QUEUE_LOCK(p_runloop);
          msg_found                       = msg_queue_extract(
-               &runloop_state.msg_queue, &msg_entry);
-         runloop_state.msg_queue_size = msg_queue_size(
-               &runloop_state.msg_queue);
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+               &p_runloop->msg_queue, &msg_entry);
+         p_runloop->msg_queue_size = msg_queue_size(
+               &p_runloop->msg_queue);
+         RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop);
 
          if (msg_found)
             gfx_widgets_msg_queue_push(
@@ -30809,7 +30780,7 @@ static void video_driver_frame(const void *data, unsigned width,
                   msg_entry.prio,
                   false,
 #ifdef HAVE_MENU
-                  runloop_state.menu_driver_alive
+                  p_runloop->menu_driver_alive
 #else
                   false
 #endif
@@ -30823,12 +30794,12 @@ static void video_driver_frame(const void *data, unsigned width,
 #endif
       {
          const char *msg                 = NULL;
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
-         msg                             = msg_queue_pull(&runloop_state.msg_queue);
-         runloop_state.msg_queue_size = msg_queue_size(&runloop_state.msg_queue);
+         RUNLOOP_MSG_QUEUE_LOCK(p_runloop);
+         msg                             = msg_queue_pull(&p_runloop->msg_queue);
+         p_runloop->msg_queue_size       = msg_queue_size(&p_runloop->msg_queue);
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+         RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop);
       }
    }
 
@@ -30836,7 +30807,7 @@ static void video_driver_frame(const void *data, unsigned width,
    {
       audio_statistics_t audio_stats;
       double stddev                          = 0.0;
-      struct retro_system_av_info *av_info   = &runloop_state.av_info;
+      struct retro_system_av_info *av_info   = &p_runloop->av_info;
       unsigned red                           = 255;
       unsigned green                         = 255;
       unsigned blue                          = 255;
@@ -30872,7 +30843,7 @@ static void video_driver_frame(const void *data, unsigned width,
             last_fps,
             frame_time / 1000.0f,
             100.0f * stddev,
-            runloop_state.frame_count,
+            p_runloop->frame_count,
             video_info.width,
             video_info.height,
             video_info.refresh_rate,
@@ -30893,13 +30864,13 @@ static void video_driver_frame(const void *data, unsigned width,
    }
 
    if (p_rarch->current_video && p_rarch->current_video->frame)
-      runloop_state.video_active = p_rarch->current_video->frame(
+      p_runloop->video_active = p_rarch->current_video->frame(
             p_rarch->video_driver_data, data, width, height,
-            runloop_state.frame_count, (unsigned)pitch,
+            p_runloop->frame_count, (unsigned)pitch,
             video_info.menu_screensaver_active ? "" : video_driver_msg,
             &video_info);
 
-   runloop_state.frame_count++;
+   p_runloop->frame_count++;
 
    /* Display the status text, with a higher priority. */
    if (  (   video_info.fps_show
@@ -30928,7 +30899,7 @@ static void video_driver_frame(const void *data, unsigned width,
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
    {
-      runloop_state.video_driver_crt_switching_active          = true;
+      p_runloop->video_driver_crt_switching_active          = true;
 
       switch (video_info.crt_switch_resolution_super)
       {
@@ -30937,13 +30908,13 @@ static void video_driver_frame(const void *data, unsigned width,
          case 1920:
             width                                         =
                video_info.crt_switch_resolution_super;
-            runloop_state.video_driver_crt_dynamic_super_width = false;
+            p_runloop->video_driver_crt_dynamic_super_width = false;
             break;
          case 1:
-            runloop_state.video_driver_crt_dynamic_super_width = true;
+            p_runloop->video_driver_crt_dynamic_super_width = true;
             break;
          default:
-            runloop_state.video_driver_crt_dynamic_super_width = false;
+            p_runloop->video_driver_crt_dynamic_super_width = false;
             break;
       }
 
@@ -30956,10 +30927,10 @@ static void video_driver_frame(const void *data, unsigned width,
             video_info.crt_switch_center_adjust,
             video_info.crt_switch_porch_adjust,
             video_info.monitor_index,
-            runloop_state.video_driver_crt_dynamic_super_width);
+            p_runloop->video_driver_crt_dynamic_super_width);
    }
    else if (!video_info.crt_switch_resolution)
-      runloop_state.video_driver_crt_switching_active = false;
+      p_runloop->video_driver_crt_switching_active = false;
 }
 
 void crt_switch_driver_reinit(void)
@@ -31049,6 +31020,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 {
    video_viewport_t *custom_vp             = NULL;
    struct rarch_state       *p_rarch       = &rarch_st;
+   runloop_state_t *p_runloop              = &runloop_state;
    settings_t *settings                    = p_rarch->configuration_settings;
 #ifdef HAVE_THREADS
    bool is_threaded                        =
@@ -31058,7 +31030,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
    custom_vp                               = &settings->video_viewport_custom;
 #ifdef HAVE_GFX_WIDGETS
-   video_info->widgets_active              = runloop_state.widgets_active;
+   video_info->widgets_active              = p_runloop->widgets_active;
 #else
    video_info->widgets_active              = false;
 #endif
@@ -31081,7 +31053,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->max_swapchain_images        = settings->uints.video_max_swapchain_images;
    video_info->windowed_fullscreen         = settings->bools.video_windowed_fullscreen;
    video_info->fullscreen                  = settings->bools.video_fullscreen
-      || runloop_state.rarch_force_fullscreen;
+      || p_runloop->rarch_force_fullscreen;
    video_info->menu_mouse_enable           = settings->bools.menu_mouse_enable;
    video_info->monitor_index               = settings->uints.video_monitor_index;
 
@@ -31100,9 +31072,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_userdata            = &p_rarch->dispwidget_st;
-   video_info->widgets_is_paused           = runloop_state.widgets_paused;
-   video_info->widgets_is_fast_forwarding  = runloop_state.widgets_fast_forward;
-   video_info->widgets_is_rewinding        = runloop_state.widgets_rewinding;
+   video_info->widgets_is_paused           = p_runloop->widgets_paused;
+   video_info->widgets_is_fast_forwarding  = p_runloop->widgets_fast_forward;
+   video_info->widgets_is_rewinding        = p_runloop->widgets_rewinding;
 #else
    video_info->widgets_userdata            = NULL;
    video_info->widgets_is_paused           = false;
@@ -31113,7 +31085,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->width                       = p_rarch->video_driver_width;
    video_info->height                      = p_rarch->video_driver_height;
 
-   video_info->use_rgba                    = runloop_state.video_driver_use_rgba;
+   video_info->use_rgba                    = p_runloop->video_driver_use_rgba;
 
    video_info->libretro_running            = false;
    video_info->msg_bgcolor_enable          =
@@ -31123,7 +31095,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->memory_update_interval      = settings->uints.memory_update_interval;
 
 #ifdef HAVE_MENU
-   video_info->menu_is_alive               = runloop_state.menu_driver_alive;
+   video_info->menu_is_alive               = p_runloop->menu_driver_alive;
    video_info->menu_screensaver_active     = p_rarch->menu_driver_state.screensaver_active;
    video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
@@ -31161,14 +31133,14 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_wallpaper_opacity      = 0.0f;
 #endif
 
-   video_info->runloop_is_paused           = runloop_state.paused;
-   video_info->runloop_is_slowmotion       = runloop_state.slowmotion;
+   video_info->runloop_is_paused             = p_runloop->paused;
+   video_info->runloop_is_slowmotion         = p_runloop->slowmotion;
 
-   video_info->input_driver_nonblock_state = runloop_state.input_driver_nonblock_state;
-   video_info->input_driver_grab_mouse_state = runloop_state.input_driver_grab_mouse_state;
-   video_info->disp_userdata               = &p_rarch->dispgfx;
+   video_info->input_driver_nonblock_state   = p_runloop->input_driver_nonblock_state;
+   video_info->input_driver_grab_mouse_state = p_runloop->input_driver_grab_mouse_state;
+   video_info->disp_userdata                 = &p_rarch->dispgfx;
 
-   video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
+   video_info->userdata                      = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
 
 #ifdef HAVE_THREADS
    VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
@@ -34966,17 +34938,18 @@ static void runloop_task_msg_queue_push(
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
-   bool widgets_active         = runloop_state.widgets_active;
+   runloop_state_t *p_runloop  = &runloop_state;
+   bool widgets_active         = p_runloop->widgets_active;
 
    if (widgets_active && task->title && !task->mute)
    {
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_LOCK(p_runloop);
       ui_companion_driver_msg_queue_push(p_rarch, msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
       if (is_accessibility_enabled(
             accessibility_enable,
-            runloop_state.accessibility_enabled))
+            p_runloop->accessibility_enabled))
          accessibility_speak_priority(p_rarch,
                accessibility_enable,
                accessibility_narrator_speech_speed,
@@ -34993,12 +34966,12 @@ static void runloop_task_msg_queue_push(
             prio,
             flush,
 #ifdef HAVE_MENU
-            runloop_state.menu_driver_alive
+            p_runloop->menu_driver_alive
 #else
             false
 #endif
             );
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop);
    }
    else
 #endif
@@ -35736,8 +35709,9 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_category category)
 {
    struct rarch_state *p_rarch                  = &rarch_st;
+   runloop_state_t *p_runloop                   = &runloop_state;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active                          = runloop_state.widgets_active;
+   bool widgets_active                          = p_runloop->widgets_active;
 #endif
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings                         = p_rarch->configuration_settings;
@@ -35745,11 +35719,11 @@ void runloop_msg_queue_push(const char *msg,
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
 
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+   RUNLOOP_MSG_QUEUE_LOCK(p_runloop);
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
             accessibility_enable,
-            runloop_state.accessibility_enabled))
+            p_runloop->accessibility_enabled))
       accessibility_speak_priority(p_rarch,
             accessibility_enable,
             accessibility_narrator_speech_speed,
@@ -35769,7 +35743,7 @@ void runloop_msg_queue_push(const char *msg,
             prio,
             flush,
 #ifdef HAVE_MENU
-            runloop_state.menu_driver_alive
+            p_runloop->menu_driver_alive
 #else
             false
 #endif
@@ -35780,21 +35754,21 @@ void runloop_msg_queue_push(const char *msg,
 #endif
    {
       if (flush)
-         msg_queue_clear(&runloop_state.msg_queue);
+         msg_queue_clear(&p_runloop->msg_queue);
 
-      msg_queue_push(&runloop_state.msg_queue, msg,
+      msg_queue_push(&p_runloop->msg_queue, msg,
             prio, duration,
             title, icon, category);
 
-      runloop_state.msg_queue_size = msg_queue_size(
-            &runloop_state.msg_queue);
+      p_runloop->msg_queue_size = msg_queue_size(
+            &p_runloop->msg_queue);
    }
 
    ui_companion_driver_msg_queue_push(p_rarch,
          msg,
          prio, duration, flush);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+   RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop);
 }
 
 void runloop_get_status(bool *is_paused, bool *is_idle,
@@ -36439,7 +36413,7 @@ static enum runloop_state runloop_check_state(
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_LOCK(p_runloop);
       gfx_widgets_iterate(
             &p_rarch->dispwidget_st,
             &p_rarch->dispgfx,
@@ -36450,7 +36424,7 @@ static enum runloop_state runloop_check_state(
             settings->paths.directory_assets,
             settings->paths.path_font,
             VIDEO_DRIVER_IS_THREADED_INTERNAL());
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_state);
+      RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop);
    }
 #endif
 

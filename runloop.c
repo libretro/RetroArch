@@ -22,6 +22,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include "autosave.h"
 #include "command.h"
 #include "configuration.h"
 #include "content.h"
@@ -1200,7 +1201,6 @@ void runloop_frame_time_free(runloop_state_t *p_runloop)
    p_runloop->max_frames       = 0;
 }
 
-
 #ifdef HAVE_RUNAHEAD
 void runloop_runahead_clear_variables(runloop_state_t *p_runloop)
 {
@@ -1211,5 +1211,38 @@ void runloop_runahead_clear_variables(runloop_state_t *p_runloop)
    p_runloop->runahead_secondary_core_available = true;
    p_runloop->runahead_force_input_dirty        = true;
    p_runloop->last_frame_count_runahead         = 0;
+}
+#endif
+
+void runloop_msg_queue_deinit(runloop_state_t *p_runloop)
+{
+   RUNLOOP_MSG_QUEUE_LOCK(p_runloop);
+
+   msg_queue_deinitialize(&p_runloop->msg_queue);
+
+   RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop);
+#ifdef HAVE_THREADS
+   slock_free(p_runloop->msg_queue_lock);
+   p_runloop->msg_queue_lock = NULL;
+#endif
+
+   p_runloop->msg_queue_size = 0;
+}
+
+void runloop_msg_queue_init(runloop_state_t *p_runloop)
+{
+   runloop_msg_queue_deinit(p_runloop);
+   msg_queue_initialize(&p_runloop->msg_queue, 8);
+
+#ifdef HAVE_THREADS
+   p_runloop->msg_queue_lock   = slock_new();
+#endif
+}
+
+#ifdef HAVE_THREADS
+void runloop_autosave_deinit(runloop_state_t *p_runloop)
+{
+   if (p_runloop->rarch_use_sram)
+      autosave_deinit();
 }
 #endif

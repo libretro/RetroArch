@@ -105,6 +105,14 @@ RETRO_BEGIN_DECLS
 #define BSV_MOVIE_IS_EOF(runloop)
 #endif
 
+#ifdef HAVE_THREADS
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop) slock_lock(runloop->msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop) slock_unlock(runloop->msg_queue_lock)
+#else
+#define RUNLOOP_MSG_QUEUE_LOCK(p_runloop)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop)
+#endif
+
 enum rarch_ctl_state
 {
    RARCH_CTL_NONE = 0,
@@ -2406,15 +2414,20 @@ void runloop_fastmotion_override_free(settings_t *settings,
 void runloop_game_focus_free(runloop_state_t *p_runloop);
 void runloop_audio_buffer_status_free(runloop_state_t *p_runloop);
 void runloop_frame_time_free(runloop_state_t *p_runloop);
-#ifdef HAVE_RUNAHEAD
-void runloop_runahead_clear_variables(runloop_state_t *p_runloop);
-#endif
 retro_time_t runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio);
 float runloop_get_fastforward_ratio(
       settings_t *settings,
       struct retro_fastforwarding_override *fastmotion_override);
+void runloop_msg_queue_deinit(runloop_state_t *p_runloop);
+void runloop_msg_queue_init(runloop_state_t *p_runloop);
+#ifdef HAVE_RUNAHEAD
+void runloop_runahead_clear_variables(runloop_state_t *p_runloop);
+#endif
+#ifdef HAVE_THREADS
+void runloop_autosave_deinit(runloop_state_t *p_runloop);
+#endif
 
 RETRO_END_DECLS
 
