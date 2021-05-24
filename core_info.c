@@ -1809,13 +1809,18 @@ static core_info_list_t *core_info_list_new(const char *path,
    core_info_list->list  = core_info;
    core_info_list->count = path_list->core_list->size;
 
-   /* Read core info cache, if enabled */
+#if !defined(IOS)
+   /* Read core info cache, if enabled
+    * > This functionality is hard disabled on iOS/tvOS,
+    *   where core path changes on every install
+    *   (invalidating any cached parameters) */
    if (enable_cache)
    {
       core_info_cache_list = core_info_cache_read(info_dir);
       if (!core_info_cache_list)
          goto error;
    }
+#endif
 
    for (i = 0; i < path_list->core_list->size; i++)
    {

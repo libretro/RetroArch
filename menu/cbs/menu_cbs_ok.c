@@ -2446,9 +2446,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       }
       else
       {
-#ifndef IOS
          core_info = playlist_entry_get_core_info(entry);
-#endif
+
          if (core_info && !string_is_empty(core_info->path))
             strlcpy(core_path, core_info->path, sizeof(core_path));
          else
