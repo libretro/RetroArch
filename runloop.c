@@ -14,6 +14,7 @@
  */
 
 #include <stdint.h>
+#include <math.h>
 
 #include <string/stdstring.h>
 
@@ -21,6 +22,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include "command.h"
 #include "configuration.h"
 #include "content.h"
 #include "file_path_special.h"
@@ -847,6 +849,21 @@ end:
 }
 #endif
 
+retro_time_t runloop_set_frame_limit(
+      const struct retro_system_av_info *av_info,
+      float fastforward_ratio)
+{
+   return (fastforward_ratio < 1.0f) ? 0.0f :
+         (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
+}
+
+float runloop_get_fastforward_ratio(
+      settings_t *settings,
+      struct retro_fastforwarding_override *fastmotion_override)
+{
+   return (fastmotion_override->fastforward && (fastmotion_override->ratio >= 0.0f)) ?
+         fastmotion_override->ratio : settings->floats.fastforward_ratio;
+}
 
 /* Fetches core options path for current core/content
  * - path: path from which options should be read
@@ -1101,3 +1118,98 @@ core_option_manager_t *runloop_init_core_options(
             options_path, src_options_path, option_defs);
    return NULL;
 }
+
+void runloop_audio_buffer_status_free(runloop_state_t *p_runloop)
+{
+   memset(&p_runloop->audio_buffer_status, 0,
+         sizeof(struct retro_audio_buffer_status_callback));
+   p_runloop->audio_latency = 0;
+}
+
+void runloop_game_focus_free(runloop_state_t *p_runloop)
+{
+   /* Ensure that game focus mode is disabled */
+   if (p_runloop->game_focus_state.enabled)
+   {
+      enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
+      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+   }
+
+   p_runloop->game_focus_state.enabled        = false;
+   p_runloop->game_focus_state.core_requested = false;
+}
+
+void runloop_fastmotion_override_free(settings_t *settings,
+      runloop_state_t *p_runloop)
+{
+   float fastforward_ratio = settings->floats.fastforward_ratio;
+   bool reset_frame_limit  = p_runloop->fastmotion_override.fastforward &&
+         (p_runloop->fastmotion_override.ratio >= 0.0f) &&
+         (p_runloop->fastmotion_override.ratio != fastforward_ratio);
+
+   p_runloop->fastmotion_override.ratio          = 0.0f;
+   p_runloop->fastmotion_override.fastforward    = false;
+   p_runloop->fastmotion_override.notification   = false;
+   p_runloop->fastmotion_override.inhibit_toggle = false;
+
+   if (reset_frame_limit)
+      p_runloop->frame_limit_minimum_time     = runloop_set_frame_limit(
+            &p_runloop->av_info,
+            fastforward_ratio);
+}
+
+void runloop_system_info_free(runloop_state_t *p_runloop)
+{
+   rarch_system_info_t        *sys_info               = &p_runloop->system;
+
+   if (sys_info->subsystem.data)
+      free(sys_info->subsystem.data);
+   sys_info->subsystem.data                           = NULL;
+   sys_info->subsystem.size                           = 0;
+
+   if (sys_info->ports.data)
+      free(sys_info->ports.data);
+   sys_info->ports.data                               = NULL;
+   sys_info->ports.size                               = 0;
+
+   if (sys_info->mmaps.descriptors)
+      free((void *)sys_info->mmaps.descriptors);
+   sys_info->mmaps.descriptors                        = NULL;
+   sys_info->mmaps.num_descriptors                    = 0;
+
+   p_runloop->key_event                               = NULL;
+   p_runloop->frontend_key_event                      = NULL;
+
+   p_runloop->audio_callback.callback                 = NULL;
+   p_runloop->audio_callback.set_state                = NULL;
+
+   sys_info->info.library_name                        = NULL;
+   sys_info->info.library_version                     = NULL;
+   sys_info->info.valid_extensions                    = NULL;
+   sys_info->info.need_fullpath                       = false;
+   sys_info->info.block_extract                       = false;
+
+   memset(&p_runloop->system, 0, sizeof(rarch_system_info_t));
+}
+
+void runloop_frame_time_free(runloop_state_t *p_runloop)
+{
+   memset(&p_runloop->frame_time, 0,
+         sizeof(struct retro_frame_time_callback));
+   p_runloop->frame_time_last  = 0;
+   p_runloop->max_frames       = 0;
+}
+
+
+#ifdef HAVE_RUNAHEAD
+void runloop_runahead_clear_variables(runloop_state_t *p_runloop)
+{
+   p_runloop->runahead_save_state_size          = 0;
+   p_runloop->runahead_save_state_size_known    = false;
+   p_runloop->runahead_video_active             = true;
+   p_runloop->runahead_available                = true;
+   p_runloop->runahead_secondary_core_available = true;
+   p_runloop->runahead_force_input_dirty        = true;
+   p_runloop->last_frame_count_runahead         = 0;
+}
+#endif

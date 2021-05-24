@@ -1258,14 +1258,6 @@ enum auto_shader_operation
    AUTO_SHADER_OP_EXISTS
 };
 
-enum input_game_focus_cmd_type
-{
-   GAME_FOCUS_CMD_OFF = 0,
-   GAME_FOCUS_CMD_ON,
-   GAME_FOCUS_CMD_TOGGLE,
-   GAME_FOCUS_CMD_REAPPLY
-};
-
 typedef struct runloop_ctx_msg_info
 {
    const char *msg;
