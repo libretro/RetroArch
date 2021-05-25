@@ -266,7 +266,8 @@ typedef struct settings
       unsigned camera_width;
       unsigned camera_height;
 
-      unsigned input_overlay_show_physical_inputs_port;
+      unsigned input_overlay_show_inputs;
+      unsigned input_overlay_show_inputs_port;
 
       unsigned run_ahead_frames;
 
@@ -542,7 +543,6 @@ typedef struct settings
       bool input_overlay_enable_autopreferred;
       bool input_overlay_hide_in_menu;
       bool input_overlay_hide_when_gamepad_connected;
-      bool input_overlay_show_physical_inputs;
       bool input_overlay_show_mouse_cursor;
       bool input_overlay_auto_rotate;
       bool input_overlay_auto_scale;

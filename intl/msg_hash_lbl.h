@@ -1511,12 +1511,12 @@ MSG_HASH(
    "overlay_hide_when_gamepad_connected"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "overlay_show_physical_inputs"
+   MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   "input_overlay_show_inputs"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "overlay_show_physical_inputs_port"
+   MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "input_overlay_show_inputs_port"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
