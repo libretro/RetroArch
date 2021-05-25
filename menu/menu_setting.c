@@ -5227,6 +5227,45 @@ static void setting_get_string_representation_uint_input_auto_game_focus(
    }
 }
 
+static void setting_get_string_representation_uint_input_overlay_show_inputs(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case OVERLAY_SHOW_INPUT_NONE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF),
+               len);
+         break;
+      case OVERLAY_SHOW_INPUT_TOUCHED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED),
+               len);
+         break;
+      case OVERLAY_SHOW_INPUT_PHYSICAL:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL),
+               len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_input_overlay_show_inputs_port(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+      snprintf(s, len, "%u",
+            *setting->value.target.unsigned_integer + 1);
+}
+
 /* A protected driver is such that the user cannot set to "null" using the UI.
  * Can prevent the user from locking him/herself out of the program. */
 static bool setting_is_protected_driver(rarch_setting_t *setting)
@@ -13857,35 +13896,40 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
-         CONFIG_BOOL(
+         CONFIG_UINT(
                list, list_info,
-               &settings->bools.input_overlay_show_physical_inputs,
-               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-               DEFAULT_SHOW_PHYSICAL_INPUTS,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
+               &settings->uints.input_overlay_show_inputs,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+               DEFAULT_OVERLAY_SHOW_INPUTS,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
+               general_read_handler
                );
+         (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left               = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right              = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_input_overlay_show_inputs;
+         menu_settings_list_current_add_range(list, list_info, 0, OVERLAY_SHOW_INPUT_LAST-1, 1, true, true);
 
          CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.input_overlay_show_physical_inputs_port,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-                  MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-                  0,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler
-                  );
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               list, list_info,
+               &settings->uints.input_overlay_show_inputs_port,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+               DEFAULT_OVERLAY_SHOW_INPUTS_PORT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler
+               );
+         (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_input_overlay_show_inputs_port;
          menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1, true, true);
 
          CONFIG_BOOL(

@@ -416,6 +416,13 @@ enum quit_on_close_content_type
    QUIT_ON_CLOSE_CONTENT_LAST
 };
 
+enum overlay_show_input_type
+{
+   OVERLAY_SHOW_INPUT_NONE = 0,
+   OVERLAY_SHOW_INPUT_TOUCHED,
+   OVERLAY_SHOW_INPUT_PHYSICAL,
+   OVERLAY_SHOW_INPUT_LAST
+};
 
 RETRO_END_DECLS
 
