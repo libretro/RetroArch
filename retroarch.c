@@ -2383,7 +2383,6 @@ static bool menu_driver_displaylist_push_internal(
 }
 
 static bool menu_driver_displaylist_push(
-      struct rarch_state *p_rarch,
       struct menu_state *menu_st,
       settings_t *settings,
       file_list_t *entry_list,
@@ -2614,7 +2613,6 @@ int generic_menu_entry_action(
    {
       bool refresh            = false;
       menu_driver_displaylist_push(
-            p_rarch,
             menu_st,
             settings,
             selection_buf,
@@ -4667,7 +4665,6 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
    menu_st->selection_ptr         = 0;
 
    if (!menu_driver_displaylist_push(
-            p_rarch,
             menu_st,
             settings,
             list,
@@ -9632,7 +9629,7 @@ static void path_deinit_subsystem(struct rarch_state *p_rarch)
    p_rarch->subsystem_fullpaths = NULL;
 }
 
-static void dir_free_shader(struct rarch_state *p_rarch,
+static void dir_free_shader(
       struct rarch_dir_shader_list *dir_list,
       bool shader_remember_last_dir)
 {
@@ -9655,7 +9652,6 @@ static void dir_free_shader(struct rarch_state *p_rarch,
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool dir_init_shader_internal(
-      struct rarch_state *p_rarch,
       bool shader_remember_last_dir,
       struct rarch_dir_shader_list *dir_list,
       const char *shader_dir,
@@ -9738,7 +9734,7 @@ static void dir_init_shader(
 #endif
 
    /* Always free existing shader list */
-   dir_free_shader(p_rarch, dir_list,
+   dir_free_shader(dir_list,
          video_shader_remember_last_dir);
 
    /* Try directory of last selected shader preset */
@@ -9746,7 +9742,6 @@ static void dir_init_shader(
        (last_shader_preset_type != RARCH_SHADER_NONE) &&
        !string_is_empty(last_shader_preset_dir) &&
        dir_init_shader_internal(
-          p_rarch,
           video_shader_remember_last_dir,
           dir_list,
           last_shader_preset_dir,
@@ -9757,7 +9752,6 @@ static void dir_init_shader(
    /* Try video shaders directory */
    if (!string_is_empty(directory_video_shader) &&
        dir_init_shader_internal(
-            p_rarch,
             video_shader_remember_last_dir,
             dir_list,
             directory_video_shader, NULL, show_hidden_files))
@@ -9766,7 +9760,6 @@ static void dir_init_shader(
    /* Try config directory */
    if (!string_is_empty(directory_menu_config) &&
        dir_init_shader_internal(
-            p_rarch,
             video_shader_remember_last_dir,
             dir_list,
             directory_menu_config, NULL, show_hidden_files))
@@ -9781,7 +9774,6 @@ static void dir_init_shader(
 
       if (!string_is_empty(rarch_config_directory))
          dir_init_shader_internal(
-               p_rarch,
                video_shader_remember_last_dir,
                dir_list,
                rarch_config_directory, NULL, show_hidden_files);
@@ -10206,7 +10198,7 @@ void menu_input_dialog_end(void)
    /* Inhibits input for 2 frames
     * > Required, since input is ignored for 1 frame
     *   after certain events - e.g. closing the OSK */
-   p_rarch->input_driver_flushing_input = 2;
+   p_rarch->input_driver_flushing_input                  = 2;
 }
 
 const char *menu_input_dialog_get_buffer(void)
@@ -10424,7 +10416,7 @@ bool menu_driver_is_alive(void)
 
 /* MESSAGE QUEUE */
 
-static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
+static void retroarch_msg_queue_deinit(void)
 {
    RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
 
@@ -10439,9 +10431,9 @@ static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
    runloop_state.msg_queue_size = 0;
 }
 
-static void retroarch_msg_queue_init(struct rarch_state *p_rarch)
+static void retroarch_msg_queue_init(void)
 {
-   retroarch_msg_queue_deinit(p_rarch);
+   retroarch_msg_queue_deinit();
    msg_queue_initialize(&runloop_state.msg_queue, 8);
 
 #ifdef HAVE_THREADS
@@ -15405,7 +15397,7 @@ void main_exit(void *args)
    p_rarch->rarch_block_config_read = false;
 #endif
 
-   retroarch_msg_queue_deinit(p_rarch);
+   retroarch_msg_queue_deinit();
    driver_uninit(p_rarch, DRIVERS_CMD_ALL);
 
    retro_main_log_file_deinit();
@@ -15506,7 +15498,7 @@ int rarch_main(int argc, char *argv[], void *data)
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
 
-   retroarch_msg_queue_init(p_rarch);
+   retroarch_msg_queue_init();
 
    if (p_rarch->current_frontend_ctx)
    {
@@ -30184,7 +30176,7 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
-   dir_free_shader(p_rarch,
+   dir_free_shader(
          (struct rarch_dir_shader_list*)&p_rarch->dir_shader_list,
          p_rarch->configuration_settings->bools.video_shader_remember_last_dir);
 
@@ -35322,7 +35314,6 @@ static bool retroarch_validate_per_core_options(char *s,
 }
 
 static bool retroarch_validate_game_options(
-      struct rarch_state *p_rarch,
       char *s, size_t len, bool mkdir)
 {
    const char *core_name       = runloop_state.system.info.library_name;
@@ -35333,7 +35324,6 @@ static bool retroarch_validate_game_options(
 }
 
 static bool retroarch_validate_folder_options(
-      struct rarch_state *p_rarch,
       char *s, size_t len, bool mkdir)
 {
    char folder_name[PATH_MAX_LENGTH];
@@ -35380,43 +35370,34 @@ static void retroarch_validate_cpu_features(struct rarch_state *p_rarch)
 }
 
 #ifdef HAVE_MENU
-static void menu_driver_find_driver(
-      struct rarch_state *p_rarch,
+static const menu_ctx_driver_t *menu_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled)
 {
-   int i                = (int)driver_find_index(
-         "menu_driver",
+   int i = (int)driver_find_index("menu_driver",
          settings->arrays.menu_driver);
 
    if (i >= 0)
-      p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
-         menu_ctx_drivers[i];
-   else
+      return (const menu_ctx_driver_t*)menu_ctx_drivers[i];
+
+   if (verbosity_enabled)
    {
-      if (verbosity_enabled)
+      unsigned d;
+      RARCH_WARN("Couldn't find any %s named \"%s\"\n", prefix,
+            settings->arrays.menu_driver);
+      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+      for (d = 0; menu_ctx_drivers[d]; d++)
       {
-         unsigned d;
-         RARCH_WARN("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.menu_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; menu_ctx_drivers[d]; d++)
+         if (menu_ctx_drivers[d])
          {
-            if (menu_ctx_drivers[d])
-            {
-               RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
-            }
+            RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
          }
-         RARCH_WARN("Going to default to first %s...\n", prefix);
       }
-
-      p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
-         menu_ctx_drivers[0];
-
-      if (!p_rarch->menu_driver_ctx)
-         retroarch_fail(p_rarch, 1, "find_menu_driver()");
+      RARCH_WARN("Going to default to first %s...\n", prefix);
    }
+
+   return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
 }
 #endif
 
@@ -35618,8 +35599,9 @@ bool retroarch_main_init(int argc, char *argv[])
    location_driver_find_driver(p_rarch, settings,
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
-   menu_driver_find_driver(p_rarch, settings,
-         "menu driver", verbosity_enabled);
+   if (!(p_rarch->menu_driver_ctx = menu_driver_find_driver(settings,
+         "menu driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "menu_driver_find_driver()");
 #endif
    /* Enforce stored brightness if needed */
    if (frontend_driver_can_set_screen_brightness())
@@ -36019,7 +36001,7 @@ static bool rarch_game_specific_options(struct rarch_state *p_rarch,
    char game_options_path[PATH_MAX_LENGTH];
    game_options_path[0] ='\0';
 
-   if (!retroarch_validate_game_options(p_rarch,
+   if (!retroarch_validate_game_options(
             game_options_path,
             sizeof(game_options_path), false) ||
        !path_is_valid(game_options_path))
@@ -36046,7 +36028,7 @@ static bool rarch_folder_specific_options(
    char folder_options_path[PATH_MAX_LENGTH];
    folder_options_path[0] ='\0';
 
-   if (!retroarch_validate_folder_options(p_rarch,
+   if (!retroarch_validate_folder_options(
             folder_options_path,
             sizeof(folder_options_path), false) ||
        !path_is_valid(folder_options_path))
@@ -39488,13 +39470,13 @@ bool core_options_create_override(bool game_specific)
    /* Get options file path (either game-specific or folder-specific) */
    if (game_specific)
    {
-      if (!retroarch_validate_game_options(p_rarch,
+      if (!retroarch_validate_game_options(
                options_path,
             sizeof(options_path), true))
          goto error;
    }
    else
-      if (!retroarch_validate_folder_options(p_rarch,
+      if (!retroarch_validate_folder_options(
                options_path,
                sizeof(options_path), true))
          goto error;
@@ -39574,7 +39556,7 @@ bool core_options_remove_override(bool game_specific)
     *   check whether a folder-specific config
     *   exists */
    if (game_specific &&
-       retroarch_validate_folder_options(p_rarch,
+       retroarch_validate_folder_options(
           new_options_path,
           sizeof(new_options_path), false) &&
        path_is_valid(new_options_path))
