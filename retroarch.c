@@ -7088,16 +7088,17 @@ static bool init_netplay_deferred(
       struct rarch_state *p_rarch,
       const char* server, unsigned port)
 {
-   bool client_deferred                  = !string_is_empty(server) && port != 0;
-
-   if (client_deferred)
+   if (!string_is_empty(server) && port != 0)
    {
       strlcpy(p_rarch->server_address_deferred, server,
             sizeof(p_rarch->server_address_deferred));
       p_rarch->server_port_deferred    = port;
+      runloop_state.netplay_client_deferred = true;
    }
+   else
+      runloop_state.netplay_client_deferred = false;
 
-   return client_deferred;
+   return runloop_state.netplay_client_deferred;
 }
 
 /**
@@ -8179,7 +8180,6 @@ static void deinit_netplay(struct rarch_state *p_rarch)
  **/
 static bool init_netplay(
       struct rarch_state *p_rarch,
-      runloop_state_t *p_runloop,
       settings_t *settings,
       void *direct_host,
       const char *server, unsigned port)
@@ -8187,8 +8187,8 @@ static bool init_netplay(
    struct retro_callbacks cbs    = {0};
    uint64_t serialization_quirks = 0;
    uint64_t quirks               = 0;
-   bool _netplay_is_client       = p_runloop->netplay_is_client;
-   bool _netplay_enabled         = p_runloop->netplay_enabled;
+   bool _netplay_is_client       = runloop_state.netplay_is_client;
+   bool _netplay_enabled         = runloop_state.netplay_enabled;
 
    if (!_netplay_enabled)
       return false;
@@ -8281,30 +8281,29 @@ static bool init_netplay(
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *p_runloop  = &runloop_state;
    netplay_t *netplay          = p_rarch->netplay_data;
    bool ret                    = true;
 
-   if (p_runloop->in_netplay)
+   if (runloop_state.in_netplay)
       return true;
-   p_runloop->in_netplay       = true;
+   runloop_state.in_netplay         = true;
 
    if (!netplay)
    {
       switch (state)
       {
          case RARCH_NETPLAY_CTL_ENABLE_SERVER:
-            p_runloop->netplay_enabled       = true;
-            p_runloop->netplay_is_client     = false;
+            runloop_state.netplay_enabled    = true;
+            runloop_state.netplay_is_client  = false;
             goto done;
 
          case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
-            p_runloop->netplay_enabled       = true;
-            p_runloop->netplay_is_client     = true;
+            runloop_state.netplay_enabled    = true;
+            runloop_state.netplay_is_client  = true;
             break;
 
          case RARCH_NETPLAY_CTL_DISABLE:
-            p_runloop->netplay_enabled       = false;
+            runloop_state.netplay_enabled    = false;
 #ifdef HAVE_DISCORD
             if (discord_is_inited)
             {
@@ -8316,7 +8315,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             goto done;
 
          case RARCH_NETPLAY_CTL_IS_ENABLED:
-            ret = p_runloop->netplay_enabled;
+            ret = runloop_state.netplay_enabled;
             goto done;
 
          case RARCH_NETPLAY_CTL_IS_REPLAYING:
@@ -8325,8 +8324,8 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             goto done;
 
          case RARCH_NETPLAY_CTL_IS_SERVER:
-            ret =  p_runloop->netplay_enabled
-               && !p_runloop->netplay_is_client;
+            ret =  runloop_state.netplay_enabled
+               && !runloop_state.netplay_is_client;
             goto done;
 
          case RARCH_NETPLAY_CTL_IS_CONNECTED:
@@ -8353,8 +8352,8 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = netplay->is_replay;
          goto done;
       case RARCH_NETPLAY_CTL_IS_SERVER:
-         ret =  p_runloop->netplay_enabled
-            && !p_runloop->netplay_is_client;
+         ret =  runloop_state.netplay_enabled
+            && !runloop_state.netplay_is_client;
          goto done;
       case RARCH_NETPLAY_CTL_IS_CONNECTED:
          ret = netplay->is_connected;
@@ -8413,7 +8412,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
    }
 
 done:
-   p_runloop->in_netplay = false;
+   runloop_state.in_netplay = false;
    return ret;
 }
 #endif
@@ -10189,11 +10188,10 @@ const char *menu_input_dialog_get_label_setting_buffer(void)
 
 void menu_input_dialog_end(void)
 {
-   runloop_state_t *p_runloop                            = &runloop_state;
    struct rarch_state *p_rarch                           = &rarch_st;
    p_rarch->menu_input_dialog_keyboard_type              = 0;
    p_rarch->menu_input_dialog_keyboard_idx               = 0;
-   p_runloop->menu_input_dialog_keyboard_display         = false;
+   runloop_state.menu_input_dialog_keyboard_display           = false;
    p_rarch->menu_input_dialog_keyboard_label[0]          = '\0';
    p_rarch->menu_input_dialog_keyboard_label_setting[0]  = '\0';
 
@@ -12556,7 +12554,7 @@ static void command_event_runtime_log_deinit(
       unsigned seconds          = 0;
 
       runtime_log_convert_usec2hms(
-            p_runloop->libretro_core_runtime_usec,
+            runloop_state.libretro_core_runtime_usec,
             &hours, &minutes, &seconds);
 
       snprintf(log, sizeof(log),
@@ -12567,7 +12565,7 @@ static void command_event_runtime_log_deinit(
    }
 
    /* Only write to file if content has run for a non-zero length of time */
-   if (p_runloop->libretro_core_runtime_usec > 0)
+   if (runloop_state.libretro_core_runtime_usec > 0)
    {
       /* Per core logging */
       if (content_runtime_log)
@@ -12580,7 +12578,7 @@ static void command_event_runtime_log_deinit(
 
    /* Reset runtime + content/core paths, to prevent any
     * possibility of duplicate logging */
-   p_runloop->libretro_core_runtime_usec = 0;
+   runloop_state.libretro_core_runtime_usec = 0;
    memset(p_runloop->runtime_content_path,
          0, sizeof(p_runloop->runtime_content_path));
    memset(p_runloop->runtime_core_path,
@@ -12592,8 +12590,8 @@ static void command_event_runtime_log_init(runloop_state_t *p_runloop)
    const char *content_path                 = path_get(RARCH_PATH_CONTENT);
    const char *core_path                    = path_get(RARCH_PATH_CORE);
 
-   p_runloop->libretro_core_runtime_last    = cpu_features_get_time_usec();
-   p_runloop->libretro_core_runtime_usec    = 0;
+   runloop_state.libretro_core_runtime_last = cpu_features_get_time_usec();
+   runloop_state.libretro_core_runtime_usec = 0;
 
    /* Have to cache content and core path here, otherwise
     * logging fails if new content is loaded without
@@ -13129,35 +13127,32 @@ static bool command_event_resize_windowed_scale(settings_t *settings)
 void input_remapping_deinit(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t  *p_runloop = &runloop_state;
    global_t     *global        = &p_rarch->g_extern;
    if (!string_is_empty(global->name.remapfile))
       free(global->name.remapfile);
-   global->name.remapfile                  = NULL;
-   p_runloop->remaps_core_active           = false;
-   p_runloop->remaps_content_dir_active    = false;
-   p_runloop->remaps_game_active           = false;
+   global->name.remapfile                     = NULL;
+   runloop_state.remaps_core_active        = false;
+   runloop_state.remaps_content_dir_active = false;
+   runloop_state.remaps_game_active        = false;
 }
 
 static bool input_driver_grab_mouse(struct rarch_state *p_rarch)
 {
-   runloop_state_t  *p_runloop = &runloop_state;
    if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
       return false;
 
    p_rarch->current_input->grab_mouse(p_rarch->current_input_data, true);
-   p_runloop->input_driver_grab_mouse_state = true;
+   runloop_state.input_driver_grab_mouse_state = true;
    return true;
 }
 
 static bool input_driver_ungrab_mouse(struct rarch_state *p_rarch)
 {
-   runloop_state_t  *p_runloop = &runloop_state;
    if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
       return false;
 
    p_rarch->current_input->grab_mouse(p_rarch->current_input_data, false);
-   p_runloop->input_driver_grab_mouse_state = false;
+   runloop_state.input_driver_grab_mouse_state = false;
    return true;
 }
 
@@ -14334,7 +14329,7 @@ bool command_event(enum event_command cmd, void *data)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
          break;
       case CMD_EVENT_NETPLAY_DEINIT:
-         deinit_netplay(p_rarch, p_runloop);
+         deinit_netplay(p_rarch);
          break;
       case CMD_EVENT_NETWORK_INIT:
          network_init();
@@ -14348,7 +14343,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (!init_netplay(p_rarch, p_runloop,
+            if (!init_netplay(p_rarch,
                      p_rarch->configuration_settings,
                      NULL,
                      hostname
@@ -14387,7 +14382,7 @@ bool command_event(enum event_command cmd, void *data)
                   : netplay_port);
 
             if (!init_netplay(
-                     p_rarch, p_runloop,
+                     p_rarch,
                      p_rarch->configuration_settings,
                      NULL,
                      hostname->elems[0].data,
@@ -14429,11 +14424,11 @@ bool command_event(enum event_command cmd, void *data)
                   ? atoi(hostname->elems[1].data)
                   : netplay_port);
 
-            if (!(runloop_state.netplay_client_deferred = init_netplay_deferred(p_rarch,
+            if (!init_netplay_deferred(p_rarch,
                      hostname->elems[0].data,
                      !string_is_empty(hostname->elems[1].data)
                      ? atoi(hostname->elems[1].data)
-                     : netplay_port)))
+                     : netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -38251,8 +38246,7 @@ bool core_options_remove_override(bool game_specific)
 {
    char new_options_path[PATH_MAX_LENGTH];
    struct rarch_state *p_rarch      = &rarch_st;
-   runloop_state_t     *p_runloop   = &runloop_state;
-   core_option_manager_t *coreopts  = p_runloop->core_options;
+   core_option_manager_t *coreopts  = runloop_state.core_options;
    settings_t *settings             = p_rarch->configuration_settings;
    bool per_core_options            = !settings->bools.global_core_options;
    const char *path_core_options    = settings->paths.path_core_options;
@@ -38264,14 +38258,14 @@ bool core_options_remove_override(bool game_specific)
 
    /* Sanity check 1 - if there are no core options
     * or no overrides are active, there is nothing to do */
-   if (     !coreopts ||
-       (    !p_runloop->game_options_active &&
-            !p_runloop->folder_options_active))
+   if (!coreopts ||
+       (!runloop_state.game_options_active &&
+            !runloop_state.folder_options_active))
       return true;
 
    /* Sanity check 2 - can only remove an override
     * if the specified type is currently active */
-   if (game_specific && !p_runloop->game_options_active)
+   if (game_specific && !runloop_state.game_options_active)
       goto error;
 
    /* Get current options file path */
@@ -38302,7 +38296,7 @@ bool core_options_remove_override(bool game_specific)
       /* Try core-specific options, if enabled */
       if (per_core_options)
       {
-         const char *core_name = p_runloop->system.info.library_name;
+         const char *core_name = runloop_state.system.info.library_name;
          per_core_options      = retroarch_validate_per_core_options(
                new_options_path, sizeof(new_options_path), true,
                      core_name, core_name);
@@ -38369,14 +38363,14 @@ bool core_options_remove_override(bool game_specific)
    if (folder_options_active)
    {
       path_set(RARCH_PATH_CORE_OPTIONS, new_options_path);
-      p_runloop->game_options_active   = false;
-      p_runloop->folder_options_active = true;
+      runloop_state.game_options_active   = false;
+      runloop_state.folder_options_active = true;
    }
    else
    {
       path_clear(RARCH_PATH_CORE_OPTIONS);
-      p_runloop->game_options_active   = false;
-      p_runloop->folder_options_active = false;
+      runloop_state.game_options_active   = false;
+      runloop_state.folder_options_active = false;
 
       strlcpy(coreopts->conf_path, new_options_path,
             sizeof(coreopts->conf_path));
@@ -38403,9 +38397,8 @@ error:
 
 void core_options_reset(void)
 {
+   core_option_manager_t *coreopts = runloop_state.core_options;
    size_t i;
-   runloop_state_t *p_runloop      = &runloop_state;
-   core_option_manager_t *coreopts = p_runloop->core_options;
 
    /* If there are no core options, there
     * is nothing to do */
