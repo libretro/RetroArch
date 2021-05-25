@@ -1191,7 +1191,6 @@ GIT
 RETROARCH
 ============================================================ */
 #include "../retroarch.c"
-#include "../runloop.c"
 #include "../command.c"
 #include "../libretro-common/queues/task_queue.c"
 

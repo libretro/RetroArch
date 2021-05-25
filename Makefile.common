@@ -232,7 +232,6 @@ endif
 
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
-       runloop.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
