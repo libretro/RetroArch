@@ -302,6 +302,9 @@ typedef struct xmb_handle
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
 
+   void (*word_wrap)(char *dst, size_t dst_size, const char *src,
+      int line_width, int wideglyph_width, unsigned max_lines);
+
    menu_screensaver_t *screensaver;
 
    gfx_thumbnail_path_data_t *thumbnail_path_data;
@@ -326,6 +329,7 @@ typedef struct xmb_handle
    int old_depth;
    int icon_size;
    int cursor_size;
+   int wideglyph_width;
 
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
@@ -976,10 +980,10 @@ static void xmb_render_messagebox_internal(
       return;
 
    /* Split message into lines */
-   word_wrap(
-         wrapped_message, message,
+   (xmb->word_wrap)(
+         wrapped_message, sizeof(wrapped_message), message,
          usable_width / (xmb->font_size * 0.6f),
-         true, 0);
+         xmb->wideglyph_width, 0);
 
    string_list_initialize(&list);
 
@@ -5771,6 +5775,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    p_anim->updatetime_cb    = xmb_menu_animation_update_time;
 
+   /* set word_wrap function pointer */
+   xmb->word_wrap = msg_hash_get_wideglyph_str() ? word_wrap_wideglyph : word_wrap;
+
    return menu;
 
 error:
@@ -6280,6 +6287,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    char iconpath[PATH_MAX_LENGTH];
    char bg_file_path[PATH_MAX_LENGTH];
    gfx_display_t *p_disp               = disp_get_ptr();
+   const char *wideglyph_str = msg_hash_get_wideglyph_str();
    iconpath[0]       = bg_file_path[0] = '\0';
 
    fill_pathname_application_special(bg_file_path,
@@ -6314,6 +6322,19 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
          xmb->font2_size,
          is_threaded);
+
+   xmb->wideglyph_width = 100;
+
+   if (wideglyph_str)
+   {
+      int char_width =
+         font_driver_get_message_width(xmb->font, "a", 1, 1);
+      int wideglyph_width =
+         font_driver_get_message_width(xmb->font, wideglyph_str, strlen(wideglyph_str), 1);
+
+      if (wideglyph_width > 0 && char_width > 0) 
+         xmb->wideglyph_width = wideglyph_width * 100 / char_width;
+   }
 
    if (reinit_textures)
    {

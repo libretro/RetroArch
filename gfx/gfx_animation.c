@@ -1832,6 +1832,7 @@ end:
 bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
+   size_t wrapped_str_len       = 0;
    struct string_list lines     = {0};
    size_t line_offset           = 0;
    bool success                 = false;
@@ -1848,15 +1849,18 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
       goto end;
 
    /* Line wrap input string */
-   wrapped_str = (char*)malloc((strlen(line_ticker->str) + 1) * sizeof(char));
+   wrapped_str_len = strlen(line_ticker->str) + 1 + 10; /* 10 bytes use for inserting '\n' */
+   wrapped_str = (char*)malloc(wrapped_str_len);
    if (!wrapped_str)
       goto end;
+   wrapped_str[0] = '\0';
 
    word_wrap(
          wrapped_str,
+         wrapped_str_len,
          line_ticker->str,
          (int)line_ticker->line_len,
-         true, 0);
+         100, 0);
 
    if (string_is_empty(wrapped_str))
       goto end;
@@ -1923,6 +1927,7 @@ end:
 bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
 {
    char *wrapped_str              = NULL;
+   size_t wrapped_str_len         = 0;
    struct string_list lines       = {0};
    int glyph_width                = 0;
    int glyph_height               = 0;
@@ -1936,6 +1941,11 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    bool success                   = false;
    bool is_active                 = false;
    gfx_animation_t *p_anim        = anim_get_ptr();
+   const char *wideglyph_str      = msg_hash_get_wideglyph_str();
+   int wideglyph_width            = 100;
+   void (*word_wrap_func)(char *dst, size_t dst_size, const char *src,
+         int line_width, int wideglyph_width, unsigned max_lines)
+      = wideglyph_str ? word_wrap_wideglyph : word_wrap;
 
    /* Sanity check */
    if (!line_ticker)
@@ -1962,6 +1972,18 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    if (glyph_width <= 0)
       goto end;
 
+   if (wideglyph_str)
+   {
+      wideglyph_width = font_driver_get_message_width(
+         line_ticker->font, wideglyph_str, strlen(wideglyph_str),
+         line_ticker->font_scale);
+      
+      if (wideglyph_width > 0)
+         wideglyph_width = wideglyph_width * 100 / glyph_width;
+      else
+         wideglyph_width = 100;
+   }
+
    /* > Height */
    glyph_height = font_driver_get_line_height(
          line_ticker->font, line_ticker->font_scale);
@@ -1977,15 +1999,18 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
       goto end;
 
    /* Line wrap input string */
-   wrapped_str = (char*)malloc((strlen(line_ticker->src_str) + 1) * sizeof(char));
+   wrapped_str_len = strlen(line_ticker->src_str) + 1 + 10; /* 10 bytes use for inserting '\n' */
+   wrapped_str = (char*)malloc(wrapped_str_len);
    if (!wrapped_str)
       goto end;
+   wrapped_str[0] = '\0';
 
-   word_wrap(
+   (word_wrap_func)(
          wrapped_str,
+         wrapped_str_len,
          line_ticker->src_str,
          (int)line_len,
-         true, 0);
+         wideglyph_width, 0);
 
    if (string_is_empty(wrapped_str))
       goto end;

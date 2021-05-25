@@ -2320,3 +2320,8 @@ const char *msg_hash_to_str_ko(enum msg_hash_enums msg) {
 
     return "null";
 }
+
+const char *msg_hash_get_wideglyph_str_ko(void)
+{
+   return "메";
+}

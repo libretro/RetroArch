@@ -1515,6 +1515,7 @@ typedef struct
    font_data_t *font;
    video_font_raster_block_t raster_block;   /* ptr alignment */
    unsigned glyph_width;
+   unsigned wideglyph_width;
    int line_height;
    int line_ascender;
    int line_centre_offset;
@@ -1605,6 +1606,9 @@ typedef struct materialui_handle
       materialui_font_data_t list;  /* ptr alignment */
       materialui_font_data_t hint;  /* ptr alignment */
    } font_data;
+
+   void (*word_wrap)(char *dst, size_t dst_size, const char *src,
+      int line_width, int wideglyph_width, unsigned max_lines);
 
    /* Thumbnail helpers */
    gfx_thumbnail_path_data_t *thumbnail_path_data;
@@ -2591,10 +2595,10 @@ static void materialui_render_messagebox(
       return;
 
    /* Split message into lines */
-   word_wrap(
-         wrapped_message, message,
+   (mui->word_wrap)(
+         wrapped_message, sizeof(wrapped_message), message,
          usable_width / (int)mui->font_data.list.glyph_width,
-         true, 0);
+         mui->font_data.list.wideglyph_width, 0);
 
    string_list_initialize(&list);
    if (
@@ -2753,10 +2757,10 @@ static unsigned materialui_count_sublabel_lines(
    sublabel_width_max = usable_width - (int)mui->sublabel_padding -
          (has_icon ? (int)mui->icon_size : 0);
 
-   word_wrap(
-         wrapped_sublabel_str, entry.sublabel,
+   (mui->word_wrap)(
+         wrapped_sublabel_str, sizeof(wrapped_sublabel_str), entry.sublabel,
          sublabel_width_max / (int)mui->font_data.hint.glyph_width,
-         true, 0);
+         mui->font_data.hint.wideglyph_width, 0);
 
    /* Return number of lines in wrapped string */
    return materialui_count_lines(wrapped_sublabel_str);
@@ -3484,6 +3488,13 @@ static bool (*materialui_render_process_entry)(
  * materialui_render_process_entry() END
  * ============================== */
 
+static void materialui_init_font(
+   gfx_display_t *p_disp,
+   materialui_font_data_t *font_data,
+   int font_size,
+   bool video_is_threaded,
+   const char *str_latin);
+
 static void materialui_layout(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
@@ -4039,9 +4050,9 @@ static void materialui_render_menu_entry_default(
       sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
 
       /* Wrap sublabel string */
-      word_wrap(wrapped_sublabel, entry->sublabel,
+      (mui->word_wrap)(wrapped_sublabel, sizeof(wrapped_sublabel), entry->sublabel,
             (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
-            true, 0);
+            mui->font_data.hint.wideglyph_width, 0);
 
       /* Draw sublabel string
        * > Note: We must allow text to be drawn off-screen
@@ -4368,9 +4379,9 @@ static void materialui_render_menu_entry_playlist_list(
       sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
 
       /* Wrap sublabel string */
-      word_wrap(wrapped_sublabel, entry->sublabel,
+      (mui->word_wrap)(wrapped_sublabel, sizeof(wrapped_sublabel), entry->sublabel,
             (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
-            true, 0);
+            mui->font_data.hint.wideglyph_width, 0);
 
       /* Draw sublabel string
        * > Note: We must allow text to be drawn off-screen
@@ -7558,6 +7569,57 @@ static void materialui_update_list_view(materialui_handle_t *mui, settings_t *se
    mui->need_compute = true;
 }
 
+static void materialui_init_font(
+   gfx_display_t *p_disp,
+   materialui_font_data_t *font_data,
+   int font_size,
+   bool video_is_threaded,
+   const char *str_latin
+   )
+{
+   const char *wideglyph_str = msg_hash_get_wideglyph_str();
+
+   /* We assume the average glyph aspect ratio is close to 3:4 */
+   font_data->glyph_width = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
+
+   if (font_data->font)
+   {
+      gfx_display_font_free(font_data->font);
+      font_data->font = NULL;
+   }
+
+   font_data->font = gfx_display_font(
+         p_disp,
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
+         font_size, video_is_threaded);
+
+  if (font_data->font)
+   {
+      /* Calculate a more realistic ticker_limit */
+      int char_width =
+         font_driver_get_message_width(font_data->font, str_latin, 1, 1);
+
+      if (char_width > 0)
+         font_data->glyph_width = (unsigned)char_width;
+
+      font_data->wideglyph_width = 100;
+
+      if (wideglyph_str)
+      {
+         int wideglyph_width =
+            font_driver_get_message_width(font_data->font, wideglyph_str, strlen(wideglyph_str), 1);
+
+         if (wideglyph_width > 0 && char_width > 0) 
+            font_data->wideglyph_width = wideglyph_width * 100 / char_width;
+      }
+
+      /* Get line metrics */
+      font_data->line_height        = font_driver_get_line_height(font_data->font, 1.0f);
+      font_data->line_ascender      = font_driver_get_line_ascender(font_data->font, 1.0f);
+      font_data->line_centre_offset = font_driver_get_line_centre_offset(font_data->font, 1.0f);
+   }
+}
+
 /* Compute the positions of the widgets */
 static void materialui_layout(
       materialui_handle_t *mui,
@@ -7635,88 +7697,11 @@ static void materialui_layout(
       mui->nav_bar_layout_height       = mui->nav_bar.width;
    }
 
-   /* We assume the average glyph aspect ratio is close to 3:4 */
-   mui->font_data.title.glyph_width = (int)((title_font_size * (3.0f / 4.0f)) + 0.5f);
-   mui->font_data.list.glyph_width  = (int)((list_font_size  * (3.0f / 4.0f)) + 0.5f);
-   mui->font_data.hint.glyph_width  = (int)((hint_font_size  * (3.0f / 4.0f)) + 0.5f);
-
    p_disp->header_height = new_header_height;
 
-   if (mui->font_data.title.font)
-   {
-      gfx_display_font_free(mui->font_data.title.font);
-      mui->font_data.title.font = NULL;
-   }
-   if (mui->font_data.list.font)
-   {
-      gfx_display_font_free(mui->font_data.list.font);
-      mui->font_data.list.font = NULL;
-   }
-   if (mui->font_data.hint.font)
-   {
-      gfx_display_font_free(mui->font_data.hint.font);
-      mui->font_data.hint.font = NULL;
-   }
-
-   mui->font_data.title.font = gfx_display_font(
-         p_disp,
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
-         title_font_size, video_is_threaded);
-
-   mui->font_data.list.font  = gfx_display_font(
-         p_disp,
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
-         list_font_size, video_is_threaded);
-
-   mui->font_data.hint.font  = gfx_display_font(
-         p_disp,
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
-         hint_font_size, video_is_threaded);
-
-   if (mui->font_data.title.font)
-   {
-      /* Calculate a more realistic ticker_limit */
-      int title_char_width =
-         font_driver_get_message_width(mui->font_data.title.font, "a", 1, 1);
-
-      if (title_char_width > 0)
-         mui->font_data.title.glyph_width = (unsigned)title_char_width;
-
-      /* Get line metrics */
-      mui->font_data.title.line_height        = font_driver_get_line_height(mui->font_data.title.font, 1.0f);
-      mui->font_data.title.line_ascender      = font_driver_get_line_ascender(mui->font_data.title.font, 1.0f);
-      mui->font_data.title.line_centre_offset = font_driver_get_line_centre_offset(mui->font_data.title.font, 1.0f);
-   }
-
-   if (mui->font_data.list.font)
-   {
-      /* Calculate a more realistic ticker_limit */
-      int list_char_width =
-         font_driver_get_message_width(mui->font_data.list.font, "a", 1, 1);
-
-      if (list_char_width > 0)
-         mui->font_data.list.glyph_width = (unsigned)list_char_width;
-
-      /* Get line metrics */
-      mui->font_data.list.line_height        = font_driver_get_line_height(mui->font_data.list.font, 1.0f);
-      mui->font_data.list.line_ascender      = font_driver_get_line_ascender(mui->font_data.list.font, 1.0f);
-      mui->font_data.list.line_centre_offset = font_driver_get_line_centre_offset(mui->font_data.list.font, 1.0f);
-   }
-
-   if (mui->font_data.hint.font)
-   {
-      /* Calculate a more realistic ticker_limit */
-      int hint_char_width =
-         font_driver_get_message_width(mui->font_data.hint.font, "t", 1, 1);
-
-      if (hint_char_width > 0)
-         mui->font_data.hint.glyph_width = (unsigned)hint_char_width;
-
-      /* Get line metrics */
-      mui->font_data.hint.line_height        = font_driver_get_line_height(mui->font_data.hint.font, 1.0f);
-      mui->font_data.hint.line_ascender      = font_driver_get_line_ascender(mui->font_data.hint.font, 1.0f);
-      mui->font_data.hint.line_centre_offset = font_driver_get_line_centre_offset(mui->font_data.hint.font, 1.0f);
-   }
+   materialui_init_font(p_disp, &mui->font_data.title, title_font_size, video_is_threaded, "a");
+   materialui_init_font(p_disp, &mui->font_data.list, list_font_size, video_is_threaded, "a");
+   materialui_init_font(p_disp, &mui->font_data.hint, hint_font_size, video_is_threaded, "t");
 
    /* When updating the layout, the system bar
     * cache must be invalidated (since all text
@@ -7907,6 +7892,9 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    materialui_refresh_playlist_icon_list(mui, settings);
 
    p_anim->updatetime_cb = materialui_menu_animation_update_time;
+
+   /* set word_wrap function pointer */
+   mui->word_wrap = msg_hash_get_wideglyph_str() ? word_wrap_wideglyph : word_wrap;
 
    return menu;
 error:

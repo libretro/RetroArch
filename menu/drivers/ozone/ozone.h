@@ -99,6 +99,7 @@ typedef struct
    font_data_t *font;
    video_font_raster_block_t raster_block; /* ptr alignment */
    int glyph_width;
+   int wideglyph_width;
    int line_height;
    int line_ascender;
    int line_centre_offset;
@@ -131,6 +132,9 @@ struct ozone_handle
       ozone_font_data_t entries_sublabel;
       ozone_font_data_t sidebar;
    } fonts;
+
+   void (*word_wrap)(char *dst, size_t dst_size, const char *src,
+      int line_width, int wideglyph_width, unsigned max_lines);
 
    struct
    {

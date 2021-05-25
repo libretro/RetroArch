@@ -3932,9 +3932,9 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message,
 
    /* Split message into lines */
    word_wrap(
-         wrapped_message, message,
+         wrapped_message, sizeof(wrapped_message), message,
          rgui->term_layout.width,
-         true, 0);
+         100, 0);
 
    string_list_initialize(&list);
    if (     !string_split_noalloc(&list, wrapped_message, "\n")
