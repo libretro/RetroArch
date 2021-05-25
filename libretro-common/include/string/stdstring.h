@@ -149,7 +149,7 @@ char *string_trim_whitespace_right(char *const s);
 char *string_trim_whitespace(char *const s);
 
 /* max_lines == 0 means no limit */
-char *word_wrap(char *buffer, const char *string,
+void word_wrap(char *dst, const char *src,
       int line_width, bool unicode, unsigned max_lines);
 
 /* Splits string into tokens seperated by 'delim'

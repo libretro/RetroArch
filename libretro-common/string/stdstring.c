@@ -187,88 +187,90 @@ char *string_trim_whitespace(char *const s)
    return s;
 }
 
-char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, unsigned max_lines)
+void word_wrap(char *dst, const char *src, int line_width, bool unicode, unsigned max_lines)
 {
-   unsigned i     = 0;
-   unsigned len   = (unsigned)strlen(string);
-   unsigned lines = 1;
+   char *lastspace     = NULL;
+   unsigned counter    = 0;
+   unsigned lines      = 1;
+   int src_len         = (int)strlen(src);
+   const char *src_end = src + src_len;
 
-   while (i < len)
+   /* Early return if src string length is less
+    * than line width */
+   if (src_len < line_width)
    {
-      unsigned counter;
-      int pos = (int)(&buffer[i] - buffer);
+      /* TODO/FIXME: Would be better to use strcpy(),
+       * but the behaviour of this function is undefined
+       * if src and dst point to the same buffer */
+      while (src_len--)
+         *dst++ = *src++;
+      *dst = '\0';
+      return;
+   }
 
-      /* copy string until the end of the line is reached */
-      for (counter = 1; counter <= (unsigned)line_width; counter++)
+   while (*src != '\0')
+   {
+      unsigned char_len;
+
+      char_len = (unsigned)(utf8skip(src, 1) - src);
+      counter += unicode ? 1 : char_len;
+
+      if (*src == ' ')
+         lastspace = dst; /* Remember the location of the whitespace */
+      else if (*src == '\n')
       {
-         const char *character;
-         unsigned char_len;
-         unsigned j = i;
+         /* If newlines embedded in the input,
+          * reset the index */
+         lines++;
+         counter = 0;
 
-         /* check if end of string reached */
-         if (i == len)
+         /* Early return if remaining src string
+          * length is less than line width */
+         src_len = (int)(src_end - src);
+
+         if (src_len <= line_width)
          {
-            buffer[i] = 0;
-            return buffer;
+            while (src_len--)
+               *dst++ = *src++;
+            *dst = '\0';
+            return;
          }
+     }
 
-         character = utf8skip(&string[i], 1);
-         char_len  = (unsigned)(character - &string[i]);
+      while (char_len--)
+         *dst++ = *src++;
 
-         if (!unicode)
-            counter += char_len - 1;
-
-         do
-         {
-            buffer[i] = string[i];
-            char_len--;
-            i++;
-         } while (char_len);
-
-         /* check for newlines embedded in the original input
-          * and reset the index */
-         if (buffer[j] == '\n')
-         {
-            lines++;
-            counter = 1;
-         }
-      }
-
-      /* check for whitespace */
-      if (string[i] == ' ')
+      if (counter >= (unsigned)line_width)
       {
-         if ((max_lines == 0 || lines < max_lines))
+         counter = 0;
+
+         if (lastspace && (max_lines == 0 || lines < max_lines))
          {
-            buffer[i] = '\n';
-            i++;
+            /* Replace nearest (previous) whitespace
+             * with newline character */
+            *lastspace = '\n';
             lines++;
+
+            src -= dst - lastspace - 1;
+            dst = lastspace + 1;
+            lastspace  = NULL;
+
+            /* Early return if remaining src string
+             * length is less than line width */
+            src_len    = (int)(src_end - src);
+
+            if (src_len < line_width)
+            {
+               while (src_len--)
+                  *dst++ = *src++;
+               *dst = '\0';
+               return;
+            }
          }
-      }
-      else
-      {
-         int k;
-
-         /* check for nearest whitespace back in string */
-         for (k = i; k > 0; k--)
-         {
-            if (string[k] != ' ' || (max_lines != 0 && lines >= max_lines))
-               continue;
-
-            buffer[k] = '\n';
-            /* set string index back to character after this one */
-            i         = k + 1;
-            lines++;
-            break;
-         }
-
-         if (&buffer[i] - buffer == pos)
-            return buffer;
       }
    }
 
-   buffer[i] = 0;
-
-   return buffer;
+   *dst = '\0';
 }
 
 /* Splits string into tokens seperated by 'delim'
