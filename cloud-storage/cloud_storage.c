@@ -25,9 +25,9 @@
 #include <unistd.h>
 
 #include <file/file_path.h>
+#include <lrc_hash.h>
 #include <retroarch.h>
 #include <retro_dirent.h>
-#include <utils/md5.h>
 #include <lists/linked_list.h>
 #include <queues/generic_queue.h>
 #include <rthreads/rthreads.h>
@@ -35,8 +35,7 @@
 #include <streams/file_stream.h>
 
 #include "cloud_storage.h"
-#include "provider_common.h"
-#include "providers/local_folder/local_folder.h"
+#include "providers/local_folder.h"
 
 #define BUFFER_SIZE 8192
 
@@ -91,24 +90,20 @@ static void _sync_files_execute(folder_type_t folder_type);
 
 static void _upload_file_execute(folder_type_t folder_type, char *file_name);
 
-void _cloud_storage_item_free_fn(void *item)
+static void _cloud_storage_item_free_fn(void *item)
 {
    cloud_storage_item_free((cloud_storage_item_t *) item);
 }
 
 void cloud_storage_item_free(cloud_storage_item_t *item)
 {
-   while (item)
+   if (item)
    {
       free(item->id);
       free(item->name);
 
       if (item->item_type == CLOUD_STORAGE_FILE)
       {
-         if (item->type_data.file.hash_value)
-         {
-            free(item->type_data.file.hash_value);
-         }
          if (item->type_data.file.download_url)
          {
             free(item->type_data.file.download_url);
@@ -173,7 +168,7 @@ static void _operation_thread_loop(void *user_data)
       if (_shutdown)
       {
          slock_unlock(_operation_queue_mutex);
-         continue;
+         break;
       }
 
       operation = (struct _operation_t *)generic_queue_pop(_operation_queue);
@@ -195,12 +190,6 @@ static void _operation_thread_loop(void *user_data)
 
          _free_operation(operation);
       }
-   }
-
-   /* Broke out of the operation loop, will shutdown the operation thread */
-   if (_operation_queue)
-   {
-      generic_queue_free(_operation_queue, &_free_operation_fn);
    }
 }
 
@@ -242,78 +231,29 @@ void cloud_storage_shutdown(void)
    slock_unlock(_operation_queue_mutex);
 
    sthread_join(_operation_thread);
-}
+   generic_queue_free(_operation_queue, &_free_operation_fn);
 
-char *cloud_storage_get_md5_hash(char *absolute_filename)
-{
-   RFILE *file;
-   uint8_t buffer[BUFFER_SIZE];
-   MD5_CTX md5_ctx;
-   int64_t bytes_read;
-   unsigned char *checksum;
-   char *checksum_str;
-
-   file = filestream_open(absolute_filename, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
-   {
-      return NULL;
-   }
-
-   MD5_Init(&md5_ctx);
-
-   /* Pass the contents of the local file through the MD5 hash function */
-   bytes_read = filestream_read(file, buffer, BUFFER_SIZE);
-   while (bytes_read > 0)
-   {
-      MD5_Update(&md5_ctx, buffer, bytes_read);
-      bytes_read = filestream_read(file, buffer, BUFFER_SIZE);
-   }
-
-   filestream_close(file);
-   checksum = (unsigned char *)calloc(16, sizeof(char));
-   MD5_Final(checksum, &md5_ctx);
-
-   /* Convert the MD5 checksum to a hex string */
-   checksum_str = bytes_to_hex_str(checksum, 16);
-   free(checksum);
-
-   return checksum_str;
-}
-
-/* Converts a value (game save/state directory setting) to an absolute directory path */
-static char *_config_value_to_directory(const char *value)
-{
-   char *dir;
-   int i;
-
-   dir = strdup(value);
-   path_basedir(dir);
-   for (i = strlen(dir) - 1; i > 0; i++)
-   {
-      if (dir[i] == '/')
-      {
-         dir[i] = '\0';
-      } else {
-         break;
-      }
-   }
-
-   return dir;
 }
 
 /* Generate the local absolute filename from the folder category and filename */
 static char *_get_absolute_filename(folder_type_t folder_type, char *filename)
 {
    global_t *global;
-   char *raw_folder;
    char *folder;
+   size_t folder_len;
+   char *last_slash;
    char *absolute_filename;
 
    global = global_get_ptr();
    switch (folder_type)
    {
       case CLOUD_STORAGE_GAME_STATES:
-         folder = _config_value_to_directory(global->name.savestate);
+         folder_len = strlen(global->name.savestate) + 1;
+         folder = malloc(folder_len);
+         fill_pathname_basedir(folder, global->name.savestate, folder_len);
+         last_slash = find_last_slash(folder);
+         if (last_slash && last_slash[1] == '\0')
+            last_slash[0] = '\0';
          break;
       default:
          return NULL;
@@ -340,7 +280,8 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
 {
    cloud_storage_item_t *folder;
    linked_list_iterator_t *iterator;
-   cloud_storage_item_t *file = NULL;
+   cloud_storage_item_t *current_file;
+   cloud_storage_item_t *remote_file = NULL;
 
    switch (folder_type)
    {
@@ -360,9 +301,10 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
    iterator = linked_list_iterator(folder->type_data.folder.children, true);
    while (iterator)
    {
-      file = (cloud_storage_item_t *)linked_list_iterator_value(iterator);
-      if (file->item_type == CLOUD_STORAGE_FILE && !strcmp(local_file, file->name))
+      current_file = (cloud_storage_item_t *)linked_list_iterator_value(iterator);
+      if (current_file->item_type == CLOUD_STORAGE_FILE && !strcmp(local_file, current_file->name))
       {
+         remote_file = current_file;
          break;
       }
 
@@ -374,7 +316,7 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
       linked_list_iterator_free(iterator);
    }
 
-   return file;
+   return remote_file;
 }
 
 /* Check if a file needs to be uploaded
@@ -383,7 +325,7 @@ static cloud_storage_item_t *_get_remote_file_for_local_file(
  */
 static bool _file_need_upload(folder_type_t folder_type, char *local_file, cloud_storage_item_t *remote_file)
 {
-   char *checksum_str = NULL;
+   char checksum_str[33];
    bool need_upload;
 
    if (!remote_file)
@@ -396,15 +338,15 @@ static bool _file_need_upload(folder_type_t folder_type, char *local_file, cloud
       return false;
    }
 
+   memset(checksum_str, 0, 33);
    switch (remote_file->type_data.file.hash_type)
    {
       case CLOUD_STORAGE_HASH_MD5:
-         checksum_str = cloud_storage_get_md5_hash(local_file);
+         MD5_calculate(local_file, checksum_str);
          break;
    }
 
    need_upload = strcmp(checksum_str, remote_file->type_data.file.hash_value) != 0;
-   free(checksum_str);
    return need_upload;
 }
 
@@ -451,11 +393,12 @@ static void _upload_file(folder_type_t folder_type, char *local_file, cloud_stor
       remote_file,
       local_file))
    {
-      if (!remote_file->type_data.file.hash_value) {
+      if (strlen(remote_file->type_data.file.hash_value) == 0)
+      {
          switch (remote_file->type_data.file.hash_type)
          {
             case CLOUD_STORAGE_HASH_MD5:
-               remote_file->type_data.file.hash_value = (char *)cloud_storage_get_md5_hash(local_file);
+               MD5_calculate(local_file, remote_file->type_data.file.hash_value);
                break;
          }
       }
@@ -493,11 +436,7 @@ static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_st
          item_to_update->type_data.file.download_url = NULL;
       }
 
-      if (item_to_update->type_data.file.hash_value)
-      {
-         free(item_to_update->type_data.file.hash_value);
-         item_to_update->type_data.file.hash_value = NULL;
-      }
+      item_to_update->type_data.file.hash_value[0] = '\0';
    }
 
    item_to_update->item_type = other->item_type;
@@ -512,10 +451,7 @@ static void _update_existing_item(cloud_storage_item_t *item_to_update, cloud_st
 
       item_to_update->type_data.file.hash_type = other->type_data.file.hash_type;
 
-      if (other->type_data.file.hash_value)
-      {
-         item_to_update->type_data.file.hash_value = strdup(other->type_data.file.hash_value);
-      }
+      strcpy(item_to_update->type_data.file.hash_value, other->type_data.file.hash_value);
    } else
    {
       item_to_update->type_data.folder.children = other->type_data.folder.children;
@@ -542,6 +478,7 @@ static void _sync_files_upload(folder_type_t folder_type)
       return;
    }
 
+   /* Get the absolute path of the folder type */
    switch (folder_type)
    {
       case CLOUD_STORAGE_GAME_STATES:
@@ -557,6 +494,7 @@ static void _sync_files_upload(folder_type_t folder_type)
       return;
    }
 
+   /* If the path is ".../xxx.yyy", then get path up to the last '/' character */
    dir_name = strdup(raw_dir);
    if (strrchr(dir_name, '.') > strrchr(dir_name, '/'))
    {
@@ -664,7 +602,7 @@ static bool _have_local_file_for_remote_file(
  */
 static bool _file_need_download(char *local_file, cloud_storage_item_t *remote_file)
 {
-   char *checksum_str = NULL;
+   char checksum_str[33];
    bool need_download;
    char *raw_dir;
 
@@ -681,12 +619,13 @@ static bool _file_need_download(char *local_file, cloud_storage_item_t *remote_f
    switch (remote_file->type_data.file.hash_type)
    {
       case CLOUD_STORAGE_HASH_MD5:
-         checksum_str = cloud_storage_get_md5_hash(local_file);
+         MD5_calculate(local_file, checksum_str);
          break;
+      default:
+         checksum_str[0] = '\0';
    }
 
    need_download = strcmp(checksum_str, remote_file->type_data.file.hash_value) != 0;
-   free(checksum_str);
    return need_download;
 }
 
@@ -825,11 +764,19 @@ void cloud_storage_sync_files(void)
    bool sync_states;
    global_t *global = global_get_ptr();
    char *raw_folder;
+   size_t raw_folder_len;
+   char *last_slash;
    int i;
    generic_queue_iterator_t *iterator;
    struct _operation_t *operation;
 
-   raw_folder = _config_value_to_directory(global->name.savestate);
+   raw_folder_len = strlen(global->name.savestate);
+   raw_folder = (char *)malloc(raw_folder_len);
+   fill_pathname_basedir(raw_folder, global->name.savestate, raw_folder_len);
+   last_slash = find_last_slash(raw_folder);
+   if (last_slash && last_slash[1] == '\0')
+      last_slash[0] = '\0';
+
    sync_states = strcmp(_game_states_config_value, raw_folder) != 0;
 
    if (!sync_states)
@@ -838,7 +785,7 @@ void cloud_storage_sync_files(void)
       return;
    } else
    {
-      strcpy(_game_states_config_value, global->name.savestate);
+      strcpy(_game_states_config_value, raw_folder);
    }
 
    slock_lock(_operation_queue_mutex);

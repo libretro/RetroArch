@@ -1,7 +1,7 @@
 /* Copyright  (C) 2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (provider_common.h).
+ * The following license statement only applies to this file (local_folder.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,24 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _CLOUD_STORAGE_PROVIDER_COMMON_H
-#define _CLOUD_STORAGE_PROVIDER_COMMON_H
+#ifndef _LOCAL_FOLDER_H
+#define _LOCAL_FOLDER_H
 
 #include <retro_common_api.h>
 
+#include "../cloud_storage.h"
+
 RETRO_BEGIN_DECLS
 
-/**
- * @brief Get the hex encoded MD5 hash of a local file
- *
- * Calculates the MD5 checksum of the contents of a local file. The checksum
- * is hex encoded and returned a newly allocated char*. Caller must release
- * the returned string.
- *
- * @param absolute_filename absolute filename of the local file
- * @return hex encoded MD5 checksum of file contents
- */
-char *cloud_storage_get_md5_hash(char *absolute_filename);
+cloud_storage_provider_t *cloud_storage_local_folder_create(void);
 
 RETRO_END_DECLS
 

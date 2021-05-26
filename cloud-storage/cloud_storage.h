@@ -46,7 +46,7 @@ typedef enum cloud_storage_hash_type_t cloud_storage_hash_type_t;
 struct cloud_storage_file_t
 {
    cloud_storage_hash_type_t hash_type;
-   char *hash_value;
+   char hash_value[33];
    char *download_url;
 };
 typedef struct cloud_storage_file_t cloud_storage_file_t;

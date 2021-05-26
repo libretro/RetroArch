@@ -199,6 +199,49 @@ void sha256_hash(char *s, const uint8_t *in, size_t size)
       snprintf(s + 2 * i, 3, "%02x", (unsigned)shahash.u8[i]);
 }
 
+int sha256_calculate(const char *path, char *result) {
+   struct sha256_ctx sha;
+   unsigned char buff[4096];
+   uint32_t checksum[4];
+   int rv    = 1;
+   RFILE *fd = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fd)
+      goto error;
+
+   buff[0] = '\0';
+
+   sha256_init(&sha);
+
+   do
+   {
+      rv = (int)filestream_read(fd, buff, 4096);
+      if (rv < 0)
+         goto error;
+
+      sha256_chunk(&sha, buff, rv);
+   } while (rv);
+
+   sha256_final(&sha);
+   sha256_subhash(&sha, checksum);
+
+   sprintf(result, "%08X%08X%08X%08X",
+         checksum[0],
+         checksum[1],
+         checksum[2],
+         checksum[3]);
+
+   filestream_close(fd);
+   return 0;
+
+error:
+   if (fd)
+      filestream_close(fd);
+   return -1;
+}
+
 #ifndef HAVE_ZLIB
 /* Zlib CRC32. */
 static const uint32_t crc32_hash_table[256] = {
@@ -573,4 +616,58 @@ uint32_t djb2_calculate(const char *str)
       hash = ( hash << 5 ) + hash + *aux++;
 
    return hash;
+}
+
+int MD5_calculate(const char *path, char *result) {
+   MD5_CTX md5;
+   unsigned char buff[4096];
+   unsigned char checksum[16];
+   int rv    = 1;
+   RFILE *fd = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fd)
+      goto error;
+
+   buff[0] = '\0';
+
+   MD5_Init(&md5);
+
+   do
+   {
+      rv = (int)filestream_read(fd, buff, 4096);
+      if (rv < 0)
+         goto error;
+
+      MD5_Update(&md5, buff, rv);
+   } while (rv);
+
+   MD5_Final(checksum, &md5);
+
+   sprintf(result, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+         checksum[0],
+         checksum[1],
+         checksum[2],
+         checksum[3],
+         checksum[4],
+         checksum[5],
+         checksum[6],
+         checksum[7],
+         checksum[8],
+         checksum[9],
+         checksum[10],
+         checksum[11],
+         checksum[12],
+         checksum[13],
+         checksum[14],
+         checksum[15]);
+
+   filestream_close(fd);
+   return 0;
+
+error:
+   if (fd)
+      filestream_close(fd);
+   return -1;
 }

@@ -47,6 +47,8 @@ RETRO_BEGIN_DECLS
  **/
 void sha256_hash(char *out, const uint8_t *in, size_t size);
 
+int sha256_calculate(const char *path, char *result);
+
 int sha1_calculate(const char *path, char *result);
 
 uint32_t djb2_calculate(const char *str);
@@ -89,6 +91,7 @@ typedef struct {
 void MD5_Init(MD5_CTX *ctx);
 void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size);
 void MD5_Final(unsigned char *result, MD5_CTX *ctx);
+int MD5_calculate(const char *path, char *result);
 
 RETRO_END_DECLS
 
