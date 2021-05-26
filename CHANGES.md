@@ -1,10 +1,16 @@
 # Future
+- CONTENT LOADING/FILE IO: Prevent unnecessary extraction (to disk) of compressed content files when need_fullpath is false
 - CORE INFO/FILE IO: Enable core info cache by default now for all platforms
+- CORE INFO/REGRESSION FIX: Fix regression caused by core info file caching - Downloads was no longer showing up in Load Content
+- FILE IO/COMPRESSED: Ability to load content inside ZIP files directly into RAM
+- INPUT REMAPPING/OVERLAYS: Prevent duplicate inputs when using remaps with input overlays
 - LAKKA: Add brightness restore hook
 - LOCALIZATION: Fetch translations from Crowdin
 - MENU/OZONE: Added simple playlist entry enumeration
 - MENU/XMB: Fix display of 'Maximum Users' menu entry dropdown list
 - PS3/PSL1GHT: Joypad driver works again
+- PSTV: Fix Vita input driver for PSTV
+- PSTV: Support for 720p on PSTV when using 'Unlock framebuffer' in Sharpscale plugin
 - RPNG: Fix some memory corruption if processing broken input PNG file
 - SECURITY: Fix CVE-2021-28927
 

@@ -89,6 +89,7 @@ static void gdi_render_msg(
       const char *msg,
       const struct font_params *params)
 {
+   char* msg_local;
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y, msg_strlen;
    unsigned i;
@@ -142,8 +143,7 @@ static void gdi_render_msg(
       blue       = video_msg_color_b * 255.0f;
    }
 
-   char* msg_local = utf8_to_local_string_alloc(msg);
-
+   msg_local  = utf8_to_local_string_alloc(msg);
    msg_strlen = strlen(msg_local);
 
    GetTextExtentPoint32(font->gdi->memDC, msg_local, msg_strlen, &textSize);

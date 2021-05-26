@@ -93,6 +93,7 @@ enum video_driver_enum
    VIDEO_GDI,
    VIDEO_VGA,
    VIDEO_FPGA,
+   VIDEO_RSX,
    VIDEO_NULL
 };
 
@@ -315,6 +316,8 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_FPGA;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
+#elif defined(__PSL1GHT__)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_RSX;
 #else
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #endif
@@ -465,7 +468,7 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 #elif defined(PS2)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
-#elif defined(__PS3__) && !defined(__PSL1GHT__)
+#elif defined(__PS3__) || defined(__PSL1GHT__)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
 #elif defined(ORBIS)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
@@ -867,6 +870,8 @@ const char *config_get_default_video(void)
          return "vga";
       case VIDEO_FPGA:
          return "fpga";
+      case VIDEO_RSX:
+         return "rsx";
       case VIDEO_NULL:
          break;
    }
@@ -1744,7 +1749,6 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_OVERLAY
    SETTING_BOOL("input_overlay_enable",         &settings->bools.input_overlay_enable, true, config_overlay_enable_default(), false);
    SETTING_BOOL("input_overlay_enable_autopreferred", &settings->bools.input_overlay_enable_autopreferred, true, DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED, false);
-   SETTING_BOOL("input_overlay_show_physical_inputs", &settings->bools.input_overlay_show_physical_inputs, true, DEFAULT_SHOW_PHYSICAL_INPUTS, false);
    SETTING_BOOL("input_overlay_hide_in_menu",   &settings->bools.input_overlay_hide_in_menu, true, DEFAULT_OVERLAY_HIDE_IN_MENU, false);
    SETTING_BOOL("input_overlay_hide_when_gamepad_connected", &settings->bools.input_overlay_hide_when_gamepad_connected, true, DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, false);
    SETTING_BOOL("input_overlay_show_mouse_cursor",   &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
@@ -2032,7 +2036,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("ozone_menu_color_theme",       &settings->uints.menu_ozone_color_theme, true, DEFAULT_OZONE_COLOR_THEME, false);
 #endif
 #endif
-   SETTING_UINT("audio_out_rate",               &settings->uints.audio_out_rate, true, DEFAULT_OUTPUT_RATE, false);
+   SETTING_UINT("audio_out_rate",               &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);
    SETTING_UINT("crt_switch_resolution_super",  &settings->uints.crt_switch_resolution_super,      true, DEFAULT_CRT_SWITCH_RESOLUTION_SUPER, false);
    SETTING_UINT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */, false);
@@ -2069,7 +2073,12 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
 #endif
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
-   SETTING_UINT("input_overlay_show_physical_inputs_port", &settings->uints.input_overlay_show_physical_inputs_port, true, 0, false);
+
+#if defined(HAVE_OVERLAY)
+   SETTING_UINT("input_overlay_show_inputs",      &settings->uints.input_overlay_show_inputs, true, DEFAULT_OVERLAY_SHOW_INPUTS, false);
+   SETTING_UINT("input_overlay_show_inputs_port", &settings->uints.input_overlay_show_inputs_port, true, DEFAULT_OVERLAY_SHOW_INPUTS_PORT, false);
+#endif
+
    SETTING_UINT("video_msg_bgcolor_red",        &settings->uints.video_msg_bgcolor_red, true, message_bgcolor_red, false);
    SETTING_UINT("video_msg_bgcolor_green",        &settings->uints.video_msg_bgcolor_green, true, message_bgcolor_green, false);
    SETTING_UINT("video_msg_bgcolor_blue",        &settings->uints.video_msg_bgcolor_blue, true, message_bgcolor_blue, false);

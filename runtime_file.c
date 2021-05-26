@@ -1138,7 +1138,6 @@ bool runtime_log_has_last_played(runtime_log_t *runtime_log)
 /* Saves specified runtime log to disk */
 void runtime_log_save(runtime_log_t *runtime_log)
 {
-   int n;
    char value_string[64]; /* 64 characters should be
                              enough for a very long runtime... :) */
    RFILE *file            = NULL;

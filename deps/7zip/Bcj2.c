@@ -8,8 +8,10 @@
 
 #define CProb UInt16
 
+#undef  kTopValue
 #define kTopValue ((UInt32)1 << 24)
 #define kNumModelBits 11
+#undef  kBitModelTotal
 #define kBitModelTotal (1 << kNumModelBits)
 #define kNumMoveBits 5
 

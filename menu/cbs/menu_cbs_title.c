@@ -755,10 +755,9 @@ static int action_get_title_generic(char *s, size_t len,
 {
    if (!string_is_empty(path))
    {
-      bool ret                     = false;
       struct string_list list_path = {0};
       string_list_initialize(&list_path);
-      if ((ret = string_split_noalloc(&list_path, path, "|")))
+      if (string_split_noalloc(&list_path, path, "|"))
       {
          char elem0_path[255];
          elem0_path[0] = '\0';

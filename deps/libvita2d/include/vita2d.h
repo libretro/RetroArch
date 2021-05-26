@@ -11,6 +11,18 @@ extern "C" {
 
 #define RGBA8(r,g,b,a) ((((a)&0xFF)<<24) | (((b)&0xFF)<<16) | (((g)&0xFF)<<8) | (((r)&0xFF)<<0))
 
+typedef enum
+{
+	VITA2D_VIDEO_MODE_960x544 = 0,
+	VITA2D_VIDEO_MODE_1280x720
+} vita2d_video_mode;
+
+typedef struct vita2d_video_mode_data {
+	int width;
+   int height;
+   int stride;
+} vita2d_video_mode_data;
+
 typedef struct vita2d_clear_vertex {
 	float x;
 	float y;
@@ -58,7 +70,7 @@ typedef struct vita2d_pgf vita2d_pgf;
 
 int vita2d_init();
 int vita2d_init_advanced(unsigned int temp_pool_size);
-int vita2d_init_advanced_with_msaa(unsigned int temp_pool_size, SceGxmMultisampleMode msaa);
+int vita2d_init_advanced_with_msaa(unsigned int temp_pool_size, SceGxmMultisampleMode msaa, vita2d_video_mode video_mode);
 void vita2d_wait_rendering_done();
 int vita2d_fini();
 
@@ -74,8 +86,8 @@ int vita2d_common_dialog_update();
 void vita2d_set_clear_color(unsigned int color);
 unsigned int vita2d_get_clear_color();
 
-void vita2d_set_clear_color(unsigned int color);
-unsigned int vita2d_get_clear_color();
+vita2d_video_mode_data vita2d_get_video_mode_data();
+
 void vita2d_set_vblank_wait(int enable);
 void *vita2d_get_current_fb();
 SceGxmContext *vita2d_get_context();

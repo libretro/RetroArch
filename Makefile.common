@@ -1990,7 +1990,8 @@ ifeq ($(HAVE_CDROM), 1)
    DEFINES += -DHAVE_CDROM
    OBJ += $(LIBRETRO_COMM_DIR)/cdrom/cdrom.o \
 			 $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.o \
-			 $(LIBRETRO_COMM_DIR)/media/media_detect_cd.o
+			 $(LIBRETRO_COMM_DIR)/media/media_detect_cd.o \
+			 tasks/task_content_disc.o
 endif
 
 ifeq ($(HAVE_RTGA), 1)

@@ -4781,7 +4781,6 @@ static void wifi_scan_callback(retro_task_t *task,
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
    size_t                              idx   = 0;
-   struct menu_displaylist_state *p_displist = &menu_displist_st;
 #if defined(HAVE_NETWORKING)
    settings_t              *settings         = config_get_ptr();
 #endif
@@ -7936,15 +7935,18 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
          {
-            bool input_overlay_enable     = settings->bools.input_overlay_enable;
-            bool input_overlay_auto_scale = settings->bools.input_overlay_auto_scale;
+            bool input_overlay_enable       = settings->bools.input_overlay_enable;
+            bool input_overlay_auto_scale   = settings->bools.input_overlay_auto_scale;
+            enum overlay_show_input_type
+                  input_overlay_show_inputs = (enum overlay_show_input_type)
+                        settings->uints.input_overlay_show_inputs;
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                      PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,                PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, PARSE_ONLY_BOOL,  false },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,        PARSE_ONLY_BOOL,  false },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,   PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS,                 PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,            PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,           PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,                  PARSE_ONLY_BOOL,  false },
@@ -7970,14 +7972,18 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED:
-                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
-                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE:
                   case MENU_ENUM_LABEL_OVERLAY_PRESET:
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
                      if (input_overlay_enable)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT:
+                     if (input_overlay_enable &&
+                         (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_PHYSICAL))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE:

@@ -205,6 +205,7 @@ typedef struct
 #define kEndPosModelIndex 14
 #define kNumFullDistances (1 << (kEndPosModelIndex >> 1))
 
+#ifndef __LZMA_DEC_H
 typedef
 #ifdef _LZMA_PROB32
   UInt32
@@ -212,6 +213,7 @@ typedef
   UInt16
 #endif
   CLzmaProb;
+#endif
 
 #define LZMA_PB_MAX 4
 #define LZMA_LC_MAX 8
@@ -973,7 +975,8 @@ MY_NO_INLINE static void MY_FAST_CALL LenPriceEnc_UpdateTables(
   printf("\n MovePos %u", num);
   #endif
 */
-  
+
+#undef  MOVE_POS
 #define MOVE_POS(p, num) { \
     p->additionalOffset += (num); \
     p->matchFinder.Skip(p->matchFinderObj, (UInt32)(num)); }
