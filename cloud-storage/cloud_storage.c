@@ -770,7 +770,7 @@ void cloud_storage_sync_files(void)
    generic_queue_iterator_t *iterator;
    struct _operation_t *operation;
 
-   raw_folder_len = strlen(global->name.savestate);
+   raw_folder_len = strlen(global->name.savestate) + 1;
    raw_folder = (char *)malloc(raw_folder_len);
    fill_pathname_basedir(raw_folder, global->name.savestate, raw_folder_len);
    last_slash = find_last_slash(raw_folder);
