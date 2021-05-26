@@ -7933,6 +7933,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#if defined(HAVE_OVERLAY)
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
          {
             bool input_overlay_enable       = settings->bools.input_overlay_enable;
@@ -8019,6 +8020,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#endif
 #ifdef HAVE_VIDEO_LAYOUT
       case DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
          {
@@ -8563,7 +8565,9 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
+#if defined(HAVE_OVERLAY)
                {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS, PARSE_ACTION},
+#endif
 #ifdef HAVE_VIDEO_LAYOUT
                {MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS, PARSE_ACTION},
 #endif
@@ -11311,7 +11315,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST:
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
+#if defined(HAVE_OVERLAY)
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
+#endif
 #ifdef HAVE_VIDEO_LAYOUT
       case DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
 #endif

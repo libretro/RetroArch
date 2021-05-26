@@ -48,6 +48,11 @@
 #include "menu/menu_screensaver.h"
 #endif
 
+/* Required for 'show inputs on overlay' setting */
+#if defined(HAVE_OVERLAY)
+#include "../input/input_overlay.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -742,10 +747,12 @@ static const unsigned input_backtouch_toggle       = false;
 
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
 
+#if defined(HAVE_OVERLAY)
 #if defined(RARCH_MOBILE)
 #define DEFAULT_OVERLAY_SHOW_INPUTS OVERLAY_SHOW_INPUT_TOUCHED
 #else
 #define DEFAULT_OVERLAY_SHOW_INPUTS OVERLAY_SHOW_INPUT_PHYSICAL
+#endif
 #endif
 
 #define DEFAULT_OVERLAY_SHOW_INPUTS_PORT 0

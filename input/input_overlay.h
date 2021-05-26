@@ -103,6 +103,14 @@ enum overlay_orientation
    OVERLAY_ORIENTATION_PORTRAIT
 };
 
+enum overlay_show_input_type
+{
+   OVERLAY_SHOW_INPUT_NONE = 0,
+   OVERLAY_SHOW_INPUT_TOUCHED,
+   OVERLAY_SHOW_INPUT_PHYSICAL,
+   OVERLAY_SHOW_INPUT_LAST
+};
+
 struct overlay
 {
    struct overlay_desc *descs;
