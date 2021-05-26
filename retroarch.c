@@ -2673,15 +2673,21 @@ int generic_menu_entry_action(
       }
 
       if (!string_is_empty(title_name))
-         snprintf(speak_string, sizeof(speak_string),
-               "%s %s", title_name, current_label); 
-      else
-         strlcpy(speak_string, current_label, sizeof(speak_string));
-
-      if (!string_is_equal(current_value, "..."))
       {
-         strlcat(speak_string, " ", sizeof(speak_string));
-         strlcat(speak_string, current_value, sizeof(speak_string));
+         if (!string_is_equal(current_value, "..."))
+            snprintf(speak_string, sizeof(speak_string),
+                  "%s %s %s", title_name, current_label, current_value); 
+         else
+            snprintf(speak_string, sizeof(speak_string),
+                  "%s %s", title_name, current_label); 
+      }
+      else
+      {
+         if (!string_is_equal(current_value, "..."))
+            snprintf(speak_string, sizeof(speak_string),
+                  "%s %s", current_label, current_value);
+         else
+            strlcpy(speak_string, current_label, sizeof(speak_string));
       }
 
       if (!string_is_empty(speak_string))
@@ -5114,12 +5120,11 @@ enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
    return menu->last_shader_selection.pass_type;
 }
 
-void menu_driver_get_last_shader_path_int(
-      struct rarch_state *p_rarch, enum rarch_shader_type type,
+static void menu_driver_get_last_shader_path_int(
+      settings_t *settings, enum rarch_shader_type type,
       const char *shader_dir, const char *shader_file_name,
       const char **dir_out, const char **file_name_out)
 {
-   settings_t *settings         = p_rarch->configuration_settings;
    bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
    const char *video_shader_dir = settings->paths.directory_video_shader;
 
@@ -5159,6 +5164,7 @@ void menu_driver_get_last_shader_preset_path(
       const char **directory, const char **file_name)
 {
    struct rarch_state *p_rarch  = &rarch_st;
+   settings_t *settings         = p_rarch->configuration_settings;
    menu_handle_t *menu          = p_rarch->menu_driver_data;
    enum rarch_shader_type type  = RARCH_SHADER_NONE;
    const char *shader_dir       = NULL;
@@ -5171,7 +5177,7 @@ void menu_driver_get_last_shader_preset_path(
       shader_file_name = menu->last_shader_selection.preset_file_name;
    }
 
-   menu_driver_get_last_shader_path_int(p_rarch, type,
+   menu_driver_get_last_shader_path_int(settings, type,
          shader_dir, shader_file_name,
          directory, file_name);
 }
@@ -5181,6 +5187,7 @@ void menu_driver_get_last_shader_pass_path(
 {
    struct rarch_state *p_rarch  = &rarch_st;
    menu_handle_t *menu          = p_rarch->menu_driver_data;
+   settings_t *settings         = p_rarch->configuration_settings;
    enum rarch_shader_type type  = RARCH_SHADER_NONE;
    const char *shader_dir       = NULL;
    const char *shader_file_name = NULL;
@@ -5192,7 +5199,7 @@ void menu_driver_get_last_shader_pass_path(
       shader_file_name = menu->last_shader_selection.pass_file_name;
    }
 
-   menu_driver_get_last_shader_path_int(p_rarch, type,
+   menu_driver_get_last_shader_path_int(settings, type,
          shader_dir, shader_file_name,
          directory, file_name);
 }
@@ -6592,15 +6599,15 @@ finish:
 
 static void handle_discord_join(const char* secret)
 {
-   char url[2048]              = FILE_PATH_LOBBY_LIBRETRO_URL;
+   char url[2048];
    struct string_list    *list = string_split(secret, "|");
    struct rarch_state *p_rarch = &rarch_st;
    discord_state_t *discord_st = &p_rarch->discord_st;
 
    strlcpy(discord_st->peer_party_id,
          list->elems[0].data, sizeof(discord_st->peer_party_id));
-   strlcat(url, discord_st->peer_party_id, sizeof(url));
-   strlcat(url, "/", sizeof(url));
+   snprintf(url, sizeof(url), FILE_PATH_LOBBY_LIBRETRO_URL "%s/",
+         discord_st->peer_party_id);
 
    RARCH_LOG("[DISCORD]: Querying lobby id: %s at %s\n",
          discord_st->peer_party_id, url);
@@ -10867,7 +10874,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
-static bool task_auto_translate_callback(struct rarch_state *p_rarch)
+static bool task_auto_translate_callback(void)
 {
    bool was_paused                   = runloop_state.paused;
    command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
@@ -10924,7 +10931,7 @@ task_finished:
    task_set_finished(task, true);
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
-       task_auto_translate_callback(p_rarch);
+       task_auto_translate_callback();
    if (task->user_data)
        free(task->user_data);
 }
@@ -12908,7 +12915,7 @@ static bool command_event_save_core_config(
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         char tmp[64]   = {0};
+         char tmp[64];
 
          fill_pathname_base_noext(
                config_name,
@@ -12919,9 +12926,13 @@ static bool command_event_save_core_config(
                sizeof(config_path));
 
          if (i)
-            snprintf(tmp, sizeof(tmp), "-%u", i);
+            snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
+         else
+         {
+            tmp[0] = '\0';
+            strlcpy(tmp, ".cfg", sizeof(tmp));
+         }
 
-         strlcat(tmp, ".cfg", sizeof(tmp));
          strlcat(config_path, tmp, sizeof(config_path));
 
          if (!path_is_valid(config_path))
@@ -35502,22 +35513,23 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          char str_output[256];
          char str[128];
-         str[0]        = str_output[0] = '\0';
+         str[0]        = '\0';
 
          retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
+#ifdef HAVE_GIT_VERSION
          snprintf(str_output, sizeof(str_output),
-               "%s: %s",
+               "%s: %s" "\n" FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n" FILE_PATH_LOG_INFO " Git: %s" "\n" FILE_PATH_LOG_INFO " =================================================\n",
+               msg_hash_to_str(MSG_CAPABILITIES),
+               str,
+               retroarch_git_version
+               );
+#else
+         snprintf(str_output, sizeof(str_output),
+               "%s: %s" "\n" FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n" FILE_PATH_LOG_INFO " =================================================\n",
                msg_hash_to_str(MSG_CAPABILITIES),
                str);
-         strlcat(str_output, "\n" FILE_PATH_LOG_INFO " Built: " __DATE__ "\n" FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n", sizeof(str_output));
-#ifdef HAVE_GIT_VERSION
-         strlcat(str_output, FILE_PATH_LOG_INFO " Git: ", sizeof(str_output));
-         strlcat(str_output, retroarch_git_version, sizeof(str_output));
-         strlcat(str_output, "\n", sizeof(str_output));
 #endif
-
-         strlcat(str_output, FILE_PATH_LOG_INFO " =================================================\n", sizeof(str_output));
          RARCH_LOG_OUTPUT(str_output);
       }
    }
