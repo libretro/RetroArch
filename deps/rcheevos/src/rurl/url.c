@@ -1,6 +1,6 @@
-#include "rurl.h"
+#include "rc_url.h"
 
-#include "../rcheevos/compat.h"
+#include "../rcheevos/rc_compat.h"
 #include "../rhash/md5.h"
 
 #include <stdio.h>
@@ -98,7 +98,7 @@ int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const
   }
 
   /* Evaluate the signature. */
-  snprintf(signature, sizeof(signature), "%u%s%u", lboard_id, user_name, lboard_id);
+  snprintf(signature, sizeof(signature), "%u%s%d", lboard_id, user_name, value);
   md5_init(&state);
   md5_append(&state, (unsigned char*)signature, (int)strlen(signature));
   md5_finish(&state, hash);

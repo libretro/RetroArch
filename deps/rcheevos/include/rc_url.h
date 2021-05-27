@@ -1,5 +1,5 @@
-#ifndef RURL_H
-#define RURL_H
+#ifndef RC_URL_H
+#define RC_URL_H
 
 #include <stddef.h>
 
@@ -32,4 +32,4 @@ int rc_url_ping(char* url_buffer, size_t url_buffer_size, char* post_buffer, siz
 }
 #endif
 
-#endif /* RURL_H */
+#endif /* RC_URL_H */

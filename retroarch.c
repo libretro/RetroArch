@@ -6679,6 +6679,9 @@ void discord_update(enum discord_presence presence)
 {
    struct rarch_state *p_rarch = &rarch_st;
    discord_state_t *discord_st = &p_rarch->discord_st;
+#ifdef HAVE_CHEEVOS
+   char cheevos_richpresence[256];
+#endif
 
    if (presence == discord_st->status)
       return;
@@ -6762,8 +6765,9 @@ void discord_update(enum discord_presence presence)
                discord_st->presence.startTimestamp = discord_st->start_time;
 
 #ifdef HAVE_CHEEVOS
-               discord_st->presence.details        = rcheevos_get_richpresence();
-               if (!discord_st->presence.details || !*discord_st->presence.details)
+               if (rcheevos_get_richpresence(cheevos_richpresence, sizeof(cheevos_richpresence)) > 0)
+                  discord_st->presence.details     = cheevos_richpresence;
+               else
 #endif
                    discord_st->presence.details    = msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME);
@@ -6839,7 +6843,8 @@ void discord_update(enum discord_presence presence)
          if (discord_st->pause_time)
             return;
 
-         discord_st->presence.details = rcheevos_get_richpresence();
+         if (rcheevos_get_richpresence(cheevos_richpresence, sizeof(cheevos_richpresence)) > 0)
+            discord_st->presence.details = cheevos_richpresence;
          presence = DISCORD_PRESENCE_GAME;
          break;
 #endif

@@ -1,4 +1,5 @@
-#include "internal.h"
+#include "rc_runtime.h"
+#include "rc_internal.h"
 
 #include "../rhash/md5.h"
 
@@ -24,7 +25,13 @@ typedef struct rc_runtime_progress_t {
 
 #define RC_TRIGGER_STATE_UNUPDATED 0x7F
 
-#define RC_MEMREF_FLAG_PREV_IS_PRIOR 0x00010000
+#define RC_MEMREF_FLAG_CHANGED_THIS_FRAME 0x00010000
+
+#define RC_COND_FLAG_IS_TRUE                            0x00000001
+#define RC_COND_FLAG_OPERAND1_IS_INDIRECT_MEMREF        0x00010000
+#define RC_COND_FLAG_OPERAND1_MEMREF_CHANGED_THIS_FRAME 0x00020000
+#define RC_COND_FLAG_OPERAND2_IS_INDIRECT_MEMREF        0x00100000
+#define RC_COND_FLAG_OPERAND2_MEMREF_CHANGED_THIS_FRAME 0x00200000
 
 static void rc_runtime_progress_write_uint(rc_runtime_progress_t* progress, unsigned value)
 {
@@ -105,7 +112,7 @@ static void rc_runtime_progress_init(rc_runtime_progress_t* progress, rc_runtime
 
 static int rc_runtime_progress_write_memrefs(rc_runtime_progress_t* progress)
 {
-  rc_memref_value_t* memref = progress->runtime->memrefs;
+  rc_memref_t* memref = progress->runtime->memrefs;
   unsigned int flags = 0;
 
   rc_runtime_progress_start_chunk(progress, RC_RUNTIME_CHUNK_MEMREFS);
@@ -118,14 +125,14 @@ static int rc_runtime_progress_write_memrefs(rc_runtime_progress_t* progress)
   }
   else {
     while (memref) {
-      flags = memref->memref.size;
-      if (memref->previous == memref->prior)
-        flags |= RC_MEMREF_FLAG_PREV_IS_PRIOR;
+      flags = memref->value.size;
+      if (memref->value.changed)
+        flags |= RC_MEMREF_FLAG_CHANGED_THIS_FRAME;
 
-      rc_runtime_progress_write_uint(progress, memref->memref.address);
+      rc_runtime_progress_write_uint(progress, memref->address);
       rc_runtime_progress_write_uint(progress, flags);
-      rc_runtime_progress_write_uint(progress, memref->value);
-      rc_runtime_progress_write_uint(progress, memref->prior);
+      rc_runtime_progress_write_uint(progress, memref->value.value);
+      rc_runtime_progress_write_uint(progress, memref->value.prior);
 
       memref = memref->next;
     }
@@ -140,8 +147,8 @@ static int rc_runtime_progress_read_memrefs(rc_runtime_progress_t* progress)
   unsigned entries;
   unsigned address, flags, value, prior;
   char size;
-  rc_memref_value_t* memref;
-  rc_memref_value_t* first_unmatched = progress->runtime->memrefs;
+  rc_memref_t* memref;
+  rc_memref_t* first_unmatched_memref = progress->runtime->memrefs;
 
   /* re-read the chunk size to determine how many memrefs are present */
   progress->offset -= 4;
@@ -155,15 +162,15 @@ static int rc_runtime_progress_read_memrefs(rc_runtime_progress_t* progress)
 
     size = flags & 0xFF;
 
-    memref = first_unmatched;
+    memref = first_unmatched_memref;
     while (memref) {
-      if (memref->memref.address == address && memref->memref.size == size) {
-        memref->value = value;
-        memref->previous = (flags & RC_MEMREF_FLAG_PREV_IS_PRIOR) ? prior : value;
-        memref->prior = prior;
+      if (memref->address == address && memref->value.size == size) {
+        memref->value.value = value;
+        memref->value.changed = (flags & RC_MEMREF_FLAG_CHANGED_THIS_FRAME) ? 1 : 0;
+        memref->value.prior = prior;
 
-        if (memref == first_unmatched)
-          first_unmatched = memref->next;
+        if (memref == first_unmatched_memref)
+          first_unmatched_memref = memref->next;
 
         break;
       }
@@ -177,16 +184,57 @@ static int rc_runtime_progress_read_memrefs(rc_runtime_progress_t* progress)
   return RC_OK;
 }
 
+static int rc_runtime_progress_is_indirect_memref(rc_operand_t* oper)
+{
+  switch (oper->type)
+  {
+    case RC_OPERAND_CONST:
+    case RC_OPERAND_FP:
+    case RC_OPERAND_LUA:
+      return 0;
+
+    default:
+      return oper->value.memref->value.is_indirect;
+  }
+}
+
 static int rc_runtime_progress_write_condset(rc_runtime_progress_t* progress, rc_condset_t* condset)
 {
   rc_condition_t* cond;
+  unsigned flags;
 
   rc_runtime_progress_write_uint(progress, condset->is_paused);
 
   cond = condset->conditions;
   while (cond) {
+    flags = 0;
+    if (cond->is_true)
+      flags |= RC_COND_FLAG_IS_TRUE;
+
+    if (rc_runtime_progress_is_indirect_memref(&cond->operand1)) {
+      flags |= RC_COND_FLAG_OPERAND1_IS_INDIRECT_MEMREF;
+      if (cond->operand1.value.memref->value.changed)
+        flags |= RC_COND_FLAG_OPERAND1_MEMREF_CHANGED_THIS_FRAME;
+    }
+
+    if (rc_runtime_progress_is_indirect_memref(&cond->operand2)) {
+      flags |= RC_COND_FLAG_OPERAND2_IS_INDIRECT_MEMREF;
+      if (cond->operand2.value.memref->value.changed)
+        flags |= RC_COND_FLAG_OPERAND2_MEMREF_CHANGED_THIS_FRAME;
+    }
+
     rc_runtime_progress_write_uint(progress, cond->current_hits);
-    rc_runtime_progress_write_uint(progress, cond->is_true);
+    rc_runtime_progress_write_uint(progress, flags);
+
+    if (flags & RC_COND_FLAG_OPERAND1_IS_INDIRECT_MEMREF) {
+      rc_runtime_progress_write_uint(progress, cond->operand1.value.memref->value.value);
+      rc_runtime_progress_write_uint(progress, cond->operand1.value.memref->value.prior);
+    }
+
+    if (flags & RC_COND_FLAG_OPERAND2_IS_INDIRECT_MEMREF) {
+      rc_runtime_progress_write_uint(progress, cond->operand2.value.memref->value.value);
+      rc_runtime_progress_write_uint(progress, cond->operand2.value.memref->value.prior);
+    }
 
     cond = cond->next;
   }
@@ -197,13 +245,28 @@ static int rc_runtime_progress_write_condset(rc_runtime_progress_t* progress, rc
 static int rc_runtime_progress_read_condset(rc_runtime_progress_t* progress, rc_condset_t* condset)
 {
   rc_condition_t* cond;
+  unsigned flags;
 
   condset->is_paused = rc_runtime_progress_read_uint(progress);
 
   cond = condset->conditions;
   while (cond) {
     cond->current_hits = rc_runtime_progress_read_uint(progress);
-    cond->is_true = rc_runtime_progress_read_uint(progress) & 0xFF;
+    flags = rc_runtime_progress_read_uint(progress);
+
+    cond->is_true = (flags & RC_COND_FLAG_IS_TRUE) ? 1 : 0;
+
+    if (flags & RC_COND_FLAG_OPERAND1_IS_INDIRECT_MEMREF) {
+      cond->operand1.value.memref->value.value = rc_runtime_progress_read_uint(progress);
+      cond->operand1.value.memref->value.prior = rc_runtime_progress_read_uint(progress);
+      cond->operand1.value.memref->value.changed = (flags & RC_COND_FLAG_OPERAND1_MEMREF_CHANGED_THIS_FRAME) ? 1 : 0;
+    }
+
+    if (flags & RC_COND_FLAG_OPERAND2_IS_INDIRECT_MEMREF) {
+      cond->operand2.value.memref->value.value = rc_runtime_progress_read_uint(progress);
+      cond->operand2.value.memref->value.prior = rc_runtime_progress_read_uint(progress);
+      cond->operand2.value.memref->value.changed = (flags & RC_COND_FLAG_OPERAND2_MEMREF_CHANGED_THIS_FRAME) ? 1 : 0;
+    }
 
     cond = cond->next;
   }
@@ -226,8 +289,7 @@ static int rc_runtime_progress_write_trigger(rc_runtime_progress_t* progress, rc
   }
 
   condset = trigger->alternative;
-  while (condset)
-  {
+  while (condset) {
     result = rc_runtime_progress_write_condset(progress, condset);
     if (result != RC_OK)
       return result;
@@ -253,8 +315,7 @@ static int rc_runtime_progress_read_trigger(rc_runtime_progress_t* progress, rc_
   }
 
   condset = trigger->alternative;
-  while (condset)
-  {
+  while (condset) {
     result = rc_runtime_progress_read_condset(progress, condset);
     if (result != RC_OK)
       return result;
@@ -271,25 +332,25 @@ static int rc_runtime_progress_write_achievements(rc_runtime_progress_t* progres
   int offset = 0;
   int result;
 
-  for (i = 0; i < progress->runtime->trigger_count; ++i)
-  {
+  for (i = 0; i < progress->runtime->trigger_count; ++i) {
     rc_runtime_trigger_t* runtime_trigger = &progress->runtime->triggers[i];
     if (!runtime_trigger->trigger)
       continue;
 
     switch (runtime_trigger->trigger->state)
     {
+      case RC_TRIGGER_STATE_DISABLED:
       case RC_TRIGGER_STATE_INACTIVE:
       case RC_TRIGGER_STATE_TRIGGERED:
         /* don't store state for inactive or triggered achievements */
-        break;
+        continue;
 
       default:
         break;
     }
 
     if (!progress->buffer) {
-      if(runtime_trigger->serialized_size) {
+      if (runtime_trigger->serialized_size) {
         progress->offset += runtime_trigger->serialized_size;
         continue;
       }
@@ -344,10 +405,10 @@ static int rc_runtime_progress_serialize_internal(rc_runtime_progress_t* progres
   rc_runtime_progress_write_uint(progress, RC_RUNTIME_MARKER);
 
   if ((result = rc_runtime_progress_write_memrefs(progress)) != RC_OK)
-      return result;
+    return result;
 
   if ((result = rc_runtime_progress_write_achievements(progress)) != RC_OK)
-      return result;
+    return result;
 
   rc_runtime_progress_write_uint(progress, RC_RUNTIME_CHUNK_DONE);
   rc_runtime_progress_write_uint(progress, 16);
@@ -411,6 +472,7 @@ int rc_runtime_deserialize_progress(rc_runtime_t* runtime, const unsigned char* 
     if (runtime_trigger->trigger) {
       switch (runtime_trigger->trigger->state)
       {
+        case RC_TRIGGER_STATE_DISABLED:
         case RC_TRIGGER_STATE_INACTIVE:
         case RC_TRIGGER_STATE_TRIGGERED:
           /* don't update state for inactive or triggered achievements */
