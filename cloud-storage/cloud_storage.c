@@ -249,7 +249,7 @@ static char *_get_absolute_filename(folder_type_t folder_type, char *filename)
    {
       case CLOUD_STORAGE_GAME_STATES:
          folder_len = strlen(global->name.savestate) + 1;
-         folder = malloc(folder_len);
+         folder = (char *)malloc(folder_len);
          fill_pathname_basedir(folder, global->name.savestate, folder_len);
          last_slash = find_last_slash(folder);
          if (last_slash && last_slash[1] == '\0')
