@@ -108,7 +108,7 @@ char* rc_alloc_str(rc_parse_state_t* parse, const char* text, int length) {
       next = &(*next)->right;
   }
 
-  *next = rc_alloc_scratch(NULL, &used, sizeof(rc_scratch_string_t), RC_ALIGNOF(rc_scratch_string_t), &parse->scratch, RC_OFFSETOF(parse->scratch.objs, __rc_scratch_string_t));
+  *next = (rc_scratch_string_t*)rc_alloc_scratch(NULL, &used, sizeof(rc_scratch_string_t), RC_ALIGNOF(rc_scratch_string_t), &parse->scratch, RC_OFFSETOF(parse->scratch.objs, __rc_scratch_string_t));
   ptr = (char*)rc_alloc_scratch(parse->buffer, &parse->offset, length + 1, RC_ALIGNOF(char), &parse->scratch, -1);
 
   if (!ptr || !*next) {

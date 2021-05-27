@@ -1859,7 +1859,7 @@ void rcheevos_validate_config_settings(void)
 
          if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
          {
-            int i;
+            size_t i;
             const char *val               = NULL;
             const rc_disallowed_setting_t
                *disallowed_setting        = core_filter->disallowed_settings;
