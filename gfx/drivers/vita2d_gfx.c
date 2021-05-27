@@ -178,6 +178,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
          if ((width != vita->width || height != vita->height) && vita->texture)
          {
+            vita2d_wait_rendering_done();
             vita2d_free_texture(vita->texture);
             vita->texture = NULL;
          }
@@ -646,6 +647,7 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    if (width != vita->menu.width && height != vita->menu.height && vita->menu.texture)
    {
+      vita2d_wait_rendering_done();
       vita2d_free_texture(vita->menu.texture);
       vita->menu.texture = NULL;
    }
