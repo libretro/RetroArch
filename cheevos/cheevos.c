@@ -54,6 +54,10 @@
 #include "../cheat_manager.h"
 #endif
 
+#ifdef HAVE_CHD
+#include "streams/chd_stream.h"
+#endif
+
 #include "badges.h"
 #include "cheevos.h"
 #include "cheevos_memory.h"
@@ -2878,21 +2882,51 @@ static void* rc_hash_handle_cd_open_track(const char* path, uint32_t track)
 {
    cdfs_track_t* cdfs_track;
 
-   if (track == 0)
-      cdfs_track = cdfs_open_data_track(path);
-   else
-      cdfs_track = cdfs_open_track(path, track);
+   switch (track)
+   {
+      case RC_HASH_CDTRACK_FIRST_DATA:
+         cdfs_track = cdfs_open_data_track(path);
+         break;
+
+      case RC_HASH_CDTRACK_LAST:
+#ifdef HAVE_CHD
+         if (string_is_equal_noncase(path_get_extension(path), "chd"))
+         {
+            cdfs_track = cdfs_open_track(path, CHDSTREAM_TRACK_LAST);
+            break;
+         }
+#endif
+         CHEEVOS_LOG(RCHEEVOS_TAG "Last track only supported for CHD\n");
+         cdfs_track = NULL;
+         break;
+
+      case RC_HASH_CDTRACK_LARGEST:
+#ifdef HAVE_CHD
+         if (string_is_equal_noncase(path_get_extension(path), "chd"))
+         {
+            cdfs_track = cdfs_open_track(path, CHDSTREAM_TRACK_PRIMARY);
+            break;
+         }
+#endif
+         CHEEVOS_LOG(RCHEEVOS_TAG "Largest track only supported for CHD, using first data track\n");
+         cdfs_track = cdfs_open_data_track(path);
+         break;
+
+      default:
+         cdfs_track = cdfs_open_track(path, track);
+         break;
+   }
 
    if (cdfs_track)
    {
       cdfs_file_t* file = (cdfs_file_t*)malloc(sizeof(cdfs_file_t));
       if (cdfs_open_file(file, cdfs_track, NULL))
-         return file;
+         return file; /* ASSERT: file owns cdfs_track now */
 
       CHEEVOS_FREE(file);
+      cdfs_close_track(cdfs_track); /* ASSERT: this free()s cdfs_track */
    }
 
-   cdfs_close_track(cdfs_track); /* ASSERT: this free()s cdfs_track */
    return NULL;
 }
 
@@ -2955,6 +2989,7 @@ bool rcheevos_load(const void *data)
       return false;
 
    /* provide hooks for reading files */
+   memset(&filereader, 0, sizeof(filereader));
    filereader.open = rc_hash_handle_file_open;
    filereader.seek = rc_hash_handle_file_seek;
    filereader.tell = rc_hash_handle_file_tell;
@@ -2962,6 +2997,7 @@ bool rcheevos_load(const void *data)
    filereader.close = rc_hash_handle_file_close;
    rc_hash_init_custom_filereader(&filereader);
 
+   memset(&cdreader, 0, sizeof(cdreader));
    cdreader.open_track = rc_hash_handle_cd_open_track;
    cdreader.read_sector = rc_hash_handle_cd_read_sector;
    cdreader.close_track = rc_hash_handle_cd_close_track;
