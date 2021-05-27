@@ -107,6 +107,10 @@
 #include "../gfx/video_layout.h"
 #endif
 
+#if defined(HAVE_OVERLAY)
+#include "../input/input_overlay.h"
+#endif
+
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
 #include "gfx/common/ctr_common.h"
@@ -5227,6 +5231,7 @@ static void setting_get_string_representation_uint_input_auto_game_focus(
    }
 }
 
+#if defined(HAVE_OVERLAY)
 static void setting_get_string_representation_uint_input_overlay_show_inputs(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -5265,6 +5270,7 @@ static void setting_get_string_representation_uint_input_overlay_show_inputs_por
       snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer + 1);
 }
+#endif
 
 /* A protected driver is such that the user cannot set to "null" using the UI.
  * Can prevent the user from locking him/herself out of the program. */
@@ -13908,6 +13914,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler
                );
+         (*list)[list_info->index - 1].ui_type                   = ST_UI_TYPE_UINT_COMBOBOX;
          (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
          (*list)[list_info->index - 1].action_left               = &setting_uint_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right              = &setting_uint_action_right_with_refresh;

@@ -610,10 +610,10 @@ OverlayPage::OverlayPage(QObject *parent) :
 QWidget *OverlayPage::widget()
 {
    QWidget                      *widget = new QWidget;
+#if defined(HAVE_OVERLAY)
    QVBoxLayout                  *layout = new QVBoxLayout;
 
    CheckableSettingsGroup *overlayGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE);
-   CheckableSettingsGroup  *inputsGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS);
 
    overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED);
    overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE);
@@ -621,9 +621,8 @@ QWidget *OverlayPage::widget()
    overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED);
    overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR);
 
-   inputsGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT);
-
-   overlayGroup->addRow(inputsGroup);
+   overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS);
+   overlayGroup->add(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT);
 
    overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_PRESET);
    overlayGroup->add(MENU_ENUM_LABEL_OVERLAY_OPACITY);
@@ -644,6 +643,7 @@ QWidget *OverlayPage::widget()
    layout->addStretch();
 
    widget->setLayout(layout);
+#endif
 
    return widget;
 }
