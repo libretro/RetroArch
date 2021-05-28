@@ -171,7 +171,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
       char name[PATH_MAX_LENGTH];
       memset(name, 0, sizeof(name));
 
-      WideCharToMultiByte(CP_ACP, 0, aa->FriendlyName, wcslen(aa->FriendlyName),
+      WideCharToMultiByte(CP_UTF8, 0, aa->FriendlyName, wcslen(aa->FriendlyName),
             name, PATH_MAX_LENGTH, NULL, NULL);
 
       for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next)
