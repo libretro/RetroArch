@@ -1,8 +1,12 @@
 # Future
+
+# 1.9.4
+- CHEEVOS: update rcheevos to v10.0.0
 - CONTENT LOADING/FILE IO: Prevent unnecessary extraction (to disk) of compressed content files when need_fullpath is false
 - CORE INFO/FILE IO: Enable core info cache by default now for all platforms
 - CORE INFO/REGRESSION FIX: Fix regression caused by core info file caching - Downloads was no longer showing up in Load Content
 - FILE IO/COMPRESSED: Ability to load content inside ZIP files directly into RAM
+- INPUT/OVERLAYS: Add option to select between 'touched' elements and physical controller inputs when showing inputs on overlays
 - INPUT REMAPPING/OVERLAYS: Prevent duplicate inputs when using remaps with input overlays
 - LAKKA: Add brightness restore hook
 - LOCALIZATION: Fetch translations from Crowdin
