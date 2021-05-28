@@ -4015,6 +4015,7 @@ static unsigned menu_displaylist_parse_content_information(
       content_path   = loaded_content_path;
       core_path      = loaded_core_path;
 
+      if (core_info_find(core_path, &core_info))
          if (!string_is_empty(core_info->display_name))
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
    }
