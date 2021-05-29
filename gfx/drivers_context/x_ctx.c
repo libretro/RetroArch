@@ -64,6 +64,7 @@ typedef struct gfx_ctx_x_data
    bool core_es_core;
    bool debug;
    bool should_reset_mode;
+   bool is_fullscreen;
    bool is_double;
    bool core_hw_context_enable;
    bool adaptive_vsync;
@@ -298,7 +299,24 @@ static void gfx_ctx_x_swap_buffers(void *data)
 }
 
 static bool gfx_ctx_x_set_resize(void *data,
-      unsigned width, unsigned height) { return true; }
+      unsigned width, unsigned height)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+
+   if (!x)
+      return false;
+
+   /*
+    * X11 loses focus on monitor/resolution swap and exits fullscreen.
+    * Set window on top again to maintain both fullscreen and resolution.
+    */
+   if (x->is_fullscreen) {
+      XMapRaised(g_x11_dpy, g_x11_win);
+      RARCH_LOG("[GLX]: Resized fullscreen resolution to %dx%d.\n", width, height);
+   }
+
+   return true;
+}
 
 static void *gfx_ctx_x_init(void *data)
 {
@@ -455,7 +473,6 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    if (!x)
       return false;
 
-
    switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -489,6 +506,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       LeaveWindowMask | EnterWindowMask |
       ButtonReleaseMask | ButtonPressMask;
    swa.override_redirect = False;
+
+   x->is_fullscreen = fullscreen;
 
    if (fullscreen && !windowed_full)
    {
