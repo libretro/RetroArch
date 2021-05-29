@@ -36,7 +36,7 @@ cp -f ~/${FILENAME} ~/RetroArch_Metal.dmg
 echo "Notarizing DMG..."
 
 codesign --force --verbose --timestamp --sign "7069CC8A4AE9AFF0493CC539BBA4FA345F0A668B" ~/RetroArch_Metal.dmg
-REQUESTUUID=$(xcrun altool --notarize-app -t osx -f ~/RetroArch_Metal.dmg --primary-bundle-id libretro.RetroArch -u $APPLE_ID -p $APPLE_ID_PASS -itc_provider UK699V5ZS8 | awk '/RequestUUID/ { print $NF; }')
+REQUESTUUID=$(xcrun altool --notarize-app -t osx -f ~/RetroArch_Metal.dmg --primary-bundle-id com.libretro.RetroArchM -u $APPLE_ID -p $APPLE_ID_PASS -itc_provider UK699V5ZS8 | awk '/RequestUUID/ { print $NF; }')
 sleep 200
 xcrun altool --notarization-info $REQUESTUUID -u $APPLE_ID -p $APPLE_ID_PASS -ascprovider UK699V5ZS8
 xcrun stapler staple ~/RetroArch_Metal.dmg
