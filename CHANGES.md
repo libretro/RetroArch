@@ -1,4 +1,5 @@
 # Future
+- PSTV: Fix scaling on PSTV when not using 720p
 
 # 1.9.4
 - CHEEVOS: update rcheevos to v10.0.0
