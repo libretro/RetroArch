@@ -9134,7 +9134,7 @@ static bool setting_append_list(
          }
 #endif
 
-#ifdef HAVE_LAKKA
+#if defined(HAVE_LAKKA) || defined(HAVE_WIFI)
          if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
          {
             CONFIG_ACTION(

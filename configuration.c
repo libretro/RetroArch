@@ -213,6 +213,7 @@ enum bluetooth_driver_enum
 enum wifi_driver_enum
 {
    WIFI_CONNMANCTL          = BLUETOOTH_NULL + 1,
+   WIFI_NMCLI,
    WIFI_NULL
 };
 
@@ -1090,6 +1091,8 @@ const char *config_get_default_wifi(void)
    {
       case WIFI_CONNMANCTL:
          return "connmanctl";
+      case WIFI_NMCLI:
+         return "nmcli";
       case WIFI_NULL:
          break;
    }
