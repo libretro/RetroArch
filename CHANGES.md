@@ -1,5 +1,5 @@
 # Future
-- PSTV: Fix scaling on PSTV when not using 720p
+- X11: fix fullscreen when swapping monitors/resolution
 
 # 1.9.4
 - CHEEVOS: update rcheevos to v10.0.0
@@ -16,6 +16,7 @@
 - PS3/PSL1GHT: Joypad driver works again
 - PSTV: Fix Vita input driver for PSTV
 - PSTV: Support for 720p on PSTV when using 'Unlock framebuffer' in Sharpscale plugin
+- PSTV: Fix scaling on PSTV when not using 720p
 - RPNG: Fix some memory corruption if processing broken input PNG file
 - SECURITY: Fix CVE-2021-28927
 
