@@ -818,8 +818,8 @@ end:
    buf_info = NULL;
 }
 static void check_proc_acpi_sysfs_battery(const char *node,
-      bool *have_battery, bool *charging,
-      int *seconds, int *percent)
+      bool *have_battery, bool *charging, int *seconds,
+      int *percent, int *valid_pct_idx)
 {
    char path[1024];
    const char *base  = proc_acpi_sysfs_battery_path;
@@ -837,6 +837,22 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    int           pct = -1;
 
    path[0]           = '\0';
+
+   /* Stat type. Avoid unknown or device supplies. Missing is considered System. */
+   snprintf(path, sizeof(path), "%s/%s/%s", base, node, "scope");
+
+   if (filestream_exists(path) != 0)
+   {
+      if (filestream_read_file(path, (void**)&buf, &length) == 1 && buf)
+      {
+         if (strstr((char*)buf, "Unknown"))
+            goto end;
+         else if (strstr((char*)buf, "Device"))
+            goto end;
+         free(buf);
+         buf = NULL;
+      }
+   }
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
 
@@ -858,9 +874,8 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       else if (strstr((char*)buf, "Full"))
          *have_battery = true;
       free(buf);
+      buf = NULL;
    }
-
-   buf = NULL;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "capacity");
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
@@ -868,7 +883,12 @@ static void check_proc_acpi_sysfs_battery(const char *node,
 
    capacity = atoi(buf);
 
-   *percent = capacity;
+   /*
+    * Keep record of valid capacities for calculating an average
+    * on systems with backup battery supplies.
+    */
+   (*valid_pct_idx)++;
+   (*percent) += capacity;
 
 end:
    free(buf);
@@ -1103,6 +1123,7 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
    bool have_battery   = false;
    bool have_ac        = false;
    bool charging       = false;
+   int  valid_pct_idx  = 0;
    struct RDIR *entry  = retro_opendir(proc_acpi_sysfs_battery_path);
    if (!entry)
       goto error;
@@ -1116,8 +1137,12 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
 
       if (node && (strstr(node, "BAT") || strstr(node, "battery")))
          check_proc_acpi_sysfs_battery(node,
-               &have_battery, &charging, seconds, percent);
+               &have_battery, &charging, seconds, percent, &valid_pct_idx);
    }
+
+   /* Get average percentage */
+   if (valid_pct_idx)
+      (*percent) /= valid_pct_idx;
 
    retro_closedir(entry);
 
