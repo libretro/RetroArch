@@ -54,7 +54,8 @@ enum rarch_path_type
    RARCH_PATH_CORE_OPTIONS,
    RARCH_PATH_DEFAULT_SHADER_PRESET,
    RARCH_PATH_BASENAME,
-   RARCH_PATH_SUBSYSTEM
+   RARCH_PATH_SUBSYSTEM,
+   RARCH_PATH_STATE
 };
 
 void dir_clear(enum rarch_dir_type type);

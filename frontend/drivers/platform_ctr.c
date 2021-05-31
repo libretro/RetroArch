@@ -160,8 +160,10 @@ static void frontend_ctr_deinit(void* data)
    verbosity_enable();
    retro_main_log_file_init(NULL, false);
 
+#ifdef CONSOLE_LOG
    if (ctr_bottom_screen_enabled && (ctr_fork_mode == FRONTEND_FORK_NONE))
       wait_for_input();
+#endif
 
    CFGU_GetModelNintendo2DS(&not_2DS);
 
@@ -417,13 +419,15 @@ void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
                        id,
                        (u32*)gfxBottomFramebuffers[id],
                        (u32*)gfxBottomFramebuffers[id],
-                       240 * 2,
-                       GSP_RGB565_OES);
+                       240 * 3,
+                       GSP_BGR8_OES);
    }
 }
 #endif
 
+#ifdef CONSOLE_LOG
 PrintConsole* ctrConsole;
+#endif
 
 static void frontend_ctr_init(void* data)
 {
@@ -434,10 +438,10 @@ static void frontend_ctr_init(void* data)
 
    verbosity_enable();
 
-   gfxInit(GSP_BGR8_OES, GSP_RGB565_OES, false);
+   gfxInit(GSP_BGR8_OES, GSP_BGR8_OES, false);
 
    u32 topSize               = 400 * 240 * 3;
-   u32 bottomSize            = 320 * 240 * 2;
+   u32 bottomSize            = 320 * 240 * 3;
 
 #ifdef USE_CTRULIB_2
    linearFree(gfxGetFramebuffer(GFX_TOP,    GFX_LEFT, NULL, NULL));
@@ -471,7 +475,9 @@ static void frontend_ctr_init(void* data)
    gfxSetFramebufferInfo(GFX_BOTTOM, 0);
 
    gfxSet3D(true);
+#ifdef CONSOLE_LOG
    ctrConsole = consoleInit(GFX_BOTTOM, NULL);
+#endif
 
    /* enable access to all service calls when possible. */
    if (svchax_init)

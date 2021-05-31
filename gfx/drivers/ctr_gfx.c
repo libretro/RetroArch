@@ -50,6 +50,16 @@
 #include "../../tasks/tasks_internal.h"
 #endif
 
+enum
+{
+   CTR_TEXTURE_BOTTOM_MENU,
+   CTR_TEXTURE_STATE_THUMBNAIL,
+   CTR_TEXTURE_LAST
+};
+
+/* TODO/FIXME - global referenced outside */
+extern uint64_t lifecycle_state;
+
 /* An annoyance...
  * Have to keep track of bottom screen enable state
  * externally, otherwise cannot detect current state
@@ -226,6 +236,545 @@ static void ctr_update_viewport(
 
 }
 
+static const char *ctr_texture_path(unsigned id)
+{
+   switch (id)
+   {
+      case CTR_TEXTURE_BOTTOM_MENU:
+         return "ctr/bottom_menu.png";
+      case CTR_TEXTURE_STATE_THUMBNAIL:
+         {
+            static char state_path[PATH_MAX_LENGTH];
+
+            snprintf(state_path, sizeof(state_path),
+               "%s.png", path_get(RARCH_PATH_STATE));
+
+            return path_basename(state_path);
+         }
+   }
+
+   return NULL;
+}   
+
+static void ctr_update_state_date(void *data)
+{
+   ctr_video_t *ctr = (ctr_video_t*)data;
+
+   time_t now = time(NULL);
+
+   struct tm *t = localtime(&now);
+   sprintf(ctr->state_date, "%02d/%02d/%d",
+      t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
+}
+
+static bool ctr_update_state_date_from_file(void *data)
+{
+   const char *state_path;
+   ctr_video_t *ctr = (ctr_video_t*)data;
+
+   state_path = path_get(RARCH_PATH_STATE);
+
+#ifdef USE_CTRULIB_2
+   time_t mtime;
+   bool file_exists = archive_getmtime(state_path + 5, &mtime) == 0;
+#else
+   u64 mtime;
+   bool file_exists = sdmc_getmtime(state_path + 5, &mtime) == 0;
+#endif 
+   if (!file_exists)
+   {
+      ctr->state_data_exist = false;
+      snprintf(ctr->state_date, sizeof(ctr->state_date), "00/00/0000");
+      return false;
+   }
+
+   ctr->state_data_exist = true;
+
+#ifdef USE_CTRULIB_2
+   struct tm *t = localtime(&mtime);
+#else
+   time_t ft = mtime;
+   struct tm *t = localtime(&ft);
+#endif
+   sprintf(ctr->state_date, "%02d/%02d/%d",
+      t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
+      
+  return true;
+}
+
+static void ctr_state_thumbnail_geom(void *data)
+{
+   ctr_video_t *ctr = (ctr_video_t *) data;
+   struct ctr_bottom_texture_data *o = NULL;
+   const int target_width = 120;
+   const int target_height = 90;
+   unsigned width, height;
+
+   if (ctr)
+      o = &ctr->bottom_textures[CTR_TEXTURE_STATE_THUMBNAIL];
+
+   if (!o)
+      return;
+
+   ctr_texture_t *texture = (ctr_texture_t *) o->texture;
+   if (!texture)
+      return;
+
+   float scale = (float) target_width / texture->active_width;
+   if (target_width > texture->active_width * scale) {
+      scale = (float) (target_width + 1) / texture->active_width;
+   }
+
+   o->frame_coords->u0 = 0;
+   o->frame_coords->v0 = 0;
+   o->frame_coords->u1 = texture->active_width;
+   o->frame_coords->v1 = texture->active_height;
+
+   int x_offset = 184;
+   int y_offset = 46 + (target_height - texture->active_height * scale) / 2;
+
+   o->frame_coords->x0 = x_offset;
+   o->frame_coords->y0 = y_offset;
+   o->frame_coords->x1 = o->frame_coords->x0 + texture->active_width * scale;
+   o->frame_coords->y1 = o->frame_coords->y0 + texture->active_height * scale;
+
+   ctr_set_scale_vector(&o->scale_vector,
+         CTR_BOTTOM_FRAMEBUFFER_WIDTH,
+         CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+         texture->width,
+         texture->height);
+}
+
+static bool ctr_load_bottom_texture(void *data)
+{
+   unsigned i;
+   const char *dir_assets;
+
+   ctr_video_t *ctr = (ctr_video_t *)data;
+   settings_t *settings = config_get_ptr();
+
+   for (i = 0; i < CTR_TEXTURE_LAST; i++)
+   {
+      if (i == CTR_TEXTURE_STATE_THUMBNAIL)
+         dir_assets = dir_get_ptr(RARCH_DIR_SAVESTATE);
+      else
+         dir_assets = settings->paths.directory_assets;
+
+      if (gfx_display_reset_textures_list(
+         ctr_texture_path(i), dir_assets,
+         &ctr->bottom_textures[i].texture,
+         TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+      {
+         struct ctr_bottom_texture_data *o = &ctr->bottom_textures[i];
+         o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
+
+         if (i == CTR_TEXTURE_STATE_THUMBNAIL)
+         {
+            ctr_state_thumbnail_geom(ctr);
+            ctr->render_state_from_png_file = true;
+         }
+         else
+         {
+            ctr_texture_t *texture = (ctr_texture_t *) o->texture;
+
+            o->frame_coords->u0 = 0;
+            o->frame_coords->v0 = 0;
+            o->frame_coords->u1 = texture->width;
+            o->frame_coords->v1 = texture->height;
+
+            o->frame_coords->x0 = 0;
+            o->frame_coords->y0 = 0;
+            o->frame_coords->x1 = o->frame_coords->x0 + texture->width;
+            o->frame_coords->y1 = o->frame_coords->y0 + texture->height;
+
+            ctr_set_scale_vector(&o->scale_vector,
+                  CTR_BOTTOM_FRAMEBUFFER_WIDTH,
+                  CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+                  texture->width,
+                  texture->height);
+         }
+      }
+      else if (i == CTR_TEXTURE_BOTTOM_MENU)
+         return false;
+   }
+
+   return true;
+}
+
+static void save_state_to_file(void *data)
+{
+   ctr_video_t *ctr = (ctr_video_t*)data;
+
+   char state_path[PATH_MAX_LENGTH];
+   global_t *global = global_get_ptr();
+   const char *name_savestate = global->name.savestate;
+
+   if (ctr->state_slot > 0)
+      snprintf(state_path, sizeof(state_path), "%s%d", name_savestate,
+            ctr->state_slot);
+   else if (ctr->state_slot < 0)
+      fill_pathname_join_delim(state_path,
+            name_savestate, "auto", '.', sizeof(state_path));
+   else
+      strlcpy(state_path, name_savestate, sizeof(state_path));
+
+   command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
+}
+
+static void bottom_menu_control(void* data, bool lcd_bottom)
+{
+   touchPosition state_tmp_touch;
+   uint32_t state_tmp = 0;
+   ctr_video_t *ctr = (ctr_video_t*)data;
+   settings_t *settings = config_get_ptr();
+   int config_slot = settings->ints.state_slot;
+
+   if (!ctr->init_bottom_menu)
+   {
+      if (ctr_load_bottom_texture(ctr))
+      {
+         ctr_update_state_date_from_file(ctr);
+         ctr->bottom_menu = CTR_BOTTOM_MENU_DEFAULT;
+      }
+
+      ctr->init_bottom_menu = true;
+   }
+
+   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
+
+   state_tmp = hidKeysDown();
+   hidTouchRead(&state_tmp_touch);
+
+   if (state_tmp & KEY_TOUCH)
+   {
+#ifdef CONSOLE_LOG
+      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+      return;
+#endif
+      if (!rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+         return;
+
+      if (!lcd_bottom ||
+         ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
+      {
+         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+         return;
+      }
+
+      switch (ctr->bottom_menu)
+      {
+         case CTR_BOTTOM_MENU_DEFAULT:
+            BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+            break;
+         case CTR_BOTTOM_MENU_SELECT:
+            if (state_tmp_touch.px > 8 &&
+                  state_tmp_touch.px < 164 &&
+                  state_tmp_touch.py > 9 &&
+                  state_tmp_touch.py < 86)
+            {
+               BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+            }
+            else if (state_tmp_touch.px > 8 &&
+                  state_tmp_touch.px < 164 &&
+                  state_tmp_touch.py > 99 &&
+                  state_tmp_touch.py < 230) 
+            {
+               char screenshot_full_path[PATH_MAX_LENGTH];
+
+               struct ctr_bottom_texture_data *o =
+                  &ctr->bottom_textures[CTR_TEXTURE_STATE_THUMBNAIL];
+
+               ctr_texture_t *texture = (ctr_texture_t *) o->texture;
+               if (texture)
+                  linearFree(texture->data);
+               else
+               {
+                  o->texture = (uintptr_t) calloc(1, sizeof(ctr_texture_t));
+                  o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
+                  texture = (ctr_texture_t *) o->texture;
+               }
+
+               texture->width = ctr->texture_width;
+               texture->height = ctr->texture_width;
+               texture->active_width = ctr->frame_coords->u1;
+               texture->active_height = ctr->frame_coords->v1;
+
+               texture->data = linearAlloc(
+                     ctr->texture_width * ctr->texture_height * 
+                     (ctr->rgb32? 4:2));
+
+               memcpy(texture->data, ctr->texture_swizzled, 
+                     ctr->texture_width * ctr->texture_height * 
+                     (ctr->rgb32? 4:2));
+
+               ctr_state_thumbnail_geom(ctr);
+
+               ctr->state_data_exist = true;
+               ctr->state_data_on_ram = true;
+               ctr->render_state_from_png_file = false;
+
+               ctr_update_state_date(ctr);
+
+               command_event(CMD_EVENT_SAVE_STATE_TO_RAM, NULL);
+
+               if (settings->bools.savestate_thumbnail_enable)
+               {
+                  sprintf(screenshot_full_path, "%s/%s",
+                     dir_get_ptr(RARCH_DIR_SAVESTATE),
+                     ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL));
+
+                  take_screenshot(NULL, screenshot_full_path, true,
+                     video_driver_cached_frame_has_valid_framebuffer(),
+                     true, true);
+               }
+
+               BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+            }
+            else if (state_tmp_touch.px > 176 &&
+                  state_tmp_touch.px < 311 &&
+                  state_tmp_touch.py > 9 &&
+                  state_tmp_touch.py < 230 &&
+                  ctr->state_data_exist) 
+            {
+               if (ctr->state_data_on_ram)
+                  command_event(CMD_EVENT_LOAD_STATE_FROM_RAM, NULL);
+               else
+                  command_event(CMD_EVENT_LOAD_STATE, NULL);
+               BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+            }
+            break;
+      }
+
+      ctr->refresh_bottom_menu = true;
+   }
+
+   if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE ||
+         !rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+      return;
+
+   if (ctr->state_slot != config_slot)
+   {
+      if (ctr->state_data_on_ram)
+      {
+         save_state_to_file(ctr);
+         ctr->state_data_on_ram = false;
+      }
+
+      ctr->state_slot = config_slot;
+
+      struct ctr_bottom_texture_data *o = &ctr->bottom_textures[CTR_TEXTURE_STATE_THUMBNAIL];
+      ctr_texture_t *texture = (ctr_texture_t *) o->texture;
+
+      if (texture)
+      {
+         linearFree(texture->data);
+         linearFree(o->frame_coords);
+         o->texture = 0;
+      }
+
+      if (ctr_update_state_date_from_file(ctr))
+      {
+         if(gfx_display_reset_textures_list(
+                  ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
+                  dir_get_ptr(RARCH_DIR_SAVESTATE),
+                  &o->texture,
+                  TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+         {
+            o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
+            ctr_state_thumbnail_geom(ctr);
+            ctr->render_state_from_png_file = true;
+         }
+      }
+
+      ctr->refresh_bottom_menu = true;
+   }
+
+   if (menu_driver_is_alive())
+      ctr->bottom_menu = CTR_BOTTOM_MENU_SELECT;
+   else
+      ctr->bottom_menu = CTR_BOTTOM_MENU_DEFAULT;
+
+   if (ctr->prev_bottom_menu != ctr->bottom_menu)
+   {
+      ctr->prev_bottom_menu = ctr->bottom_menu;
+      ctr->refresh_bottom_menu = true;
+   }
+}
+
+static void font_driver_render_msg_bottom(
+      void *data,         
+      const char *msg,    
+      const void *_params,
+      void *font_data)    
+{
+   ctr_video_t *ctr = (ctr_video_t*)data;
+
+   ctr->render_font_bottom = true;
+   font_driver_render_msg(ctr, msg, _params, font_data);
+   ctr->render_font_bottom = false;
+}
+
+static void ctr_render_bottom_screen(void *data)
+{
+   ctr_video_t *ctr = (ctr_video_t*)data;
+
+   if (!ctr)
+      return;
+
+   if (!ctr->refresh_bottom_menu)
+      return;
+
+   struct font_params params = { 0, };
+   params.text_align = TEXT_ALIGN_CENTER;
+   params.color = COLOR_ABGR(255, 255, 255, 255);
+
+   switch (ctr->bottom_menu)
+   {
+      case CTR_BOTTOM_MENU_NOT_AVAILABLE:
+         {
+            params.scale = 1.6f;
+            params.x = 0.0f;
+            params.y = 0.5f;
+
+            font_driver_render_msg_bottom(ctr,
+               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
+               &params, NULL);
+         }
+         break;
+      case CTR_BOTTOM_MENU_DEFAULT:
+         {
+            params.scale = 1.6f;
+            params.x = 0.0f;
+            params.y = 0.5f;
+
+            font_driver_render_msg_bottom(ctr,
+               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_DEFAULT),
+               &params, NULL);
+         }
+         break;
+      case CTR_BOTTOM_MENU_SELECT:
+         {
+            params.scale = 1.48f;
+            params.color = COLOR_ABGR(255, 255, 255, 255);
+
+            /* draw state thumbnail */
+            if (ctr->state_data_exist) {
+               struct ctr_bottom_texture_data *o = (struct ctr_bottom_texture_data*)
+                  &ctr->bottom_textures[CTR_TEXTURE_STATE_THUMBNAIL];
+
+               ctr_texture_t *texture = (ctr_texture_t *) o->texture;
+               if (texture)
+               {
+                  GPU_TEXCOLOR colorType = GPU_RGBA8;
+                  if (!ctr->render_state_from_png_file && !ctr->rgb32)
+                     colorType = GPU_RGB565;
+
+                  ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(texture->data),
+                        texture->width, texture->height,
+                        GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
+                        GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+                        colorType);
+
+                  GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
+                  ctrGuSetVertexShaderFloatUniform(0, (float*)&o->scale_vector, 1);
+                  ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(o->frame_coords));
+
+                  GPU_SetViewport(NULL,
+                        VIRT_TO_PHYS(ctr->drawbuffers.bottom),
+                        0, 0, CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+                        CTR_BOTTOM_FRAMEBUFFER_WIDTH);
+                  GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+               }
+               else
+               {
+                  params.x = 0.266f;
+                  params.y = 0.64f;
+                  font_driver_render_msg_bottom(ctr, 
+                     msg_hash_to_str(MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL),
+                     &params, NULL);
+               }
+            }
+            else
+            {
+               params.x = 0.266f;
+               params.y = 0.64f;
+               font_driver_render_msg_bottom(ctr, 
+                  msg_hash_to_str(MSG_3DS_BOTTOM_MENU_NO_STATE_DATA),
+                  &params, NULL);
+            }
+
+            /* draw bottom menu */
+            struct ctr_bottom_texture_data *o = &ctr->bottom_textures[CTR_TEXTURE_BOTTOM_MENU];
+            ctr_texture_t *texture = (ctr_texture_t *) o->texture;
+
+            ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(texture->data),
+                  texture->width, texture->height,
+                  GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
+                  GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+                  GPU_RGBA8);
+
+            GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
+            ctrGuSetVertexShaderFloatUniform(0, (float*)&o->scale_vector, 1);
+            ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(o->frame_coords));
+
+            GPU_SetViewport(NULL,
+                  VIRT_TO_PHYS(ctr->drawbuffers.bottom),
+                  0, 0, CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+                  CTR_BOTTOM_FRAMEBUFFER_WIDTH);
+            GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+
+            /* draw resume game */
+            params.x = -0.178f;
+            params.y = 0.78f;
+
+            font_driver_render_msg_bottom(ctr, 
+               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_RESUME),
+               &params, NULL);
+
+            /* draw create restore point */
+            params.x = -0.178f;
+            params.y = 0.33f;
+
+            font_driver_render_msg_bottom(ctr, 
+               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_SAVE_STATE),
+               &params, NULL);
+
+            /* draw load restore point */
+            params.x = 0.266f;
+            params.y = 0.24f;
+
+            font_driver_render_msg_bottom(ctr, 
+               msg_hash_to_str(MSG_3DS_BOTTOM_MENU_LOAD_STATE),
+               &params, NULL);
+
+            /* draw date */
+            params.x = 0.266f;
+            params.y = 0.87f;
+            font_driver_render_msg_bottom(ctr, ctr->state_date,
+               &params, NULL);
+         }
+         break;
+   }
+}
+
+static void ctr_set_bottom_screen_enable(bool enabled)
+{
+   Handle lcd_handle;
+   u8 not_2DS;
+
+   CFGU_GetModelNintendo2DS(&not_2DS);
+   if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+   {
+      u32 *cmdbuf = getThreadCommandBuffer();
+      cmdbuf[0] = enabled? 0x00110040:  0x00120040;
+      cmdbuf[1] = 2;
+      svcSendSyncRequest(lcd_handle);
+      svcCloseHandle(lcd_handle);
+   }
+
+   ctr_bottom_screen_enabled = enabled;
+}
+
 static void ctr_lcd_aptHook(APT_HookType hook, void* param)
 {
    ctr_video_t *ctr  = (ctr_video_t*)param;
@@ -285,16 +834,12 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
 
    if ((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
    {
-      Handle lcd_handle;
-      u8 not_2DS;
-      CFGU_GetModelNintendo2DS(&not_2DS);
-      if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
+      ctr_set_bottom_screen_enable(hook == APTHOOK_ONSUSPEND);
+
+      if (ctr->state_data_on_ram)
       {
-         u32 *cmdbuf = getThreadCommandBuffer();
-         cmdbuf[0] = ((hook == APTHOOK_ONSUSPEND) || ctr_bottom_screen_enabled)? 0x00110040: 0x00120040;
-         cmdbuf[1] = 2;
-         svcSendSyncRequest(lcd_handle);
-         svcCloseHandle(lcd_handle);
+         save_state_to_file(ctr);
+         ctr->state_data_on_ram = false;
       }
    }
    
@@ -324,34 +869,11 @@ static bool ctr_tasks_finder(retro_task_t *task,void *userdata)
 task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
 #endif
 
-static void ctr_set_bottom_screen_enable(void* data, bool enabled)
-{
-   Handle lcd_handle;
-   u8 not_2DS;
-   ctr_video_t *ctr = (ctr_video_t*)data;
-
-   if (!ctr)
-     return;
-
-   gfxBottomFramebuffers[0] = enabled ? (u8*)ctrConsole->frameBuffer:
-                                        (u8*)ctr->empty_framebuffer;
-
-   CFGU_GetModelNintendo2DS(&not_2DS);
-   if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
-   {
-      u32 *cmdbuf = getThreadCommandBuffer();
-      cmdbuf[0] = enabled? 0x00110040:  0x00120040;
-      cmdbuf[1] = 2;
-      svcSendSyncRequest(lcd_handle);
-      svcCloseHandle(lcd_handle);
-   }
-
-   ctr_bottom_screen_enabled = enabled;
-}
 
 static void* ctr_init(const video_info_t* video,
       input_driver_t** input, void** input_data)
 {
+   size_t i;
    float refresh_rate;
    u8 device_model      = 0xFF;
    void* ctrinput       = NULL;
@@ -374,6 +896,7 @@ static void* ctr_init(const video_info_t* video,
 
    ctr->drawbuffers.top.left = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
    ctr->drawbuffers.top.right = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
+   ctr->drawbuffers.bottom = vramAlloc(CTR_BOTTOM_FRAMEBUFFER_WIDTH * CTR_BOTTOM_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
 
    ctr->display_list_size = 0x4000;
    ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
@@ -382,6 +905,22 @@ static void* ctr_init(const video_info_t* video,
    ctr->vertex_cache.size = 0x1000;
    ctr->vertex_cache.buffer = linearAlloc(ctr->vertex_cache.size * sizeof(ctr_vertex_t));
    ctr->vertex_cache.current = ctr->vertex_cache.buffer;
+
+   ctr->bottom_textures = (struct ctr_bottom_texture_data *)calloc(CTR_TEXTURE_LAST,
+      sizeof(*ctr->bottom_textures));
+
+   ctr->init_bottom_menu = false;
+   ctr->state_data_exist = false;
+   ctr->state_data_on_ram = false;
+   ctr->render_font_bottom = false;
+   ctr->refresh_bottom_menu = true;
+   ctr->render_state_from_png_file = false;
+   ctr->bottom_menu = CTR_BOTTOM_MENU_NOT_AVAILABLE;
+   ctr->prev_bottom_menu = CTR_BOTTOM_MENU_NOT_AVAILABLE;
+   ctr->state_slot = settings->ints.state_slot;
+
+   snprintf(ctr->state_date, sizeof(ctr->state_date), "%s", "00/00/0000");
+   ctr->state_date[CTR_STATE_DATE_SIZE - 1] = '\0';
 
    ctr->rgb32 = video->rgb32;
    ctr->texture_width = video->input_scale * RARCH_SCALE_BASE;
@@ -494,6 +1033,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->smooth        = video->smooth;
    ctr->vsync         = video->vsync;
    ctr->current_buffer_top = 0;
+   ctr->current_buffer_bottom = 0;
 
    /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
     * mode with the parallax barrier disabled
@@ -501,9 +1041,6 @@ static void* ctr_init(const video_info_t* video,
     * CTR_VIDEO_MODE_2D_400X240 and CTR_VIDEO_MODE_2D_800X240) */
    CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
    ctr->supports_parallax_disable = (device_model == 0) || (device_model == 1);
-
-   ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
-   memset(ctr->empty_framebuffer, 0, 320 * 240 * 2);
 
    refresh_rate = (32730.0 * 8192.0) / 4481134.0;
 
@@ -521,7 +1058,7 @@ static void* ctr_init(const video_info_t* video,
 
    /* Set bottom screen enable state, if required */
    if (lcd_bottom != ctr_bottom_screen_enabled)
-      ctr_set_bottom_screen_enable(ctr, lcd_bottom);
+      ctr_set_bottom_screen_enable(lcd_bottom);
 
    gspSetEventCallback(GSPGPU_EVENT_VBlank0,
          (ThreadFunc)ctr_vsync_hook, ctr, false);
@@ -539,12 +1076,10 @@ static bool ctr_frame(void* data, const void* frame,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
    static uint64_t currentTick,lastTick;
-   touchPosition state_tmp_touch;
-   extern GSPGPU_FramebufferInfo topFramebufferInfo;
+   extern GSPGPU_FramebufferInfo topFramebufferInfo, bottomFramebufferInfo;
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
    uint32_t diff;
-   uint32_t state_tmp             = 0;
    ctr_video_t       *ctr         = (ctr_video_t*)data;
    static float        fps        = 0.0;
    static int total_frames        = 0;
@@ -566,6 +1101,7 @@ static bool ctr_frame(void* data, const void* frame,
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
+   bool lcd_bottom                = false;
 
    if (!width || !height || !settings)
    {
@@ -573,12 +1109,10 @@ static bool ctr_frame(void* data, const void* frame,
       return true;
    }
 
-   state_tmp = hidKeysDown();
-   hidTouchRead(&state_tmp_touch);
-   if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py < 120))
-   {
-      ctr_set_bottom_screen_enable(ctr, !ctr_bottom_screen_enabled);
-   }
+   lcd_bottom = settings->bools.video_3ds_lcd_bottom;
+   if (lcd_bottom != ctr_bottom_screen_enabled)
+      ctr_set_bottom_screen_enable(lcd_bottom);
+   bottom_menu_control(data, lcd_bottom);
 
    if (ctr->p3d_event_pending)
    {
@@ -724,11 +1258,23 @@ static bool ctr_frame(void* data, const void* frame,
             custom_vp_height
             );
 
-   ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
-                    (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,
-                    0x201, NULL, 0x00000000,
-                    0,
-                    0x201);
+   if (ctr->refresh_bottom_menu)
+   {
+      ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
+            (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,
+            0x201,
+            (u32*)ctr->drawbuffers.bottom, 0x00000000,
+            (u32*)ctr->drawbuffers.bottom + 2 * CTR_BOTTOM_FRAMEBUFFER_WIDTH * CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+            0x201);
+   }
+   else
+   {
+      ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
+            (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,
+            0x201, NULL, 0x00000000,
+            0,
+            0x201);
+   }
 
    GPUCMD_SetBufferOffset(0);
 
@@ -900,6 +1446,12 @@ static bool ctr_frame(void* data, const void* frame,
       gfx_widgets_frame(video_info);
 #endif
 
+#ifndef CONSOLE_LOG
+   if (ctr_bottom_screen_enabled && 
+         rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+      ctr_render_bottom_screen(ctr);
+#endif
+
    if (msg)
       font_driver_render_msg(ctr, msg, NULL, NULL);
 
@@ -920,10 +1472,21 @@ static bool ctr_frame(void* data, const void* frame,
                            CTRGU_RGBA8,
                            gfxTopRightFramebuffers[ctr->current_buffer_top], 240, CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
+#ifndef CONSOLE_LOG
+   ctrGuDisplayTransfer(true,
+                        ctr->drawbuffers.bottom,
+                        240,
+                        320,
+                        CTRGU_RGBA8,
+                        gfxBottomFramebuffers[ctr->current_buffer_bottom],
+      						240,
+		      				CTRGU_RGB8,
+      					CTRGU_MULTISAMPLE_NONE);
+#endif
    /* Swap buffers : */
 
 #ifdef USE_CTRULIB_2
-   u32 *buf0, *buf1;
+   u32 *buf0, *buf1, *bottom;
    u32 stride;
 
    buf0 = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
@@ -947,6 +1510,16 @@ static bool ctr_frame(void* data, const void* frame,
 
    gspPresentBuffer(GFX_TOP, ctr->current_buffer_top, buf0, buf1,
                     stride, (1<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES);
+
+#ifndef CONSOLE_LOG
+   if (ctr->refresh_bottom_menu)
+   {
+      bottom = (u32*)gfxBottomFramebuffers[ctr->current_buffer_bottom];
+      stride = 240 * 3;
+      gspPresentBuffer(GFX_BOTTOM, ctr->current_buffer_bottom, bottom, bottom,
+            stride, GSP_BGR8_OES);
+   }
+#endif 
 #else
    topFramebufferInfo.
       active_framebuf           = ctr->current_buffer_top;
@@ -967,7 +1540,7 @@ static bool ctr_frame(void* data, const void* frame,
             framebuf1_vaddr     = (u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
       else
          topFramebufferInfo.
-            framebuf1_vaddr      = topFramebufferInfo.framebuf0_vaddr;
+            framebuf1_vaddr     = topFramebufferInfo.framebuf0_vaddr;
 
       topFramebufferInfo.
          framebuf_widthbytesize = 240 * 3;
@@ -985,11 +1558,43 @@ static bool ctr_frame(void* data, const void* frame,
 	framebufferInfoHeader[0x0]  ^= 1;
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
 	framebufferInfoHeader[0x1]   = 1;
+
+#ifndef CONSOLE_LOG
+   if (ctr->refresh_bottom_menu)
+   {
+      bottomFramebufferInfo.
+         active_framebuf           = ctr->current_buffer_bottom;
+      bottomFramebufferInfo.
+         framebuf0_vaddr           = (u32*)gfxBottomFramebuffers[
+         ctr->current_buffer_bottom];
+
+      bottomFramebufferInfo.
+         framebuf1_vaddr           = (u32*)(gfxBottomFramebuffers[
+               ctr->current_buffer_bottom] + 240 * 3);
+      bottomFramebufferInfo.
+         framebuf_widthbytesize    = 240 * 3;
+
+      bottomFramebufferInfo.format = GSP_BGR8_OES;
+      bottomFramebufferInfo.
+         framebuf_dispselect       = ctr->current_buffer_bottom;
+      bottomFramebufferInfo.unk    = 0x00000000;
+
+      u8* framebufferInfoHeader2   = gfxSharedMemory+0x200+gfxThreadID*0x80+0x40;
+      GSPGPU_FramebufferInfo*
+         framebufferInfo2          =
+         (GSPGPU_FramebufferInfo*)&framebufferInfoHeader2[0x4];
+      framebufferInfoHeader2[0x0] ^= 1;
+      framebufferInfo2[framebufferInfoHeader2[0x0]] = bottomFramebufferInfo;
+      framebufferInfoHeader2[0x1]  = 1;
+   }
+#endif
 #endif
 
    ctr->current_buffer_top     ^= 1;
+   ctr->current_buffer_bottom  ^= 1;
    ctr->p3d_event_pending       = true;
    ctr->ppf_event_pending       = true;
+   ctr->refresh_bottom_menu     = false;
 
    return true;
 }
@@ -1024,16 +1629,33 @@ static bool ctr_suppress_screensaver(void* data, bool enable)
 
 static void ctr_free(void* data)
 {
+   unsigned i;
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (!ctr)
       return;
+
+   if (ctr->state_data_on_ram)
+      save_state_to_file(ctr);
 
    aptUnhook(&ctr->lcd_aptHook);
    gspSetEventCallback(GSPGPU_EVENT_VBlank0, NULL, NULL, true);
    shaderProgramFree(&ctr->shader);
    DVLB_Free(ctr->dvlb);
    vramFree(ctr->drawbuffers.top.left);
+   vramFree(ctr->drawbuffers.bottom);
+   for (i = 0; i < CTR_TEXTURE_LAST; i++)
+   {
+      struct ctr_bottom_texture_data *o = &ctr->bottom_textures[i];
+      ctr_texture_t *texture = (ctr_texture_t *) o->texture;
+      if (texture)
+      {
+         linearFree(texture->data);
+         linearFree(o->frame_coords);
+         o->texture = 0;
+      }
+   }
+   free(ctr->bottom_textures);
    linearFree(ctr->display_list);
    linearFree(ctr->texture_linear);
    linearFree(ctr->texture_swizzled);
@@ -1041,7 +1663,6 @@ static void ctr_free(void* data)
    linearFree(ctr->menu.texture_linear);
    linearFree(ctr->menu.texture_swizzled);
    linearFree(ctr->menu.frame_coords);
-   linearFree(ctr->empty_framebuffer);
    linearFree(ctr->vertex_cache.buffer);
    linearFree(ctr);
 #if 0

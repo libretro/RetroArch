@@ -42,7 +42,8 @@
 typedef struct
 {
    ctr_texture_t texture;
-   ctr_scale_vector_t scale_vector;
+   ctr_scale_vector_t scale_vector_top;
+   ctr_scale_vector_t scale_vector_bottom;
    const font_renderer_driver_t* font_driver;
    void* font_data;
 } ctr_font_t;
@@ -95,7 +96,15 @@ static void* ctr_font_init_font(void* data, const char* font_path,
    linearFree(tmp);
 #endif
 
-   ctr_set_scale_vector(&font->scale_vector, 400, 240, font->texture.width, font->texture.height);
+   ctr_set_scale_vector(&font->scale_vector_top, 
+      CTR_TOP_FRAMEBUFFER_WIDTH, 
+      CTR_TOP_FRAMEBUFFER_HEIGHT,
+      font->texture.width, font->texture.height);
+
+   ctr_set_scale_vector(&font->scale_vector_bottom, 
+      CTR_BOTTOM_FRAMEBUFFER_WIDTH, 
+      CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+      font->texture.width, font->texture.height);
 
    return font;
 }
@@ -174,11 +183,12 @@ static void ctr_font_render_line(
    switch (text_align)
    {
       case TEXT_ALIGN_RIGHT:
-         x -= ctr_font_get_message_width(font, msg, msg_len, scale);
+         x += width - ctr_font_get_message_width(font, msg, msg_len, scale);
          break;
 
       case TEXT_ALIGN_CENTER:
-         x -= ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
+         x += width / 2 - 
+            ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
          break;
    }
 
@@ -231,7 +241,11 @@ static void ctr_font_render_line(
       return;
 
    GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
-   ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector, 1);
+   if (!ctr->render_font_bottom)
+      ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector_top, 1);
+   else
+      ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector_bottom, 1);
+
    GSPGPU_FlushDataCache(ctr->vertex_cache.current,
          (v - ctr->vertex_cache.current) * sizeof(ctr_vertex_t));
    ctrGuSetAttributeBuffers(2,
@@ -261,20 +275,31 @@ static void ctr_font_render_line(
          GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
          GPU_L8);
 
-   GPU_SetViewport(NULL,
-         VIRT_TO_PHYS(ctr->drawbuffers.top.left),
-         0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
-         ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
-
-   GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
-
-   if (ctr->video_mode == CTR_VIDEO_MODE_3D)
+   if (!ctr->render_font_bottom)
    {
       GPU_SetViewport(NULL,
-                      VIRT_TO_PHYS(ctr->drawbuffers.top.right),
-                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                      CTR_TOP_FRAMEBUFFER_WIDTH);
+            VIRT_TO_PHYS(ctr->drawbuffers.top.left),
+            0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+            ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
+            ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
+
+      if (ctr->video_mode == CTR_VIDEO_MODE_3D)
+      {
+         GPU_SetViewport(NULL,
+               VIRT_TO_PHYS(ctr->drawbuffers.top.right),
+               0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+               CTR_TOP_FRAMEBUFFER_WIDTH);
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
+      }
+   }
+   else
+   {
+      GPU_SetViewport(NULL,
+            VIRT_TO_PHYS(ctr->drawbuffers.bottom),
+            0, 0, CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+            CTR_BOTTOM_FRAMEBUFFER_WIDTH);
       GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
    }
 
@@ -363,8 +388,10 @@ static void ctr_font_render_msg(
             alpha, r_dark, g_dark, b_dark, alpha_dark;
    ctr_font_t                * font = (ctr_font_t*)data;
    ctr_video_t                *ctr  = (ctr_video_t*)userdata;
-   unsigned width                   = ctr->vp.full_width;
-   unsigned height                  = ctr->vp.full_height;
+   unsigned width                   = ctr->render_font_bottom ?
+      CTR_BOTTOM_FRAMEBUFFER_WIDTH : CTR_TOP_FRAMEBUFFER_WIDTH;
+   unsigned height                  = ctr->render_font_bottom ?
+      CTR_BOTTOM_FRAMEBUFFER_HEIGHT : CTR_TOP_FRAMEBUFFER_HEIGHT;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;

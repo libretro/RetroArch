@@ -9122,6 +9122,27 @@ static void path_fill_names(struct rarch_state *p_rarch)
    }
 }
 
+char *path_get_state(void)
+{
+   static char state_path[16384];
+   struct rarch_state *p_rarch   = &rarch_st;
+   const global_t *global        = &p_rarch->g_extern;
+   settings_t *settings          = p_rarch->configuration_settings;
+   int state_slot                = settings->ints.state_slot;
+   const char *name_savestate    = global->name.savestate;
+
+   if (state_slot > 0)
+      snprintf(state_path, sizeof(state_path), "%s%d",
+            name_savestate, state_slot);
+   else if (state_slot < 0)
+      fill_pathname_join_delim(state_path,
+            name_savestate, "auto", '.', sizeof(state_path));
+   else
+      strlcpy(state_path, name_savestate, sizeof(state_path));
+
+   return state_path;
+}
+
 char *path_get_ptr(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -9150,6 +9171,8 @@ char *path_get_ptr(enum rarch_path_type type)
          break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
+      case RARCH_PATH_STATE:
+         return path_get_state();
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -9186,6 +9209,8 @@ const char *path_get(enum rarch_path_type type)
          break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
+      case RARCH_PATH_STATE:
+         return path_get_state();
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -13234,28 +13259,16 @@ static bool command_event_main_state(
 {
    retro_ctx_size_info_t info;
    char msg[128];
-   char state_path[16384];
+   const char *state_path;
    const global_t *global      = &p_rarch->g_extern;
    settings_t *settings        = p_rarch->configuration_settings;
    bool ret                    = false;
    bool push_msg               = true;
 
-   state_path[0] = msg[0]      = '\0';
+   msg[0]                      = '\0';
 
    if (global)
-   {
-      int state_slot             = settings->ints.state_slot;
-      const char *name_savestate = global->name.savestate;
-
-      if (state_slot > 0)
-         snprintf(state_path, sizeof(state_path), "%s%d",
-               name_savestate, state_slot);
-      else if (state_slot < 0)
-         fill_pathname_join_delim(state_path,
-               name_savestate, "auto", '.', sizeof(state_path));
-      else
-         strlcpy(state_path, name_savestate, sizeof(state_path));
-   }
+      state_path = path_get(RARCH_PATH_STATE);
 
    core_serialize_size(&info);
 
@@ -13264,6 +13277,7 @@ static bool command_event_main_state(
       switch (cmd)
       {
          case CMD_EVENT_SAVE_STATE:
+         case CMD_EVENT_SAVE_STATE_TO_RAM:
             {
                bool savestate_auto_index                      =
                      settings->bools.savestate_auto_index;
@@ -13272,7 +13286,10 @@ static bool command_event_main_state(
                bool frame_time_counter_reset_after_save_state =
                      settings->bools.frame_time_counter_reset_after_save_state;
 
-               content_save_state(state_path, true, false);
+               if (cmd == CMD_EVENT_SAVE_STATE)
+                  content_save_state(state_path, true, false);
+               else
+                  content_save_state_to_ram();
 
                /* Clean up excess savestates if necessary */
                if (savestate_auto_index && (savestate_max_keep > 0))
@@ -13286,24 +13303,33 @@ static bool command_event_main_state(
             }
             break;
          case CMD_EVENT_LOAD_STATE:
-            if (content_load_state(state_path, false, false))
+         case CMD_EVENT_LOAD_STATE_FROM_RAM:
             {
+               bool res = false;
+               if (cmd == CMD_EVENT_LOAD_STATE)
+                  res = content_load_state(state_path, false, false);
+               else
+                  res = content_load_state_from_ram();
+
+               if (res)
+               {
 #ifdef HAVE_CHEEVOS
-               if (rcheevos_hardcore_active())
-               {
-                  rcheevos_pause_hardcore();
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               }
+                  if (rcheevos_hardcore_active())
+                  {
+                     rcheevos_pause_hardcore();
+                     runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  }
 #endif
-               ret = true;
+                  ret = true;
 #ifdef HAVE_NETWORKING
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
-               {
-                  bool frame_time_counter_reset_after_load_state =
-                     settings->bools.frame_time_counter_reset_after_load_state;
-                  if (frame_time_counter_reset_after_load_state)
-                     p_rarch->video_driver_frame_time_count = 0;
+                  {
+                     bool frame_time_counter_reset_after_load_state =
+                        settings->bools.frame_time_counter_reset_after_load_state;
+                     if (frame_time_counter_reset_after_load_state)
+                        p_rarch->video_driver_frame_time_count = 0;
+                  }
                }
             }
             push_msg = false;
@@ -13798,11 +13824,13 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
+      case CMD_EVENT_UNDO_SAVE_STATE:
+      case CMD_EVENT_LOAD_STATE_FROM_RAM:
          if (!command_event_main_state(p_rarch, cmd))
             return false;
          break;
-      case CMD_EVENT_UNDO_SAVE_STATE:
-         if (!command_event_main_state(p_rarch, cmd))
+      case CMD_EVENT_RAM_STATE_TO_FILE:
+         if (!content_ram_state_to_file((char *) data))
             return false;
          break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
@@ -13834,6 +13862,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          return false;
       case CMD_EVENT_SAVE_STATE:
+      case CMD_EVENT_SAVE_STATE_TO_RAM:
          {
             bool savestate_auto_index = settings->bools.savestate_auto_index;
             int state_slot            = settings->ints.state_slot;
