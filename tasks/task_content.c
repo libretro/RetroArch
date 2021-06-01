@@ -57,6 +57,7 @@
 #include <lists/string_list.h>
 #include <lists/dir_list.h>
 #include <vfs/vfs_implementation.h>
+#include <array/rbuf.h>
 
 #include <retro_miscellaneous.h>
 #include <retro_assert.h>
@@ -130,8 +131,6 @@ struct content_information_ctx
    char *directory_cache;
    char *directory_system;
 
-   struct string_list *temporary_content;
-
    struct
    {
       struct retro_subsystem_info *data;
@@ -151,6 +150,531 @@ struct content_information_ctx
    bool check_firmware_before_loading;
 };
 
+/*************************************/
+/* Content file info functions START */
+/*************************************/
+
+static void content_file_override_free(
+      content_state_t *p_content)
+{
+   size_t i;
+
+   if (!p_content->content_override_list)
+      return;
+
+   for (i = 0; i < RBUF_LEN(p_content->content_override_list); i++)
+   {
+      content_file_override_t *override =
+            &p_content->content_override_list[i];
+
+      if (!override || !override->ext)
+         continue;
+
+      free(override->ext);
+   }
+
+   RBUF_FREE(p_content->content_override_list);
+}
+
+/* Returns true if an override for content files
+ * of extension 'ext' has been set */
+static bool content_file_override_get_ext(
+      content_state_t *p_content,
+      const char *ext,
+      const content_file_override_t **override)
+{
+   size_t num_overrides;
+   size_t i;
+
+   if (!p_content || string_is_empty(ext))
+      return false;
+
+   num_overrides = RBUF_LEN(p_content->content_override_list);
+
+   if (num_overrides < 1)
+      return false;
+
+   for (i = 0; i < num_overrides; i++)
+   {
+      content_file_override_t *content_override =
+            &p_content->content_override_list[i];
+
+      if (!content_override ||
+          !content_override->ext)
+         continue;
+
+      if (string_is_equal_noncase(
+            content_override->ext, ext))
+      {
+         if (override)
+            *override = content_override;
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
+bool content_file_override_set(
+      const struct retro_system_content_info_override *overrides)
+{
+   content_state_t *p_content = content_state_get_ptr();
+   size_t i;
+
+   if (!p_content || !overrides)
+      return false;
+
+   /* Free any existing override list */
+   content_file_override_free(p_content);
+
+   for (i = 0; overrides[i].extensions; i++)
+   {
+      struct string_list ext_list = {0};
+      size_t j;
+
+      /* Get list of extensions affected by override */
+      string_list_initialize(&ext_list);
+      if (!string_split_noalloc(&ext_list,
+            overrides[i].extensions, "|"))
+      {
+         string_list_deinitialize(&ext_list);
+         continue;
+      }
+
+      for (j = 0; j < ext_list.size; j++)
+      {
+         const char *ext                   = ext_list.elems[j].data;
+         content_file_override_t *override = NULL;
+         size_t num_entries;
+
+         /* Check whether extension has already been
+          * registered */
+         if (string_is_empty(ext) ||
+             content_file_override_get_ext(p_content, ext, NULL))
+            continue;
+
+         /* Add current override to the list */
+         num_entries = RBUF_LEN(p_content->content_override_list);
+
+         if (!RBUF_TRYFIT(p_content->content_override_list,
+               num_entries + 1))
+         {
+            string_list_deinitialize(&ext_list);
+            return false;
+         }
+
+         RBUF_RESIZE(p_content->content_override_list,
+               num_entries + 1);
+
+         RARCH_LOG("[CONTENT OVERRIDE]: File Extension: '%s' - need_fullpath: %s, persistent_data: %s\n",
+               ext, overrides[i].need_fullpath ? "TRUE" : "FALSE",
+               overrides[i].persistent_data ? "TRUE" : "FALSE");
+
+         override                  = &p_content->content_override_list[num_entries];
+         override->ext             = strdup(ext);
+         override->need_fullpath   = overrides[i].need_fullpath;
+         override->persistent_data = overrides[i].persistent_data;
+      }
+
+      string_list_deinitialize(&ext_list);
+   }
+
+   return true;
+}
+
+/* Frees any content data that is not flagged
+ * as 'persistent'. Should be called after
+ * content_file_load() */
+static void content_file_list_free_transient_data(
+      content_file_list_t *file_list)
+{
+   size_t i;
+
+   if (!file_list)
+      return;
+
+   for (i = 0; i < file_list->size; i++)
+   {
+      content_file_info_t *file_info = &file_list->entries[i];
+
+      if (file_info->data &&
+          !file_info->persistent_data)
+      {
+         free((void*)file_info->data);
+
+         file_info->data      = NULL;
+         file_info->data_size = 0;
+      }
+   }
+}
+
+static void content_file_list_free_entry(
+      content_file_info_t *file_info)
+{
+   if (!file_info)
+      return;
+
+   if (file_info->full_path)
+   {
+      free(file_info->full_path);
+      file_info->full_path = NULL;
+   }
+
+   if (file_info->archive_path)
+   {
+      free(file_info->archive_path);
+      file_info->archive_path = NULL;
+   }
+
+   if (file_info->archive_file)
+   {
+      free(file_info->archive_file);
+      file_info->archive_file = NULL;
+   }
+
+   if (file_info->dir)
+   {
+      free(file_info->dir);
+      file_info->dir = NULL;
+   }
+
+   if (file_info->name)
+   {
+      free(file_info->name);
+      file_info->name = NULL;
+   }
+
+   if (file_info->ext)
+   {
+      free(file_info->ext);
+      file_info->ext = NULL;
+   }
+
+   if (file_info->meta)
+   {
+      free(file_info->meta);
+      file_info->meta = NULL;
+   }
+
+   if (file_info->data)
+   {
+      free((void*)file_info->data);
+      file_info->data = NULL;
+   }
+   file_info->data_size = 0;
+
+   file_info->file_in_archive = false;
+   file_info->persistent_data = false;
+}
+
+static void content_file_list_free(
+      content_file_list_t *file_list)
+{
+   if (!file_list)
+      return;
+
+   if (file_list->entries)
+   {
+      size_t i;
+
+      for (i = 0; i < file_list->size; i++)
+      {
+         content_file_info_t *file_info = &file_list->entries[i];
+         content_file_list_free_entry(file_info);
+      }
+
+      free(file_list->entries);
+   }
+
+   if (file_list->temporary_files)
+   {
+      size_t i;
+
+      /* Remove any temporary content files from
+       * the file system */
+      for (i = 0; i < file_list->temporary_files->size; i++)
+      {
+         const char *path = file_list->temporary_files->elems[i].data;
+
+         if (string_is_empty(path))
+            continue;
+
+         RARCH_LOG("[CONTENT LOAD]: %s: %s\n",
+               msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE),
+               path);
+
+         if (filestream_delete(path) != 0)
+            RARCH_ERR("[CONTENT LOAD]: %s: %s.\n",
+                  msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
+                  path);
+      }
+
+      string_list_free(file_list->temporary_files);
+   }
+
+   if (file_list->game_info)
+      free(file_list->game_info);
+
+   if (file_list->game_info_ext)
+      free(file_list->game_info_ext);
+
+   free(file_list);
+}
+
+static content_file_list_t *content_file_list_init(size_t size)
+{
+   content_file_list_t *file_list = NULL;
+
+   if (size < 1)
+      goto error;
+
+   file_list = (content_file_list_t *)malloc(sizeof(*file_list));
+   if (!file_list)
+      goto error;
+
+   /* Set initial 'values' */
+   file_list->entries         = NULL;
+   file_list->size            = 0;
+   file_list->temporary_files = string_list_new();
+   file_list->game_info       = NULL;
+   file_list->game_info_ext   = NULL;
+
+   if (!file_list->temporary_files)
+      goto error;
+
+   /* Create entries list */
+   file_list->entries         = (content_file_info_t *)
+         calloc(size, sizeof(content_file_info_t));
+   if (!file_list->entries)
+      goto error;
+
+   file_list->size            = size;
+
+   /* Create retro_game_info object */
+   file_list->game_info       = (struct retro_game_info *)
+         calloc(size, sizeof(struct retro_game_info));
+   if (!file_list->game_info)
+      goto error;
+
+   /* Create retro_game_info_ext object */
+   file_list->game_info_ext   = (struct retro_game_info_ext *)
+         calloc(size, sizeof(struct retro_game_info_ext));
+   if (!file_list->game_info_ext)
+      goto error;
+
+   return file_list;
+
+error:
+   if (file_list)
+      content_file_list_free(file_list);
+   return NULL;
+}
+
+/* Convenience function: Adds an entry to the
+ * temporary (i.e. extracted) content file list.
+ * Returns pointer to allocated char array. */
+static const char *content_file_list_append_temporary(
+      content_file_list_t *file_list,
+      const char *path)
+{
+   union string_list_elem_attr attr;
+
+   if (!file_list ||
+       string_is_empty(path))
+      return NULL;
+
+   attr.i = 0;
+
+   if (string_list_append(file_list->temporary_files,
+         path, attr))
+      return file_list->temporary_files->elems[
+         file_list->temporary_files->size - 1].data;
+
+   return NULL;
+}
+
+/* Note: Takes ownership of supplied 'data' buffer */
+static bool content_file_list_set_info(
+      content_file_list_t *file_list,
+      const char *path,
+      void *data,
+      size_t data_size,
+      bool persistent_data,
+      size_t idx)
+{
+   content_file_info_t *file_info            = NULL;
+   struct retro_game_info *game_info         = NULL;
+   struct retro_game_info_ext *game_info_ext = NULL;
+
+   if (!file_list ||
+       (idx >= file_list->size))
+      return false;
+
+   file_info = &file_list->entries[idx];
+   if (!file_info)
+      return false;
+
+   game_info = &file_list->game_info[idx];
+   if (!game_info)
+      return false;
+
+   game_info_ext = &file_list->game_info_ext[idx];
+   if (!game_info_ext)
+      return false;
+
+   /* Clear any existing info */
+   content_file_list_free_entry(file_info);
+
+   game_info->path = NULL;
+   game_info->data = NULL;
+   game_info->size = 0;
+   game_info->meta = NULL;
+
+   game_info_ext->full_path       = NULL;
+   game_info_ext->archive_path    = NULL;
+   game_info_ext->archive_file    = NULL;
+   game_info_ext->dir             = NULL;
+   game_info_ext->name            = NULL;
+   game_info_ext->ext             = NULL;
+   game_info_ext->meta            = NULL;
+   game_info_ext->data            = NULL;
+   game_info_ext->size            = 0;
+   game_info_ext->file_in_archive = false;
+   game_info_ext->persistent_data = false;
+
+   /* Assign data */
+   if (( data && !data_size) ||
+       (!data &&  data_size))
+      return false;
+
+   file_info->data            = data;
+   file_info->data_size       = data_size;
+   file_info->persistent_data = persistent_data;
+
+   /* Assign paths
+    * > There is some degree of redundant data
+    *   here, but we need it in this format
+    *   (persistent copies of each parameter)
+    *   to minimise complications when passing
+    *   extended path info to cores */
+   if (!string_is_empty(path))
+   {
+      const char *archive_delim = NULL;
+      const char *ext           = NULL;
+      char dir[PATH_MAX_LENGTH];
+      char name[256];
+
+      dir[0]  = '\0';
+      name[0] = '\0';
+
+      /* 'Full' path - may point to a file
+       * inside an archive */
+      file_info->full_path = strdup(path);
+
+      /* File extension - may be used core-side
+       * to differentiate content types */
+      ext = path_get_extension(path);
+      if (ext)
+      {
+         file_info->ext = strdup(ext);
+         /* File extension is always presented
+          * core-side in lowercase format */
+         string_to_lower(file_info->ext);
+      }
+
+      /* Check whether path corresponds to a file
+       * inside an archive */
+      archive_delim = path_get_archive_delim(path);
+
+      if (archive_delim)
+      {
+         char archive_path[PATH_MAX_LENGTH];
+         size_t len;
+
+         archive_path[0] = '\0';
+
+         /* Extract path of parent archive */
+         len = (size_t)(1 + archive_delim - path);
+         len = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
+
+         strlcpy(archive_path, path, len * sizeof(char));
+         if (!string_is_empty(archive_path))
+            file_info->archive_path = strdup(archive_path);
+
+         /* Extract name of file in archive */
+         archive_delim++;
+         if (!string_is_empty(archive_delim))
+            file_info->archive_file = strdup(archive_delim);
+
+         /* Extract parent directory - may be used
+          * core-side as a reference point for searching
+          * related content (e.g. same file name, different
+          * extension) */
+         fill_pathname_parent_dir(dir, archive_path, sizeof(dir));
+
+         /* Extract 'canonical' name/id of content file -
+          * may be used core-side as a reference point for
+          * searching related content. For archived content,
+          * this is the basename of the archive file without
+          * extension */
+         fill_pathname_base_noext(name, archive_path, sizeof(name));
+
+         file_info->file_in_archive = true;
+      }
+      else
+      {
+         /* If path corresponds to a 'normal' file,
+          * just extract parent directory */
+         fill_pathname_parent_dir(dir, path, sizeof(dir));
+
+         /* For uncompressed content, 'canonical' name/id
+          * is the basename of the content file, without
+          * extension */
+         fill_pathname_base_noext(name, path, sizeof(name));
+      }
+
+      if (!string_is_empty(dir))
+      {
+         /* Remove any trailing slash */
+         char *last_slash = find_last_slash(dir);
+         if (last_slash && (last_slash[1] == '\0'))
+            *last_slash = '\0';
+
+         if (!string_is_empty(dir))
+            file_info->dir = strdup(dir);
+      }
+
+      if (!string_is_empty(name))
+         file_info->name = strdup(name);
+   }
+
+   /* Assign retro_game_info pointers */
+   game_info->path = file_info->full_path;
+   game_info->data = file_info->data;
+   game_info->size = file_info->data_size;
+   game_info->meta = file_info->meta;
+
+   /* Assign retro_game_info_ext pointers */
+   game_info_ext->full_path       = file_info->full_path;
+   game_info_ext->archive_path    = file_info->archive_path;
+   game_info_ext->archive_file    = file_info->archive_file;
+   game_info_ext->dir             = file_info->dir;
+   game_info_ext->name            = file_info->name;
+   game_info_ext->ext             = file_info->ext;
+   game_info_ext->meta            = file_info->meta;
+   game_info_ext->data            = file_info->data;
+   game_info_ext->size            = file_info->data_size;
+   game_info_ext->file_in_archive = file_info->file_in_archive;
+   game_info_ext->persistent_data = file_info->persistent_data;
+
+   return true;
+}
+
+/***********************************/
+/* Content file info functions END */
+/***********************************/
+
 /********************************/
 /* Content file functions START */
 /********************************/
@@ -160,16 +684,18 @@ struct content_information_ctx
 #define CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, block_extract) (attr.i |= ((block_extract) ? 1 : 0))
 #define CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, need_fullpath) (attr.i |= ((need_fullpath) ? 2 : 0))
 #define CONTENT_FILE_ATTR_SET_REQUIRED(attr, required)           (attr.i |= ((required)      ? 4 : 0))
+#define CONTENT_FILE_ATTR_SET_PERSISTENT(attr, persistent)       (attr.i |= ((persistent)    ? 8 : 0))
 
 #define CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(attr) ((attr.i & 1) != 0)
 #define CONTENT_FILE_ATTR_GET_NEED_FULLPATH(attr) ((attr.i & 2) != 0)
 #define CONTENT_FILE_ATTR_GET_REQUIRED(attr)      ((attr.i & 4) != 0)
+#define CONTENT_FILE_ATTR_GET_PERSISTENT(attr)    ((attr.i & 8) != 0)
 
 /**
  * content_file_load_into_memory:
- * @path         : path of the content file.
- * @buf          : buffer into which the content file will be read.
- * @length       : size of the resultant content buffer.
+ * @content_path : path of the content file.
+ * @data         : buffer into which the content file will be read.
+ * @data_size    : size of the resultant content buffer.
  *
  * Reads the content file into memory. Also performs soft patching
  * (see patch_content function) if soft patching has not been
@@ -180,17 +706,18 @@ struct content_information_ctx
 static bool content_file_load_into_memory(
       content_information_ctx_t *content_ctx,
       content_state_t *p_content,
-      struct retro_game_info *info,
-      size_t idx, bool content_compressed,
-      enum rarch_content_type first_content_type)
+      const char *content_path,
+      bool content_compressed,
+      size_t idx,
+      enum rarch_content_type first_content_type,
+      uint8_t **data,
+      size_t *data_size)
 {
-   struct retro_game_info *content_info = &info[idx];
-   const char *content_path             = content_info->path;
-   uint8_t *content_data                = NULL;
-   int64_t length                       = 0;
+   uint8_t *content_data = NULL;
+   int64_t content_size  = 0;
 
-   content_info->data = NULL;
-   content_info->size = 0;
+   *data      = NULL;
+   *data_size = 0;
 
    RARCH_LOG("[CONTENT LOAD]: %s: %s\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), content_path);
@@ -200,23 +727,24 @@ static bool content_file_load_into_memory(
    if (content_compressed)
    {
       if (!file_archive_compressed_read(content_path,
-            (void**)&content_data, NULL, &length))
+            (void**)&content_data, NULL, &content_size))
          return false;
    }
    else
 #endif
       if (!filestream_read_file(content_path,
-            (void**)&content_data, &length))
+            (void**)&content_data, &content_size))
          return false;
 
-   if (length < 0)
+   if (content_size < 0)
       return false;
 
    /* First content file is significant: attempt to do
     * soft patching, CRC checking, etc. */
    if (idx == 0)
    {
-      /* If we have a media type, ignore CRC32 calculation. */
+      /* If we have a media type, ignore patches/CRC32
+       * calculation. */
       if (first_content_type == RARCH_CONTENT_NONE)
       {
          bool has_patch = false;
@@ -232,7 +760,7 @@ static bool content_file_load_into_memory(
                   content_ctx->name_bps,
                   content_ctx->name_ups,
                   (uint8_t**)&content_data,
-                  (void*)&length);
+                  (void*)&content_size);
 #endif
          /* If content is compressed or a patch has been
           * applied, must determine CRC value using the
@@ -244,7 +772,7 @@ static bool content_file_load_into_memory(
          if (content_compressed || has_patch)
          {
             p_content->rom_crc = encoding_crc32(0, content_data,
-                  (size_t)length);
+                  (size_t)content_size);
             RARCH_LOG("[CONTENT LOAD]: CRC32: 0x%x\n",
                   (unsigned)p_content->rom_crc);
          }
@@ -259,8 +787,8 @@ static bool content_file_load_into_memory(
          p_content->rom_crc = 0;
    }
 
-   content_info->data = content_data;
-   content_info->size = length;
+   *data      = content_data;
+   *data_size = (size_t)content_size;
 
    return true;
 }
@@ -268,17 +796,15 @@ static bool content_file_load_into_memory(
 #ifdef HAVE_COMPRESSION
 static bool content_file_extract_from_archive(
       content_information_ctx_t *content_ctx,
-      struct retro_game_info *info,
-      size_t idx, const char *valid_exts,
+      content_state_t *p_content,
+      const char *valid_exts,
+      const char **content_path,
       char **error_string)
 {
-   struct retro_game_info *content_info = &info[idx];
-   const char *content_path             = content_info->path;
-   union string_list_elem_attr attr;
+   const char *temp_path_ptr = NULL;
    char temp_path[PATH_MAX_LENGTH];
    char msg[1024];
 
-   attr.i       = 0;
    temp_path[0] = '\0';
    msg[0]       = '\0';
 
@@ -287,14 +813,14 @@ static bool content_file_extract_from_archive(
 
    /* Attempt to extract file  */
    if (!file_archive_extract_file(
-         content_path, valid_exts,
+         *content_path, valid_exts,
          string_is_empty(content_ctx->directory_cache) ?
                NULL : content_ctx->directory_cache,
          temp_path, sizeof(temp_path)))
    {
       snprintf(msg, sizeof(msg), "%s: %s\n",
             msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-            content_path);
+            *content_path);
       *error_string = strdup(msg);
       return false;
    }
@@ -302,13 +828,13 @@ static bool content_file_extract_from_archive(
    /* Add path of extracted file to temporary content
     * list (so it can be deleted when deinitialising
     * the core) */
-   if (!string_list_append(content_ctx->temporary_content,
-         temp_path, attr))
+   temp_path_ptr = content_file_list_append_temporary(
+         p_content->content_list, temp_path);
+   if (!temp_path_ptr)
       return false;
 
-   /* Assign extracted file path to info struct */
-   content_info->path = content_ctx->temporary_content->elems[
-         content_ctx->temporary_content->size - 1].data;
+   /* Update content path pointer */
+   *content_path = temp_path_ptr;
 
    RARCH_LOG("[CONTENT LOAD]: Content successfully extracted to: %s\n",
          temp_path);
@@ -317,19 +843,19 @@ static bool content_file_extract_from_archive(
 }
 #endif
 
-static void content_file_set_info_path(
+static void content_file_get_path(
       struct string_list *content,
-      struct retro_game_info *info,
       size_t idx,
       const char *valid_exts,
+      const char **path,
       bool *path_is_compressed)
 {
-   const char *content_path             = content->elems[idx].data;
-   struct retro_game_info *content_info = &info[idx];
+   const char *content_path = content->elems[idx].data;
    bool path_is_archive;
    bool path_is_inside_archive;
 
-   content_info->path  = NULL;
+   *path               = NULL;
+   *path_is_compressed = false;
 
    if (string_is_empty(content_path))
       return;
@@ -385,7 +911,46 @@ static void content_file_set_info_path(
    }
 #endif
 
-   content_info->path = content_path;
+   *path = content_path;
+}
+
+static void content_file_apply_overrides(
+      content_state_t *p_content,
+      struct string_list *content,
+      size_t idx,
+      const char *path)
+{
+   const content_file_override_t *override = NULL;
+
+   if (!p_content->content_override_list)
+      return;
+
+   /* Check whether an override has been set
+    * for files of this type */
+   if (content_file_override_get_ext(p_content,
+         path_get_extension(path), &override))
+   {
+      /* Get existing attributes */
+      bool block_extract = CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[idx].attr);
+      bool required      = CONTENT_FILE_ATTR_GET_REQUIRED(content->elems[idx].attr);
+      bool persistent    = CONTENT_FILE_ATTR_GET_PERSISTENT(content->elems[idx].attr);
+
+      CONTENT_FILE_ATTR_RESET(content->elems[idx].attr);
+
+      /* Apply updates
+       * > Note that 'persistent' attribute must not
+       *   be set false by an override if it is already
+       *   true (frontend may require persistence for
+       *   other purposes, e.g. runahead) */
+      CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(content->elems[idx].attr,
+            block_extract);
+      CONTENT_FILE_ATTR_SET_NEED_FULLPATH(content->elems[idx].attr,
+            override->need_fullpath);
+      CONTENT_FILE_ATTR_SET_REQUIRED(content->elems[idx].attr,
+            required);
+      CONTENT_FILE_ATTR_SET_PERSISTENT(content->elems[idx].attr,
+            (persistent || override->persistent_data));
+   }
 }
 
 /**
@@ -397,7 +962,6 @@ static void content_file_set_info_path(
  * Returns : true if successful, otherwise false.
  **/
 static bool content_file_load(
-      struct retro_game_info *info,
       content_state_t *p_content,
       struct string_list *content,
       content_information_ctx_t *content_ctx,
@@ -418,20 +982,21 @@ static bool content_file_load(
 
    for (i = 0; i < content->size; i++)
    {
-      const char *valid_exts  = special ?
+      const char *content_path = NULL;
+      uint8_t *content_data    = NULL;
+      size_t content_size      = 0;
+      const char *valid_exts   = special ?
             special->roms[i].valid_extensions :
                   content_ctx->valid_extensions;
-      bool content_compressed = false;
+      bool content_compressed  = false;
 
-      /* Get content path (note that this is always
-       * assigned to the info struct, regardless of
-       * whether the core requests it) */
-      content_file_set_info_path(content, info, i,
-            valid_exts, &content_compressed);
+      /* Get content path */
+      content_file_get_path(content, i, valid_exts,
+            &content_path, &content_compressed);
 
       /* If content is missing and core requires content,
        * return an error */
-      if (string_is_empty(info[i].path))
+      if (string_is_empty(content_path))
       {
          if (CONTENT_FILE_ATTR_GET_REQUIRED(content->elems[i].attr))
          {
@@ -444,19 +1009,24 @@ static bool content_file_load(
          /* If this is the first item of content,
           * get content type */
          if (i == 0)
-            first_content_type = path_is_media_type(info[i].path);
+            first_content_type = path_is_media_type(content_path);
+
+         /* Apply any file-type-specific content
+          * handling overrides */
+         content_file_apply_overrides(p_content, content, i, content_path);
 
          /* If core does not require 'fullpath', load
           * the content into memory */
          if (!CONTENT_FILE_ATTR_GET_NEED_FULLPATH(content->elems[i].attr))
          {
             if (!content_file_load_into_memory(
-                  content_ctx, p_content, info, i,
-                  content_compressed, first_content_type))
+                  content_ctx, p_content, content_path,
+                  content_compressed, i, first_content_type,
+                  &content_data, &content_size))
             {
-               snprintf(msg, sizeof(msg), "%s \"%s\".\n",
+               snprintf(msg, sizeof(msg), "%s \"%s\"\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                     info[i].path);
+                     content_path);
                *error_string = strdup(msg);
                return false;
             }
@@ -468,26 +1038,24 @@ static bool content_file_load(
              * is true, extract it to a temporary file */
             if (content_compressed &&
                 !CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[i].attr) &&
-                !content_file_extract_from_archive(content_ctx,
-                     info, i, valid_exts, error_string))
+                !content_file_extract_from_archive(content_ctx, p_content,
+                     valid_exts, &content_path, error_string))
                return false;
 #endif
 #ifdef __WINRT__
             /* TODO: When support for the 'actual' VFS is added,
              * there will need to be some more logic here */
             if (!system->supports_vfs &&
-                !is_path_accessible_using_standard_io(info[i].path))
+                !is_path_accessible_using_standard_io(content_path))
             {
                /* Fallback to a file copy into an accessible directory */
                char *buf;
                int64_t len;
-               union string_list_elem_attr attr;
                char new_basedir[PATH_MAX_LENGTH];
                char new_path[PATH_MAX_LENGTH];
 
                new_path[0]    = '\0';
                new_basedir[0] = '\0';
-               attr.i         = 0;
 
                RARCH_LOG("[CONTENT LOAD]: Core does not support VFS"
                      " - copying to cache directory\n");
@@ -507,15 +1075,15 @@ static bool content_file_load(
                }
 
                fill_pathname_join(new_path, new_basedir,
-                     path_basename(info[i].path), sizeof(new_path));
+                     path_basename(content_path), sizeof(new_path));
 
                /* TODO: This may fail on very large files...
                 * but copying large files is not a good idea anyway */
-               if (!filestream_read_file(info[i].path, &buf, &len))
+               if (!filestream_read_file(content_path, &buf, &len))
                {
                   snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                        info[i].path);
+                        content_path);
                   *error_string = strdup(msg);
                   return false;
                }
@@ -525,18 +1093,15 @@ static bool content_file_load(
                   free(buf);
                   snprintf(msg, sizeof(msg), "%s \"%s\". (during copy write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                        info[i].path);
+                        content_path);
                   *error_string = strdup(msg);
                   return false;
                }
 
                free(buf);
 
-               string_list_append(content_ctx->temporary_content,
-                     new_path, attr);
-
-               info[i].path = content_ctx->temporary_content->elems[
-                     content_ctx->temporary_content->size - 1].data;
+               content_path = content_file_list_append_temporary(
+                     p_content->content_list, new_path);
 
                used_vfs_fallback_copy = true;
             }
@@ -552,7 +1117,7 @@ static bool content_file_load(
                /* If we have a media type, ignore CRC32 calculation. */
                if (first_content_type == RARCH_CONTENT_NONE)
                {
-                  strlcpy(p_content->pending_rom_crc_path, info[i].path,
+                  strlcpy(p_content->pending_rom_crc_path, content_path,
                         sizeof(p_content->pending_rom_crc_path));
                   p_content->pending_rom_crc = true;
                }
@@ -561,12 +1126,25 @@ static bool content_file_load(
             }
          }
       }
+
+      /* Add current entry to content file list */
+      if (!content_file_list_set_info(
+            p_content->content_list,
+            content_path, content_data, content_size,
+            CONTENT_FILE_ATTR_GET_PERSISTENT(content->elems[i].attr), i))
+      {
+         RARCH_LOG("[CONTENT LOAD]: Failed to process content file: %s\n", content_path);
+         if (content_data)
+            free((void*)content_data);
+         *error_enum = MSG_FAILED_TO_LOAD_CONTENT;
+         return false;
+      }
    }
 
    /* Load content into core */
    load_info.content = content;
    load_info.special = special;
-   load_info.info    = info;
+   load_info.info    = p_content->content_list->game_info;
 
    if (!core_load_game(&load_info))
    {
@@ -583,12 +1161,13 @@ static bool content_file_load(
 #ifdef HAVE_CHEEVOS
    if (!special)
    {
-      const char *first_content_path = info[0].path;
+      const char *first_content_path =
+            p_content->content_list->entries[0].full_path;
       if (!string_is_empty(first_content_path))
       {
          if (first_content_type == RARCH_CONTENT_NONE)
          {
-            rcheevos_load(info);
+            rcheevos_load(p_content->content_list->game_info);
             return true;
          }
       }
@@ -699,6 +1278,15 @@ static void content_file_set_attributes(
       CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, content_ctx->need_fullpath);
       CONTENT_FILE_ATTR_SET_REQUIRED(attr, !contentless);
 
+#if defined(HAVE_RUNAHEAD)
+      /* If runahead is supported and we are not using
+       * subsystems, content data buffer must *always*
+       * be persistent, since user may toggle second
+       * instance runahead at any time (and secondary
+       * core initialisation requires valid data) */
+      CONTENT_FILE_ATTR_SET_PERSISTENT(attr, true);
+#endif
+
       if (string_is_empty(content_path))
       {
          if (contentless &&
@@ -725,7 +1313,6 @@ static bool content_file_init(
       enum msg_hash_enums *error_enum,
       char **error_string)
 {
-   struct retro_game_info *info               = NULL;
    bool subsystem_path_is_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
    bool ret                                   = subsystem_path_is_empty;
    const struct retro_subsystem_info *special = subsystem_path_is_empty ?
@@ -738,19 +1325,14 @@ static bool content_file_init(
    content_file_set_attributes(content, special, content_ctx, error_string);
 
    if (content->size > 0)
-      info = (struct retro_game_info*)calloc(content->size, sizeof(*info));
+      p_content->content_list = content_file_list_init(content->size);
 
-   if (info)
+   if (p_content->content_list)
    {
-      size_t i;
+      ret = content_file_load(p_content, content, content_ctx,
+            error_enum, error_string, special);
 
-      ret = content_file_load(info, p_content, content,
-            content_ctx, error_enum, error_string, special);
-
-      for (i = 0; i < content->size; i++)
-         free((void*)info[i].data);
-
-      free(info);
+      content_file_list_free_transient_data(p_content->content_list);
    }
    else if (!special)
    {
@@ -2124,26 +2706,12 @@ bool content_is_inited(void)
 
 void content_deinit(void)
 {
-   unsigned i;
    content_state_t *p_content = content_state_get_ptr();
 
-   if (p_content->temporary_content)
-   {
-      for (i = 0; i < p_content->temporary_content->size; i++)
-      {
-         const char *path = p_content->temporary_content->elems[i].data;
+   content_file_override_free(p_content);
+   content_file_list_free(p_content->content_list);
 
-         RARCH_LOG("[CONTENT LOAD]: %s: %s.\n",
-               msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-         if (filestream_delete(path) != 0)
-            RARCH_ERR("[CONTENT LOAD]: %s: %s.\n",
-                  msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
-                  path);
-      }
-      string_list_free(p_content->temporary_content);
-   }
-
-   p_content->temporary_content            = NULL;
+   p_content->content_list                 = NULL;
    p_content->rom_crc                      = 0;
    p_content->is_inited                    = false;
    p_content->core_does_not_need_content   = false;
@@ -2181,7 +2749,8 @@ bool content_init(void)
    const char *path_dir_system                = settings->paths.directory_system;
    const char *path_dir_cache                 = settings->paths.directory_cache;
 
-   p_content->temporary_content               = string_list_new();
+   content_file_list_free(p_content->content_list);
+   p_content->content_list                    = NULL;
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
 #ifdef HAVE_PATCH
@@ -2190,7 +2759,6 @@ bool content_init(void)
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
 #endif
-   content_ctx.temporary_content              = p_content->temporary_content;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -2238,13 +2806,11 @@ bool content_init(void)
 
    if (string_list_initialize(&content))
    {
-      if (     !p_content->temporary_content
-            || !content_file_init(&content_ctx, p_content,
-               &content, &error_enum, &error_string))
+      if (!content_file_init(&content_ctx, p_content,
+            &content, &error_enum, &error_string))
       {
          content_deinit();
-
-         ret                = false;
+         ret = false;
       }
       string_list_deinitialize(&content);
    }

@@ -124,6 +124,10 @@ bool content_set_subsystem_by_name(const char* subsystem_name);
 /* Get the current subsystem "friendly name" */
 void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len);
 
+/* Sets overrides which modify frontend handling of
+ * specific content file types */
+bool content_file_override_set(const struct retro_system_content_info_override *overrides);
+
 RETRO_END_DECLS
 
 #endif
