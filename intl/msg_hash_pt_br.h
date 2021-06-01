@@ -4870,7 +4870,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "Iniciar ativo"
+   "Modo Jogar de Novo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
@@ -6756,7 +6756,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Predefinições simples"
    )
-   
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Salva uma predefinição do Shader com um link para a predefinição original que já está carregada e inclui apenas as alterações que você fez no parâmetro."
