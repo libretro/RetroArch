@@ -69,9 +69,19 @@ typedef struct rcheevos_racheevo_t
   const char* description;
   const char* badge;
   const char* memaddr;
-  unsigned points;
   unsigned id;
-  unsigned active;
+  unsigned points;
+
+  retro_time_t unlock_time;
+  uint8_t active;
+
+#ifdef HAVE_MENU
+  uint8_t menu_bucket;
+  uint8_t menu_progress;
+  uint8_t menu_badge_grayscale;
+  uintptr_t menu_badge_texture;
+#endif
+
 } rcheevos_racheevo_t;
 
 typedef struct rcheevos_ralboard_t
@@ -98,6 +108,18 @@ typedef struct rcheevos_rapatchdata_t
    unsigned lboard_count;
 } rcheevos_rapatchdata_t;
 
+#ifdef HAVE_MENU
+
+typedef struct rcheevos_menuitem_t
+{
+   rcheevos_racheevo_t* cheevo;
+   enum msg_hash_enums state_label_idx;   
+} rcheevos_menuitem_t;
+
+void rcheevos_menu_reset_badges(void);
+
+#endif
+
 typedef struct rcheevos_locals_t
 {
    rc_runtime_t runtime;              /* rcheevos runtime state */
@@ -113,6 +135,12 @@ typedef struct rcheevos_locals_t
    char token[32];                    /* user's session token */
    char hash[33];                     /* retroachievements hash for current content */
    char user_agent_prefix[128];       /* RetroArch/OS version information */
+
+#ifdef HAVE_MENU
+   rcheevos_menuitem_t* menuitems;    /* array of items for the achievements quick menu */
+   unsigned menuitem_capacity;        /* maximum number of items in the menuitems array */
+   unsigned menuitem_count;           /* current number of items in the menuitems array */
+#endif
 
    bool hardcore_active;              /* hardcore functionality is active */
    bool loaded;                       /* load task has completed */

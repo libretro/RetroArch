@@ -18,7 +18,7 @@
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
-#include "../cheevos/badges.h"
+#include "../cheevos/cheevos.h"
 
 #ifdef HAVE_THREADS
 #define SLOCK_LOCK(x) slock_lock(x)
@@ -391,7 +391,7 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
 
    /* important - this must be done outside the lock because it has the potential to need to
     * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t badge_id = cheevos_get_badge_texture(badge, 0);
+   uintptr_t badge_id = rcheevos_get_badge_texture(badge, 0);
 
    if (state->queue_read_index < 0)
    {

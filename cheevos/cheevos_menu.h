@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2015-2018 - Andre Leiradella
+ *  Copyright (C) 2019-2021 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,23 +13,35 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_CHEEVOS_BADGE_H
-#define __RARCH_CHEEVOS_BADGE_H
+#ifndef __RARCH_CHEEVOS_MENU_H
+#define __RARCH_CHEEVOS_MENU_H
+
+#ifdef HAVE_MENU
 
 #include <stdint.h>
-#include <retro_common_api.h>
+#include <stdlib.h>
+
 #include <boolean.h>
+
+#include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 
-#ifdef HAVE_MENU
-void cheevos_reset_menu_badges(void);
-void cheevos_set_menu_badge(int index, const char *badge, bool locked);
-uintptr_t cheevos_get_menu_badge_texture(int index);
-#endif
+typedef struct rcheevos_ctx_desc
+{
+   unsigned idx;
+   char *s;
+   size_t len;
+} rcheevos_ctx_desc_t;
 
-uintptr_t cheevos_get_badge_texture(const char* badge, bool locked);
+void rcheevos_menu_populate(void* data);
+void rcheevos_menu_populate_hardcore_pause_submenu(void* data);
+bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_size);
+bool rcheevos_menu_get_sublabel(unsigned menu_offset, char* buffer, size_t buffer_size);
+uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset);
 
 RETRO_END_DECLS
 
-#endif
+#endif /* HAVE_MENU */
+
+#endif /* __RARCH_CHEEVOS_CHEEVOS_H */

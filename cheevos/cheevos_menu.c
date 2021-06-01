@@ -15,103 +15,335 @@
 
 #include "cheevos_locals.h"
 
-#include "badges.h"
-
 #ifdef HAVE_MENU
+
+#include "cheevos.h"
+
+#include "../deps/rcheevos/include/rc_runtime_types.h"
+
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
-#endif
 
-#ifdef HAVE_MENU
-void rcheevos_get_achievement_state(unsigned index,
-      char *buffer, size_t len)
+#include <features/features_cpu.h>
+
+enum rcheevos_menuitem_bucket
+{
+   RCHEEVOS_MENUITEM_BUCKET_UNKNOWN = 0,
+   RCHEEVOS_MENUITEM_BUCKET_LOCKED,
+   RCHEEVOS_MENUITEM_BUCKET_UNLOCKED,
+   RCHEEVOS_MENUITEM_BUCKET_UNSUPPORTED,
+   RCHEEVOS_MENUITEM_BUCKET_RECENTLY_UNLOCKED,
+   RCHEEVOS_MENUITEM_BUCKET_ACTIVE_CHALLENGE,
+   RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE
+};
+
+static void rcheevos_menu_update_bucket(rcheevos_racheevo_t* cheevo)
+{
+   if (!cheevo->memaddr)
+   {
+      /* non-active unsupported achievement */
+      cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_UNSUPPORTED;
+   }
+   else if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
+   {
+      /* non-active unlocked in hardcore achievement */
+      cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_UNLOCKED;
+   }
+   else
+   {
+      const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+      rc_trigger_t* trigger;
+
+      if (!rcheevos_locals->hardcore_active && !(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
+      {
+         /* non-active unlocked in softcore achievement in softcore mode */
+         cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_UNLOCKED;
+         return;
+      }
+
+      /* active achievement */
+      cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_LOCKED;
+      cheevo->menu_progress = 0;
+
+      trigger = rc_runtime_get_achievement(&rcheevos_locals->runtime, cheevo->id);
+      if (trigger)
+      {
+         if (trigger->measured_value && trigger->measured_target)
+         {
+            const unsigned long clamped_value = (unsigned long)
+                  MIN(trigger->measured_value, trigger->measured_target);
+            cheevo->menu_progress = 
+                  (uint8_t)((clamped_value * 100) / trigger->measured_target);
+         }
+
+         if (trigger->state == RC_TRIGGER_STATE_PRIMED)
+            cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_ACTIVE_CHALLENGE;
+         else if (cheevo->menu_progress >= 80)
+            cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE;
+      }
+   } 
+}
+
+static void rcheevos_menu_update_buckets(bool cheevos_test_unofficial)
 {
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-   enum msg_hash_enums enum_idx;
-   rcheevos_racheevo_t *cheevo = NULL;
-   bool check_measured         = false;
-
-   if (index < rcheevos_locals->patchdata.core_count)
+   rcheevos_racheevo_t* cheevo = rcheevos_locals->patchdata.core;
+   rcheevos_racheevo_t* stop = cheevo + rcheevos_locals->patchdata.core_count;
+ 
+   while (cheevo < stop)
    {
-      enum_idx    = MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY;
-      if (rcheevos_locals->patchdata.core)
-         cheevo   = &rcheevos_locals->patchdata.core[index];
-   }
-   else
-   {
-      enum_idx    = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY;
-      if (rcheevos_locals->patchdata.unofficial)
-         cheevo   = &rcheevos_locals->patchdata.unofficial[index - 
-            rcheevos_locals->patchdata.core_count];
+      rcheevos_menu_update_bucket(cheevo);
+      ++cheevo;
    }
 
-   if (!cheevo || !cheevo->memaddr)
-      enum_idx       = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY;
-   else if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
-      enum_idx       = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
-   else if (!(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
+   if (cheevos_test_unofficial)
    {
-      enum_idx       = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
-      /* if in hardcore mode, track progress towards hardcore unlock */
-      check_measured = rcheevos_locals->hardcore_active;
-   }
-   /* Use either "Locked" for core or "Unofficial" 
-    * for unofficial as set above and track progress */
-   else
-      check_measured = true;
+      cheevo = rcheevos_locals->patchdata.unofficial;
+      stop = cheevo + rcheevos_locals->patchdata.unofficial_count;
 
-   strlcpy(buffer, msg_hash_to_str(enum_idx), len);
-
-   if (check_measured)
-   {
-      unsigned value, target;
-      if (rc_runtime_get_achievement_measured(&rcheevos_locals->runtime,
-            cheevo->id, &value, &target) && target > 0 && value > 0)
+      while (cheevo < stop)
       {
-         char measured_buffer[12];
-         const unsigned int clamped_value = MIN(value, target);
-         const int percent = (int)(((unsigned long)clamped_value) * 100 / target);
-
-         snprintf(measured_buffer, sizeof(measured_buffer),
-               " - %d%%", percent);
-         strlcat(buffer, measured_buffer, len);
+         rcheevos_menu_update_bucket(cheevo);
+         ++cheevo;
       }
    }
 }
 
-static void rcheevos_append_menu_achievement(
-      menu_displaylist_info_t* info, size_t idx,
-      rcheevos_racheevo_t* cheevo)
+bool rcheevos_menu_get_state(unsigned menu_offset, char *buffer, size_t len)
 {
-   bool badge_grayscale;
+   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   if (menu_offset < rcheevos_locals->menuitem_count)
+   {
+      const rcheevos_menuitem_t* menuitem = &rcheevos_locals->menuitems[menu_offset];
+      const rcheevos_racheevo_t* cheevo = menuitem->cheevo;
+      if (cheevo)
+      {
+         if (cheevo->menu_progress)
+         {
+            snprintf(buffer, len, "%s - %d%%", 
+                  msg_hash_to_str(menuitem->state_label_idx),
+                  cheevo->menu_progress);
+         }
+         else
+         {
+            strlcpy(buffer, msg_hash_to_str(menuitem->state_label_idx), len);
+         }
 
-   menu_entries_append_enum(info->list, cheevo->title,
-      cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-      (unsigned)(MENU_SETTINGS_CHEEVOS_START + idx), 0, 0);
+         return true;
+      }
+   }
 
-   /* TODO/FIXME - can we refactor this?
-    * Make badge_grayscale true by default, then
-    * have one conditional (second one here) that sets it
-    * to false */
-   if (!cheevo->memaddr)
-      badge_grayscale = true;  /* unsupported */
-   else if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE) || 
-            !(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
-      badge_grayscale = false; /* unlocked */
-   else
-      badge_grayscale = true;  /* locked */
+   if (buffer)
+      buffer[0] = '\0';
 
-   cheevos_set_menu_badge((int)idx, cheevo->badge, badge_grayscale);
+   return false;
 }
-#endif
 
-void rcheevos_populate_hardcore_pause_menu(void* data)
+bool rcheevos_menu_get_sublabel(unsigned menu_offset, char *buffer, size_t len)
 {
-#ifdef HAVE_MENU
+   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   if (menu_offset < rcheevos_locals->menuitem_count)
+   {
+      const rcheevos_racheevo_t* cheevo = rcheevos_locals->menuitems[menu_offset].cheevo;
+      if (cheevo && buffer)
+      {
+         strlcpy(buffer, cheevo->description, len);
+         return true;
+      }
+   }
+
+   if (buffer)
+      buffer[0] = '\0';
+
+   return false;
+}
+
+void rcheevos_menu_reset_badges(void)
+{
+   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   rcheevos_racheevo_t* cheevo = rcheevos_locals->patchdata.core;
+   rcheevos_racheevo_t* stop = cheevo + rcheevos_locals->patchdata.core_count;
+ 
+   while (cheevo < stop)
+   {
+      if (cheevo->menu_badge_texture)
+         video_driver_texture_unload(&cheevo->menu_badge_texture);
+      ++cheevo;
+   }
+
+   cheevo = rcheevos_locals->patchdata.unofficial;
+   stop = cheevo + rcheevos_locals->patchdata.unofficial_count;
+
+   while (cheevo < stop)
+   {
+      if (cheevo->menu_badge_texture)
+         video_driver_texture_unload(&cheevo->menu_badge_texture);
+      ++cheevo;
+   }
+}
+
+static rcheevos_menuitem_t* rcheevos_menu_allocate(
+      rcheevos_locals_t* rcheevos_locals, rcheevos_racheevo_t* cheevo)
+{
+   rcheevos_menuitem_t* menuitem;
+
+   if (rcheevos_locals->menuitem_count == rcheevos_locals->menuitem_capacity)
+   {
+      if (rcheevos_locals->menuitems)
+      {
+         rcheevos_locals->menuitem_capacity += 32;
+         rcheevos_menuitem_t* new_menuitems = (rcheevos_menuitem_t*)
+               realloc(rcheevos_locals->menuitems, 
+                       rcheevos_locals->menuitem_capacity * sizeof(rcheevos_menuitem_t));
+
+         if (new_menuitems)
+         {
+            rcheevos_locals->menuitems = new_menuitems;
+         }
+         else
+         {
+            /* realloc failed */
+            CHEEVOS_ERR(RCHEEVOS_TAG " could not allocate space for %u menu items",
+                  rcheevos_locals->menuitem_capacity);
+            rcheevos_locals->menuitem_capacity -= 32;
+            return NULL;
+         }
+      }
+      else
+      {
+         rcheevos_locals->menuitem_capacity = 64;
+         rcheevos_locals->menuitems = (rcheevos_menuitem_t*)
+               malloc(rcheevos_locals->menuitem_capacity * sizeof(rcheevos_menuitem_t));
+
+         if (!rcheevos_locals->menuitems)
+         {
+            /* malloc failed */
+            CHEEVOS_ERR(RCHEEVOS_TAG " could not allocate space for %u menu items",
+                  rcheevos_locals->menuitem_capacity);
+            rcheevos_locals->menuitem_capacity = 0;
+            return NULL;
+         }
+      }
+   }
+
+   menuitem = &rcheevos_locals->menuitems[rcheevos_locals->menuitem_count++];
+   menuitem->cheevo = cheevo;
+   menuitem->state_label_idx = 0;
+   return menuitem;
+}
+
+static void rcheevos_menu_append_header(rcheevos_locals_t* rcheevos_locals,
+      enum msg_hash_enums label)
+{
+   rcheevos_menuitem_t* menuitem = rcheevos_menu_allocate(rcheevos_locals, NULL);
+   if (menuitem)
+      menuitem->state_label_idx = label;
+}
+
+static void rcheevos_menu_append_items(menu_displaylist_info_t* info,
+      bool cheevos_test_unofficial, enum rcheevos_menuitem_bucket bucket)
+{
+   const settings_t *settings = config_get_ptr();
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   rcheevos_racheevo_t* cheevo = rcheevos_locals->patchdata.core;
+   rcheevos_racheevo_t* stop   = cheevo + rcheevos_locals->patchdata.core_count;
+   bool processing_unofficial  = false;
+ 
+   do
+   {
+      if (cheevo == stop)
+      {
+         if (!cheevos_test_unofficial || processing_unofficial)
+            break;
+
+         processing_unofficial = true;
+         cheevo = rcheevos_locals->patchdata.unofficial;
+         stop = cheevo + rcheevos_locals->patchdata.unofficial_count;
+         continue;
+      }
+
+      if (cheevo->menu_bucket == bucket)
+      {
+         rcheevos_menuitem_t* menuitem = rcheevos_menu_allocate(rcheevos_locals, cheevo);
+         if (!menuitem)
+            return;
+
+         switch (cheevo->menu_bucket)
+         {
+            case RCHEEVOS_MENUITEM_BUCKET_UNSUPPORTED:
+               menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY;
+               break;
+
+            case RCHEEVOS_MENUITEM_BUCKET_UNLOCKED:
+            case RCHEEVOS_MENUITEM_BUCKET_RECENTLY_UNLOCKED:
+               if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
+                  menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
+               else
+                  menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
+               break;
+
+            default:
+               if (processing_unofficial)
+                  menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY;
+               else if (!(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
+                  menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
+               else
+                  menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY;
+               break;
+         }
+
+         if (cheevo->badge && cheevo->badge[0] && settings && 
+               settings->bools.cheevos_badges_enable)
+         {
+            bool badge_grayscale = false;
+            switch (bucket)
+            {
+               case RCHEEVOS_MENUITEM_BUCKET_LOCKED:
+               case RCHEEVOS_MENUITEM_BUCKET_UNSUPPORTED:
+               case RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE:
+                  badge_grayscale = true;
+                  break;
+
+               default:
+                  badge_grayscale = false;
+                  break;
+            }
+
+            if (!cheevo->menu_badge_texture || cheevo->menu_badge_grayscale != badge_grayscale)
+            {
+               if (cheevo->menu_badge_texture)
+                  video_driver_texture_unload(&cheevo->menu_badge_texture);
+
+               cheevo->menu_badge_texture = 
+                     rcheevos_get_badge_texture(cheevo->badge, badge_grayscale);
+               cheevo->menu_badge_grayscale = badge_grayscale;
+            }
+         }
+      }
+
+      ++cheevo;
+   } while (true);
+}
+
+uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset)
+{
+   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   if (menu_offset < rcheevos_locals->menuitem_count)
+   {
+      const rcheevos_racheevo_t* cheevo = rcheevos_locals->menuitems[menu_offset].cheevo;
+      if (cheevo)
+         return cheevo->menu_badge_texture;
+   }
+
+   return 0;
+}
+
+void rcheevos_menu_populate_hardcore_pause_submenu(void* data)
+{
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    menu_displaylist_info_t* info = (menu_displaylist_info_t*)data;
-   settings_t* settings = config_get_ptr();
-   bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
+   const settings_t* settings = config_get_ptr();
+   const bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
 
    if (cheevos_hardcore_mode_enable && rcheevos_locals->loaded)
    {
@@ -142,55 +374,178 @@ void rcheevos_populate_hardcore_pause_menu(void* data)
                MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
       }
    }
-#endif
 }
 
-void rcheevos_populate_menu(void* data)
+void rcheevos_menu_populate(void* data)
 {
-#ifdef HAVE_MENU
-   int i                             = 0;
-   int count                         = 0;
-   rcheevos_racheevo_t* cheevo       = NULL;
-   menu_displaylist_info_t* info     = (menu_displaylist_info_t*)data;
-   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-   settings_t* settings              = config_get_ptr();
-   bool cheevos_enable               = settings->bools.cheevos_enable;
-   bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
-   bool cheevos_test_unofficial      = settings->bools.cheevos_test_unofficial;
+   menu_displaylist_info_t* info            = (menu_displaylist_info_t*)data;
+   rcheevos_locals_t* rcheevos_locals       = get_rcheevos_locals();
+   const settings_t* settings               = config_get_ptr();
+   const bool cheevos_test_unofficial       = settings->bools.cheevos_test_unofficial;
+   unsigned num_locked                      = 0;
+   unsigned num_unlocked                    = 0;
+   unsigned num_recently_unlocked           = 0;
+   unsigned num_unsupported                 = 0;
+   unsigned num_active_challenges           = 0;
+   unsigned num_almost_there                = 0;
 
-   CHEEVOS_LOG(RCHEEVOS_TAG "populate_menu");
-
-   if (   cheevos_enable
-       && cheevos_hardcore_mode_enable
-       && rcheevos_locals->loaded)
+   if (rcheevos_locals->loaded)
    {
-      if (rcheevos_locals->hardcore_active)
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU),
-               MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
-               MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0);
-      else
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU),
-               MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
-               MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
+      const retro_time_t now                = cpu_features_get_time_usec();
+      const retro_time_t recent_unlock_time = now - (10 * 60 * 1000000); /* 10 minutes ago */
+      bool processing_unofficial            = false;
+      rcheevos_racheevo_t* cheevo           = NULL;
+      rcheevos_racheevo_t* stop             = NULL;
+
+      /* first menu item is the Pause/Resume Hardcore option (unless hardcore is disabled) */
+      if (settings->bools.cheevos_enable && settings->bools.cheevos_hardcore_mode_enable)
+      {
+         if (rcheevos_locals->hardcore_active)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU),
+                  MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
+                  MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0);
+         else
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU),
+                  MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
+                  MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0);
+      }
+
+      /* update the bucket for each achievement */
+      rcheevos_menu_update_buckets(cheevos_test_unofficial);
+
+      /* count items in each bucket */
+      cheevo = rcheevos_locals->patchdata.core;
+      stop = cheevo + rcheevos_locals->patchdata.core_count;
+     
+      do
+      {
+         if (cheevo == stop)
+         {
+            if (!cheevos_test_unofficial || processing_unofficial)
+               break;
+
+            processing_unofficial = true;
+            cheevo = rcheevos_locals->patchdata.unofficial;
+            stop = cheevo + rcheevos_locals->patchdata.unofficial_count;
+            continue;
+         }
+
+         switch (cheevo->menu_bucket)
+         {
+            case RCHEEVOS_MENUITEM_BUCKET_UNLOCKED:
+               if (cheevo->unlock_time && cheevo->unlock_time >= recent_unlock_time)
+               {
+                  cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_RECENTLY_UNLOCKED;
+                  ++num_recently_unlocked;
+               }
+               else
+               {
+                  ++num_unlocked;
+               }
+               break;
+
+            case RCHEEVOS_MENUITEM_BUCKET_LOCKED:
+               ++num_locked;
+               break;
+
+            case RCHEEVOS_MENUITEM_BUCKET_UNSUPPORTED:
+               ++num_unsupported;
+               break;
+
+            case RCHEEVOS_MENUITEM_BUCKET_ACTIVE_CHALLENGE:
+               ++num_active_challenges;
+               break;
+
+            case RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE:
+               ++num_almost_there;
+               break;
+         }
+
+         ++cheevo;
+      } while(true);
    }
 
-   cheevo = rcheevos_locals->patchdata.core;
-   for (count = rcheevos_locals->patchdata.core_count; count > 0; count--)
-      rcheevos_append_menu_achievement(info, i++, cheevo++);
-
-   if (cheevos_test_unofficial)
+   /* active challenges */
+   if (num_active_challenges)
    {
-      cheevo = rcheevos_locals->patchdata.unofficial;
-      for (count = rcheevos_locals->patchdata.unofficial_count; count > 0; count--)
-         rcheevos_append_menu_achievement(info, i++, cheevo++);
+
    }
 
-   if (i == 0)
+   /* recently unlocked */
+   if (num_recently_unlocked)
    {
+
+   }
+
+   /* almost there */
+   if (num_almost_there)
+   {
+
+   }
+
+   /* locked */
+   if (num_locked)
+   {
+      if (rcheevos_locals->menuitem_count > 0)
+      {
+         rcheevos_menu_append_header(rcheevos_locals,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY);
+      }
+
+      rcheevos_menu_append_items(info, cheevos_test_unofficial, 
+            RCHEEVOS_MENUITEM_BUCKET_LOCKED);
+   }
+
+   /* unlocked */
+   if (num_unlocked)
+   {
+      if (rcheevos_locals->menuitem_count > 0)
+      {
+         rcheevos_menu_append_header(rcheevos_locals,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY);
+      }
+
+      rcheevos_menu_append_items(info, cheevos_test_unofficial, 
+            RCHEEVOS_MENUITEM_BUCKET_UNLOCKED);
+   }
+
+   if (rcheevos_locals->menuitem_count > 0)
+   {
+      rcheevos_menuitem_t* menuitem = rcheevos_locals->menuitems;
+      rcheevos_menuitem_t* stop = menuitem + rcheevos_locals->menuitem_count;
+      char buffer[128];
+      unsigned idx = 0;
+
+      do
+      {
+         if (menuitem->cheevo)
+         {
+            menu_entries_append_enum(info->list, menuitem->cheevo->title,
+                  menuitem->cheevo->description, 
+                  MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
+                  MENU_SETTINGS_CHEEVOS_START + idx, 0, 0);
+         }
+         else
+         {
+            snprintf(buffer, sizeof(buffer), "----- %s -----", 
+                  msg_hash_to_str(menuitem->state_label_idx));
+
+            menu_entries_append_enum(info->list, buffer, "", 
+                  MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
+                  MENU_SETTINGS_CHEEVOS_START + idx, 0, 0);
+         }
+
+         ++idx;
+         ++menuitem;
+      } while (menuitem != stop);
+   }
+   else
+   {
+      /* no achievements found */
       if (!rcheevos_locals->core_supports)
       {
          menu_entries_append_enum(info->list,
@@ -199,7 +554,7 @@ void rcheevos_populate_menu(void* data)
             MENU_ENUM_LABEL_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
             FILE_TYPE_NONE, 0, 0);
       }
-      else if (!settings->arrays.cheevos_token[0])
+      else if (!rcheevos_locals->token[0])
       {
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN),
@@ -216,6 +571,31 @@ void rcheevos_populate_menu(void* data)
             FILE_TYPE_NONE, 0, 0);
       }
    }
-#endif
+}
+
+#endif /* HAVE_MENU */
+
+uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked)
+{
+   char badge_file[24];
+   char fullpath[PATH_MAX_LENGTH];
+   uintptr_t tex = 0;
+
+   if (!badge)
+      return 0;
+
+   snprintf(badge_file, sizeof(badge_file), "%s%s%s", badge,
+      locked ? "_lock" : "", FILE_PATH_PNG_EXTENSION);
+
+   fill_pathname_application_special(fullpath, sizeof(fullpath),
+         APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+
+   if (!gfx_display_reset_textures_list(badge_file, fullpath,
+         &tex, TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+   {
+      tex = 0;
+   }
+
+   return tex;
 }
 

@@ -53,7 +53,6 @@
 #include "streams/chd_stream.h"
 #endif
 
-#include "badges.h"
 #include "cheevos.h"
 #include "cheevos_locals.h"
 #include "cheevos_memory.h"
@@ -139,6 +138,11 @@ static rcheevos_locals_t rcheevos_locals =
    {0},  /* token */
    "N/A",/* hash */
    "",   /* user_agent_prefix */
+#ifdef HAVE_MENU
+   NULL, /* menuitems */
+   0,    /* menuitem_capacity */
+   0,    /* menuitem_count */
+#endif
    false,/* hardcore_active */
    false,/* loaded */
    true, /* core_supports */
@@ -1210,37 +1214,6 @@ void rcheevos_reset_game(bool widgets_ready)
              rcheevos_locals.patchdata.console_id);
 }
 
-bool rcheevos_get_description(rcheevos_ctx_desc_t* desc)
-{
-   unsigned idx;
-   const rcheevos_racheevo_t* cheevo;
-
-   if (!desc)
-      return false;
-
-   *desc->s = 0;
-
-   if (rcheevos_locals.loaded)
-   {
-      idx = desc->idx;
-
-      if (idx < rcheevos_locals.patchdata.core_count)
-         cheevo = rcheevos_locals.patchdata.core + idx;
-      else
-      {
-         idx -= rcheevos_locals.patchdata.core_count;
-
-         if (idx >= rcheevos_locals.patchdata.unofficial_count)
-            return true;
-         cheevo = rcheevos_locals.patchdata.unofficial + idx;
-      }
-
-      strlcpy(desc->s, cheevo->description, desc->len);
-   }
-
-   return true;
-}
-
 bool rcheevos_hardcore_active(void)
 {
    return rcheevos_locals.hardcore_active;
@@ -1281,10 +1254,10 @@ bool rcheevos_unload(void)
 
    if (rcheevos_locals.loaded)
    {
-      rcheevos_free_patchdata(&rcheevos_locals.patchdata);
 #ifdef HAVE_MENU
-      cheevos_reset_menu_badges();
+      rcheevos_menu_reset_badges();
 #endif
+      rcheevos_free_patchdata(&rcheevos_locals.patchdata);
 
       rcheevos_locals.loaded                    = false;
       rcheevos_locals.hardcore_active           = false;
@@ -2233,7 +2206,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 #endif
 
 #ifdef HAVE_MENU
-      cheevos_reset_menu_badges();
+      rcheevos_menu_reset_badges();
 #endif
 
       for (coro->i = 0; coro->i < 2; coro->i++)
