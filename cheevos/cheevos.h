@@ -21,8 +21,6 @@
 
 #include <boolean.h>
 
-#include "../verbosity.h"
-
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -33,13 +31,6 @@ typedef struct rcheevos_ctx_desc
    char *s;
    size_t len;
 } rcheevos_ctx_desc_t;
-
-enum
-{
-   RCHEEVOS_ACTIVE_SOFTCORE = 1 << 0,
-   RCHEEVOS_ACTIVE_HARDCORE = 1 << 1,
-   RCHEEVOS_ACTIVE_UNOFFICIAL = 1 << 2
-};
 
 bool rcheevos_load(const void *data);
 size_t rcheevos_get_serialize_size(void);

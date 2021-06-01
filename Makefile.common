@@ -2108,6 +2108,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
       OBJ += cheevos/cheevos.o \
              cheevos/badges.o \
+             cheevos/cheevos_menu.o \
              cheevos/cheevos_memory.o \
              cheevos/cheevos_parser.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
