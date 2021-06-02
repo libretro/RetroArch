@@ -324,8 +324,26 @@ static void rcheevos_menu_append_items(rcheevos_locals_t* rcheevos_locals,
                menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY;
                break;
 
-            case RCHEEVOS_MENUITEM_BUCKET_UNLOCKED:
             case RCHEEVOS_MENUITEM_BUCKET_RECENTLY_UNLOCKED:
+            {
+               /* insert the item such that the unlock times are descending */
+               unsigned entry_index = rcheevos_locals->menuitem_count - 1;
+               while (entry_index > first_index)
+               {
+                  rcheevos_menuitem_t* prev_menuitem = menuitem - 1;
+                  if (prev_menuitem->cheevo->unlock_time >= cheevo->unlock_time)
+                     break;
+
+                  memcpy(menuitem, prev_menuitem, sizeof(rcheevos_menuitem_t));
+                  menuitem = prev_menuitem;
+                  --entry_index;
+               }
+
+               menuitem->cheevo = cheevo;
+            }
+            /* fallthrough to RCHEEVOS_MENUITEM_BUCKET_UNLOCKED */
+
+            case RCHEEVOS_MENUITEM_BUCKET_UNLOCKED:
                if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
                   menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
                else
