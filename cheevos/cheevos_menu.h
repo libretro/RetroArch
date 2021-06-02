@@ -28,13 +28,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct rcheevos_ctx_desc
-{
-   unsigned idx;
-   char *s;
-   size_t len;
-} rcheevos_ctx_desc_t;
-
 void rcheevos_menu_populate(void* data);
 void rcheevos_menu_populate_hardcore_pause_submenu(void* data);
 bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_size);
