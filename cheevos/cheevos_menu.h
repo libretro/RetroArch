@@ -45,4 +45,4 @@ RETRO_END_DECLS
 
 #endif /* HAVE_MENU */
 
-#endif /* __RARCH_CHEEVOS_CHEEVOS_H */
+#endif /* __RARCH_CHEEVOS_MENU_H */

@@ -2214,10 +2214,43 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
    }
 #endif
 
-#ifdef HAVE_MENU
-      rcheevos_menu_reset_badges();
-#endif
+      /* make sure the directory exists */
+      coro->badge_fullpath[0] = '\0';
+      fill_pathname_application_special(coro->badge_fullpath,
+         sizeof(coro->badge_fullpath),
+         APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
+      if (!path_is_directory(coro->badge_fullpath))
+         path_mkdir(coro->badge_fullpath);
+
+      /* fetch the placeholder image */
+      strlcpy(coro->badge_name, "00000" FILE_PATH_PNG_EXTENSION,
+            sizeof(coro->badge_name));
+      fill_pathname_join(coro->badge_fullpath, coro->badge_fullpath,
+         coro->badge_name, sizeof(coro->badge_fullpath));
+
+      if (!path_is_valid(coro->badge_fullpath))
+      {
+#ifdef CHEEVOS_LOG_BADGES
+         CHEEVOS_LOG(RCHEEVOS_TAG "downloading badge %s\n",
+            coro->badge_fullpath);
+#endif
+         snprintf(coro->url, sizeof(coro->url),
+            FILE_PATH_RETROACHIEVEMENTS_URL "/Badge/%s", coro->badge_name);
+
+         CORO_GOSUB(RCHEEVOS_HTTP_GET);
+
+         if (coro->json)
+         {
+            if (!filestream_write_file(coro->badge_fullpath, coro->json, coro->k))
+               CHEEVOS_ERR(RCHEEVOS_TAG "Error writing badge %s\n", coro->badge_fullpath);
+
+            CHEEVOS_FREE(coro->json);
+            coro->json = NULL;
+         }
+      }
+
+      /* fetch the game images */
       for (coro->i = 0; coro->i < 2; coro->i++)
       {
          if (coro->i == 0)
@@ -2233,23 +2266,12 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 
          for (; coro->cheevo < coro->cheevo_end; coro->cheevo++)
          {
-            if (!coro->cheevo->badge[0])
+            if (!coro->cheevo->badge || !coro->cheevo->badge[0])
                continue;
 
             for (coro->j = 0 ; coro->j < 2; coro->j++)
             {
-               coro->badge_fullpath[0] = '\0';
-               fill_pathname_application_special(
-                     coro->badge_fullpath,
-                     sizeof(coro->badge_fullpath),
-                     APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
-
-               if (!path_is_directory(coro->badge_fullpath))
-                  path_mkdir(coro->badge_fullpath);
                CORO_YIELD();
-
-               if (!coro->cheevo->badge || !coro->cheevo->badge[0])
-                  continue;
 
                if (coro->j == 0)
                   snprintf(coro->badge_name,
@@ -2261,6 +2283,11 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
                         sizeof(coro->badge_name),
                         "%s_lock" FILE_PATH_PNG_EXTENSION,
                         coro->cheevo->badge);
+
+               coro->badge_fullpath[0] = '\0';
+               fill_pathname_application_special(coro->badge_fullpath,
+                     sizeof(coro->badge_fullpath),
+                     APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
                fill_pathname_join(
                      coro->badge_fullpath,
@@ -2287,11 +2314,9 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
                      if (!filestream_write_file(coro->badge_fullpath,
                               coro->json, coro->k))
                         CHEEVOS_ERR(RCHEEVOS_TAG "Error writing badge %s\n", coro->badge_fullpath);
-                     else
-                     {
-                        CHEEVOS_FREE(coro->json);
-                        coro->json = NULL;
-                     }
+
+                     CHEEVOS_FREE(coro->json);
+                     coro->json = NULL;
                   }
                }
             }

@@ -155,4 +155,4 @@ rcheevos_locals_t* get_rcheevos_locals();
 
 RETRO_END_DECLS
 
-#endif
+#endif /* __RARCH_CHEEVOS_LOCALS_H */

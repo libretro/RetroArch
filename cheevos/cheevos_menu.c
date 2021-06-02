@@ -15,12 +15,15 @@
 
 #include "cheevos_locals.h"
 
+#include "../gfx/gfx_display.h"
+
 #ifdef HAVE_MENU
 
 #include "cheevos.h"
 
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 
+#include "../file_path_special.h"
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
 
@@ -203,7 +206,7 @@ static rcheevos_menuitem_t* rcheevos_menu_allocate(
          else
          {
             /* realloc failed */
-            CHEEVOS_ERR(RCHEEVOS_TAG " could not allocate space for %u menu items",
+            CHEEVOS_ERR(RCHEEVOS_TAG " could not allocate space for %u menu items\n",
                   rcheevos_locals->menuitem_capacity);
             rcheevos_locals->menuitem_capacity -= 32;
             return NULL;
@@ -218,7 +221,7 @@ static rcheevos_menuitem_t* rcheevos_menu_allocate(
          if (!rcheevos_locals->menuitems)
          {
             /* malloc failed */
-            CHEEVOS_ERR(RCHEEVOS_TAG " could not allocate space for %u menu items",
+            CHEEVOS_ERR(RCHEEVOS_TAG " could not allocate space for %u menu items\n",
                   rcheevos_locals->menuitem_capacity);
             rcheevos_locals->menuitem_capacity = 0;
             return NULL;
@@ -238,6 +241,53 @@ static void rcheevos_menu_append_header(rcheevos_locals_t* rcheevos_locals,
    rcheevos_menuitem_t* menuitem = rcheevos_menu_allocate(rcheevos_locals, NULL);
    if (menuitem)
       menuitem->state_label_idx = label;
+}
+
+static void rcheevos_menu_update_badge(rcheevos_racheevo_t* cheevo)
+{
+   bool badge_grayscale = false;
+   switch (cheevo->menu_bucket)
+   {
+      case RCHEEVOS_MENUITEM_BUCKET_LOCKED:
+      case RCHEEVOS_MENUITEM_BUCKET_UNSUPPORTED:
+      case RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE:
+      case RCHEEVOS_MENUITEM_BUCKET_ACTIVE_CHALLENGE:
+         badge_grayscale = true;
+         break;
+
+      default:
+         badge_grayscale = false;
+         break;
+   }
+
+   if (!cheevo->menu_badge_texture || cheevo->menu_badge_grayscale != badge_grayscale)
+   {
+      uintptr_t new_badge_texture =
+         rcheevos_get_badge_texture(cheevo->badge, badge_grayscale);
+
+      if (new_badge_texture)
+      {
+         if (cheevo->menu_badge_texture)
+            video_driver_texture_unload(&cheevo->menu_badge_texture);
+
+         cheevo->menu_badge_texture = new_badge_texture;
+         cheevo->menu_badge_grayscale = badge_grayscale;
+      }
+      /* menu_badge_grayscale is overloaded such that any value greater than 1 indicates
+       * the server default image is being used */
+      else if (cheevo->menu_badge_grayscale < 2)
+      {
+         if (cheevo->menu_badge_texture)
+            video_driver_texture_unload(&cheevo->menu_badge_texture);
+
+         /* requested badge is not available, check for server default */
+         cheevo->menu_badge_texture =
+            rcheevos_get_badge_texture("00000", false);
+
+         if (cheevo->menu_badge_texture)
+            cheevo->menu_badge_grayscale = 2;
+      }
+   }
 }
 
 static void rcheevos_menu_append_items(rcheevos_locals_t* rcheevos_locals,
@@ -314,30 +364,7 @@ static void rcheevos_menu_append_items(rcheevos_locals_t* rcheevos_locals,
          if (cheevo->badge && cheevo->badge[0] && settings &&
                settings->bools.cheevos_badges_enable)
          {
-            bool badge_grayscale = false;
-            switch (bucket)
-            {
-               case RCHEEVOS_MENUITEM_BUCKET_LOCKED:
-               case RCHEEVOS_MENUITEM_BUCKET_UNSUPPORTED:
-               case RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE:
-               case RCHEEVOS_MENUITEM_BUCKET_ACTIVE_CHALLENGE:
-                  badge_grayscale = true;
-                  break;
-
-               default:
-                  badge_grayscale = false;
-                  break;
-            }
-
-            if (!cheevo->menu_badge_texture || cheevo->menu_badge_grayscale != badge_grayscale)
-            {
-               if (cheevo->menu_badge_texture)
-                  video_driver_texture_unload(&cheevo->menu_badge_texture);
-
-               cheevo->menu_badge_texture = 
-                     rcheevos_get_badge_texture(cheevo->badge, badge_grayscale);
-               cheevo->menu_badge_grayscale = badge_grayscale;
-            }
+            rcheevos_menu_update_badge(cheevo);
          }
       }
 
@@ -350,9 +377,22 @@ uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset)
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    if (menu_offset < rcheevos_locals->menuitem_count)
    {
-      const rcheevos_racheevo_t* cheevo = rcheevos_locals->menuitems[menu_offset].cheevo;
+      rcheevos_racheevo_t* cheevo = rcheevos_locals->menuitems[menu_offset].cheevo;
       if (cheevo)
+      {
+         /* if we're using the placeholder badge, check to see if the real badge
+          * has become available (do this roughly once a second) */
+         if (cheevo->menu_badge_grayscale >= 2)
+         {
+            if (++cheevo->menu_badge_grayscale == 64)
+            {
+               cheevo->menu_badge_grayscale = 2;
+               rcheevos_menu_update_badge(cheevo);
+            }
+         }
+
          return cheevo->menu_badge_texture;
+      }
    }
 
    return 0;
