@@ -21,10 +21,10 @@
 
 #include "cheevos_memory.h"
 
+#include <../command.h>
+#include <../verbosity.h>
 #include <boolean.h>
-#include <command.h>
 #include <queues/task_queue.h>
-#include <verbosity.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>

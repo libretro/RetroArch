@@ -194,9 +194,9 @@ static rcheevos_menuitem_t* rcheevos_menu_allocate(
    {
       if (rcheevos_locals->menuitems)
       {
+         rcheevos_menuitem_t* new_menuitems;
          rcheevos_locals->menuitem_capacity += 32;
-         rcheevos_menuitem_t* new_menuitems = (rcheevos_menuitem_t*)
-               realloc(rcheevos_locals->menuitems,
+         new_menuitems = (rcheevos_menuitem_t*)realloc(rcheevos_locals->menuitems,
                        rcheevos_locals->menuitem_capacity * sizeof(rcheevos_menuitem_t));
 
          if (new_menuitems)
@@ -231,7 +231,7 @@ static rcheevos_menuitem_t* rcheevos_menu_allocate(
 
    menuitem = &rcheevos_locals->menuitems[rcheevos_locals->menuitem_count++];
    menuitem->cheevo = cheevo;
-   menuitem->state_label_idx = 0;
+   menuitem->state_label_idx = MSG_UNKNOWN;
    return menuitem;
 }
 
