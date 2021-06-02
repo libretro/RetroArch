@@ -1,4 +1,5 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2015-2018 - Andre Leiradella
  *  Copyright (C) 2019-2021 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -113,7 +114,7 @@ typedef struct rcheevos_rapatchdata_t
 typedef struct rcheevos_menuitem_t
 {
    rcheevos_racheevo_t* cheevo;
-   enum msg_hash_enums state_label_idx;   
+   enum msg_hash_enums state_label_idx;
 } rcheevos_menuitem_t;
 
 void rcheevos_menu_reset_badges(void);

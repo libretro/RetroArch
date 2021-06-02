@@ -790,7 +790,8 @@ static int menu_dialog_iterate(
 
 #ifdef HAVE_CHEEVOS
       case MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION:
-         rcheevos_menu_get_sublabel(p_dialog->current_id, s, len);
+         if (!rcheevos_menu_get_sublabel(p_dialog->current_id, s, len))
+            return 1;
          break;
 #endif
 

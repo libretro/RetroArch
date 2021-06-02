@@ -72,7 +72,7 @@ static void rcheevos_menu_update_bucket(rcheevos_racheevo_t* cheevo)
          {
             const unsigned long clamped_value = (unsigned long)
                   MIN(trigger->measured_value, trigger->measured_target);
-            cheevo->menu_progress = 
+            cheevo->menu_progress =
                   (uint8_t)((clamped_value * 100) / trigger->measured_target);
          }
 
@@ -81,7 +81,7 @@ static void rcheevos_menu_update_bucket(rcheevos_racheevo_t* cheevo)
          else if (cheevo->menu_progress >= 80)
             cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE;
       }
-   } 
+   }
 }
 
 static void rcheevos_menu_update_buckets(bool cheevos_test_unofficial)
@@ -89,7 +89,7 @@ static void rcheevos_menu_update_buckets(bool cheevos_test_unofficial)
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    rcheevos_racheevo_t* cheevo = rcheevos_locals->patchdata.core;
    rcheevos_racheevo_t* stop = cheevo + rcheevos_locals->patchdata.core_count;
- 
+
    while (cheevo < stop)
    {
       rcheevos_menu_update_bucket(cheevo);
@@ -120,7 +120,7 @@ bool rcheevos_menu_get_state(unsigned menu_offset, char *buffer, size_t len)
       {
          if (cheevo->menu_progress)
          {
-            snprintf(buffer, len, "%s - %d%%", 
+            snprintf(buffer, len, "%s - %d%%",
                   msg_hash_to_str(menuitem->state_label_idx),
                   cheevo->menu_progress);
          }
@@ -163,7 +163,7 @@ void rcheevos_menu_reset_badges(void)
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    rcheevos_racheevo_t* cheevo = rcheevos_locals->patchdata.core;
    rcheevos_racheevo_t* stop = cheevo + rcheevos_locals->patchdata.core_count;
- 
+
    while (cheevo < stop)
    {
       if (cheevo->menu_badge_texture)
@@ -193,7 +193,7 @@ static rcheevos_menuitem_t* rcheevos_menu_allocate(
       {
          rcheevos_locals->menuitem_capacity += 32;
          rcheevos_menuitem_t* new_menuitems = (rcheevos_menuitem_t*)
-               realloc(rcheevos_locals->menuitems, 
+               realloc(rcheevos_locals->menuitems,
                        rcheevos_locals->menuitem_capacity * sizeof(rcheevos_menuitem_t));
 
          if (new_menuitems)
@@ -240,15 +240,15 @@ static void rcheevos_menu_append_header(rcheevos_locals_t* rcheevos_locals,
       menuitem->state_label_idx = label;
 }
 
-static void rcheevos_menu_append_items(menu_displaylist_info_t* info,
+static void rcheevos_menu_append_items(rcheevos_locals_t* rcheevos_locals,
       bool cheevos_test_unofficial, enum rcheevos_menuitem_bucket bucket)
 {
    const settings_t *settings = config_get_ptr();
-   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    rcheevos_racheevo_t* cheevo = rcheevos_locals->patchdata.core;
    rcheevos_racheevo_t* stop   = cheevo + rcheevos_locals->patchdata.core_count;
    bool processing_unofficial  = false;
- 
+   const unsigned first_index  = rcheevos_locals->menuitem_count;
+
    do
    {
       if (cheevo == stop)
@@ -282,6 +282,25 @@ static void rcheevos_menu_append_items(menu_displaylist_info_t* info,
                   menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
                break;
 
+            case RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE:
+            {
+               /* insert the item such that the progresses are descending */
+               unsigned entry_index = rcheevos_locals->menuitem_count - 1;
+               while (entry_index > first_index)
+               {
+                  rcheevos_menuitem_t* prev_menuitem = menuitem - 1;
+                  if (prev_menuitem->cheevo->menu_progress >= cheevo->menu_progress)
+                     break;
+
+                  memcpy(menuitem, prev_menuitem, sizeof(rcheevos_menuitem_t));
+                  menuitem = prev_menuitem;
+                  --entry_index;
+               }
+
+               menuitem->cheevo = cheevo;
+            }
+            /* fallthrough to default */
+
             default:
                if (processing_unofficial)
                   menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY;
@@ -292,7 +311,7 @@ static void rcheevos_menu_append_items(menu_displaylist_info_t* info,
                break;
          }
 
-         if (cheevo->badge && cheevo->badge[0] && settings && 
+         if (cheevo->badge && cheevo->badge[0] && settings &&
                settings->bools.cheevos_badges_enable)
          {
             bool badge_grayscale = false;
@@ -301,6 +320,7 @@ static void rcheevos_menu_append_items(menu_displaylist_info_t* info,
                case RCHEEVOS_MENUITEM_BUCKET_LOCKED:
                case RCHEEVOS_MENUITEM_BUCKET_UNSUPPORTED:
                case RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE:
+               case RCHEEVOS_MENUITEM_BUCKET_ACTIVE_CHALLENGE:
                   badge_grayscale = true;
                   break;
 
@@ -420,7 +440,7 @@ void rcheevos_menu_populate(void* data)
       /* count items in each bucket */
       cheevo = rcheevos_locals->patchdata.core;
       stop = cheevo + rcheevos_locals->patchdata.core_count;
-     
+
       do
       {
          if (cheevo == stop)
@@ -467,24 +487,52 @@ void rcheevos_menu_populate(void* data)
 
          ++cheevo;
       } while(true);
+
+      if (!rcheevos_locals->menuitems)
+      {
+         /* reserve space for all achievements and up to 6 headers before we need to realloc */
+         rcheevos_locals->menuitem_capacity = rcheevos_locals->patchdata.core_count + 6;
+         if (cheevos_test_unofficial)
+            rcheevos_locals->menuitem_capacity += rcheevos_locals->patchdata.unofficial_count;
+
+         rcheevos_locals->menuitems = (rcheevos_menuitem_t*)
+               malloc(rcheevos_locals->menuitem_capacity * sizeof(rcheevos_menuitem_t));
+         if (!rcheevos_locals->menuitems)
+            rcheevos_locals->menuitem_capacity = 0;
+      }
    }
+
+   /* reset menu */
+   rcheevos_locals->menuitem_count = 0;
 
    /* active challenges */
    if (num_active_challenges)
    {
+      rcheevos_menu_append_header(rcheevos_locals,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY);
 
+      rcheevos_menu_append_items(rcheevos_locals, cheevos_test_unofficial,
+            RCHEEVOS_MENUITEM_BUCKET_ACTIVE_CHALLENGE);
    }
 
    /* recently unlocked */
    if (num_recently_unlocked)
    {
+      rcheevos_menu_append_header(rcheevos_locals,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY);
 
+      rcheevos_menu_append_items(rcheevos_locals, cheevos_test_unofficial,
+            RCHEEVOS_MENUITEM_BUCKET_RECENTLY_UNLOCKED);
    }
 
    /* almost there */
    if (num_almost_there)
    {
+      rcheevos_menu_append_header(rcheevos_locals,
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY);
 
+      rcheevos_menu_append_items(rcheevos_locals, cheevos_test_unofficial,
+            RCHEEVOS_MENUITEM_BUCKET_ALMOST_THERE);
    }
 
    /* locked */
@@ -496,7 +544,7 @@ void rcheevos_menu_populate(void* data)
                MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY);
       }
 
-      rcheevos_menu_append_items(info, cheevos_test_unofficial, 
+      rcheevos_menu_append_items(rcheevos_locals, cheevos_test_unofficial,
             RCHEEVOS_MENUITEM_BUCKET_LOCKED);
    }
 
@@ -509,12 +557,13 @@ void rcheevos_menu_populate(void* data)
                MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY);
       }
 
-      rcheevos_menu_append_items(info, cheevos_test_unofficial, 
+      rcheevos_menu_append_items(rcheevos_locals, cheevos_test_unofficial,
             RCHEEVOS_MENUITEM_BUCKET_UNLOCKED);
    }
 
    if (rcheevos_locals->menuitem_count > 0)
    {
+      /* convert to menu entries */
       rcheevos_menuitem_t* menuitem = rcheevos_locals->menuitems;
       rcheevos_menuitem_t* stop = menuitem + rcheevos_locals->menuitem_count;
       char buffer[128];
@@ -525,16 +574,16 @@ void rcheevos_menu_populate(void* data)
          if (menuitem->cheevo)
          {
             menu_entries_append_enum(info->list, menuitem->cheevo->title,
-                  menuitem->cheevo->description, 
+                  menuitem->cheevo->description,
                   MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                   MENU_SETTINGS_CHEEVOS_START + idx, 0, 0);
          }
          else
          {
-            snprintf(buffer, sizeof(buffer), "----- %s -----", 
+            snprintf(buffer, sizeof(buffer), "----- %s -----",
                   msg_hash_to_str(menuitem->state_label_idx));
 
-            menu_entries_append_enum(info->list, buffer, "", 
+            menu_entries_append_enum(info->list, buffer, "",
                   MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                   MENU_SETTINGS_CHEEVOS_START + idx, 0, 0);
          }

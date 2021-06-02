@@ -965,6 +965,8 @@ static void rcheevos_award_achievement(rcheevos_locals_t *locals,
    if (locals->hardcore_active)
       cheevo->active &= ~RCHEEVOS_ACTIVE_HARDCORE;
 
+   cheevo->unlock_time = cpu_features_get_time_usec();
+
    /* Show the OSD message. */
    {
 #if defined(HAVE_GFX_WIDGETS)
@@ -1256,6 +1258,13 @@ bool rcheevos_unload(void)
    {
 #ifdef HAVE_MENU
       rcheevos_menu_reset_badges();
+
+      if (rcheevos_locals.menuitems)
+      {
+         CHEEVOS_FREE(rcheevos_locals.menuitems);
+         rcheevos_locals.menuitems = NULL;
+         rcheevos_locals.menuitem_capacity = rcheevos_locals.menuitem_count = 0;
+      }
 #endif
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
 
