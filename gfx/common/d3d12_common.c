@@ -315,10 +315,11 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    desc.Windowed     = TRUE;
 #endif
 #if 0
-   desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+   desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
    desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
+   desc.Flags      = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 #ifdef __WINRT__
    hr = DXGICreateSwapChainForCoreWindow(d3d12->factory, d3d12->queue.handle, corewindow, &desc, NULL, &d3d12->chain.handle);
