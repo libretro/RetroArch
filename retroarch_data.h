@@ -1090,6 +1090,9 @@ static const wifi_driver_t *wifi_drivers[] = {
 #ifdef HAVE_LAKKA
    &wifi_connmanctl,
 #endif
+#ifdef HAVE_WIFI
+   &wifi_nmcli,
+#endif
    &wifi_null,
    NULL,
 };

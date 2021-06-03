@@ -194,3 +194,4 @@ HAVE_STEAM=no              # Enable Steam build
 HAVE_ODROIDGO2=no          # ODROID-GO Advance rotation support (requires librga)
 HAVE_LIBSHAKE=no           # libShake haptic feedback support
 HAVE_CHECK=no              # check support for unit tests
+HAVE_WIFI=no               # wifi driver support
