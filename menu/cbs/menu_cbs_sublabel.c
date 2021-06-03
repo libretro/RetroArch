@@ -26,7 +26,7 @@
 #include "../../core_option_manager.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
+#include "../../cheevos/cheevos_menu.h"
 #endif
 #include "../../core_info.h"
 #include "../../verbosity.h"
@@ -1052,20 +1052,8 @@ static int action_bind_sublabel_cheevos_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   rcheevos_ctx_desc_t desc_info;
-   unsigned new_id;
-   char fetched_sublabel[MENU_SUBLABEL_MAX_LENGTH];
-
-   fetched_sublabel[0] = '\0';
-
-   new_id              = type - MENU_SETTINGS_CHEEVOS_START;
-   desc_info.idx       = new_id;
-   desc_info.s         = fetched_sublabel;
-   desc_info.len       = len;
-
-   rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
-
-   strlcpy(s, desc_info.s, len);
+   unsigned offset = type - MENU_SETTINGS_CHEEVOS_START;
+   rcheevos_menu_get_sublabel(offset, s, len);
    return 0;
 }
 #endif

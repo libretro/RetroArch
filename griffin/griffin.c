@@ -191,7 +191,7 @@ ACHIEVEMENTS
 #include "../network/net_http_special.c"
 
 #include "../cheevos/cheevos.c"
-#include "../cheevos/badges.c"
+#include "../cheevos/cheevos_menu.c"
 #include "../cheevos/cheevos_memory.c"
 #include "../cheevos/cheevos_parser.c"
 

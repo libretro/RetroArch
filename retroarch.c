@@ -174,6 +174,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
+#include "cheevos/cheevos_menu.h"
 #endif
 
 #ifdef HAVE_TRANSLATE
@@ -789,13 +790,8 @@ static int menu_dialog_iterate(
 
 #ifdef HAVE_CHEEVOS
       case MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION:
-         {
-            rcheevos_ctx_desc_t desc_info;
-            desc_info.idx = p_dialog->current_id;
-            desc_info.s   = s;
-            desc_info.len = len;
-            rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
-         }
+         if (!rcheevos_menu_get_sublabel(p_dialog->current_id, s, len))
+            return 1;
          break;
 #endif
 

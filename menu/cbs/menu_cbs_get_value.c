@@ -53,7 +53,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
+#include "../../cheevos/cheevos_menu.h"
 #endif
 
 #ifndef BIND_ACTION_GET_VALUE
@@ -129,7 +129,7 @@ static void menu_action_setting_disp_set_label_cheevos_entry(
    *w = 19;
    strlcpy(s2, path, len2);
 
-   rcheevos_get_achievement_state(type - MENU_SETTINGS_CHEEVOS_START, s, len);
+   rcheevos_menu_get_state(type - MENU_SETTINGS_CHEEVOS_START, s, len);
 }
 #endif
 

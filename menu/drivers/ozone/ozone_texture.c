@@ -24,7 +24,7 @@
 #include <file/file_path.h>
 
 #ifdef HAVE_CHEEVOS
-#include "../../../cheevos/badges.h"
+#include "../../../cheevos/cheevos_menu.h"
 #endif
 
 #include "../../../file_path_special.h"
@@ -464,11 +464,17 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          (type < MENU_SETTINGS_NETPLAY_ROOMS_START)
       )
    {
+      char buffer[64];
       int               index = type - MENU_SETTINGS_CHEEVOS_START;
-      uintptr_t badge_texture = cheevos_get_menu_badge_texture(index);
+      uintptr_t badge_texture = rcheevos_menu_get_badge_texture(index);
       if (badge_texture)
          return badge_texture;
-      /* Should be replaced with placeholder badge icon. */
+
+      /* no state means its a header - show the info icon */
+      if (!rcheevos_menu_get_state(index, buffer, sizeof(buffer)))
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INFO];
+
+      /* placeholder badge image was not found, show generic menu icon */
       return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS];
    }
 #endif
