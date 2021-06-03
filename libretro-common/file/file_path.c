@@ -640,25 +640,25 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
 #ifdef _WIN32
    char *ret = NULL;
-   wchar_t *abs_path = (wchar_t *)malloc(PATH_MAX_LENGTH * sizeof(wchar_t));
+   wchar_t abs_path[PATH_MAX_LENGTH];
    wchar_t *rel_path = utf8_to_utf16_string_alloc(buf);
 
-   if (abs_path && rel_path && _wfullpath(abs_path, rel_path, PATH_MAX_LENGTH))
-   {
-      char *tmp = utf16_to_utf8_string_alloc(abs_path);
-
-      if (tmp)
-      {
-         strlcpy(buf, tmp, size);
-         free(tmp);
-         ret = buf;
-      }
-   }
-
    if (rel_path)
+   {
+      if (_wfullpath(abs_path, rel_path, PATH_MAX_LENGTH))
+      {
+         char *tmp = utf16_to_utf8_string_alloc(abs_path);
+
+         if (tmp)
+         {
+            strlcpy(buf, tmp, size);
+            free(tmp);
+            ret = buf;
+         }
+      }
+
       free(rel_path);
-   if (abs_path)
-      free(abs_path);
+   }
 
    return ret;
 #else
