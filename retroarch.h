@@ -295,10 +295,43 @@ typedef struct global
    bool cli_load_menu_on_error;
 } global_t;
 
+typedef struct content_file_override
+{
+   char *ext;
+   bool need_fullpath;
+   bool persistent_data;
+} content_file_override_t;
+
+typedef struct content_file_info
+{
+   char *full_path;
+   char *archive_path;
+   char *archive_file;
+   char *dir;
+   char *name;
+   char *ext;
+   char *meta; /* Unused at present */
+   void *data;
+   size_t data_size;
+   bool file_in_archive;
+   bool persistent_data;
+} content_file_info_t;
+
+typedef struct content_file_list
+{
+   content_file_info_t *entries;
+   struct string_list *temporary_files;
+   struct retro_game_info *game_info;
+   struct retro_game_info_ext *game_info_ext;
+   size_t size;
+} content_file_list_t;
+
 typedef struct content_state
 {
    char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
-   struct string_list *temporary_content;
+
+   content_file_override_t *content_override_list;
+   content_file_list_t *content_list;
 
    int pending_subsystem_rom_num;
    int pending_subsystem_id;

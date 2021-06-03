@@ -18526,6 +18526,48 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE:
+         {
+            const struct retro_system_content_info_override *overrides =
+                  (const struct retro_system_content_info_override *)data;
+
+            RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE.\n");
+
+            /* Passing NULL always results in 'success' - this
+             * allows cores to test for frontend support of
+             * the RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE and
+             * RETRO_ENVIRONMENT_GET_GAME_INFO_EXT callbacks */
+            if (!overrides)
+               return true;
+
+            return content_file_override_set(overrides);
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_GET_GAME_INFO_EXT:
+         {
+            content_state_t *p_content                       =
+                  content_state_get_ptr();
+            const struct retro_game_info_ext **game_info_ext =
+                  (const struct retro_game_info_ext **)data;
+
+            RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_GET_GAME_INFO_EXT.\n");
+
+            if (!game_info_ext)
+               return false;
+
+            if (p_content &&
+                p_content->content_list &&
+                p_content->content_list->game_info_ext)
+               *game_info_ext = p_content->content_list->game_info_ext;
+            else
+            {
+               RARCH_ERR("[Environ]: Failed to retrieve extended game info\n");
+               *game_info_ext = NULL;
+               return false;
+            }
+         }
+         break;
 
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
@@ -18938,7 +18980,6 @@ static void free_retro_ctx_load_content_info(struct
    if (!dest)
       return;
 
-   core_free_retro_game_info(dest->info);
    string_list_free((struct string_list*)dest->content);
    if (dest->info)
       free(dest->info);
@@ -18956,32 +18997,19 @@ static struct retro_game_info* clone_retro_game_info(const
    if (!dest)
       return NULL;
 
-   dest->path                   = NULL;
-   dest->data                   = NULL;
-   dest->size                   = 0;
-   dest->meta                   = NULL;
-
-   if (src->size && src->data)
-   {
-      void *data = malloc(src->size);
-
-      if (data)
-      {
-         memcpy(data, src->data, src->size);
-         dest->data = data;
-      }
-   }
-
-   if (!string_is_empty(src->path))
-      dest->path = strdup(src->path);
-   if (!string_is_empty(src->meta))
-      dest->meta = strdup(src->meta);
-
-   dest->size    = src->size;
+   /* content_file_init() guarantees that all
+    * elements of the source retro_game_info
+    * struct will persist for the lifetime of
+    * the core. This means we do not have to
+    * copy any data; pointer assignment is
+    * sufficient */
+   dest->path = src->path;
+   dest->data = src->data;
+   dest->size = src->size;
+   dest->meta = src->meta;
 
    return dest;
 }
-
 
 static struct retro_ctx_load_content_info
 *clone_retro_ctx_load_content_info(
@@ -39390,23 +39418,6 @@ bool core_has_set_input_descriptor(void)
    struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->current_core.has_set_input_descriptors;
 }
-
-#if defined(HAVE_RUNAHEAD)
-static void core_free_retro_game_info(struct retro_game_info *dest)
-{
-   if (!dest)
-      return;
-   if (dest->path)
-      free((void*)dest->path);
-   if (dest->data)
-      free((void*)dest->data);
-   if (dest->meta)
-      free((void*)dest->meta);
-   dest->path = NULL;
-   dest->data = NULL;
-   dest->meta = NULL;
-}
-#endif
 
 unsigned int retroarch_get_rotation(void)
 {

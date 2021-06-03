@@ -136,9 +136,6 @@ static void drivers_init(struct rarch_state *p_rarch,
       int flags,
       bool verbosity_enabled);
 
-#if defined(HAVE_RUNAHEAD)
-static void core_free_retro_game_info(struct retro_game_info *dest);
-#endif
 static bool core_load(struct rarch_state *p_rarch,
       unsigned poll_type_behavior);
 static bool core_unload_game(struct rarch_state *p_rarch);

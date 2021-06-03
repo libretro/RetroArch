@@ -1388,6 +1388,111 @@ enum retro_mod
                                             * fastforwarding state will occur in this case).
                                             */
 
+#define RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE 65
+                                           /* const struct retro_system_content_info_override * --
+                                            * Allows an implementation to override 'global' content
+                                            * info parameters reported by retro_get_system_info().
+                                            * Overrides also affect subsystem content info parameters
+                                            * set via RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO.
+                                            * This function must be called inside retro_set_environment().
+                                            * If callback returns false, content info overrides
+                                            * are unsupported by the frontend, and will be ignored.
+                                            * If callback returns true, extended game info may be
+                                            * retrieved by calling RETRO_ENVIRONMENT_GET_GAME_INFO_EXT
+                                            * in retro_load_game() or retro_load_game_special().
+                                            *
+                                            * 'data' points to an array of retro_system_content_info_override
+                                            * structs terminated by a { NULL, false, false } element.
+                                            * If 'data' is NULL, no changes will be made to the frontend;
+                                            * a core may therefore pass NULL in order to test whether
+                                            * the RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE and
+                                            * RETRO_ENVIRONMENT_GET_GAME_INFO_EXT callbacks are supported
+                                            * by the frontend.
+                                            *
+                                            * For struct member descriptions, see the definition of
+                                            * struct retro_system_content_info_override.
+                                            *
+                                            * Example:
+                                            *
+                                            * - struct retro_system_info:
+                                            * {
+                                            *    "My Core",                      // library_name
+                                            *    "v1.0",                         // library_version
+                                            *    "m3u|md|cue|iso|chd|sms|gg|sg", // valid_extensions
+                                            *    true,                           // need_fullpath
+                                            *    false                           // block_extract
+                                            * }
+                                            *
+                                            * - Array of struct retro_system_content_info_override:
+                                            * {
+                                            *    {
+                                            *       "md|sms|gg", // extensions
+                                            *       false,       // need_fullpath
+                                            *       true         // persistent_data
+                                            *    },
+                                            *    {
+                                            *       "sg",        // extensions
+                                            *       false,       // need_fullpath
+                                            *       false        // persistent_data
+                                            *    },
+                                            *    { NULL, false, false }
+                                            * }
+                                            *
+                                            * Result:
+                                            * - Files of type m3u, cue, iso, chd will not be
+                                            *   loaded by the frontend. Frontend will pass a
+                                            *   valid path to the core, and core will handle
+                                            *   loading internally
+                                            * - Files of type md, sms, gg will be loaded by
+                                            *   the frontend. A valid memory buffer will be
+                                            *   passed to the core. This memory buffer will
+                                            *   remain valid until retro_deinit() returns
+                                            * - Files of type sg will be loaded by the frontend.
+                                            *   A valid memory buffer will be passed to the core.
+                                            *   This memory buffer will remain valid until
+                                            *   retro_load_game() (or retro_load_game_special())
+                                            *   returns
+                                            *
+                                            * NOTE: If an extension is listed multiple times in
+                                            * an array of retro_system_content_info_override
+                                            * structs, only the first instance will be registered
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_GAME_INFO_EXT 66
+                                           /* const struct retro_game_info_ext ** --
+                                            * Allows an implementation to fetch extended game
+                                            * information, providing additional content path
+                                            * and memory buffer status details.
+                                            * This function may only be called inside
+                                            * retro_load_game() or retro_load_game_special().
+                                            * If callback returns false, extended game information
+                                            * is unsupported by the frontend. In this case, only
+                                            * regular retro_game_info will be available.
+                                            * RETRO_ENVIRONMENT_GET_GAME_INFO_EXT is guaranteed
+                                            * to return true if RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE
+                                            * returns true.
+                                            *
+                                            * 'data' points to an array of retro_game_info_ext structs.
+                                            *
+                                            * For struct member descriptions, see the definition of
+                                            * struct retro_game_info_ext.
+                                            *
+                                            * - If function is called inside retro_load_game(),
+                                            *   the retro_game_info_ext array is guaranteed to
+                                            *   have a size of 1 - i.e. the returned pointer may
+                                            *   be used to access directly the members of the
+                                            *   first retro_game_info_ext struct, for example:
+                                            *
+                                            *      struct retro_game_info_ext *game_info_ext;
+                                            *      if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &game_info_ext))
+                                            *         printf("Content Directory: %s\n", game_info_ext->dir);
+                                            *
+                                            * - If the function is called inside retro_load_game_special(),
+                                            *   the retro_game_info_ext array is guaranteed to have a
+                                            *   size equal to the num_info argument passed to
+                                            *   retro_load_game_special()
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -2789,6 +2894,213 @@ struct retro_system_info
     * Necessary for certain libretro implementations that load games
     * from zipped archives. */
    bool        block_extract;
+};
+
+/* Defines overrides which modify frontend handling of
+ * specific content file types.
+ * An array of retro_system_content_info_override is
+ * passed to RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE
+ * NOTE: In the following descriptions, references to
+ *       retro_load_game() may be replaced with
+ *       retro_load_game_special() */
+struct retro_system_content_info_override
+{
+   /* A list of file extensions for which the override
+    * should apply, delimited by a 'pipe' character
+    * (e.g. "md|sms|gg")
+    * Permitted file extensions are limited to those
+    * included in retro_system_info::valid_extensions
+    * and/or retro_subsystem_rom_info::valid_extensions */
+   const char *extensions;
+
+   /* Overrides the need_fullpath value set in
+    * retro_system_info and/or retro_subsystem_rom_info.
+    * To reiterate:
+    *
+    * If need_fullpath is true and retro_load_game() is called:
+    *    - retro_game_info::path is guaranteed to contain a valid
+    *      path to an existent file
+    *    - retro_game_info::data and retro_game_info::size are invalid
+    *
+    * If need_fullpath is false and retro_load_game() is called:
+    *    - retro_game_info::path may be NULL
+    *    - retro_game_info::data and retro_game_info::size are guaranteed
+    *      to be valid
+    *
+    * In addition:
+    *
+    * If need_fullpath is true and retro_load_game() is called:
+    *    - retro_game_info_ext::full_path is guaranteed to contain a valid
+    *      path to an existent file
+    *    - retro_game_info_ext::archive_path may be NULL
+    *    - retro_game_info_ext::archive_file may be NULL
+    *    - retro_game_info_ext::dir is guaranteed to contain a valid path
+    *      to the directory in which the content file exists
+    *    - retro_game_info_ext::name is guaranteed to contain the
+    *      basename of the content file, without extension
+    *    - retro_game_info_ext::ext is guaranteed to contain the
+    *      extension of the content file in lower case format
+    *    - retro_game_info_ext::data and retro_game_info_ext::size
+    *      are invalid
+    *
+    * If need_fullpath is false and retro_load_game() is called:
+    *    - If retro_game_info_ext::file_in_archive is false:
+    *       - retro_game_info_ext::full_path is guaranteed to contain
+    *         a valid path to an existent file
+    *       - retro_game_info_ext::archive_path may be NULL
+    *       - retro_game_info_ext::archive_file may be NULL
+    *       - retro_game_info_ext::dir is guaranteed to contain a
+    *         valid path to the directory in which the content file exists
+    *       - retro_game_info_ext::name is guaranteed to contain the
+    *         basename of the content file, without extension
+    *       - retro_game_info_ext::ext is guaranteed to contain the
+    *         extension of the content file in lower case format
+    *    - If retro_game_info_ext::file_in_archive is true:
+    *       - retro_game_info_ext::full_path may be NULL
+    *       - retro_game_info_ext::archive_path is guaranteed to
+    *         contain a valid path to an existent compressed file
+    *         inside which the content file is located
+    *       - retro_game_info_ext::archive_file is guaranteed to
+    *         contain a valid path to an existent content file
+    *         inside the compressed file referred to by
+    *         retro_game_info_ext::archive_path
+    *            e.g. for a compressed file '/path/to/foo.zip'
+    *            containing 'bar.sfc'
+    *             > retro_game_info_ext::archive_path will be '/path/to/foo.zip'
+    *             > retro_game_info_ext::archive_file will be 'bar.sfc'
+    *       - retro_game_info_ext::dir is guaranteed to contain a
+    *         valid path to the directory in which the compressed file
+    *         (containing the content file) exists
+    *       - retro_game_info_ext::name is guaranteed to contain
+    *         EITHER
+    *         1) the basename of the compressed file (containing
+    *            the content file), without extension
+    *         OR
+    *         2) the basename of the content file inside the
+    *            compressed file, without extension
+    *         In either case, a core should consider 'name' to
+    *         be the canonical name/ID of the the content file
+    *       - retro_game_info_ext::ext is guaranteed to contain the
+    *         extension of the content file inside the compressed file,
+    *         in lower case format
+    *    - retro_game_info_ext::data and retro_game_info_ext::size are
+    *      guaranteed to be valid */
+   bool need_fullpath;
+
+   /* If need_fullpath is false, specifies whether the content
+    * data buffer available in retro_load_game() is 'persistent'
+    *
+    * If persistent_data is false and retro_load_game() is called:
+    *    - retro_game_info::data and retro_game_info::size
+    *      are valid only until retro_load_game() returns
+    *    - retro_game_info_ext::data and retro_game_info_ext::size
+    *      are valid only until retro_load_game() returns
+    *
+    * If persistent_data is true and retro_load_game() is called:
+    *    - retro_game_info::data and retro_game_info::size
+    *      are valid until retro_deinit() returns
+    *    - retro_game_info_ext::data and retro_game_info_ext::size
+    *      are valid until retro_deinit() returns */
+   bool persistent_data;
+};
+
+/* Similar to retro_game_info, but provides extended
+ * information about the source content file and
+ * game memory buffer status.
+ * And array of retro_game_info_ext is returned by
+ * RETRO_ENVIRONMENT_GET_GAME_INFO_EXT
+ * NOTE: In the following descriptions, references to
+ *       retro_load_game() may be replaced with
+ *       retro_load_game_special() */
+struct retro_game_info_ext
+{
+   /* - If file_in_archive is false, contains a valid
+    *   path to an existent content file (UTF-8 encoded)
+    * - If file_in_archive is true, may be NULL */
+   const char *full_path;
+
+   /* - If file_in_archive is false, may be NULL
+    * - If file_in_archive is true, contains a valid path
+    *   to an existent compressed file inside which the
+    *   content file is located (UTF-8 encoded) */
+   const char *archive_path;
+
+   /* - If file_in_archive is false, may be NULL
+    * - If file_in_archive is true, contain a valid path
+    *   to an existent content file inside the compressed
+    *   file referred to by archive_path (UTF-8 encoded)
+    *      e.g. for a compressed file '/path/to/foo.zip'
+    *      containing 'bar.sfc'
+    *      > archive_path will be '/path/to/foo.zip'
+    *      > archive_file will be 'bar.sfc' */
+   const char *archive_file;
+
+   /* - If file_in_archive is false, contains a valid path
+    *   to the directory in which the content file exists
+    *   (UTF-8 encoded)
+    * - If file_in_archive is true, contains a valid path
+    *   to the directory in which the compressed file
+    *   (containing the content file) exists (UTF-8 encoded) */
+   const char *dir;
+
+   /* Contains the canonical name/ID of the content file
+    * (UTF-8 encoded). Intended for use when identifying
+    * 'complementary' content named after the loaded file -
+    * i.e. companion data of a different format (a CD image
+    * required by a ROM), texture packs, internally handled
+    * save files, etc.
+    * - If file_in_archive is false, contains the basename
+    *   of the content file, without extension
+    * - If file_in_archive is true, then string is
+    *   implementation specific. A frontend may choose to
+    *   set a name value of:
+    *   EITHER
+    *   1) the basename of the compressed file (containing
+    *      the content file), without extension
+    *   OR
+    *   2) the basename of the content file inside the
+    *      compressed file, without extension
+    *   RetroArch sets the 'name' value according to (1).
+    *   A frontend that supports routine loading of
+    *   content from archives containing multiple unrelated
+    *   content files may set the 'name' value according
+    *   to (2). */
+   const char *name;
+
+   /* - If file_in_archive is false, contains the extension
+    *   of the content file in lower case format
+    * - If file_in_archive is true, contains the extension
+    *   of the content file inside the compressed file,
+    *   in lower case format */
+   const char *ext;
+
+   /* String of implementation specific meta-data. */
+   const char *meta;
+
+   /* Memory buffer of loaded game content. Will be NULL:
+    * IF
+    * - retro_system_info::need_fullpath is true and
+    *   retro_system_content_info_override::need_fullpath
+    *   is unset
+    * OR
+    * - retro_system_content_info_override::need_fullpath
+    *   is true */
+   const void *data;
+
+   /* Size of game content memory buffer, in bytes */
+   size_t size;
+
+   /* True if loaded content file is inside a compressed
+    * archive */
+   bool file_in_archive;
+
+   /* - If data is NULL, value is unset/ignored
+    * - If data is non-NULL:
+    *   - If persistent_data is false, data and size are
+    *     valid only until retro_load_game() returns
+    *   - If persistent_data is true, data and size are
+    *     are valid until retro_deinit() returns */
+   bool persistent_data;
 };
 
 struct retro_game_geometry
