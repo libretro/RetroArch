@@ -196,7 +196,7 @@ START_TEST (test_word_wrap)
 
    char output[1024];
 
-   word_wrap(output, testtxt, 40, true, 10);
+   word_wrap(output, sizeof(output), testtxt, 40, 100, 10);
    ck_assert(!strcmp(output, expected));
 }
 END_TEST

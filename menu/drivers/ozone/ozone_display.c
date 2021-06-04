@@ -495,7 +495,9 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
-   word_wrap(message, text, (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width, true, 0);
+   (ozone->word_wrap)(message, sizeof(message), text,
+         (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width,
+         ozone->fonts.entries_label.wideglyph_width, 0);
 
    string_list_initialize(&list);
    string_split_noalloc(&list, message, "\n");
@@ -602,10 +604,10 @@ void ozone_draw_messagebox(
       return;
 
    /* Split message into lines */
-   word_wrap(
-         wrapped_message, message,
+   (ozone->word_wrap)(
+         wrapped_message, sizeof(wrapped_message), message,
          usable_width / (int)ozone->fonts.footer.glyph_width,
-         true, 0);
+         ozone->fonts.footer.wideglyph_width, 0);
 
    string_list_initialize(&list);
    if (

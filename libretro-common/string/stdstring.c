@@ -187,24 +187,23 @@ char *string_trim_whitespace(char *const s)
    return s;
 }
 
-void word_wrap(char *dst, const char *src, int line_width, bool unicode, unsigned max_lines)
+void word_wrap(char *dst, size_t dst_size, const char *src, int line_width, int wideglyph_width, unsigned max_lines)
 {
    char *lastspace     = NULL;
    unsigned counter    = 0;
    unsigned lines      = 1;
-   int src_len         = (int)strlen(src);
+   size_t src_len      = strlen(src);
    const char *src_end = src + src_len;
+
+   /* Prevent buffer overflow */
+   if (dst_size < src_len + 1)
+      return;
 
    /* Early return if src string length is less
     * than line width */
    if (src_len < line_width)
    {
-      /* TODO/FIXME: Would be better to use strcpy(),
-       * but the behaviour of this function is undefined
-       * if src and dst point to the same buffer */
-      while (src_len--)
-         *dst++ = *src++;
-      *dst = '\0';
+      strcpy(dst, src);
       return;
    }
 
@@ -213,7 +212,7 @@ void word_wrap(char *dst, const char *src, int line_width, bool unicode, unsigne
       unsigned char_len;
 
       char_len = (unsigned)(utf8skip(src, 1) - src);
-      counter += unicode ? 1 : char_len;
+      counter++;
 
       if (*src == ' ')
          lastspace = dst; /* Remember the location of the whitespace */
@@ -226,13 +225,9 @@ void word_wrap(char *dst, const char *src, int line_width, bool unicode, unsigne
 
          /* Early return if remaining src string
           * length is less than line width */
-         src_len = (int)(src_end - src);
-
-         if (src_len <= line_width)
+         if (src_end - src <= line_width)
          {
-            while (src_len--)
-               *dst++ = *src++;
-            *dst = '\0';
+            strcpy(dst, src);
             return;
          }
      }
@@ -257,13 +252,135 @@ void word_wrap(char *dst, const char *src, int line_width, bool unicode, unsigne
 
             /* Early return if remaining src string
              * length is less than line width */
-            src_len    = (int)(src_end - src);
-
-            if (src_len < line_width)
+            if (src_end - src < line_width)
             {
-               while (src_len--)
-                  *dst++ = *src++;
-               *dst = '\0';
+               strcpy(dst, src);
+               return;
+            }
+         }
+      }
+   }
+
+   *dst = '\0';
+}
+
+void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src, int line_width, int wideglyph_width, unsigned max_lines)
+{
+   char *lastspace                   = NULL;
+   char *lastwideglyph               = NULL;
+   const char *src_end               = src + strlen(src);
+   unsigned lines                    = 1;
+   /* 'line_width' means max numbers of characters per line,
+    * but this metric is only meaningful when dealing with
+    * 'regular' glyphs that have an on-screen pixel width
+    * similar to that of regular Latin characters.
+    * When handing so-called 'wide' Unicode glyphs, it is
+    * necessary to consider the actual on-screen pixel width
+    * of each character.
+    * In order to do this, we create a distinction between
+    * regular Latin 'non-wide' glyphs and 'wide' glyphs, and
+    * normalise all values relative to the on-screen pixel
+    * width of regular Latin characters:
+    * - Regular 'non-wide' glyphs have a normalised width of 100
+    * - 'line_width' is therefore normalised to 100 * (width_in_characters)
+    * - 'wide' glyphs have a normalised width of
+    *   100 * (wide_character_pixel_width / latin_character_pixel_width)
+    * - When a character is detected, the position in the current
+    *   line is incremented by the regular normalised width of 100
+    * - If that character is then determined to be a 'wide'
+    *   glyph, the position in the current line is further incremented
+    *   by the difference between the normalised 'wide' and 'non-wide'
+    *   width values */
+   unsigned counter_normalized       = 0;
+   int line_width_normalized         = line_width * 100;
+   int additional_counter_normalized = wideglyph_width - 100;
+ 
+   /* Early return if src string length is less
+    * than line width */
+   if (src_end - src < line_width)
+   {
+      strlcpy(dst, src, dst_size);
+      return;
+   }
+
+   while (*src != '\0')
+   {
+      unsigned char_len;
+
+      char_len = (unsigned)(utf8skip(src, 1) - src);
+      counter_normalized += 100;
+
+      /* Prevent buffer overflow */
+      if (char_len >= dst_size)
+         break;
+
+      if (*src == ' ')
+         lastspace = dst; /* Remember the location of the whitespace */
+      else if (*src == '\n')
+      {
+         /* If newlines embedded in the input,
+          * reset the index */
+         lines++;
+         counter_normalized = 0;
+
+         /* Early return if remaining src string
+          * length is less than line width */
+         if (src_end - src <= line_width)
+         {
+            strlcpy(dst, src, dst_size);
+            return;
+         }
+      }
+      else if (char_len >= 3)
+      {
+         /* Remember the location of the first byte
+          * whose length as UTF-8 >= 3*/
+         lastwideglyph = dst;
+         counter_normalized += additional_counter_normalized;
+      }
+
+      dst_size -= char_len;
+      while (char_len--)
+         *dst++ = *src++;
+
+      if (counter_normalized >= (unsigned)line_width_normalized)
+      {
+         counter_normalized = 0;
+
+         if (max_lines != 0 && lines >= max_lines)
+            continue;
+         else if (lastwideglyph && (!lastspace || lastwideglyph > lastspace))
+         {
+            /* Insert newline character */
+            *lastwideglyph = '\n';
+            lines++;
+            src -= dst - lastwideglyph;
+            dst = lastwideglyph + 1;
+            lastwideglyph = NULL;
+
+            /* Early return if remaining src string
+             * length is less than line width */
+            if (src_end - src <= line_width)
+            {
+               strlcpy(dst, src, dst_size);
+               return;
+            }
+         }
+         else if (lastspace)
+         {
+            /* Replace nearest (previous) whitespace
+             * with newline character */
+            *lastspace = '\n';
+            lines++;
+            src -= dst - lastspace - 1;
+            dst = lastspace + 1;
+            lastspace = NULL;
+
+            /* Early return if remaining src string
+             * length is less than line width */
+            if (src_end - src < line_width)
+            {
+               strlcpy(dst, src, dst_size);
                return;
             }
          }

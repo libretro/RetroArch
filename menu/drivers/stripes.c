@@ -286,6 +286,9 @@ typedef struct stripes_handle
    font_data_t *font2;
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
+
+   void (*word_wrap)(char *dst, size_t dst_size, const char *src,
+      int line_width, int wideglyph_width, unsigned max_lines);
 } stripes_handle_t;
 
 float stripes_scale_mod[8] = {
@@ -2406,7 +2409,8 @@ static int stripes_draw_item(
 
       label_offset      = - stripes->margins_label_top;
 
-      word_wrap(entry_sublabel, entry->sublabel, 50 * stripes_scale_mod[3], true, 0);
+      (stripes->word_wrap)(entry_sublabel, sizeof(entry_sublabel),
+            entry->sublabel, 50 * stripes_scale_mod[3], 100, 0);
 
       stripes_draw_text(xmb_shadows_enable, stripes, entry_sublabel,
             node->x + stripes->margins_screen_left +
@@ -3373,6 +3377,9 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
 
    file_list_initialize(&stripes->horizontal_list);
    stripes_init_horizontal_list(stripes);
+
+   /* set word_wrap function pointer */
+   stripes->word_wrap = msg_hash_get_wideglyph_str() ? word_wrap_wideglyph : word_wrap;
 
    return menu;
 

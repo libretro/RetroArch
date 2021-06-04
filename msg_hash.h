@@ -3272,6 +3272,37 @@ unsigned *msg_hash_get_uint(enum msg_hash_action type);
 
 void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
 
+/* Latin languages typically consist of regular
+ * alpha numeric characters with a 'standard'
+ * on-screen pixel width.
+ * Non-Latin languages (e.g. CJK) typically consist
+ * of so-called 'wide' Unicode glyphs, which may have
+ * an on-screen pixel width several times that of Latin
+ * characters.
+ * In order to determine efficiently the on-screen width
+ * of a text string (e.g. when word wrapping), it is
+ * therefore necessary to:
+ * - Identify which languages make use of 'wide' Unicode
+ *   glyphs
+ * - For each of these languages, provide a mechanism for
+ *   measuring the typical on-screen pixel width of
+ *   language-specific 'wide' Unicode glyphs
+ * As such, msg_hash_get_wideglyph_str() returns a pointer
+ * to a 'wide' Unicode character of typical on-screen pixel
+ * width for the currently set user language.
+ * - If msg_hash_get_wideglyph_str() returns NULL, the current
+ *   language is assumed to be Latin-based, with no usage
+ *   of 'wide' Unicode glyphs
+ * - If msg_hash_get_wideglyph_str() returns a valid pointer,
+ *   actual 'wide' glyph width for the current language may
+ *   be found by passing said pointer to the current font
+ *   rendering implementation */
+const char *msg_hash_get_wideglyph_str(void);
+const char *msg_hash_get_wideglyph_str_chs(void);
+const char *msg_hash_get_wideglyph_str_cht(void);
+const char *msg_hash_get_wideglyph_str_jp(void);
+const char *msg_hash_get_wideglyph_str_ko(void);
+
 uint32_t msg_hash_calculate(const char *s);
 
 const char *get_user_language_iso639_1(bool limit);
