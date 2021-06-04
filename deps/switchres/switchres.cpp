@@ -22,9 +22,9 @@ using namespace std;
 const string WHITESPACE = " \n\r\t\f\v";
 
 #if defined(_WIN32)
-	#define SR_CONFIG_PATHS ".\\;.\\ini\\;"
+	#define SR_CONFIG_PATHS ";.\\;.\\ini\\;"
 #elif defined(__linux__)
-	#define SR_CONFIG_PATHS "./;./ini/;/etc/;"
+	#define SR_CONFIG_PATHS ";./;./ini/;/etc/;"
 #endif
 
 //============================================================
@@ -244,14 +244,16 @@ bool switchres_manager::parse_config(const char *file_name)
 					break;
 				case s2i("user_mode"):
 				{
+					modeline user_mode = {};
 					if (strcmp(value.c_str(), "auto"))
 					{
-						modeline user_mode = {};
 						if (sscanf(value.c_str(), "%dx%d@%d", &user_mode.width, &user_mode.height, &user_mode.refresh) < 1)
+						{
 							log_error("Error: use format resolution <w>x<h>@<r>\n");
-						else
-							set_user_mode(&user_mode);
+							break;
+						}
 					}
+					set_user_mode(&user_mode);
 					break;
 				}
 
