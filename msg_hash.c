@@ -539,6 +539,7 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val)
 
 const char *msg_hash_get_wideglyph_str(void)
 {
+#ifdef HAVE_LANGEXTRA
    switch (uint_user_language)
    {
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
@@ -552,6 +553,7 @@ const char *msg_hash_get_wideglyph_str(void)
       default:
          break;
    }
+#endif
    
    return NULL;
 }
