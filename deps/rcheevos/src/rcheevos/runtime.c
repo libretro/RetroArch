@@ -229,19 +229,13 @@ int rc_runtime_get_achievement_measured(const rc_runtime_t* runtime, unsigned id
     return 0;
   }
 
-  switch (trigger->state)
-  {
-    case RC_TRIGGER_STATE_DISABLED:
-    case RC_TRIGGER_STATE_INACTIVE:
-    case RC_TRIGGER_STATE_TRIGGERED:
-      /* don't report measured information for inactive triggers */
-      *measured_value = *measured_target = 0;
-      break;
-
-    default:
-      *measured_value = trigger->measured_value;
-      *measured_target = trigger->measured_target;
-      break;
+  if (rc_trigger_state_active(trigger->state)) {
+    *measured_value = trigger->measured_value;
+    *measured_target = trigger->measured_target;
+  }
+  else {
+    /* don't report measured information for inactive triggers */
+    *measured_value = *measured_target = 0;
   }
 
   return 1;
@@ -457,7 +451,7 @@ int rc_runtime_activate_richpresence(rc_runtime_t* self, const char* script, lua
   return RC_OK;
 }
 
-int rc_runtime_get_richpresence(const rc_runtime_t* self, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L) {
+int rc_runtime_get_richpresence(const rc_runtime_t* self, char* buffer, unsigned buffersize, rc_runtime_peek_t peek, void* peek_ud, lua_State* L) {
   if (self->richpresence && self->richpresence->richpresence)
     return rc_get_richpresence_display_string(self->richpresence->richpresence, buffer, buffersize, peek, peek_ud, L);
 
@@ -465,7 +459,7 @@ int rc_runtime_get_richpresence(const rc_runtime_t* self, char* buffer, unsigned
   return 0;
 }
 
-void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_handler, rc_peek_t peek, void* ud, lua_State* L) {
+void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_handler, rc_runtime_peek_t peek, void* ud, lua_State* L) {
   rc_runtime_event_t runtime_event;
   int i;
 
@@ -476,7 +470,7 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
 
   for (i = self->trigger_count - 1; i >= 0; --i) {
     rc_trigger_t* trigger = self->triggers[i].trigger;
-    int trigger_state;
+    int old_state, new_state;
 
     if (!trigger)
       continue;
@@ -495,8 +489,18 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
       continue;
     }
 
-    trigger_state = trigger->state;
-    switch (rc_evaluate_trigger(trigger, peek, ud, L))
+    old_state = trigger->state;
+    new_state = rc_evaluate_trigger(trigger, peek, ud, L);
+    if (new_state == old_state)
+      continue;
+
+    if (old_state == RC_TRIGGER_STATE_PRIMED) {
+      runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_UNPRIMED;
+      runtime_event.id = self->triggers[i].id;
+      event_handler(&runtime_event);
+    }
+
+    switch (new_state)
     {
       case RC_TRIGGER_STATE_RESET:
         runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_RESET;
@@ -511,23 +515,19 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
         break;
 
       case RC_TRIGGER_STATE_PAUSED:
-        if (trigger_state != RC_TRIGGER_STATE_PAUSED) {
-          runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_PAUSED;
-          runtime_event.id = self->triggers[i].id;
-          event_handler(&runtime_event);
-        }
+        runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_PAUSED;
+        runtime_event.id = self->triggers[i].id;
+        event_handler(&runtime_event);
         break;
 
       case RC_TRIGGER_STATE_PRIMED:
-        if (trigger_state != RC_TRIGGER_STATE_PRIMED) {
-          runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_PRIMED;
-          runtime_event.id = self->triggers[i].id;
-          event_handler(&runtime_event);
-        }
+        runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_PRIMED;
+        runtime_event.id = self->triggers[i].id;
+        event_handler(&runtime_event);
         break;
 
       case RC_TRIGGER_STATE_ACTIVE:
-        if (trigger_state != RC_TRIGGER_STATE_ACTIVE) {
+        if (old_state == RC_TRIGGER_STATE_WAITING || old_state == RC_TRIGGER_STATE_PAUSED) {
           runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_ACTIVATED;
           runtime_event.id = self->triggers[i].id;
           event_handler(&runtime_event);

@@ -1180,6 +1180,21 @@ static void rcheevos_lboard_updated(rcheevos_ralboard_t* lboard, int value,
       gfx_widgets_set_leaderboard_display(lboard->id, buffer);
    }
 }
+
+static void rcheevos_challenge_started(rcheevos_racheevo_t* cheevo, int value,
+      bool widgets_ready)
+{
+   if (cheevo && widgets_ready && rcheevos_locals.leaderboard_trackers)
+      gfx_widgets_set_challenge_display(cheevo->id, cheevo->badge);
+}
+
+static void rcheevos_challenge_ended(rcheevos_racheevo_t* cheevo, int value,
+      bool widgets_ready)
+{
+   if (cheevo && widgets_ready && rcheevos_locals.leaderboard_trackers)
+      gfx_widgets_set_challenge_display(cheevo->id, NULL);
+}
+
 #endif
 
 int rcheevos_get_richpresence(char buffer[], int buffer_size)
@@ -1704,6 +1719,20 @@ static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_eve
 
    switch (runtime_event->type)
    {
+#if defined(HAVE_GFX_WIDGETS)
+      case RC_RUNTIME_EVENT_LBOARD_UPDATED:
+         rcheevos_lboard_updated(rcheevos_find_lboard(runtime_event->id), runtime_event->value, widgets_ready);
+         break;
+
+      case RC_RUNTIME_EVENT_ACHIEVEMENT_PRIMED:
+         rcheevos_challenge_started(rcheevos_find_cheevo(runtime_event->id), runtime_event->value, widgets_ready);
+         break;
+
+      case RC_RUNTIME_EVENT_ACHIEVEMENT_UNPRIMED:
+         rcheevos_challenge_ended(rcheevos_find_cheevo(runtime_event->id), runtime_event->value, widgets_ready);
+         break;
+#endif
+
       case RC_RUNTIME_EVENT_ACHIEVEMENT_TRIGGERED:
          rcheevos_award_achievement(&rcheevos_locals, rcheevos_find_cheevo(runtime_event->id), widgets_ready);
          break;
@@ -1711,12 +1740,6 @@ static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_eve
       case RC_RUNTIME_EVENT_LBOARD_STARTED:
          rcheevos_lboard_started(rcheevos_find_lboard(runtime_event->id), runtime_event->value, widgets_ready);
          break;
-
-#if defined(HAVE_GFX_WIDGETS)
-      case RC_RUNTIME_EVENT_LBOARD_UPDATED:
-         rcheevos_lboard_updated(rcheevos_find_lboard(runtime_event->id), runtime_event->value, widgets_ready);
-         break;
-#endif
 
       case RC_RUNTIME_EVENT_LBOARD_CANCELED:
          rcheevos_lboard_canceled(rcheevos_find_lboard(runtime_event->id),

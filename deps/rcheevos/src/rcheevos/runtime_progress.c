@@ -337,17 +337,9 @@ static int rc_runtime_progress_write_achievements(rc_runtime_progress_t* progres
     if (!runtime_trigger->trigger)
       continue;
 
-    switch (runtime_trigger->trigger->state)
-    {
-      case RC_TRIGGER_STATE_DISABLED:
-      case RC_TRIGGER_STATE_INACTIVE:
-      case RC_TRIGGER_STATE_TRIGGERED:
-        /* don't store state for inactive or triggered achievements */
-        continue;
-
-      default:
-        break;
-    }
+    /* don't store state for inactive or triggered achievements */
+    if (!rc_trigger_state_active(runtime_trigger->trigger->state))
+      continue;
 
     if (!progress->buffer) {
       if (runtime_trigger->serialized_size) {
@@ -470,19 +462,12 @@ int rc_runtime_deserialize_progress(rc_runtime_t* runtime, const unsigned char* 
   for (i = 0; i < runtime->trigger_count; ++i) {
     rc_runtime_trigger_t* runtime_trigger = &runtime->triggers[i];
     if (runtime_trigger->trigger) {
-      switch (runtime_trigger->trigger->state)
+      /* don't update state for inactive or triggered achievements */
+      if (rc_trigger_state_active(runtime_trigger->trigger->state))
       {
-        case RC_TRIGGER_STATE_DISABLED:
-        case RC_TRIGGER_STATE_INACTIVE:
-        case RC_TRIGGER_STATE_TRIGGERED:
-          /* don't update state for inactive or triggered achievements */
-          break;
-
-        default:
-          /* mark active achievements as unupdated. anything that's still unupdated
-           * after deserializing the progress will be reset to waiting */
-          runtime_trigger->trigger->state = RC_TRIGGER_STATE_UNUPDATED;
-          break;
+        /* mark active achievements as unupdated. anything that's still unupdated
+         * after deserializing the progress will be reset to waiting */
+        runtime_trigger->trigger->state = RC_TRIGGER_STATE_UNUPDATED;
       }
     }
   }
