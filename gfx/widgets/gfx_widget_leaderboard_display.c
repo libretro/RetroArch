@@ -121,7 +121,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 
       if (state->challenge_count)
       {
-         const unsigned widget_size = video_width / 32;
+         const unsigned widget_size = spacing * 4;
 
          x = video_width;
          y -= (widget_size + spacing);

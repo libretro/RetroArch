@@ -1184,14 +1184,15 @@ static void rcheevos_lboard_updated(rcheevos_ralboard_t* lboard, int value,
 static void rcheevos_challenge_started(rcheevos_racheevo_t* cheevo, int value,
       bool widgets_ready)
 {
-   if (cheevo && widgets_ready && rcheevos_locals.leaderboard_trackers)
+   settings_t* settings = config_get_ptr();
+   if (cheevo && widgets_ready && settings->bools.cheevos_challenge_indicators)
       gfx_widgets_set_challenge_display(cheevo->id, cheevo->badge);
 }
 
 static void rcheevos_challenge_ended(rcheevos_racheevo_t* cheevo, int value,
       bool widgets_ready)
 {
-   if (cheevo && widgets_ready && rcheevos_locals.leaderboard_trackers)
+   if (cheevo && widgets_ready)
       gfx_widgets_set_challenge_display(cheevo->id, NULL);
 }
 

@@ -397,6 +397,10 @@ MSG_HASH(
    "cheevos_start_active"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "cheevos_challenge_indicators"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
    "unload_core"
    )
