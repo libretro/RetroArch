@@ -1492,25 +1492,6 @@ static void d3d9_get_overlay_interface(void *data,
 }
 #endif
 
-static void d3d9_update_title(void)
-{
-#ifndef _XBOX
-   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-
-   if (window)
-   {
-      char title[128];
-
-      title[0] = '\0';
-
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         window->set_title(&main_window, title);
-   }
-#endif
-}
-
 static bool d3d9_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count, unsigned pitch,
@@ -1638,7 +1619,7 @@ static bool d3d9_frame(void *data, const void *frame,
       d3d9_end_scene(d3d->dev);
    }
 
-   d3d9_update_title();
+   win32_update_title();
    d3d9_swap(d3d, d3d->dev);
 
    return true;

@@ -2378,3 +2378,22 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    return true;
 }
 #endif
+
+void win32_update_title(void)
+{
+#ifndef _XBOX
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title(&main_window, title);
+   }
+#endif
+}
