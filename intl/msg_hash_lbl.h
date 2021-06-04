@@ -4473,6 +4473,10 @@ MSG_HASH(
    "cheat_delete_match"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CRT_SWITCH_HIRES_MENU,
+   "crt_switch_hires_menu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "crt_switch_resolution_use_custom_refresh_rate"
    )

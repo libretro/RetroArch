@@ -2,9 +2,9 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2014-2017 - Jean-Andrï¿½ Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
- *  Copyright (C) 2016-2019 - Andrés Suárez (input mapper/Discord code)
+ *  Copyright (C) 2016-2019 - Andrï¿½s Suï¿½rez (input mapper/Discord code)
  *  Copyright (C) 2016-2017 - Gregor Richards (network code)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -226,7 +226,9 @@
 #include "gfx/video_thread_wrapper.h"
 #endif
 #include "gfx/video_display_server.h"
-#include "gfx/video_crt_switch.h"
+#ifdef HAVE_SR2
+   #include "gfx/video_crt_switch.h"
+#endif
 #include "bluetooth/bluetooth_driver.h"
 #include "wifi/wifi_driver.h"
 #include "misc/cpufreq/cpufreq.h"
@@ -31600,6 +31602,7 @@ static void video_driver_frame(const void *data, unsigned width,
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active          = p_rarch->widgets_active;
 #endif
+   static int native_width = 0;
 
    status_text[0]                  = '\0';
    video_driver_msg[0]          = '\0';
@@ -31969,7 +31972,7 @@ static void video_driver_frame(const void *data, unsigned width,
    if (video_info.crt_switch_resolution)
    {
       p_rarch->video_driver_crt_switching_active          = true;
-
+      native_width = width;
       switch (video_info.crt_switch_resolution_super)
       {
          case 2560:
@@ -31986,25 +31989,34 @@ static void video_driver_frame(const void *data, unsigned width,
             p_rarch->video_driver_crt_dynamic_super_width = false;
             break;
       }
-
+      #if defined(HAVE_SR2) && !defined(ANDROID)
       crt_switch_res_core(
             &p_rarch->crt_switch_st,
-            width,
+            native_width, width,
             height,
             p_rarch->video_driver_core_hz,
             video_info.crt_switch_resolution,
             video_info.crt_switch_center_adjust,
             video_info.crt_switch_porch_adjust,
             video_info.monitor_index,
-            p_rarch->video_driver_crt_dynamic_super_width);
+            p_rarch->video_driver_crt_dynamic_super_width,
+            video_info.crt_switch_resolution_super,
+            video_info.crt_switch_hires_menu);
+      #endif
    }
    else if (!video_info.crt_switch_resolution)
       p_rarch->video_driver_crt_switching_active = false;
 }
 
-void crt_switch_driver_reinit(void)
+void crt_switch_driver_refresh(void)
 {
+   /*video_context_driver_reset();*/
    video_driver_reinit(DRIVERS_CMD_ALL);
+}
+
+char* crt_switch_core_name(void)
+{
+   return (char*)runloop_state.system.info.library_name;
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -32106,7 +32118,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
-   video_info->crt_switch_porch_adjust    = settings->ints.crt_switch_porch_adjust;
+   video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
+   video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
@@ -33504,6 +33517,15 @@ static void retroarch_deinit_drivers(
    }
 #endif
 
+   /* Switchres deinit */
+   if (p_rarch->video_driver_crt_switching_active) {
+     /* RARCH_LOG("[CRT]: Getting video info\n"); 
+      RARCH_LOG("[CRT]: About to destroy SR\n");
+     */
+      #ifdef HAVE_SR2
+      crt_destroy_modes(&p_rarch->crt_switch_st);
+      #endif
+   }
    /* Video */
    video_display_server_destroy();
 
@@ -33551,6 +33573,7 @@ static void retroarch_deinit_drivers(
    cbs->state_cb                                    = NULL;
 
    p_rarch->current_core.inited                     = false;
+
 }
 
 bool driver_ctl(enum driver_ctl_state state, void *data)

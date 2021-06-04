@@ -1237,6 +1237,8 @@ typedef struct video_frame_info
    bool menu_is_alive;
    bool menu_screensaver_active;
    bool msg_bgcolor_enable;
+   bool crt_switch_hires_menu;
+
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
@@ -1715,7 +1717,9 @@ void video_monitor_set_refresh_rate(float hz);
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
-void crt_switch_driver_reinit(void);
+void crt_switch_driver_refresh(void);
+
+char* crt_switch_core_name(void);
 
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
    (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
