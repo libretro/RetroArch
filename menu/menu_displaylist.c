@@ -9740,7 +9740,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   if (!string_is_empty(cd_info.title))
                   {
-                     char title[256];
+                     char title[sizeof("Title: ")+sizeof(cd_info.title)];
                      snprintf(title, sizeof(title), "Title: %s", cd_info.title);
 
                      if (menu_entries_append_enum(info->list,
