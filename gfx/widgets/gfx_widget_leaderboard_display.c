@@ -18,6 +18,8 @@
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
+#include "../cheevos/cheevos.h"
+
 #ifdef HAVE_THREADS
 #define SLOCK_LOCK(x) slock_lock(x)
 #define SLOCK_UNLOCK(x) slock_unlock(x)
@@ -196,7 +198,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 {
-   int i;
+   unsigned i;
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
    SLOCK_LOCK(state->array_lock);
@@ -243,13 +245,13 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
 {
-   int i;
+   unsigned i;
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
    /* important - this must be done outside the lock because it has the potential to need to
     * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t badge_id = badge ? rcheevos_get_badge_texture(badge, 0) : NULL;
-   uintptr_t old_badge_id = NULL;
+   uintptr_t badge_id = badge ? rcheevos_get_badge_texture(badge, 0) : 0;
+   uintptr_t old_badge_id = 0;
 
    SLOCK_LOCK(state->array_lock);
 
