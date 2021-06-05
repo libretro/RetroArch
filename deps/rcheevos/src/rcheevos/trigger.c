@@ -80,6 +80,20 @@ rc_trigger_t* rc_parse_trigger(void* buffer, const char* memaddr, lua_State* L, 
   return (parse.offset >= 0) ? self : NULL;
 }
 
+int rc_trigger_state_active(int state)
+{
+  switch (state)
+  {
+    case RC_TRIGGER_STATE_DISABLED:
+    case RC_TRIGGER_STATE_INACTIVE:
+    case RC_TRIGGER_STATE_TRIGGERED:
+      return 0;
+
+    default:
+      return 1;
+  }
+}
+
 static void rc_reset_trigger_hitcounts(rc_trigger_t* self) {
   rc_condset_t* condset;
 
@@ -102,20 +116,27 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
   char is_paused;
   char is_primed;
 
-  /* previously triggered, do nothing - return INACTIVE so caller doesn't think it triggered again */
-  if (self->state == RC_TRIGGER_STATE_TRIGGERED)
-    return RC_TRIGGER_STATE_INACTIVE;
+  switch (self->state)
+  {
+    case RC_TRIGGER_STATE_TRIGGERED:
+      /* previously triggered. do nothing - return INACTIVE so caller doesn't think it triggered again */
+      return RC_TRIGGER_STATE_INACTIVE;
 
-  /* unsupported, do nothing - return INACTIVE */
-  if (self->state == RC_TRIGGER_STATE_DISABLED)
-    return RC_TRIGGER_STATE_INACTIVE;
+    case RC_TRIGGER_STATE_DISABLED:
+      /* unsupported. do nothing - return INACTIVE */
+      return RC_TRIGGER_STATE_INACTIVE;
+
+    case RC_TRIGGER_STATE_INACTIVE:
+      /* not yet active. update the memrefs so deltas are correct when it becomes active, then return INACTIVE */
+      rc_update_memref_values(self->memrefs, peek, ud);
+      return RC_TRIGGER_STATE_INACTIVE;
+
+    default:
+      break;
+  }
 
   /* update the memory references */
   rc_update_memref_values(self->memrefs, peek, ud);
-
-  /* not yet active, only update the memrefs so deltas are correct when it becomes active */
-  if (self->state == RC_TRIGGER_STATE_INACTIVE)
-    return RC_TRIGGER_STATE_INACTIVE;
 
   /* process the trigger */
   memset(&eval_state, 0, sizeof(eval_state));
@@ -178,6 +199,11 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
     /* if there were hit counts to clear, return RESET, but don't change the state */
     if (self->has_hits) {
       self->has_hits = 0;
+
+      /* cannot be PRIMED while ResetIf is true */
+      if (self->state == RC_TRIGGER_STATE_PRIMED)
+          self->state = RC_TRIGGER_STATE_ACTIVE;
+
       return RC_TRIGGER_STATE_RESET;
     }
 

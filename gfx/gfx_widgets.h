@@ -354,6 +354,7 @@ void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget);
 #ifdef HAVE_CHEEVOS
 void gfx_widgets_push_achievement(const char *title, const char *badge);
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value);
+void gfx_widgets_set_challenge_display(unsigned id, const char* badge);
 #endif
 
 /* Warning: not thread safe! */

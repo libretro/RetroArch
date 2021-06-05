@@ -183,6 +183,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_enable,                MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_test_unofficial,       MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_leaderboards_enable,   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_challenge_indicators,  MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_richpresence_enable,   MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_badges_enable,         MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE)
 #if defined(HAVE_AUDIOMIXER)
@@ -3557,6 +3558,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_leaderboards_enable);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_challenge_indicators);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_richpresence_enable);

@@ -735,6 +735,7 @@ typedef struct settings
       bool cheevos_auto_screenshot;
       bool cheevos_start_active;
       bool cheevos_unlock_sound_enable;
+      bool cheevos_challenge_indicators;
 
       /* Camera */
       bool camera_allow;

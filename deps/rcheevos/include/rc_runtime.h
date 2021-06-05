@@ -102,7 +102,7 @@ int rc_runtime_format_lboard_value(char* buffer, int size, int value, int format
 
 
 int rc_runtime_activate_richpresence(rc_runtime_t* runtime, const char* script, lua_State* L, int funcs_idx);
-int rc_runtime_get_richpresence(const rc_runtime_t* self, char* buffer, unsigned buffersize, rc_runtime_peek_t peek, void* peek_ud, lua_State* L);
+int rc_runtime_get_richpresence(const rc_runtime_t* runtime, char* buffer, unsigned buffersize, rc_runtime_peek_t peek, void* peek_ud, lua_State* L);
 
 enum {
   RC_RUNTIME_EVENT_ACHIEVEMENT_ACTIVATED, /* from WAITING, PAUSED, or PRIMED to ACTIVE */
@@ -115,7 +115,8 @@ enum {
   RC_RUNTIME_EVENT_LBOARD_UPDATED,
   RC_RUNTIME_EVENT_LBOARD_TRIGGERED,
   RC_RUNTIME_EVENT_ACHIEVEMENT_DISABLED,
-  RC_RUNTIME_EVENT_LBOARD_DISABLED
+  RC_RUNTIME_EVENT_LBOARD_DISABLED,
+  RC_RUNTIME_EVENT_ACHIEVEMENT_UNPRIMED
 };
 
 typedef struct rc_runtime_event_t {

@@ -119,6 +119,7 @@ unsigned rc_get_memref_value(rc_memref_t* memref, int operand_type, rc_eval_stat
 unsigned rc_get_memref_value_value(rc_memref_value_t* memref, int operand_type);
 
 void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_parse_state_t* parse);
+int rc_trigger_state_active(int state);
 
 rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse, int is_value);
 int rc_test_condset(rc_condset_t* self, rc_eval_state_t* eval_state);

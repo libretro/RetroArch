@@ -7382,6 +7382,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                                      PARSE_ONLY_STRING, false },
                {MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,                          PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,                           PARSE_ONLY_STRING_OPTIONS,   false  },
+               {MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,                          PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,                           PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,                                 PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,                               PARSE_ONLY_BOOL,   false  },
