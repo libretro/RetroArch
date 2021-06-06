@@ -435,7 +435,7 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch, int width, int height, f
    
    width = w;
 
-   crt_aspect_ratio_switch(p_switch, width,height);
+   crt_aspect_ratio_switch(p_switch, width,height,width,height);
    
    /* following code is the mode line generator */
    hfp      = ((width * 0.044) + (width / 112));

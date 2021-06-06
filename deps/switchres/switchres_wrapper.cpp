@@ -34,6 +34,8 @@ MODULE_API void sr_init() {
 
 MODULE_API void sr_load_ini(char* config) {
 	swr->parse_config(config);
+	swr->display()->m_ds = swr->ds;
+	swr->display()->parse_options();
 }
 
 
