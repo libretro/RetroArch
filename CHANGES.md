@@ -3,7 +3,10 @@
 - CHEEVOS: Challenge indicators
 - CHEEVOS: Group achievements by category in quick menu
 - CHEEVOS: Relabel 'Start Active' with 'Encore Mode'
+- D3D10: Window title should now update
+- D3D11: Window title should now update
 - D3D11: Allow fastforward in fullscreen
+- D3D12: Window title should now update
 - D3D12: Allow fastforward in fullscreen
 - CRT/SWITCHRES: New implementation
 - FONTS: Improve message wrapping with CJK languages
