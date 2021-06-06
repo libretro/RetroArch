@@ -1613,6 +1613,7 @@ static bool d3d12_gfx_frame(
 
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
 
+   win32_update_title();
 #if 1
    DXGIPresent(d3d12->chain.handle, !!vsync, present_flags);
 #else

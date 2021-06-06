@@ -162,6 +162,8 @@ void win32_unset_input_userdata(void);
 
 void win32_set_input_userdata(void *data);
 
+void win32_update_title(void);
+
 RETRO_END_DECLS
 
 #endif
