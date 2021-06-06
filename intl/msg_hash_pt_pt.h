@@ -2352,6 +2352,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    "Ativar/desativar conquistas não oficiais e/ou característas beta para fins de testes."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
+   )
 
 /* Settings > Network */
 
@@ -2599,10 +2603,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    "Capturas do ecrã"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "Entrada de auto-configuração"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -2964,7 +2964,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -4153,14 +4153,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_UNMUTED,
    "Removido silêncio."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "Erro ao guardar o ficheiro de auto-configuração."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "O ficheiro de auto-configuração foi guardado com sucesso."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
