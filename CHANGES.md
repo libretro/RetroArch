@@ -1,7 +1,11 @@
 # Future
 - ARCHIVE: Fix loading of archived content with file names containing '#' characters
+- CHEEVOS: Challenge indicators
 - CHEEVOS: Group achievements by category in quick menu
 - CHEEVOS: Relabel 'Start Active' with 'Encore Mode'
+- D3D11: Allow fastforward in fullscreen
+- D3D12: Allow fastforward in fullscreen
+- CRT/SWITCHRES: New implementation
 - FONTS: Improve message wrapping with CJK languages
 - FONTS: Fix garbled characters when converting encodings
 - LIBRETRO: Add API extension for setting 'need_fullpath' based on content file extension and to request persistent frontend content data buffers
