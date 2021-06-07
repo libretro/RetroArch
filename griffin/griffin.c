@@ -1254,26 +1254,6 @@ THREAD
 
 #if defined(XENON)
 #include "../thread/xenon_sdl_threads.c"
-#elif defined(PSP)
-#include "../deps/pthreads/platform/helper/tls-helper.c"
-#include "../deps/pthreads/platform/psp/psp_osal.c"
-#include "../deps/pthreads/pte_main.c"
-#include "../deps/pthreads/pte.c"
-#include "../deps/pthreads/pthread_attr.c"
-#include "../deps/pthreads/pthread_barrier.c"
-#include "../deps/pthreads/pthread_cond.c"
-#include "../deps/pthreads/pthread_condattr.c"
-#include "../deps/pthreads/pthread_get.c"
-#include "../deps/pthreads/pthread_key.c"
-#include "../deps/pthreads/pthread_mutex.c"
-#include "../deps/pthreads/pthread_mutexattr.c"
-#include "../deps/pthreads/pthread_rwlock.c"
-#include "../deps/pthreads/pthread_rwlockattr.c"
-#include "../deps/pthreads/pthread_set.c"
-#include "../deps/pthreads/pthread_spin.c"
-#include "../deps/pthreads/pthread.c"
-#include "../deps/pthreads/sched.c"
-#include "../deps/pthreads/sem.c"
 #endif
 
 #include "../libretro-common/rthreads/rthreads.c"
