@@ -971,7 +971,9 @@ MIDI
 /*============================================================
 DRIVERS
 ============================================================ */
-/*#include "../gfx/video_crt_switch.c" */
+#ifdef HAVE_CRTSWITCHRES
+#include "../gfx/video_crt_switch.c"
+#endif
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail_path.c"
