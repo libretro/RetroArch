@@ -226,8 +226,8 @@
 #include "gfx/video_thread_wrapper.h"
 #endif
 #include "gfx/video_display_server.h"
-#ifdef HAVE_SR2
-   #include "gfx/video_crt_switch.h"
+#ifdef HAVE_CRTSWITCHRES
+#include "gfx/video_crt_switch.h"
 #endif
 #include "bluetooth/bluetooth_driver.h"
 #include "wifi/wifi_driver.h"
@@ -31602,9 +31602,8 @@ static void video_driver_frame(const void *data, unsigned width,
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active          = p_rarch->widgets_active;
 #endif
-   static int native_width = 0;
 
-   status_text[0]                  = '\0';
+   status_text[0]               = '\0';
    video_driver_msg[0]          = '\0';
 
    if (!video_driver_active)
@@ -31968,28 +31967,30 @@ static void video_driver_frame(const void *data, unsigned width,
       }
    }
 
+#if defined(HAVE_CRTSWITCHRES)
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
    {
-      p_rarch->video_driver_crt_switching_active          = true;
-      native_width = width;
+      unsigned native_width                      = width;
+      bool dynamic_super_width                   = false;
+
+      p_rarch->video_driver_crt_switching_active = true;
+
       switch (video_info.crt_switch_resolution_super)
       {
          case 2560:
          case 3840:
          case 1920:
-            width                                         =
-               video_info.crt_switch_resolution_super;
-            p_rarch->video_driver_crt_dynamic_super_width = false;
+            width               = video_info.crt_switch_resolution_super;
+            dynamic_super_width = false;
             break;
          case 1:
-            p_rarch->video_driver_crt_dynamic_super_width = true;
+            dynamic_super_width = true;
             break;
          default:
-            p_rarch->video_driver_crt_dynamic_super_width = false;
             break;
       }
-      #if defined(HAVE_SR2) && !defined(ANDROID)
+
       crt_switch_res_core(
             &p_rarch->crt_switch_st,
             native_width, width,
@@ -31999,12 +32000,12 @@ static void video_driver_frame(const void *data, unsigned width,
             video_info.crt_switch_center_adjust,
             video_info.crt_switch_porch_adjust,
             video_info.monitor_index,
-            p_rarch->video_driver_crt_dynamic_super_width,
+            dynamic_super_width,
             video_info.crt_switch_resolution_super,
             video_info.crt_switch_hires_menu);
-      #endif
    }
    else if (!video_info.crt_switch_resolution)
+#endif
       p_rarch->video_driver_crt_switching_active = false;
 }
 
@@ -33517,15 +33518,18 @@ static void retroarch_deinit_drivers(
    }
 #endif
 
+#if defined(HAVE_CRTSWITCHRES)
    /* Switchres deinit */
-   if (p_rarch->video_driver_crt_switching_active) {
-     /* RARCH_LOG("[CRT]: Getting video info\n"); 
+   if (p_rarch->video_driver_crt_switching_active)
+   {
+#if defined(DEBUG)
+      RARCH_LOG("[CRT]: Getting video info\n");
       RARCH_LOG("[CRT]: About to destroy SR\n");
-     */
-      #ifdef HAVE_SR2
+#endif
       crt_destroy_modes(&p_rarch->crt_switch_st);
-      #endif
    }
+#endif
+
    /* Video */
    video_display_server_destroy();
 

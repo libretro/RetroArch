@@ -1719,9 +1719,9 @@ struct rarch_state
    double audio_source_ratio_original;
    double audio_source_ratio_current;
    struct retro_system_av_info video_driver_av_info; /* double alignment */
-   #ifdef HAVE_SR2
+#ifdef HAVE_CRTSWITCHRES
    videocrt_switch_t crt_switch_st;                  /* double alignment */
-   #endif
+#endif
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_time_t libretro_core_runtime_last;
@@ -2254,7 +2254,6 @@ struct rarch_state
    bool video_driver_state_out_rgb32;
 #endif
    bool video_driver_crt_switching_active;
-   bool video_driver_crt_dynamic_super_width;
    bool video_driver_threaded;
 
    bool video_started_fullscreen;
