@@ -23,7 +23,7 @@ const string WHITESPACE = " \n\r\t\f\v";
 
 #if defined(_WIN32)
 	#define SR_CONFIG_PATHS ";.\\;.\\ini\\;"
-#elif defined(__linux__)
+#else
 	#define SR_CONFIG_PATHS ";./;./ini/;/etc/;"
 #endif
 
