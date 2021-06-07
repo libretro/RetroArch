@@ -1666,7 +1666,9 @@ static bool d3d11_gfx_frame(
    }
    d3d11->sprites.enabled = false;
 
+#if defined(_WIN32) && !defined(__WINRT__)
    win32_update_title();
+#endif
    DXGIPresent(d3d11->swapChain, !!vsync, present_flags);
    Release(rtv);
 
