@@ -13,6 +13,7 @@
 - FONTS: Fix garbled characters when converting encodings
 - LIBRETRO: Add API extension for setting 'need_fullpath' based on content file extension and to request persistent frontend content data buffers
 - UNIX: Get better battery stats on sysfs nodes
+- VIDEO: Extend Frame Delay range to 19 to accommodate PAL land too 
 - WIFI/LAKKA: Add nmcli to wifi drivers
 - WIFI/LAKKA: Add wifi configuration menu
 - X11: fix fullscreen when swapping monitors/resolution
