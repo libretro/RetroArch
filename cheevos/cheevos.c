@@ -55,7 +55,6 @@
 
 #include "cheevos.h"
 #include "cheevos_locals.h"
-#include "cheevos_memory.h"
 #include "cheevos_parser.h"
 
 #include "../file_path_special.h"
@@ -494,20 +493,66 @@ static void rcheevos_invalidate_address(unsigned address)
    }
 }
 
+static void rcheevos_handle_log_message(const char* message)
+{
+   CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", message);
+}
+
+static void rcheevos_get_core_memory_info(unsigned id, rc_libretro_core_memory_info_t* info)
+{
+   retro_ctx_memory_info_t ctx_info;
+   if (!info)
+      return;
+
+   ctx_info.id = id;
+   if (core_get_memory(&ctx_info))
+   {
+      info->data = (unsigned char*)ctx_info.data;
+      info->size = ctx_info.size;
+   }
+   else
+   {
+      info->data = NULL;
+      info->size = 0;
+   }
+}
+
+static int rcheevos_init_memory(rcheevos_locals_t* locals)
+{
+   rarch_system_info_t* system = runloop_get_system_info();
+   rarch_memory_map_t* mmaps = &system->mmaps;
+   struct retro_memory_descriptor descriptors[64];
+   struct retro_memory_map mmap;
+   unsigned i;
+
+   mmap.descriptors = &descriptors[0];
+   mmap.num_descriptors = sizeof(descriptors) / sizeof(descriptors[0]);
+   if (mmaps->num_descriptors < mmap.num_descriptors)
+      mmap.num_descriptors = mmaps->num_descriptors;
+
+   /* RetroArch wraps the retro_memory_descriptor's in rarch_memory_descriptor_t's, pull them back out */
+   for (i = 0; i < mmap.num_descriptors; ++i)
+      memcpy(&descriptors[i], &mmaps->descriptors[i].core, sizeof(descriptors[0]));
+
+   rc_libretro_init_verbose_message_callback(rcheevos_handle_log_message);
+   return rc_libretro_memory_init(&locals->memory, &mmap,
+         rcheevos_get_core_memory_info, locals->patchdata.console_id);
+}
+
 uint8_t* rcheevos_patch_address(unsigned address)
 {
    if (rcheevos_locals.memory.count == 0)
    {
       /* memory map was not previously initialized (no achievements for this game?) try now */
-      rcheevos_memory_init(&rcheevos_locals.memory, rcheevos_locals.patchdata.console_id);
+      rcheevos_init_memory(&rcheevos_locals);
    }
 
-   return rcheevos_memory_find(&rcheevos_locals.memory, address);
+   return rc_libretro_memory_find(&rcheevos_locals.memory, address);
 }
 
 static unsigned rcheevos_peek(unsigned address, unsigned num_bytes, void* ud)
 {
-   uint8_t* data = rcheevos_memory_find(&rcheevos_locals.memory, address);
+   uint8_t* data = rc_libretro_memory_find(&rcheevos_locals.memory, address);
    if (data)
    {
       switch (num_bytes)
@@ -737,7 +782,7 @@ static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
    {
       if (!memref->value.is_indirect)
       {
-         uint8_t* data = rcheevos_memory_find(&rcheevos_locals.memory,
+         uint8_t* data = rc_libretro_memory_find(&rcheevos_locals.memory,
                memref->address);
          if (!data)
             rcheevos_invalidate_address(memref->address);
@@ -822,7 +867,7 @@ static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
 
    settings        = config_get_ptr();
 
-   if (!rcheevos_memory_init(&locals->memory, locals->patchdata.console_id))
+   if (!rcheevos_init_memory(locals))
    {
       /* some cores (like Mupen64-Plus) don't expose the 
        * memory until the first call to retro_run.
@@ -922,7 +967,7 @@ static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
 
 error:
    rcheevos_free_patchdata(&locals->patchdata);
-   rcheevos_memory_destroy(&locals->memory);
+   rc_libretro_memory_destroy(&locals->memory);
    return -1;
 }
 
@@ -1228,9 +1273,7 @@ void rcheevos_reset_game(bool widgets_ready)
    /* Some cores reallocate memory on reset, 
     * make sure we update our pointers */
    if (rcheevos_locals.memory.total_size > 0)
-      rcheevos_memory_init(
-            &rcheevos_locals.memory,
-             rcheevos_locals.patchdata.console_id);
+      rcheevos_init_memory(&rcheevos_locals);
 }
 
 bool rcheevos_hardcore_active(void)
@@ -1269,7 +1312,7 @@ bool rcheevos_unload(void)
    }
 
    if (rcheevos_locals.memory.count > 0)
-      rcheevos_memory_destroy(&rcheevos_locals.memory);
+      rc_libretro_memory_destroy(&rcheevos_locals.memory);
 
    if (rcheevos_locals.loaded)
    {
@@ -1646,7 +1689,7 @@ void rcheevos_test(void)
    if (rcheevos_locals.memory.count == 0)
    {
       /* we were unable to initialize memory earlier, try now */
-      if (!rcheevos_memory_init(&rcheevos_locals.memory, rcheevos_locals.patchdata.console_id))
+      if (!rcheevos_init_memory(&rcheevos_locals))
       {
          const settings_t* settings    = config_get_ptr();
          rcheevos_locals.core_supports = false;
@@ -2624,11 +2667,6 @@ static void rc_hash_handle_cd_close_track(void* track_handle)
    }
 }
 
-static void rc_hash_handle_log_message(const char* message)
-{
-   CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", message);
-}
-
 /* end hooks */
 
 bool rcheevos_load(const void *data)
@@ -2678,13 +2716,13 @@ bool rcheevos_load(const void *data)
    cdreader.close_track = rc_hash_handle_cd_close_track;
    rc_hash_init_custom_cdreader(&cdreader);
 
-   rc_hash_init_error_message_callback(rc_hash_handle_log_message);
+   rc_hash_init_error_message_callback(rcheevos_handle_log_message);
 
 #ifndef DEBUG /* in DEBUG mode, always initialize the verbose message handler */
    if (settings->bools.cheevos_verbose_enable)
 #endif
    {
-      rc_hash_init_verbose_message_callback(rc_hash_handle_log_message);
+      rc_hash_init_verbose_message_callback(rcheevos_handle_log_message);
    }
 
    task = task_init();

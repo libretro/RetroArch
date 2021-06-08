@@ -19,7 +19,7 @@
 
 #include "../deps/rcheevos/include/rc_runtime.h"
 
-#include "cheevos_memory.h"
+#include "../deps/rcheevos/src/rcheevos/rc_libretro.h"
 
 #include <../command.h>
 #include <../verbosity.h>
@@ -125,7 +125,7 @@ typedef struct rcheevos_locals_t
 {
    rc_runtime_t runtime;              /* rcheevos runtime state */
    rcheevos_rapatchdata_t patchdata;  /* achievement/leaderboard data from the server */
-   rcheevos_memory_regions_t memory;  /* achievement addresses to core memory mappings */
+   rc_libretro_memory_regions_t memory;/* achievement addresses to core memory mappings */
 
    retro_task_t* task;                /* load task */
 #ifdef HAVE_THREADS

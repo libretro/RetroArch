@@ -192,7 +192,6 @@ ACHIEVEMENTS
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_menu.c"
-#include "../cheevos/cheevos_memory.c"
 #include "../cheevos/cheevos_parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
