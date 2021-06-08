@@ -2124,6 +2124,7 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
              deps/rcheevos/src/rcheevos/operand.o \
+             deps/rcheevos/src/rcheevos/rc_libretro.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
              deps/rcheevos/src/rcheevos/runtime.o \
              deps/rcheevos/src/rcheevos/runtime_progress.o \

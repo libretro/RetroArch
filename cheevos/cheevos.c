@@ -77,6 +77,7 @@
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_url.h"
 #include "../deps/rcheevos/include/rc_hash.h"
+#include "../deps/rcheevos/src/rcheevos/rc_libretro.h"
 
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
@@ -1536,177 +1537,39 @@ void rcheevos_hardcore_enabled_changed(void)
    }
 }
 
-typedef struct rc_disallowed_setting_t
-{
-   const char* setting;
-   const char* value;
-} rc_disallowed_setting_t;
-
-typedef struct rc_disallowed_core_settings_t
-{
-   const char* library_name;
-   const rc_disallowed_setting_t* disallowed_settings;
-} rc_disallowed_core_settings_t;
-
-static const rc_disallowed_setting_t _rc_disallowed_dolphin_settings[] = {
-   { "dolphin_cheats_enabled",      "enabled" },
-   { NULL, NULL }
-};
-
-static const rc_disallowed_setting_t _rc_disallowed_ecwolf_settings[] = {
-   { "ecwolf-invulnerability",      "enabled" },
-   { NULL, NULL }
-};
-
-static const rc_disallowed_setting_t _rc_disallowed_fbneo_settings[] = {
-   { "fbneo-allow-patched-romsets", "enabled" },
-   { "fbneo-cheat-*",               "!,Disabled,0 - Disabled" },
-   { NULL, NULL }
-};
-
-static const rc_disallowed_setting_t _rc_disallowed_gpgx_settings[] = {
-   { "genesis_plus_gx_lock_on",     ",action replay (pro),game genie" },
-   { NULL, NULL }
-};
-
-static const rc_disallowed_setting_t _rc_disallowed_ppsspp_settings[] = {
-   { "ppsspp_cheats",               "enabled" },
-   { NULL, NULL }
-};
-
-static const rc_disallowed_core_settings_t rc_disallowed_core_settings[] = {
-   { "dolphin-emu",     _rc_disallowed_dolphin_settings },
-   { "ecwolf",          _rc_disallowed_ecwolf_settings },
-   { "FinalBurn Neo",   _rc_disallowed_fbneo_settings },
-   { "Genesis Plus GX", _rc_disallowed_gpgx_settings },
-   { "PPSSPP",          _rc_disallowed_ppsspp_settings },
-   { NULL,              NULL }
-};
-
-static int rcheevos_match_value(const char* val, const char* match)
-{
-   /* if value starts with a comma, it's a CSV list of potential matches */
-   if (*match == ',')
-   {
-      do
-      {
-         int size;
-         const char* ptr = ++match;
-
-         while (*match && *match != ',')
-            ++match;
-
-         size = match - ptr;
-         if (val[size] == '\0')
-         {
-            char buffer[128];
-            if (string_is_equal_fast(ptr, val, size))
-               return true;
-
-            memcpy(buffer, ptr, size);
-            buffer[size] = '\0';
-            if (string_is_equal_case_insensitive(buffer, val))
-               return true;
-         }
-      } while(*match == ',');
-
-      return false;
-   }
-
-   /* a leading exclamation point means the provided value(s) 
-    * are not forbidden (are allowed) */
-   if (*match == '!')
-      return !rcheevos_match_value(val, &match[1]);
-
-   /* just a single value, attempt to match it */
-   return string_is_equal_case_insensitive(val, match);
-}
-
 void rcheevos_validate_config_settings(void)
 {
-   const rc_disallowed_core_settings_t 
-      *core_filter                  = rc_disallowed_core_settings;
+   const rc_disallowed_setting_t* disallowed_settings;
+   core_option_manager_t* coreopts = NULL;
    struct retro_system_info* system = runloop_get_libretro_system_info();
+   int i;
+
    if (!system->library_name || !rcheevos_locals.hardcore_active)
       return;
 
-   while (core_filter->library_name)
+   disallowed_settings = rc_libretro_get_disallowed_settings(system->library_name);
+   if (disallowed_settings == NULL)
+      return;
+
+   if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+      return;
+
+   for (i = 0; i < coreopts->size; i++)
    {
-      if (string_is_equal(core_filter->library_name, system->library_name))
+      const char* key = coreopts->opts[i].key;
+      const char* val = core_option_manager_get_val(coreopts, i);
+      if (!rc_libretro_is_setting_allowed(disallowed_settings, key, val))
       {
-         core_option_manager_t* coreopts = NULL;
+         char buffer[256];
+         snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
+         CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
+         rcheevos_pause_hardcore();
 
-         if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
-         {
-            size_t i;
-            const char *val               = NULL;
-            const rc_disallowed_setting_t
-               *disallowed_setting        = core_filter->disallowed_settings;
-            int allowed                   = 1;
-
-            for (; disallowed_setting->setting; ++disallowed_setting)
-            {
-               const char *key = disallowed_setting->setting;
-               size_t key_len  = strlen(key);
-
-               if (key[key_len - 1] == '*')
-               {
-                  for (i = 0; i < coreopts->size; i++)
-                  {
-                     if (string_starts_with_size(
-                              coreopts->opts[i].key, key, key_len - 1))
-                     {
-                        const char* val = core_option_manager_get_val(
-                              coreopts, i);
-
-                        if (val)
-                        {
-                           if (rcheevos_match_value(
-                                    val, disallowed_setting->value))
-                           {
-                              key     = coreopts->opts[i].key;
-                              allowed = 0;
-                              break;
-                           }
-                        }
-                     }
-                  }
-               }
-               else
-               {
-                  for (i = 0; i < coreopts->size; i++)
-                  {
-                     if (string_is_equal(coreopts->opts[i].key, key))
-                     {
-                        val = core_option_manager_get_val(coreopts, i);
-                        if (rcheevos_match_value(val, disallowed_setting->value))
-                        {
-                           allowed = 0;
-                           break;
-                        }
-                     }
-                  }
-               }
-
-               if (!allowed)
-               {
-                  char buffer[256];
-                  snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
-                  CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
-                  rcheevos_pause_hardcore();
-
-                  runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
-                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-
-                  break;
-               }
-            }
-         }
+         runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 
          break;
       }
-
-      ++core_filter;
    }
 }
 
