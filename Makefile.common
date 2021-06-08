@@ -304,7 +304,6 @@ OBJ += \
        input/common/input_hid_common.o \
        led/led_driver.o \
        gfx/video_coord_array.o \
-       gfx/video_crt_switch.o \
 		 gfx/gfx_display.o \
        gfx/gfx_animation.o \
 		 gfx/gfx_thumbnail_path.o \
@@ -769,6 +768,11 @@ endif
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += wifi/drivers/connmanctl.o
    OBJ += misc/cpufreq/cpufreq.o
+endif
+
+ifeq ($(HAVE_WIFI), 1)
+   OBJ += wifi/drivers/nmcli.o
+   DEFINES += -DHAVE_WIFI
 endif
 
 # Audio
@@ -2107,7 +2111,7 @@ ifeq ($(HAVE_NETWORKING), 1)
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
       OBJ += cheevos/cheevos.o \
-             cheevos/badges.o \
+             cheevos/cheevos_menu.o \
              cheevos/cheevos_memory.o \
              cheevos/cheevos_parser.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
@@ -2267,6 +2271,39 @@ ifeq ($(HAVE_FFMPEG), 1)
    DEF_FLAGS += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS) \
                 -Wno-deprecated-declarations
    INCLUDE_DIRS += -Iffmpeg
+endif
+
+# CRT mode switching
+ifeq ($(HAVE_CRTSWITCHRES), 1)
+   INCLUDE_DIRS += -I$(DEPS_DIR)/switchres
+   OBJ += gfx/video_crt_switch.o \
+          $(DEPS_DIR)/switchres/monitor.o \
+          $(DEPS_DIR)/switchres/modeline.o \
+          $(DEPS_DIR)/switchres/switchres.o \
+          $(DEPS_DIR)/switchres/display.o \
+          $(DEPS_DIR)/switchres/custom_video.o \
+          $(DEPS_DIR)/switchres/log.o \
+          $(DEPS_DIR)/switchres/switchres_wrapper.o \
+          $(DEPS_DIR)/switchres/edid.o
+   ifneq ($(findstring Win32,$(OS)),)
+      OBJ += $(DEPS_DIR)/switchres/display_windows.o \
+             $(DEPS_DIR)/switchres/custom_video_ati_family.o \
+             $(DEPS_DIR)/switchres/custom_video_ati.o \
+             $(DEPS_DIR)/switchres/custom_video_adl.o \
+             $(DEPS_DIR)/switchres/custom_video_pstrip.o \
+             $(DEPS_DIR)/switchres/resync_windows.o
+   endif
+   ifneq ($(findstring Linux,$(OS)),)
+      OBJ += $(DEPS_DIR)/switchres/display_linux.o 
+      ifeq ($(HAVE_X11)$(HAVE_XRANDR), 11)
+         OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o 
+         DEFINES += -DSR_WITH_XRANDR
+      endif
+   endif
+   ifneq ($(findstring Win32,$(OS)),)
+      DEFINES += -DSR_WIN32_STATIC
+   endif
+   LIBS += -lstdc++
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)

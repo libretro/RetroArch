@@ -679,6 +679,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #else
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
+   desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 #ifdef DEBUG
    flags                                  |= D3D11_CREATE_DEVICE_DEBUG;
@@ -1325,6 +1326,8 @@ static bool d3d11_gfx_frame(
    D3D11RenderTargetView rtv      = NULL;
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
+   bool vsync                     = d3d11->vsync;
+   unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
@@ -1337,7 +1340,7 @@ static bool d3d11_gfx_frame(
 
    if (d3d11->resize_chain)
    {
-      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
       d3d11->viewport.Width  = video_width;
       d3d11->viewport.Height = video_height;
@@ -1663,7 +1666,10 @@ static bool d3d11_gfx_frame(
    }
    d3d11->sprites.enabled = false;
 
-   DXGIPresent(d3d11->swapChain, !!d3d11->vsync, 0);
+#if defined(_WIN32) && !defined(__WINRT__)
+   win32_update_title();
+#endif
+   DXGIPresent(d3d11->swapChain, !!vsync, present_flags);
    Release(rtv);
 
    return true;

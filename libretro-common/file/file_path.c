@@ -90,38 +90,44 @@ const char *path_get_archive_delim(const char *path)
    if (!last_slash)
       return NULL;
 
-   /* Find delimiter position */
-   delim = strrchr(last_slash, '#');
+   /* Find delimiter position
+    * > Since filenames may contain '#' characters,
+    *   must loop until we find the first '#' that
+    *   is directly *after* a compression extension */
+   delim = strchr(last_slash, '#');
 
-   if (!delim)
-      return NULL;
-
-   /* Check whether this is a known archive type
-    * > Note: The code duplication here is
-    *   deliberate, to maximise performance */
-   if (delim - last_slash > 4)
+   while (delim)
    {
-      strlcpy(buf, delim - 4, sizeof(buf));
-      buf[4] = '\0';
+      /* Check whether this is a known archive type
+       * > Note: The code duplication here is
+       *   deliberate, to maximise performance */
+      if (delim - last_slash > 4)
+      {
+         strlcpy(buf, delim - 4, sizeof(buf));
+         buf[4] = '\0';
 
-      string_to_lower(buf);
+         string_to_lower(buf);
 
-      /* Check if this is a '.zip', '.apk' or '.7z' file */
-      if (string_is_equal(buf,     ".zip") ||
-          string_is_equal(buf,     ".apk") ||
-          string_is_equal(buf + 1, ".7z"))
-         return delim;
-   }
-   else if (delim - last_slash > 3)
-   {
-      strlcpy(buf, delim - 3, sizeof(buf));
-      buf[3] = '\0';
+         /* Check if this is a '.zip', '.apk' or '.7z' file */
+         if (string_is_equal(buf,     ".zip") ||
+             string_is_equal(buf,     ".apk") ||
+             string_is_equal(buf + 1, ".7z"))
+            return delim;
+      }
+      else if (delim - last_slash > 3)
+      {
+         strlcpy(buf, delim - 3, sizeof(buf));
+         buf[3] = '\0';
 
-      string_to_lower(buf);
+         string_to_lower(buf);
 
-      /* Check if this is a '.7z' file */
-      if (string_is_equal(buf, ".7z"))
-         return delim;
+         /* Check if this is a '.7z' file */
+         if (string_is_equal(buf, ".7z"))
+            return delim;
+      }
+
+      delim++;
+      delim = strchr(delim, '#');
    }
 
    return NULL;

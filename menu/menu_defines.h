@@ -416,7 +416,6 @@ enum quit_on_close_content_type
    QUIT_ON_CLOSE_CONTENT_LAST
 };
 
-
 RETRO_END_DECLS
 
 #endif

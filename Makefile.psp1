@@ -19,7 +19,7 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-INCDIR = deps deps/stb deps/7zip deps/pthreads deps/pthreads/platform/psp deps/pthreads/platform/helper libretro-common/include libretro-common/include/compat/zlib
+INCDIR = deps deps/stb deps/7zip libretro-common/include libretro-common/include/compat/zlib
 CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
@@ -27,7 +27,7 @@ RARCH_DEFINES = -DPSP -D_MIPS_ARCH_ALLEGREX -DHAVE_LANGEXTRA -DHAVE_ZLIB -DHAVE_
 
 LIBDIR =
 LDFLAGS =
-LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc
+LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread-psp
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS

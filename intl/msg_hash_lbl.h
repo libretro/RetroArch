@@ -397,6 +397,10 @@ MSG_HASH(
    "cheevos_start_active"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "cheevos_challenge_indicators"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
    "unload_core"
    )
@@ -1511,12 +1515,12 @@ MSG_HASH(
    "overlay_hide_when_gamepad_connected"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "overlay_show_physical_inputs"
+   MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   "input_overlay_show_inputs"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "overlay_show_physical_inputs_port"
+   MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "input_overlay_show_inputs_port"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -4471,6 +4475,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_DELETE_MATCH,
    "cheat_delete_match"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CRT_SWITCH_HIRES_MENU,
+   "crt_switch_hires_menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,

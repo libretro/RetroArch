@@ -107,6 +107,10 @@
 #include "../gfx/video_layout.h"
 #endif
 
+#if defined(HAVE_OVERLAY)
+#include "../input/input_overlay.h"
+#endif
+
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
 #include "gfx/common/ctr_common.h"
@@ -5227,6 +5231,47 @@ static void setting_get_string_representation_uint_input_auto_game_focus(
    }
 }
 
+#if defined(HAVE_OVERLAY)
+static void setting_get_string_representation_uint_input_overlay_show_inputs(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case OVERLAY_SHOW_INPUT_NONE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF),
+               len);
+         break;
+      case OVERLAY_SHOW_INPUT_TOUCHED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED),
+               len);
+         break;
+      case OVERLAY_SHOW_INPUT_PHYSICAL:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL),
+               len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_uint_input_overlay_show_inputs_port(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+      snprintf(s, len, "%u",
+            *setting->value.target.unsigned_integer + 1);
+}
+#endif
+
 /* A protected driver is such that the user cannot set to "null" using the UI.
  * Can prevent the user from locking him/herself out of the program. */
 static bool setting_is_protected_driver(rarch_setting_t *setting)
@@ -6087,7 +6132,13 @@ static void setting_get_string_representation_uint_crt_switch_resolutions(
          strlcpy(s, "15 KHz", len);
          break;
       case CRT_SWITCH_31KHZ:
-         strlcpy(s, "31 KHz", len);
+         strlcpy(s, "31 KHz, Standard", len);
+         break;
+      case CRT_SWITCH_32_120:
+         strlcpy(s, "31 KHz, 120Hz", len);
+         break;
+      case CRT_SWITCH_INI:
+         strlcpy(s, "INI", len);
          break;
    }
 }
@@ -9089,7 +9140,7 @@ static bool setting_append_list(
          }
 #endif
 
-#ifdef HAVE_LAKKA
+#if defined(HAVE_LAKKA) || defined(HAVE_WIFI)
          if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
          {
             CONFIG_ACTION(
@@ -9396,6 +9447,11 @@ static bool setting_append_list(
 #endif
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
+#if defined(IOS)
+               if (bool_entries[i].name_enum_idx ==
+                     MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE)
+                  continue;
+#endif
                CONFIG_BOOL(
                      list, list_info,
                      bool_entries[i].target,
@@ -11440,7 +11496,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, 19, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             /* Unlike all other shader-related menu entries
@@ -11611,7 +11667,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_crt_switch_resolutions;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_range(list, list_info, CRT_SWITCH_NONE, CRT_SWITCH_31KHZ, 1.0, true, true);
+         menu_settings_list_current_add_range(list, list_info, CRT_SWITCH_NONE, CRT_SWITCH_INI, 1.0, true, true);
 
 			CONFIG_UINT(
 				  list, list_info,
@@ -11669,6 +11725,22 @@ static bool setting_append_list(
                &settings->bools.crt_switch_custom_refresh_enable,
                MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
                MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.crt_switch_hires_menu,
+               MENU_ENUM_LABEL_CRT_SWITCH_HIRES_MENU,
+               MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
                false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
@@ -13852,35 +13924,41 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
-         CONFIG_BOOL(
+         CONFIG_UINT(
                list, list_info,
-               &settings->bools.input_overlay_show_physical_inputs,
-               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-               DEFAULT_SHOW_PHYSICAL_INPUTS,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
+               &settings->uints.input_overlay_show_inputs,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+               DEFAULT_OVERLAY_SHOW_INPUTS,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
+               general_read_handler
                );
+         (*list)[list_info->index - 1].ui_type                   = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left               = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right              = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_input_overlay_show_inputs;
+         menu_settings_list_current_add_range(list, list_info, 0, OVERLAY_SHOW_INPUT_LAST-1, 1, true, true);
 
          CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.input_overlay_show_physical_inputs_port,
-                  MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-                  MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-                  0,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler
-                  );
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               list, list_info,
+               &settings->uints.input_overlay_show_inputs_port,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+               DEFAULT_OVERLAY_SHOW_INPUTS_PORT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler
+               );
+         (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_input_overlay_show_inputs_port;
          menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1, true, true);
 
          CONFIG_BOOL(
@@ -17851,6 +17929,22 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_right = setting_string_action_right_string_options;
          (*list)[list_info->index - 1].get_string_representation = achievement_leaderboards_get_string_representation;
          (*list)[list_info->index - 1].free_flags &= ~SD_FREE_FLAG_VALUES;
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cheevos_challenge_indicators,
+               MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
 
          CONFIG_BOOL(
                list, list_info,

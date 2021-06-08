@@ -100,9 +100,7 @@ static void vita2d_font_free_font(void *data, bool is_threaded)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-#if 0
    vita2d_wait_rendering_done();
-#endif
    vita2d_free_texture(font->texture);
 
    free(font);

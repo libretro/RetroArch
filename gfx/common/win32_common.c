@@ -642,6 +642,26 @@ static void win32_save_position(void)
    }
 }
 
+static void win32_resize_after_display_change(HWND hwnd)
+{
+   HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+   if (monitor != NULL)
+   {
+      MONITORINFO info;
+      memset(&info, 0, sizeof(info));
+      info.cbSize = sizeof(info);
+
+      if (GetMonitorInfo(monitor, &info))
+      {
+         int new_width = abs(info.rcMonitor.right - info.rcMonitor.left);
+         int new_height = abs(info.rcMonitor.bottom - info.rcMonitor.top);
+
+         SetWindowPos(hwnd, 0, 0, 0, new_width, new_height, SWP_NOMOVE);
+      }
+   }
+}
+
 static bool win32_browser(
       HWND owner,
       char *filename,
@@ -1049,6 +1069,9 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             win32_clip_window(false);
          break;
 #endif
+      case WM_DISPLAYCHANGE:  /* fix size after display mode switch when using SR */
+         win32_resize_after_display_change(hwnd);
+         break;
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -1165,6 +1188,9 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             win32_clip_window(false);
          break;
 #endif
+      case WM_DISPLAYCHANGE:  /* fix size after display mode switch when using SR */
+         win32_resize_after_display_change(hwnd);
+         break;
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -2352,3 +2378,22 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    return true;
 }
 #endif
+
+void win32_update_title(void)
+{
+#ifndef _XBOX
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title(&main_window, title);
+   }
+#endif
+}

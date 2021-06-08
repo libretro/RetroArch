@@ -41,6 +41,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
+#include "../cheevos/cheevos_menu.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -4015,6 +4016,7 @@ static unsigned menu_displaylist_parse_content_information(
       content_path   = loaded_content_path;
       core_path      = loaded_core_path;
 
+      if (core_info_find(core_path, &core_info))
          if (!string_is_empty(core_info->display_name))
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
    }
@@ -7380,6 +7382,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                                      PARSE_ONLY_STRING, false },
                {MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,                          PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,                           PARSE_ONLY_STRING_OPTIONS,   false  },
+               {MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,                          PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,                           PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,                                 PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,                               PARSE_ONLY_BOOL,   false  },
@@ -7797,6 +7800,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,                           PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,                               PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,         PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CRT_SWITCH_HIRES_MENU,         PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7933,17 +7937,21 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#if defined(HAVE_OVERLAY)
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
          {
-            bool input_overlay_enable     = settings->bools.input_overlay_enable;
-            bool input_overlay_auto_scale = settings->bools.input_overlay_auto_scale;
+            bool input_overlay_enable       = settings->bools.input_overlay_enable;
+            bool input_overlay_auto_scale   = settings->bools.input_overlay_auto_scale;
+            enum overlay_show_input_type
+                  input_overlay_show_inputs = (enum overlay_show_input_type)
+                        settings->uints.input_overlay_show_inputs;
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                      PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,                PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED, PARSE_ONLY_BOOL,  false },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,        PARSE_ONLY_BOOL,  false },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,   PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS,                 PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,            PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,           PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,                  PARSE_ONLY_BOOL,  false },
@@ -7969,14 +7977,18 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED:
-                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
-                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE:
                   case MENU_ENUM_LABEL_OVERLAY_PRESET:
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
                      if (input_overlay_enable)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT:
+                     if (input_overlay_enable &&
+                         (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_PHYSICAL))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE:
@@ -8012,6 +8024,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#endif
 #ifdef HAVE_VIDEO_LAYOUT
       case DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
          {
@@ -8556,7 +8569,9 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
+#if defined(HAVE_OVERLAY)
                {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS, PARSE_ACTION},
+#endif
 #ifdef HAVE_VIDEO_LAYOUT
                {MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS, PARSE_ACTION},
 #endif
@@ -8854,7 +8869,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_BLUETOOTH
                {MENU_ENUM_LABEL_BLUETOOTH_DRIVER,      PARSE_ONLY_STRING_OPTIONS},
 #endif
-#ifdef HAVE_LAKKA
+#if defined(HAVE_LAKKA) || defined(HAVE_WIFI)
                {MENU_ENUM_LABEL_WIFI_DRIVER,           PARSE_ONLY_STRING_OPTIONS},
 #endif
             };
@@ -9725,7 +9740,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   if (!string_is_empty(cd_info.title))
                   {
-                     char title[256];
+                     char title[sizeof("Title: ")+sizeof(cd_info.title)];
                      snprintf(title, sizeof(title), "Title: %s", cd_info.title);
 
                      if (menu_entries_append_enum(info->list,
@@ -10970,7 +10985,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_ACHIEVEMENT_PAUSE_MENU:
 #ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         rcheevos_populate_hardcore_pause_menu(info);
+         rcheevos_menu_populate_hardcore_pause_submenu(info);
 #endif
          info->need_push = true;
          info->need_refresh = true;
@@ -10978,7 +10993,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         rcheevos_populate_menu(info);
+         rcheevos_menu_populate(info);
 #endif
          info->need_push    = true;
          info->need_refresh = true;
@@ -11304,7 +11319,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST:
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
+#if defined(HAVE_OVERLAY)
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
+#endif
 #ifdef HAVE_VIDEO_LAYOUT
       case DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST:
 #endif

@@ -2319,3 +2319,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg) {
 
    return "null";
 }
+
+const char *msg_hash_get_wideglyph_str_jp(void)
+{
+   return "漢";
+}

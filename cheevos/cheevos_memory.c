@@ -15,7 +15,7 @@
 
 #include "cheevos_memory.h"
 
-#include "util.h"
+#include "cheevos_locals.h"
 
 #include "../retroarch.h"
 #include "../verbosity.h"

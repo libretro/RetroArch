@@ -83,6 +83,38 @@ enum {
 
 const char* rc_console_name(int console_id);
 
+/*****************************************************************************\
+| Memory mapping                                                              |
+\*****************************************************************************/
+
+enum {
+  RC_MEMORY_TYPE_SYSTEM_RAM,          /* normal system memory */
+  RC_MEMORY_TYPE_SAVE_RAM,            /* memory that persists between sessions */
+  RC_MEMORY_TYPE_VIDEO_RAM,           /* memory reserved for graphical processing */
+  RC_MEMORY_TYPE_READONLY,            /* memory that maps to read only data */
+  RC_MEMORY_TYPE_HARDWARE_CONTROLLER, /* memory for interacting with system components */
+  RC_MEMORY_TYPE_VIRTUAL_RAM,         /* secondary address space that maps to real memory in system RAM */
+  RC_MEMORY_TYPE_UNUSED               /* these addresses don't really exist */
+};
+
+typedef struct rc_memory_region_t {
+  unsigned start_address;             /* first address of block as queried by RetroAchievements */
+  unsigned end_address;               /* last address of block as queried by RetroAchievements */
+  unsigned real_address;              /* real address for first address of block */
+  char type;                          /* RC_MEMORY_TYPE_ for block */
+  const char* description;            /* short description of block */
+}
+rc_memory_region_t;
+
+typedef struct rc_memory_regions_t {
+  const rc_memory_region_t* region;
+  unsigned num_regions;
+}
+rc_memory_regions_t;
+
+const rc_memory_regions_t* rc_console_memory_regions(int console_id);
+
+
 #ifdef __cplusplus
 }
 #endif

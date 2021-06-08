@@ -1547,6 +1547,7 @@ static bool d3d10_gfx_frame(
    }
    d3d10->sprites.enabled = false;
 
+   win32_update_title();
    DXGIPresent(d3d10->swapChain, !!d3d10->vsync, 0);
 
    return true;

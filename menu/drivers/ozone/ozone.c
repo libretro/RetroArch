@@ -869,6 +869,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
    p_anim->updatetime_cb = ozone_menu_animation_update_time;
 
+   /* set word_wrap function pointer */
+   ozone->word_wrap = msg_hash_get_wideglyph_str() ? word_wrap_wideglyph : word_wrap;
+
    return menu;
 
 error:
@@ -985,6 +988,7 @@ static bool ozone_init_font(
 {
    int glyph_width       = 0;
    gfx_display_t *p_disp = disp_get_ptr();
+   const char *wideglyph_str = msg_hash_get_wideglyph_str();
 
    /* Free existing */
    if (font_data->font)
@@ -1008,6 +1012,18 @@ static bool ozone_init_font(
    glyph_width = font_driver_get_message_width(font_data->font, "a", 1, 1.0f);
    if (glyph_width > 0)
       font_data->glyph_width     = glyph_width;
+
+   font_data->wideglyph_width = 100;
+
+   if (wideglyph_str)
+   {
+      int wideglyph_width =
+         font_driver_get_message_width(font_data->font, wideglyph_str, strlen(wideglyph_str), 1.0f);
+      
+      if (wideglyph_width > 0 && glyph_width > 0) 
+         font_data->wideglyph_width = wideglyph_width * 100 / glyph_width;
+   }
+
    font_data->line_height        = font_driver_get_line_height(font_data->font, 1.0f);
    font_data->line_ascender      = font_driver_get_line_ascender(font_data->font, 1.0f);
    font_data->line_centre_offset = font_driver_get_line_centre_offset(font_data->font, 1.0f);
@@ -4027,10 +4043,14 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
       /* Word wrap core name string, if required */
       if (!scroll_content_metadata)
       {
+         char tmpstr[sizeof(ozone->selection_core_name)];
          unsigned metadata_len =
                (ozone->dimensions.thumbnail_bar_width - ((ozone->dimensions.sidebar_entry_icon_padding * 2) * 2)) /
                      ozone->fonts.footer.glyph_width;
-         word_wrap(ozone->selection_core_name, ozone->selection_core_name, metadata_len, true, 0);
+
+         strlcpy(tmpstr, ozone->selection_core_name, sizeof(tmpstr));
+         (ozone->word_wrap)(ozone->selection_core_name, sizeof(ozone->selection_core_name),
+               tmpstr, metadata_len, ozone->fonts.footer.wideglyph_width, 0);
          ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
       }
       else
@@ -4076,7 +4096,10 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
           * formats. Last played strings are well defined, however
           * (unlike core names), so this should never overflow the
           * side bar */
-         word_wrap(ozone->selection_lastplayed, ozone->selection_lastplayed, 30, true, 0);
+         char tmpstr[sizeof(ozone->selection_lastplayed)];
+
+         strlcpy(tmpstr, ozone->selection_lastplayed, sizeof(tmpstr));
+         (ozone->word_wrap)(ozone->selection_lastplayed, sizeof(ozone->selection_lastplayed), tmpstr, 30, 100, 0);
          ozone->selection_lastplayed_lines = ozone_count_lines(ozone->selection_lastplayed);
       }
       else

@@ -9,8 +9,8 @@ import urllib.request
 import zipfile
 
 # Check Crowdin API Key
-if len(sys.argv) < 1:
-    print('Please Provides Crowdin API Key!')
+if len(sys.argv) < 2:
+    print('Please provide Crowdin API Key!')
     exit()
 
 api_key = sys.argv[1]

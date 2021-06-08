@@ -1195,8 +1195,15 @@ void CoreOptionsDialog::buildLayout()
 
                if (!string_is_empty(option->info))
                {
-                  char *new_info = strdup(option->info);
-                  word_wrap(new_info, new_info, 50, true, 0);
+                  char *new_info;
+                  size_t new_info_len = strlen(option->info) + 1;
+
+                  new_info = (char *)malloc(new_info_len);
+                  if (!new_info)
+                     return;
+                  new_info[0] = '\0';
+
+                  word_wrap(new_info, new_info_len, option->info, 50, 100, 0);
                   descLabel->setToolTip(new_info);
                   combo_box->setToolTip(new_info);
                   free(new_info);

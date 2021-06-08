@@ -44,16 +44,13 @@ static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
-static void runloop_deinit_core_options(
-      runloop_state_t *p_runloop,
-      const char *path_core_options);
-static core_option_manager_t *runloop_init_core_variables(
-      runloop_state_t *p_runloop,
-      settings_t *settings,
+static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
+      const char *p);
+static void retroarch_init_core_variables(
+      struct rarch_state *p_rarch,
       const struct retro_variable *vars);
-static core_option_manager_t *runloop_init_core_options(
-      runloop_state_t *p_runloop,
-      settings_t *settings,
+static void rarch_init_core_options(
+      struct rarch_state *p_rarch,
       const struct retro_core_option_definition *option_defs);
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
@@ -139,9 +136,6 @@ static void drivers_init(struct rarch_state *p_rarch,
       int flags,
       bool verbosity_enabled);
 
-#if defined(HAVE_RUNAHEAD)
-static void core_free_retro_game_info(struct retro_game_info *dest);
-#endif
 static bool core_load(struct rarch_state *p_rarch,
       unsigned poll_type_behavior);
 static bool core_unload_game(struct rarch_state *p_rarch);

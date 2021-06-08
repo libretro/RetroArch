@@ -1169,6 +1169,8 @@ static bool d3d12_gfx_frame(
    unsigned         i;
    d3d12_texture_t* texture       = NULL;
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
+   bool vsync                     = d3d12->chain.vsync;
+   unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    bool statistics_show           = video_info->statistics_show;
    unsigned video_width           = video_info->width;
@@ -1189,7 +1191,7 @@ static bool d3d12_gfx_frame(
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
          Release(d3d12->chain.renderTargets[i]);
 
-      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
       {
@@ -1610,9 +1612,12 @@ static bool d3d12_gfx_frame(
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
-
+   
+#if defined(_WIN32) && !defined(__WINRT__)
+   win32_update_title();
+#endif
 #if 1
-   DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
+   DXGIPresent(d3d12->chain.handle, !!vsync, present_flags);
 #else
    DXGI_PRESENT_PARAMETERS pp = { 0 };
    DXGIPresent1(d3d12->swapchain, 0, 0, &pp);

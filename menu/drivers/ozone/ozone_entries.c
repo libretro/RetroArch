@@ -400,9 +400,10 @@ void ozone_compute_entries_position(
                   sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
             }
 
-            word_wrap(wrapped_sublabel_str, entry.sublabel,
+            (ozone->word_wrap)(wrapped_sublabel_str, sizeof(wrapped_sublabel_str), entry.sublabel,
                   sublabel_max_width / 
-                  ozone->fonts.entries_sublabel.glyph_width, false, 0);
+                  ozone->fonts.entries_sublabel.glyph_width,
+                  ozone->fonts.entries_sublabel.wideglyph_width, 0);
 
             node->sublabel_lines = ozone_count_lines(wrapped_sublabel_str);
 
@@ -763,7 +764,9 @@ border_iterate:
             }
 
             wrapped_sublabel_str[0] = '\0';
-            word_wrap(wrapped_sublabel_str, sublabel_str, sublabel_max_width / ozone->fonts.entries_sublabel.glyph_width, false, 0);
+            (ozone->word_wrap)(wrapped_sublabel_str, sizeof(wrapped_sublabel_str),
+                  sublabel_str, sublabel_max_width / ozone->fonts.entries_sublabel.glyph_width,
+                  ozone->fonts.entries_sublabel.wideglyph_width, 0);
             sublabel_str = wrapped_sublabel_str;
          }
       }

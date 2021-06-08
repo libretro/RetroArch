@@ -704,6 +704,9 @@ enum msg_hash_enums
    MENU_LABEL(CHEEVOS_LOCKED_ENTRY),
    MENU_LABEL(CHEEVOS_UNSUPPORTED_ENTRY),
    MENU_LABEL(CHEEVOS_UNOFFICIAL_ENTRY),
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
    MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
 
@@ -970,8 +973,19 @@ enum msg_hash_enums
 #if defined(ANDROID)
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
 #endif
+
+   /* Legacy enums - no longer needed, but cannot
+    * delete because they are used by Crowdin
+    * translations... */
    MENU_LABEL(INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS),
    MENU_LABEL(INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT),
+
+   MENU_LABEL(INPUT_OVERLAY_SHOW_INPUTS),
+   MENU_LABEL(INPUT_OVERLAY_SHOW_INPUTS_PORT),
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_NONE,
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+
    MENU_LABEL(INPUT_OVERLAY_SHOW_MOUSE_CURSOR),
    MENU_LABEL(INPUT_OVERLAY_AUTO_ROTATE),
    MENU_LABEL(INPUT_OVERLAY_AUTO_SCALE),
@@ -1000,6 +1014,7 @@ enum msg_hash_enums
    MENU_LABEL(CRT_SWITCH_RESOLUTION),
    MENU_LABEL(CRT_SWITCH_RESOLUTION_SUPER),
    MENU_LABEL(CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID),
+   MENU_LABEL(CRT_SWITCH_HIRES_MENU),
    MENU_LABEL(CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE),
    MENU_LABEL(CRT_SWITCH_X_AXIS_CENTERING),
    MENU_LABEL(CRT_SWITCH_PORCH_ADJUST),
@@ -1390,6 +1405,7 @@ enum msg_hash_enums
    MENU_LABEL(CHEEVOS_UNLOCK_SOUND_ENABLE),
    MENU_LABEL(CHEEVOS_AUTO_SCREENSHOT),
    MENU_LABEL(CHEEVOS_START_ACTIVE),
+   MENU_LABEL(CHEEVOS_CHALLENGE_INDICATORS),
    MENU_LABEL(CHEEVOS_ENABLE),
    MENU_LABEL(CHEEVOS_DESCRIPTION),
    MENU_LABEL(ACCOUNTS_RETRO_ACHIEVEMENTS),
@@ -3257,6 +3273,37 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash);
 unsigned *msg_hash_get_uint(enum msg_hash_action type);
 
 void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
+
+/* Latin languages typically consist of regular
+ * alpha numeric characters with a 'standard'
+ * on-screen pixel width.
+ * Non-Latin languages (e.g. CJK) typically consist
+ * of so-called 'wide' Unicode glyphs, which may have
+ * an on-screen pixel width several times that of Latin
+ * characters.
+ * In order to determine efficiently the on-screen width
+ * of a text string (e.g. when word wrapping), it is
+ * therefore necessary to:
+ * - Identify which languages make use of 'wide' Unicode
+ *   glyphs
+ * - For each of these languages, provide a mechanism for
+ *   measuring the typical on-screen pixel width of
+ *   language-specific 'wide' Unicode glyphs
+ * As such, msg_hash_get_wideglyph_str() returns a pointer
+ * to a 'wide' Unicode character of typical on-screen pixel
+ * width for the currently set user language.
+ * - If msg_hash_get_wideglyph_str() returns NULL, the current
+ *   language is assumed to be Latin-based, with no usage
+ *   of 'wide' Unicode glyphs
+ * - If msg_hash_get_wideglyph_str() returns a valid pointer,
+ *   actual 'wide' glyph width for the current language may
+ *   be found by passing said pointer to the current font
+ *   rendering implementation */
+const char *msg_hash_get_wideglyph_str(void);
+const char *msg_hash_get_wideglyph_str_chs(void);
+const char *msg_hash_get_wideglyph_str_cht(void);
+const char *msg_hash_get_wideglyph_str_jp(void);
+const char *msg_hash_get_wideglyph_str_ko(void);
 
 uint32_t msg_hash_calculate(const char *s);
 
