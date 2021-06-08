@@ -2963,17 +2963,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          {
             /* Quickmenu controls repeats the same icons for all users */
             if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
-            {
                input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-               while (type > (input_id + 23))
-                  input_id = (input_id + 24);
-            }
             else
-            {
                input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
-               while (type > (input_id + 15))
-                  input_id = (input_id + 16);
-            }
+            while (type > (input_id + 23))
+               input_id = (input_id + 24);
 
             /* Human readable bind order */
             if (type < (input_id + RARCH_ANALOG_BIND_LIST_END))

@@ -1138,7 +1138,7 @@ static int action_bind_sublabel_remap_kbd_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
 
    snprintf(s, len, "%s #%d: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),

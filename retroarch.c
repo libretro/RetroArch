@@ -22595,8 +22595,18 @@ static void input_driver_poll(void)
                   if (remap_key == RETROK_UNKNOWN)
                      continue;
 
-                  current_button_value =
-                     BIT256_GET_PTR(p_new_state, j);
+                  if (j >= RARCH_FIRST_CUSTOM_BIND && j < RARCH_ANALOG_BIND_LIST_END)
+                  {
+                     int16_t current_axis_value = p_new_state->analogs[j - RARCH_FIRST_CUSTOM_BIND];
+                     current_button_value = abs(current_axis_value) >
+                           p_rarch->input_driver_axis_threshold
+                            * 32767;
+                  }
+                  else
+                  {
+                     current_button_value =
+                        BIT256_GET_PTR(p_new_state, j);
+                  }
 
 #ifdef HAVE_OVERLAY
                   if (poll_overlay && i == 0)
