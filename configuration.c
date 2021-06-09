@@ -3280,8 +3280,8 @@ static bool config_load_file(global_t *global,
    if (settings->uints.video_hard_sync_frames > 3)
       settings->uints.video_hard_sync_frames = 3;
 
-   if (settings->uints.video_frame_delay > 15)
-      settings->uints.video_frame_delay = 15;
+   if (settings->uints.video_frame_delay > MAXIMUM_FRAME_DELAY)
+      settings->uints.video_frame_delay = MAXIMUM_FRAME_DELAY;
 
    settings->uints.video_swap_interval = MAX(settings->uints.video_swap_interval, 1);
    settings->uints.video_swap_interval = MIN(settings->uints.video_swap_interval, 4);
