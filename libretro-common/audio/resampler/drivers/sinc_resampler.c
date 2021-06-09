@@ -376,7 +376,7 @@ static void resampler_sinc_process_sse_kaiser(void *re_, struct resampler_data *
                sum_r        = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, _sinc));
             }
 
-#if 0
+#ifdef HAVE_GRIFFIN
             /* Them annoying shuffles.
              * sum_l = { l3, l2, l1, l0 }
              * sum_r = { r3, r2, r1, r0 }
