@@ -17724,8 +17724,9 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
          /* Playlist entry index display is currently
-          * supported only by Ozone */
-         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+          * supported only by Ozone & XMB */
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
