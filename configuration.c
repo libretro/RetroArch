@@ -341,7 +341,7 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SWITCH;
 #elif defined(HAVE_PULSE)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
-#elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
+#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
 #elif defined(HAVE_ALSA)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
