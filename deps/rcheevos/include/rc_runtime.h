@@ -130,6 +130,9 @@ typedef void (*rc_runtime_event_handler_t)(const rc_runtime_event_t* runtime_eve
 
 void rc_runtime_do_frame(rc_runtime_t* runtime, rc_runtime_event_handler_t event_handler, rc_runtime_peek_t peek, void* ud, lua_State* L);
 void rc_runtime_reset(rc_runtime_t* runtime);
+
+typedef int (*rc_runtime_validate_address_t)(unsigned address);
+void rc_runtime_validate_addresses(rc_runtime_t* runtime, rc_runtime_event_handler_t event_handler, rc_runtime_validate_address_t validate_handler);
 void rc_runtime_invalidate_address(rc_runtime_t* runtime, unsigned address);
 
 int rc_runtime_progress_size(const rc_runtime_t* runtime, lua_State* L);

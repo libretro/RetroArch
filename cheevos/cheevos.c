@@ -73,7 +73,7 @@
 #include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
-#include "../deps/rcheevos/include/rc_runtime_types.h"
+#include "../deps/rcheevos/include/rc_runtime.h"
 #include "../deps/rcheevos/include/rc_url.h"
 #include "../deps/rcheevos/include/rc_hash.h"
 #include "../deps/rcheevos/src/rcheevos/rc_libretro.h"
@@ -171,6 +171,7 @@ static void rcheevos_async_task_callback(
       retro_task_t* task, void* task_data, void* user_data, const char* error);
 static void rcheevos_async_submit_lboard(rcheevos_locals_t *locals,
       rcheevos_async_io_request* request);
+static void rcheevos_validate_memrefs(rcheevos_locals_t* locals);
 
 /*****************************************************************************
 Supporting functions.
@@ -351,48 +352,13 @@ static void rcheevos_log_post_url(
 #endif
 }
 
-static bool rcheevos_condset_contains_memref(const rc_condset_t* condset,
-      const rc_memref_t* memref)
-{
-   if (condset)
-   {
-      rc_condition_t* cond = NULL;
-      for (cond = condset->conditions; cond; cond = cond->next)
-      {
-         if (     cond->operand1.value.memref == memref 
-               || cond->operand2.value.memref == memref)
-            return true;
-      }
-   }
-
-   return false;
-}
-
-static bool rcheevos_trigger_contains_memref(const rc_trigger_t* trigger,
-      const rc_memref_t* memref)
-{
-   rc_condset_t* condset;
-   if (!trigger)
-      return false;
-
-   if (rcheevos_condset_contains_memref(trigger->requirement, memref))
-      return true;
-
-   for (condset = trigger->alternative; condset; condset = condset->next)
-   {
-      if (rcheevos_condset_contains_memref(condset, memref))
-         return true;
-   }
-
-   return false;
-}
-
 static void rcheevos_achievement_disabled(rcheevos_racheevo_t* cheevo, unsigned address)
 {
    if (!cheevo)
       return;
 
-   CHEEVOS_ERR(RCHEEVOS_TAG "Achievement disabled (invalid address %06X): %s\n", address, cheevo->title);
+   CHEEVOS_ERR(RCHEEVOS_TAG "Achievement %u disabled (invalid address %06X): %s\n",
+               cheevo->id, address, cheevo->title);
    CHEEVOS_FREE(cheevo->memaddr);
    cheevo->memaddr = NULL;
 }
@@ -402,95 +368,10 @@ static void rcheevos_lboard_disabled(rcheevos_ralboard_t* lboard, unsigned addre
    if (!lboard)
       return;
 
-   CHEEVOS_ERR(RCHEEVOS_TAG "Leaderboard disabled (invalid address %06X): %s\n", address, lboard->title);
+   CHEEVOS_ERR(RCHEEVOS_TAG "Leaderboard %u disabled (invalid address %06X): %s\n",
+               lboard->id, address, lboard->title);
    CHEEVOS_FREE(lboard->mem);
    lboard->mem = NULL;
-}
-
-static void rcheevos_invalidate_address(unsigned address)
-{
-   unsigned i, count;
-   rcheevos_racheevo_t* cheevo     = NULL;
-   rcheevos_ralboard_t* lboard     = NULL;
-   /* Remove the invalid memref from the chain so we don't 
-    * try to evaluate it in the future.
-    * It's still there, so anything referencing it will 
-    * continue to fetch 0. */
-   rc_memref_t **last_memref       = &rcheevos_locals.runtime.memrefs;
-   rc_memref_t *memref             = *last_memref;
-
-   do
-   {
-      if (memref->address == address && !memref->value.is_indirect)
-      {
-         *last_memref = memref->next;
-         break;
-      }
-
-      last_memref = &memref->next;
-      memref      = *last_memref;
-   } while(memref);
-
-   /* If the address is only used indirectly, 
-    * don't disable anything dependent on it */
-   if (!memref)
-      return;
-
-   /* Disable any achievements dependent on the address */
-   for (i = 0; i < 2; ++i)
-   {
-      if (i == 0)
-      {
-         cheevo = rcheevos_locals.patchdata.core;
-         count  = rcheevos_locals.patchdata.core_count;
-      }
-      else
-      {
-         cheevo = rcheevos_locals.patchdata.unofficial;
-         count  = rcheevos_locals.patchdata.unofficial_count;
-      }
-
-      while (count--)
-      {
-         if (cheevo->memaddr)
-         {
-            const rc_trigger_t* trigger = rc_runtime_get_achievement(
-                  &rcheevos_locals.runtime, cheevo->id);
-
-            if (trigger && rcheevos_trigger_contains_memref(trigger, memref))
-            {
-               rcheevos_achievement_disabled(cheevo, address);
-               rc_runtime_deactivate_achievement(&rcheevos_locals.runtime,
-                     cheevo->id);
-            }
-         }
-
-         ++cheevo;
-      }
-   }
-
-   /* disable any leaderboards dependent on the address */
-   lboard = rcheevos_locals.patchdata.lboards;
-   for (i = 0; i < rcheevos_locals.patchdata.lboard_count; ++i, ++lboard)
-   {
-      if (lboard->mem)
-      {
-         const rc_lboard_t* rc_lboard = rc_runtime_get_lboard(
-               &rcheevos_locals.runtime, lboard->id);
-
-         if (  rc_lboard &&
-            (  rcheevos_trigger_contains_memref(&rc_lboard->start,  memref) ||
-               rcheevos_trigger_contains_memref(&rc_lboard->cancel, memref) ||
-               rcheevos_trigger_contains_memref(&rc_lboard->submit, memref) ||
-               rcheevos_condset_contains_memref(rc_lboard->value.conditions,
-                  memref))
-            )
-         {
-            rcheevos_lboard_disabled(lboard, address);
-            rc_runtime_deactivate_lboard(&rcheevos_locals.runtime, lboard->id);
-         }
-      }
-   }
 }
 
 static void rcheevos_handle_log_message(const char* message)
@@ -774,24 +655,6 @@ static void rcheevos_async_task_callback(
    }
 }
 
-static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
-{
-   rc_memref_t* memref = locals->runtime.memrefs;
-
-   while (memref)
-   {
-      if (!memref->value.is_indirect)
-      {
-         uint8_t* data = rc_libretro_memory_find(&rcheevos_locals.memory,
-               memref->address);
-         if (!data)
-            rcheevos_invalidate_address(memref->address);
-      }
-
-      memref = memref->next;
-   }
-}
-
 static void rcheevos_activate_achievements(rcheevos_locals_t *locals,
       rcheevos_racheevo_t* cheevo, unsigned count, unsigned flags)
 {
@@ -859,7 +722,9 @@ static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
 
    if (   locals->patchdata.core_count       == 0
        && locals->patchdata.unofficial_count == 0
-       && locals->patchdata.lboard_count     == 0)
+       && locals->patchdata.lboard_count     == 0
+       && (!locals->patchdata.richpresence_script ||
+           !*locals->patchdata.richpresence_script))
    {
       rcheevos_free_patchdata(&locals->patchdata);
       return 0;
@@ -1121,7 +986,7 @@ static void rcheevos_lboard_submit(rcheevos_locals_t *locals,
    char formatted_value[16];
 
    /* Show the OSD message (regardless of notifications setting). */
-   rc_format_value(formatted_value, sizeof(formatted_value),
+   rc_runtime_format_lboard_value(formatted_value, sizeof(formatted_value),
          value, lboard->format);
 
    CHEEVOS_LOG(RCHEEVOS_TAG "Submitting %s for leaderboard %u\n",
@@ -1191,7 +1056,7 @@ static void rcheevos_lboard_started(rcheevos_ralboard_t * lboard, int value,
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_ready && rcheevos_locals.leaderboard_trackers)
    {
-      rc_format_value(buffer, sizeof(buffer), value, lboard->format);
+      rc_runtime_format_lboard_value(buffer, sizeof(buffer), value, lboard->format);
       gfx_widgets_set_leaderboard_display(lboard->id, buffer);
    }
 #endif
@@ -1222,7 +1087,7 @@ static void rcheevos_lboard_updated(rcheevos_ralboard_t* lboard, int value,
    if (widgets_ready && rcheevos_locals.leaderboard_trackers)
    {
       char buffer[32];
-      rc_format_value(buffer, sizeof(buffer), value, lboard->format);
+      rc_runtime_format_lboard_value(buffer, sizeof(buffer), value, lboard->format);
       gfx_widgets_set_leaderboard_display(lboard->id, buffer);
    }
 }
@@ -1670,6 +1535,17 @@ static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_eve
    }
 }
 
+static int rcheevos_runtime_address_validator(unsigned address)
+{
+   return (rc_libretro_memory_find(&rcheevos_locals.memory, address) != NULL);
+}
+
+static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
+{
+   rc_runtime_validate_addresses(&locals->runtime,
+         rcheevos_runtime_event_handler, rcheevos_runtime_address_validator);
+}
+
 /*****************************************************************************
 Test all the achievements (call once per frame).
 *****************************************************************************/
@@ -1949,10 +1825,20 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
                   "This game has no achievements.",
                   0, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-            rcheevos_pause_hardcore();
+            if (rcheevos_locals.patchdata.richpresence_script &&
+               *rcheevos_locals.patchdata.richpresence_script)
+            {
+               rcheevos_locals.loaded = true;
+            }
+            else
+            {
+               rcheevos_pause_hardcore();
+            }
          }
          else
+         {
             rcheevos_locals.loaded = true;
+         }
       }
 
 #if HAVE_REWIND

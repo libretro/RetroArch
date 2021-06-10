@@ -95,6 +95,86 @@ int rc_parse_memref(const char** memaddr, char* size, unsigned* address) {
   return RC_OK;
 }
 
+static const unsigned char rc_bits_set[16] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4 };
+
+unsigned rc_transform_memref_value(unsigned value, char size)
+{
+  switch (size)
+  {
+    case RC_MEMSIZE_BIT_0:
+      value = (value >> 0) & 1;
+      break;
+
+    case RC_MEMSIZE_BIT_1:
+      value = (value >> 1) & 1;
+      break;
+
+    case RC_MEMSIZE_BIT_2:
+      value = (value >> 2) & 1;
+      break;
+
+    case RC_MEMSIZE_BIT_3:
+      value = (value >> 3) & 1;
+      break;
+
+    case RC_MEMSIZE_BIT_4:
+      value = (value >> 4) & 1;
+      break;
+
+    case RC_MEMSIZE_BIT_5:
+      value = (value >> 5) & 1;
+      break;
+
+    case RC_MEMSIZE_BIT_6:
+      value = (value >> 6) & 1;
+      break;
+
+    case RC_MEMSIZE_BIT_7:
+      value = (value >> 7) & 1;
+      break;
+
+    case RC_MEMSIZE_LOW:
+      value = value & 0x0f;
+      break;
+
+    case RC_MEMSIZE_HIGH:
+      value = (value >> 4) & 0x0f;
+      break;
+
+    case RC_MEMSIZE_BITCOUNT:
+      value = rc_bits_set[(value & 0x0F)]
+            + rc_bits_set[((value >> 4) & 0x0F)];
+      break;
+
+    default:
+      break;
+  }
+
+  return value;
+}
+
+char rc_memref_shared_size(char size)
+{
+  switch (size) {
+    case RC_MEMSIZE_BIT_0:
+    case RC_MEMSIZE_BIT_1:
+    case RC_MEMSIZE_BIT_2:
+    case RC_MEMSIZE_BIT_3:
+    case RC_MEMSIZE_BIT_4:
+    case RC_MEMSIZE_BIT_5:
+    case RC_MEMSIZE_BIT_6:
+    case RC_MEMSIZE_BIT_7:
+    case RC_MEMSIZE_LOW:
+    case RC_MEMSIZE_HIGH:
+    case RC_MEMSIZE_BITCOUNT:
+      /* these can all share an 8-bit memref and just mask off the appropriate data in rc_transform_memref_value */
+      return RC_MEMSIZE_8_BITS;
+
+    default:
+      return size;
+  }
+}
+
 static unsigned rc_peek_value(unsigned address, char size, rc_peek_t peek, void* ud) {
   unsigned value;
 
@@ -103,46 +183,6 @@ static unsigned rc_peek_value(unsigned address, char size, rc_peek_t peek, void*
 
   switch (size)
   {
-    case RC_MEMSIZE_BIT_0:
-      value = (peek(address, 1, ud) >> 0) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_1:
-      value = (peek(address, 1, ud) >> 1) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_2:
-      value = (peek(address, 1, ud) >> 2) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_3:
-      value = (peek(address, 1, ud) >> 3) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_4:
-      value = (peek(address, 1, ud) >> 4) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_5:
-      value = (peek(address, 1, ud) >> 5) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_6:
-      value = (peek(address, 1, ud) >> 6) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_7:
-      value = (peek(address, 1, ud) >> 7) & 1;
-      break;
-
-    case RC_MEMSIZE_LOW:
-      value = peek(address, 1, ud) & 0x0f;
-      break;
-
-    case RC_MEMSIZE_HIGH:
-      value = (peek(address, 1, ud) >> 4) & 0x0f;
-      break;
-
     case RC_MEMSIZE_8_BITS:
       value = peek(address, 1, ud);
       break;
@@ -161,7 +201,15 @@ static unsigned rc_peek_value(unsigned address, char size, rc_peek_t peek, void*
       break;
 
     default:
-      value = 0;
+      if (rc_memref_shared_size(size) == RC_MEMSIZE_8_BITS)
+      {
+        value = peek(address, 1, ud);
+        value = rc_transform_memref_value(value, size);
+      }
+      else
+      {
+        value = 0;
+      }
       break;
   }
 

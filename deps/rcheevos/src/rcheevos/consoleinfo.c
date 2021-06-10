@@ -338,10 +338,14 @@ static const rc_memory_region_t _rc_memory_regions_intellivision[] = {
 static const rc_memory_regions_t rc_memory_regions_intellivision = { _rc_memory_regions_intellivision, 9 };
 
 /* ===== Magnavox Odyssey 2 ===== */
+/* https://sudonull.com/post/76885-Architecture-and-programming-Philips-Videopac-Magnavox-Odyssey-2 */
 static const rc_memory_region_t _rc_memory_regions_magnavox_odyssey_2[] = {
-    { 0x000000U, 0x00003FU, 0x000040U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    /* Internal and external RAMs are reachable using unique instructions.
+     * The real addresses provided are virtual and for mapping purposes only. */
+    { 0x000000U, 0x00003FU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Internal RAM" },
+    { 0x000040U, 0x00013FU, 0x000040U, RC_MEMORY_TYPE_SYSTEM_RAM, "External RAM" }
 };
-static const rc_memory_regions_t rc_memory_regions_magnavox_odyssey_2 = { _rc_memory_regions_magnavox_odyssey_2, 1 };
+static const rc_memory_regions_t rc_memory_regions_magnavox_odyssey_2 = { _rc_memory_regions_magnavox_odyssey_2, 2 };
 
 /* ===== Master System ===== */
 /* http://www.smspower.org/Development/MemoryMap */
@@ -374,8 +378,9 @@ static const rc_memory_regions_t rc_memory_regions_msx = { _rc_memory_regions_ms
 /* ===== Neo Geo Pocket ===== */
 /* http://neopocott.emuunlim.com/docs/tech-11.txt */
 static const rc_memory_region_t _rc_memory_regions_neo_geo_pocket[] = {
-    /* MednafenNGP exposes 16KB, but the doc suggests there's 24-32KB */
-    { 0x000000U, 0x003FFFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    /* The docs suggest there's Work RAM exposed from $0000-$6FFF, Sound RAM from $7000-$7FFF, and Video 
+     * RAM from $8000-$BFFF, but both MednafenNGP and FBNeo only expose system RAM from $4000-$7FFF */
+    { 0x000000U, 0x003FFFU, 0x004000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
 };
 static const rc_memory_regions_t rc_memory_regions_neo_geo_pocket = { _rc_memory_regions_neo_geo_pocket, 1 };
 

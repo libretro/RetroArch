@@ -22,8 +22,9 @@ static rc_memref_value_t* rc_alloc_helper_variable_memref_value(const char* mema
   if (rc_parse_memref(&end, &size, &address) == RC_OK) {
     /* make sure the entire memaddr was consumed. if not, there's an operator and it's a comparison, not a memory reference */
     if (end == &memaddr[memaddr_len]) {
-      /* just a memory reference, allocate it */
-      return &rc_alloc_memref(parse, address, size, 0)->value;
+      /* if it's not a derived size, we can reference the memref directly */
+      if (rc_memref_shared_size(size) == size)
+        return &rc_alloc_memref(parse, address, size, 0)->value;
     }
   }
 
