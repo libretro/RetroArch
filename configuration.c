@@ -4664,9 +4664,12 @@ bool input_remapping_load_file(void *data, const char *path)
          else
          {
             char stk_ident[128];
+            char key_ident[128];
             int stk_remap = -1;
+            int key_remap = -1;
             
             stk_ident[0]  = '\0';
+            key_ident[0]  = '\0';
 
             fill_pathname_join_delim(stk_ident, s3,
                   key_string, '$', sizeof(stk_ident));
@@ -4685,6 +4688,15 @@ bool input_remapping_load_file(void *data, const char *path)
                configuration_set_uint(settings,
                      settings->uints.input_remap_ids[i][j], stk_remap);
             }
+
+            fill_pathname_join_delim(key_ident, s2,
+                  key_string, '_', sizeof(key_ident));
+
+            if (!config_get_int(conf, key_ident, &key_remap))
+               key_remap = RETROK_UNKNOWN;
+
+            configuration_set_uint(settings,
+                  settings->uints.input_keymapper_ids[i][j], key_remap);
          }
       }
 
@@ -4782,6 +4794,7 @@ bool input_remapping_save_file(const char *path)
       {
          char stk_ident[128];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
+         unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
          const char *key_string = key_strings[j];
          stk_ident[0]           = '\0';
          fill_pathname_join_delim(stk_ident, s3,
@@ -4797,6 +4810,16 @@ bool input_remapping_save_file(const char *path)
             else
                config_set_int(conf, stk_ident,
                      settings->uints.input_remap_ids[i][j]);
+         }
+
+         if (keymap_id != RETROK_UNKNOWN)
+         {
+            char key_ident[128];
+            key_ident[0] = '\0';
+            fill_pathname_join_delim(key_ident, s2,
+                  key_string, '_', sizeof(key_ident));
+            config_set_int(conf, key_ident,
+                  settings->uints.input_keymapper_ids[i][j]);
          }
       }
 

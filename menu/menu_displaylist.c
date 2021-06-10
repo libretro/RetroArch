@@ -4626,8 +4626,8 @@ static int menu_displaylist_parse_input_description_kbd_list(
       goto end;
 
    /* Determine user/button indices */
-   user_idx = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
-   btn_idx  = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+   user_idx = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
+   btn_idx  = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
    if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       goto end;
@@ -9634,7 +9634,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
                else if (device == RETRO_DEVICE_KEYBOARD)
                {
-                  for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+                  for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
                   {
                      char desc_label[400];
                      char descriptor[300];
@@ -9679,7 +9679,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (menu_entries_append_enum(list, descriptor, info->path,
                               MSG_UNKNOWN,
                               MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
-                              (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0))
+                              (p * RARCH_ANALOG_BIND_LIST_END) + retro_id, 0, 0))
                         count++;
                   }
                }

@@ -6572,9 +6572,9 @@ static int action_ok_push_dropdown_item_input_description_kbd(
 
    /* Determine user/button indices */
    user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) 
-      / RARCH_FIRST_CUSTOM_BIND;
+      / RARCH_ANALOG_BIND_LIST_END;
    btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) 
-      - RARCH_FIRST_CUSTOM_BIND * user_idx;
+      - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
    if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return menu_cbs_exit();
