@@ -860,8 +860,9 @@ static unsigned menu_displaylist_parse_core_manager_list(
 
    if (core_info_list)
    {
-      core_info_t *core_info = NULL;
-      size_t menu_index      = 0;
+      menu_serch_terms_t *search_terms = menu_entries_search_get_terms();
+      core_info_t *core_info           = NULL;
+      size_t menu_index                = 0;
       size_t i;
 
       /* Sort cores alphabetically */
@@ -875,6 +876,30 @@ static unsigned menu_displaylist_parse_core_manager_list(
 
          if (core_info)
          {
+            /* If a search is active, skip non-matching
+             * entries */
+            if (search_terms)
+            {
+               bool entry_valid = true;
+               size_t j;
+
+               for (j = 0; j < search_terms->size; j++)
+               {
+                  const char *search_term = search_terms->terms[j];
+
+                  if (!string_is_empty(search_term) &&
+                      !string_is_empty(core_info->display_name) &&
+                      !strcasestr(core_info->display_name, search_term))
+                  {
+                     entry_valid = false;
+                     break;
+                  }
+               }
+
+               if (!entry_valid)
+                  continue;
+            }
+
             if (menu_entries_append_enum(info->list,
                      core_info->path,
                      "",
@@ -11078,6 +11103,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
              * the navigation pointer if the current size is
              * different */
             static size_t prev_count = 0;
+            size_t selection         = menu_navigation_get_selection();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
             count           = menu_displaylist_parse_core_manager_list(info,
                   settings);
@@ -11089,7 +11115,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                      FILE_TYPE_NONE, 0, 0);
 
-            if (count != prev_count)
+            if ((count != prev_count) ||
+                (selection >= count))
             {
                info->need_refresh          = true;
                info->need_navigation_clear = true;
