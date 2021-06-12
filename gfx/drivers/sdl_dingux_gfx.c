@@ -761,7 +761,7 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
 {
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 
-   if (unlikely(!vid || !frame))
+   if (unlikely(!vid))
       return true;
 
    /* If fast forward is currently active, we may
@@ -805,13 +805,16 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
 
       if (likely(vid->mode_valid))
       {
-         /* Blit frame to SDL surface */
-         if (vid->rgb32)
-            sdl_dingux_blit_frame32(vid, (uint32_t*)frame,
-                  width, height, pitch);
-         else
-            sdl_dingux_blit_frame16(vid, (uint16_t*)frame,
-                  width, height, pitch);
+         if (likely(frame))
+         {
+            /* Blit frame to SDL surface */
+            if (vid->rgb32)
+               sdl_dingux_blit_frame32(vid, (uint32_t*)frame,
+                     width, height, pitch);
+            else
+               sdl_dingux_blit_frame16(vid, (uint16_t*)frame,
+                     width, height, pitch);
+         }
       }
       /* If current display mode is invalid,
        * just display an error message */
