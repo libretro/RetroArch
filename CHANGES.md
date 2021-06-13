@@ -1,5 +1,9 @@
 # Future
+
+# 1.9.5
+- ALSATHREAD: Make alsathread default for all ALSA devices with threads
 - ARCHIVE: Fix loading of archived content with file names containing '#' characters
+- CHEEVOS: Upgrade to rcheevos 10.1 
 - CHEEVOS: Challenge indicators
 - CHEEVOS: Group achievements by category in quick menu
 - CHEEVOS: Relabel 'Start Active' with 'Encore Mode'
@@ -11,7 +15,10 @@
 - CRT/SWITCHRES: New implementation
 - FONTS: Improve message wrapping with CJK languages
 - FONTS: Fix garbled characters when converting encodings
+- INPUT: Allow the 8 analog stick directions to be used as keys for core keyboard mappings
 - LIBRETRO: Add API extension for setting 'need_fullpath' based on content file extension and to request persistent frontend content data buffers
+- MENU/SEARCH: Add enhanced search functionality to the 'Manage Cores' menu
+- OPENDINGUX: Fix black screens when triggering gfx driver initialisation via menu actions 
 - UNIX: Get better battery stats on sysfs nodes
 - VIDEO: Extend Frame Delay range to 19 to accommodate PAL land too 
 - WIFI/LAKKA: Add nmcli to wifi drivers
