@@ -298,6 +298,7 @@ struct ozone_handle
    bool cursor_mode;
    bool sidebar_collapsed;
    bool show_thumbnail_bar;
+   bool pending_hide_thumbnail_bar;
    bool fullscreen_thumbnails_available;
    bool show_fullscreen_thumbnails;
    bool selection_core_is_viewer;

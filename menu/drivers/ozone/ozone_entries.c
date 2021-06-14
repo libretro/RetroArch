@@ -161,8 +161,9 @@ static void ozone_draw_entry_value(
 
 static void ozone_thumbnail_bar_hide_end(void *userdata)
 {
-   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
-   ozone->show_thumbnail_bar = false;
+   ozone_handle_t *ozone             = (ozone_handle_t*) userdata;
+   ozone->show_thumbnail_bar         = false;
+   ozone->pending_hide_thumbnail_bar = false;
 }
 
 static void ozone_draw_no_thumbnail_available(
@@ -437,34 +438,52 @@ void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist,
 
    gfx_animation_kill_by_tag(&tag);
 
-   /* Show it */
-   if (is_playlist && !ozone->cursor_in_sidebar && !ozone->show_thumbnail_bar && ozone->depth == 1)
+   /* Show it
+    * > We only want to trigger a 'show' animation
+    *   if 'show_thumbnail_bar' is currently false.
+    *   However: 'show_thumbnail_bar' is only set
+    *   to false by the 'ozone_thumbnail_bar_hide_end'
+    *   callback. If the above 'gfx_animation_kill_by_tag()'
+    *   kills an existing 'hide' animation, then the
+    *   callback will not fire - so the sidebar will be
+    *   off screen, but a subsequent attempt to show it
+    *   here will fail, since 'show_thumbnail_bar' will
+    *   be a false positive. We therefore require an
+    *   additional 'pending_hide_thumbnail_bar' parameter
+    *   to track mid-animation state changes... */
+   if (is_playlist &&
+       !ozone->cursor_in_sidebar &&
+       (!ozone->show_thumbnail_bar || ozone->pending_hide_thumbnail_bar) &&
+       (ozone->depth == 1))
    {
       if (allow_animation)
       {
          ozone->show_thumbnail_bar = true;
 
-         entry.cb             = NULL;
-         entry.userdata       = NULL;
-         entry.target_value   = ozone->dimensions.thumbnail_bar_width;
+         entry.cb                  = NULL;
+         entry.userdata            = NULL;
+         entry.target_value        = ozone->dimensions.thumbnail_bar_width;
 
          gfx_animation_push(&entry);
       }
       else
       {
          ozone->animations.thumbnail_bar_position = ozone->dimensions.thumbnail_bar_width;
-         ozone->show_thumbnail_bar = true;
+         ozone->show_thumbnail_bar                = true;
       }
+
+      ozone->pending_hide_thumbnail_bar = false;
    }
    /* Hide it */
    else
    {
       if (allow_animation)
       {
-         entry.cb             = ozone_thumbnail_bar_hide_end;
-         entry.userdata       = ozone;
-         entry.target_value   = 0.0f;
+         entry.cb                          = ozone_thumbnail_bar_hide_end;
+         entry.userdata                    = ozone;
+         entry.target_value                = 0.0f;
 
+         ozone->pending_hide_thumbnail_bar = true;
          gfx_animation_push(&entry);
       }
       else

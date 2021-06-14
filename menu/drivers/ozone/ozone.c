@@ -726,6 +726,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone->animations.thumbnail_bar_position     = 0.0f;
    ozone->show_thumbnail_bar                    = false;
+   ozone->pending_hide_thumbnail_bar            = false;
    ozone->dimensions_sidebar_width              = 0.0f;
 
    ozone->num_search_terms_old                  = 0;
@@ -1352,7 +1353,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 static void ozone_collapse_end(void *userdata)
 {
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
-   ozone->draw_sidebar = false;
+   ozone->draw_sidebar   = false;
 }
 
 static void ozone_unload_thumbnail_textures(void *data)
@@ -3288,17 +3289,26 @@ static void ozone_list_open(ozone_handle_t *ozone, settings_t *settings)
    /* Sidebar animation */
    ozone_sidebar_update_collapse(ozone, settings, true);
 
+   /* Kill any existing sidebar slide-in/out animations
+    * before pushing a new one
+    * > This is required since the 'ozone_collapse_end'
+    *   callback from an unfinished slide-out animation
+    *   may subsequently override the 'draw_sidebar'
+    *   value set at the beginning of the next slide-in
+    *   animation... */
+   gfx_animation_kill_by_tag(&sidebar_tag);
+
    if (ozone->depth == 1)
    {
       ozone->draw_sidebar = true;
 
-      entry.cb = NULL;
-      entry.duration = ANIMATION_PUSH_ENTRY_DURATION;
-      entry.easing_enum = EASING_OUT_QUAD;
-      entry.subject = &ozone->sidebar_offset;
-      entry.tag = sidebar_tag;
-      entry.target_value = 0.0f;
-      entry.userdata = NULL;
+      entry.cb            = NULL;
+      entry.duration      = ANIMATION_PUSH_ENTRY_DURATION;
+      entry.easing_enum   = EASING_OUT_QUAD;
+      entry.subject       = &ozone->sidebar_offset;
+      entry.tag           = sidebar_tag;
+      entry.target_value  = 0.0f;
+      entry.userdata      = NULL;
 
       gfx_animation_push(&entry);
    }
