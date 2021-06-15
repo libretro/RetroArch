@@ -1080,6 +1080,60 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
+static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
+{
+   char path[PATH_MAX_LENGTH];
+   char       *tmp                    = string_replace_substring(xmb->title_name, "/", " ");
+   settings_t *settings               = config_get_ptr();
+   const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
+
+   path[0]          = '\0';
+
+   if (tmp)
+   {
+      fill_pathname_join_noext(
+            path,
+            dir_dynamic_wallpapers,
+            tmp,
+            sizeof(path));
+      free(tmp);
+   }
+
+   strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
+
+   if (!path_is_valid(path))
+      fill_pathname_application_special(path, sizeof(path),
+            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+
+   return strdup(path);
+}
+
+static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb)
+{
+   char *path;
+   settings_t *settings               = config_get_ptr();
+
+   if (!settings->bools.menu_dynamic_wallpaper_enable)
+      return;
+
+   path = xmb_path_dynamic_wallpaper(xmb);
+   if (!string_is_equal(path, xmb->bg_file_path))
+   {
+      if (path_is_valid(path))
+      {
+         task_push_image_load(path,
+               video_driver_supports_rgba(), 0,
+               menu_display_handle_wallpaper_upload, NULL);
+         if (!string_is_empty(xmb->bg_file_path))
+            free(xmb->bg_file_path);
+         xmb->bg_file_path = strdup(path);
+      }
+   }
+
+   free(path);
+   path = NULL;
+}
+
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings = config_get_ptr();
@@ -1837,46 +1891,6 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 {
    unsigned i, first, last, height;
    size_t end                         = 0;
-   settings_t *settings               = config_get_ptr();
-   bool menu_dynamic_wallpaper_enable = settings->bools.menu_dynamic_wallpaper_enable;
-   const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
-
-   if (menu_dynamic_wallpaper_enable)
-   {
-      char path[PATH_MAX_LENGTH];
-      char       *tmp  = string_replace_substring(xmb->title_name, "/", " ");
-
-      path[0]          = '\0';
-
-      if (tmp)
-      {
-         fill_pathname_join_noext(
-               path,
-               dir_dynamic_wallpapers,
-               tmp,
-               sizeof(path));
-         free(tmp);
-      }
-
-      strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
-
-      if (!path_is_valid(path))
-         fill_pathname_application_special(path, sizeof(path),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
-
-      if (!string_is_equal(path, xmb->bg_file_path))
-      {
-         if (path_is_valid(path))
-         {
-            task_push_image_load(path,
-                  video_driver_supports_rgba(), 0,
-                  menu_display_handle_wallpaper_upload, NULL);
-            if (!string_is_empty(xmb->bg_file_path))
-               free(xmb->bg_file_path);
-            xmb->bg_file_path = strdup(path);
-         }
-      }
-   }
 
    end   = list ? list->size : 0;
 
@@ -2470,6 +2484,7 @@ static void xmb_populate_entries(void *data,
                         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS));
 
    xmb_set_title(xmb);
+   xmb_update_dynamic_wallpaper(xmb);
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
@@ -6322,7 +6337,7 @@ error:
    RARCH_WARN("[XMB] Critical asset missing, no icons will be drawn\n");
 }
 
-static void xmb_context_reset_background(const char *iconpath)
+static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath)
 {
    settings_t *settings        = config_get_ptr();
    const char *path_menu_wp    = settings->paths.path_menu_wallpaper;
@@ -6339,8 +6354,14 @@ static void xmb_context_reset_background(const char *iconpath)
       char path[PATH_MAX_LENGTH];
       path[0] = '\0';
 
-      fill_pathname_join(path, iconpath,
-            FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
+      /* Use dynamic wallpaper background as fallback instead */
+      if (settings->bools.menu_dynamic_wallpaper_enable)
+         strlcpy(path, xmb_path_dynamic_wallpaper(xmb), sizeof(path));
+
+      if (!path_is_valid(path))
+         fill_pathname_join(path, iconpath,
+               FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
+
       if (path_is_valid(path))
          task_push_image_load(path,
                video_driver_supports_rgba(), 0,
@@ -6411,7 +6432,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    if (reinit_textures)
    {
       xmb_context_reset_textures(xmb, iconpath);
-      xmb_context_reset_background(iconpath);
+      xmb_context_reset_background(xmb, iconpath);
    }
 
    xmb_context_reset_horizontal_list(xmb);
