@@ -121,6 +121,33 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
 
+      for (i = 0; i < state->tracker_count; ++i)
+      {
+         const unsigned widget_width = state->tracker_info[i].width;
+         x                           = video_width - widget_width - spacing;
+         y                          -= (widget_height + spacing);
+
+         /* Backdrop */
+         gfx_display_draw_quad(
+               p_disp,
+               video_info->userdata,
+               video_width, video_height,
+               (int)x, (int)y, widget_width, widget_height,
+               video_width, video_height,
+               p_dispwidget->backdrop_orig);
+
+         /* Text */
+         gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
+               state->tracker_info[i].display,
+               (float)(x + CHEEVO_LBOARD_DISPLAY_PADDING),
+               (float)(y + widget_height - (CHEEVO_LBOARD_DISPLAY_PADDING - 1)
+                     - p_dispwidget->gfx_widget_fonts.regular.line_descender),
+               video_width, video_height,
+               TEXT_COLOR_INFO,
+               TEXT_ALIGN_LEFT,
+               true);
+      }
+
       if (state->challenge_count)
       {
          const unsigned widget_size = spacing * 4;
@@ -157,39 +184,12 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             {
                /* achievement badge */
                gfx_widgets_draw_icon(video_info->userdata,
-                  p_disp, video_width, video_height,
-                  widget_size, widget_size,
-                  state->challenge_info[i].image,
-                  x, y, 0, 1, pure_white);
+                     p_disp, video_width, video_height,
+                     widget_size, widget_size,
+                     state->challenge_info[i].image,
+                     x, y, 0, 1, pure_white);
             }
          }
-      }
-
-      for (i = 0; i < state->tracker_count; ++i)
-      {
-         const unsigned widget_width = state->tracker_info[i].width;
-         x                           = video_width - widget_width - spacing;
-         y                          -= (widget_height + spacing);
-
-         /* Backdrop */
-         gfx_display_draw_quad(
-               p_disp,
-               video_info->userdata,
-               video_width, video_height,
-               (int)x, (int)y, widget_width, widget_height,
-               video_width, video_height,
-               p_dispwidget->backdrop_orig);
-
-         /* Text */
-         gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-            state->tracker_info[i].display,
-            (float)(x + CHEEVO_LBOARD_DISPLAY_PADDING),
-            (float)(y + widget_height - (CHEEVO_LBOARD_DISPLAY_PADDING - 1) 
-               - p_dispwidget->gfx_widget_fonts.regular.line_descender),
-            video_width, video_height,
-            TEXT_COLOR_INFO,
-            TEXT_ALIGN_LEFT,
-            true);
       }
    }
 
