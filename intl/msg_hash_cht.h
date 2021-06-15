@@ -2578,10 +2578,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 /* Settings > User Interface > Views > Settings */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
-   "顯示目錄"
-   )
 
 /* Settings > User Interface > Appearance */
 
@@ -2635,6 +2631,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    "為測試目的而打開或關閉非官方成就和/或測試版特性。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
    )
 
 /* Settings > Network */
@@ -2855,10 +2855,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    "抓圖"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "輸入設備自動設定目錄"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -3244,7 +3240,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -4713,14 +4709,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_UNMUTED,
    "取消靜音。"
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "儲存 autoconf 文件錯誤。"
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "自動設定文件儲存成功。"
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

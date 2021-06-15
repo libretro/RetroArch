@@ -1513,6 +1513,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Ustaw niestandardowy rozmiar wysokości dla trybu pełnoekranowego bez okien. Pozostawienie go na 0 spowoduje użycie rozdzielczości pulpitu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Wymuś rozdzielczość do UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Wymuś rozdzielczość do rozmiaru pełnoekranowego, jeśli jest ustawione na 0, zostanie użyta stała rozdzielczość 3840 x 2160."
+   )
 
 /* Settings > Video > Windowed Mode */
 
@@ -3369,20 +3377,8 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Pokaż wejścia na nakładce"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Pokazuje wejścia klawiatury / kontrolera na nakładce ekranowej."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Pokaż port nasłuchiwania wejść"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Wybierz port dla nakładki do nasłuchania, jeśli włączona jest opcja 'Pokaż wejścia na nakładkę'."
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "Dotknięte"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -4656,7 +4652,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
-   "Pokaż katalog"
+   "Pokaż 'Katalog'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
@@ -4894,7 +4890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "Start Aktywny"
+   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
@@ -5220,6 +5216,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Ostatnio grane:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   "Pokaż indeks wpisów playlisty"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "Wyświetlaj numery wpisów podczas przeglądania playlist. Format wyświetlania zależy od aktualnie wybranego sterownika menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
@@ -5598,7 +5602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "Wprowadź autoconfig"
+   "Profile kontrolera"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
@@ -6050,6 +6054,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
    "Ścieżka do pliku"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "Wpis: %lu/%lu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
@@ -6788,7 +6796,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Proste ustawienia wstępne"
    )
-   
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Zapisz ustawienie cienia, które ma link do oryginalnego ustawienia wstępnego i zawiera tylko zmiany parametrów."
@@ -7442,6 +7450,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
    "Nieobsługiwane"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
+   "Ostatnio odblokowane"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
+   "Prawie gotowe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
+   "Aktywne wyzwania"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
@@ -10024,11 +10044,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "Błąd podczas zapisywania pliku autoconfig."
+   "Błąd podczas zapisywania profilu kontrolera."
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Plik Autoconfig został pomyślnie zapisany."
+   "Profil kontrolera zapisany pomyślnie."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
@@ -11385,6 +11405,10 @@ MSG_HASH(
    "Pozwala na ręczne dostosowywanie wszystkich szczegółów w każdym CPU: zarządca, częstotliwość itp. Zalecane tylko dla zaawansowanych użytkowników."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   "Wydajność (zarządzanie)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
    "Tryb domyślny i zalecany. Maksymalna wydajność podczas odtwarzania podczas oszczędzania energii podczas zatrzymania lub przeglądania menu."
    )
@@ -11415,6 +11439,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "Zbalansowany"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Dostosowuje się do aktualnego obciążenia. Działa dobrze z większością urządzeń i emulatorów oraz pomaga oszczędzać energię. Wymagające gry i rdzenie mogą doznać spadku wydajności na niektórych urządzeniach."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,

@@ -1505,6 +1505,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Define a altura personalizada para o modo de tela cheia em não-janela. Deixar desativado irá usar a resolução da área de trabalho."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Forçar resolução em UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Força a resolução ao tamanho da tela. Se o valor definido for 0, será usado o valor fixo de 3840x2160."
+   )
 
 /* Settings > Video > Windowed Mode */
 
@@ -2003,7 +2011,7 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Desative as teclas de atalho do Windows (É preciso reiniciar)"
+   "Desativar teclas de atalho do Windows (requer reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
@@ -2199,7 +2207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Exige que a tecla do atalho Sair seja pressionada duas vezes para encerrar o RetroArch."
+   "Exige que a tecla do atalho 'Sair' seja pressionada duas vezes para encerrar o RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -2808,11 +2816,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
-   "Arquivos de Informação Cache de Núcleo"
+   "Arquivos de informação de cache do núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
-   "Manter um cache local persistente da informação principal instalada. Reduz significativamente o tempo de carregamento em plataformas com acesso lento ao disco."
+   "Mantem um cache local persistente da informação principal instalada. Reduz significativamente o tempo de carregamento em plataformas com acesso lento ao disco."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -3349,20 +3357,28 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Mostrar comandos na sobreposição"
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "Mostrar entradas na sobreposição"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Mostra comandos de teclado/controle na sobreposição."
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   "Mostra as entradas registradas na sobreposição. 'Tocados' serão destacados os elementos pressionados ou clicados na sobreposição. Físico (controle) será destacada a entrada real transmitida para os núcleos, geralmente, de um controle ou teclado conectado."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Mostrar portas receptoras de entrada"
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "Tocado"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Selecione a porta que a sobreposição ouvirá se a opção 'Mostre os comandos na sobreposição' estiver ativa."
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "Físico (controle)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Mostrar entradas da porta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Selecione a porta do dispositivo de entrada que será monitorada quando a opção 'Mostrar entradas na sobreposição' estiver configurada como 'Físico (controle)'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -3584,7 +3600,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_SHOW,
-   "Exibe a taxa atual na tela dos quadros por segundo."
+   "Exibe a quantidade de quadros por segundo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
@@ -4636,7 +4652,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
-   "Mostrar 'Diretório'"
+   "Mostre o 'Diretório'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
@@ -4870,7 +4886,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "Modo Jogar de Novo"
+   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
@@ -5196,6 +5212,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Última partida:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   "Mostrar índice de entradas da lista de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "Mostre a quantidade de entradas ao visualizar as listas de reprodução. O formato de exibição depende do driver do menu atualmente selecionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
@@ -5566,7 +5590,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "Auto configuração de entrada"
+   "Salve os perfis dos controles"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
@@ -6022,6 +6046,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
    "Caminho do arquivo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "Entrada: %lu/%lu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
@@ -7402,6 +7430,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
    "Não suportado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
+   "Desbloqueado recentemente"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
+   "Quase lá"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
+   "Desafios ativos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
@@ -9968,11 +10008,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "Erro em salvar o arquivo de auto configuração."
+   "Houve um erro ao salvar o perfil do controle."
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Arquivo de autoconfiguração salvo com sucesso."
+   "Perfil de controle salvo com sucesso."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

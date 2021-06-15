@@ -404,7 +404,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   "以前の検索を表示します。"
+   "以前の検索を表示します."
    )
 
 /* Main Menu > Information > Core Information */
@@ -1498,6 +1498,10 @@ MSG_HASH(
    "ウィンドウフルスクリーンモード"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "全画面表示にフルスクリーンウィンドウを使用し, ディスプレイモードの切り替えが起こらないようにします."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    "フルスクリーンの幅"
    )
@@ -1749,7 +1753,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "早送りで消音"
+   "早送り時に消音"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
@@ -2626,47 +2630,47 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-   "ライトガンのトリガー"
+   "ライトガン トリガー"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-   "ライトガンのリロード"
+   "ライトガン リロード"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
-   "ライトガンのAux A"
+   "ライトガン Aux A"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
-   "ライトガンのAux B"
+   "ライトガン Aux B"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-   "ライトガンのAux C"
+   "ライトガン Aux C"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
-   "ライトガンのスタート"
+   "ライトガン スタート"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
-   "ライトガンのセレクト"
+   "ライトガン セレクト"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-   "ライトガンの十字キーの上"
+   "ライトガン 十字キー 上"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-   "ライトガンの十字キーの下"
+   "ライトガン 十字キー 下"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-   "ライトガンの十字キーの左"
+   "ライトガン 十字キー 左"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-   "ライトガンの十字キーの右"
+   "ライトガン 十字キー 右"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
@@ -3026,7 +3030,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "コンテンツを読み込む際に, 最後に使用したディレクトリでファイルブラウザを開きます。 注意: RetroArchを再起動すると位置情報がデフォルトにリセットされます。"
+   "コンテンツを読み込む際に, 最後に使用したディレクトリでファイルブラウザを開きます. 注意: 再起動するとデフォルトにリセットされます."
    )
 
 /* Settings > Frame Throttle */
@@ -3069,7 +3073,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "メニュー内でフレームレートが制限されていることを確認します。"
+   "メニュー内でフレームレートが制限されるようにします."
    )
 
 /* Settings > Frame Throttle > Rewind */
@@ -3232,7 +3236,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-   "メニュー表示中はオーバーレイを隠し, メニューを閉じたときに再表示します。"
+   "メニュー表示中はオーバーレイを隠し, メニューを閉じたときに再表示します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -3249,24 +3253,12 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "オーバーレイに入力を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "オーバーレイにキーボード/コントローラ入力を表示します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "入力表示のポート番号"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
    "オーバーレイにマウスカーソルを表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   "オーバーレイにマウスカーソルを表示します。"
+   "オーバーレイにマウスカーソルを表示します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
@@ -3275,6 +3267,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
    "現在のオーバーレイでサポートされている場合, 画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます. "
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "オーバーレイの自動スケーリング"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "画面のアスペクト比に一致するよう, オーバーレイのスケーリングとUI部品の表示間隔を自動調整します. コントローラのオーバレイで最も良い結果をもたらします."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
@@ -3290,7 +3290,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   "オーバーレイUI要素の不透明度です。"
+   "オーバーレイUI要素の不透明度です."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -3298,7 +3298,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "ファイルブラウザからオーバーレイを選択します。"
+   "ファイルブラウザからオーバーレイを選択します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
@@ -3392,7 +3392,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
-   "OSDメッセージを表示します。"
+   "OSDメッセージを表示します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
@@ -3544,15 +3544,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-   "OSDメッセージのフォント"
+   "通知のフォント"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
-   "画面上の通知のフォントを選択します。"
+   "OSD通知のフォントを選択します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-   "OSDメッセージのサイズ"
+   "通知のサイズ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
@@ -3560,7 +3560,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
-   "OSDメッセージのX位置"
+   "通知の表示位置 (水平方向)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
@@ -3568,7 +3568,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
-   "OSDメッセージのY位置"
+   "通知の表示位置 (垂直方向)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
@@ -3576,35 +3576,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-   "OSDメッセージの赤色値"
+   "通知の色(赤色値)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-   "OSDメッセージの緑色値"
+   "通知の色(緑色値)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-   "OSDメッセージの青色値"
+   "通知の色(青色値)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   "OSDメッセージ背景を有効"
+   "通知の背景"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-   "OSDメッセージ背景の赤色値"
+   "通知の背景色(赤色値)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "OSDメッセージ背景の緑色値"
+   "通知の背景色(緑色値)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "OSDメッセージ背景の青色値"
+   "通知の背景色(青色値)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   "OSDメッセージ背景の不透明度"
+   "通知の背景色の透明度"
    )
 
 /* Settings > User Interface */
@@ -3635,11 +3635,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   "キオスクモードを有効"
+   "キオスクモード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   "コンフィグに関係するあらゆる設定を隠すことでセットアップを保護します。"
+   "設定変更メニューを隠すことでセットアップを保護します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
@@ -3647,7 +3647,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-   "キオスクモードを有効にする際にあらかじめパスワードを設定しておくことで, そのパスワードを使用してメニューからキオスクモードを無効にすることができます。"
+   "キオスクモードを有効にする際にあらかじめパスワードを設定しておくことで, そのパスワードを使用してメニューからキオスクモードを無効にすることができます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
@@ -3743,7 +3743,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "RetroArch がアクティブウインドウでなくなったときに, コンテンツを一時停止します."
+   "RetroArch がアクティブウィンドウでなくなったときに, コンテンツを一時停止します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
@@ -4375,10 +4375,6 @@ MSG_HASH(
    "[ユーザ]設定を表示します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
-   "[ディレクトリ]を表示"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
    "[ディレクトリ]設定を表示します."
    )
@@ -4415,7 +4411,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "フレームバッファの不透明度を調整します。"
+   "フレームバッファの不透明度を変更します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -4512,6 +4508,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    "翻訳したあとの言語"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+   "サービスを利用して翻訳したあとの言語です. 'デフォルト' は英語です."
+   )
 
 /* Settings > Accessibility */
 
@@ -4607,6 +4607,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    "実績を獲得したときに自動的にスクリーンショットを撮ります."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
    )
 
 /* Settings > Network */
@@ -4792,7 +4796,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   "ダウンロードしたアーカイブを自動解凍"
+   "ダウンロードしたアーカイブを自動展開"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
@@ -4817,6 +4821,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
    "コアバックアップ履歴サイズ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "インストールされているコアごとに自動生成されるバックアップの数を指定します. この制限に達すると, オンラインアップデートを介して新しいバックアップを作成したときに最も古いバックアップが削除されます. 手動でのコアバックアップはこの設定の影響を受けません."
    )
 
 /* Settings > Playlists */
@@ -4980,8 +4988,16 @@ MSG_HASH(
    "プライバシー"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   "プライバシー設定を変更します."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
    "アカウント"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+   "現在設定されているアカウントを管理します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
@@ -4994,6 +5010,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
    "言語"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   "ユーザインタフェースの言語を指定します."
    )
 
 /* Settings > User > Privacy */
@@ -5207,10 +5227,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    "スクリーンショットはこのディレクトリに保存されます."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "入力デバイスの自動設定"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
@@ -6280,7 +6296,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -7492,7 +7508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "プレイリスト名を切り捨てる(再起動が必要)"
+   "プレイリスト名を切り詰める (再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -7500,7 +7516,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "名前切り捨て後にプレイリストを並べ替える (再起動が必要)"
+   "プレイリスト名を切り詰め後に並べ替える (再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -8407,7 +8423,7 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "フッタの不透明度を調整します。"
+   "フッタの不透明度を修正します."
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
@@ -8415,7 +8431,7 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "ヘッダの不透明度を調整します。"
+   "ヘッダの不透明度を修正します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
@@ -8944,7 +8960,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_EXTRACTING_CORE,
-   "コアを解凍中: "
+   "コアを展開中: "
    )
 MSG_HASH(
    MSG_CORE_INSTALLED,
@@ -9039,14 +9055,6 @@ MSG_HASH(
    "消音解除"
    )
 MSG_HASH(
-   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "自動設定ファイルの保存でエラーが発生しました"
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "自動設定ファイルの保存に成功しました"
-   )
-MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "自動セーブを初期化できませんでした"
    )
@@ -9124,11 +9132,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
-   "解凍は既に進行中です"
+   "展開は既に進行中です."
    )
 MSG_HASH(
    MSG_DECOMPRESSION_FAILED,
-   "解凍に失敗しました"
+   "展開に失敗しました."
    )
 MSG_HASH(
    MSG_DETECTED_VIEWPORT_OF,
@@ -9204,11 +9212,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_EXTRACTING,
-   "解凍中"
+   "展開中"
    )
 MSG_HASH(
    MSG_EXTRACTING_FILE,
-   "ファイルを解凍中"
+   "ファイルを展開中"
    )
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
@@ -9832,11 +9840,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
-   "パスワードが一致しました"
+   "パスワードが一致しました."
    )
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-   "パスワードが一致しません"
+   "パスワードが一致しません."
    )
 MSG_HASH(
    MSG_CONFIG_OVERRIDE_LOADED,
@@ -10489,6 +10497,10 @@ MSG_HASH(
    "Wiimoteのライトガン速度に合わせてx/yスケールを調整します."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "タッチスクリーンのスケーリング"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "タッチスクリーン座標のx/yスケールを調整し、OSレベルの表示スケールに対応します."

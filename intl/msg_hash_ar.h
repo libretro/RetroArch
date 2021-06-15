@@ -112,6 +112,18 @@ MSG_HASH(
    "إظهار قائمة سطح المكتب"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "افتح قائمة سطح المكتب التقليدية."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "تعطيل وضع Kiosk (مطلوب إعادة التشغيل)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "إظهار كافة الإعدادات ذات الصلة بالتهيئات."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "المُحَدّث عبر الإنترنت"
    )
@@ -280,6 +292,14 @@ MSG_HASH(
    "تحديث جميع النوى المثبتة إلى أحدث إصدار متاح."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   "تبديل النواة إلى إصدارات متجر Play"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   "استبدل جميع النواة القديمة والنواة المثبتة يدوياً بأحدث الإصدارات من متجر جوجل بلي حيثما كانت متاحة."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "مُحَدّث الصور المصغرة"
    )
@@ -359,8 +379,16 @@ MSG_HASH(
    "معلومات الشبكة"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   "عرض واجهة/واجهات الشبكة وعناوين IP المرتبطة بها."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    "معلومات النظام"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "عرض المعلومات الخاصة بالجهاز."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -831,6 +859,14 @@ MSG_HASH(
    "مراجعة مجلة edg"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "شهر تاريخ الإصدار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "سنة تاريخ الاصدار"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
    "تصنيف BBFC"
    )
@@ -963,6 +999,10 @@ MSG_HASH(
    "أجهزة الادخال"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   "تغيير إعدادات وحدة التحكم ولوحة المفاتيح والفأرة."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    "وقت الإستجابة"
    )
@@ -1005,6 +1045,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "مستعرض الملفات"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "تغيير إعدادات متصفح الملفات."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1073,6 +1117,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    "الشبكة"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "تغيير إعدادات الخادم والشبكة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1249,16 +1297,32 @@ MSG_HASH(
    "تعليق شاشة التوقف"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   "منع موفر الشاشة الخاص بك من أن يصبح نشطاً."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "الفيديو المطروح"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   "يحسن الأداء على حساب التأخير والمزيد من مقاطع الفيديو. يستخدم فقط إذا لم يكن من الممكن الحصول على السرعة الكاملة خلاف ذلك."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "إدراج الإطار الأسود"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "إدراج إطار أسود بين الأطر. مفيد على بعض شاشات معدل التحديث العالي للقضاء على التشبح فالشاشات."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "لقطة شاشة GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "لقطات الشاشة التقط المادة المظللة لوحدة GPU إذا كانت متاحة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -1266,8 +1330,24 @@ MSG_HASH(
    )
 #if defined(DINGUX)
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "إستيفاء الصورة"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "تحديد طريقة استخراج الصور عند قياس المحتوى عن طريق ال IPU. \"ثنائي تكعيبي\" او \"ثنائي خطي\" ينصح عند استخدام فلاتر الفيديو التي تعمل بالمعالج. هذا الخيار ليس له تأثير على الأداء."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "ثنائي تكعيبي"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
    "ثنائي"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "أقرب جوار"
    )
 #endif
 MSG_HASH(
@@ -1277,6 +1357,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "فلتر الفيديو"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "إزالة فلتر الفيديو"
    )
 
 /* Settings > Video > CRT SwitchRes */
@@ -1369,6 +1453,14 @@ MSG_HASH(
    "معدل التحديث كما أبلغ عنه مشغل العرض."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
+   "٦٠ هرتز"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
+   "٥٠ هرتز"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
@@ -1493,6 +1585,14 @@ MSG_HASH(
 /* Settings > Video > Synchronization */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "المزامنة العمودية (VSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "Vsync (Adaptive) تكيفية"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "تأخير الإطار"
    )
@@ -1560,8 +1660,16 @@ MSG_HASH(
    "كتم"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "كتم الصوت."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    "كتم صوت الميكسير"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "كتم صوت المزيج."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
@@ -1596,6 +1704,14 @@ MSG_HASH(
    "ملحق DSP الصوتي الذي يعالج الصوت قبل إرساله إلى السائق."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "إزالة البرنامج المساعد DSP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   "إلغاء تحميل أي ملحق DSP صوتي نشط."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    "وضع WASAPI الحصري"
    )
@@ -1625,6 +1741,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "الصوت"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   "تمكين إخراج الصوت."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -1739,6 +1859,10 @@ MSG_HASH(
    "توقف"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+   "سيؤدي هذا إلى إيقاف تشغيل البث الصوتي، ولكن لن يزيله من الذاكرة. يمكن البدء مرة أخرى عن طريق تحديد 'تشغيل'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "إزالة"
    )
@@ -1819,6 +1943,10 @@ MSG_HASH(
    "تشغيل"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   "الكشف"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
    "حد محاور زر الإدخال"
    )
@@ -1839,6 +1967,10 @@ MSG_HASH(
    "فترة Turbo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+   "دورة واجبات توربو"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
    "وضع توربو"
    )
@@ -1849,6 +1981,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "الزر الافتراضي النشط لوضع توربو 'زر واحد'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "وضع توربو"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "تغيير إعدادات نمط توربو."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2857,16 +2997,8 @@ MSG_HASH(
 #if defined(ANDROID)
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "إظهار المدخلات في التراكب"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "إظهار مدخلات لوحة المفاتيح/وحدة التحكم على الشاشة التداخلية."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "إظهار مدخلات منفذ الاستماع"
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "مَلموس"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -3294,10 +3426,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 /* Settings > User Interface > Views > Settings */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
-   "إظهار الدليل"
-   )
 
 /* Settings > User Interface > Appearance */
 
@@ -3438,7 +3566,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "شغل النشط"
+   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
    )
 
 /* Settings > Network */
@@ -3879,10 +4007,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    "لقطات الشاشة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "إدخال التكوين التلقائي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
@@ -4804,7 +4928,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -7865,14 +7989,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_UNMUTED,
    "تم إلغاء كتم الصوت."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "حدث خطأ أثناء حفظ الملف التلقائي."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "تم حفظ ملف التكوين التلقائي بنجاح."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

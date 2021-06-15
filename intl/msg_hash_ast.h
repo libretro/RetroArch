@@ -689,6 +689,10 @@ MSG_HASH(
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Use Custom Refresh Rate"
+   )
 
 /* Settings > Video > Output */
 
@@ -1240,6 +1244,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
    "Amuesa más información nos avisos."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
+   )
 
 /* Settings > Network */
 
@@ -1516,6 +1524,10 @@ MSG_HASH(
    "Nome"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "Entrada: %lu/%lu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "Nucleu"
    )
@@ -1648,7 +1660,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 
 /* Quick Menu > Shaders > Remove */

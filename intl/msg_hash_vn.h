@@ -465,6 +465,10 @@ MSG_HASH(
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Use Custom Refresh Rate"
+   )
 
 /* Settings > Video > Output */
 
@@ -856,6 +860,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
    "Enable or disable unofficial achievements and/or beta features for testing purposes."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
+   )
 
 /* Settings > Network */
 
@@ -983,10 +991,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY,
    "Mục Cursor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "Input Autoconfig Danh mục"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -1180,7 +1184,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 
 /* Quick Menu > Shaders > Remove */
@@ -1525,14 +1529,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_UNMUTED,
    "Âm thanh unmuted."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "Tập tin Autoconfig bị lỗi khi lưu."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Tập tin Autoconfig đã lưu thành công."
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
