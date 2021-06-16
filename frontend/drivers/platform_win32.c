@@ -1033,25 +1033,23 @@ static bool accessibility_speak_windows(int speed,
    init_nvda();
 #endif
    
-   if (USE_POWERSHELL)
+   if (USE_POWERSHELL && !strchr(speak_text, '"') && !strchr(speak_text, '\\') && !strstr(speak_text, "$(")) // TODO: escape these things properly instead of rejecting the entire string
    {
+      const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"";
+      const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"";
       if (strlen(language) > 0) 
       {
-         nbytes_cmd = snprintf(NULL, 0, 
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text) + 1;
+         nbytes_cmd = snprintf(NULL, 0, template_lang, language, speeds[speed-1], speak_text) + 1;
          if (!(cmd = malloc(nbytes_cmd)))
             return false;
-         snprintf(cmd, nbytes_cmd, 
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text);
+         snprintf(cmd, nbytes_cmd, template_lang, language, speeds[speed-1], speak_text);
       }
       else
       {
-         nbytes_cmd = snprintf(NULL, 0,
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text) + 1;
+         nbytes_cmd = snprintf(NULL, 0, template_nolang, speeds[speed-1], speak_text) + 1;
          if (!(cmd = malloc(nbytes_cmd)))
             return false;
-         snprintf(cmd, nbytes_cmd,
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
+         snprintf(cmd, nbytes_cmd, template_nolang, speeds[speed-1], speak_text); 
       }
 
       if (pi_set)
