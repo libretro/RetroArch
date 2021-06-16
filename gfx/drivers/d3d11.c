@@ -625,6 +625,9 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #else
    IDXGIFactory* dxgiFactory               = NULL;
 #endif
+#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP)
+   IDXGIFactory5* dxgiFactory5             = NULL;
+#endif
    IDXGIDevice* dxgiDevice                 = NULL;
    IDXGIAdapter* adapter                   = NULL;
    UINT                 flags              = 0;
@@ -671,16 +674,6 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #ifdef HAVE_WINDOW
    desc.Windowed                           = TRUE;
 #endif
-#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
-   /* On phone, no swap effects are supported. */
-   /* TODO/FIXME - need to verify if this is needed and if 
-    * flip model cannot be used here */
-   desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
-#else
-   desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-#endif
-   desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-
 #ifdef DEBUG
    flags                                  |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
@@ -715,25 +708,54 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #else
    adapter->lpVtbl->GetParent(
          adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
+
+   /* On phone, no swap effects are supported. */
+   /* TODO/FIXME - need to verify if this is needed and if
+    * flip model cannot be used here */
+   desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP)
+   /* Check for ALLOW_TEARING support before trying to use it.
+    * Also don't use the flip model if it's not supported, because then we can't uncap our
+    * present rate. */
+   if (SUCCEEDED(dxgiFactory->lpVtbl->QueryInterface(
+      dxgiFactory, uuidof(IDXGIFactory5), (void**)&dxgiFactory5)))
+   {
+      BOOL allow_tearing_supported = FALSE;
+      if (SUCCEEDED(dxgiFactory5->lpVtbl->CheckFeatureSupport(
+         dxgiFactory5, DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+         &allow_tearing_supported, sizeof(allow_tearing_supported))) &&
+         allow_tearing_supported)
+      {
+         desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+         desc.Flags                |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+         d3d11->has_flip_model     = true;
+         d3d11->has_allow_tearing  = true;
+      }
+
+      dxgiFactory5->lpVtbl->Release(dxgiFactory5);
+   }
+#endif
+
    if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
                dxgiFactory, (IUnknown*)d3d11->device,
                &desc, (IDXGISwapChain**)&d3d11->swapChain)))
    {
+      if (!d3d11->has_flip_model)
+         return false;
+
       RARCH_WARN("[D3D11]: Failed to create swapchain with flip model, try non-flip model.\n");
 
       /* Failed to create swapchain, try non-flip model */
-      d3d11->has_flip_model = false;
-      desc.SwapEffect       = DXGI_SWAP_EFFECT_DISCARD;
+      desc.SwapEffect          = DXGI_SWAP_EFFECT_DISCARD;
+      desc.Flags               &= ~DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+      d3d11->has_flip_model    = false;
+      d3d11->has_allow_tearing = false;
 
       if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
                   dxgiFactory, (IUnknown*)d3d11->device,
                   &desc, (IDXGISwapChain**)&d3d11->swapChain)))
          return false;
    }
-
-   if (     desc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD
-         || desc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL)
-      d3d11->has_flip_model = true;
 #endif
 
    dxgiFactory->lpVtbl->Release(dxgiFactory);
@@ -1327,7 +1349,7 @@ static bool d3d11_gfx_frame(
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
    bool vsync                     = d3d11->vsync;
-   unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
+   unsigned present_flags         = (vsync || !d3d11->has_allow_tearing) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
@@ -1340,7 +1362,8 @@ static bool d3d11_gfx_frame(
 
    if (d3d11->resize_chain)
    {
-      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, DXGI_FORMAT_UNKNOWN,
+                        d3d11->has_allow_tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
 
       d3d11->viewport.Width  = video_width;
       d3d11->viewport.Height = video_height;

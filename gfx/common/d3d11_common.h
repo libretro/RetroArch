@@ -2547,6 +2547,7 @@ typedef struct
    bool                  resize_render_targets;
    bool                  init_history;
    bool                  has_flip_model;
+   bool                  has_allow_tearing;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 #ifdef __WINRT__
    DXGIFactory2 factory;
