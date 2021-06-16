@@ -371,7 +371,8 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
          XAUDIO2_BUFFER xa2buffer;
 
          while (handle->buffers == MAX_BUFFERS - 1)
-            WaitForSingleObject(handle->hEvent, INFINITE);
+            if (!(WaitForSingleObject(handle->hEvent, 50) == WAIT_OBJECT_0))
+               return -1;
 
          xa2buffer.Flags      = 0;
          xa2buffer.AudioBytes = handle->bufsize;
