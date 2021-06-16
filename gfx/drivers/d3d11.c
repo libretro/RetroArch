@@ -62,6 +62,10 @@
 #include "../../uwp/uwp_func.h"
 #endif
 
+#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP)
+const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIFactory5 = { 0x7632e1f5,0xee65,0x4dca, { 0x87,0xfd,0x84,0xcd,0x75,0xf8,0x83,0x8d } };
+#endif
+
 /* Temporary workaround for d3d11 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d11_fake_context;
 
@@ -718,7 +722,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
     * Also don't use the flip model if it's not supported, because then we can't uncap our
     * present rate. */
    if (SUCCEEDED(dxgiFactory->lpVtbl->QueryInterface(
-      dxgiFactory, uuidof(IDXGIFactory5), (void**)&dxgiFactory5)))
+      dxgiFactory, &libretro_IID_IDXGIFactory5, (void**)&dxgiFactory5)))
    {
       BOOL allow_tearing_supported = FALSE;
       if (SUCCEEDED(dxgiFactory5->lpVtbl->CheckFeatureSupport(
