@@ -1170,6 +1170,7 @@ static bool d3d12_gfx_frame(
    d3d12_texture_t* texture       = NULL;
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
    bool vsync                     = d3d12->chain.vsync;
+   unsigned sync_interval         = (vsync) ? d3d12->chain.swap_interval : 0;
    unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    bool statistics_show           = video_info->statistics_show;
@@ -1181,8 +1182,6 @@ static bool d3d12_gfx_frame(
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
-
-   d3d12_gfx_sync(d3d12);
 
    if (d3d12->resize_chain)
    {
@@ -1601,11 +1600,14 @@ static bool d3d12_gfx_frame(
    win32_update_title();
 #endif
 #if 1
-   DXGIPresent(d3d12->chain.handle, !!vsync, present_flags);
+   DXGIPresent(d3d12->chain.handle, sync_interval, present_flags);
 #else
    DXGI_PRESENT_PARAMETERS pp = { 0 };
    DXGIPresent1(d3d12->swapchain, 0, 0, &pp);
 #endif
+
+   /* Sync after Present for minimal delay */
+   d3d12_gfx_sync(d3d12);
 
    return true;
 }
@@ -1614,8 +1616,9 @@ static void d3d12_gfx_set_nonblock_state(void* data, bool toggle,
       bool adaptive_vsync_enabled,
       unsigned swap_interval)
 {
-   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
-   d3d12->chain.vsync   = !toggle;
+   d3d12_video_t* d3d12       = (d3d12_video_t*)data;
+   d3d12->chain.vsync         = !toggle;
+   d3d12->chain.swap_interval = swap_interval;
 }
 
 static bool d3d12_gfx_alive(void* data)
