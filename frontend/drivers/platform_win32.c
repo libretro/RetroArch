@@ -1033,7 +1033,7 @@ static bool accessibility_speak_windows(int speed,
    init_nvda();
 #endif
    
-   if (USE_POWERSHELL && !strchr(speak_text, '"') && !strchr(speak_text, '\\') && !strstr(speak_text, "$(")) // TODO: escape these things properly instead of rejecting the entire string
+   if (USE_POWERSHELL && !strchr(speak_text, '"') && !strchr(speak_text, '\\') && !strstr(speak_text, "$(")) /* TODO: escape these things properly instead of rejecting the entire string */
    {
       const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"";
       const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"";
