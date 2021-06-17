@@ -1702,10 +1702,10 @@ struct runloop
    bool autosave;
 #ifdef HAVE_CONFIGFILE
    bool overrides_active;
+#endif
    bool remaps_core_active;
    bool remaps_game_active;
    bool remaps_content_dir_active;
-#endif
 #ifdef HAVE_SCREENSHOTS
    bool max_frames_screenshot;
    char max_frames_screenshot_path[PATH_MAX_LENGTH];

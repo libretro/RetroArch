@@ -1372,7 +1372,7 @@ bool menu_input_key_bind_set_mode(
       return false;
 
    index_offset             = setting->index_offset;
-   binds->port              = settings->uints.input_joypad_map[index_offset];
+   binds->port              = settings->uints.input_joypad_index[index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(
          p_rarch->joypad,
@@ -1382,7 +1382,7 @@ bool menu_input_key_bind_set_mode(
          NULL,
 #endif
          binds);
-   menu_input_key_bind_poll_bind_state(p_rarch, settings->uints.input_joypad_map[binds->port],
+   menu_input_key_bind_poll_bind_state(p_rarch, settings->uints.input_joypad_index[binds->port],
          binds, false);
 
    current_usec             = cpu_features_get_time_usec();
@@ -1495,7 +1495,7 @@ static bool menu_input_key_bind_iterate(
       p_rarch->keyboard_mapping_blocked    = false;
 
       menu_input_key_bind_poll_bind_state(p_rarch,
-            settings->uints.input_joypad_map[new_binds.port],
+            settings->uints.input_joypad_index[new_binds.port],
             &new_binds, timed_out);
 
 #ifdef ANDROID
@@ -12139,20 +12139,39 @@ static void command_event_set_mixer_volume(
  * Initialize libretro controllers.
  **/
 static void command_event_init_controllers(rarch_system_info_t *info,
-      unsigned num_active_users)
+      settings_t *settings, unsigned num_active_users)
 {
-   unsigned i;
-   unsigned ports_size           = info->ports.size;
+   unsigned num_core_ports = info->ports.size;
+   unsigned port;
 
-   for (i = 0; i < ports_size; i++)
+   for (port = 0; port < num_core_ports; port++)
    {
+      unsigned device                                 = RETRO_DEVICE_NONE;
+      const struct retro_controller_description *desc = NULL;
       retro_ctx_controller_info_t pad;
-      unsigned device                                 = (i < num_active_users)
-         ? input_config_get_device(i)
-         : RETRO_DEVICE_NONE;
-      const struct retro_controller_description *desc =
-         libretro_find_controller_description(
-               &info->ports.data[i], device);
+      unsigned i;
+
+      /* Check whether current core port is mapped
+       * to an input device
+       * > If is not, leave 'device' set to
+       *   'RETRO_DEVICE_NONE'
+       * > For example: if input ports 0 and 1 are
+       *   mapped to core port 0, core port 1 will
+       *   be unmapped and should be disabled */
+      for (i = 0; i < num_active_users; i++)
+      {
+         if (i >= MAX_USERS)
+            break;
+
+         if (port == settings->uints.input_remap_ports[i])
+         {
+            device = input_config_get_device(port);
+            break;
+         }
+      }
+
+      desc = libretro_find_controller_description(
+            &info->ports.data[port], device);
 
       if (desc && !desc->desc)
       {
@@ -12171,7 +12190,7 @@ static void command_event_init_controllers(rarch_system_info_t *info,
       }
 
       pad.device     = device;
-      pad.port       = i;
+      pad.port       = port;
       core_set_controller_port_device(&pad);
    }
 }
@@ -12182,46 +12201,6 @@ static void command_event_disable_overrides(struct rarch_state *p_rarch)
    /* reload the original config */
    config_unload_override();
    runloop_state.overrides_active = false;
-}
-
-void input_remapping_set_defaults(void)
-{
-   unsigned i, j;
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
-   global_t     *global        = &p_rarch->g_extern;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
-      {
-         const struct  retro_keybind *keybind = &input_config_binds[i][j];
-         if (keybind)
-            configuration_set_uint(settings,
-                  settings->uints.input_remap_ids[i][j], keybind->id);
-         configuration_set_uint(settings,
-               settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
-      }
-
-      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
-         configuration_set_uint(settings,
-               settings->uints.input_remap_ids[i][j], j);
-   }
-
-   if (global)
-   {
-      for (i = 0; i < MAX_USERS; i++)
-      {
-         if (global->old_analog_dpad_mode[i])
-            configuration_set_uint(settings,
-                  settings->uints.input_analog_dpad_mode[i],
-                  global->old_analog_dpad_mode[i]);
-         if (global->old_libretro_device[i])
-            configuration_set_uint(settings,
-                  settings->uints.input_libretro_device[i],
-                  global->old_libretro_device[i]);
-      }
-   }
 }
 #endif
 
@@ -12254,16 +12233,16 @@ static void command_event_deinit_core(
    p_rarch->runtime_shader_preset[0] = '\0';
 #endif
 
-#ifdef HAVE_CONFIGFILE
    if (     runloop_state.remaps_core_active
          || runloop_state.remaps_content_dir_active
          || runloop_state.remaps_game_active
       )
    {
       input_remapping_deinit();
-      input_remapping_set_defaults();
+      input_remapping_set_defaults(true);
    }
-#endif
+   else
+      input_remapping_restore_global_config(true);
 }
 
 #ifdef HAVE_CHEATS
@@ -12770,6 +12749,15 @@ static bool command_event_init_core(
 
    p_rarch->current_core.retro_set_environment(rarch_environment_cb);
 
+   /* Load any input remap files
+    * > Note that we always cache the current global
+    *   input settings when initialising a core
+    *   (regardless of whether remap files are loaded)
+    *   so settings can be restored when the core is
+    *   unloaded - i.e. core remapping options modified
+    *   at runtime should not 'bleed through' into the
+    *   master config file */
+   input_remapping_cache_global_config();
 #ifdef HAVE_CONFIGFILE
    if (auto_remaps_enable)
       config_load_remap(dir_input_remapping, &runloop_state.system);
@@ -13202,16 +13190,165 @@ static bool command_event_resize_windowed_scale(struct rarch_state *p_rarch)
    return true;
 }
 
+void input_remapping_cache_global_config(void)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
+   global_t *global            = &p_rarch->g_extern;
+   unsigned i;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      global->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      global->old_libretro_device[i]  = settings->uints.input_libretro_device[i];
+   }
+
+   global->old_analog_dpad_mode_set = true;
+   global->old_libretro_device_set  = true;
+}
+
+void input_remapping_enable_global_config_restore(void)
+{
+   struct rarch_state *p_rarch    = &rarch_st;
+   global_t *global               = &p_rarch->g_extern;
+   global->remapping_cache_active = true;
+}
+
+void input_remapping_restore_global_config(bool clear_cache)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
+   global_t *global            = &p_rarch->g_extern;
+   unsigned i;
+
+   if (!global->remapping_cache_active)
+      goto end;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (global->old_analog_dpad_mode_set &&
+          (settings->uints.input_analog_dpad_mode[i] !=
+               global->old_analog_dpad_mode[i]))
+         configuration_set_uint(settings,
+               settings->uints.input_analog_dpad_mode[i],
+               global->old_analog_dpad_mode[i]);
+
+      if (global->old_libretro_device_set &&
+          (settings->uints.input_libretro_device[i] !=
+               global->old_libretro_device[i]))
+         configuration_set_uint(settings,
+               settings->uints.input_libretro_device[i],
+               global->old_libretro_device[i]);
+   }
+
+end:
+   if (clear_cache)
+   {
+      global->old_analog_dpad_mode_set = false;
+      global->old_libretro_device_set  = false;
+      global->remapping_cache_active   = false;
+   }
+}
+
+void input_remapping_update_port_map(void)
+{
+   unsigned i, j;
+   struct rarch_state *p_rarch        = &rarch_st;
+   settings_t *settings               = p_rarch->configuration_settings;
+   unsigned port_map_index[MAX_USERS] = {0};
+
+   /* First pass: 'reset' port map */
+   for (i = 0; i < MAX_USERS; i++)
+      for (j = 0; j < (MAX_USERS + 1); j++)
+         settings->uints.input_remap_port_map[i][j] = MAX_USERS;
+
+   /* Second pass: assign port indices from
+    * 'input_remap_ports' */
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned remap_port = settings->uints.input_remap_ports[i];
+
+      if (remap_port < MAX_USERS)
+      {
+         /* 'input_remap_port_map' provides a list of
+          * 'physical' ports for each 'virtual' port
+          * sampled in input_state().
+          * (Note: in the following explanation, port
+          * index starts from 0, rather than the frontend
+          * display convention of 1)
+          * For example - the following remap configuration
+          * will map input devices 0+1 to port 0, and input
+          * device 2 to port 1
+          * > input_remap_ports[0] = 0;
+          *   input_remap_ports[1] = 0;
+          *   input_remap_ports[2] = 1;
+          * This gives a port map of:
+          * > input_remap_port_map[0] = { 0, 1, MAX_USERS, ... };
+          *   input_remap_port_map[1] = { 2, MAX_USERS, ... }
+          *   input_remap_port_map[2] = { MAX_USERS, ... }
+          *   ...
+          * A port map value of MAX_USERS indicates the end
+          * of the 'physical' port list */
+         settings->uints.input_remap_port_map[remap_port]
+               [port_map_index[remap_port]] = i;
+         port_map_index[remap_port]++;
+      }
+   }
+}
+
 void input_remapping_deinit(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   global_t     *global        = &p_rarch->g_extern;
-   if (!string_is_empty(global->name.remapfile))
+   global_t *global            = &p_rarch->g_extern;
+   if (global->name.remapfile)
       free(global->name.remapfile);
-   global->name.remapfile                     = NULL;
+   global->name.remapfile                  = NULL;
    runloop_state.remaps_core_active        = false;
    runloop_state.remaps_content_dir_active = false;
    runloop_state.remaps_game_active        = false;
+}
+
+void input_remapping_set_defaults(bool clear_cache)
+{
+   unsigned i, j;
+   struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      /* Button/keyboard remaps */
+      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+      {
+         const struct retro_keybind *keybind = &input_config_binds[i][j];
+
+         configuration_set_uint(settings,
+               settings->uints.input_remap_ids[i][j],
+                     keybind ? keybind->id : RARCH_UNMAPPED);
+
+         configuration_set_uint(settings,
+               settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
+      }
+
+      /* Analog stick remaps */
+      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+         configuration_set_uint(settings,
+               settings->uints.input_remap_ids[i][j], j);
+
+      /* Controller port remaps */
+      configuration_set_uint(settings,
+            settings->uints.input_remap_ports[i], i);
+   }
+
+   /* Need to call 'input_remapping_update_port_map()'
+    * whenever 'settings->uints.input_remap_ports'
+    * is modified */
+   input_remapping_update_port_map();
+
+   /* Restore 'global' settings that were cached on
+    * the last core init
+    * > Prevents remap changes from 'bleeding through'
+    *   into the main config file */
+   input_remapping_restore_global_config(clear_cache);
 }
 
 static bool input_driver_grab_mouse(struct rarch_state *p_rarch)
@@ -13810,16 +13947,16 @@ bool command_event(enum event_command cmd, void *data)
 
             video_driver_restore_cached(p_rarch, settings);
 
-#ifdef HAVE_CONFIGFILE
             if (     runloop_state.remaps_core_active
                   || runloop_state.remaps_content_dir_active
                   || runloop_state.remaps_game_active
                )
             {
                input_remapping_deinit();
-               input_remapping_set_defaults();
+               input_remapping_set_defaults(true);
             }
-#endif
+            else
+               input_remapping_restore_global_config(true);
 
             if (is_inited)
             {
@@ -15120,9 +15257,8 @@ bool command_event(enum event_command cmd, void *data)
          {
             rarch_system_info_t *info = &runloop_state.system;
             if (info)
-               command_event_init_controllers(info,
-                     p_rarch->input_driver_max_users
-                     );
+               command_event_init_controllers(info, settings,
+                     p_rarch->input_driver_max_users);
          }
          break;
       case CMD_EVENT_NONE:
@@ -17542,9 +17678,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                      p_rarch->input_driver_max_users;
                   for (p = 0; p < input_driver_max_users; p++)
                   {
+                     unsigned mapped_port = settings->uints.input_remap_ports[p];
+
                      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
                      {
-                        const char *description = system->input_desc_btn[p][retro_id];
+                        const char *description = system->input_desc_btn[mapped_port][retro_id];
 
                         if (!description)
                            continue;
@@ -22313,7 +22451,7 @@ bool input_driver_set_rumble_state(unsigned port,
    const input_device_driver_t *sec_joypad = NULL;
 #endif
    bool rumble_state                       = false;
-   unsigned  joy_idx                       = settings->uints.input_joypad_map[port];
+   unsigned  joy_idx                       = settings->uints.input_joypad_index[port];
 
    if (joy_idx >= MAX_USERS)
       return false;
@@ -22455,8 +22593,9 @@ static void input_driver_poll(void)
    for (i = 0; i < max_users; i++)
    {
       joypad_info[i].axis_threshold              = p_rarch->input_driver_axis_threshold;
-      joypad_info[i].joy_idx                     = settings->uints.input_joypad_map[i];
+      joypad_info[i].joy_idx                     = settings->uints.input_joypad_index[i];
       joypad_info[i].auto_binds                  = input_autoconf_binds[joypad_info[i].joy_idx];
+
       p_rarch->input_driver_turbo_btns.frame_enable[i] = p_rarch->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid ?
          input_state_wrap(
                p_rarch->current_input,
@@ -22500,13 +22639,11 @@ static void input_driver_poll(void)
       for (i = 0; i < max_users; i++)
       {
          input_bits_t current_inputs;
-         unsigned device
-            = settings->uints.input_libretro_device[i]
-            & RETRO_DEVICE_MASK;
-         input_bits_t *p_new_state
-            = (input_bits_t*)&current_inputs;
-         unsigned input_analog_dpad_mode =
-            settings->uints.input_analog_dpad_mode[i];
+         unsigned mapped_port            = settings->uints.input_remap_ports[i];
+         unsigned device                 = settings->uints.input_libretro_device[mapped_port]
+                                           & RETRO_DEVICE_MASK;
+         input_bits_t *p_new_state       = (input_bits_t*)&current_inputs;
+         unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[i];
 
          switch (device)
          {
@@ -22591,8 +22728,8 @@ static void input_driver_poll(void)
                for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
                {
                   unsigned current_button_value;
-                  unsigned remap_key               =
-                     settings->uints.input_keymapper_ids[i][j];
+                  unsigned remap_key =
+                        settings->uints.input_keymapper_ids[i][j];
 
                   if (remap_key == RETROK_UNKNOWN)
                      continue;
@@ -22665,9 +22802,9 @@ static void input_driver_poll(void)
                {
                   bool remap_valid;
                   unsigned remap_button         =
-                     settings->uints.input_remap_ids[i][j];
+                        settings->uints.input_remap_ids[i][j];
                   unsigned current_button_value =
-                     BIT256_GET_PTR(p_new_state, j);
+                        BIT256_GET_PTR(p_new_state, j);
 
 #ifdef HAVE_OVERLAY
                   if (poll_overlay && i == 0)
@@ -22721,8 +22858,7 @@ static void input_driver_poll(void)
                {
                   unsigned k                 = (unsigned)j + RARCH_FIRST_CUSTOM_BIND;
                   int16_t current_axis_value = p_new_state->analogs[j];
-                  unsigned remap_axis        =
-                     settings->uints.input_remap_ids[i][k];
+                  unsigned remap_axis        = settings->uints.input_remap_ids[i][k];
 
                   if (
                         (abs(current_axis_value) > 0 &&
@@ -22831,7 +22967,7 @@ static int16_t input_state_device(
       unsigned idx, unsigned id,
       bool button_mask)
 {
-   int16_t res                   = 0;
+   int16_t res = 0;
 
    switch (device)
    {
@@ -23070,11 +23206,9 @@ static int16_t input_state_device(
                         unsigned offset = RARCH_FIRST_CUSTOM_BIND +
                            (idx * 4) + (id * 2);
 
-                        if (settings->uints.input_remap_ids
-                              [port][offset]   != offset)
+                        if (settings->uints.input_remap_ids[port][offset] != offset)
                            reset_state = true;
-                        else if (settings->uints.input_remap_ids
-                              [port][offset+1] != (offset+1))
+                        else if (settings->uints.input_remap_ids[port][offset+1] != (offset+1))
                            reset_state = true;
                      }
 
@@ -23156,26 +23290,31 @@ static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   struct rarch_state *p_rarch    = &rarch_st;
-   settings_t *settings           = p_rarch->configuration_settings;
-   float input_analog_deadzone    = settings->floats.input_analog_deadzone;
-   float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
-   unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[port];
-   int16_t result                 = 0;
-   int16_t ret                    = 0;
+   unsigned mapped_port;
+   struct rarch_state *p_rarch             = &rarch_st;
+   settings_t *settings                    = p_rarch->configuration_settings;
+   float input_analog_deadzone             = settings->floats.input_analog_deadzone;
+   float input_analog_sensitivity          = settings->floats.input_analog_sensitivity;
+   unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
+   const input_device_driver_t *joypad     = p_rarch->joypad;
 #ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                 = p_rarch->sec_joypad;
+   const input_device_driver_t *sec_joypad = p_rarch->sec_joypad;
 #else
-   const input_device_driver_t
-      *sec_joypad                 = NULL;
+   const input_device_driver_t *sec_joypad = NULL;
 #endif
+   bool input_blocked                      = (p_rarch->input_driver_flushing_input > 0) ||
+                                             p_rarch->input_driver_block_libretro_input;
+   bool bitmask_enabled                    = false;
+   unsigned max_users                      = p_rarch->input_driver_max_users;
+   int16_t result                          = 0;
 
-   joypad_info.axis_threshold     = p_rarch->input_driver_axis_threshold;
-   joypad_info.joy_idx            = settings->uints.input_joypad_map[port];
-   joypad_info.auto_binds         = input_autoconf_binds[joypad_info.joy_idx];
+   device                                 &= RETRO_DEVICE_MASK;
+   bitmask_enabled                         = (device == RETRO_DEVICE_JOYPAD) &&
+                                             (id == RETRO_DEVICE_ID_JOYPAD_MASK);
+   joypad_info.axis_threshold              = p_rarch->input_driver_axis_threshold;
 
 #ifdef HAVE_BSV_MOVIE
+   /* Load input from BSV record, if enabled */
    if (BSV_MOVIE_IS_PLAYBACK_ON())
    {
       int16_t bsv_result;
@@ -23191,97 +23330,138 @@ static int16_t input_state(unsigned port, unsigned device,
    }
 #endif
 
-   device &= RETRO_DEVICE_MASK;
-   ret     = input_state_wrap(
-         p_rarch->current_input,
-         p_rarch->current_input_data,
-         p_rarch->joypad,
-         sec_joypad,
-         &joypad_info,
-         p_rarch->libretro_input_binds,
-         p_rarch->keyboard_mapping_blocked,
-         port, device, idx, id);
-
-   if (  (device == RETRO_DEVICE_ANALOG) &&
-         (ret == 0))
+   /* Loop over all 'physical' ports mapped to specified
+    * 'virtual' port index */
+   while ((mapped_port = *(input_remap_port_map++)) < MAX_USERS)
    {
-      const input_device_driver_t *joypad     = p_rarch->joypad;
-#ifdef HAVE_MFI
-      const input_device_driver_t *sec_joypad = p_rarch->sec_joypad;
-#else
-      const input_device_driver_t *sec_joypad = NULL;
-#endif
-      if (p_rarch->libretro_input_binds[port])
+      int16_t ret                     = 0;
+      int16_t port_result             = 0;
+      unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[mapped_port];
+
+      joypad_info.joy_idx             = settings->uints.input_joypad_index[mapped_port];
+      joypad_info.auto_binds          = input_autoconf_binds[joypad_info.joy_idx];
+
+      /* Skip disabled input devices */
+      if (mapped_port >= max_users)
+         continue;
+
+      /* TODO/FIXME: This code is gibberish - a mess of nested
+       * refactors that make no sense whatsoever. The entire
+       * thing needs to be rewritten from scratch... */
+
+      ret = input_state_wrap(
+            p_rarch->current_input,
+            p_rarch->current_input_data,
+            joypad,
+            sec_joypad,
+            &joypad_info,
+            p_rarch->libretro_input_binds,
+            p_rarch->keyboard_mapping_blocked,
+            mapped_port, device, idx, id);
+
+      if ((device == RETRO_DEVICE_ANALOG) &&
+          (ret == 0))
       {
-         if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+         if (p_rarch->libretro_input_binds[mapped_port])
          {
-            if (id < RARCH_FIRST_CUSTOM_BIND)
+            if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
             {
-               bool valid_bind    =
-                  p_rarch->libretro_input_binds[port][id].valid;
-               if (valid_bind)
+               if (id < RARCH_FIRST_CUSTOM_BIND)
                {
-                  if (sec_joypad)
-                     ret          =
-                        input_joypad_analog_button(
+                  bool valid_bind = p_rarch->libretro_input_binds[mapped_port][id].valid;
+
+                  if (valid_bind)
+                  {
+                     if (sec_joypad)
+                        ret = input_joypad_analog_button(
                               input_analog_deadzone,
                               input_analog_sensitivity,
                               sec_joypad, &joypad_info,
                               id,
-                              &p_rarch->libretro_input_binds[port][id]);
-                  if (joypad && (ret == 0))
-                     ret          = input_joypad_analog_button(
-                           input_analog_deadzone,
-                           input_analog_sensitivity,
-                           joypad, &joypad_info,
-                           id,
-                           &p_rarch->libretro_input_binds[port][id]);
+                              &p_rarch->libretro_input_binds[mapped_port][id]);
+
+                     if (joypad && (ret == 0))
+                        ret = input_joypad_analog_button(
+                              input_analog_deadzone,
+                              input_analog_sensitivity,
+                              joypad, &joypad_info,
+                              id,
+                              &p_rarch->libretro_input_binds[mapped_port][id]);
+                  }
                }
             }
+            else
+            {
+               if (sec_joypad)
+                  ret = input_joypad_analog_axis(
+                        input_analog_dpad_mode,
+                        input_analog_deadzone,
+                        input_analog_sensitivity,
+                        sec_joypad,
+                        &joypad_info,
+                        idx,
+                        id,
+                        p_rarch->libretro_input_binds[mapped_port]);
+
+               if (joypad && (ret == 0))
+                  ret = input_joypad_analog_axis(
+                        input_analog_dpad_mode,
+                        input_analog_deadzone,
+                        input_analog_sensitivity,
+                        joypad,
+                        &joypad_info,
+                        idx,
+                        id,
+                        p_rarch->libretro_input_binds[mapped_port]);
+            }
+         }
+      }
+
+      if (!input_blocked)
+      {
+         input_mapper_t *handle = &p_rarch->input_driver_mapper;
+
+         if (bitmask_enabled)
+         {
+            unsigned i;
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               if (input_state_device(p_rarch, settings, handle,
+                     ret, mapped_port, device, idx, i, true))
+                  port_result |= (1 << i);
          }
          else
+            port_result = input_state_device(p_rarch, settings, handle,
+                  ret, mapped_port, device, idx, id, false);
+      }
+
+      /* Digital values are represented by a bitmap;
+       * we can just perform the logical OR of
+       * successive samples.
+       * Analog values are an integer corresponding
+       * to the extent of the analog motion; these
+       * cannot be OR'd together, we must instead
+       * keep the value with the largest magnitude */
+      if (device == RETRO_DEVICE_ANALOG)
+      {
+         if (result == 0)
+            result = port_result;
+         else
          {
-            if (sec_joypad)
-               ret = input_joypad_analog_axis(
-                     input_analog_dpad_mode,
-                     input_analog_deadzone,
-                     input_analog_sensitivity,
-                     sec_joypad,
-                     &joypad_info,
-                     idx,
-                     id,
-                     p_rarch->libretro_input_binds[port]);
-            if (joypad && (ret == 0))
-               ret = input_joypad_analog_axis(
-                     input_analog_dpad_mode,
-                     input_analog_deadzone,
-                     input_analog_sensitivity,
-                     joypad,
-                     &joypad_info,
-                     idx,
-                     id,
-                     p_rarch->libretro_input_binds[port]);
+            int16_t port_result_abs = (port_result >= 0) ?
+                  port_result : -port_result;
+            int16_t result_abs      = (result >= 0) ?
+                  result : -result;
+
+            result = (port_result_abs > result_abs) ?
+                  port_result : result;
          }
       }
-   }
-
-   if (     (p_rarch->input_driver_flushing_input == 0)
-         && !p_rarch->input_driver_block_libretro_input)
-   {
-      input_mapper_t *handle        = &p_rarch->input_driver_mapper;
-      if (  (device == RETRO_DEVICE_JOYPAD) &&
-            (id == RETRO_DEVICE_ID_JOYPAD_MASK))
-      {
-         unsigned i;
-         for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            if (input_state_device(p_rarch, settings, handle, ret, port, device, idx, i, true))
-               result |= (1 << i);
-      }
       else
-         result = input_state_device(p_rarch, settings, handle, ret, port, device, idx, id, false);
+         result |= port_result;
    }
 
 #ifdef HAVE_BSV_MOVIE
+   /* Save input to BSV record, if enabled */
    if (BSV_MOVIE_IS_PLAYBACK_OFF())
    {
       result = swap_if_big16(result);
@@ -27013,7 +27193,7 @@ const struct retro_keybind *input_config_get_bind_auto(
 {
    struct rarch_state *p_rarch = &rarch_st;
    settings_t        *settings = p_rarch->configuration_settings;
-   unsigned        joy_idx     = settings->uints.input_joypad_map[port];
+   unsigned        joy_idx     = settings->uints.input_joypad_index[port];
 
    if (joy_idx < MAX_USERS)
       return &input_autoconf_binds[joy_idx][id];
@@ -37086,16 +37266,16 @@ bool retroarch_main_quit(void)
       p_rarch->runtime_shader_preset[0] = '\0';
 #endif
 
-#ifdef HAVE_CONFIGFILE
       if (     runloop_state.remaps_core_active
             || runloop_state.remaps_content_dir_active
             || runloop_state.remaps_game_active
          )
       {
          input_remapping_deinit();
-         input_remapping_set_defaults();
+         input_remapping_set_defaults(true);
       }
-#endif
+      else
+         input_remapping_restore_global_config(true);
    }
 
    runloop_state.shutdown_initiated = true;
@@ -37437,7 +37617,7 @@ static enum runloop_state runloop_check_state(
       *sec_joypad                                  = NULL;
 #endif
 
-      joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
+      joypad_info.joy_idx                          = settings->uints.input_joypad_index[port];
       joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
       joypad_info.axis_threshold                   = p_rarch->input_driver_axis_threshold;
 
@@ -38693,13 +38873,15 @@ int runloop_iterate(void)
    /* Update binds for analog dpad modes. */
    for (i = 0; i < max_users; i++)
    {
-      enum analog_dpad_mode dpad_mode        = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode = (enum analog_dpad_mode)
+            settings->uints.input_analog_dpad_mode[i];
 
       if (dpad_mode != ANALOG_DPAD_NONE)
       {
          unsigned k;
-         struct retro_keybind *general_binds = input_config_binds[i];
-         struct retro_keybind *auto_binds    = input_autoconf_binds[i];
+         unsigned joy_idx                    = settings->uints.input_joypad_index[i];
+         struct retro_keybind *general_binds = input_config_binds[joy_idx];
+         struct retro_keybind *auto_binds    = input_autoconf_binds[joy_idx];
          unsigned x_plus                     = RARCH_ANALOG_RIGHT_X_PLUS;
          unsigned y_plus                     = RARCH_ANALOG_RIGHT_Y_PLUS;
          unsigned x_minus                    = RARCH_ANALOG_RIGHT_X_MINUS;
@@ -38786,15 +38968,17 @@ int runloop_iterate(void)
 
    for (i = 0; i < max_users; i++)
    {
-      unsigned j;
-      enum analog_dpad_mode dpad_mode        = (enum analog_dpad_mode)settings->uints.input_analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode = (enum analog_dpad_mode)
+            settings->uints.input_analog_dpad_mode[i];
 
       /* Restores analog D-pad binds temporarily overridden. */
 
       if (dpad_mode != ANALOG_DPAD_NONE)
       {
-         struct retro_keybind *general_binds = input_config_binds[i];
-         struct retro_keybind *auto_binds    = input_autoconf_binds[i];
+         unsigned j;
+         unsigned joy_idx                    = settings->uints.input_joypad_index[i];
+         struct retro_keybind *general_binds = input_config_binds[joy_idx];
+         struct retro_keybind *auto_binds    = input_autoconf_binds[joy_idx];
 
          for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
          {
@@ -39288,6 +39472,13 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
       game_loaded = p_rarch->current_core.retro_load_game(NULL);
 
    p_rarch->current_core.game_loaded = game_loaded;
+
+   /* If 'game_loaded' is true at this point, then
+    * core is actually running; register that any
+    * changes to global remap-related parameters
+    * should be reset once core is deinitialised */
+   if (game_loaded)
+      input_remapping_enable_global_config_restore();
 
    return game_loaded;
 }

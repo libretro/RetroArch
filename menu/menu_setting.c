@@ -96,6 +96,7 @@
 #include "../verbosity.h"
 #include "../playlist.h"
 #include "../manual_content_scan.h"
+#include "../input/input_remapping.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -5386,6 +5387,37 @@ static int setting_action_left_libretro_device_type(
    return 0;
 }
 
+static int setting_action_left_input_remap_port(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   bool refresh         = false;
+   unsigned port        = 0;
+   settings_t *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   if (settings->uints.input_remap_ports[port] > 0)
+      settings->uints.input_remap_ports[port]--;
+   else
+      settings->uints.input_remap_ports[port] = MAX_USERS - 1;
+
+   /* Must be called whenever settings->uints.input_remap_ports
+    * is modified */
+   input_remapping_update_port_map();
+
+   /* Changing mapped port may leave a core port unused;
+    * reinitialise controllers to ensure that any such
+    * ports are set to 'RETRO_DEVICE_NONE' */
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   return 0;
+}
+
 static int setting_uint_action_left_crt_switch_resolution_super(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -5427,7 +5459,7 @@ static int setting_action_left_bind_device(
 
    index_offset = setting->index_offset;
 
-   p = &settings->uints.input_joypad_map[index_offset];
+   p = &settings->uints.input_joypad_index[index_offset];
 
    if ((*p) >= max_devices)
       *p = max_devices - 1;
@@ -6242,6 +6274,14 @@ static void setting_get_string_representation_uint_analog_dpad_mode(
    strlcpy(s, modes[*setting->value.target.unsigned_integer % ANALOG_DPAD_LAST], len);
 }
 
+static void setting_get_string_representation_uint_input_remap_port(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+      snprintf(s, len, "%u", *setting->value.target.unsigned_integer + 1);
+}
+
 #ifdef HAVE_THREADS
 static void setting_get_string_representation_uint_autosave_interval(
       rarch_setting_t *setting,
@@ -6860,7 +6900,7 @@ static int setting_action_start_bind_device(rarch_setting_t *setting)
       return -1;
 
    configuration_set_uint(settings,
-         settings->uints.input_joypad_map[setting->index_offset], setting->index_offset);
+         settings->uints.input_joypad_index[setting->index_offset], setting->index_offset);
    return 0;
 }
 
@@ -6962,6 +7002,32 @@ static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
    return 0;
 }
 
+static int setting_action_start_input_remap_port(rarch_setting_t *setting)
+{
+   bool refresh         = false;
+   settings_t *settings = config_get_ptr();
+   unsigned port;
+
+   if (!setting)
+      return -1;
+
+   port                                    = setting->index_offset;
+   settings->uints.input_remap_ports[port] = port;
+
+   /* Must be called whenever settings->uints.input_remap_ports
+    * is modified */
+   input_remapping_update_port_map();
+
+   /* Changing mapped port may leave a core port unused;
+    * reinitialise controllers to ensure that any such
+    * ports are set to 'RETRO_DEVICE_NONE' */
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   return 0;
+}
+
 static int setting_action_start_video_refresh_rate_auto(
       rarch_setting_t *setting)
 {
@@ -7045,6 +7111,37 @@ static int setting_action_right_libretro_device_type(
    return 0;
 }
 
+static int setting_action_right_input_remap_port(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   bool refresh         = false;
+   unsigned port        = 0;
+   settings_t *settings = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   if (settings->uints.input_remap_ports[port] < MAX_USERS - 1)
+      settings->uints.input_remap_ports[port]++;
+   else
+      settings->uints.input_remap_ports[port] = 0;
+
+   /* Must be called whenever settings->uints.input_remap_ports
+    * is modified */
+   input_remapping_update_port_map();
+
+   /* Changing mapped port may leave a core port unused;
+    * reinitialise controllers to ensure that any such
+    * ports are set to 'RETRO_DEVICE_NONE' */
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   return 0;
+}
+
 static int setting_action_right_bind_device(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -7058,7 +7155,7 @@ static int setting_action_right_bind_device(
 
    index_offset = setting->index_offset;
 
-   p = &settings->uints.input_joypad_map[index_offset];
+   p = &settings->uints.input_joypad_index[index_offset];
 
    if (*p < max_devices)
       (*p)++;
@@ -7142,7 +7239,7 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
       return;
 
    index_offset = setting->index_offset;
-   map          = settings->uints.input_joypad_map[index_offset];
+   map          = settings->uints.input_joypad_index[index_offset];
 
    if (map < max_devices)
    {
@@ -7213,7 +7310,7 @@ static void general_read_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
       case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
       case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->uints.input_joypad_map[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX];
+         *setting->value.target.integer = settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX];
          break;
       default:
          break;
@@ -7474,7 +7571,7 @@ static void general_write_handler(rarch_setting_t *setting)
          {
             settings_t *settings         = config_get_ptr();
             settings->modified           = true;
-            settings->uints.input_joypad_map[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
+            settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
          }
          break;
       case MENU_ENUM_LABEL_LOG_TO_FILE:
@@ -7865,6 +7962,24 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       default:
+         /* Special cases */
+
+         /* > Mapped Port (virtual -> 'physical' port mapping)
+          *   Occupies a range of enum indices, so cannot
+          *   simply switch on the value */
+         if ((setting->enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT) &&
+             (setting->enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
+         {
+            /* Must be called whenever settings->uints.input_remap_ports
+             * is modified */
+            input_remapping_update_port_map();
+
+            /* Changing mapped port may leave a core port unused;
+             * reinitialise controllers to ensure that any such
+             * ports are set to 'RETRO_DEVICE_NONE' */
+            command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+         }
+
          break;
    }
 
@@ -8390,6 +8505,72 @@ static bool setting_append_list_input_player_options(
             &subgroup_info,
             parent_group);
       (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
+   }
+
+   END_SUB_GROUP(list, list_info, parent_group);
+   END_GROUP(list, list_info, parent_group);
+
+   return true;
+}
+
+static bool setting_append_list_input_remap_port_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   settings_t *settings = config_get_ptr();
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   static char key_port[MAX_USERS][64];
+   static char label_port[MAX_USERS][64];
+   unsigned user;
+
+   group_info.name    = NULL;
+   subgroup_info.name = NULL;
+
+   START_GROUP(list, list_info, &group_info,
+         "Mapped Ports", parent_group);
+
+   parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+
+   START_SUB_GROUP(list, list_info, "State", &group_info,
+         &subgroup_info, parent_group);
+
+   for (user = 0; user < MAX_USERS; user++)
+   {
+      key_port[user][0]   = '\0';
+      label_port[user][0] = '\0';
+
+      snprintf(key_port[user], sizeof(key_port[user]),
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
+               user + 1);
+
+      snprintf(label_port[user], sizeof(label_port[user]), "%s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT));
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_remap_ports[user],
+            key_port[user],
+            label_port[user],
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_input_remap_port;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_input_remap_port;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_input_remap_port;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_remap_port;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      (*list)[list_info->index - 1].get_string_representation =
+         &setting_get_string_representation_uint_input_remap_port;
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS-1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_REMAP_PORT + user));
    }
 
    END_SUB_GROUP(list, list_info, parent_group);
@@ -9243,6 +9424,8 @@ static bool setting_append_list(
 
          for (user = 0; user < MAX_USERS; user++)
             setting_append_list_input_player_options(list, list_info, parent_group, user);
+
+         setting_append_list_input_remap_port_options(list, list_info, parent_group);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

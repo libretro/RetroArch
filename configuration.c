@@ -2435,10 +2435,8 @@ void config_set_defaults(void *data)
 #endif
 
    input_config_reset();
-#ifdef HAVE_CONFIGFILE
    input_remapping_deinit();
-   input_remapping_set_defaults();
-#endif
+   input_remapping_set_defaults(false);
 
    /* Verify that binds are in proper order. */
    for (i = 0; i < MAX_USERS; i++)
@@ -2461,7 +2459,7 @@ void config_set_defaults(void *data)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      settings->uints.input_joypad_map[i] = i;
+      settings->uints.input_joypad_index[i] = i;
 #ifdef SWITCH /* Switch prefered default dpad mode */
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
 #else
@@ -3196,7 +3194,7 @@ static bool config_load_file(global_t *global,
       buf[0] = '\0';
 
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_map[i], buf);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], buf);
 
       snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
@@ -3856,9 +3854,7 @@ bool config_load_remap(const char *directory_input_remapping,
          FILE_PATH_REMAP_EXTENSION,
          sizeof(game_path));
 
-#ifdef HAVE_CONFIGFILE
-   input_remapping_set_defaults();
-#endif
+   input_remapping_set_defaults(false);
 
    /* If a game remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(game_path)))
@@ -4229,7 +4225,7 @@ bool config_save_file(const char *path)
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       config_set_int(conf, cfg, settings->uints.input_device[i]);
       snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
-      config_set_int(conf, cfg, settings->uints.input_joypad_map[i]);
+      config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
       snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
       config_set_int(conf, cfg, input_config_get_device(i));
       snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
@@ -4492,11 +4488,11 @@ bool config_save_overrides(enum override_type type, void *data)
             config_set_int(conf, cfg, overrides->uints.input_device[i]);
          }
 
-         if (settings->uints.input_joypad_map[i]
-               != overrides->uints.input_joypad_map[i])
+         if (settings->uints.input_joypad_index[i]
+               != overrides->uints.input_joypad_index[i])
          {
             snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
-            config_set_int(conf, cfg, overrides->uints.input_joypad_map[i]);
+            config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
          }
       }
 
@@ -4609,16 +4605,13 @@ bool input_remapping_load_file(void *data, const char *path)
    if (!string_is_empty(global->name.remapfile))
    {
       input_remapping_deinit();
-      input_remapping_set_defaults();
+      input_remapping_set_defaults(false);
    }
    global->name.remapfile = strdup(path);
 
    for (i = 0; i < MAX_USERS; i++)
    {
       char s1[32], s2[32], s3[32];
-
-      global->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
-      global->old_libretro_device[i]  = settings->uints.input_libretro_device[i];
 
       s1[0] = '\0';
       s2[0] = '\0';
@@ -4705,7 +4698,17 @@ bool input_remapping_load_file(void *data, const char *path)
 
       snprintf(s1, sizeof(s1), "input_libretro_device_p%u", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
+
+      snprintf(s1, sizeof(s1), "input_remap_port_p%u", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
    }
+
+   input_remapping_update_port_map();
+
+   /* Whenever a remap file is loaded, subsequent
+    * changes to global remap-related parameters
+    * must be reset at the next core deinitialisation */
+   input_remapping_enable_global_config_restore();
 
    return true;
 }
@@ -4745,13 +4748,37 @@ bool input_remapping_save_file(const char *path)
          return false;
    }
 
-   for (i = 0; i < max_users; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
-      char s1[32], s2[32], s3[32];
+      bool skip_port = true;
+      char s1[32];
+      char s2[32];
+      char s3[32];
 
       s1[0] = '\0';
       s2[0] = '\0';
       s3[0] = '\0';
+
+      /* We must include all mapped ports + all those
+       * with an index less than max_users */
+      if (i < max_users)
+         skip_port = false;
+      else
+      {
+         /* Check whether current port is mapped
+          * to an input device */
+         for (j = 0; j < max_users; j++)
+         {
+            if (i == settings->uints.input_remap_ports[j])
+            {
+               skip_port = false;
+               break;
+            }
+         }
+      }
+
+      if (skip_port)
+         continue;
 
       snprintf(s1, sizeof(s1), "input_player%u_btn", i + 1);
       snprintf(s2, sizeof(s2), "input_player%u_key", i + 1);
@@ -4825,8 +4852,12 @@ bool input_remapping_save_file(const char *path)
 
       snprintf(s1, sizeof(s1), "input_libretro_device_p%u", i + 1);
       config_set_int(conf, s1, input_config_get_device(i));
+
       snprintf(s1, sizeof(s1), "input_player%u_analog_dpad_mode", i + 1);
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
+
+      snprintf(s1, sizeof(s1), "input_remap_port_p%u", i + 1);
+      config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
    }
 
    ret = config_file_write(conf, remap_file, true);
