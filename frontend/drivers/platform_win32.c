@@ -1033,8 +1033,23 @@ static bool accessibility_speak_windows(int speed,
    init_nvda();
 #endif
    
-   if (USE_POWERSHELL && !strchr(speak_text, '"') && !strchr(speak_text, '\\') && !strstr(speak_text, "$(")) /* TODO: escape these things properly instead of rejecting the entire string */
+   if (USE_POWERSHELL)
    {
+      /* Sanitize strings here.  Strings can use escape characters to execute 
+       * arbitary code in powershell.  Since we're just reading out the text,
+       * we can replace these chars with spaces instead. */
+      	   
+      char * current_pos = (char*) speak_text;
+      while (current_pos[0] != '\0') {
+         if (current_pos[0] == '\\' || current_pos[0] == '"' || 
+             current_pos[0] == '\'' || current_pos[0] == '(' ||
+             current_pos[0] == ')' || current_pos[0] == '$' ||
+             current_pos[0] == '}' || current_pos[0] == '{' ||
+             current_pos[0] == '@' || current_pos[0] == '&') 
+            current_pos[0] = ' ';
+         current_pos++;
+      }
+
       const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"";
       const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"";
       if (strlen(language) > 0) 
