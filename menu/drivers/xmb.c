@@ -6339,10 +6339,24 @@ error:
 
 static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath)
 {
+   char path[PATH_MAX_LENGTH];
    settings_t *settings        = config_get_ptr();
    const char *path_menu_wp    = settings->paths.path_menu_wallpaper;
 
-   if (!string_is_empty(path_menu_wp))
+   path[0] = '\0';
+
+   /* Dynamic wallpaper takes precedence as reset background,
+    * then comes 'menu_wallpaper', and then iconset 'bg.png' */
+   if (settings->bools.menu_dynamic_wallpaper_enable)
+      strlcpy(path, xmb_path_dynamic_wallpaper(xmb), sizeof(path));
+
+   if (!string_is_empty(path) && path_is_valid(path))
+   {
+      task_push_image_load(path,
+            video_driver_supports_rgba(), 0,
+            menu_display_handle_wallpaper_upload, NULL);
+   }
+   else if (!string_is_empty(path_menu_wp))
    {
       if (path_is_valid(path_menu_wp))
          task_push_image_load(path_menu_wp,
@@ -6351,16 +6365,8 @@ static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath
    }
    else if (!string_is_empty(iconpath))
    {
-      char path[PATH_MAX_LENGTH];
-      path[0] = '\0';
-
-      /* Use dynamic wallpaper background as fallback instead */
-      if (settings->bools.menu_dynamic_wallpaper_enable)
-         strlcpy(path, xmb_path_dynamic_wallpaper(xmb), sizeof(path));
-
-      if (!path_is_valid(path))
-         fill_pathname_join(path, iconpath,
-               FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
+      fill_pathname_join(path, iconpath,
+            FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
 
       if (path_is_valid(path))
          task_push_image_load(path,
