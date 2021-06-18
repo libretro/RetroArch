@@ -943,17 +943,36 @@ static bool terminate_win32_process(PROCESS_INFORMATION pi)
 
 static PROCESS_INFORMATION g_pi;
 
-static bool create_win32_process(char* cmd)
+static bool create_win32_process(char* cmd, const char * input = NULL)
 {
    STARTUPINFO si;
+   HANDLE rd = NULL;
+   bool ret;
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
    memset(&g_pi, 0, sizeof(g_pi));
 
-   if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
-                      NULL, NULL, &si, &g_pi))
-      return false;
-   return true;
+   if (input)
+   {
+      HANDLE wr;
+      if (!CreatePipe(&rd, &wr, NULL, strlen(input))) return false;
+      
+      SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+      
+      DWORD dummy;
+      WriteFile(wr, input, strlen(input), &dummy, NULL);
+      CloseHandle(wr);
+      
+      si.dwFlags |= STARTF_USESTDHANDLES;
+      si.hStdInput = rd;
+      si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+      si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+   }
+
+   ret = CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NO_WINDOW,
+                      NULL, NULL, &si, &g_pi);
+   if (rd) CloseHandle(rd);
+   return ret;
 }
 
 static bool is_narrator_running_windows(void)
@@ -1033,28 +1052,28 @@ static bool accessibility_speak_windows(int speed,
    init_nvda();
 #endif
    
-   if (USE_POWERSHELL && !strchr(speak_text, '"') && !strchr(speak_text, '\\') && !strstr(speak_text, "$(")) /* TODO: escape these things properly instead of rejecting the entire string */
+   if (USE_POWERSHELL)
    {
-      const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"";
-      const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"";
+      const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
+      const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
       if (strlen(language) > 0) 
       {
-         nbytes_cmd = snprintf(NULL, 0, template_lang, language, speeds[speed-1], speak_text) + 1;
+         nbytes_cmd = snprintf(NULL, 0, template_lang, language, speeds[speed-1]) + 1;
          if (!(cmd = malloc(nbytes_cmd)))
             return false;
-         snprintf(cmd, nbytes_cmd, template_lang, language, speeds[speed-1], speak_text);
+         snprintf(cmd, nbytes_cmd, template_lang, language, speeds[speed-1]);
       }
       else
       {
-         nbytes_cmd = snprintf(NULL, 0, template_nolang, speeds[speed-1], speak_text) + 1;
+         nbytes_cmd = snprintf(NULL, 0, template_nolang, speeds[speed-1]) + 1;
          if (!(cmd = malloc(nbytes_cmd)))
             return false;
-         snprintf(cmd, nbytes_cmd, template_nolang, speeds[speed-1], speak_text); 
+         snprintf(cmd, nbytes_cmd, template_nolang, speeds[speed-1]); 
       }
 
       if (pi_set)
          terminate_win32_process(g_pi);
-      res = create_win32_process(cmd);
+      res = create_win32_process(cmd, speak_text);
       free(cmd);
       cmd = NULL;
       if (!res)
