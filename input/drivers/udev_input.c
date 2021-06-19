@@ -1060,7 +1060,7 @@ static int16_t udev_input_state(
                      (binds[port][id].key < RETROK_LAST) && 
                      udev_keyboard_pressed(udev, binds[port][id].key)
                      && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                        && !keyboard_mapping_blocked)
+                        || !keyboard_mapping_blocked)
                      )
                   return 1;
                else if (udev_mouse_button_pressed(udev, port,
