@@ -1443,7 +1443,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   "Switch to high resolution modeline when no content is loaded for use with high-resolution menus."
+   "Switch to high resolution modeline for use with high-resolution menus when no content is loaded."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -4980,7 +4980,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    "Automatically take a screenshot when an achievement is earned."
    )
-MSG_HASH( /* suggestion for translators: translate as "Play Again Mode" */
+MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
    MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
    "Encore Mode"
    )
