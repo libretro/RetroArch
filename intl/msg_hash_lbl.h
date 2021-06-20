@@ -23,6 +23,10 @@ MSG_HASH(
    "retro_achievements"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "toggle_cheevos_hardcore"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_TWITCH,
    "twitch"
    )
@@ -3641,10 +3645,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "disconnect_device_from_a_valid_port"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Failed to set disk"
    )
 MSG_HASH(
    MSG_FAILED_TO_START_AUDIO_DRIVER,
