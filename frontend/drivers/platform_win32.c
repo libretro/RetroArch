@@ -954,12 +954,12 @@ static bool create_win32_process(char* cmd, const char * input)
 
    if (input)
    {
+      DWORD dummy;
       HANDLE wr;
       if (!CreatePipe(&rd, &wr, NULL, strlen(input))) return false;
       
       SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
       
-      DWORD dummy;
       WriteFile(wr, input, strlen(input), &dummy, NULL);
       CloseHandle(wr);
       
