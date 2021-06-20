@@ -294,6 +294,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #endif
 
    desc.BufferCount          = countof(d3d12->chain.renderTargets);
+   desc.BufferUsage          = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 #ifdef __WINRT__
    desc.Width                = width;
    desc.Height               = height;
@@ -302,14 +303,11 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    desc.BufferDesc.Width     = width;
    desc.BufferDesc.Height    = height;
    desc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   desc.BufferDesc.RefreshRate.Numerator   = 0;
+   desc.BufferDesc.RefreshRate.Denominator = 1;
 #endif
    desc.SampleDesc.Count     = 1;
-#if 0
-   desc.BufferDesc.RefreshRate.Numerator   = 60;
-   desc.BufferDesc.RefreshRate.Denominator = 1;
-   desc.SampleDesc.Quality                 = 0;
-#endif
-   desc.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+   desc.SampleDesc.Quality   = 0;
 #ifdef HAVE_WINDOW
    desc.OutputWindow = hwnd;
    desc.Windowed     = TRUE;
