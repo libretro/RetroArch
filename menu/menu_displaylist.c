@@ -1354,7 +1354,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device config name: %s",
-               input_config_get_device_display_name(controller) ?
+               input_config_get_device_config_name(controller) ?
                input_config_get_device_config_name(controller)  : 
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
             if (menu_entries_append_enum(list, tmp, "",
@@ -4415,7 +4415,7 @@ static int menu_displaylist_parse_input_device_index_list(
       goto end;
 
    port = setting->index_offset;
-   map  = settings->uints.input_joypad_map[port];
+   map  = settings->uints.input_joypad_index[port];
 
    if (port >= MAX_USERS)
       goto end;
@@ -4511,6 +4511,7 @@ static int menu_displaylist_parse_input_description_list(
    unsigned user_idx;
    unsigned btn_idx;
    unsigned current_remap_idx;
+   unsigned mapped_port;
    size_t i, j;
    char entry_label[21];
 
@@ -4520,10 +4521,16 @@ static int menu_displaylist_parse_input_description_list(
       goto end;
 
    /* Determine user/button indices */
-   user_idx = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx  = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   user_idx    = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx     = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
-   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+   if ((user_idx >= MAX_USERS) ||
+       (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+      goto end;
+
+   mapped_port = settings->uints.input_remap_ports[user_idx];
+
+   if (mapped_port >= MAX_USERS)
       goto end;
 
    /* Get current mapping for selected button */
@@ -4548,7 +4555,7 @@ static int menu_displaylist_parse_input_description_list(
       const char *input_desc_btn;
 
       i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
-      input_desc_btn = system->input_desc_btn[user_idx][i];
+      input_desc_btn = system->input_desc_btn[mapped_port][i];
 
       /* Check whether an input is defined for
        * this button */
@@ -4651,10 +4658,11 @@ static int menu_displaylist_parse_input_description_kbd_list(
       goto end;
 
    /* Determine user/button indices */
-   user_idx = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
-   btn_idx  = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
+   user_idx    = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
+   btn_idx     = (info->type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
-   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+   if ((user_idx >= MAX_USERS) ||
+       (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       goto end;
 
    /* Get current mapping for selected button */
@@ -9577,22 +9585,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             const char *menu_driver     = menu_driver_ident();
             bool is_rgui                = string_is_equal(menu_driver, "rgui");
             file_list_t *list           = info->list;
-            unsigned p                  = atoi(info->path);
+            unsigned port               = string_to_unsigned(info->path);
+            unsigned mapped_port        = settings->uints.input_remap_ports[port];
             size_t selection            = menu_navigation_get_selection();
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
             {
-               char key_type[PATH_MAX_LENGTH];
-               char key_analog[PATH_MAX_LENGTH];
-               unsigned val = p + 1;
+               char key_type[64];
+               char key_analog[64];
+               char key_port[64];
 
-               key_type[0] = key_analog[0] = '\0';
+               key_type[0]   = '\0';
+               key_analog[0] = '\0';
+               key_port[0]   = '\0';
 
                snprintf(key_type, sizeof(key_type),
-                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), mapped_port + 1);
                snprintf(key_analog, sizeof(key_analog),
-                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), port + 1);
+               snprintf(key_port, sizeof(key_port),
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT), port + 1);
 
                if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
                         key_type, PARSE_ONLY_UINT, true, MENU_SETTINGS_INPUT_LIBRETRO_DEVICE) == 0)
@@ -9600,12 +9613,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
                         key_analog, PARSE_ONLY_UINT, true, MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE) == 0)
                   count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
+                        key_port, PARSE_ONLY_UINT, true, MENU_SETTINGS_INPUT_INPUT_REMAP_PORT) == 0)
+                  count++;
             }
 
             {
                unsigned retro_id, j;
-               unsigned device  = settings->uints.input_libretro_device[p];
-               device &= RETRO_DEVICE_MASK;
+               unsigned device  = settings->uints.input_libretro_device[mapped_port];
+               device          &= RETRO_DEVICE_MASK;
 
                if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
                {
@@ -9621,10 +9637,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         ? input_config_bind_order[j] 
                         : j;
                      keybind                               = 
-                        &input_config_binds[p][retro_id];
+                        &input_config_binds[port][retro_id];
                      auto_bind                             = 
                         (const struct retro_keybind*)
-                        input_config_get_bind_auto(p, retro_id);
+                        input_config_get_bind_auto(port, retro_id);
 
                      input_config_get_bind_string(descriptor,
                            keybind, auto_bind, sizeof(descriptor));
@@ -9632,7 +9648,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (!strstr(descriptor, "Auto"))
                      {
                         const struct retro_keybind *keyptr =
-                           &input_config_binds[p][retro_id];
+                           &input_config_binds[port][retro_id];
 
                         snprintf(desc_label, sizeof(desc_label),
                               "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
@@ -9646,14 +9662,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            && !settings->bools.menu_show_sublabels)
                      {
                         snprintf(desc_label, sizeof(desc_label),
-                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), port + 1);
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
+                     /* Note: 'physical' port is passed as label */
                      if (menu_entries_append_enum(list, descriptor, info->path,
                               MSG_UNKNOWN,
                               MENU_SETTINGS_INPUT_DESC_BEGIN +
-                              (p * (RARCH_FIRST_CUSTOM_BIND + 8)) + retro_id, 0, 0))
+                              (port * (RARCH_FIRST_CUSTOM_BIND + 8)) + retro_id, 0, 0))
                         count++;
                   }
                }
@@ -9671,10 +9688,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         ? input_config_bind_order[j] 
                         : j;
                      keybind                               =
-                        &input_config_binds[p][retro_id];
+                        &input_config_binds[port][retro_id];
                      auto_bind                             =
                         (const struct retro_keybind*)
-                        input_config_get_bind_auto(p, retro_id);
+                        input_config_get_bind_auto(port, retro_id);
 
                      input_config_get_bind_string(descriptor,
                            keybind, auto_bind, sizeof(descriptor));
@@ -9682,7 +9699,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (!strstr(descriptor, "Auto"))
                      {
                         const struct retro_keybind *keyptr =
-                           &input_config_binds[p][retro_id];
+                           &input_config_binds[port][retro_id];
 
                         snprintf(desc_label, sizeof(desc_label),
                               "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
@@ -9697,14 +9714,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      {
                         snprintf(desc_label, sizeof(desc_label),
                               "%s [%s %u]", descriptor,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), port + 1);
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
+                     /* Note: 'physical' port is passed as label */
                      if (menu_entries_append_enum(list, descriptor, info->path,
                               MSG_UNKNOWN,
                               MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
-                              (p * RARCH_ANALOG_BIND_LIST_END) + retro_id, 0, 0))
+                              (port * RARCH_ANALOG_BIND_LIST_END) + retro_id, 0, 0))
                         count++;
                   }
                }

@@ -709,20 +709,20 @@ static void menu_action_setting_disp_set_label_input_desc(
       char *s2, size_t len2)
 {
    unsigned remap_idx;
-   settings_t *settings                  = config_get_ptr();
-   const char* descriptor                = NULL;
-   unsigned user_idx                     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   unsigned btn_idx                      = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   unsigned mapped_port;
+   settings_t *settings   = config_get_ptr();
+   const char* descriptor = NULL;
+   unsigned user_idx      = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   unsigned btn_idx       = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
    if (!settings)
       return;
 
-   remap_idx =
-      settings->uints.input_remap_ids[user_idx][btn_idx];
+   mapped_port = settings->uints.input_remap_ports[user_idx];
+   remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
 
    if (remap_idx != RARCH_UNMAPPED)
-      descriptor = 
-         runloop_get_system_info()->input_desc_btn[user_idx][remap_idx];
+      descriptor = runloop_get_system_info()->input_desc_btn[mapped_port][remap_idx];
 
    s[0] = '-';
    s[1] = '-';
@@ -754,7 +754,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    char desc[PATH_MAX_LENGTH];
    unsigned key_id, btn_idx;
    unsigned remap_id;
-   unsigned user_idx = 0;
+   unsigned user_idx;
 
    settings_t *settings = config_get_ptr();
 
@@ -763,8 +763,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
 
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
    btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
-   remap_id =
-      settings->uints.input_keymapper_ids[user_idx][btn_idx];
+   remap_id = settings->uints.input_keymapper_ids[user_idx][btn_idx];
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS - 1; key_id++)
    {
