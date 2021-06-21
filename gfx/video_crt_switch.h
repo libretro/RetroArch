@@ -54,7 +54,6 @@ typedef struct videocrt_switch
 
    bool sr2_active;
    bool menu_active;
-   char* core_name;
    bool hh_core;
 
 

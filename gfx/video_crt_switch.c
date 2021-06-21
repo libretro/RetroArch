@@ -29,6 +29,8 @@
 #include "video_display_server.h"
 #include "../core_info.h"
 #include "../verbosity.h"
+#include "../file_path_special.h"
+#include "../paths.h"
 #include "gfx_display.h"
 
 #if !defined(HAVE_VIDEOCORE) 
@@ -44,6 +46,12 @@ static sr_mode srm;
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
 static void crt_rpi_switch(videocrt_switch_t *p_switch,int width, int height, float hz, int xoffset, int native_width);
 #endif
+
+static void crt_check_hh_core(videocrt_switch_t *p_switch);
+static void crt_adjust_sr_ini(videocrt_switch_t *p_switch);
+static bool ini_overrides_loaded = false;
+static char core_name[256]; /* same size as library_name on retroarch_data.h */
+static char content_dir[PATH_MAX_LENGTH];
 
 static bool crt_check_for_changes(videocrt_switch_t *p_switch)
 {
@@ -180,6 +188,11 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch, int monitor_index, unsigne
 
       RARCH_LOG("[CRT]: SR rtn %d \n", p_switch->rtn);
 
+      if(p_switch->rtn == 1)
+      {
+         core_name[0] = '\0';
+         content_dir[0] = '\0';
+      }
    }
    
    if (p_switch->rtn == 1)
@@ -200,6 +213,9 @@ static void switch_res_crt(
       videocrt_switch_t *p_switch,
       unsigned width, unsigned height, unsigned crt_mode, unsigned native_width, int monitor_index, int super_width)
 {
+   char current_core_name[sizeof(core_name)];
+   char current_content_dir[sizeof(content_dir)];
+
    unsigned char interlace = 0,   ret;
    const char* err_msg;
    int w = native_width, h = height;
@@ -207,7 +223,21 @@ static void switch_res_crt(
    
    if (crt_sr2_init(p_switch, monitor_index, crt_mode, super_width)) /* Checked SR2 is loded if not Load it */
    {
- 
+      /* Check for core and content changes in case we need to make any adjustments */
+      if(crt_switch_core_name())
+         strlcpy(current_core_name, crt_switch_core_name(), sizeof(current_core_name));
+      else
+         current_core_name[0] = '\0';
+      fill_pathname_parent_dir_name(current_content_dir, path_get(RARCH_PATH_CONTENT), sizeof(current_content_dir));
+      if (!string_is_equal(core_name, current_core_name) || !string_is_equal(content_dir, current_content_dir))
+      {
+         /* A core or content change was detected, we update the current values and make adjustments */
+         strlcpy(core_name, current_core_name, sizeof(core_name));
+         strlcpy(content_dir, current_content_dir, sizeof(content_dir));
+         RARCH_LOG("[CRT]: Current running core %s \n", core_name);
+         crt_adjust_sr_ini(p_switch);
+         crt_check_hh_core(p_switch);
+      }
       ret =   sr_switch_to_mode(w, h, rr, interlace, &srm);
       if(!ret) 
       {
@@ -317,7 +347,6 @@ void crt_switch_res_core(
       int monitor_index, bool dynamic,
       int super_width, bool hires_menu)
 {
-
    if (height <= 4)
    {
       if (hires_menu == true)
@@ -348,14 +377,6 @@ void crt_switch_res_core(
       p_switch->center_adjust         = crt_switch_center_adjust;
       p_switch->index                 = monitor_index;
 
-      if (p_switch->core_name != crt_switch_core_name())
-      {   
-         p_switch->core_name = crt_switch_core_name();
-         RARCH_LOG("[CRT]: Current running core %s \n", p_switch->core_name);
-         crt_check_hh_core(p_switch);
-      
-      }
-
       /* Detect resolution change and switch */
       if (crt_check_for_changes(p_switch))
       {
@@ -383,6 +404,46 @@ void crt_switch_res_core(
 
    }
    
+}
+
+void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
+{
+   char config_directory[PATH_MAX_LENGTH];
+   char switchres_ini_override_file[PATH_MAX_LENGTH];
+
+   if(p_switch->sr2_active)
+   {
+      /* First we reload the base switchres.ini file to undo any overrides that might have been loaded for another core */
+      if(ini_overrides_loaded)
+      {
+         RARCH_LOG("[CRT]: Loading default switchres.ini \n");
+         sr_load_ini((char *)"switchres.ini");
+         ini_overrides_loaded = false;
+      }
+      if(strlen(core_name) > 0) {
+         /* Then we look for config/Core Name/Core Name.switchres.ini and load it, overriding any variables it specifies */
+         config_directory[0] = '\0';
+         fill_pathname_application_special(config_directory,
+            sizeof(config_directory), APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+         fill_pathname_join_special_ext(switchres_ini_override_file,
+            config_directory, core_name, core_name, ".switchres.ini", sizeof(switchres_ini_override_file));
+         if(path_is_valid(switchres_ini_override_file))
+         {
+            RARCH_LOG("[CRT]: Loading switchres.ini core override file from %s \n", switchres_ini_override_file);
+            sr_load_ini(switchres_ini_override_file);
+            ini_overrides_loaded = true;
+         }
+         /* Next up we load directory overrides, if any */
+         fill_pathname_join_special_ext(switchres_ini_override_file,
+            config_directory, core_name, content_dir, ".switchres.ini", sizeof(switchres_ini_override_file));
+         if(path_is_valid(switchres_ini_override_file))
+         {
+            RARCH_LOG("[CRT]: Loading switchres.ini content directory override file from %s \n", switchres_ini_override_file);
+            sr_load_ini(switchres_ini_override_file);
+            ini_overrides_loaded = true;
+         }
+      }
+   }
 }
 
 /* only used for RPi3 */
