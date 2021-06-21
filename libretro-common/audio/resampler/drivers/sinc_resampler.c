@@ -37,6 +37,12 @@
 
 #ifdef __SSE__
 #include <xmmintrin.h>
+
+#ifdef _MSC_VER
+#define MEMBER(v, i) ((v).m128_f32[(i)])
+#else
+#define MEMBER(v, i) ((v)[(i)])
+#endif
 #endif
 
 #if defined(__AVX__)
@@ -353,9 +359,6 @@ static void resampler_sinc_process_sse_kaiser(void *re_, struct resampler_data *
          while (resamp->time < phases)
          {
             unsigned i;
-#if 0
-            __m128 sum;
-#endif
             unsigned phase           = resamp->time >> resamp->subphase_bits;
             float *phase_table       = resamp->phase_table + phase * taps * 2;
             float *delta_table       = phase_table + taps;
@@ -376,34 +379,8 @@ static void resampler_sinc_process_sse_kaiser(void *re_, struct resampler_data *
                sum_r        = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, _sinc));
             }
 
-#if 0
-            /* Them annoying shuffles.
-             * sum_l = { l3, l2, l1, l0 }
-             * sum_r = { r3, r2, r1, r0 }
-             */
-            sum      = _mm_add_ps(_mm_shuffle_ps(sum_l, sum_r,
-                     _MM_SHUFFLE(1, 0, 1, 0)),
-                  _mm_shuffle_ps(sum_l, sum_r, _MM_SHUFFLE(3, 2, 3, 2)));
-            /* sum   = { r1, r0, l1, l0 } + { r3, r2, l3, l2 }
-             * sum   = { R1, R0, L1, L0 }
-             */
-            sum      = _mm_add_ps(_mm_shuffle_ps(sum, sum, _MM_SHUFFLE(3, 3, 1, 1)), sum);
-            /* sum   = {R1, R1, L1, L1 } + { R1, R0, L1, L0 }
-             * sum   = { X,  R,  X,  L }
-             */
-            /* Store L */
-            _mm_store_ss(output++, sum);
-            /* movehl { X, R, X, L } == { X, R, X, R } */
-            _mm_store_ss(output++, _mm_movehl_ps(sum, sum));
-#else
-#ifdef _MSC_VER
-            *(output++) = _mm_cvtss_f32(sum_l) + sum_l.m128_f32[1] + sum_l.m128_f32[2] + sum_l.m128_f32[3];
-            *(output++) = _mm_cvtss_f32(sum_r) + sum_r.m128_f32[1] + sum_r.m128_f32[2] + sum_r.m128_f32[3];
-#else
-            *(output++) = _mm_cvtss_f32(sum_l) + sum_l[1] + sum_l[2] + sum_l[3];
-            *(output++) = _mm_cvtss_f32(sum_r) + sum_r[1] + sum_r[2] + sum_r[3];
-#endif
-#endif
+            *(output++) = _mm_cvtss_f32(sum_l) + MEMBER(sum_l, 1) + MEMBER(sum_l, 2) + MEMBER(sum_l, 3);
+            *(output++) = _mm_cvtss_f32(sum_r) + MEMBER(sum_r, 1) + MEMBER(sum_r, 2) + MEMBER(sum_r, 3);
 
             out_frames++;
             resamp->time += ratio;
@@ -451,9 +428,6 @@ static void resampler_sinc_process_sse(void *re_, struct resampler_data *data)
          while (resamp->time < phases)
          {
             unsigned i;
-#if 0
-            __m128 sum;
-#endif
             unsigned phase           = resamp->time >> resamp->subphase_bits;
             float *phase_table       = resamp->phase_table + phase * taps;
 
@@ -469,34 +443,8 @@ static void resampler_sinc_process_sse(void *re_, struct resampler_data *data)
                sum_r        = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, _sinc));
             }
 
-#if 0
-            /* Them annoying shuffles.
-             * sum_l = { l3, l2, l1, l0 }
-             * sum_r = { r3, r2, r1, r0 }
-             */
-            sum = _mm_add_ps(_mm_shuffle_ps(sum_l, sum_r,
-                     _MM_SHUFFLE(1, 0, 1, 0)),
-                  _mm_shuffle_ps(sum_l, sum_r, _MM_SHUFFLE(3, 2, 3, 2)));
-            /* sum   = { r1, r0, l1, l0 } + { r3, r2, l3, l2 }
-             * sum   = { R1, R0, L1, L0 }
-             */
-            sum = _mm_add_ps(_mm_shuffle_ps(sum, sum, _MM_SHUFFLE(3, 3, 1, 1)), sum);
-            /* sum   = {R1, R1, L1, L1 } + { R1, R0, L1, L0 }
-             * sum   = { X,  R,  X,  L }
-             */
-            /* Store L */
-            _mm_store_ss(output++, sum);
-            /* movehl { X, R, X, L } == { X, R, X, R } */
-            _mm_store_ss(output++, _mm_movehl_ps(sum, sum));
-#else
-#ifdef _MSC_VER
-            *(output++) = _mm_cvtss_f32(sum_l) + sum_l.m128_f32[1] + sum_l.m128_f32[2] + sum_l.m128_f32[3];
-            *(output++) = _mm_cvtss_f32(sum_r) + sum_r.m128_f32[1] + sum_r.m128_f32[2] + sum_r.m128_f32[3];
-#else
-            *(output++) = _mm_cvtss_f32(sum_l) + sum_l[1] + sum_l[2] + sum_l[3];
-            *(output++) = _mm_cvtss_f32(sum_r) + sum_r[1] + sum_r[2] + sum_r[3];
-#endif
-#endif
+            *(output++) = _mm_cvtss_f32(sum_l) + MEMBER(sum_l, 1) + MEMBER(sum_l, 2) + MEMBER(sum_l, 3);
+            *(output++) = _mm_cvtss_f32(sum_r) + MEMBER(sum_r, 1) + MEMBER(sum_r, 2) + MEMBER(sum_r, 3);
 
             out_frames++;
             resamp->time += ratio;
