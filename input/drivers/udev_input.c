@@ -807,9 +807,7 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
 static int16_t udev_lightgun_aiming_state(
       udev_input_t *udev, unsigned port, unsigned id )
 {
-#ifdef HAVE_X11
-   struct video_viewport vp;
-#endif
+
    const int edge_detect       = 32700;
    bool inside                 = false;
    int16_t res_x               = 0;
@@ -819,28 +817,11 @@ static int16_t udev_lightgun_aiming_state(
 
    udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
 
-#ifdef HAVE_X11
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-#endif
-
    if (!mouse)
       return 0;
 
-#ifdef HAVE_X11
-   /* udev->pointer_x and y is only set in X11 */
-   if (!(video_driver_translate_coord_viewport_wrap(
-               &vp, udev->pointer_x, udev->pointer_y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-#else
-   res_x  = udev_mouse_get_pointer_x(mouse, false);
-   res_y  = udev_mouse_get_pointer_y(mouse, false);
-#endif
+   res_x = udev_mouse_get_pointer_x(mouse, false);
+   res_y = udev_mouse_get_pointer_y(mouse, false);
 
    inside =    (res_x >= -edge_detect) 
             && (res_y >= -edge_detect)
@@ -850,11 +831,9 @@ static int16_t udev_lightgun_aiming_state(
    switch ( id )
    {
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         if (inside)
             return res_x;
          break;
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         if (inside)
             return res_y;
          break;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
