@@ -39711,29 +39711,31 @@ bool core_options_create_override(bool game_specific)
 {
    char options_path[PATH_MAX_LENGTH];
    config_file_t *conf         = NULL;
-   struct rarch_state *p_rarch = &rarch_st;
 
-   options_path[0] = '\0';
+   options_path[0]             = '\0';
 
-   /* Sanity check - cannot create a folder-specific
-    * override if a game-specific override is
-    * already active */
-   if (!game_specific && runloop_state.game_options_active)
-      goto error;
-
-   /* Get options file path (either game-specific or folder-specific) */
-   if (game_specific)
+   if (!game_specific)
    {
-      if (!retroarch_validate_game_options(
-               options_path,
-            sizeof(options_path), true))
+      /* Sanity check - cannot create a folder-specific
+       * override if a game-specific override is
+       * already active */
+      if (runloop_state.game_options_active)
          goto error;
-   }
-   else
+
+      /* Get options file path (folder-specific) */
       if (!retroarch_validate_folder_options(
                options_path,
                sizeof(options_path), true))
          goto error;
+   }
+   else
+   {
+      /* Get options file path (game-specific) */
+      if (!retroarch_validate_game_options(
+               options_path,
+               sizeof(options_path), true))
+         goto error;
+   }
 
    /* Open config file */
    if (!(conf = config_file_new_from_path_to_string(options_path)))

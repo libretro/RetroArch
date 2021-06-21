@@ -151,7 +151,7 @@ static rcheevos_locals_t rcheevos_locals =
    false /* leaderboard_trackers */
 };
 
-rcheevos_locals_t* get_rcheevos_locals()
+rcheevos_locals_t* get_rcheevos_locals(void)
 {
    return &rcheevos_locals;
 }
