@@ -219,12 +219,13 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
          x11_exit_fullscreen(g_x11_dpy);
          x->should_reset_mode = false;
       }
-
+/*
       if (!video_driver_is_video_cache_context())
       {
          XCloseDisplay(g_x11_dpy);
          g_x11_dpy = NULL;
       }
+*/ /* Why are you closing X display here no vaild context can be created after this point */
    }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
