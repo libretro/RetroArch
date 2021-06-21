@@ -60,9 +60,7 @@
 
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
-#endif
-
-#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP)
+#else
 const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIFactory5 = { 0x7632e1f5,0xee65,0x4dca, { 0x87,0xfd,0x84,0xcd,0x75,0xf8,0x83,0x8d } };
 #endif
 
@@ -627,9 +625,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #ifdef __WINRT__
    IDXGIFactory2* dxgiFactory              = NULL;
 #else
-   IDXGIFactory* dxgiFactory               = NULL;
-#endif
-#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP)
+   IDXGIFactory*  dxgiFactory              = NULL;
    IDXGIFactory5* dxgiFactory5             = NULL;
 #endif
    IDXGIDevice* dxgiDevice                 = NULL;
@@ -678,9 +674,11 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 #ifdef HAVE_WINDOW
    desc.Windowed                           = TRUE;
 #endif
+
 #ifdef DEBUG
    flags                                  |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
+
 
    if(*cached_device && *cached_context)
    {
@@ -702,7 +700,20 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    d3d11->device->lpVtbl->QueryInterface(
          d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
    dxgiDevice->lpVtbl->GetAdapter(dxgiDevice, &adapter);
+
 #ifdef __WINRT__
+#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   /* On phone, no swap effects are supported. */
+   /* TODO/FIXME - need to verify if this is needed and if 
+    * flip model cannot be used here */
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
+#else
+   d3d11->has_flip_model                   = true;
+   d3d11->has_allow_tearing                = true;
+   desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+#endif
+
    adapter->lpVtbl->GetParent(
          adapter, uuidof(IDXGIFactory2), (void**)&dxgiFactory);
    if (FAILED(dxgiFactory->lpVtbl->CreateSwapChainForCoreWindow(
@@ -710,14 +721,11 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
                &desc, NULL, (IDXGISwapChain1**)&d3d11->swapChain)))
       return false;
 #else
+   desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
+
    adapter->lpVtbl->GetParent(
          adapter, uuidof(IDXGIFactory1), (void**)&dxgiFactory);
 
-   /* On phone, no swap effects are supported. */
-   /* TODO/FIXME - need to verify if this is needed and if
-    * flip model cannot be used here */
-   desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP)
    /* Check for ALLOW_TEARING support before trying to use it.
     * Also don't use the flip model if it's not supported, because then we can't uncap our
     * present rate. */
@@ -734,19 +742,17 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
          desc.Flags                |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
          d3d11->has_flip_model     = true;
          d3d11->has_allow_tearing  = true;
+
+         RARCH_LOG("[D3D11]: Flip model and tear control supported and enabled.\n");
       }
 
       dxgiFactory5->lpVtbl->Release(dxgiFactory5);
    }
-#endif
 
    if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
                dxgiFactory, (IUnknown*)d3d11->device,
                &desc, (IDXGISwapChain**)&d3d11->swapChain)))
    {
-      if (!d3d11->has_flip_model)
-         return false;
-
       RARCH_WARN("[D3D11]: Failed to create swapchain with flip model, try non-flip model.\n");
 
       /* Failed to create swapchain, try non-flip model */
@@ -1353,7 +1359,8 @@ static bool d3d11_gfx_frame(
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
    bool vsync                     = d3d11->vsync;
-   unsigned present_flags         = (vsync || !d3d11->has_allow_tearing) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
+   /* TODO/FIXME - setting the conditional to (vsync || !d3d11->has_allow_tearing) causes a black screen on startup in fullscreen mode */
+   unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
@@ -1366,8 +1373,10 @@ static bool d3d11_gfx_frame(
 
    if (d3d11->resize_chain)
    {
+      UINT swapchain_flags                = d3d11->has_allow_tearing 
+         ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
       DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, DXGI_FORMAT_UNKNOWN,
-                        d3d11->has_allow_tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
+            swapchain_flags);
 
       d3d11->viewport.Width  = video_width;
       d3d11->viewport.Height = video_height;
