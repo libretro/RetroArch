@@ -5156,7 +5156,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          size_t x_pos      = xmb->icon_size / 6;
          size_t x_pos_icon = xmb->margins_title_left;
 
-         if (xmb_coord_white[3] != 0 &&  !xmb->assets_missing)
+         if (!xmb->assets_missing)
          {
             if (dispctx && dispctx->blend_begin)
                dispctx->blend_begin(userdata);
@@ -5207,7 +5207,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       char timedate[255];
       int x_pos = 0;
 
-      if (xmb_coord_white[3] != 0 && !xmb->assets_missing)
+      if (!xmb->assets_missing)
       {
          int x_pos = 0;
 
@@ -5261,7 +5261,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    gfx_display_set_alpha(item_color,
          MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
-   if (xmb_coord_white[3] != 0 && !xmb->assets_missing)
+   if (!xmb->assets_missing)
    {
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
