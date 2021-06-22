@@ -1055,6 +1055,8 @@ void gfx_display_draw_cursor(
    draw.texture         = texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
+   draw.scale_factor    = 1.0f;
+   draw.rotation        = 0.0f;
 
    if (dispctx->blend_begin)
       dispctx->blend_begin(userdata);

@@ -766,7 +766,18 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
                   &desc, (IDXGISwapChain**)&d3d11->swapChain)))
          return false;
    }
+
+#ifdef HAVE_WINDOW
+   /* Don't let DXGI mess with the full screen state, because otherwise we end up with a mismatch
+    * between the window size and the buffers. RetroArch only uses windowed mode (see above). */
+   if (FAILED(dxgiFactory->lpVtbl->MakeWindowAssociation(dxgiFactory, desc.OutputWindow,
+                                                         DXGI_MWA_NO_ALT_ENTER)))
+   {
+      RARCH_ERR("[D3D11]: Failed to make disable DXGI ALT+ENTER handling.\n");
+   }
 #endif
+
+#endif    // __WINRT__
 
    dxgiFactory->lpVtbl->Release(dxgiFactory);
    adapter->lpVtbl->Release(adapter);
@@ -1359,8 +1370,7 @@ static bool d3d11_gfx_frame(
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
    bool vsync                     = d3d11->vsync;
-   /* TODO/FIXME - setting the conditional to (vsync || !d3d11->has_allow_tearing) causes a black screen on startup in fullscreen mode */
-   unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
+   unsigned present_flags         = (vsync || !d3d11->has_allow_tearing) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
@@ -1600,9 +1610,8 @@ static bool d3d11_gfx_frame(
       D3D11SetPShaderSamplers(
             context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
+      D3D11Draw(context, 4, 0);
    }
-
-   D3D11Draw(context, 4, 0);
 
    D3D11SetRasterizerState(context, d3d11->scissor_enabled);
    D3D11SetScissorRects(d3d11->context, 1, &d3d11->scissor);
