@@ -479,7 +479,7 @@ static void udev_handle_mouse(void *data,
    }
 }
 
-static bool udev_input_add_device(udev_input_t *udev,
+static int udev_input_add_device(udev_input_t *udev,
       enum udev_input_dev_type type, const char *devnode, device_handle_cb cb)
 {
    unsigned char keycaps[(KEY_MAX / 8) + 1];
@@ -518,7 +518,7 @@ static bool udev_input_add_device(udev_input_t *udev,
    if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD )
    {
       if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof (keycaps)), keycaps) == -1)
-        return 0;  /* gotta have some buttons!  :)  */
+        return -1;  /* gotta have some buttons!  return -1 to skip error logging for this:)  */
 
       if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
       {
@@ -1240,13 +1240,11 @@ static bool open_devices(udev_input_t *udev,
 
          if (fd != -1)
          {
-            bool check = udev_input_add_device(udev, type, devnode, cb);
-#ifdef DEBUG
-            if (!check)
-               RARCH_DBG("[udev] udev_input_add_device SKIPPED : %s (%s).\n",
+            int check = udev_input_add_device(udev, type, devnode, cb);
+            if (!check && check != -1 )
+               RARCH_DBG("[udev] udev_input_add_device error : %s (%s).\n",
                      devnode, strerror(errno));
-#endif
-            if (check)
+            else if (check != -1 && check != 0)  
             {
                char ident[255];
                if (ioctl(fd, EVIOCGNAME(sizeof(ident)), ident) < 0)
