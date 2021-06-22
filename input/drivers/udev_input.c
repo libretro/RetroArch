@@ -1216,8 +1216,8 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
-   int device_index                 = 0;
-
+   static int device_keyboard                 = 0;
+   static int device_mouse                    = 0;
    if (!enumerate)
       return false;
 
@@ -1241,19 +1241,33 @@ static bool open_devices(udev_input_t *udev,
          if (fd != -1)
          {
             bool check = udev_input_add_device(udev, type, devnode, cb);
-
+#ifdef DEBUG
             if (!check)
                RARCH_DBG("[udev] udev_input_add_device SKIPPED : %s (%s).\n",
                      devnode, strerror(errno));
-            else
+#endif
+            if (check)
             {
                char ident[255];
                if (ioctl(fd, EVIOCGNAME(sizeof(ident)), ident) < 0)
                   ident[0] = '\0';
-               RARCH_LOG("[udev]: Added Device %s %s (%s).\n",
-                     type == UDEV_INPUT_KEYBOARD ? "Keyboard" : "Mouse",
+               if ( type == UDEV_INPUT_KEYBOARD)
+               {
+                  RARCH_LOG("[udev]: Added Device Keyboard#%d %s (%s) .\n",
+                     device_keyboard,
                      ident,
                      devnode);
+                   device_keyboard++;
+               }                     
+               else
+               {
+                  RARCH_LOG("[udev]: Added Device mouse#%d %s (%s) .\n",
+                     device_mouse,
+                     ident,
+                     devnode);
+                     device_mouse++;
+               }                     
+                  
             }
 
             (void)check;
