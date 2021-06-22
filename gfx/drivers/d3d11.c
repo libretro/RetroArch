@@ -1370,8 +1370,7 @@ static bool d3d11_gfx_frame(
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
    bool vsync                     = d3d11->vsync;
-   /* TODO/FIXME - setting the conditional to (vsync || !d3d11->has_allow_tearing) causes a black screen on startup in fullscreen mode */
-   unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
+   unsigned present_flags         = (vsync || !d3d11->has_allow_tearing) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
