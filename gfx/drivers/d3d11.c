@@ -766,7 +766,18 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
                   &desc, (IDXGISwapChain**)&d3d11->swapChain)))
          return false;
    }
+
+#ifdef HAVE_WINDOW
+   /* Don't let DXGI mess with the full screen state, because otherwise we end up with a mismatch
+    * between the window size and the buffers. RetroArch only uses windowed mode (see above). */
+   if (FAILED(dxgiFactory->lpVtbl->MakeWindowAssociation(dxgiFactory, desc.OutputWindow,
+                                                         DXGI_MWA_NO_ALT_ENTER)))
+   {
+      RARCH_ERR("[D3D11]: Failed to make disable DXGI ALT+ENTER handling.\n");
+   }
 #endif
+
+#endif    // __WINRT__
 
    dxgiFactory->lpVtbl->Release(dxgiFactory);
    adapter->lpVtbl->Release(adapter);
