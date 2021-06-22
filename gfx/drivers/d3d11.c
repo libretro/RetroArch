@@ -1611,9 +1611,8 @@ static bool d3d11_gfx_frame(
       D3D11SetPShaderSamplers(
             context, 0, 1, &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       D3D11SetVShaderConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
+      D3D11Draw(context, 4, 0);
    }
-
-   D3D11Draw(context, 4, 0);
 
    D3D11SetRasterizerState(context, d3d11->scissor_enabled);
    D3D11SetScissorRects(d3d11->context, 1, &d3d11->scissor);
