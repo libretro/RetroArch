@@ -482,6 +482,7 @@ static void udev_handle_mouse(void *data,
 static bool udev_input_add_device(udev_input_t *udev,
       enum udev_input_dev_type type, const char *devnode, device_handle_cb cb)
 {
+   unsigned char keycaps[(KEY_MAX / 8) + 1];
    int fd;
    struct stat st;
 #if defined(HAVE_EPOLL)
@@ -516,6 +517,9 @@ static bool udev_input_add_device(udev_input_t *udev,
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
    if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD )
    {
+      if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof (keycaps)), keycaps) == -1)
+        return 0;  /* gotta have some buttons!  :)  */
+
       if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
       {
          if (absinfo.minimum >= absinfo.maximum )
@@ -1034,8 +1038,14 @@ static int16_t udev_input_state(
                if ( 
                      (binds[port][id].key < RETROK_LAST) && 
                      udev_keyboard_pressed(udev, binds[port][id].key)
-                     && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                        || !keyboard_mapping_blocked)
+                     && ((    id != RARCH_GAME_FOCUS_TOGGLE) 
+                        && !keyboard_mapping_blocked)
+                     )
+                  return 1;
+               else if ( 
+                     (binds[port][id].key < RETROK_LAST) && 
+                     udev_keyboard_pressed(udev, binds[port][id].key)
+                     && (    id == RARCH_GAME_FOCUS_TOGGLE)
                      )
                   return 1;
                else if (udev_mouse_button_pressed(udev, port,
@@ -1206,9 +1216,7 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
-#ifdef DEBUG
    int device_index                 = 0;
-#endif
 
    if (!enumerate)
       return false;
@@ -1233,15 +1241,21 @@ static bool open_devices(udev_input_t *udev,
          if (fd != -1)
          {
             bool check = udev_input_add_device(udev, type, devnode, cb);
-#ifdef DEBUG
+
             if (!check)
-               RARCH_ERR("[udev] Failed to open device: %s (%s).\n",
+               RARCH_DBG("[udev] udev_input_add_device SKIPPED : %s (%s).\n",
                      devnode, strerror(errno));
             else
-               RARCH_LOG("[udev]: %s #%d (%s).\n",
+            {
+               char ident[255];
+               if (ioctl(fd, EVIOCGNAME(sizeof(ident)), ident) < 0)
+                  ident[0] = '\0';
+               RARCH_LOG("[udev]: Added Device %s %s (%s).\n",
                      type == UDEV_INPUT_KEYBOARD ? "Keyboard" : "Mouse",
-                     device_index++, devnode);
-#endif
+                     ident,
+                     devnode);
+            }
+
             (void)check;
             close(fd);
          }
