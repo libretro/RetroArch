@@ -89,23 +89,6 @@ static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
 
 #define ANDROID_KEYBOARD_INPUT_PRESSED(key) (BIT_GET(android_key_state[0], (key)))
 
-uint8_t *android_keyboard_state_get(unsigned port)
-{
-   return android_key_state[port];
-}
-
-static void android_keyboard_free(void)
-{
-   unsigned i, j;
-
-   for (i = 0; i < DEFAULT_MAX_PADS; i++)
-      for (j = 0; j < MAX_KEYS; j++)
-         android_key_state[i][j] = 0;
-}
-
-/* TODO/FIXME -
- * fix game focus toggle */
-
 typedef struct
 {
    float x;
@@ -166,6 +149,14 @@ static void frontend_android_get_name(char *s, size_t len);
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
 void (*engine_handle_dpad)(struct android_app *, AInputEvent*, int, int);
+
+uint8_t *android_keyboard_state_get(unsigned port);
+static void android_keyboard_free(void);
+static bool android_is_keyboard_id(int id);
+static int16_t relative_mouse_state(android_input_t *android, unsigned port, unsigned id);
+static int16_t lightgun_state(android_input_t *android, unsigned port, unsigned id);
+static int16_t pointer_state(android_input_t *android, unsigned port,
+      unsigned device, unsigned id, unsigned idx);
 
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate);
@@ -758,15 +749,6 @@ static INLINE void android_input_poll_event_type_motion(
       android->mouse_r = (android->pointer_count == 2);
 }
 
-static bool android_is_keyboard_id(int id)
-{
-   unsigned i;
-   for (i = 0;  i < (unsigned)kbd_num; i++)
-      if (id == kbd_id[i])
-         return true;
-
-   return false;
-}
 
 static INLINE void android_input_poll_event_type_keyboard(
       AInputEvent *event, int keycode, int *handled)
@@ -792,6 +774,8 @@ static INLINE void android_input_poll_event_type_keyboard(
       *handled = 0;
 }
 
+/* TODO/FIXME -
+ * fix game focus toggle */
 static INLINE void android_input_poll_event_type_key(
       struct android_app *android_app,
       AInputEvent *event, int port, int keycode, int source,
@@ -1362,146 +1346,6 @@ bool android_run_events(void *data)
    return true;
 }
 
-static int16_t android_input_state(
-      void *data,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
-{
-   android_input_t *android           = (android_input_t*)data;
-
-   switch (device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (binds[port][i].valid)
-               {
-                  if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], i))
-                     ret |= (1 << i);
-               }
-            }
-            return ret;
-         }
-
-         if (binds[port][id].valid)
-            if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id))
-               return 1;
-         break;
-      case RETRO_DEVICE_ANALOG:
-         break;
-      case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) 
-            && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT],
-                  rarch_keysym_lut[id]);
-      case RETRO_DEVICE_MOUSE:
-         {
-            int val = 0;
-            if(port > 0) return 0; /* TODO: implement mouse for additional ports/players */
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return android->mouse_l || android_check_quick_tap(android);
-               case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                  return android->mouse_r;
-               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                  return android->mouse_m;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  val = android->mouse_x_delta;
-                  android->mouse_x_delta = 0;
-                  /* flush delta after it has been read */
-                  return val;
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  val = android->mouse_y_delta;
-                  android->mouse_y_delta = 0;
-                  /* flush delta after it has been read */
-                  return val;
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  val = android->mouse_wu;
-                  android->mouse_wu = 0;
-                  return val;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  val = android->mouse_wd;
-                  android->mouse_wd = 0;
-                  return val;
-            }
-         }
-         break;
-      case RETRO_DEVICE_LIGHTGUN:
-         {
-            int val = 0;
-            if(port > 0) return 0; /* TODO: implement lightgun for additional ports/players */
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_LIGHTGUN_X:
-                  val                    = android->mouse_x_delta;
-                  android->mouse_x_delta = 0;
-                  /* flush delta after it has been read */
-                  return val;
-               case RETRO_DEVICE_ID_LIGHTGUN_Y:
-                  val                    = android->mouse_y_delta;
-                  android->mouse_y_delta = 0;
-                  /* flush delta after it has been read */
-                  return val;
-               case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-                  return android->mouse_l || android_check_quick_tap(android);
-               case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
-                  return android->mouse_m;
-               case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
-                  return android->mouse_r;
-               case RETRO_DEVICE_ID_LIGHTGUN_START:
-                  return android->mouse_m && android->mouse_r;
-               case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-                  return android->mouse_m && android->mouse_l;
-            }
-         }
-         break;
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         switch (id)
-         {
-            case RETRO_DEVICE_ID_POINTER_X:
-               if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  return android->pointer[idx].full_x;
-               return android->pointer[idx].x;
-            case RETRO_DEVICE_ID_POINTER_Y:
-               if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  return android->pointer[idx].full_y;
-               return android->pointer[idx].y;
-            case RETRO_DEVICE_ID_POINTER_PRESSED:
-               if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  return (idx < android->pointer_count) &&
-                     (android->pointer[idx].full_x != -0x8000) &&
-                     (android->pointer[idx].full_y != -0x8000);
-               return (idx < android->pointer_count) &&
-                  (android->pointer[idx].x != -0x8000) &&
-                  (android->pointer[idx].y != -0x8000);
-            case RETRO_DEVICE_ID_POINTER_COUNT:
-               return android->pointer_count;
-            case RARCH_DEVICE_ID_POINTER_BACK:
-            {
-               const struct retro_keybind *keyptr = 
-                  &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
-               if (keyptr->joykey == 0)
-                  return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
-            }
-         }
-         break;
-   }
-
-   return 0;
-}
-
 static void android_input_free_input(void *data)
 {
    android_input_t *android = (android_input_t*)data;
@@ -1655,6 +1499,198 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
    }
 
    return false;
+}
+
+static int16_t android_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
+{
+   android_input_t *android           = (android_input_t*)data;
+
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            int16_t ret = 0;
+
+            /* Check for mouse bindings to the retropad */
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (binds[port][i].valid)
+               {
+                  /* TODO: 
+                  /* if (android_mouse_button_pressed(android, port, binds[port][i].mbutton))
+                     ret |= (1 << i); */
+               }
+            }
+
+            /* check custom keyboard bindings */
+
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               if (binds[port][i].valid)
+               {
+                  if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], i))
+                     ret |= (1 << i);
+               }
+            }
+            return ret;
+
+            /* check regular keyboard bindings */
+            if (binds[port][id].valid)
+               if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id))
+                  return 1;
+         }
+         break;
+
+      case RETRO_DEVICE_ANALOG:
+         return 0; /* TODO: implement analog controls */
+
+      case RETRO_DEVICE_KEYBOARD:
+         if (id < RETROK_LAST)
+           return BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
+
+      case RETRO_DEVICE_MOUSE:
+         return relative_mouse_state(android, port, id);
+
+      case RETRO_DEVICE_LIGHTGUN:
+         return lightgun_state(android, port, id);
+
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return pointer_state(android, port, device, id, idx);
+   }
+
+   return 0;
+}
+
+uint8_t *android_keyboard_state_get(unsigned port)
+{
+   return android_key_state[port];
+}
+
+static void android_keyboard_free(void)
+{
+   unsigned i, j;
+
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
+      for (j = 0; j < MAX_KEYS; j++)
+         android_key_state[i][j] = 0;
+}
+
+static bool android_is_keyboard_id(int id)
+{
+   unsigned i;
+   for (i = 0;  i < (unsigned)kbd_num; i++)
+      if (id == kbd_id[i])
+         return true;
+
+   return false;
+}
+
+static int16_t relative_mouse_state(android_input_t *android, unsigned port, unsigned id)
+{
+   int val = 0;
+   if(port > 0) return 0; /* TODO: implement mouse for additional ports/players */
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return android->mouse_l || android_check_quick_tap(android);
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return android->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return android->mouse_m;
+      case RETRO_DEVICE_ID_MOUSE_X:
+         val = android->mouse_x_delta;
+         android->mouse_x_delta = 0;
+         /* flush delta after it has been read */
+         return val;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         val = android->mouse_y_delta;
+         android->mouse_y_delta = 0;
+         /* flush delta after it has been read */
+         return val;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         val = android->mouse_wu;
+         android->mouse_wu = 0;
+         return val;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         val = android->mouse_wd;
+         android->mouse_wd = 0;
+         return val;
+   }
+}
+
+static int16_t lightgun_state(android_input_t *android, unsigned port, unsigned id)
+{
+   int val = 0;
+   if(port > 0) return 0; /* TODO: implement lightgun for additional ports/players */
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_X:
+         val                    = android->mouse_x_delta;
+         android->mouse_x_delta = 0;
+         /* flush delta after it has been read */
+         return val;
+      case RETRO_DEVICE_ID_LIGHTGUN_Y:
+         val                    = android->mouse_y_delta;
+         android->mouse_y_delta = 0;
+         /* flush delta after it has been read */
+         return val;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return android->mouse_l || android_check_quick_tap(android);
+      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+         return android->mouse_m;
+      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+         return android->mouse_r;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return android->mouse_m && android->mouse_r;
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return android->mouse_m && android->mouse_l;
+   }
+}
+
+static int16_t pointer_state(android_input_t *android, unsigned port,
+      unsigned device, unsigned id, unsigned idx)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         if (device == RARCH_DEVICE_POINTER_SCREEN)
+            return android->pointer[idx].full_x;
+         return android->pointer[idx].x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         if (device == RARCH_DEVICE_POINTER_SCREEN)
+            return android->pointer[idx].full_y;
+         return android->pointer[idx].y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         if (device == RARCH_DEVICE_POINTER_SCREEN)
+            return (idx < android->pointer_count) &&
+               (android->pointer[idx].full_x != -0x8000) &&
+               (android->pointer[idx].full_y != -0x8000);
+         return (idx < android->pointer_count) &&
+            (android->pointer[idx].x != -0x8000) &&
+            (android->pointer[idx].y != -0x8000);
+      case RETRO_DEVICE_ID_POINTER_COUNT:
+         return android->pointer_count;
+      case RARCH_DEVICE_ID_POINTER_BACK:
+      {
+         const struct retro_keybind *keyptr = 
+            &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
+         if (keyptr->joykey == 0)
+            return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
+      }
+   }
 }
 
 static float android_input_get_sensor_input(void *data,
