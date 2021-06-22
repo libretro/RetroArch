@@ -53,6 +53,7 @@ typedef struct
    double view_abs_ratio_x;
    double view_abs_ratio_y;
    HWND window;
+   RECT rect; /* Needed for checking for a windows size change */
    winraw_mouse_t *mice;
    unsigned mouse_cnt;
    winraw_keyboard_t keyboard;
@@ -62,7 +63,6 @@ typedef struct
 
 /* TODO/FIXME - static globals */
 static winraw_mouse_t *g_mice        = NULL;
-static RECT *prev_rect               = NULL; /* Needed to store RECT to checking for a windows size change */ 
 
 #define WINRAW_KEYBOARD_PRESSED(wr, key) (wr->keyboard.keys[rarch_keysym_lut[(enum retro_key)(key)]])
 
@@ -338,17 +338,13 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
-   RECT *tmp_rect = NULL;
+   RECT tmp_rect;
+
    /* used for fixing cordinates after switching resolutions */
-   GetClientRect((HWND)video_driver_window_get(), tmp_rect);
-   if (!prev_rect)
+   GetClientRect((HWND)video_driver_window_get(), &tmp_rect);
+   if (!EqualRect(&wr->rect, &tmp_rect))
    {
-      GetClientRect((HWND)video_driver_window_get(), prev_rect);
-      winraw_init_mouse_xy_mapping(wr);
-   }
-   else if (tmp_rect != prev_rect)
-   {
-      GetClientRect((HWND)video_driver_window_get(), prev_rect);
+      wr->rect = tmp_rect;
       winraw_init_mouse_xy_mapping(wr);
    }
 
