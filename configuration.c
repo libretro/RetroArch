@@ -1530,6 +1530,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_windowed_fullscreen",     &settings->bools.video_windowed_fullscreen, true, DEFAULT_WINDOWED_FULLSCREEN, false);
    SETTING_BOOL("video_crop_overscan",           &settings->bools.video_crop_overscan, true, DEFAULT_CROP_OVERSCAN, false);
    SETTING_BOOL("video_scale_integer",           &settings->bools.video_scale_integer, true, DEFAULT_SCALE_INTEGER, false);
+   SETTING_BOOL("video_scale_integer_overscale", &settings->bools.video_scale_integer_overscale, true, DEFAULT_SCALE_INTEGER_OVERSCALE, false);
    SETTING_BOOL("video_smooth",                  &settings->bools.video_smooth, true, DEFAULT_VIDEO_SMOOTH, false);
    SETTING_BOOL("video_ctx_scaling",              &settings->bools.video_ctx_scaling, true, DEFAULT_VIDEO_CTX_SCALING, false);
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);

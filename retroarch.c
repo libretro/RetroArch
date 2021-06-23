@@ -31819,6 +31819,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    struct rarch_state     *p_rarch = &rarch_st;
    settings_t *settings            = p_rarch->configuration_settings;
    unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   bool overscale                  = settings->bools.video_scale_integer_overscale;
 
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
@@ -31861,8 +31862,15 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
          if (keep_aspect)
          {
             /* X/Y scale must be same. */
-            unsigned max_scale = MIN(width / base_width,
-                  height / base_height);
+            unsigned max_scale = 1;
+
+            if (overscale)
+               max_scale = MIN((width / base_width) + !!(width % base_width),
+                     (height / base_height) + !!(height % base_height));
+            else
+               max_scale = MIN(width / base_width,
+                     height / base_height);
+
             padding_x          = width - base_width * max_scale;
             padding_y          = height - base_height * max_scale;
          }

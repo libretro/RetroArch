@@ -1632,6 +1632,14 @@ MSG_HASH(
    "Scale video in integer steps only. The base size depends on system-reported geometry and aspect ratio. If 'Force Aspect Ratio' is not set, X/Y will be integer scaled independently."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Integer Scale Overscale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Force integer scaling to round up to the next larger integer instead of rounding down."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Aspect Ratio"
    )

@@ -7765,6 +7765,11 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
+               if (settings->bools.video_scale_integer)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
                         PARSE_ONLY_UINT, false) == 0)
