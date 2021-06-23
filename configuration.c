@@ -2467,6 +2467,8 @@ void config_set_defaults(void *data)
 #endif
       input_config_set_device(i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = 0;
+      settings->uints.input_combine_into[i] = 0;
+      settings->uints.input_combine_from[i][0] = 0;
    }
 
    video_driver_reset_custom_viewport();
@@ -3045,7 +3047,7 @@ static void video_driver_load_settings(global_t *global,
 static bool config_load_file(global_t *global,
       const char *path, settings_t *settings)
 {
-   unsigned i;
+   unsigned i,j;
    char tmp_str[PATH_MAX_LENGTH];
    bool ret                                        = false;
    unsigned tmp_uint                               = 0;
@@ -3190,6 +3192,7 @@ static bool config_load_file(global_t *global,
    for (i = 0; i < MAX_USERS; i++)
    {
       char buf[64];
+      uint16_t into;
 
       buf[0] = '\0';
 
@@ -3204,6 +3207,23 @@ static bool config_load_file(global_t *global,
 
       snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
+
+      snprintf(buf, sizeof(buf), "input_player%u_combine_into", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_combine_into[i], buf);
+      RARCH_DBG("combine port %d into port %d",i+1,settings->uints.input_combine_into[i]);
+
+      into = settings->uints.input_combine_into[i];
+      if((into > 0) && (into < MAX_USERS+1)) {
+         RARCH_DBG("combine port %d into port %d",i+1,into);
+         /* append to the combine_from array */
+         for(j=0;j<MAX_USERS-2;j++) {
+            if(settings->uints.input_combine_from[into-1][j] == 0) {
+               settings->uints.input_combine_from[into-1][j] = i+1;
+               settings->uints.input_combine_from[into-1][j+1] = 0;
+               break;
+            }
+         }
+      }
    }
 
    /* LED map for use by the led driver */
@@ -4232,6 +4252,8 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
       snprintf(cfg, sizeof(cfg), "input_player%u_mouse_index", i + 1);
       config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_combine_into", i + 1);
+      config_set_int(conf, cfg, settings->uints.input_combine_into[i]);
    }
 
    /* Boolean settings */
