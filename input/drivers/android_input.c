@@ -1534,17 +1534,19 @@ static int16_t android_input_state(
                }
             }
 
-            /* check custom keyboard bindings */
-
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            /* check custom keyboard bindings, if they are not blocked */
+            if (!keyboard_mapping_blocked)
             {
-               if (binds[port][i].valid)
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], i))
-                     ret |= (1 << i);
+                  if (binds[port][i].valid)
+                  {
+                     if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], i))
+                        ret |= (1 << i);
+                  }
                }
+               return ret;
             }
-            return ret;
 
             /* check regular keyboard bindings */
             if (binds[port][id].valid)
