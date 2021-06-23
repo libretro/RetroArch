@@ -2287,6 +2287,7 @@ struct rarch_state
    bool input_driver_block_libretro_input;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
+   bool input_driver_analog_requested[MAX_USERS];
 
    input_game_focus_state_t game_focus_state; /* bool alignment */
 
