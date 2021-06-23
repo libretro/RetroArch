@@ -1528,7 +1528,7 @@ static int16_t android_input_state(
             {
                if (binds[port][i].valid)
                {
-                  /* TODO: 
+                  /* TODO: check mouse to retropad bindings - udev_input.c is an example */
                   /* if (android_mouse_button_pressed(android, port, binds[port][i].mbutton))
                      ret |= (1 << i); */
                }
@@ -1631,35 +1631,32 @@ static int16_t relative_mouse_state(android_input_t *android, unsigned port, uns
          android->mouse_wd = 0;
          return val;
    }
+
+   return 0;
 }
 
 static int16_t lightgun_state(android_input_t *android, unsigned port, unsigned id)
 {
-   int val = 0;
    if (port > 0) return 0; /* TODO: implement lightgun for additional ports/players */
    switch (id)
    {
-      case RETRO_DEVICE_ID_LIGHTGUN_X:
-         val                    = android->mouse_x_delta;
-         android->mouse_x_delta = 0;
-         /* flush delta after it has been read */
-         return val;
-      case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         val                    = android->mouse_y_delta;
-         android->mouse_y_delta = 0;
-         /* flush delta after it has been read */
-         return val;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+         return android->pointer[0].x;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+         return android->pointer[0].y;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return 0; /* TODO: implement RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN */
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
          return android->mouse_l || android_check_quick_tap(android);
-      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
-         return android->mouse_m;
-      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
          return android->mouse_r;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return android->mouse_m && android->mouse_r;
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return android->mouse_m && android->mouse_l;
+         return android->mouse_m;
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+         return android->mouse_l && android->mouse_r;
    }
+
+   return 0;
 }
 
 static int16_t pointer_state(android_input_t *android, unsigned port,
@@ -1694,6 +1691,8 @@ static int16_t pointer_state(android_input_t *android, unsigned port,
             return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
       }
    }
+
+   return 0;
 }
 
 static float android_input_get_sensor_input(void *data,
