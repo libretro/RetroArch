@@ -19105,6 +19105,11 @@ static void uninit_libretro_symbols(
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
 
+   /* Core has finished utilising the input driver;
+    * reset 'analog input requested' flags */
+   memset(&p_rarch->input_driver_analog_requested, 0,
+         sizeof(p_rarch->input_driver_analog_requested));
+
    /* Performance counters no longer valid. */
    p_rarch->perf_ptr_libretro  = 0;
    memset(p_rarch->perf_counters_libretro, 0,
@@ -21160,7 +21165,7 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                      /* Light up the button if pressed */
                      if (ol_state ?
                            !BIT256_GET(ol_state->buttons, id) :
-                           !input_state(port, RETRO_DEVICE_JOYPAD, 0, id))
+                           !input_state_internal(port, RETRO_DEVICE_JOYPAD, 0, id))
                      {
                         /* We need ALL of the inputs to be active,
                          * abort. */
@@ -21199,9 +21204,9 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
                   RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
 
-               analog_x              = input_state(port, RETRO_DEVICE_ANALOG,
+               analog_x              = input_state_internal(port, RETRO_DEVICE_ANALOG,
                      index, RETRO_DEVICE_ID_ANALOG_X);
-               analog_y              = input_state(port, RETRO_DEVICE_ANALOG,
+               analog_y              = input_state_internal(port, RETRO_DEVICE_ANALOG,
                      index, RETRO_DEVICE_ID_ANALOG_Y);
             }
 
@@ -21210,9 +21215,7 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 
             /* Only modify overlay delta_x/delta_y values
              * if we are monitoring input from a physical
-             * controller (breaks analog touchscreen input,
-             * but it is the only way to show analog stick
-             * motion) */
+             * controller */
             if (!ol_state)
             {
                desc->delta_x = dx;
@@ -21229,7 +21232,7 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
       case OVERLAY_TYPE_KEYBOARD:
          if (ol_state ?
                OVERLAY_GET_KEY(ol_state, desc->retro_key_idx) :
-               input_state(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
+               input_state_internal(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
          {
             desc->updated  = true;
             return true;
@@ -22613,12 +22616,37 @@ static void input_driver_poll(void)
 
 #ifdef HAVE_OVERLAY
    if (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive)
+   {
+      unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[0];
+
+      switch (input_analog_dpad_mode)
+      {
+         case ANALOG_DPAD_LSTICK:
+         case ANALOG_DPAD_RSTICK:
+            {
+               unsigned mapped_port = settings->uints.input_remap_ports[0];
+
+               if (p_rarch->input_driver_analog_requested[mapped_port])
+                  input_analog_dpad_mode = ANALOG_DPAD_NONE;
+            }
+            break;
+         case ANALOG_DPAD_LSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
+            break;
+         case ANALOG_DPAD_RSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
+            break;
+         default:
+            break;
+      }
+
       input_poll_overlay(p_rarch,
             settings,
             p_rarch->overlay_ptr,
             input_overlay_opacity,
-            settings->uints.input_analog_dpad_mode[0],
+            input_analog_dpad_mode,
             p_rarch->input_driver_axis_threshold);
+   }
 #endif
 
 #ifdef HAVE_MENU
@@ -22644,6 +22672,23 @@ static void input_driver_poll(void)
                                            & RETRO_DEVICE_MASK;
          input_bits_t *p_new_state       = (input_bits_t*)&current_inputs;
          unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[i];
+
+         switch (input_analog_dpad_mode)
+         {
+            case ANALOG_DPAD_LSTICK:
+            case ANALOG_DPAD_RSTICK:
+               if (p_rarch->input_driver_analog_requested[mapped_port])
+                  input_analog_dpad_mode = ANALOG_DPAD_NONE;
+               break;
+            case ANALOG_DPAD_LSTICK_FORCED:
+               input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
+               break;
+            case ANALOG_DPAD_RSTICK_FORCED:
+               input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
+               break;
+            default:
+               break;
+         }
 
          switch (device)
          {
@@ -22962,6 +23007,7 @@ static int16_t input_state_device(
       struct rarch_state *p_rarch,
       settings_t *settings,
       input_mapper_t *handle,
+      unsigned input_analog_dpad_mode,
       int16_t ret,
       unsigned port, unsigned device,
       unsigned idx, unsigned id,
@@ -23219,13 +23265,38 @@ static int16_t input_state_device(
                         res = ret;
 
 #ifdef HAVE_OVERLAY
-                        if (  p_rarch->overlay_ptr        &&
-                              p_rarch->overlay_ptr->alive && port == 0)
+                        if (p_rarch->overlay_ptr &&
+                            p_rarch->overlay_ptr->alive &&
+                            (port == 0) &&
+                            !(((input_analog_dpad_mode == ANALOG_DPAD_LSTICK) &&
+                                 (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)) ||
+                             ((input_analog_dpad_mode == ANALOG_DPAD_RSTICK) &&
+                                 (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))))
                         {
                            input_overlay_state_t *ol_state =
                               &p_rarch->overlay_ptr->overlay_state;
-                           if (ol_state->analog[base])
-                              res |= ol_state->analog[base];
+                           int16_t ol_analog               =
+                                 ol_state->analog[base];
+
+                           /* Analog values are an integer corresponding
+                            * to the extent of the analog motion; these
+                            * cannot be OR'd together, we must instead
+                            * keep the value with the largest magnitude */
+                           if (ol_analog)
+                           {
+                              if (res == 0)
+                                 res = ol_analog;
+                              else
+                              {
+                                 int16_t ol_analog_abs = (ol_analog >= 0) ?
+                                       ol_analog : -ol_analog;
+                                 int16_t res_abs       = (res >= 0) ?
+                                       res : -res;
+
+                                 res = (ol_analog_abs > res_abs) ?
+                                       ol_analog : res;
+                              }
+                           }
                         }
 #endif
                      }
@@ -23239,6 +23310,10 @@ static int16_t input_state_device(
                int        val1 = handle->analog_value[port][offset];
                int        val2 = handle->analog_value[port][offset+1];
 
+               /* OR'ing these analog values is 100% incorrect,
+                * but I have no idea what this code is supposed
+                * to be doing (val1 and val2 always seem to be
+                * zero), so I will leave it alone... */
                if (val1)
                   res          |= val1;
                else if (val2)
@@ -23274,19 +23349,7 @@ static int16_t input_state_device(
    return res;
 }
 
-/**
- * input_state:
- * @port                 : user number.
- * @device               : device identifier of user.
- * @idx                  : index value of user.
- * @id                   : identifier of key pressed by user.
- *
- * Input state callback function.
- *
- * Returns: Non-zero if the given key (identified by @id)
- * was pressed by the user (assigned to @port).
- **/
-static int16_t input_state(unsigned port, unsigned device,
+static int16_t input_state_internal(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
@@ -23296,6 +23359,7 @@ static int16_t input_state(unsigned port, unsigned device,
    float input_analog_deadzone             = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity          = settings->floats.input_analog_sensitivity;
    unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
+   bool input_driver_analog_requested      = p_rarch->input_driver_analog_requested[port];
    const input_device_driver_t *joypad     = p_rarch->joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t *sec_joypad = p_rarch->sec_joypad;
@@ -23313,23 +23377,6 @@ static int16_t input_state(unsigned port, unsigned device,
                                              (id == RETRO_DEVICE_ID_JOYPAD_MASK);
    joypad_info.axis_threshold              = p_rarch->input_driver_axis_threshold;
 
-#ifdef HAVE_BSV_MOVIE
-   /* Load input from BSV record, if enabled */
-   if (BSV_MOVIE_IS_PLAYBACK_ON())
-   {
-      int16_t bsv_result;
-      if (intfstream_read(p_rarch->bsv_movie_state_handle->file, &bsv_result, 2) == 2)
-      {
-#ifdef HAVE_CHEEVOS
-         rcheevos_pause_hardcore();
-#endif
-         return swap_if_big16(bsv_result);
-      }
-
-      p_rarch->bsv_movie_state.movie_end = true;
-   }
-#endif
-
    /* Loop over all 'physical' ports mapped to specified
     * 'virtual' port index */
    while ((mapped_port = *(input_remap_port_map++)) < MAX_USERS)
@@ -23344,6 +23391,25 @@ static int16_t input_state(unsigned port, unsigned device,
       /* Skip disabled input devices */
       if (mapped_port >= max_users)
          continue;
+
+      /* If core has requested analog input, disable
+       * analog to dpad mapping (unless forced) */
+      switch (input_analog_dpad_mode)
+      {
+         case ANALOG_DPAD_LSTICK:
+         case ANALOG_DPAD_RSTICK:
+            if (input_driver_analog_requested)
+               input_analog_dpad_mode = ANALOG_DPAD_NONE;
+            break;
+         case ANALOG_DPAD_LSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
+            break;
+         case ANALOG_DPAD_RSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
+            break;
+         default:
+            break;
+      }
 
       /* TODO/FIXME: This code is gibberish - a mess of nested
        * refactors that make no sense whatsoever. The entire
@@ -23426,12 +23492,14 @@ static int16_t input_state(unsigned port, unsigned device,
             unsigned i;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                if (input_state_device(p_rarch, settings, handle,
-                     ret, mapped_port, device, idx, i, true))
+                     input_analog_dpad_mode, ret, mapped_port,
+                           device, idx, i, true))
                   port_result |= (1 << i);
          }
          else
             port_result = input_state_device(p_rarch, settings, handle,
-                  ret, mapped_port, device, idx, id, false);
+                  input_analog_dpad_mode, ret, mapped_port,
+                        device, idx, id, false);
       }
 
       /* Digital values are represented by a bitmap;
@@ -23459,6 +23527,63 @@ static int16_t input_state(unsigned port, unsigned device,
       else
          result |= port_result;
    }
+
+#ifdef HAVE_BSV_MOVIE
+   /* Save input to BSV record, if enabled */
+   if (BSV_MOVIE_IS_PLAYBACK_OFF())
+   {
+      result = swap_if_big16(result);
+      intfstream_write(p_rarch->bsv_movie_state_handle->file, &result, 2);
+   }
+#endif
+
+   return result;
+}
+
+/**
+ * input_state:
+ * @port                 : user number.
+ * @device               : device identifier of user.
+ * @idx                  : index value of user.
+ * @id                   : identifier of key pressed by user.
+ *
+ * Input state callback function.
+ *
+ * Returns: Non-zero if the given key (identified by @id)
+ * was pressed by the user (assigned to @port).
+ **/
+static int16_t input_state(unsigned port, unsigned device,
+      unsigned idx, unsigned id)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   int16_t result              = 0;
+
+#ifdef HAVE_BSV_MOVIE
+   /* Load input from BSV record, if enabled */
+   if (BSV_MOVIE_IS_PLAYBACK_ON())
+   {
+      int16_t bsv_result = 0;
+      if (intfstream_read(p_rarch->bsv_movie_state_handle->file, &bsv_result, 2) == 2)
+      {
+#ifdef HAVE_CHEEVOS
+         rcheevos_pause_hardcore();
+#endif
+         return swap_if_big16(bsv_result);
+      }
+
+      p_rarch->bsv_movie_state.movie_end = true;
+   }
+#endif
+
+   /* Read input state */
+   result = input_state_internal(port, device, idx, id);
+
+   /* Register any analog stick input requests for
+    * this 'virtual' (core) port */
+   if ((device == RETRO_DEVICE_ANALOG) &&
+       ((idx == RETRO_DEVICE_INDEX_ANALOG_LEFT) ||
+            (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)))
+      p_rarch->input_driver_analog_requested[port] = true;
 
 #ifdef HAVE_BSV_MOVIE
    /* Save input to BSV record, if enabled */
@@ -33744,6 +33869,8 @@ static void retroarch_deinit_drivers(
    p_rarch->input_driver_nonblock_state             = false;
    p_rarch->input_driver_flushing_input             = 0;
    memset(&p_rarch->input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
+   memset(&p_rarch->input_driver_analog_requested, 0,
+         sizeof(p_rarch->input_driver_analog_requested));
    p_rarch->current_input                           = NULL;
 
 #ifdef HAVE_MENU
@@ -36699,6 +36826,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          retroarch_audio_buffer_status_free(p_rarch);
          retroarch_game_focus_free(p_rarch);
          retroarch_fastmotion_override_free(p_rarch, &runloop_state);
+         memset(&p_rarch->input_driver_analog_requested, 0,
+               sizeof(p_rarch->input_driver_analog_requested));
          break;
       case RARCH_CTL_IS_IDLE:
          return runloop_state.idle;
@@ -38712,6 +38841,7 @@ static enum runloop_state runloop_check_state(
 int runloop_iterate(void)
 {
    unsigned i;
+   enum analog_dpad_mode dpad_mode[MAX_USERS];
    struct rarch_state                  *p_rarch = &rarch_st;
    settings_t *settings                         = p_rarch->configuration_settings;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
@@ -38873,10 +39003,32 @@ int runloop_iterate(void)
    /* Update binds for analog dpad modes. */
    for (i = 0; i < max_users; i++)
    {
-      enum analog_dpad_mode dpad_mode = (enum analog_dpad_mode)
+      dpad_mode[i] = (enum analog_dpad_mode)
             settings->uints.input_analog_dpad_mode[i];
 
-      if (dpad_mode != ANALOG_DPAD_NONE)
+      switch (dpad_mode[i])
+      {
+         case ANALOG_DPAD_LSTICK:
+         case ANALOG_DPAD_RSTICK:
+            {
+               unsigned mapped_port = settings->uints.input_remap_ports[i];
+
+               if (p_rarch->input_driver_analog_requested[mapped_port])
+                  dpad_mode[i] = ANALOG_DPAD_NONE;
+            }
+            break;
+         case ANALOG_DPAD_LSTICK_FORCED:
+            dpad_mode[i] = ANALOG_DPAD_LSTICK;
+            break;
+         case ANALOG_DPAD_RSTICK_FORCED:
+            dpad_mode[i] = ANALOG_DPAD_RSTICK;
+            break;
+         default:
+            break;
+      }
+
+      /* Push analog to D-Pad mappings to binds. */
+      if (dpad_mode[i] != ANALOG_DPAD_NONE)
       {
          unsigned k;
          unsigned joy_idx                    = settings->uints.input_joypad_index[i];
@@ -38887,9 +39039,7 @@ int runloop_iterate(void)
          unsigned x_minus                    = RARCH_ANALOG_RIGHT_X_MINUS;
          unsigned y_minus                    = RARCH_ANALOG_RIGHT_Y_MINUS;
 
-         /* Push analog to D-Pad mappings to binds. */
-
-         if ((dpad_mode) == ANALOG_DPAD_LSTICK)
+         if (dpad_mode[i] == ANALOG_DPAD_LSTICK)
          {
             x_plus            =  RARCH_ANALOG_LEFT_X_PLUS;
             y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS;
@@ -38966,14 +39116,10 @@ int runloop_iterate(void)
       discord_update(DISCORD_PRESENCE_GAME);
 #endif
 
+   /* Restores analog D-pad binds temporarily overridden. */
    for (i = 0; i < max_users; i++)
    {
-      enum analog_dpad_mode dpad_mode = (enum analog_dpad_mode)
-            settings->uints.input_analog_dpad_mode[i];
-
-      /* Restores analog D-pad binds temporarily overridden. */
-
-      if (dpad_mode != ANALOG_DPAD_NONE)
+      if (dpad_mode[i] != ANALOG_DPAD_NONE)
       {
          unsigned j;
          unsigned joy_idx                    = settings->uints.input_joypad_index[i];
@@ -39427,6 +39573,17 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
    struct rarch_state *p_rarch  = &rarch_st;
    if (!pad)
       return false;
+
+   /* We are potentially 'connecting' a entirely different
+    * type of virtual input device, which may or may not
+    * support analog inputs. We therefore have to reset
+    * the 'analog input requested' flag for this port - but
+    * since port mapping is arbitrary/mutable, it is easiest
+    * to simply reset the flags for all ports.
+    * Correct values will be registered at the next call
+    * of 'input_state()' */
+   memset(&p_rarch->input_driver_analog_requested, 0,
+         sizeof(p_rarch->input_driver_analog_requested));
 
 #ifdef HAVE_RUNAHEAD
    remember_controller_port_device(p_rarch, pad->port, pad->device);

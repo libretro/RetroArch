@@ -292,6 +292,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_runahead_toggle,       ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ai_service,            MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_menu_toggle,           MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_adc_type,                   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE)
 #ifdef HAVE_MATERIALUI
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_playlist_icons_enable, MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE)
@@ -4308,8 +4309,33 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_backup_entry);
             break;
          default:
-         case MSG_UNKNOWN:
             return -1;
+      }
+   }
+   else
+   {
+      /* Per-port 'Analog to Digital Type' entries
+       * require special handling */
+      if (string_starts_with_size(label, "input_player",
+            STRLEN_CONST("input_player")) &&
+         string_ends_with_size(label, "_analog_dpad_mode",
+               strlen(label), STRLEN_CONST("_analog_dpad_mode")))
+      {
+         unsigned i;
+         for (i = 0; i < MAX_USERS; i++)
+         {
+            char key_input_adc_type[64];
+            key_input_adc_type[0] = '\0';
+
+            snprintf(key_input_adc_type, sizeof(key_input_adc_type),
+                  "input_player%u_analog_dpad_mode", i + 1);
+
+            if (!string_is_equal(label, key_input_adc_type))
+               continue;
+
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_adc_type);
+            return 0;
+         }
       }
    }
 
