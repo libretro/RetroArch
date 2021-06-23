@@ -317,10 +317,6 @@ MSG_HASH(
 
 /* Settings > Video > CRT SwitchRes */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Use Custom Refresh Rate"
-   )
 
 /* Settings > Video > Output */
 
@@ -468,10 +464,6 @@ MSG_HASH(
 
 /* Settings > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "Encore Mode" /* suggestion for translators: translate as "Play Again Mode" */
-   )
 
 /* Settings > Network */
 
@@ -614,10 +606,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
-   )
 
 /* Quick Menu > Information */
 
@@ -696,6 +684,10 @@ MSG_HASH(
 
 /* Unused (Needs Confirmation) */
 
+MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+   "Letöltések"
+   )
 
 /* Discord Status */
 
