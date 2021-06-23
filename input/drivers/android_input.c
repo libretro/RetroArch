@@ -1603,7 +1603,7 @@ static bool android_is_keyboard_id(int id)
 static int16_t relative_mouse_state(android_input_t *android, unsigned port, unsigned id)
 {
    int val = 0;
-   if(port > 0) return 0; /* TODO: implement mouse for additional ports/players */
+   if (port > 0) return 0; /* TODO: implement mouse for additional ports/players */
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
@@ -1636,7 +1636,7 @@ static int16_t relative_mouse_state(android_input_t *android, unsigned port, uns
 static int16_t lightgun_state(android_input_t *android, unsigned port, unsigned id)
 {
    int val = 0;
-   if(port > 0) return 0; /* TODO: implement lightgun for additional ports/players */
+   if (port > 0) return 0; /* TODO: implement lightgun for additional ports/players */
    switch (id)
    {
       case RETRO_DEVICE_ID_LIGHTGUN_X:
@@ -1665,6 +1665,7 @@ static int16_t lightgun_state(android_input_t *android, unsigned port, unsigned 
 static int16_t pointer_state(android_input_t *android, unsigned port,
       unsigned device, unsigned id, unsigned idx)
 {
+   if (port > 0) return 0; /* TODO: Implement pointers for additional ports/players */
    switch (id)
    {
       case RETRO_DEVICE_ID_POINTER_X:
