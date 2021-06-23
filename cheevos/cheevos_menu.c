@@ -42,6 +42,8 @@ enum rcheevos_menuitem_bucket
 
 static void rcheevos_menu_update_bucket(rcheevos_racheevo_t* cheevo)
 {
+   cheevo->menu_progress = 0;
+
    if (!cheevo->memaddr)
    {
       /* non-active unsupported achievement */
@@ -66,7 +68,6 @@ static void rcheevos_menu_update_bucket(rcheevos_racheevo_t* cheevo)
 
       /* active achievement */
       cheevo->menu_bucket = RCHEEVOS_MENUITEM_BUCKET_LOCKED;
-      cheevo->menu_progress = 0;
 
       trigger = rc_runtime_get_achievement(&rcheevos_locals->runtime, cheevo->id);
       if (trigger)
