@@ -790,7 +790,7 @@ static enum frontend_powerstate
 frontend_switch_get_powerstate(int *seconds, int *percent)
 {
    uint32_t pct;
-   ChargerType ct;
+   PsmChargerType ct;
    Result rc;
    if (!psmInitialized)
       return FRONTEND_POWERSTATE_NONE;
@@ -810,8 +810,8 @@ frontend_switch_get_powerstate(int *seconds, int *percent)
 
    switch (ct)
    {
-      case ChargerType_Charger:
-      case ChargerType_Usb:
+      case PsmChargerType_EnoughPower:
+      case PsmChargerType_LowPower:
          return FRONTEND_POWERSTATE_CHARGING;
       default:
          break;
