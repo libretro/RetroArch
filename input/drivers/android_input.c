@@ -1640,14 +1640,19 @@ static int16_t lightgun_state(android_input_t *android, unsigned port, unsigned 
    if (port > 0) return 0; /* TODO: implement lightgun for additional ports/players */
    switch (id)
    {
+         /* June 2021: The `pointer[0]->x` and `->y` values are set to -0x8000 when the    */
+         /* pointer is not pressed. Therefore we return 0 when -0x8000 is found. In terms  */
+         /* of the libretro API, this centers the 'cursor' of the gun, which is a more     */
+         /* intuitive no-touch position than to have the lightgun pointed at at one edge   */
+         /* of the range.                                                                  */
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         return android->pointer[0].x;
+         return (android->pointer[0].x != -0x8000);
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         return android->pointer[0].y;
+         return (android->pointer[0].y != -0x8000);
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return 0; /* TODO: implement RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN */
+         return (android->pointer[0].x == -0x8000) && (android->pointer[0].y == -0x8000);
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return android->mouse_l || android_check_quick_tap(android);
+         return (android->pointer[0].x != -0x8000) && (android->pointer[0].y != -0x8000);
       case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
          return android->mouse_r;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
