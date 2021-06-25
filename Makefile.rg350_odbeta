@@ -25,7 +25,7 @@ else
 STRIP                 = $(TOOLCHAIN_DIR)/usr/bin/mipsel-gcw0-linux-uclibc-strip
 endif
 
-GCW0_SDL_CONFIG      ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config
+GCW0_SDL_CONFIG      ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl2-config
 GCW0_FREETYPE_CONFIG ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config
 GCW0_MK_SQUASH_FS    ?= $(TOOLCHAIN_DIR)/usr/bin/mksquashfs
 
@@ -90,7 +90,7 @@ HAVE_RJPEG = 1
 HAVE_RPILED = 0
 HAVE_RPNG = 1
 HAVE_RUNAHEAD = 1
-HAVE_SDL_DINGUX = 1
+HAVE_SDL2 = 1
 HAVE_SHADERPIPELINE = 0
 HAVE_STB_FONT = 0
 HAVE_STB_IMAGE = 1
@@ -134,9 +134,10 @@ DEFINES += -DHAVE_GETOPT_LONG=1 -DHAVE_STRCASESTR=1 -DHAVE_DYNAMIC=1
 DEFINES += -DHAVE_AL=1
 DEFINES += -DHAVE_FILTERS_BUILTIN
 DEFINES += -DHAVE_UDEV=1
+DEFINES += -DHAVE_SDL2
 
-SDL_DINGUX_CFLAGS := $(shell $(GCW0_SDL_CONFIG) --cflags)
-SDL_DINGUX_LIBS := $(shell $(GCW0_SDL_CONFIG) --libs)
+SDL2_CFLAGS := $(shell $(GCW0_SDL_CONFIG) --cflags)
+SDL2_LIBS := $(shell $(GCW0_SDL_CONFIG) --libs)
 FREETYPE_CFLAGS := $(shell $(GCW0_FREETYPE_CONFIG) --cflags)
 FREETYPE_LIBS := $(shell $(GCW0_FREETYPE_CONFIG) --libs)
 AL_LIBS := -lopenal
