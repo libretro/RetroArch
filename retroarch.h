@@ -123,15 +123,12 @@ enum rarch_ctl_state
 
    RARCH_CTL_IS_REMAPS_CORE_ACTIVE,
    RARCH_CTL_SET_REMAPS_CORE_ACTIVE,
-   RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE,
 
    RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE,
    RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE,
-   RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE,
 
    RARCH_CTL_IS_REMAPS_GAME_ACTIVE,
    RARCH_CTL_SET_REMAPS_GAME_ACTIVE,
-   RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE,
 #endif
 
    RARCH_CTL_IS_MISSING_BIOS,
@@ -288,6 +285,11 @@ typedef struct global
       bool softfilter_enable;
 
    } console;
+   unsigned old_analog_dpad_mode[MAX_USERS];
+   unsigned old_libretro_device[MAX_USERS];
+   bool old_analog_dpad_mode_set;
+   bool old_libretro_device_set;
+   bool remapping_cache_active;
    /* Settings and/or global states specific to menus */
 #ifdef HAVE_MENU
    enum menu_action menu_prev_action;
@@ -296,10 +298,43 @@ typedef struct global
    bool cli_load_menu_on_error;
 } global_t;
 
+typedef struct content_file_override
+{
+   char *ext;
+   bool need_fullpath;
+   bool persistent_data;
+} content_file_override_t;
+
+typedef struct content_file_info
+{
+   char *full_path;
+   char *archive_path;
+   char *archive_file;
+   char *dir;
+   char *name;
+   char *ext;
+   char *meta; /* Unused at present */
+   void *data;
+   size_t data_size;
+   bool file_in_archive;
+   bool persistent_data;
+} content_file_info_t;
+
+typedef struct content_file_list
+{
+   content_file_info_t *entries;
+   struct string_list *temporary_files;
+   struct retro_game_info *game_info;
+   struct retro_game_info_ext *game_info_ext;
+   size_t size;
+} content_file_list_t;
+
 typedef struct content_state
 {
    char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
-   struct string_list *temporary_content;
+
+   content_file_override_t *content_override_list;
+   content_file_list_t *content_list;
 
    int pending_subsystem_rom_num;
    int pending_subsystem_id;
@@ -1116,6 +1151,7 @@ typedef struct video_frame_info
 {
    void *userdata;
    void *widgets_userdata;
+   void *disp_userdata;
 
    int custom_vp_x;
    int custom_vp_y;
@@ -1140,6 +1176,8 @@ typedef struct video_frame_info
    unsigned custom_vp_full_width;
    unsigned custom_vp_full_height;
    unsigned black_frame_insertion;
+   unsigned fps_update_interval;
+   unsigned memory_update_interval;
 
    float menu_wallpaper_opacity;
    float menu_framebuffer_opacity;
@@ -1202,6 +1240,8 @@ typedef struct video_frame_info
    bool menu_is_alive;
    bool menu_screensaver_active;
    bool msg_bgcolor_enable;
+   bool crt_switch_hires_menu;
+
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
@@ -1680,7 +1720,9 @@ void video_monitor_set_refresh_rate(float hz);
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
-void crt_switch_driver_reinit(void);
+void crt_switch_driver_refresh(void);
+
+char* crt_switch_core_name(void);
 
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
    (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
@@ -1865,6 +1907,7 @@ extern const gfx_ctx_driver_t gfx_ctx_videocore;
 extern const gfx_ctx_driver_t gfx_ctx_qnx;
 extern const gfx_ctx_driver_t gfx_ctx_cgl;
 extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
+extern const gfx_ctx_driver_t gfx_ctx_cocoavk;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;

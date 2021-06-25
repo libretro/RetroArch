@@ -96,23 +96,23 @@ struct drm_fb
  */
 typedef struct hdmi_timings
 {
-   int h_active_pixels; // horizontal pixels (width)
-   int h_sync_polarity; // invert hsync polarity
-   int h_front_porch;   // horizontal forward padding from DE acitve edge
-   int h_sync_pulse;    // hsync pulse width in pixel clocks
-   int h_back_porch;    // vertical back padding from DE active edge
-   int v_active_lines;  // vertical pixels height (lines)
-   int v_sync_polarity; // invert vsync polarity
-   int v_front_porch;   // vertical forward padding from DE active edge
-   int v_sync_pulse;    // vsync pulse width in pixel clocks
-   int v_back_porch;    // vertical back padding from DE active edge
-   int v_sync_offset_a; // leave at zero
-   int v_sync_offset_b; // leave at zero
-   int pixel_rep;       // leave at zero
-   int frame_rate;      // screen refresh rate in Hz
-   int interlaced;      // leave at zero
-   int pixel_freq;      // clock frequency (width*height*framerate)
-   int aspect_ratio;    // *
+   int h_active_pixels; /* horizontal pixels (width) */
+   int h_sync_polarity; /* invert hsync polarity */
+   int h_front_porch;   /* horizontal forward padding from DE acitve edge */
+   int h_sync_pulse;    /* hsync pulse width in pixel clocks */
+   int h_back_porch;    /* vertical back padding from DE active edge */
+   int v_active_lines;  /* vertical pixels height (lines) */
+   int v_sync_polarity; /* invert vsync polarity */
+   int v_front_porch;   /* vertical forward padding from DE active edge */
+   int v_sync_pulse;    /* vsync pulse width in pixel clocks */
+   int v_back_porch;    /* vertical back padding from DE active edge */
+   int v_sync_offset_a; /* leave at zero */
+   int v_sync_offset_b; /* leave at zero */
+   int pixel_rep;       /* leave at zero */
+   int frame_rate;      /* screen refresh rate in Hz */
+   int interlaced;      /* leave at zero */
+   int pixel_freq;      /* clock frequency (width*height*framerate) */
+   int aspect_ratio;
 } hdmi_timings_t;
 
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
@@ -150,7 +150,7 @@ bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
       modeInfo->vsync_start = modeInfo->vdisplay + (timings.v_front_porch * (timings.interlaced ? 2 : 1));
       modeInfo->vsync_end = modeInfo->vsync_start + (timings.v_sync_pulse * (timings.interlaced ? 2 : 1));
       modeInfo->vtotal = modeInfo->vsync_end + (timings.v_back_porch * (timings.interlaced ? 2 : 1));
-      modeInfo->vscan = 0; // TODO: ??
+      modeInfo->vscan = 0; /* TODO: ?? */
       modeInfo->vrefresh = timings.frame_rate;
       modeInfo->flags = timings.interlaced ? DRM_MODE_FLAG_INTERLACE : 0;
       modeInfo->flags |= timings.v_sync_polarity ? DRM_MODE_FLAG_NVSYNC : DRM_MODE_FLAG_PVSYNC;
@@ -738,9 +738,9 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
          /* Find best match. */
          for (i = 0; i < g_drm_connector->count_modes; i++) {
+            float diff;
             mode = &g_drm_connector->modes[i];
 
-            float diff;
             if (width != mode->hdisplay ||
                height != mode->vdisplay)
                continue;

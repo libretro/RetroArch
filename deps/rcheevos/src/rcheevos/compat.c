@@ -1,4 +1,4 @@
-#include "compat.h"
+#include "rc_compat.h"
 
 #include <ctype.h>
 #include <stdarg.h>

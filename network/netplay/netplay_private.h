@@ -585,27 +585,6 @@ struct netplay
  **************************************************************/
 
 /**
- * netplay_init_socket_buffer
- *
- * Initialize a new socket buffer.
- */
-bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size);
-
-/**
- * netplay_resize_socket_buffer
- *
- * Resize the given socket_buffer's buffer to the requested size.
- */
-bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize);
-
-/**
- * netplay_deinit_socket_buffer
- *
- * Free a socket buffer.
- */
-void netplay_deinit_socket_buffer(struct socket_buffer *sbuf);
-
-/**
  * netplay_send
  *
  * Queue the given data for sending.
@@ -666,20 +645,6 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
    uint32_t frame);
 
 /**
- * netplay_delta_frame_crc
- *
- * Get the CRC for the serialization of this frame.
- */
-uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta);
-
-/**
- * netplay_delta_frame_free
- *
- * Free a delta frame's dependencies
- */
-void netplay_delta_frame_free(struct delta_frame *delta);
-
-/**
  * netplay_input_state_for
  *
  * Get an input state for a particular client
@@ -721,13 +686,6 @@ bool netplay_lan_ad_server(netplay_t *netplay);
  **/
 void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save);
-
-/**
- * netplay_settings_share_mode
- *
- * Get the preferred share mode
- */
-uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analog);
 
 /**
  * input_poll_net
@@ -860,20 +818,6 @@ void netplay_send_raw_cmd_all(netplay_t *netplay,
    size_t size);
 
 /**
- * netplay_cmd_crc
- *
- * Send a CRC command to all active clients.
- */
-bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta);
-
-/**
- * netplay_cmd_request_savestate
- *
- * Send a savestate request command.
- */
-bool netplay_cmd_request_savestate(netplay_t *netplay);
-
-/**
  * netplay_cmd_mode
  *
  * Send a mode change request. As a server, the request is to ourself, and so
@@ -881,15 +825,6 @@ bool netplay_cmd_request_savestate(netplay_t *netplay);
  */
 bool netplay_cmd_mode(netplay_t *netplay,
    enum rarch_netplay_connection_mode mode);
-
-/**
- * netplay_cmd_stall
- *
- * Send a stall command.
- */
-bool netplay_cmd_stall(netplay_t *netplay,
-   struct netplay_connection *connection,
-   uint32_t frames);
 
 /**
  * netplay_poll_net_input
@@ -936,7 +871,7 @@ enum netplay_keys {
 
 /* The mapping of keys from netplay (network) to libretro (host) */
 extern const uint16_t netplay_key_ntoh_mapping[];
-#define netplay_key_ntoh(k) (netplay_key_ntoh_mapping[k])
+#define NETPLAY_KEY_NTOH(k) (netplay_key_ntoh_mapping[k])
 
 /* The mapping of keys from libretro (host) to netplay (network) */
 uint32_t netplay_key_hton(unsigned key);

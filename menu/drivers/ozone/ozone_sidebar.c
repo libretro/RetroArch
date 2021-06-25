@@ -752,6 +752,7 @@ void ozone_refresh_sidebars(
       ozone->animations.thumbnail_bar_position = 0.0f;
       ozone->show_thumbnail_bar                = false;
    }
+   ozone->pending_hide_thumbnail_bar           = false;
 
    /* If sidebar is on-screen, update scroll position */
    if (ozone->depth == 1)

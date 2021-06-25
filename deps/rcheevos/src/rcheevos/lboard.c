@@ -1,4 +1,4 @@
-#include "internal.h"
+#include "rc_internal.h"
 
 enum {
   RC_LBOARD_START    = 1 << 0,
@@ -139,7 +139,9 @@ void rc_parse_lboard_internal(rc_lboard_t* self, const char* memaddr, rc_parse_s
 int rc_lboard_size(const char* memaddr) {
   rc_lboard_t* self;
   rc_parse_state_t parse;
+  rc_memref_t* first_memref;
   rc_init_parse_state(&parse, 0, 0, 0);
+  rc_init_parse_state_memrefs(&parse, &first_memref);
 
   self = RC_ALLOC(rc_lboard_t, &parse);
   rc_parse_lboard_internal(self, memaddr, &parse);
@@ -151,15 +153,19 @@ int rc_lboard_size(const char* memaddr) {
 rc_lboard_t* rc_parse_lboard(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx) {
   rc_lboard_t* self;
   rc_parse_state_t parse;
+
+  if (!buffer || !memaddr)
+    return 0;
+
   rc_init_parse_state(&parse, buffer, L, funcs_ndx);
-  
+
   self = RC_ALLOC(rc_lboard_t, &parse);
   rc_init_parse_state_memrefs(&parse, &self->memrefs);
 
   rc_parse_lboard_internal(self, memaddr, &parse);
 
   rc_destroy_parse_state(&parse);
-  return parse.offset >= 0 ? self : 0;
+  return (parse.offset >= 0) ? self : 0;
 }
 
 int rc_evaluate_lboard(rc_lboard_t* self, int* value, rc_peek_t peek, void* peek_ud, lua_State* L) {
@@ -167,7 +173,7 @@ int rc_evaluate_lboard(rc_lboard_t* self, int* value, rc_peek_t peek, void* peek
 
   rc_update_memref_values(self->memrefs, peek, peek_ud);
 
-  if (self->state == RC_LBOARD_STATE_INACTIVE)
+  if (self->state == RC_LBOARD_STATE_INACTIVE || self->state == RC_LBOARD_STATE_DISABLED)
     return RC_LBOARD_STATE_INACTIVE;
 
   /* these are always tested once every frame, to ensure hit counts work properly */
@@ -199,14 +205,16 @@ int rc_evaluate_lboard(rc_lboard_t* self, int* value, rc_peek_t peek, void* peek
         }
         else if (self->start.requirement == 0 && self->start.alternative == 0) {
           /* start condition is empty - this leaderboard is submit-only with no measured progress */
-        } 
+        }
         else {
           /* start the leaderboard attempt */
           self->state = RC_LBOARD_STATE_STARTED;
 
           /* reset any hit counts in the value */
-          if (self->value.conditions)
-            rc_reset_condset(self->value.conditions);
+          if (self->progress)
+            rc_reset_value(self->progress);
+
+          rc_reset_value(&self->value);
         }
       }
       break;
@@ -251,4 +259,9 @@ void rc_reset_lboard(rc_lboard_t* self) {
   rc_reset_trigger(&self->start);
   rc_reset_trigger(&self->submit);
   rc_reset_trigger(&self->cancel);
+
+  if (self->progress)
+    rc_reset_value(self->progress);
+
+  rc_reset_value(&self->value);
 }

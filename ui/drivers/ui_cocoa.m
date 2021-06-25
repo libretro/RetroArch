@@ -26,7 +26,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
-#include "../../defines/cocoa_defines.h"
+#include <defines/cocoa_defines.h>
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
 
@@ -349,6 +349,17 @@ static ui_application_t ui_application_cocoa = {
 #else
 #define CONVERT_POINT() [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil]
 #endif
+
+- (void)keyDown:(NSEvent *)theEvent
+{
+   switch([theEvent keyCode])
+   {
+      case 0x35: /* Escape */
+         break;
+      default:
+         [super keyDown:theEvent];
+   }
+}
 
 - (void)sendEvent:(NSEvent *)event {
    NSEventType event_type = event.type;

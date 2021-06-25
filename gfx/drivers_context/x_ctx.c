@@ -64,6 +64,7 @@ typedef struct gfx_ctx_x_data
    bool core_es_core;
    bool debug;
    bool should_reset_mode;
+   bool is_fullscreen;
    bool is_double;
    bool core_hw_context_enable;
    bool adaptive_vsync;
@@ -218,12 +219,6 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
          x11_exit_fullscreen(g_x11_dpy);
          x->should_reset_mode = false;
       }
-
-      if (!video_driver_is_video_cache_context())
-      {
-         XCloseDisplay(g_x11_dpy);
-         g_x11_dpy = NULL;
-      }
    }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
@@ -258,40 +253,30 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
    {
       if (g_pglSwapInterval)
       {
-         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->interval);
          if (g_pglSwapInterval(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+            RARCH_WARN("[GLX]: glXSwapInterval(%i) failed.\n", x->interval);
       }
       else if (g_pglSwapIntervalEXT)
-      {
-         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->interval);
          g_pglSwapIntervalEXT(g_x11_dpy, x->glx_win, x->interval);
-      }
       else if (g_pglSwapIntervalSGI)
       {
-         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->interval);
          if (g_pglSwapIntervalSGI(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+            RARCH_WARN("[GLX]: glXSwapIntervalSGI(%i) failed.\n", x->interval);
       }
    }
    else
    {
       if (g_pglSwapIntervalEXT)
-      {
-         RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->interval);
          g_pglSwapIntervalEXT(g_x11_dpy, x->glx_win, x->interval);
-      }
       else if (g_pglSwapInterval)
       {
-         RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->interval);
          if (g_pglSwapInterval(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+            RARCH_WARN("[GLX]: glXSwapInterval(%i) failed.\n", x->interval);
       }
       else if (g_pglSwapIntervalSGI)
       {
-         RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->interval);
          if (g_pglSwapIntervalSGI(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+            RARCH_WARN("[GLX]: glXSwapIntervalSGI(%i) failed.\n", x->interval);
       }
    }
 #endif
@@ -308,7 +293,24 @@ static void gfx_ctx_x_swap_buffers(void *data)
 }
 
 static bool gfx_ctx_x_set_resize(void *data,
-      unsigned width, unsigned height) { return true; }
+      unsigned width, unsigned height)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+
+   if (!x)
+      return false;
+
+   /*
+    * X11 loses focus on monitor/resolution swap and exits fullscreen.
+    * Set window on top again to maintain both fullscreen and resolution.
+    */
+   if (x->is_fullscreen) {
+      XMapRaised(g_x11_dpy, g_x11_win);
+      RARCH_LOG("[GLX]: Resized fullscreen resolution to %dx%d.\n", width, height);
+   }
+
+   return true;
+}
 
 static void *gfx_ctx_x_init(void *data)
 {
@@ -465,7 +467,6 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    if (!x)
       return false;
 
-
    switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -499,6 +500,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       LeaveWindowMask | EnterWindowMask |
       ButtonReleaseMask | ButtonPressMask;
    swa.override_redirect = False;
+
+   x->is_fullscreen = fullscreen;
 
    if (fullscreen && !windowed_full)
    {

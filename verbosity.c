@@ -19,7 +19,7 @@
 #endif
 
 #if defined(__PSL1GHT__) || defined(__PS3__)
-#include "ps3_defines.h"
+#include "defines/ps3_defines.h"
 #endif
 
 #ifdef __MACH__
@@ -214,108 +214,106 @@ void retro_main_log_file_deinit(void)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    verbosity_state_t *g_verbosity = &main_verbosity_st;
+   const char              *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 
-   {
-      const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 #if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
-      vprintf(fmt, ap);
+   vprintf(fmt, ap);
 #else
-      static aslclient asl_client;
-      static int asl_initialized = 0;
-      if (!asl_initialized)
-      {
-         asl_client      = asl_open(
-               FILE_PATH_PROGRAM_NAME,
-               "com.apple.console",
-               ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
-         asl_initialized = 1;
-      }
-      aslmsg msg = asl_new(ASL_TYPE_MSG);
-      asl_set(msg, ASL_KEY_READ_UID, "-1");
-      if (tag)
-         asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
-      asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
-      asl_free(msg);
+   static aslclient asl_client;
+   static int asl_initialized = 0;
+   if (!asl_initialized)
+   {
+      asl_client      = asl_open(
+            FILE_PATH_PROGRAM_NAME,
+            "com.apple.console",
+            ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+      asl_initialized = 1;
+   }
+   aslmsg msg = asl_new(ASL_TYPE_MSG);
+   asl_set(msg, ASL_KEY_READ_UID, "-1");
+   if (tag)
+      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
+   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
+   asl_free(msg);
 #endif
 #elif defined(_XBOX1)
-      /* FIXME: Using arbitrary string as fmt argument is unsafe. */
-      char msg_new[256];
-      char buffer[256];
+   /* FIXME: Using arbitrary string as fmt argument is unsafe. */
+   char msg_new[256];
+   char buffer[256];
 
-      msg_new[0] = buffer[0] = '\0';
-      snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
-            FILE_PATH_PROGRAM_NAME, tag_v, fmt);
-      wvsprintf(buffer, msg_new, ap);
-      OutputDebugStringA(buffer);
+   msg_new[0] = buffer[0] = '\0';
+   snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
+         FILE_PATH_PROGRAM_NAME, tag_v, fmt);
+   wvsprintf(buffer, msg_new, ap);
+   OutputDebugStringA(buffer);
 #elif defined(ANDROID)
-      int prio = ANDROID_LOG_INFO;
-      if (tag)
-      {
-         if (string_is_equal(FILE_PATH_LOG_WARN, tag))
-            prio = ANDROID_LOG_WARN;
-         else if (string_is_equal(FILE_PATH_LOG_ERROR, tag))
-            prio = ANDROID_LOG_ERROR;
-      }
+   int prio = ANDROID_LOG_INFO;
+   if (tag)
+   {
+      if (string_is_equal(FILE_PATH_LOG_WARN, tag))
+         prio = ANDROID_LOG_WARN;
+      else if (string_is_equal(FILE_PATH_LOG_ERROR, tag))
+         prio = ANDROID_LOG_ERROR;
+   }
 
-      if (g_verbosity->initialized)
-      {
-         vfprintf(g_verbosity->fp, fmt, ap);
-         fflush(g_verbosity->fp);
-      }
-      else
-         __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
+   if (g_verbosity->initialized)
+   {
+      vfprintf(g_verbosity->fp, fmt, ap);
+      fflush(g_verbosity->fp);
+   }
+   else
+      __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
 #else
-      FILE *fp = (FILE*)g_verbosity->fp;
+   FILE *fp = (FILE*)g_verbosity->fp;
 #if defined(HAVE_QT) || defined(__WINRT__)
-      char buffer[256];
-      buffer[0] = '\0';
+   char buffer[256];
+   buffer[0] = '\0';
 
-      /* Ensure null termination and line break in error case */
-      if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
+   /* Ensure null termination and line break in error case */
+   if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
+   {
+      int end;
+      buffer[sizeof(buffer) - 1]  = '\0';
+      end = strlen(buffer) - 1;
+      if (end >= 0)
+         buffer[end] = '\n';
+      else
       {
-         int end;
-         buffer[sizeof(buffer) - 1]  = '\0';
-         end = strlen(buffer) - 1;
-         if (end >= 0)
-            buffer[end] = '\n';
-         else
-         {
-            buffer[0]   = '\n';
-            buffer[1]   = '\0';
-         }
+         buffer[0]   = '\n';
+         buffer[1]   = '\0';
       }
+   }
 
-      if (fp)
-      {
-         fprintf(fp, "%s %s", tag_v, buffer);
-         fflush(fp);
-      }
+   if (fp)
+   {
+      fprintf(fp, "%s %s", tag_v, buffer);
+      fflush(fp);
+   }
 
 #if defined(HAVE_QT)
-      ui_companion_driver_log_msg(buffer);
+   ui_companion_driver_log_msg(buffer);
 #endif
 
 #if defined(__WINRT__)
-      OutputDebugStringA(buffer);
+   OutputDebugStringA(buffer);
 #endif
 #else
 #if defined(HAVE_LIBNX)
-      mutexLock(&g_verbosity->mtx);
+   mutexLock(&g_verbosity->mtx);
 #endif
-      if (fp)
-      {
-         fprintf(fp, "%s ", tag_v);
-         vfprintf(fp, fmt, ap);
-         fflush(fp);
-      }
+   if (fp)
+   {
+      fprintf(fp, "%s ", tag_v);
+      vfprintf(fp, fmt, ap);
+      fflush(fp);
+   }
 #if defined(HAVE_LIBNX)
-      mutexUnlock(&g_verbosity->mtx);
+   mutexUnlock(&g_verbosity->mtx);
 #endif
 
 #endif
 #endif
-   }
 }
 
 void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
@@ -323,9 +321,6 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
    unsigned i, offset;
    int padding     = size % 16;
    uint8_t buf[16] = {0};
-
-   if (verbosity_log_level > 1)
-      return;
 
    RARCH_LOG("== %d-byte buffer ==================\n", (int)size);
 

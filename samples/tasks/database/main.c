@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 #else
    task_queue_init(false /* threaded enable */, main_msg_queue_push);
 #endif
-   core_info_init_list(core_info_dir, core_dir, exts, true);
+   core_info_init_list(core_info_dir, core_dir, exts, true, false);
 
    task_push_dbscan(playlist_dir, db_dir, input_dir, true,
          true, main_db_cb);

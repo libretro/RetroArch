@@ -66,7 +66,9 @@ static const float *gfx_display_gl_core_get_default_tex_coords(void)
    return &gl_core_tex_coords[0];
 }
 
-static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
+static void gfx_display_gl_core_draw_pipeline(
+      gfx_display_ctx_draw_t *draw,
+      gfx_display_t *p_disp,
       void *data,
       unsigned video_width,
       unsigned video_height)
@@ -78,7 +80,6 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
    static float t                = 0.0f;
    float yflip                   = 0.0f;
    video_coord_array_t *ca       = NULL;
-   gfx_display_t *p_disp         = disp_get_ptr();
    gl_core_t *gl                 = (gl_core_t*)data;
 
    if (!gl || !draw)

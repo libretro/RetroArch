@@ -361,7 +361,8 @@ void gfx_widgets_msg_queue_push(
             /* Single line text > two lines text > two lines 
              * text with expanded width */
             unsigned title_length               = (unsigned)strlen(title);
-            char *msg                           = strdup(title);
+            char *msg                           = NULL;
+            size_t msg_len                      = 0;
             unsigned width                      = menu_is_alive 
                ? p_dispwidget->msg_queue_default_rect_width_menu_alive 
                : p_dispwidget->msg_queue_default_rect_width;
@@ -372,6 +373,12 @@ void gfx_widgets_msg_queue_push(
                   1);
             msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
 
+            msg_len = title_length + 1 + 1; /* 1 byte uses for inserting '\n' */
+            msg = (char *)malloc(msg_len);
+            if (!msg)
+               return;
+            msg[0] = '\0';
+
             /* Text is too wide, split it into two lines */
             if (text_width > width)
             {
@@ -381,13 +388,16 @@ void gfx_widgets_msg_queue_push(
                if ((text_width - (text_width >> 2)) < width)
                   width = text_width - (text_width >> 2);
 
-               word_wrap(msg, msg, (title_length * width) / text_width,
-                     false, 2);
+               word_wrap(msg, msg_len, title, (title_length * width) / text_width,
+                     100, 2);
 
                msg_widget->text_height *= 2;
             }
             else
+            {
                width                            = text_width;
+               strlcpy(msg, title, msg_len);
+            }
 
             msg_widget->msg                     = msg;
             msg_widget->msg_len                 = (unsigned)strlen(msg);
@@ -1583,9 +1593,9 @@ static void INLINE gfx_widgets_font_unbind(gfx_widget_font_data_t *font_data)
 void gfx_widgets_frame(void *data)
 {
    size_t i;
-   gfx_display_t            *p_disp = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx= p_disp->dispctx;
    video_frame_info_t *video_info   = (video_frame_info_t*)data;
+   gfx_display_t            *p_disp = (gfx_display_t*)video_info->disp_userdata;
+   gfx_display_ctx_driver_t *dispctx= p_disp->dispctx;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)video_info->widgets_userdata;
    bool framecount_show             = video_info->framecount_show;
    bool memory_show                 = video_info->memory_show;
@@ -2077,6 +2087,7 @@ static void gfx_widgets_context_reset(
 bool gfx_widgets_init(
       void *data,
       void *data_disp,
+      void *data_anim,
       void *settings_data,
       uintptr_t widgets_active_ptr,
       bool video_is_threaded,
@@ -2086,6 +2097,7 @@ bool gfx_widgets_init(
    unsigned i;
    dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)data;
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
+   gfx_animation_t *p_anim                     = (gfx_animation_t*)data_anim;
    settings_t *settings                        = (settings_t*)settings_data;
    p_dispwidget->divider_width_1px             = 1;
    p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)widgets_active_ptr;
@@ -2123,7 +2135,7 @@ bool gfx_widgets_init(
          const gfx_widget_t* widget = widgets[i];
 
          if (widget->init)
-            widget->init(video_is_threaded, fullscreen);
+            widget->init(p_disp, p_anim, video_is_threaded, fullscreen);
       }
 
       if (!fifo_initialize(&p_dispwidget->msg_queue,

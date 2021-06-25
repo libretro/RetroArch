@@ -46,7 +46,7 @@
 
 #include "../frontend_driver.h"
 #include "../../file_path_special.h"
-#include "../../defines/ps3_defines.h"
+#include <defines/ps3_defines.h>
 #include "../../defaults.h"
 #include "../../verbosity.h"
 #include "../../paths.h"

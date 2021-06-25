@@ -489,7 +489,8 @@ bool task_push_pl_thumbnail_download(
        string_is_empty(dir_thumbnails))
       goto error;
    
-   playlist_file                 = path_basename(playlist_config->path);
+   playlist_file                 = path_basename_nocompression(
+         playlist_config->path);
    
    if (string_is_empty(playlist_file))
       goto error;

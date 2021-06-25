@@ -148,9 +148,61 @@ char *string_trim_whitespace_right(char *const s);
 /* Remove leading and trailing whitespaces */
 char *string_trim_whitespace(char *const s);
 
-/* max_lines == 0 means no limit */
-char *word_wrap(char *buffer, const char *string,
-      int line_width, bool unicode, unsigned max_lines);
+/*
+ * Wraps string specified by 'src' to destination buffer
+ * specified by 'dst' and 'dst_size'.
+ * This function assumes that all glyphs in the string
+ * have an on-screen pixel width similar to that of
+ * regular Latin characters - i.e. it will not wrap
+ * correctly any text containing so-called 'wide' Unicode
+ * characters (e.g. CJK languages, emojis, etc.).
+ *
+ * @param dst             pointer to destination buffer.
+ * @param dst_size        size of destination buffer.
+ * @param src             pointer to input string.
+ * @param line_width      max number of characters per line.
+ * @param wideglyph_width not used, but is necessary to keep
+ *                        compatibility with word_wrap_wideglyph().
+ * @param max_lines       max lines of destination string.
+ *                        0 means no limit.
+ */
+void word_wrap(char *dst, size_t dst_size, const char *src,
+      int line_width, int wideglyph_width, unsigned max_lines);
+
+/*
+ * Wraps string specified by 'src' to destination buffer
+ * specified by 'dst' and 'dst_size'.
+ * This function assumes that all glyphs in the string
+ * are:
+ * - EITHER 'non-wide' Unicode glyphs, with an on-screen
+ *   pixel width similar to that of regular Latin characters
+ * - OR 'wide' Unicode glyphs (e.g. CJK languages, emojis, etc.)
+ *   with an on-screen pixel width defined by 'wideglyph_width'
+ * Note that wrapping may occur in inappropriate locations
+ * if 'src' string contains 'wide' Unicode characters whose
+ * on-screen pixel width deviates greatly from the set
+ * 'wideglyph_width' value.
+ *
+ * @param dst             pointer to destination buffer.
+ * @param dst_size        size of destination buffer.
+ * @param src             pointer to input string.
+ * @param line_width      max number of characters per line.
+ * @param wideglyph_width effective width of 'wide' Unicode glyphs.
+ *                        the value here is normalised relative to the
+ *                        typical on-screen pixel width of a regular
+ *                        Latin character:
+ *                        - a regular Latin character is defined to
+ *                          have an effective width of 100
+ *                        - wideglyph_width = 100 * (wide_character_pixel_width / latin_character_pixel_width)
+ *                        - e.g. if 'wide' Unicode characters in 'src'
+ *                          have an on-screen pixel width twice that of
+ *                          regular Latin characters, wideglyph_width
+ *                          would be 200
+ * @param max_lines       max lines of destination string.
+ *                        0 means no limit.
+ */
+void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src,
+      int line_width, int wideglyph_width, unsigned max_lines);
 
 /* Splits string into tokens seperated by 'delim'
  * > Returned token string must be free()'d

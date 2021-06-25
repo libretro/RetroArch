@@ -536,3 +536,24 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val)
          break;
    }
 }
+
+const char *msg_hash_get_wideglyph_str(void)
+{
+#ifdef HAVE_LANGEXTRA
+   switch (uint_user_language)
+   {
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         return msg_hash_get_wideglyph_str_chs();
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         return msg_hash_get_wideglyph_str_cht();
+      case RETRO_LANGUAGE_JAPANESE:
+         return msg_hash_get_wideglyph_str_jp();
+      case RETRO_LANGUAGE_KOREAN:
+         return msg_hash_get_wideglyph_str_ko();
+      default:
+         break;
+   }
+#endif
+   
+   return NULL;
+}

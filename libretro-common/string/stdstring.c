@@ -187,88 +187,207 @@ char *string_trim_whitespace(char *const s)
    return s;
 }
 
-char *word_wrap(char* buffer, const char *string, int line_width, bool unicode, unsigned max_lines)
+void word_wrap(char *dst, size_t dst_size, const char *src, int line_width, int wideglyph_width, unsigned max_lines)
 {
-   unsigned i     = 0;
-   unsigned len   = (unsigned)strlen(string);
-   unsigned lines = 1;
+   char *lastspace     = NULL;
+   unsigned counter    = 0;
+   unsigned lines      = 1;
+   size_t src_len      = strlen(src);
+   const char *src_end = src + src_len;
 
-   while (i < len)
+   /* Prevent buffer overflow */
+   if (dst_size < src_len + 1)
+      return;
+
+   /* Early return if src string length is less
+    * than line width */
+   if (src_len < line_width)
    {
-      unsigned counter;
-      int pos = (int)(&buffer[i] - buffer);
+      strcpy(dst, src);
+      return;
+   }
 
-      /* copy string until the end of the line is reached */
-      for (counter = 1; counter <= (unsigned)line_width; counter++)
+   while (*src != '\0')
+   {
+      unsigned char_len;
+
+      char_len = (unsigned)(utf8skip(src, 1) - src);
+      counter++;
+
+      if (*src == ' ')
+         lastspace = dst; /* Remember the location of the whitespace */
+      else if (*src == '\n')
       {
-         const char *character;
-         unsigned char_len;
-         unsigned j = i;
+         /* If newlines embedded in the input,
+          * reset the index */
+         lines++;
+         counter = 0;
 
-         /* check if end of string reached */
-         if (i == len)
+         /* Early return if remaining src string
+          * length is less than line width */
+         if (src_end - src <= line_width)
          {
-            buffer[i] = 0;
-            return buffer;
+            strcpy(dst, src);
+            return;
          }
+     }
 
-         character = utf8skip(&string[i], 1);
-         char_len  = (unsigned)(character - &string[i]);
+      while (char_len--)
+         *dst++ = *src++;
 
-         if (!unicode)
-            counter += char_len - 1;
-
-         do
-         {
-            buffer[i] = string[i];
-            char_len--;
-            i++;
-         } while (char_len);
-
-         /* check for newlines embedded in the original input
-          * and reset the index */
-         if (buffer[j] == '\n')
-         {
-            lines++;
-            counter = 1;
-         }
-      }
-
-      /* check for whitespace */
-      if (string[i] == ' ')
+      if (counter >= (unsigned)line_width)
       {
-         if ((max_lines == 0 || lines < max_lines))
+         counter = 0;
+
+         if (lastspace && (max_lines == 0 || lines < max_lines))
          {
-            buffer[i] = '\n';
-            i++;
+            /* Replace nearest (previous) whitespace
+             * with newline character */
+            *lastspace = '\n';
             lines++;
+
+            src -= dst - lastspace - 1;
+            dst = lastspace + 1;
+            lastspace  = NULL;
+
+            /* Early return if remaining src string
+             * length is less than line width */
+            if (src_end - src < line_width)
+            {
+               strcpy(dst, src);
+               return;
+            }
          }
-      }
-      else
-      {
-         int k;
-
-         /* check for nearest whitespace back in string */
-         for (k = i; k > 0; k--)
-         {
-            if (string[k] != ' ' || (max_lines != 0 && lines >= max_lines))
-               continue;
-
-            buffer[k] = '\n';
-            /* set string index back to character after this one */
-            i         = k + 1;
-            lines++;
-            break;
-         }
-
-         if (&buffer[i] - buffer == pos)
-            return buffer;
       }
    }
 
-   buffer[i] = 0;
+   *dst = '\0';
+}
 
-   return buffer;
+void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src, int line_width, int wideglyph_width, unsigned max_lines)
+{
+   char *lastspace                   = NULL;
+   char *lastwideglyph               = NULL;
+   const char *src_end               = src + strlen(src);
+   unsigned lines                    = 1;
+   /* 'line_width' means max numbers of characters per line,
+    * but this metric is only meaningful when dealing with
+    * 'regular' glyphs that have an on-screen pixel width
+    * similar to that of regular Latin characters.
+    * When handing so-called 'wide' Unicode glyphs, it is
+    * necessary to consider the actual on-screen pixel width
+    * of each character.
+    * In order to do this, we create a distinction between
+    * regular Latin 'non-wide' glyphs and 'wide' glyphs, and
+    * normalise all values relative to the on-screen pixel
+    * width of regular Latin characters:
+    * - Regular 'non-wide' glyphs have a normalised width of 100
+    * - 'line_width' is therefore normalised to 100 * (width_in_characters)
+    * - 'wide' glyphs have a normalised width of
+    *   100 * (wide_character_pixel_width / latin_character_pixel_width)
+    * - When a character is detected, the position in the current
+    *   line is incremented by the regular normalised width of 100
+    * - If that character is then determined to be a 'wide'
+    *   glyph, the position in the current line is further incremented
+    *   by the difference between the normalised 'wide' and 'non-wide'
+    *   width values */
+   unsigned counter_normalized       = 0;
+   int line_width_normalized         = line_width * 100;
+   int additional_counter_normalized = wideglyph_width - 100;
+ 
+   /* Early return if src string length is less
+    * than line width */
+   if (src_end - src < line_width)
+   {
+      strlcpy(dst, src, dst_size);
+      return;
+   }
+
+   while (*src != '\0')
+   {
+      unsigned char_len;
+
+      char_len = (unsigned)(utf8skip(src, 1) - src);
+      counter_normalized += 100;
+
+      /* Prevent buffer overflow */
+      if (char_len >= dst_size)
+         break;
+
+      if (*src == ' ')
+         lastspace = dst; /* Remember the location of the whitespace */
+      else if (*src == '\n')
+      {
+         /* If newlines embedded in the input,
+          * reset the index */
+         lines++;
+         counter_normalized = 0;
+
+         /* Early return if remaining src string
+          * length is less than line width */
+         if (src_end - src <= line_width)
+         {
+            strlcpy(dst, src, dst_size);
+            return;
+         }
+      }
+      else if (char_len >= 3)
+      {
+         /* Remember the location of the first byte
+          * whose length as UTF-8 >= 3*/
+         lastwideglyph = dst;
+         counter_normalized += additional_counter_normalized;
+      }
+
+      dst_size -= char_len;
+      while (char_len--)
+         *dst++ = *src++;
+
+      if (counter_normalized >= (unsigned)line_width_normalized)
+      {
+         counter_normalized = 0;
+
+         if (max_lines != 0 && lines >= max_lines)
+            continue;
+         else if (lastwideglyph && (!lastspace || lastwideglyph > lastspace))
+         {
+            /* Insert newline character */
+            *lastwideglyph = '\n';
+            lines++;
+            src -= dst - lastwideglyph;
+            dst = lastwideglyph + 1;
+            lastwideglyph = NULL;
+
+            /* Early return if remaining src string
+             * length is less than line width */
+            if (src_end - src <= line_width)
+            {
+               strlcpy(dst, src, dst_size);
+               return;
+            }
+         }
+         else if (lastspace)
+         {
+            /* Replace nearest (previous) whitespace
+             * with newline character */
+            *lastspace = '\n';
+            lines++;
+            src -= dst - lastspace - 1;
+            dst = lastspace + 1;
+            lastspace = NULL;
+
+            /* Early return if remaining src string
+             * length is less than line width */
+            if (src_end - src < line_width)
+            {
+               strlcpy(dst, src, dst_size);
+               return;
+            }
+         }
+      }
+   }
+
+   *dst = '\0';
 }
 
 /* Splits string into tokens seperated by 'delim'

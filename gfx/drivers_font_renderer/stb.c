@@ -86,6 +86,9 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
    if (!self->atlas.buffer)
       goto error;
 
+   /* Note: 1 pixel of padding is added to
+    * prevent texture bleed when drawing with
+    * linear filtering enabled */
    stbtt_PackBegin(&pc, self->atlas.buffer,
          self->atlas.width, self->atlas.height,
          self->atlas.width, 1, NULL);

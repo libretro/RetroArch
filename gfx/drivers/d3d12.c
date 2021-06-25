@@ -357,7 +357,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("[D3D12] Only Slang shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[D3D12]: Only Slang shaders are supported. Falling back to stock.\n");
       return false;
    }
 
@@ -1024,7 +1024,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    return d3d12;
 
 error:
-   RARCH_ERR("[D3D12]: failed to init video driver.\n");
+   RARCH_ERR("[D3D12]: Failed to init video driver.\n");
    d3d12_gfx_free(d3d12);
    return NULL;
 }
@@ -1111,7 +1111,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          height = d3d12->vp.height;
       }
 
-      RARCH_LOG("[d3d12]: Updating framebuffer size %u x %u.\n", width, height);
+      RARCH_LOG("[D3D12]: Updating framebuffer size %u x %u.\n", width, height);
 
       if ((i != (d3d12->shader_preset->passes - 1)) || (width != d3d12->vp.width) ||
           (height != d3d12->vp.height))
@@ -1169,6 +1169,9 @@ static bool d3d12_gfx_frame(
    unsigned         i;
    d3d12_texture_t* texture       = NULL;
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
+   bool vsync                     = d3d12->chain.vsync;
+   unsigned sync_interval         = (vsync) ? d3d12->chain.swap_interval : 0;
+   unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    bool statistics_show           = video_info->statistics_show;
    unsigned video_width           = video_info->width;
@@ -1180,8 +1183,6 @@ static bool d3d12_gfx_frame(
    bool widgets_active            = video_info->widgets_active;
 #endif
 
-   d3d12_gfx_sync(d3d12);
-
    if (d3d12->resize_chain)
    {
       unsigned i;
@@ -1189,7 +1190,7 @@ static bool d3d12_gfx_frame(
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
          Release(d3d12->chain.renderTargets[i]);
 
-      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
       {
@@ -1585,22 +1586,6 @@ static bool d3d12_gfx_frame(
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
       font_driver_render_msg(d3d12, msg, NULL, NULL);
-#ifndef __WINRT__
-      {
-         const ui_window_t* window = ui_companion_driver_get_window_ptr();
-         if (window)
-         {
-            char title[128];
-
-            title[0] = '\0';
-
-            video_driver_get_window_title(title, sizeof(title));
-
-            if (title[0])
-               window->set_title(&main_window, title);
-         }
-      }
-#endif
    }
    d3d12->sprites.enabled = false;
 
@@ -1610,13 +1595,19 @@ static bool d3d12_gfx_frame(
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
-
+   
+#if defined(_WIN32) && !defined(__WINRT__)
+   win32_update_title();
+#endif
 #if 1
-   DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
+   DXGIPresent(d3d12->chain.handle, sync_interval, present_flags);
 #else
    DXGI_PRESENT_PARAMETERS pp = { 0 };
    DXGIPresent1(d3d12->swapchain, 0, 0, &pp);
 #endif
+
+   /* Sync after Present for minimal delay */
+   d3d12_gfx_sync(d3d12);
 
    return true;
 }
@@ -1625,8 +1616,9 @@ static void d3d12_gfx_set_nonblock_state(void* data, bool toggle,
       bool adaptive_vsync_enabled,
       unsigned swap_interval)
 {
-   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
-   d3d12->chain.vsync   = !toggle;
+   d3d12_video_t* d3d12       = (d3d12_video_t*)data;
+   d3d12->chain.vsync         = !toggle;
+   d3d12->chain.swap_interval = swap_interval;
 }
 
 static bool d3d12_gfx_alive(void* data)

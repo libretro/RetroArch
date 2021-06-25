@@ -88,15 +88,16 @@ static unsigned to_menu_pipeline(
    return 0;
 }
 
-static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
+static void gfx_display_vk_draw_pipeline(
+      gfx_display_ctx_draw_t *draw,
+      gfx_display_t *p_disp,
       void *data, unsigned video_width, unsigned video_height)
 {
    static uint8_t ubo_scratch_data[768];
-   static float t                   = 0.0f;
-   gfx_display_t *p_disp            = disp_get_ptr();
-   float yflip                      = 1.0f;
    static struct video_coords blank_coords;
+   static float t                   = 0.0f;
    float output_size[2];
+   float yflip                      = 1.0f;
    video_coord_array_t *ca          = NULL;
    vk_t *vk                         = (vk_t*)data;
 

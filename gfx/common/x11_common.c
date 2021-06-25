@@ -71,6 +71,7 @@ static XF86VidModeModeInfo desktop_mode;
 static bool xdg_screensaver_available       = true;
 static bool g_x11_has_focus                 = false;
 static bool g_x11_true_full                 = false;
+static XConfigureEvent g_x11_xce            = {0};
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
@@ -530,6 +531,11 @@ bool x11_alive(void *data)
                g_x11_has_focus = false;
             break;
 
+         case ConfigureNotify:
+            if (event.xconfigure.window == g_x11_win)
+               g_x11_xce = event.xconfigure;
+            break;
+
          case ButtonPress:
             switch (event.xbutton.button)
             {
@@ -629,11 +635,19 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height)
    }
    else
    {
-      XWindowAttributes target;
-      XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+      if (g_x11_xce.width != 0 && g_x11_xce.height != 0)
+      {
+         *width  = g_x11_xce.width;
+         *height = g_x11_xce.height;
+      }
+      else
+      {
+      	 XWindowAttributes target;
+         XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
 
-      *width  = target.width;
-      *height = target.height;
+         *width  = target.width;
+         *height = target.height;
+      }
    }
 }
 
@@ -668,6 +682,8 @@ bool x11_connect(void)
 #ifdef HAVE_DBUS
    dbus_ensure_connection();
 #endif
+
+   memset(&g_x11_xce, 0, sizeof(XConfigureEvent));
 
    return true;
 }

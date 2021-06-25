@@ -115,7 +115,7 @@ static int task_database_iterate_start(retro_task_t *task,
 {
    char msg[256];
    const char *basename_path = !string_is_empty(name) ?
-      path_basename(name) : "";
+      path_basename_nocompression(name) : "";
 
    msg[0] = '\0';
 

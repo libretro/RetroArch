@@ -57,7 +57,9 @@ void Discord_RunCallbacks(void);
 
 /* If you disable the lib starting its own I/O thread, 
  * you'll need to call this from your own */
+#ifdef DISCORD_DISABLE_IO_THREAD
 void Discord_UpdateConnection(void);
+#endif
 
 void Discord_UpdatePresence(const DiscordRichPresence* presence);
 void Discord_ClearPresence(void);

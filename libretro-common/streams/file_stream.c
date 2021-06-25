@@ -521,10 +521,11 @@ int filestream_close(RFILE *stream)
  * @path             : path to file.
  * @buf              : buffer to allocate and read the contents of the
  *                     file into. Needs to be freed manually.
+ * @len              : optional output integer containing bytes read.
  *
  * Read the contents of a file into @buf.
  *
- * Returns: number of items read, -1 on error.
+ * Returns: non zero on success.
  */
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {

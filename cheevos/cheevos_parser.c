@@ -1,6 +1,6 @@
 #include "cheevos_parser.h"
 
-#include "util.h"
+#include "cheevos_locals.h"
 
 #include <encodings/utf.h>
 #include <formats/rjson.h>

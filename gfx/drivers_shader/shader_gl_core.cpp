@@ -37,8 +37,6 @@
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 
-using namespace std;
-
 GLuint gl_core_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,
@@ -189,9 +187,9 @@ GLuint gl_core_cross_compile_program(
       for (auto &res : vertex_resources.stage_inputs)
       {
          char loc_buf[64];
-         uint32_t loc = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
-         snprintf(loc_buf, sizeof(loc_buf), "RARCH_ATTRIBUTE_%d", loc);
-         glBindAttribLocation(program, loc, loc_buf);
+         uint32_t _loc = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
+         snprintf(loc_buf, sizeof(loc_buf), "RARCH_ATTRIBUTE_%d", _loc);
+         glBindAttribLocation(program, _loc, loc_buf);
       }
       glLinkProgram(program);
       glDeleteShader(vertex_shader);
@@ -255,7 +253,7 @@ GLuint gl_core_cross_compile_program(
 
       glUseProgram(0);
    }
-   catch (const exception &e)
+   catch (const std::exception &e)
    {
       RARCH_ERR("[GLCore]: Failed to cross compile program: %s\n", e.what());
       if (program != 0)
@@ -387,7 +385,7 @@ static GLenum convert_glslang_format(glslang_format fmt)
 class StaticTexture
 {
 public:
-   StaticTexture(string id,
+   StaticTexture(std::string id,
                  GLuint image,
                  unsigned width, unsigned height,
                  bool linear,
@@ -398,17 +396,17 @@ public:
    StaticTexture(StaticTexture&&) = delete;
    void operator=(StaticTexture&&) = delete;
 
-   void set_id(string name) { id = move(name); }
-   const string &get_id() const { return id; }
+   void set_id(std::string name) { id = std::move(name); }
+   const std::string &get_id() const { return id; }
    const Texture &get_texture() const { return texture; }
 
 private:
-   string id;
+   std::string id;
    GLuint image;
    Texture texture;
 };
 
-StaticTexture::StaticTexture(string id_, GLuint image_,
+StaticTexture::StaticTexture(std::string id_, GLuint image_,
       unsigned width, unsigned height, bool linear, bool mipmap,
       glslang_filter_chain_address address)
    : id(std::move(id_)), image(image_)
@@ -464,14 +462,14 @@ struct CommonResources
    CommonResources();
    ~CommonResources();
 
-   vector<Texture> original_history;
-   vector<Texture> framebuffer_feedback;
-   vector<Texture> pass_outputs;
-   vector<unique_ptr<StaticTexture>> luts;
+   std::vector<Texture> original_history;
+   std::vector<Texture> framebuffer_feedback;
+   std::vector<Texture> pass_outputs;
+   std::vector<std::unique_ptr<StaticTexture>> luts;
 
-   unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
-   unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
-   unique_ptr<video_shader> shader_preset;
+   std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_map;
+   std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_uniform_map;
+   std::unique_ptr<video_shader> shader_preset;
 
    GLuint quad_program = 0;
    GLuint quad_vbo = 0;
@@ -716,7 +714,7 @@ public:
       pass_name = name;
    }
 
-   const string &get_name() const
+   const std::string &get_name() const
    {
       return pass_name;
    }
@@ -769,10 +767,10 @@ private:
    gl_core_viewport current_viewport;
    gl_core_filter_chain_pass_info pass_info;
 
-   vector<uint32_t> vertex_shader;
-   vector<uint32_t> fragment_shader;
-   unique_ptr<Framebuffer> framebuffer;
-   unique_ptr<Framebuffer> framebuffer_feedback;
+   std::vector<uint32_t> vertex_shader;
+   std::vector<uint32_t> fragment_shader;
+   std::unique_ptr<Framebuffer> framebuffer;
+   std::unique_ptr<Framebuffer> framebuffer_feedback;
 
    bool init_pipeline();
 
@@ -811,29 +809,29 @@ private:
    unsigned pass_number = 0;
 
    size_t ubo_offset = 0;
-   string pass_name;
+   std::string pass_name;
 
    struct Parameter
    {
-      string id;
+      std::string id;
       unsigned index;
       unsigned semantic_index;
    };
 
-   vector<Parameter> parameters;
-   vector<Parameter> filtered_parameters;
-   vector<uint8_t> push_constant_buffer;
+   std::vector<Parameter> parameters;
+   std::vector<Parameter> filtered_parameters;
+   std::vector<uint8_t> push_constant_buffer;
    gl_core_buffer_locations locations = {};
    UBORing ubo_ring;
 
    void reflect_parameter(const std::string &name, slang_semantic_meta &meta);
    void reflect_parameter(const std::string &name, slang_texture_semantic_meta &meta);
-   void reflect_parameter_array(const std::string &name, std::vector<slang_texture_semantic_meta> &meta);
+   void reflect_parameter_array(const char *name, std::vector<slang_texture_semantic_meta> &meta);
 };
 
 bool Pass::build()
 {
-   unordered_map<string, slang_semantic_map> semantic_map;
+   std::unordered_map<std::string, slang_semantic_map> semantic_map;
    unsigned i;
    unsigned j = 0;
 
@@ -841,7 +839,7 @@ bool Pass::build()
    framebuffer_feedback.reset();
 
    if (!final_pass)
-      framebuffer = unique_ptr<Framebuffer>(
+      framebuffer = std::unique_ptr<Framebuffer>(
             new Framebuffer(pass_info.rt_format, pass_info.max_levels));
 
    for (i = 0; i < parameters.size(); i++)
@@ -927,20 +925,24 @@ void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_met
    }
 }
 
-void Pass::reflect_parameter_array(const std::string &name, std::vector<slang_texture_semantic_meta> &meta)
+void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_semantic_meta> &meta)
 {
    size_t i;
    for (i = 0; i < meta.size(); i++)
    {
-      std::string                  n = name + std::to_string(i);
+      char n[128];
+      snprintf(n, sizeof(n), "%s%u", name, (unsigned)i);
       slang_texture_semantic_meta *m = (slang_texture_semantic_meta*)&meta[i];
 
       if (m->uniform)
       {
-         int vert = glGetUniformLocation(pipeline,
-               (std::string("RARCH_UBO_VERTEX_INSTANCE.") + n).c_str());
-         int frag = glGetUniformLocation(pipeline,
-               (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + n).c_str());
+         int vert, frag;
+         char vert_n[256];
+         char frag_n[256];
+         snprintf(vert_n, sizeof(vert_n), "RARCH_UBO_VERTEX_INSTANCE.%s", n);
+         snprintf(frag_n, sizeof(frag_n), "RARCH_UBO_FRAGMENT_INSTANCE.%s", n);
+         vert = glGetUniformLocation(pipeline, vert_n);
+         frag = glGetUniformLocation(pipeline, frag_n);
 
          if (vert >= 0)
             m->location.ubo_vertex = vert;
@@ -950,10 +952,13 @@ void Pass::reflect_parameter_array(const std::string &name, std::vector<slang_te
 
       if (m->push_constant)
       {
-         int vert = glGetUniformLocation(pipeline,
-               (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + n).c_str());
-         int frag = glGetUniformLocation(pipeline,
-               (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + n).c_str());
+         int vert, frag;
+         char vert_n[256];
+         char frag_n[256];
+         snprintf(vert_n, sizeof(vert_n), "RARCH_PUSH_VERTEX_INSTANCE.%s", n);
+         snprintf(frag_n, sizeof(frag_n), "RARCH_PUSH_FRAGMENT_INSTANCE.%s", n);
+         vert = glGetUniformLocation(pipeline, vert_n);
+         frag = glGetUniformLocation(pipeline, frag_n);
 
          if (vert >= 0)
             m->location.push_vertex = vert;
@@ -1128,12 +1133,12 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       }
       else
       {
-         float *data = reinterpret_cast<float *>
+         float *_data = reinterpret_cast<float *>
                (push_constant_buffer.data() + refl->push_constant_offset);
-         data[0]     = (float)(width);
-         data[1]     = (float)(height);
-         data[2]     = 1.0f / (float)(width);
-         data[3]     = 1.0f / (float)(height);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
       }
    }
 }
@@ -1290,11 +1295,11 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       }
       else
       {
-         float *data = reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset);
-         data[0]     = (float)(width);
-         data[1]     = (float)(height);
-         data[2]     = 1.0f / (float)(width);
-         data[3]     = 1.0f / (float)(height);
+         float *_data = reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset);
+         _data[0]     = (float)(width);
+         _data[1]     = (float)(height);
+         _data[2]     = 1.0f / (float)(width);
+         _data[3]     = 1.0f / (float)(height);
       }
    }
 }
@@ -1310,7 +1315,7 @@ bool Pass::init_feedback()
    if (final_pass)
       return false;
 
-   framebuffer_feedback = unique_ptr<Framebuffer>(
+   framebuffer_feedback = std::unique_ptr<Framebuffer>(
          new Framebuffer(pass_info.rt_format, pass_info.max_levels));
    return true;
 }
@@ -1597,9 +1602,9 @@ struct gl_core_filter_chain
 public:
    gl_core_filter_chain(unsigned num_passes) { set_num_passes(num_passes); }
 
-   inline void set_shader_preset(unique_ptr<video_shader> shader)
+   inline void set_shader_preset(std::unique_ptr<video_shader> shader)
    {
-      common.shader_preset = move(shader);
+      common.shader_preset = std::move(shader);
    }
 
    inline video_shader *get_shader_preset()
@@ -1624,14 +1629,14 @@ public:
    void set_frame_direction(int32_t direction);
    void set_pass_name(unsigned pass, const char *name);
 
-   void add_static_texture(unique_ptr<gl_core_shader::StaticTexture> texture);
+   void add_static_texture(std::unique_ptr<gl_core_shader::StaticTexture> texture);
    void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
    void set_num_passes(unsigned passes);
 
 private:
-   vector<unique_ptr<gl_core_shader::Pass>> passes;
-   vector<gl_core_filter_chain_pass_info> pass_info;
-   vector<vector<function<void ()>>> deferred_calls;
+   std::vector<std::unique_ptr<gl_core_shader::Pass>> passes;
+   std::vector<gl_core_filter_chain_pass_info> pass_info;
+   std::vector<std::vector<std::function<void ()>>> deferred_calls;
    std::unique_ptr<gl_core_shader::Framebuffer> copy_framebuffer;
    gl_core_shader::CommonResources common;
 
@@ -1640,7 +1645,7 @@ private:
    bool init_history();
    bool init_feedback();
    bool init_alias();
-   vector<unique_ptr<gl_core_shader::Framebuffer>> original_history;
+   std::vector<std::unique_ptr<gl_core_shader::Framebuffer>> original_history;
    bool require_clear = false;
    void clear_history_and_feedback();
    void update_feedback_info();
@@ -1744,8 +1749,8 @@ void gl_core_filter_chain::end_frame()
    if (!original_history.empty())
    {
       /* Update history */
-      unique_ptr<gl_core_shader::Framebuffer> tmp;
-      unique_ptr<gl_core_shader::Framebuffer> &back = original_history.back();
+      std::unique_ptr<gl_core_shader::Framebuffer> tmp;
+      std::unique_ptr<gl_core_shader::Framebuffer> &back = original_history.back();
       swap(back, tmp);
 
       if (input_texture.width      != tmp->get_size().width  ||
@@ -1831,7 +1836,7 @@ bool gl_core_filter_chain::init_history()
 
    for (i = 0; i < passes.size(); i++)
       required_images =
-            max(required_images,
+            std::max(required_images,
                 passes[i]->get_reflection().semantic_textures[
                 SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
 
@@ -1910,7 +1915,7 @@ bool gl_core_filter_chain::init_alias()
 
    for (i = 0; i < passes.size(); i++)
    {
-      const string name = passes[i]->get_name();
+      const std::string name = passes[i]->get_name();
       if (name.empty())
          continue;
 
@@ -2064,9 +2069,9 @@ void gl_core_filter_chain::set_input_texture(
    }
 }
 
-void gl_core_filter_chain::add_static_texture(unique_ptr<gl_core_shader::StaticTexture> texture)
+void gl_core_filter_chain::add_static_texture(std::unique_ptr<gl_core_shader::StaticTexture> texture)
 {
-   common.luts.push_back(move(texture));
+   common.luts.push_back(std::move(texture));
 }
 
 void gl_core_filter_chain::set_frame_count(uint64_t count)
@@ -2093,7 +2098,7 @@ void gl_core_filter_chain::set_pass_name(unsigned pass, const char *name)
    passes[pass]->set_name(name);
 }
 
-static unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
+static std::unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
       gl_core_filter_chain *chain,
       const video_shader_lut *shader)
 {
@@ -2129,7 +2134,7 @@ static unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
    if (image.pixels)
       image_texture_free(&image);
 
-   return unique_ptr<gl_core_shader::StaticTexture>(new gl_core_shader::StaticTexture(shader->id,
+   return std::unique_ptr<gl_core_shader::StaticTexture>(new gl_core_shader::StaticTexture(shader->id,
             tex, image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             levels > 1,
@@ -2143,14 +2148,14 @@ static bool gl_core_filter_chain_load_luts(
    unsigned i;
    for (i = 0; i < shader->luts; i++)
    {
-      unique_ptr<gl_core_shader::StaticTexture> image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
+      std::unique_ptr<gl_core_shader::StaticTexture> image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
       if (!image)
       {
          RARCH_ERR("[GLCore]: Failed to load LUT \"%s\".\n", shader->lut[i].path);
          return false;
       }
 
-      chain->add_static_texture(move(image));
+      chain->add_static_texture(std::move(image));
    }
 
    return true;
@@ -2161,7 +2166,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_default(
 {
    struct gl_core_filter_chain_pass_info pass_info;
 
-   unique_ptr<gl_core_filter_chain> chain{ new gl_core_filter_chain(1) };
+   std::unique_ptr<gl_core_filter_chain> chain{ new gl_core_filter_chain(1) };
    if (!chain)
       return nullptr;
 
@@ -2194,7 +2199,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
-   unique_ptr<video_shader> shader{ new video_shader() };
+   std::unique_ptr<video_shader> shader{ new video_shader() };
    if (!shader)
       return nullptr;
 
@@ -2203,7 +2208,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
 
-   unique_ptr<gl_core_filter_chain> chain{ new gl_core_filter_chain(shader->passes + (last_pass_is_fbo ? 1 : 0)) };
+   std::unique_ptr<gl_core_filter_chain> chain{ new gl_core_filter_chain(shader->passes + (last_pass_is_fbo ? 1 : 0)) };
    if (!chain)
       return nullptr;
 
@@ -2246,7 +2251,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             return nullptr;
          }
 
-         auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
+         auto itr = std::find_if(shader->parameters, shader->parameters + shader->num_parameters,
                [&](const video_shader_parameter &param)
                {
                   return meta_param.id == param.id;
@@ -2444,7 +2449,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             sizeof(gl_core_shader::opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(move(shader));
+   chain->set_shader_preset(std::move(shader));
 
    if (!chain->init())
       return nullptr;

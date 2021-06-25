@@ -297,7 +297,8 @@ static int zip_file_decompressed(
             /* Called in case core has need_fullpath enabled. */
             bool success = filestream_write_file(decomp_state->opt_file, handle.data, size);
 
-            free(handle.data);
+            /* Note: Do not free handle.data here - this
+             * will be done when stream is deinitialised */
             handle.data = NULL;
 
             decomp_state->size = 0;
@@ -310,10 +311,50 @@ static int zip_file_decompressed(
             /* Called in case core has need_fullpath disabled.
              * Will move decompressed content directly into
              * RetroArch's ROM buffer. */
-            *decomp_state->buf = handle.data;
-            handle.data = NULL;
+            zip_context_t *zip_context = (zip_context_t *)userdata->transfer->context;
 
-            decomp_state->size = size;
+            decomp_state->size = 0;
+
+            /* Unlink data buffer from context (otherwise
+             * it will be freed when the stream is deinitialised) */
+            if (handle.data == zip_context->compressed_data)
+            {
+               /* Well this is fun...
+                * If this is 'compressed' data (if the zip
+                * file was created with the '-0   store only'
+                * flag), and the origin file is mmapped, then
+                * the context compressed_data buffer cannot be
+                * reassigned (since it is not a traditional
+                * block of user-assigned memory). We have to
+                * create a copy of it instead... */
+#ifdef HAVE_MMAP
+               if (zip_context->state->archive_mmap_data)
+               {
+                  uint8_t *temp_buf = (uint8_t*)malloc(csize);
+
+                  if (temp_buf)
+                  {
+                     memcpy(temp_buf, handle.data, csize);
+                     *decomp_state->buf        = temp_buf;
+                     decomp_state->size        = csize;
+                  }
+               }
+               else
+#endif
+               {
+                  *decomp_state->buf           = handle.data;
+                  decomp_state->size           = csize;
+                  zip_context->compressed_data = NULL;
+               }
+            }
+            else if (handle.data == zip_context->decompressed_data)
+            {
+               *decomp_state->buf             = handle.data;
+               decomp_state->size             = size;
+               zip_context->decompressed_data = NULL;
+            }
+
+            handle.data = NULL;
          }
       }
 
@@ -328,7 +369,7 @@ static int64_t zip_file_read(
       const char *needle, void **buf,
       const char *optional_outfile)
 {
-   file_archive_transfer_t state            = {ARCHIVE_TRANSFER_INIT};
+   file_archive_transfer_t state            = {0};
    decomp_state_t decomp                    = {0};
    struct archive_extract_userdata userdata = {0};
    bool returnerr                           = true;
@@ -339,8 +380,9 @@ static int64_t zip_file_read(
    if (optional_outfile)
       decomp.opt_file        = strdup(optional_outfile);
 
-   userdata.transfer = &state;
-   userdata.cb_data = &decomp;
+   state.type                = ARCHIVE_TRANSFER_INIT;
+   userdata.transfer         = &state;
+   userdata.cb_data          = &decomp;
    decomp.buf                = buf;
 
    do

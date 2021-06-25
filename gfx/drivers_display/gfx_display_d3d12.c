@@ -179,6 +179,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
+      gfx_display_t *p_disp,
       void *data, unsigned video_width, unsigned video_height)
 {
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
@@ -191,7 +192,6 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         gfx_display_t *p_disp     = disp_get_ptr();
          video_coord_array_t* ca   = &p_disp->dispca;
 
          if (!d3d12->menu_pipeline_vbo)

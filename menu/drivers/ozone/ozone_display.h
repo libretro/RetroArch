@@ -50,6 +50,7 @@ void ozone_restart_cursor_animation(ozone_handle_t *ozone);
 
 void ozone_draw_backdrop(
       void *userdata,
+      void *disp_data,
       unsigned video_width,
       unsigned video_height,
       float alpha);
@@ -57,6 +58,7 @@ void ozone_draw_backdrop(
 void ozone_draw_osk(
       ozone_handle_t *ozone,
       void *userdata,
+      void *disp_userdata,
       unsigned video_width,
       unsigned video_height,
       const char *label, const char *str);
@@ -72,6 +74,7 @@ void ozone_draw_messagebox(
 void ozone_draw_fullscreen_thumbnails(
       ozone_handle_t *ozone,
       void *userdata,
+      void *disp_userdata,
       unsigned video_width,
       unsigned video_height
       );

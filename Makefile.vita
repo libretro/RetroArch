@@ -13,7 +13,7 @@ PC_DEVELOPMENT_UDP_PORT	   =
 OBJ :=
 
 SCE_LIBC_SIZE := 4194304
-DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS
+DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_STB_VORBIS
 INCDIRS :=
 
 ifeq ($(GRIFFIN_BUILD), 1)
@@ -113,16 +113,18 @@ LD      := $(CXX)
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls -O2
+CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -g
+   CFLAGS += -g -Og
+else
+   CFLAGS += -O2
 endif
 
 ASFLAGS := $(CFLAGS)
 LDFLAGS := -Wl,-q
 
-CFLAGS += -Wall -ffast-math -g
+CFLAGS += -Wall -ffast-math
 CFLAGS += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DRARCH_CONSOLE
 CFLAGS += -DHAVE_DSP_FILTER
 CFLAGS += -DHAVE_VIDEO_FILTER

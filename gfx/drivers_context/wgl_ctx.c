@@ -451,9 +451,8 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
          if (!win32_hrc || !p_swap_interval)
             return;
 
-         RARCH_LOG("[WGL]: wglSwapInterval(%i)\n", win32_interval);
          if (!p_swap_interval(win32_interval))
-            RARCH_WARN("[WGL]: wglSwapInterval() failed.\n");
+            RARCH_WARN("[WGL]: wglSwapInterval(%i) failed.\n", win32_interval);
 #endif
          break;
 

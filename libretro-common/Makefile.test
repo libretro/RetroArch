@@ -1,0 +1,58 @@
+
+OBJDIR = ../obj-unix
+
+TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) -lcheck $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined -ftest-coverage -fprofile-arcs -ggdb
+
+TEST_GENERIC_QUEUE = test/queues/test_generic_queue
+TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
+
+TEST_LINKED_LIST = test/lists/test_linked_list
+TEST_LINKED_LIST_SRC = test/lists/test_linked_list.c lists/linked_list.c
+
+TEST_STDSTRING = test/string/test_stdstring
+TEST_STDSTRING_SRC = test/string/test_stdstring.c string/stdstring.c encodings/encoding_utf.c \
+		     compat/compat_strl.c
+
+TEST_UTILS = test/utils/test_utils
+TEST_UTILS_SRC = test/utils/test_utils.c utils/md5.c encodings/encoding_crc32.c \
+		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
+
+TEST_HASH = test/hash/test_hash
+TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
+		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
+
+all:
+	# Build and execute tests in order, to avoid coverage file collision
+	# string
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) -o $(TEST_STDSTRING)
+	$(TEST_STDSTRING)
+	lcov -c -d . -o `dirname $(TEST_STDSTRING)`/coverage.info
+	# utils
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_UTILS_SRC) -o $(TEST_UTILS)
+	$(TEST_UTILS)
+	lcov -c -d . -o `dirname $(TEST_UTILS)`/coverage.info
+	# utils
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_HASH_SRC) -o $(TEST_HASH)
+	$(TEST_HASH)
+	lcov -c -d . -o `dirname $(TEST_HASH)`/coverage.info
+	# list
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) -o $(TEST_LINKED_LIST)
+	$(TEST_LINKED_LIST)
+	lcov -c -d . -o `dirname $(TEST_LINKED_LIST)`/coverage.info
+	# queue
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) -o $(TEST_GENERIC_QUEUE)
+	$(TEST_GENERIC_QUEUE)
+	lcov -c -d . -o `dirname $(TEST_GENERIC_QUEUE)`/coverage.info
+	
+	lcov -o test/coverage.info \
+	     -a test/utils/coverage.info \
+	     -a test/string/coverage.info \
+	     -a test/lists/coverage.info \
+	     -a test/queues/coverage.info
+	genhtml -o test/coverage/ test/coverage.info
+
+clean:
+	rm -f *.gcda *.gcno
+

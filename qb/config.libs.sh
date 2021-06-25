@@ -164,6 +164,8 @@ check_lib '' THREADS "$PTHREADLIB" pthread_create
 check_enabled THREADS THREAD_STORAGE 'Thread Local Storage' 'Threads are' false
 check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
 
+check_pkgconf LIBCHECK check 0.15
+
 if [ "$OS" = 'Linux' ]; then
    check_header '' CDROM sys/ioctl.h scsi/sg.h
 fi
@@ -260,6 +262,7 @@ if [ "$OS" = 'Darwin' ]; then
    check_lib '' AL "-framework OpenAL" alcOpenDevice
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
+   HAVE_SW2=no
 else
    check_lib '' AL -lopenal alcOpenDevice
 fi
@@ -674,3 +677,11 @@ fi
 
 check_enabled 'ZLIB BUILTINZLIB' RPNG RPNG 'zlib is' false
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
+
+if [ "$HAVE_CXX11" = 'yes' ]; then
+   if [ "$OS" = 'Linux' ]; then
+      check_enabled 'VIDEOCORE X11' SR2 'CRT modeswitching' 'CRT is' true
+   else
+      check_platform Win32 SR2 'CRT modeswitching is' true
+   fi
+fi

@@ -28,7 +28,6 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
-#include <lists/string_list.h>
 
 #include "menu_defines.h"
 #include "menu_input.h"
@@ -189,6 +188,7 @@ enum menu_settings_type
 
    MENU_SETTINGS_INPUT_LIBRETRO_DEVICE,
    MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE,
+   MENU_SETTINGS_INPUT_INPUT_REMAP_PORT,
    MENU_SETTINGS_INPUT_BEGIN,
    MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 6,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
@@ -211,6 +211,12 @@ enum menu_settings_type
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
    MENU_SET_SWITCH_CPU_PROFILE,
 #endif
+
+   MENU_SETTINGS_CPU_POLICY_SET_MINFREQ,
+   MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ,
+   MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR,
+   MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ,
+   MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ,
 
    MENU_SET_CDROM_LIST,
    MENU_SET_LOAD_CDROM_LIST,
@@ -326,11 +332,6 @@ typedef struct menu_ctx_driver
 typedef struct
 {
    uint64_t state;
-
-   /* Holds a list of search terms that may be
-    * used to filter the currently displayed
-    * menu list */
-   struct string_list *search_terms;
 
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
@@ -507,12 +508,6 @@ void menu_explore_free(void);
 /* Returns true if search filter is enabled
  * for the specified menu list */
 bool menu_driver_search_filter_enabled(const char *label, unsigned type);
-bool menu_driver_search_push(const char *search_term);
-bool menu_driver_search_pop(void);
-struct string_list *menu_driver_search_get_terms(void);
-/* Convenience function: Appends list of current
- * search terms to specified string */
-void menu_driver_search_append_terms_string(char *s, size_t len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 void menu_driver_set_last_shader_preset_path(const char *path);

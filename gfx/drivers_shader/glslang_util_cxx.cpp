@@ -47,10 +47,11 @@ static std::string build_stage_source(
 
    if (lines->size < 1)
       return "";
+   str.reserve(lines->size);
 
    /* Version header. */
-   str += lines->elems[0].data;
-   str += '\n';
+   str.append(lines->elems[0].data);
+   str.append("\n");
 
    for (i = 1; i < lines->size; i++)
    {
@@ -82,12 +83,12 @@ static std::string build_stage_source(
             /* Ignore */
          }
          else if (active)
-            str += line;
+            str.append(line);
       }
       else if (active)
-         str += line;
+         str.append(line);
 
-      str += '\n';
+      str.append("\n");
    }
 
    return str;

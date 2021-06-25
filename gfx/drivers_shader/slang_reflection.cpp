@@ -55,8 +55,8 @@ static const char *semantic_uniform_names[] = {
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
-      const unordered_map<string, slang_texture_semantic_map> &semantic_map,
-      const string &name, unsigned *index)
+      const std::unordered_map<std::string, slang_texture_semantic_map> &semantic_map,
+      const std::string &name, unsigned *index)
 {
    auto itr = semantic_map.find(name);
    if (itr != end(semantic_map))
@@ -70,8 +70,8 @@ static slang_texture_semantic slang_name_to_texture_semantic(
 }
 
 static slang_texture_semantic slang_uniform_name_to_texture_semantic(
-      const unordered_map<string, slang_texture_semantic_map> &semantic_map,
-      const string &name, unsigned *index)
+      const std::unordered_map<std::string, slang_texture_semantic_map> &semantic_map,
+      const std::string &name, unsigned *index)
 {
    auto itr = semantic_map.find(name);
    if (itr != end(semantic_map))
@@ -85,8 +85,8 @@ static slang_texture_semantic slang_uniform_name_to_texture_semantic(
 }
 
 static slang_semantic slang_uniform_name_to_semantic(
-      const unordered_map<string, slang_semantic_map> &semantic_map,
-      const string &name, unsigned *index)
+      const std::unordered_map<std::string, slang_semantic_map> &semantic_map,
+      const std::string &name, unsigned *index)
 {
    unsigned i = 0;
    auto itr   = semantic_map.find(name);
@@ -277,7 +277,7 @@ static bool add_active_buffer_ranges(
    {
       unsigned sem_index             = 0;
       unsigned tex_sem_index         = 0;
-      const string &name             = compiler.get_member_name(
+      const std::string &name        = compiler.get_member_name(
             resource.base_type_id, ranges[i].index);
       const SPIRType &type           = compiler.get_type(
             compiler.get_type(resource.base_type_id).member_types[

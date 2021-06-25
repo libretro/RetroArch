@@ -29,6 +29,10 @@
 #include "input/input_defines.h"
 #include "led/led_defines.h"
 
+#ifdef HAVE_LAKKA
+#include "lakka.h"
+#endif
+
 #define configuration_set_float(settings, var, newvar) \
 { \
    settings->modified = true; \
@@ -63,7 +67,9 @@ enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
    CRT_SWITCH_15KHZ,
-   CRT_SWITCH_31KHZ
+   CRT_SWITCH_31KHZ,
+   CRT_SWITCH_32_120,
+   CRT_SWITCH_INI
 };
 
 enum override_type
@@ -116,7 +122,7 @@ typedef struct settings
       unsigned placeholder;
 
       unsigned input_split_joycon[MAX_USERS];
-      unsigned input_joypad_map[MAX_USERS];
+      unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
       /* Set by autoconfiguration in joypad_autoconfig_dir.
@@ -124,13 +130,14 @@ typedef struct settings
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
 
-      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
-
+      unsigned input_remap_ports[MAX_USERS];
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_remap_port_map[MAX_USERS][MAX_USERS + 1];
 
       unsigned led_map[MAX_LEDS];
 
-      unsigned audio_out_rate;
+      unsigned audio_output_sample_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
 
@@ -151,6 +158,7 @@ typedef struct settings
 #ifdef GEKKO
       unsigned input_mouse_scale;
 #endif
+      unsigned input_touch_scale;
       unsigned input_hotkey_block_delay;
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
@@ -200,6 +208,7 @@ typedef struct settings
       unsigned video_stream_scale_factor;
       unsigned video_3ds_display_mode;
       unsigned video_dingux_ipu_filter_type;
+      unsigned video_dingux_refresh_rate;
 #ifdef HAVE_VIDEO_LAYOUT
       unsigned video_layout_selected_view;
 #endif
@@ -250,6 +259,7 @@ typedef struct settings
       unsigned menu_scroll_delay;
       unsigned menu_content_show_add_entry;
       unsigned menu_screensaver_timeout;
+      unsigned menu_screensaver_animation;
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
@@ -259,7 +269,8 @@ typedef struct settings
       unsigned camera_width;
       unsigned camera_height;
 
-      unsigned input_overlay_show_physical_inputs_port;
+      unsigned input_overlay_show_inputs;
+      unsigned input_overlay_show_inputs_port;
 
       unsigned run_ahead_frames;
 
@@ -281,6 +292,12 @@ typedef struct settings
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
       unsigned quit_on_close_content;
+
+#ifdef HAVE_LAKKA
+      unsigned cpu_scaling_mode;
+      unsigned cpu_min_freq;
+      unsigned cpu_max_freq;
+#endif
    } uints;
 
    struct
@@ -307,6 +324,7 @@ typedef struct settings
       float menu_header_opacity;
       float menu_ticker_speed;
       float menu_rgui_particle_effect_speed;
+      float menu_screensaver_animation_speed;
 
       float audio_max_timing_skew;
       float audio_volume; /* dB scale. */
@@ -377,6 +395,11 @@ typedef struct settings
       char ai_service_url[PATH_MAX_LENGTH];
 
       char crt_switch_timings[255];
+#ifdef HAVE_LAKKA
+      char timezone[TIMEZONE_LENGTH];
+      char cpu_main_gov[32];
+      char cpu_menu_gov[32];
+#endif
    } arrays;
 
    struct
@@ -497,6 +520,7 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif
+      bool video_force_resolution;
 
       /* Accessibility */
       bool accessibility_enable;
@@ -522,7 +546,6 @@ typedef struct settings
       bool input_overlay_enable_autopreferred;
       bool input_overlay_hide_in_menu;
       bool input_overlay_hide_when_gamepad_connected;
-      bool input_overlay_show_physical_inputs;
       bool input_overlay_show_mouse_cursor;
       bool input_overlay_auto_rotate;
       bool input_overlay_auto_scale;
@@ -548,6 +571,7 @@ typedef struct settings
       bool menu_show_load_content_animation;
       bool notification_show_autoconfig;
       bool notification_show_cheats_applied;
+      bool notification_show_patch_applied;
       bool notification_show_remap_load;
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
@@ -606,6 +630,7 @@ typedef struct settings
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
       bool menu_rgui_full_width_layout;
+      bool menu_rgui_transparency;
       bool menu_rgui_shadows;
       bool menu_rgui_inline_thumbnails;
       bool menu_rgui_swap_thumbnails;
@@ -675,6 +700,7 @@ typedef struct settings
       bool kiosk_mode_enable;
 
       bool crt_switch_custom_refresh_enable;
+      bool crt_switch_hires_menu;
 
       /* Netplay */
       bool netplay_public_announce;
@@ -710,6 +736,7 @@ typedef struct settings
       bool cheevos_auto_screenshot;
       bool cheevos_start_active;
       bool cheevos_unlock_sound_enable;
+      bool cheevos_challenge_indicators;
 
       /* Camera */
       bool camera_allow;
@@ -764,6 +791,7 @@ typedef struct settings
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
       bool check_firmware_before_loading;
+      bool core_info_cache_enable;
 #ifndef HAVE_DYNAMIC
       bool always_reload_core_on_run_content;
 #endif
@@ -803,6 +831,7 @@ typedef struct settings
 
       bool playlist_sort_alphabetical;
       bool playlist_show_sublabels;
+      bool playlist_show_entry_idx;
       bool playlist_fuzzy_archive_match;
       bool playlist_portable_paths;
 
@@ -1005,6 +1034,11 @@ void config_save_file_salamander(void);
 #endif
 
 settings_t *config_get_ptr(void);
+
+#ifdef HAVE_LAKKA
+const char *config_get_all_timezones(void);
+void config_set_timezone(char *timezone);
+#endif
 
 RETRO_END_DECLS
 

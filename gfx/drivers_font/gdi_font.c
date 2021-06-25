@@ -89,6 +89,7 @@ static void gdi_render_msg(
       const char *msg,
       const struct font_params *params)
 {
+   char* msg_local;
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y, msg_strlen;
    unsigned i;
@@ -142,9 +143,10 @@ static void gdi_render_msg(
       blue       = video_msg_color_b * 255.0f;
    }
 
-   msg_strlen = strlen(msg);
+   msg_local  = utf8_to_local_string_alloc(msg);
+   msg_strlen = strlen(msg_local);
 
-   GetTextExtentPoint32(font->gdi->memDC, msg, msg_strlen, &textSize);
+   GetTextExtentPoint32(font->gdi->memDC, msg_local, msg_strlen, &textSize);
 
    switch (align)
    {
@@ -174,7 +176,7 @@ static void gdi_render_msg(
    SetBkMode(font->gdi->memDC, TRANSPARENT);
 
    string_list_initialize(&msg_list);
-   string_split_noalloc(&msg_list, msg, "\n");
+   string_split_noalloc(&msg_list, msg_local, "\n");
 
    if (drop_x || drop_y)
    {
@@ -188,7 +190,7 @@ static void gdi_render_msg(
       for (i = 0; i < msg_list.size; i++)
          TextOut(font->gdi->memDC, newDropX, newDropY + (textSize.cy * i),
                msg_list.elems[i].data,
-               utf8len(msg_list.elems[i].data));
+               strlen(msg_list.elems[i].data));
    }
 
    SetTextColor(font->gdi->memDC, RGB(red, green, blue));
@@ -196,9 +198,10 @@ static void gdi_render_msg(
    for (i = 0; i < msg_list.size; i++)
       TextOut(font->gdi->memDC, newX, newY + (textSize.cy * i),
             msg_list.elems[i].data,
-            utf8len(msg_list.elems[i].data));
+            strlen(msg_list.elems[i].data));
 
    string_list_deinitialize(&msg_list);
+   free(msg_local);
 
    SelectObject(font->gdi->memDC, font->gdi->bmp_old);
 }

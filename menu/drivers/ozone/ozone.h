@@ -29,6 +29,7 @@ typedef struct ozone_handle ozone_handle_t;
 #include "../../gfx/gfx_display.h"
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
+#include "../../menu_screensaver.h"
 
 #include "../../configuration.h"
 
@@ -98,6 +99,7 @@ typedef struct
    font_data_t *font;
    video_font_raster_block_t raster_block; /* ptr alignment */
    int glyph_width;
+   int wideglyph_width;
    int line_height;
    int line_ascender;
    int line_centre_offset;
@@ -119,6 +121,7 @@ struct ozone_handle
    char *pending_message;
    file_list_t selection_buf_old;                  /* ptr alignment */
    file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
+   menu_screensaver_t *screensaver;
 
    struct
    {
@@ -129,6 +132,9 @@ struct ozone_handle
       ozone_font_data_t entries_sublabel;
       ozone_font_data_t sidebar;
    } fonts;
+
+   void (*word_wrap)(char *dst, size_t dst_size, const char *src,
+      int line_width, int wideglyph_width, unsigned max_lines);
 
    struct
    {
@@ -212,7 +218,6 @@ struct ozone_handle
    float sidebar_offset;
    float last_scale_factor;
    float pure_white[16];
-   float pure_black[16];
 
    struct
    {
@@ -264,6 +269,7 @@ struct ozone_handle
    char selection_core_name[255];
    char selection_playtime[255];
    char selection_lastplayed[255];
+   char selection_entry_enumeration[255];
 
    bool cursor_in_sidebar;
    bool cursor_in_sidebar_old;
@@ -292,6 +298,7 @@ struct ozone_handle
    bool cursor_mode;
    bool sidebar_collapsed;
    bool show_thumbnail_bar;
+   bool pending_hide_thumbnail_bar;
    bool fullscreen_thumbnails_available;
    bool show_fullscreen_thumbnails;
    bool selection_core_is_viewer;

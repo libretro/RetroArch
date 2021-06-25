@@ -32,6 +32,9 @@ RETRO_BEGIN_DECLS
 
 #define MENU_SUBLABEL_MAX_LENGTH 1024
 
+#define MENU_SEARCH_FILTER_MAX_TERMS  8
+#define MENU_SEARCH_FILTER_MAX_LENGTH 64
+
 enum menu_entries_ctl_state
 {
    MENU_ENTRIES_CTL_NONE = 0,
@@ -88,6 +91,12 @@ typedef struct menu_ctx_list
    enum menu_list_type type;
 } menu_ctx_list_t;
 
+typedef struct menu_serch_terms
+{
+   size_t size;
+   char terms[MENU_SEARCH_FILTER_MAX_TERMS][MENU_SEARCH_FILTER_MAX_LENGTH];
+} menu_serch_terms_t;
+
 typedef struct menu_file_list_cbs
 {
    rarch_setting_t *setting;
@@ -121,6 +130,7 @@ typedef struct menu_file_list_cbs
          const char *label, char *s, size_t len,
          const char *path,
          char *path_buf, size_t path_buf_size);
+   menu_serch_terms_t search;
    enum msg_hash_enums enum_idx;
    char action_sublabel_cache[MENU_SUBLABEL_MAX_LENGTH];
    char action_title_cache   [512];
@@ -183,6 +193,17 @@ bool menu_entries_append_enum(file_list_t *list,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
+
+bool menu_entries_search_push(const char *search_term);
+bool menu_entries_search_pop(void);
+menu_serch_terms_t *menu_entries_search_get_terms(void);
+/* Convenience function: Appends list of current
+ * search terms to specified string */
+void menu_entries_search_append_terms_string(char *s, size_t len);
+/* Searches current menu list for specified 'needle'
+ * string. If string is found, returns true and sets
+ * 'idx' to the matching list entry index. */
+bool menu_entries_list_search(const char *needle, size_t *idx);
 
 /* Menu entry interface -
  *

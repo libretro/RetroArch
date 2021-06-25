@@ -18,9 +18,6 @@
 
 /* Defines */
 
-#define DISPLAY_WIDTH			960
-#define DISPLAY_HEIGHT			544
-#define DISPLAY_STRIDE_IN_PIXELS	1024
 #define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
 #define DISPLAY_PIXEL_FORMAT		SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
 #define DISPLAY_BUFFER_COUNT		3
@@ -44,6 +41,10 @@ extern const SceGxmProgram texture_tint_f_gxp;
 
 /* Static variables */
 
+static vita2d_video_mode_data video_mode_data;
+static vita2d_video_mode video_mode_initial;
+static SceGxmMultisampleMode current_msaa = SCE_GXM_MULTISAMPLE_4X;
+
 static int pgf_module_was_loaded = 0;
 
 static const SceGxmProgram *const clearVertexProgramGxp         = &clear_v_gxp;
@@ -60,8 +61,8 @@ static float clear_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 static unsigned int clear_color_u = 0xFF000000;
 static int clip_rect_x_min = 0;
 static int clip_rect_y_min = 0;
-static int clip_rect_x_max = DISPLAY_WIDTH;
-static int clip_rect_y_max = DISPLAY_HEIGHT;
+static int clip_rect_x_max = 0;
+static int clip_rect_y_max = 0;
 static int vblank_wait = 1;
 static int drawing = 0;
 static int clipping_enabled = 0;
@@ -152,6 +153,101 @@ static void patcher_host_free(void *user_data, void *mem)
 	free(mem);
 }
 
+vita2d_video_mode_data vita2d_get_video_mode_data(){
+   return video_mode_data;
+}
+
+static int vita2d_switch_video_mode(vita2d_video_mode video_mode){
+   int i,x,y,err;
+
+   if(video_mode > video_mode_initial)
+      return -1;
+   switch (video_mode)
+   {
+   case VITA2D_VIDEO_MODE_960x544:
+      video_mode_data.width = 960;
+      video_mode_data.height = 544;
+      video_mode_data.stride = 960;
+      break;
+
+   case VITA2D_VIDEO_MODE_1280x720:
+      video_mode_data.width = 1280;
+      video_mode_data.height = 720;
+      video_mode_data.stride = 1280;
+      break;
+   
+   default:
+      return -1;
+      break;
+   }
+   
+   clip_rect_x_max = video_mode_data.width;
+   clip_rect_y_max = video_mode_data.height;
+
+   if(renderTarget != NULL){ 
+      sceGxmDestroyRenderTarget(renderTarget);
+
+      for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
+         // clear the buffer then deallocate
+         memset(displayBufferData[i], 0, video_mode_data.height*video_mode_data.stride*4);
+         gpu_free(displayBufferUid[i]);
+      }
+   }
+
+      	// allocate memory and sync objects for display buffers
+	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
+		// allocate memory for display
+		displayBufferData[i] = gpu_alloc(
+			SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+			4*video_mode_data.stride*video_mode_data.height,
+			SCE_GXM_COLOR_SURFACE_ALIGNMENT,
+			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+			&displayBufferUid[i]);
+
+		// memset the buffer to black
+		for (y = 0; y < video_mode_data.height; y++) {
+			unsigned int *row = (unsigned int *)displayBufferData[i] + y*video_mode_data.stride;
+			for (x = 0; x < video_mode_data.width; x++) {
+				row[x] = 0xff000000;
+			}
+		}
+
+		// initialize a color surface for this display buffer
+		err = sceGxmColorSurfaceInit(
+			&displaySurface[i],
+			DISPLAY_COLOR_FORMAT,
+			SCE_GXM_COLOR_SURFACE_LINEAR,
+			(current_msaa == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
+			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+			video_mode_data.width,
+			video_mode_data.height,
+			video_mode_data.stride,
+			displayBufferData[i]);
+
+	}
+
+   // set up parameters
+	SceGxmRenderTargetParams renderTargetParams;
+	memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+	renderTargetParams.flags			= 0;
+	renderTargetParams.width			= video_mode_data.width;
+	renderTargetParams.height			= video_mode_data.height;
+	renderTargetParams.scenesPerFrame		= 1;
+	renderTargetParams.multisampleMode		= current_msaa;
+	renderTargetParams.multisampleLocations		= 0;
+	renderTargetParams.driverMemBlock		= -1; // Invalid UID
+
+	// create the render target
+	err = sceGxmCreateRenderTarget(&renderTargetParams, &renderTarget);
+	VITA2D_DEBUG("sceGxmCreateRenderTarget(): 0x%08X\n", err);
+
+
+
+   matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, video_mode_data.width, video_mode_data.height, 0.0f, 0.0f, 1.0f);
+
+   return 0;
+}
+
 static void display_callback(const void *callback_data)
 {
 	SceDisplayFrameBuf framebuf;
@@ -160,11 +256,14 @@ static void display_callback(const void *callback_data)
 	memset(&framebuf, 0x00, sizeof(SceDisplayFrameBuf));
 	framebuf.size        = sizeof(SceDisplayFrameBuf);
 	framebuf.base        = display_data->address;
-	framebuf.pitch       = DISPLAY_STRIDE_IN_PIXELS;
+	framebuf.pitch       = video_mode_data.stride;
 	framebuf.pixelformat = DISPLAY_PIXEL_FORMAT;
-	framebuf.width       = DISPLAY_WIDTH;
-	framebuf.height      = DISPLAY_HEIGHT;
-	sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_SETBUF_NEXTFRAME);
+	framebuf.width       = video_mode_data.width;
+	framebuf.height      = video_mode_data.height;
+	if(sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_SETBUF_NEXTFRAME) == SCE_DISPLAY_ERROR_INVALID_RESOLUTION){
+      if(video_mode_initial)
+         vita2d_switch_video_mode(VITA2D_VIDEO_MODE_960x544);
+   }
 
 	if (vblank_wait) {
 		sceDisplayWaitVblankStart();
@@ -218,16 +317,19 @@ static void _vita2d_make_fragment_programs(vita2d_fragment_programs *out,
 	VITA2D_DEBUG("texture_tint sceGxmShaderPatcherCreateFragmentProgram(): 0x%08X\n", err);
 }
 
-static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMode msaa)
+static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMode msaa, vita2d_video_mode video_mode)
 {
 	int err;
-	unsigned int i, x, y;
+	unsigned int i;
 	UNUSED(err);
 
 	if (vita2d_initialized) {
 		VITA2D_DEBUG("libvita2d is already initialized!\n");
 		return 1;
 	}
+
+   video_mode_initial = video_mode;
+   current_msaa = msaa;
 
 	SceGxmInitializeParams initializeParams;
 	memset(&initializeParams, 0, sizeof(SceGxmInitializeParams));
@@ -284,65 +386,32 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 	err = sceGxmCreateContext(&contextParams, &_vita2d_context);
 	VITA2D_DEBUG("sceGxmCreateContext(): 0x%08X\n", err);
 
-	// set up parameters
-	SceGxmRenderTargetParams renderTargetParams;
-	memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-	renderTargetParams.flags			= 0;
-	renderTargetParams.width			= DISPLAY_WIDTH;
-	renderTargetParams.height			= DISPLAY_HEIGHT;
-	renderTargetParams.scenesPerFrame		= 1;
-	renderTargetParams.multisampleMode		= msaa;
-	renderTargetParams.multisampleLocations		= 0;
-	renderTargetParams.driverMemBlock		= -1; // Invalid UID
+   err = vita2d_switch_video_mode(video_mode);
+   if(err<0){
+      VITA2D_DEBUG("vita2d_switch_video_mode(): 0x%08X\n", err);
+      return err;
+   }
 
-	// create the render target
-	err = sceGxmCreateRenderTarget(&renderTargetParams, &renderTarget);
-	VITA2D_DEBUG("sceGxmCreateRenderTarget(): 0x%08X\n", err);
+   vita2d_display_data displayData;
+	displayData.address = displayBufferData[0];
+   display_callback(&displayData);
 
 	// allocate memory and sync objects for display buffers
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		// allocate memory for display
-		displayBufferData[i] = gpu_alloc(
-			SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-			4*DISPLAY_STRIDE_IN_PIXELS*DISPLAY_HEIGHT,
-			SCE_GXM_COLOR_SURFACE_ALIGNMENT,
-			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-			&displayBufferUid[i]);
-
-		// memset the buffer to black
-		for (y = 0; y < DISPLAY_HEIGHT; y++) {
-			unsigned int *row = (unsigned int *)displayBufferData[i] + y*DISPLAY_STRIDE_IN_PIXELS;
-			for (x = 0; x < DISPLAY_WIDTH; x++) {
-				row[x] = 0xff000000;
-			}
-		}
-
-		// initialize a color surface for this display buffer
-		err = sceGxmColorSurfaceInit(
-			&displaySurface[i],
-			DISPLAY_COLOR_FORMAT,
-			SCE_GXM_COLOR_SURFACE_LINEAR,
-			(msaa == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
-			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			DISPLAY_WIDTH,
-			DISPLAY_HEIGHT,
-			DISPLAY_STRIDE_IN_PIXELS,
-			displayBufferData[i]);
-
 		// create a sync object that we will associate with this buffer
 		err = sceGxmSyncObjectCreate(&displayBufferSync[i]);
 	}
 
 	// compute the memory footprint of the depth buffer
-	const unsigned int alignedWidth = ALIGN(DISPLAY_WIDTH, SCE_GXM_TILE_SIZEX);
-	const unsigned int alignedHeight = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
+	const unsigned int alignedWidth = ALIGN(video_mode_data.width, SCE_GXM_TILE_SIZEX);
+	const unsigned int alignedHeight = ALIGN(video_mode_data.height, SCE_GXM_TILE_SIZEY);
 	unsigned int sampleCount = alignedWidth*alignedHeight;
 	unsigned int depthStrideInSamples = alignedWidth;
-	if (msaa == SCE_GXM_MULTISAMPLE_4X) {
+	if (current_msaa == SCE_GXM_MULTISAMPLE_4X) {
 		// samples increase in X and Y
 		sampleCount *= 4;
 		depthStrideInSamples *= 2;
-	} else if (msaa == SCE_GXM_MULTISAMPLE_2X) {
+	} else if (current_msaa == SCE_GXM_MULTISAMPLE_2X) {
 		// samples increase in Y only
 		sampleCount *= 2;
 	}
@@ -527,7 +596,7 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 		shaderPatcher,
 		clearFragmentProgramId,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa,
+		current_msaa,
 		NULL,
 		clearVertexProgramGxp,
 		&clearFragmentProgram);
@@ -686,8 +755,8 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 	VITA2D_DEBUG("texture sceGxmShaderPatcherCreateVertexProgram(): 0x%08X\n", err);
 
 	// Create variations of the fragment program based on blending mode
-	_vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_normal, &blend_info, msaa);
-	_vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add, &blend_info_add, msaa);
+	_vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_normal, &blend_info, current_msaa);
+	_vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add, &blend_info_add, current_msaa);
 
 	// Default to "normal" blending mode (non-additive)
 	vita2d_set_blend_mode_add(0);
@@ -713,9 +782,9 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 		sizeof(void *),
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		&poolUid);
-		
 
-	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0.0f, 0.0f, 1.0f);
+
+   matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, video_mode_data.width, video_mode_data.height, 0.0f, 0.0f, 1.0f);
 
 	backBufferIndex = 0;
 	frontBufferIndex = 0;
@@ -731,22 +800,23 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 
 int vita2d_init()
 {
-	return vita2d_init_internal(DEFAULT_TEMP_POOL_SIZE, SCE_GXM_MULTISAMPLE_NONE);
+	return vita2d_init_internal(DEFAULT_TEMP_POOL_SIZE, SCE_GXM_MULTISAMPLE_NONE, VITA2D_VIDEO_MODE_960x544);
 }
 
 int vita2d_init_advanced(unsigned int temp_pool_size)
 {
-	return vita2d_init_internal(temp_pool_size, SCE_GXM_MULTISAMPLE_NONE);
+	return vita2d_init_internal(temp_pool_size, SCE_GXM_MULTISAMPLE_NONE, VITA2D_VIDEO_MODE_960x544);
 }
 
-int vita2d_init_advanced_with_msaa(unsigned int temp_pool_size, SceGxmMultisampleMode msaa)
+int vita2d_init_advanced_with_msaa(unsigned int temp_pool_size, SceGxmMultisampleMode msaa, vita2d_video_mode video_mode)
 {
-	return vita2d_init_internal(temp_pool_size, msaa);
+	return vita2d_init_internal(temp_pool_size, msaa, video_mode);
 }
 
 void vita2d_wait_rendering_done()
 {
-	sceGxmFinish(_vita2d_context);
+   if(vita2d_initialized)
+   	sceGxmFinish(_vita2d_context);
 }
 
 int vita2d_fini()
@@ -780,7 +850,7 @@ int vita2d_fini()
 	gpu_free(depthBufferUid);
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 		// clear the buffer then deallocate
-		memset(displayBufferData[i], 0, DISPLAY_HEIGHT*DISPLAY_STRIDE_IN_PIXELS*4);
+		memset(displayBufferData[i], 0, video_mode_data.height*video_mode_data.stride*4);
 		gpu_free(displayBufferUid[i]);
 
 		// destroy the sync object
@@ -808,6 +878,7 @@ int vita2d_fini()
 
 	// destroy the render target
 	sceGxmDestroyRenderTarget(renderTarget);
+   renderTarget = NULL;
 
 	// destroy the _vita2d_context
 	sceGxmDestroyContext(_vita2d_context);
@@ -933,7 +1004,7 @@ int vita2d_get_clipping_enabled()
 
 void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 {
-	vita2d_set_viewport(0,0,DISPLAY_WIDTH,DISPLAY_HEIGHT);
+	vita2d_set_viewport(0,0,video_mode_data.width,video_mode_data.height);
 	clipping_enabled = 1;
 	clip_rect_x_min = x_min;
 	clip_rect_y_min = y_min;
@@ -952,7 +1023,7 @@ void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 			SCE_GXM_STENCIL_OP_ZERO,
 			0xFF,
 			0xFF);
-		vita2d_draw_rectangle(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
+		vita2d_draw_rectangle(0, 0, video_mode_data.width, video_mode_data.height, 0);
 		// set the stencil to 1 in the desired region
 		sceGxmSetFrontStencilFunc(
 			_vita2d_context,
@@ -1003,9 +1074,9 @@ int vita2d_common_dialog_update()
 
 	updateParam.renderTarget.colorFormat    = DISPLAY_COLOR_FORMAT;
 	updateParam.renderTarget.surfaceType    = SCE_GXM_COLOR_SURFACE_LINEAR;
-	updateParam.renderTarget.width          = DISPLAY_WIDTH;
-	updateParam.renderTarget.height         = DISPLAY_HEIGHT;
-	updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE_IN_PIXELS;
+	updateParam.renderTarget.width          = video_mode_data.width;
+	updateParam.renderTarget.height         = video_mode_data.height;
+	updateParam.renderTarget.strideInPixels = video_mode_data.stride;
 
 	updateParam.renderTarget.colorSurfaceData = displayBufferData[backBufferIndex];
 	updateParam.renderTarget.depthSurfaceData = depthBufferData;
@@ -1100,7 +1171,7 @@ void vita2d_set_blend_mode_add(int enable)
 }
 
 void vita2d_set_viewport(int x, int y, int width, int height){
-   static float vh = DISPLAY_HEIGHT;
+   float vh = video_mode_data.height;
    float sw = width  / 2.;
    float sh = height / 2.;
    float x_scale = sw;

@@ -16,48 +16,9 @@
 #ifndef __RARCH_CHEEVOS_PARSER_H
 #define __RARCH_CHEEVOS_PARSER_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <boolean.h>
-
-#include <retro_common_api.h>
+#include "cheevos_locals.h"
 
 RETRO_BEGIN_DECLS
-
-typedef struct
-{
-  const char* title;
-  const char* description;
-  const char* badge;
-  const char* memaddr;
-  unsigned points;
-  unsigned id;
-  unsigned active;
-} rcheevos_racheevo_t;
-
-typedef struct
-{
-  const char* title;
-  const char* description;
-  const char* mem;
-  unsigned id;
-  unsigned format;
-} rcheevos_ralboard_t;
-
-typedef struct
-{
-   char* title;
-   rcheevos_racheevo_t* core;
-   rcheevos_racheevo_t* unofficial;
-   rcheevos_ralboard_t* lboards;
-   char* richpresence_script;
-
-   unsigned game_id;
-   unsigned console_id;
-   unsigned core_count;
-   unsigned unofficial_count;
-   unsigned lboard_count;
-} rcheevos_rapatchdata_t;
 
 typedef void (*rcheevos_unlock_cb_t)(unsigned id, void* userdata);
 

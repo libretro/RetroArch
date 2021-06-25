@@ -103,6 +103,14 @@ enum overlay_orientation
    OVERLAY_ORIENTATION_PORTRAIT
 };
 
+enum overlay_show_input_type
+{
+   OVERLAY_SHOW_INPUT_NONE = 0,
+   OVERLAY_SHOW_INPUT_TOUCHED,
+   OVERLAY_SHOW_INPUT_PHYSICAL,
+   OVERLAY_SHOW_INPUT_LAST
+};
+
 struct overlay
 {
    struct overlay_desc *descs;
@@ -217,6 +225,7 @@ typedef struct
    float y_separation_portrait;
    float x_offset_portrait;
    float y_offset_portrait;
+   float touch_scale;
    bool auto_scale;
 } overlay_layout_desc_t;
 

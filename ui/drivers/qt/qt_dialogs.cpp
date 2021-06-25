@@ -1195,8 +1195,15 @@ void CoreOptionsDialog::buildLayout()
 
                if (!string_is_empty(option->info))
                {
-                  char *new_info = strdup(option->info);
-                  word_wrap(new_info, new_info, 50, true, 0);
+                  char *new_info;
+                  size_t new_info_len = strlen(option->info) + 1;
+
+                  new_info = (char *)malloc(new_info_len);
+                  if (!new_info)
+                     return;
+                  new_info[0] = '\0';
+
+                  word_wrap(new_info, new_info_len, option->info, 50, 100, 0);
                   descLabel->setToolTip(new_info);
                   combo_box->setToolTip(new_info);
                   free(new_info);
@@ -1745,20 +1752,29 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    if (!menu_shader)
       return;
 
-   filter = "Shader Preset (";
+   filter.append("Shader Preset (");
 
    /* NOTE: Maybe we should have a way to get a list 
     * of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
-      filter += QLatin1Literal(" *") + ".cgp";
+   {
+      filter.append(QLatin1Literal(" *"));
+      filter.append(".cgp");
+   }
 
    if (video_shader_is_supported(RARCH_SHADER_GLSL))
-      filter += QLatin1Literal(" *") + ".glslp";
+   {
+      filter.append(QLatin1Literal(" *"));
+      filter.append(".glslp");
+   }
 
    if (video_shader_is_supported(RARCH_SHADER_SLANG))
-      filter += QLatin1Literal(" *") + ".slangp";
+   {
+      filter.append(QLatin1Literal(" *"));
+      filter.append(".slangp");
+   }
 
-   filter    += ")";
+   filter.append(")");
    path       = QFileDialog::getOpenFileName(
          this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
@@ -1895,20 +1911,20 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    if (!menu_shader)
       return;
 
-   filter = "Shader (";
+   filter.append("Shader (");
 
    /* NOTE: Maybe we should have a way to get a list 
     * of all shader types instead of hard-coding this? */
    if (video_shader_is_supported(RARCH_SHADER_CG))
-      filter += QLatin1Literal(" *.cg");
+      filter.append(QLatin1Literal(" *.cg"));
 
    if (video_shader_is_supported(RARCH_SHADER_GLSL))
-      filter += QLatin1Literal(" *.glsl");
+      filter.append(QLatin1Literal(" *.glsl"));
 
    if (video_shader_is_supported(RARCH_SHADER_SLANG))
-      filter += QLatin1Literal(" *.slang");
+      filter.append(QLatin1Literal(" *.slang"));
 
-   filter += ")";
+   filter.append(")");
 
    path = QFileDialog::getOpenFileName(
          this,

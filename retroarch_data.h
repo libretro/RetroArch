@@ -44,9 +44,9 @@
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
 
-#define FAIL_CPU(simd_type) do { \
+#define FAIL_CPU(p_rarch, simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retroarch_fail(1, "validate_cpu_features()"); \
+   retroarch_fail(p_rarch, 1, "validate_cpu_features()"); \
 } while (0)
 
 #ifdef HAVE_ZLIB
@@ -107,9 +107,6 @@
 #define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
 #define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
 
-#define DEFAULT_NETWORK_CMD_PORT 55355
-#define STDIN_BUF_SIZE           4096
-
 #ifdef HAVE_THREADS
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
 #else
@@ -165,11 +162,11 @@
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch) (&p_rarch->hw_render)
 
 #ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK(p_rarch) slock_lock(p_rarch->runloop_msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch) slock_unlock(p_rarch->runloop_msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_LOCK(runloop) slock_lock(runloop.msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop) slock_unlock(runloop.msg_queue_lock)
 #else
-#define RUNLOOP_MSG_QUEUE_LOCK(p_rarch)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(p_rarch)
+#define RUNLOOP_MSG_QUEUE_LOCK(p_runloop)
+#define RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop)
 #endif
 
 #ifdef HAVE_BSV_MOVIE
@@ -186,7 +183,7 @@
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF(p_rarch) || ((p_rarch->runloop_max_frames != 0) && (frame_count >= p_rarch->runloop_max_frames)) || runloop_exec)
+#define TIME_TO_EXIT(quit_key_pressed) (runloop_state.shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF(p_rarch) || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
@@ -294,7 +291,7 @@
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle_local, #x); \
    memcpy(&current_core->x, &func, sizeof(func)); \
-   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_symbols()"); } \
+   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(p_rarch, 1, "init_libretro_symbols()"); } \
 } while (0)
 #else
 #define SYMBOL(x) current_core->x = x
@@ -406,27 +403,6 @@
 #define MENU_MAX_AXES              32
 #define MENU_MAX_HATS              4
 #define MENU_MAX_MBUTTONS          32 /* Enough to cover largest libretro constant*/
-#endif
-
-#ifndef HAVE_LANGEXTRA
-/* If HAVE_LANGEXTRA is not defined, define some ASCII-friendly pages. */
-static const char *symbols_page1_grid[] = {
-                          "1","2","3","4","5","6","7","8","9","0","Bksp",
-                          "!","\"","#","$","%","&","'","*","(",")","Enter",
-                          "+",",","-","~","/",":",";","=","<",">","Lower",
-                          "?","@","[","\\","]","^","_","|","{","}","Next"};
-
-static const char *uppercase_grid[] = {
-                          "1","2","3","4","5","6","7","8","9","0","Bksp",
-                          "Q","W","E","R","T","Y","U","I","O","P","Enter",
-                          "A","S","D","F","G","H","J","K","L","+","Lower",
-                          "Z","X","C","V","B","N","M"," ","_","/","Next"};
-
-static const char *lowercase_grid[] = {
-                          "1","2","3","4","5","6","7","8","9","0","Bksp",
-                          "q","w","e","r","t","y","u","i","o","p","Enter",
-                          "a","s","d","f","g","h","j","k","l","@","Upper",
-                          "z","x","c","v","b","n","m"," ","-",".","Next"};
 #endif
 
 /* DRIVERS */
@@ -1114,6 +1090,9 @@ static const wifi_driver_t *wifi_drivers[] = {
 #ifdef HAVE_LAKKA
    &wifi_connmanctl,
 #endif
+#ifdef HAVE_WIFI
+   &wifi_nmcli,
+#endif
    &wifi_null,
    NULL,
 };
@@ -1301,13 +1280,6 @@ enum rarch_movie_type
    RARCH_MOVIE_RECORD
 };
 
-enum cmd_source_t
-{
-   CMD_NONE = 0,
-   CMD_STDIN,
-   CMD_NETWORK
-};
-
 enum poll_type_override_t
 {
    POLL_TYPE_OVERRIDE_DONTCARE = 0,
@@ -1484,36 +1456,6 @@ struct input_overlay
    bool alive;
 };
 #endif
-
-struct cmd_map
-{
-   const char *str;
-   unsigned id;
-};
-
-#if defined(HAVE_COMMAND)
-struct cmd_action_map
-{
-   const char *str;
-   bool (*action)(const char *arg);
-   const char *arg_desc;
-};
-#endif
-
-struct command
-{
-#ifdef HAVE_STDIN_CMD
-   size_t stdin_buf_ptr;
-#endif
-#ifdef HAVE_NETWORK_CMD
-   int net_fd;
-#endif
-#ifdef HAVE_STDIN_CMD
-   char stdin_buf[STDIN_BUF_SIZE];
-#endif
-   bool stdin_enable;
-   bool state[RARCH_BIND_LIST_END];
-};
 
 /* Input config. */
 struct input_bind_map
@@ -1722,13 +1664,64 @@ struct discord_state
 typedef struct discord_state discord_state_t;
 #endif
 
+struct runloop
+{ 
+   retro_usec_t frame_time_last;        /* int64_t alignment */
+
+   msg_queue_t msg_queue;                        /* ptr alignment */
+#ifdef HAVE_THREADS
+   slock_t *msg_queue_lock;
+#endif
+   size_t msg_queue_size;
+
+   core_option_manager_t *core_options;
+   retro_keyboard_event_t key_event;             /* ptr alignment */
+   retro_keyboard_event_t frontend_key_event;    /* ptr alignment */
+
+   rarch_system_info_t system;                   /* ptr alignment */
+   struct retro_frame_time_callback frame_time;  /* ptr alignment */
+   struct retro_audio_buffer_status_callback audio_buffer_status; /* ptr alignment */
+   unsigned pending_windowed_scale;
+   unsigned max_frames;
+   unsigned audio_latency;
+
+   struct retro_fastforwarding_override fastmotion_override; /* float alignment */
+
+   bool missing_bios;
+   bool force_nonblock;
+   bool paused;
+   bool idle;
+   bool slowmotion;
+   bool fastmotion;
+   bool shutdown_initiated;
+   bool core_shutdown_initiated;
+   bool core_running;
+   bool perfcnt_enable;
+   bool game_options_active;
+   bool folder_options_active;
+   bool autosave;
+#ifdef HAVE_CONFIGFILE
+   bool overrides_active;
+#endif
+   bool remaps_core_active;
+   bool remaps_game_active;
+   bool remaps_content_dir_active;
+#ifdef HAVE_SCREENSHOTS
+   bool max_frames_screenshot;
+   char max_frames_screenshot_path[PATH_MAX_LENGTH];
+#endif
+};
+
+typedef struct runloop runloop_state_t;
+
 struct rarch_state
 {
    double audio_source_ratio_original;
    double audio_source_ratio_current;
    struct retro_system_av_info video_driver_av_info; /* double alignment */
+#ifdef HAVE_CRTSWITCHRES
    videocrt_switch_t crt_switch_st;                  /* double alignment */
-
+#endif
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_time_t libretro_core_runtime_last;
@@ -1740,7 +1733,7 @@ struct rarch_state
    menu_input_t menu_input_state;               /* retro_time_t alignment */
 #endif
 
-   retro_usec_t runloop_frame_time_last;        /* int64_t alignment */
+   
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
@@ -1750,11 +1743,6 @@ struct rarch_state
 #endif
 #ifdef HAVE_MENU
    struct menu_state menu_driver_state;         /* int64_t alignment */
-#endif
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-   struct sockaddr_storage lastcmd_net_source;  /* int64_t alignment */
-#endif
 #endif
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t dispwidget_st;              /* uint64_t alignment */
@@ -1804,13 +1792,11 @@ struct rarch_state
 #ifdef HAVE_MENU
    const char **menu_input_dialog_keyboard_buffer;
 #endif
-   core_option_manager_t *runloop_core_options;
 
    const record_driver_t *recording_driver;
    void *recording_data;
 
 #ifdef HAVE_THREADS
-   slock_t *runloop_msg_queue_lock;
    slock_t *display_lock;
    slock_t *context_lock;
 #endif
@@ -1883,7 +1869,7 @@ struct rarch_state
    void *keyboard_press_data;
 
 #ifdef HAVE_COMMAND
-   command_t *input_driver_command;
+   command_t *input_driver_command[MAX_CMD_DRIVERS];
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *input_driver_remote;
@@ -1925,13 +1911,12 @@ struct rarch_state
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
-   msg_queue_t runloop_msg_queue;                        /* ptr alignment */
+   
    gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    content_state_t            content_st;                /* ptr alignment */
    midi_event_t midi_drv_input_event;                    /* ptr alignment */
    midi_event_t midi_drv_output_event;                   /* ptr alignment */
    core_info_state_t core_info_st;                       /* ptr alignment */
-   rarch_system_info_t runloop_system;                   /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
    const input_device_driver_t *joypad;                  /* ptr alignment */
 #ifdef HAVE_MFI
@@ -1942,12 +1927,8 @@ struct rarch_state
 #endif
    gfx_display_t              dispgfx;                   /* ptr alignment */
    input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
-   struct retro_frame_time_callback runloop_frame_time;  /* ptr alignment */
-   struct retro_audio_buffer_status_callback runloop_audio_buffer_status; /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
    struct retro_audio_callback audio_callback;           /* ptr alignment */
-   retro_keyboard_event_t runloop_key_event;             /* ptr alignment */
-   retro_keyboard_event_t runloop_frontend_key_event;    /* ptr alignment */
    video_driver_frame_t frame_bak;                       /* ptr alignment */
    struct rarch_dir_shader_list dir_shader_list;         /* ptr alignment */
 #ifdef HAVE_RUNAHEAD
@@ -1988,7 +1969,6 @@ struct rarch_state
    uintptr_t video_driver_display;
    uintptr_t video_driver_window;
 
-   size_t runloop_msg_queue_size;
    size_t recording_gpu_width;
    size_t recording_gpu_height;
 
@@ -2045,9 +2025,6 @@ struct rarch_state
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
-   unsigned runloop_pending_windowed_scale;
-   unsigned runloop_max_frames;
-   unsigned runloop_audio_latency;
    unsigned fastforward_after_frames;
 
 #ifdef HAVE_MENU
@@ -2133,11 +2110,6 @@ struct rarch_state
     * TODO - Dirty hack, fix it better
     */
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-   socklen_t lastcmd_net_source_len;            /* uint32_t alignment */
-#endif
-#endif
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
    input_mapper_t input_driver_mapper;          /* uint32_t alignment */
 
@@ -2166,9 +2138,6 @@ struct rarch_state
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char cli_shader[PATH_MAX_LENGTH];
    char runtime_shader_preset[PATH_MAX_LENGTH];
-#endif
-#ifdef HAVE_SCREENSHOTS
-   char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH];
 #endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
@@ -2227,16 +2196,6 @@ struct rarch_state
 #ifdef HAVE_PATCH
    bool rarch_patch_blocked;
 #endif
-   bool runloop_missing_bios;
-   bool runloop_force_nonblock;
-   bool runloop_paused;
-   bool runloop_idle;
-   bool runloop_slowmotion;
-   bool runloop_fastmotion;
-   bool runloop_shutdown_initiated;
-   bool runloop_core_shutdown_initiated;
-   bool runloop_core_running;
-   bool runloop_perfcnt_enable;
    bool video_driver_window_title_update;
 
    /**
@@ -2280,16 +2239,6 @@ struct rarch_state
 #endif
 #ifdef HAVE_CONFIGFILE
    bool rarch_block_config_read;
-   bool runloop_overrides_active;
-   bool runloop_remaps_core_active;
-   bool runloop_remaps_game_active;
-   bool runloop_remaps_content_dir_active;
-#endif
-   bool runloop_game_options_active;
-   bool runloop_folder_options_active;
-   bool runloop_autosave;
-#ifdef HAVE_SCREENSHOTS
-   bool runloop_max_frames_screenshot;
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool cli_shader_disable;
@@ -2305,7 +2254,6 @@ struct rarch_state
    bool video_driver_state_out_rgb32;
 #endif
    bool video_driver_crt_switching_active;
-   bool video_driver_crt_dynamic_super_width;
    bool video_driver_threaded;
 
    bool video_started_fullscreen;
@@ -2339,6 +2287,7 @@ struct rarch_state
    bool input_driver_block_libretro_input;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
+   bool input_driver_analog_requested[MAX_USERS];
 
    input_game_focus_state_t game_focus_state; /* bool alignment */
 
@@ -2678,107 +2627,11 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_BREAK,         "Break"},
    {RETROK_MENU,          "Menu"},
    {RETROK_POWER,         "Power"},
-   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "€" */
+   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "�" */
    {RETROK_UNDO,          "Undo"},
    {RETROK_OEM_102,       "OEM-102"}
 };
-#endif
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static enum rarch_shader_type shader_types[] =
-{
-   RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
-};
-#endif
-
-/* These forward declarations need to be declared before
- * the global state is declared */
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool command_set_shader(const char *arg);
-#endif
-#if defined(HAVE_COMMAND)
-static bool command_version(const char* arg);
-static bool command_get_status(const char* arg);
-static bool command_get_config_param(const char* arg);
-static bool command_show_osd_msg(const char* arg);
-#ifdef HAVE_CHEEVOS
-static bool command_read_ram(const char *arg);
-static bool command_write_ram(const char *arg);
-#endif
-static bool command_read_memory(const char *arg);
-static bool command_write_memory(const char *arg);
-
-static const struct cmd_action_map action_map[] = {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   { "SET_SHADER",       command_set_shader,       "<shader path>" },
-#endif
-   { "VERSION",          command_version,          "No argument"},
-   { "GET_STATUS",       command_get_status,       "No argument" },
-   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
-   { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
-#if defined(HAVE_CHEEVOS)
-   /* These functions use achievement addresses and only work if a game with achievements is
-    * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
-   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>" },
-   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ..." },
-#endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>" },
-   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
-};
-
-static const struct cmd_map map[] = {
-   { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
-   { "FAST_FORWARD_HOLD",      RARCH_FAST_FORWARD_HOLD_KEY },
-   { "SLOWMOTION",             RARCH_SLOWMOTION_KEY },
-   { "SLOWMOTION_HOLD",        RARCH_SLOWMOTION_HOLD_KEY },
-   { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
-   { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
-   { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
-   { "CLOSE_CONTENT",          RARCH_CLOSE_CONTENT_KEY },
-   { "QUIT",                   RARCH_QUIT_KEY },
-   { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
-   { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
-   { "REWIND",                 RARCH_REWIND },
-   { "BSV_RECORD_TOGGLE",      RARCH_BSV_RECORD_TOGGLE },
-   { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },
-   { "FRAMEADVANCE",           RARCH_FRAMEADVANCE },
-   { "RESET",                  RARCH_RESET },
-   { "SHADER_NEXT",            RARCH_SHADER_NEXT },
-   { "SHADER_PREV",            RARCH_SHADER_PREV },
-   { "CHEAT_INDEX_PLUS",       RARCH_CHEAT_INDEX_PLUS },
-   { "CHEAT_INDEX_MINUS",      RARCH_CHEAT_INDEX_MINUS },
-   { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
-   { "SCREENSHOT",             RARCH_SCREENSHOT },
-   { "MUTE",                   RARCH_MUTE },
-   { "OSK",                    RARCH_OSK },
-   { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
-   { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
-   { "NETPLAY_HOST_TOGGLE",    RARCH_NETPLAY_HOST_TOGGLE },
-   { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
-   { "VOLUME_UP",              RARCH_VOLUME_UP },
-   { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
-   { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
-   { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
-   { "DISK_NEXT",              RARCH_DISK_NEXT },
-   { "DISK_PREV",              RARCH_DISK_PREV },
-   { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
-   { "UI_COMPANION_TOGGLE",    RARCH_UI_COMPANION_TOGGLE },
-   { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
-   { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
-   { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
-   { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
-   { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
-   { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
-   { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
-   { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
-   { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
-   { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
-   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
-   { "AI_SERVICE",             RARCH_AI_SERVICE },
-};
-#endif
-
-#ifdef HAVE_MENU
 static void *null_menu_init(void **userdata, bool video_is_threaded)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
@@ -2786,6 +2639,7 @@ static void *null_menu_init(void **userdata, bool video_is_threaded)
       return NULL;
    return menu;
 }
+
 static int null_menu_list_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx) { return 0; }
 

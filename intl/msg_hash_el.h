@@ -509,6 +509,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
    "Αφαιρέστε ένα αρχείο από τη λίστα των αποθηκευμένων αντιγράφων ασφαλείας."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   "[Αυτόματο]"
+   )
 
 /* Main Menu > Information > System Information */
 
@@ -827,6 +831,10 @@ MSG_HASH(
    "Προέλευση"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   "Ομάδα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
    "Βαθμολογία TGDB"
    )
@@ -1045,6 +1053,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Περιηγητής Αρχείων"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Αλλαγή ρυθμίσεων προγράμματος περιήγησης."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1322,10 +1334,6 @@ MSG_HASH(
    "Εναλλάξτε μεταξύ αυτών των επιλογών εάν η εικόνα δεν είναι σωστά κεντραρισμένη στην οθόνη."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Χρήση Προσαρμοσμένου Ρυθμού Ανανέωσης"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Χρήση προσαρμοσμένου ρυθμού ανανέωσης προσδιορισμένου στο αρχείο διαμόρφωσης εάν χρειάζεται."
    )
@@ -1376,6 +1384,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Ο ρυθμός ανανέωσης όπως αναφέρεται από τον οδηγό οθόνης."
    )
+#if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+   "Κάθετος Ρυθμός Ανανέωσης"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Ορίστε τον κάθετο ρυθμό ανανέωσης της οθόνης. Τα '50 Hz' θα ενεργοποιήσουν την ομαλή εκτέλεση βίντεο κατά την εκτέλεση του Ευρωπαϊκού περιεχομένου (PAL)."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
    "Εξαναγκασμένη απενεργοποίηση sRGB FBO"
@@ -1475,9 +1493,25 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Προτιμώμενο ύψος οπτικής γωνίας το οποίο χρησιμοποιείται εάν η Αναλογία Οθόνης είναι ορισμένη ως 'Προτιμώμενη'."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "Αφαιρεί μερικά pixel γύρω από την εικόνα όπου εθιμικά οι προγραμματιστές άφηναν κενά ή και που περιέχουν άχρηστα pixel."
+   )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   "Κάθετος Συγχρονισμός (VSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   "Προσαρμοστικός Συγχρονισμός Vsync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "Το V-Sync είναι ενεργό μέχρι τα καρέ να πέσουν χαμηλότερα από τα αναγραφόμενα. Με αυτόν το τρόπο θα μειωθεί το τραύλισμα της οθόνης (stuttering) όταν οι επιδόσεις χαμηλώνουν ενώ ταυτόχρονα είναι ενεργειακά πιο αποδοτικό."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Καθυστέρηση Καρέ"
@@ -1769,6 +1803,14 @@ MSG_HASH(
    "Προκαθορισμένο Πλήκτρο για Τούρμπο"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "Πλήκτρο \"Turbo\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Αλλαγή ρυθμίσεων πλήκτου \"Turbo\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
    "Μενού Χειριστηρίων"
    )
@@ -1816,6 +1858,26 @@ MSG_HASH(
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Επιβεβαίωση Εξόδου"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   "Ταχεία Προώθηση (Εναλλαγή)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Ταχεία Προώθηση (Κράτημα Πλήκτρου)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Ενεργοποιεί την ταχεία προώθηση όταν παραμένει πατημένο. Το περιεχόμενο εκτελείται με κανονική ταχύτητα όταν το πλήκτρο απελευθερώνεται."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+   "Αργή Κίνηση (Εναλλαγή)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
    "Αργή Κίνηση (Πατημένο)"
    )
@@ -1826,6 +1888,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
    "Αποθήκευση κατάστασης"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Πλήρης Οθόνη (Εναλλαγή)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   "Εναλλαγή μεταξύ πλήρους οθόνης και λειτουργίας παραθύρου."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
@@ -1852,8 +1922,24 @@ MSG_HASH(
    "Επιστροφή"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
+   "Παύση (Εναλλαγή)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
+   "Εναλλάσσει εκτελούμενο περιεχόμενο μεταξύ καταστάσεων σε παύση και μη παύση."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
+   "Όταν το περιεχόμενο είναι σε παύση, το προάγει κατά ένα πλαίσιο (frame)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
    "Επαναφορά παιχνιδιού"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   "Αναπαραγωγή του τρέχοντος περιεχομένου από την αρχή."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -1872,12 +1958,32 @@ MSG_HASH(
    "Λήψη Στιγμιότυπου"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+   "Σίγαση Ήχου (Εναλλαγή)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   "Πληκτρολόγιο Οθόνης (Εναλλαγή)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Ενεργοποίηση/απενεργοποίηση πληκτρολόγιου οθόνης."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Εμαφανίζει τα Καρέ ανά δευτερόλεπτο (FPS)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
+   "Ενεργοποίηση/Απενεργοποίηση της ένδειξης 'καρέ ανά δευτερόλεπτο'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
    "Αποστολή Πληροφοριων Εκσφαλματωσης (Debuging)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
+   "Στέλνει διαγνωστικές πληροφορίες σχετικά με τη συσκευή σας και τις ρυθμίσεις του RetroArch στους διακομιστές μας για ανάλυση."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
@@ -2100,11 +2206,19 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
    "Έλεγχος για απών Firmware Πριν την Φόρτωση"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "Διατήρηση τοπικής προσωρινής μνήμης των εγκατεστημένων βασικών πληροφοριών. Μειώνει σημαντικά τους χρόνους φόρτωσης σε πλατφόρμες με αργή πρόσβαση στο δίσκο."
+   )
 #ifndef HAVE_DYNAMIC
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    "Επίτρεψη περιστροφής"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   "Διαχείριση Πυρήνων"
    )
 
 /* Settings > Configuration */
@@ -2181,6 +2295,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Φιλτράρισμα άγνωστων επεκτάσεων"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Φιλτράρισμα αρχείων που εμφανίζονται στο πρόγραμμα περιήγησης αρχείων βάσει υποστηριζόμενων επεκτάσεων."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -2282,18 +2400,6 @@ MSG_HASH(
    )
 #if defined(ANDROID)
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Εμφάνιση Εισαγωγών Στο Επικάλλυμα"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Εμφάνιση εισαγωγών πληκτρολογίου/χειριστηρίου στο επικάλλυμα οθόνης."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Εμφάνιση Θύρας Εισαγωγών"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Επικάλλυμα"
@@ -2456,6 +2562,18 @@ MSG_HASH(
    "Εισαγωγή Κωδικού για Απενεργοποίηση της Παιδικής Λειτουργίας"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "Χρονικό Όριο Προβολής Οθόνης Μενού"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "Ενώ το μενού είναι ενεργό, η προφύλαξη οθόνης θα εμφανίζεται μετά την καθορισμένη περίοδο αδράνειας."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Χιονόπτωση"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Υποστήριξη Ποντικιού"
    )
@@ -2470,6 +2588,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
    "Εκτέλεση εργασιών σε ξεχωριστό νήμα (Thread)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Καθυστέρηση Κύλισης Μενού"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -2489,6 +2611,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Ρυθμίσεις"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   "Προβολή 'Διαδικτυακού Ενημερωτή'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -2858,6 +2984,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
    "Αποσύνδεση από τον διακομιστή netplay"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   "Ανανέωση Λίστας Διακομιστών Διαδικτυακού Παιχνιδιού"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   "Σάρωση για οικοδεσπότες netplay."
+   )
 
 /* Netplay > Host */
 
@@ -3024,8 +3158,16 @@ MSG_HASH(
    "Κατάργηση"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+   "Αφαίρεση αυτής της καταχώρησης από τη λίστα αναπαραγωγής."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
    "Προσθήκη στα Αγαπημένα"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
+   "Ορισμός Συσχέτισης Πυρήνα"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
@@ -3034,6 +3176,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
    "Πληροφορίες"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION,
+   "Προβολή περισσότερων πληροφορίών για το περιεχόμενο."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "Λήψη Μικρογραφιών"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   "Λήψη στιγμιότυπου οθόνης/περίβλημα κουτιού/μικρογραφίες οθόνης τίτλου για το τρέχον περιεχόμενο. Ενημέρωση τυχόν υπάρχουσων μικρογραφιών."
    )
 
 /* Playlist Item > Set Core Association */
@@ -3326,7 +3480,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 
 /* Quick Menu > Shaders > Remove */
@@ -3347,10 +3501,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
    "Δεν υπάρχουν επιτεύγματα προς προβολή."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
@@ -3792,6 +3942,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    "Χρώμα Θέματος Μενού"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Εφέ Φόντου Προφύλαξης Οθόνης"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Εμφάνιση εφέ σωματιδίων στο παρασκήνιο, ενώ το μενού είναι ενεργό."
+   )
 
 /* RGUI: Settings Options */
 
@@ -4082,6 +4240,10 @@ MSG_HASH(
    "&Φόρτωση Πυρήνα..."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+   "Έξοδος"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
    "&Eπεξεργασία"
    )
@@ -4124,6 +4286,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    "Εγχειρίδιο"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+   "Φόρτωση Προσαρμοσμένου Πυρήνα..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
@@ -4256,6 +4422,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
    "Επιλογή Φακέλου"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+   "Ενημέρωση RetroArch (Ασταθής Έκδοση)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
@@ -4403,6 +4573,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Χρήστης"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "Χρήση Ενσωματωμένου Προβολέα Εικόνων"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -4593,6 +4767,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Διαμόρφωση"
+   )
+MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+   "Λήψεις"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -5041,6 +5219,26 @@ MSG_HASH(
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
    )
 MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "εξάγει"
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "κλείσει"
+   )
+MSG_HASH(
+   MSG_FAILED,
+   "απέτυχε"
+   )
+MSG_HASH(
+   MSG_SUCCEEDED,
+   "επιτεύχθηκε"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED,
+   "δεν έχει ρυθμιστεί"
+   )
+MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
    "Οκληρώθηκε η σάρωση Bluetooth."
    )
@@ -5055,6 +5253,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
    "Σάρωση ασύρματων δικτύων..."
+   )
+MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Ενεργοποίηση Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISABLING_WIRELESS,
+   "Απενεργοποίηση Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Αποσύνδεση Wi-Fi..."
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
@@ -5089,6 +5299,10 @@ MSG_HASH(
    "Λανθασμένος κωδικός."
    )
 MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "Η σάρωση του αρχείου ολοκληρώθηκε"
+   )
+MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
    "Διαμορφώθηκε στην θύρα:"
    )
@@ -5101,12 +5315,108 @@ MSG_HASH(
    "Φυσιολογικά"
    )
 MSG_HASH(
+   MSG_NO_DISC_INSERTED,
+   "Δεν υπάρχει δίσκος στη μονάδα δίσκου."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Μη έγκυρη διαμόρφωση χειροκίνητης σάρωσης"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Δεν εντοπίστηκε έγκυρο περιεχόμενο"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_START,
+   "Σάρωση περιεχομένου: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Σάρωση: "
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
+   "Καθαρισμός καταχωρήσεων M3U: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_END,
+   "Η Σάρωση ολοκληρώθηκε: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_SCANNING_CORE,
+   "Σάρωση πυρήνα: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_ALREADY_EXISTS,
+   "Υπάρχει ήδη αντίγραφο ασφαλείας του εγκατεστημένου πυρήνα: "
+   )
+MSG_HASH(
+   MSG_BACKING_UP_CORE,
+   "Δημιουργία αντίγραφου ασφαλείας πυρήνα: "
+   )
+MSG_HASH(
+   MSG_PRUNING_CORE_BACKUP_HISTORY,
+   "Αφαίρεση παρωχημένων αντιγράφων ασφαλείας: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_COMPLETE,
+   "Το αντίγραφο ασφαλείας του πυρήνα ολοκληρώθηκε: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_ALREADY_INSTALLED,
+   "Το επιλεγμένο αντίγραφο ασφαλείας πυρήνα είναι ήδη εγκατεστημένο: "
+   )
+MSG_HASH(
+   MSG_RESTORING_CORE,
+   "Επαναφορά του πυρήνα: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_COMPLETE,
+   "Η επαναφορά του πυρήνα ολοκληρώθηκε: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   "Το επιλεγμένο αρχείο πυρήνα είναι ήδη εγκατεστημένο: "
+   )
+MSG_HASH(
+   MSG_INSTALLING_CORE,
+   "Εγκατάσταση πυρήνα: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_COMPLETE,
+   "Η εγκατάσταση του πυρήνα ολοκληρώθηκε: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_FAILED,
+   "Αποτυχία αντιγράφου ασφαλείας πυρήνα: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_FAILED,
+   "Αποτυχία αποκατάστασης πυρήνα: "
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Αποτυχία Εγκατάστασης Πυρήνα: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_DISABLED,
+   "Η αποκατάσταση του πυρήνα απενεργοποιήθηκε - ο πυρήνας είναι κλειδωμένος: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_DISABLED,
+   "Η εγκατάσταση του πυρήνα απενεργοποιήθηκε - ο πυρήνας είναι κλειδωμένος: "
+   )
+MSG_HASH(
+   MSG_CORE_LOCK_FAILED,
+   "Αποτυχία κλειδώματος πυρήνα: "
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Αποτυχία ξεκλειδώματος πυρήνα: "
+   )
+MSG_HASH(
+   MSG_CORE_DELETE_DISABLED,
+   "Η διαγραφή του πυρήνα απενεργοποιήθηκε - ο πυρήνας είναι κλειδωμένος: "
    )
 
 /* Lakka */
@@ -5159,6 +5469,18 @@ MSG_HASH(
    "Οδηγός Wi-Fi"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   "Σάρωση για ασύρματα δίκτυα και δημιουργία σύνδεσης."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   "Ενεργοποίηση Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   "Αποσύνδεση"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    "Ορισμός Πλάτους Οθόνης VI"
    )
@@ -5185,6 +5507,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    "Ενεργοποίηση Μικρού Πληκτρολογίου"
+   )
+MSG_HASH(
+   MSG_INTERNET,
+   "Διαδίκτυο"
+   )
+MSG_HASH(
+   MSG_LOCAL,
+   "Τοπικό"
+   )
+MSG_HASH(
+   MSG_READ_WRITE,
+   "Ανάγνωση/Εγγραφή"
+   )
+MSG_HASH(
+   MSG_READ_ONLY,
+   "Μόνο για Ανάγνωση"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Φωτεινότητα Οθόνης"
    )
 
 #ifdef HAVE_LAKKA_SWITCH
@@ -5232,6 +5574,18 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SSH_ENABLE,
    "Enable or disable remote command line access."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+   "Σημείο Πρόσβασης Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Ζώνη ώρας"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Επιλέξτε τη ζώνη ώρας σας για να προσαρμόσετε την ημερομηνία και την ώρα στην τοποθεσία σας."
+   )
 #endif
 #ifdef GEKKO
 MSG_HASH(
@@ -5246,6 +5600,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
    "Κάτω οθόνη 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
+   "2D (Εφέ Πλέγματος Εικονοστοιχείων)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
+   "2D (Υψηλή Ανάλυση)"
    )
 #endif
 #ifdef HAVE_QT

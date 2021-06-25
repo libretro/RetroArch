@@ -17,7 +17,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifndef __PSL1GHT__
 #include <sdk_version.h>
+#endif
 
 #include <boolean.h>
 #include <libretro.h>
@@ -26,12 +28,14 @@
 #include "../../config.h"
 #endif
 
-#include "../../defines/ps3_defines.h"
+#include <defines/ps3_defines.h>
 
 #include "../input_driver.h"
 
 #ifdef HAVE_MOUSE
+#ifndef MAX_MICE
 #define MAX_MICE 7
+#endif
 #endif
 
 /* TODO/FIXME -

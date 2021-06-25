@@ -18,7 +18,7 @@
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
-#include "../cheevos/badges.h"
+#include "../cheevos/cheevos.h"
 
 #ifdef HAVE_THREADS
 #define SLOCK_LOCK(x) slock_lock(x)
@@ -57,7 +57,10 @@ static void gfx_widget_achievement_popup_start(
 static void gfx_widget_achievement_popup_free_current(
    gfx_widget_achievement_popup_state_t* state);
 
-static bool gfx_widget_achievement_popup_init(bool video_is_threaded, bool fullscreen)
+static bool gfx_widget_achievement_popup_init(
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      bool video_is_threaded, bool fullscreen)
 {
    gfx_widget_achievement_popup_state_t* state = &p_w_achievement_popup_st;
    memset(state, 0, sizeof(*state));
@@ -101,30 +104,31 @@ static void gfx_widget_achievement_popup_context_destroy(void)
 
 static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 {
-   static float pure_white[16]                 = {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-   };
    gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
-   gfx_display_t            *p_disp  = disp_get_ptr();
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* if there's nothing in the queue, just bail */
-   if (state->queue_read_index < 0 || !state->queue[state->queue_read_index].title)
+   if (
+             state->queue_read_index < 0 
+         || !state->queue[state->queue_read_index].title)
       return;
 
    SLOCK_LOCK(state->queue_lock);
 
-   if (state->queue[state->queue_read_index].title)
    {
+      static float pure_white[16]          = {
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+      };
       const video_frame_info_t* video_info = (const video_frame_info_t*)data;
       const unsigned video_width           = video_info->width;
       const unsigned video_height          = video_info->height;
+      gfx_display_t            *p_disp     = (gfx_display_t*)video_info->disp_userdata;
+      gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
       dispgfx_widget_t* p_dispwidget       = (dispgfx_widget_t*)userdata;
       const unsigned unfold_offet          = ((1.0f - state->unfold) * 
-                                               state->width / 2);
+            state->width / 2);
       int scissor_me_timbers               = 0;
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
@@ -150,17 +154,17 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             if (dispctx && dispctx->blend_begin)
                dispctx->blend_begin(video_info->userdata);
             gfx_widgets_draw_icon(
-               video_info->userdata,
-               p_disp,
-               video_width,
-               video_height,
-               state->height,
-               state->height,
-               p_dispwidget->gfx_widgets_icons_textures[
-               MENU_WIDGETS_ICON_ACHIEVEMENT],
-               0,
-               state->y,
-               0, 1, pure_white);
+                  video_info->userdata,
+                  p_disp,
+                  video_width,
+                  video_height,
+                  state->height,
+                  state->height,
+                  p_dispwidget->gfx_widgets_icons_textures[
+                  MENU_WIDGETS_ICON_ACHIEVEMENT],
+                  0,
+                  state->y,
+                  0, 1, pure_white);
             if (dispctx && dispctx->blend_end)
                dispctx->blend_end(video_info->userdata);
          }
@@ -169,18 +173,18 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       else
       {
          gfx_widgets_draw_icon(
-            video_info->userdata,
-            p_disp,
-            video_width,
-            video_height,
-            state->height,
-            state->height,
-            state->queue[state->queue_read_index].badge,
-            0,
-            state->y,
-            0,
-            1,
-            pure_white);
+               video_info->userdata,
+               p_disp,
+               video_width,
+               video_height,
+               state->height,
+               state->height,
+               state->queue[state->queue_read_index].badge,
+               0,
+               state->y,
+               0,
+               1,
+               pure_white);
       }
 
       /* I _think_ state->unfold changes in another thread */
@@ -212,33 +216,33 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 
       /* Title */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-         msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
-         state->height + p_dispwidget->simple_widget_padding - unfold_offet,
-         state->y + p_dispwidget->gfx_widget_fonts.regular.line_height
-         + p_dispwidget->gfx_widget_fonts.regular.line_ascender,
-         video_width, video_height,
-         TEXT_COLOR_FAINT,
-         TEXT_ALIGN_LEFT,
-         true);
+            msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
+            state->height + p_dispwidget->simple_widget_padding - unfold_offet,
+            state->y + p_dispwidget->gfx_widget_fonts.regular.line_height
+            + p_dispwidget->gfx_widget_fonts.regular.line_ascender,
+            video_width, video_height,
+            TEXT_COLOR_FAINT,
+            TEXT_ALIGN_LEFT,
+            true);
 
       /* Cheevo name */
 
       /* TODO: is a ticker necessary ? */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-         state->queue[state->queue_read_index].title,
-         state->height + p_dispwidget->simple_widget_padding - unfold_offet,
-         state->y + state->height
-         - p_dispwidget->gfx_widget_fonts.regular.line_height
-         - p_dispwidget->gfx_widget_fonts.regular.line_descender,
-         video_width, video_height,
-         TEXT_COLOR_INFO,
-         TEXT_ALIGN_LEFT,
-         true);
+            state->queue[state->queue_read_index].title,
+            state->height + p_dispwidget->simple_widget_padding - unfold_offet,
+            state->y + state->height
+            - p_dispwidget->gfx_widget_fonts.regular.line_height
+            - p_dispwidget->gfx_widget_fonts.regular.line_descender,
+            video_width, video_height,
+            TEXT_COLOR_INFO,
+            TEXT_ALIGN_LEFT,
+            true);
 
       if (scissor_me_timbers)
       {
          gfx_widgets_flush_text(video_width, video_height,
-            &p_dispwidget->gfx_widget_fonts.regular);
+               &p_dispwidget->gfx_widget_fonts.regular);
          if (dispctx && dispctx->scissor_end)
             dispctx->scissor_end(video_info->userdata,
                   video_width, video_height);
@@ -387,7 +391,7 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
 
    /* important - this must be done outside the lock because it has the potential to need to
     * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t badge_id = cheevos_get_badge_texture(badge, 0);
+   uintptr_t badge_id = rcheevos_get_badge_texture(badge, 0);
 
    if (state->queue_read_index < 0)
    {

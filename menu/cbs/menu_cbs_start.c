@@ -80,9 +80,8 @@ static int action_start_remap_file_load(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_CONFIGFILE
-   input_remapping_set_defaults(true);
-#endif
+   input_remapping_deinit();
+   input_remapping_set_defaults(false);
    return 0;
 }
 
@@ -192,20 +191,24 @@ static int action_start_input_desc(
    rarch_system_info_t *system = runloop_get_system_info();
    unsigned user_idx;
    unsigned btn_idx;
+   unsigned mapped_port;
 
    (void)label;
 
    if (!settings || !system)
       return 0;
 
-   user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   mapped_port = settings->uints.input_remap_ports[user_idx];
 
-   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+   if ((user_idx >= MAX_USERS) ||
+       (mapped_port >= MAX_USERS) ||
+       (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return 0;
 
    /* Check whether core has defined this input */
-   if (!string_is_empty(system->input_desc_btn[user_idx][btn_idx]))
+   if (!string_is_empty(system->input_desc_btn[mapped_port][btn_idx]))
    {
       const struct retro_keybind *keyptr = &input_config_binds[user_idx][btn_idx];
       settings->uints.input_remap_ids[user_idx][btn_idx] = keyptr->id;
@@ -229,8 +232,8 @@ static int action_start_input_desc_kbd(
    if (!settings)
       return 0;
 
-   user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
-   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
    if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return 0;
@@ -570,20 +573,18 @@ static int action_start_core_lock(
    /* ...Otherwise, attempt to unlock it */
    if (!core_info_set_core_lock(core_path, false))
    {
-      const char *core_name = NULL;
-      core_info_ctx_find_t core_info;
+      const char *core_name  = NULL;
+      core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
 
       msg[0] = '\0';
 
       /* Need to fetch core name for error message */
-      core_info.inf  = NULL;
-      core_info.path = core_path;
 
       /* If core is found, use display name */
-      if (core_info_find(&core_info) &&
-          core_info.inf->display_name)
-         core_name = core_info.inf->display_name;
+      if (core_info_find(core_path, &core_info) &&
+          core_info->display_name)
+         core_name = core_info->display_name;
       /* If not, use core file name */
       else
          core_name = path_basename(core_path);

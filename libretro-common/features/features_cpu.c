@@ -177,7 +177,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = gettime();
 #elif !defined(__MACH__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
    time_ticks = __mftb();
-#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
+#elif (defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0) || defined(__QNX__) || defined(ANDROID)
    struct timespec tv = {0};
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
@@ -191,6 +191,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
 #elif defined(__ARM_ARCH_6__)
    __asm__ volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
+#elif defined(__aarch64__)
+   __asm__ volatile( "mrs %0, cntvct_el0" : "=r"(time_ticks) );
 #elif defined(PSP) || defined(VITA)
    time_ticks = sceKernelGetSystemTimeWide();
 #elif defined(PS2)
@@ -322,6 +324,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 #endif
 
 #if defined(__ARM_NEON__)
+#if defined(__arm__)
 static void arm_enable_runfast_mode(void)
 {
    /* RunFast mode. Enables flush-to-zero and some
@@ -338,6 +341,7 @@ static void arm_enable_runfast_mode(void)
          : "r"(x), "r"(y)
         );
 }
+#endif
 #endif
 
 #if defined(__linux__) && !defined(CPU_X86)
@@ -598,16 +602,18 @@ uint64_t cpu_features_get(void)
 #endif
 #if defined(__MACH__)
    size_t len          = sizeof(size_t);
+
+   if (sysctlbyname("hw.optional.floatingpoint", NULL, &len, NULL, 0) == 0)
+   {
+      cpu |= RETRO_SIMD_CMOV;
+   }
+
+#if defined(CPU_X86)
+   len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
    {
       cpu |= RETRO_SIMD_MMX;
       cpu |= RETRO_SIMD_MMXEXT;
-   }
-
-   len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.floatingpoint", NULL, &len, NULL, 0) == 0)
-   {
-      cpu |= RETRO_SIMD_CMOV;
    }
 
    len            = sizeof(size_t);
@@ -650,10 +656,19 @@ uint64_t cpu_features_get(void)
    if (sysctlbyname("hw.optional.altivec", NULL, &len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_VMX;
 
+#else
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.neon", NULL, &len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_NEON;
 
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.neon_fp16", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_VFPV3;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.neon_hpfp", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_VFPV4;
+#endif
 #elif defined(_XBOX1)
    cpu |= RETRO_SIMD_MMX;
    cpu |= RETRO_SIMD_SSE;
@@ -749,7 +764,7 @@ uint64_t cpu_features_get(void)
    if (check_arm_cpu_feature("neon"))
    {
       cpu |= RETRO_SIMD_NEON;
-#ifdef __ARM_NEON__
+#if defined(__ARM_NEON__) && defined(__arm__)
       arm_enable_runfast_mode();
 #endif
    }
@@ -765,7 +780,9 @@ uint64_t cpu_features_get(void)
       cpu |= RETRO_SIMD_ASIMD;
 #ifdef __ARM_NEON__
       cpu |= RETRO_SIMD_NEON;
+#if defined(__arm__)
       arm_enable_runfast_mode();
+#endif
 #endif
    }
 
@@ -784,7 +801,9 @@ uint64_t cpu_features_get(void)
 
 #elif defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
+#if defined(__arm__)
    arm_enable_runfast_mode();
+#endif
 #elif defined(__ALTIVEC__)
    cpu |= RETRO_SIMD_VMX;
 #elif defined(XBOX360)

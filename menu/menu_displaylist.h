@@ -178,7 +178,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_INPUT_MENU_SETTINGS_LIST,
    DISPLAYLIST_LATENCY_SETTINGS_LIST,
    DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST,
+#if defined(HAVE_OVERLAY)
    DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST,
+#endif
    DISPLAYLIST_AI_SERVICE_SETTINGS_LIST,
    DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST,
 #ifdef HAVE_VIDEO_LAYOUT
@@ -250,8 +252,12 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES,
    DISPLAYLIST_CORE_RESTORE_BACKUP_LIST,
    DISPLAYLIST_CORE_DELETE_BACKUP_LIST,
-   DISPLAYLIST_PENDING_CLEAR,
-   DISPLAYLIST_WIFI_NETWORKS_LIST
+   DISPLAYLIST_WIFI_NETWORKS_LIST,
+#if defined(HAVE_LAKKA)
+   DISPLAYLIST_CPU_PERFPOWER_LIST,
+   DISPLAYLIST_CPU_POLICY_LIST,
+#endif
+   DISPLAYLIST_PENDING_CLEAR
 };
 
 enum filebrowser_enums
@@ -331,7 +337,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
 bool menu_displaylist_has_subsystems(void);
 
 #if defined(HAVE_LIBRETRODB)
-unsigned menu_displaylist_explore(file_list_t *list);
+unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings);
 #endif
 
 enum filebrowser_enums filebrowser_get_type(void);

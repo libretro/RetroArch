@@ -405,7 +405,7 @@
 					"-DHAVE_CG",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchOSX107;
 				PRODUCT_NAME = RetroArchCg;
 			};
 			name = Debug;
@@ -448,7 +448,7 @@
 					"-DHAVE_CG",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchOSX107;
 				PRODUCT_NAME = RetroArchCg;
 			};
 			name = Release;
@@ -489,7 +489,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchOSX107;
 				PRODUCT_NAME = RetroArch;
 			};
 			name = Debug;
@@ -536,7 +536,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchOSX107;
 				PRODUCT_NAME = RetroArch;
 			};
 			name = Release;
@@ -613,6 +613,7 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
+					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
@@ -700,6 +701,7 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
+					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",

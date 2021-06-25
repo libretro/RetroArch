@@ -195,8 +195,8 @@ endif
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += frontend/drivers/platform_ctr.o
 endif
+
 # Git Version
-ifeq ($(HAVE_GIT_VERSION), 1)
 GIT_VERSION_CACHEDIR = $(if $(OBJDIR),$(OBJDIR),$(CURDIR))
 GIT_VERSION_CACHEFILE = $(GIT_VERSION_CACHEDIR)/git-version.cache
 
@@ -224,7 +224,6 @@ ifneq ($(GIT_VERSION),)  # Enable version_git.o?
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
    OBJ += version_git.o
 endif
-endif
 
 # General object files
 ifeq ($(HAVE_DR_MP3), 1)
@@ -233,6 +232,7 @@ endif
 
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
+       command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
@@ -275,6 +275,10 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o
 
+OBJ += \
+       $(LIBRETRO_COMM_DIR)/lists/linked_list.o \
+       $(LIBRETRO_COMM_DIR)/queues/generic_queue.o
+
 ifneq ($(findstring Linux,$(OS)),)
 	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o
 endif
@@ -300,7 +304,6 @@ OBJ += \
        input/common/input_hid_common.o \
        led/led_driver.o \
        gfx/video_coord_array.o \
-       gfx/video_crt_switch.o \
 		 gfx/gfx_display.o \
        gfx/gfx_animation.o \
 		 gfx/gfx_thumbnail_path.o \
@@ -764,6 +767,12 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += wifi/drivers/connmanctl.o
+   OBJ += misc/cpufreq/cpufreq.o
+endif
+
+ifeq ($(HAVE_WIFI), 1)
+   OBJ += wifi/drivers/nmcli.o
+   DEFINES += -DHAVE_WIFI
 endif
 
 # Audio
@@ -988,12 +997,14 @@ ifeq ($(HAVE_MENU), 1)
       OBJ += menu/drivers/materialui.o
       DEFINES += -DHAVE_MATERIALUI
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_XMB), 1)
       OBJ += menu/drivers/xmb.o
       DEFINES += -DHAVE_XMB
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_OZONE), 1)
@@ -1005,11 +1016,16 @@ ifeq ($(HAVE_MENU), 1)
              menu/drivers/ozone/ozone_sidebar.o
       DEFINES += -DHAVE_OZONE
       HAVE_ASSETS = 1
+      HAVE_MENU_SCREENSAVER = 1
    endif
 
    ifeq ($(HAVE_STRIPES), 1)
       OBJ += menu/drivers/stripes.o
       DEFINES += -DHAVE_STRIPES
+   endif
+
+   ifeq ($(HAVE_MENU_SCREENSAVER), 1)
+      OBJ += menu/menu_screensaver.o
    endif
 endif
 
@@ -1863,20 +1879,24 @@ ifeq ($(HAVE_7ZIP),1)
    INCLUDE_DIRS += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
-   7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
-           $(DEPS_DIR)/7zip/Bra86.o \
-           $(DEPS_DIR)/7zip/7zFile.o \
-           $(DEPS_DIR)/7zip/7zStream.o \
+   7ZOBJ = $(DEPS_DIR)/7zip/7zArcIn.o \
+           $(DEPS_DIR)/7zip/7zBuf.o \
+           $(DEPS_DIR)/7zip/7zCrc.o \
+           $(DEPS_DIR)/7zip/7zCrcOpt.o \
+           $(DEPS_DIR)/7zip/7zDec.o \
+           $(DEPS_DIR)/7zip/CpuArch.o \
+           $(DEPS_DIR)/7zip/Delta.o \
            $(DEPS_DIR)/7zip/LzFind.o \
            $(DEPS_DIR)/7zip/LzmaDec.o \
-           $(DEPS_DIR)/7zip/LzmaEnc.o \
-           $(DEPS_DIR)/7zip/7zCrcOpt.o \
-           $(DEPS_DIR)/7zip/Bra.o \
-           $(DEPS_DIR)/7zip/7zDec.o \
-           $(DEPS_DIR)/7zip/Bcj2.o \
-           $(DEPS_DIR)/7zip/7zCrc.o \
            $(DEPS_DIR)/7zip/Lzma2Dec.o \
-           $(DEPS_DIR)/7zip/7zBuf.o
+           $(DEPS_DIR)/7zip/LzmaEnc.o \
+           $(DEPS_DIR)/7zip/Bra.o \
+           $(DEPS_DIR)/7zip/Bra86.o \
+           $(DEPS_DIR)/7zip/BraIA64.o \
+           $(DEPS_DIR)/7zip/Bcj2.o \
+           $(DEPS_DIR)/7zip/7zFile.o \
+           $(DEPS_DIR)/7zip/7zStream.o
+
    OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_7z.o \
            $(7ZOBJ)
 endif
@@ -1974,7 +1994,8 @@ ifeq ($(HAVE_CDROM), 1)
    DEFINES += -DHAVE_CDROM
    OBJ += $(LIBRETRO_COMM_DIR)/cdrom/cdrom.o \
 			 $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.o \
-			 $(LIBRETRO_COMM_DIR)/media/media_detect_cd.o
+			 $(LIBRETRO_COMM_DIR)/media/media_detect_cd.o \
+			 tasks/task_content_disc.o
 endif
 
 ifeq ($(HAVE_RTGA), 1)
@@ -2079,14 +2100,9 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
-   OBJ += network/netplay/netplay_delta.o \
-			 network/netplay/netplay_handshake.o \
-			 network/netplay/netplay_init.o \
+   OBJ += network/netplay/netplay_handshake.o \
 			 network/netplay/netplay_io.o \
-			 network/netplay/netplay_keyboard.o \
-			 network/netplay/netplay_sync.o \
 			 network/netplay/netplay_discovery.o \
-			 network/netplay/netplay_buf.o \
 			 network/netplay/netplay_room_parse.o
 
    # RetroAchievements
@@ -2095,8 +2111,7 @@ ifeq ($(HAVE_NETWORKING), 1)
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
       OBJ += cheevos/cheevos.o \
-             cheevos/badges.o \
-             cheevos/cheevos_memory.o \
+             cheevos/cheevos_menu.o \
              cheevos/cheevos_parser.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
              deps/rcheevos/src/rcheevos/alloc.o \
@@ -2108,6 +2123,7 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
              deps/rcheevos/src/rcheevos/operand.o \
+             deps/rcheevos/src/rcheevos/rc_libretro.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
              deps/rcheevos/src/rcheevos/runtime.o \
              deps/rcheevos/src/rcheevos/runtime_progress.o \
@@ -2255,6 +2271,39 @@ ifeq ($(HAVE_FFMPEG), 1)
    DEF_FLAGS += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS) \
                 -Wno-deprecated-declarations
    INCLUDE_DIRS += -Iffmpeg
+endif
+
+# CRT mode switching
+ifeq ($(HAVE_CRTSWITCHRES), 1)
+   INCLUDE_DIRS += -I$(DEPS_DIR)/switchres
+   OBJ += gfx/video_crt_switch.o \
+          $(DEPS_DIR)/switchres/monitor.o \
+          $(DEPS_DIR)/switchres/modeline.o \
+          $(DEPS_DIR)/switchres/switchres.o \
+          $(DEPS_DIR)/switchres/display.o \
+          $(DEPS_DIR)/switchres/custom_video.o \
+          $(DEPS_DIR)/switchres/log.o \
+          $(DEPS_DIR)/switchres/switchres_wrapper.o \
+          $(DEPS_DIR)/switchres/edid.o
+   ifneq ($(findstring Win32,$(OS)),)
+      OBJ += $(DEPS_DIR)/switchres/display_windows.o \
+             $(DEPS_DIR)/switchres/custom_video_ati_family.o \
+             $(DEPS_DIR)/switchres/custom_video_ati.o \
+             $(DEPS_DIR)/switchres/custom_video_adl.o \
+             $(DEPS_DIR)/switchres/custom_video_pstrip.o \
+             $(DEPS_DIR)/switchres/resync_windows.o
+   endif
+   ifneq ($(findstring Linux,$(OS)),)
+      OBJ += $(DEPS_DIR)/switchres/display_linux.o 
+      ifeq ($(HAVE_X11)$(HAVE_XRANDR), 11)
+         OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o 
+         DEFINES += -DSR_WITH_XRANDR
+      endif
+   endif
+   ifneq ($(findstring Win32,$(OS)),)
+      DEFINES += -DSR_WIN32_STATIC
+   endif
+   LIBS += -lstdc++
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)

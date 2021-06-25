@@ -116,7 +116,7 @@ bool glslang_read_shader_file(const char *path,
    if (string_is_empty(path) || !output)
       return false;
 
-   basename      = path_basename(path);
+   basename      = path_basename_nocompression(path);
 
    if (string_is_empty(basename))
       return false;

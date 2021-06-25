@@ -347,6 +347,7 @@ void ozone_draw_icon(
 
 void ozone_draw_backdrop(
       void *userdata,
+      void *disp_data,
       unsigned video_width,
       unsigned video_height,
       float alpha)
@@ -358,7 +359,6 @@ void ozone_draw_backdrop(
       0.00, 0.00, 0.00, 0.75,
    };
    static float last_alpha           = 0.0f;
-   gfx_display_t *p_disp             = disp_get_ptr();
 
    /* TODO: Replace this backdrop by a blur shader 
     * on the whole screen if available */
@@ -369,7 +369,7 @@ void ozone_draw_backdrop(
    }
 
    gfx_display_draw_quad(
-         p_disp,
+         (gfx_display_t*)disp_data,
          userdata,
          video_width,
          video_height,
@@ -384,13 +384,14 @@ void ozone_draw_backdrop(
 
 void ozone_draw_osk(ozone_handle_t *ozone,
       void *userdata,
+      void *disp_userdata,
       unsigned video_width,
       unsigned video_height,
       const char *label, const char *str)
 {
    unsigned i;
    char message[2048];
-   gfx_display_t *p_disp               = disp_get_ptr();
+   gfx_display_t *p_disp               = (gfx_display_t*)disp_userdata;
    const char *text                    = str;
    unsigned text_color                 = 0xffffffff;
    static float ozone_osk_backdrop[16] = {
@@ -494,7 +495,9 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
-   word_wrap(message, text, (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width, true, 0);
+   (ozone->word_wrap)(message, sizeof(message), text,
+         (video_width - margin*2 - padding*2) / ozone->fonts.entries_label.glyph_width,
+         ozone->fonts.entries_label.wideglyph_width, 0);
 
    string_list_initialize(&list);
    string_split_noalloc(&list, message, "\n");
@@ -601,10 +604,10 @@ void ozone_draw_messagebox(
       return;
 
    /* Split message into lines */
-   word_wrap(
-         wrapped_message, message,
+   (ozone->word_wrap)(
+         wrapped_message, sizeof(wrapped_message), message,
          usable_width / (int)ozone->fonts.footer.glyph_width,
-         true, 0);
+         ozone->fonts.footer.wideglyph_width, 0);
 
    string_list_initialize(&list);
    if (
@@ -703,22 +706,23 @@ void ozone_draw_messagebox(
 void ozone_draw_fullscreen_thumbnails(
       ozone_handle_t *ozone,
       void *userdata,
+      void *disp_userdata,
       unsigned video_width,
       unsigned video_height)
 {
-   gfx_display_t *p_disp = disp_get_ptr();
-
    /* Check whether fullscreen thumbnails are visible */
    if (ozone->animations.fullscreen_thumbnail_alpha > 0.0f)
    {
       /* Note: right thumbnail is drawn at the top
        * in the sidebar, so it becomes the *left*
        * thumbnail when viewed fullscreen */
-      gfx_thumbnail_t *right_thumbnail = &ozone->thumbnails.left;
-      gfx_thumbnail_t *left_thumbnail  = &ozone->thumbnails.right;
+      gfx_thumbnail_t *right_thumbnail  = &ozone->thumbnails.left;
+      gfx_thumbnail_t *left_thumbnail   = &ozone->thumbnails.right;
       unsigned width                    = video_width;
       unsigned height                   = video_height;
       int view_width                    = (int)width;
+      gfx_display_t *p_disp             = (gfx_display_t*)disp_userdata;
+
       int view_height                   = (int)height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px;
       int thumbnail_margin              = ozone->dimensions.fullscreen_thumbnail_padding;
       bool show_right_thumbnail         = false;
