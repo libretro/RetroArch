@@ -1190,7 +1190,7 @@ static midi_driver_t midi_null = {
 };
 
 static midi_driver_t *midi_drivers[] = {
-#if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM)
+#if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM) && !defined(DINGUX)
    &midi_alsa,
 #endif
 #ifdef HAVE_WINMM
