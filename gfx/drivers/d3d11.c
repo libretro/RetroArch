@@ -709,8 +709,12 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 #else
    d3d11->has_flip_model                   = true;
+#if 0
+   /* TODO/FIXME - disable tear support for now for UWP
+    * until we can check for this at runtime */
    d3d11->has_allow_tearing                = true;
    desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+#endif
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
 
