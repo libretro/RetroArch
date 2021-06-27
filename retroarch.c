@@ -22593,6 +22593,9 @@ static void input_driver_poll(void)
       return;
    }
 
+   /* This rarch_joypad_info_t struct contains the device index + autoconfig binds for the 
+    * controller to be queried, and also (for unknown reasons) the analog axis threshold 
+    * when mapping analog stick to dpad input. */
    for (i = 0; i < max_users; i++)
    {
       joypad_info[i].axis_threshold              = p_rarch->input_driver_axis_threshold;
