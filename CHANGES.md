@@ -28,6 +28,11 @@
 - MENU/XMB: Icon opacity fix
 - SECURITY: Plug so-called high-risk vulnerability related to Powershell - avoid injection - don't send speech input as commandline argument
 - UWP/XBOX: Add expanded resources Rescap to increase performance of UWP version in app mode on Xbox
+- WINDOWS/INSTALLER: Add smarter isEmptyDir reference implementation that looks for subdirectories from NSIS documentation
+- WINDOWS/INSTALLER: Register new function DirectorySet that is called when pressing the "Next" button on the MUI_PAGE_DIRECTORY, aka the install folder selection GUI. DirectorySet contains the criteria for an acceptable folder, which are:
+  - `IfFileExists "$INSTDIR\retroarch.exe"` returns 1
+  - `IfFileExists "$INSTDIR\*.*` returns 0, there is no existing folder
+  - `IfFileExists "$INSTDIR\*.*"` returns 1, there is a folder, and `isEmptyDir` returns 1, therefore the folder is empty, including of subdirectories
 - X11: Fix threaded video segfault
 
 # 1.9.5
