@@ -87,8 +87,14 @@ const char *path_get_archive_delim(const char *path)
 
    buf[0] = '\0';
 
+   /* We search for delimiters after the last slash
+    * in the file path to avoid capturing delimiter
+    * characters in any parent directory names.
+    * If there are no slashes in the file name, then
+    * the path is just the file basename - in this
+    * case we search the path in its entirety */
    if (!last_slash)
-      return NULL;
+      last_slash = path;
 
    /* Find delimiter position
     * > Since filenames may contain '#' characters,
