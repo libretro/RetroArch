@@ -86,6 +86,18 @@ enum playlist_thumbnail_id
    PLAYLIST_THUMBNAIL_LEFT
 };
 
+/* Holds all parameters required to uniquely
+ * identify a playlist content path */
+typedef struct
+{
+   char *real_path;
+   char *archive_path;
+   uint32_t real_path_hash;
+   uint32_t archive_path_hash;
+   bool is_archive;
+   bool is_in_archive;
+} playlist_path_id_t;
+
 struct playlist_entry
 {
    char *path;
@@ -99,6 +111,7 @@ struct playlist_entry
    char *runtime_str;
    char *last_played_str;
    struct string_list *subsystem_roms;
+   playlist_path_id_t *path_id;
    unsigned runtime_hours;
    unsigned runtime_minutes;
    unsigned runtime_seconds;
@@ -311,6 +324,12 @@ bool playlist_entries_are_equal(
       const struct playlist_entry *entry_a,
       const struct playlist_entry *entry_b,
       const playlist_config_t *config);
+
+/* Returns true if entries at specified indices
+ * of specified playlist have identical content
+ * and core paths */
+bool playlist_index_entries_are_equal(
+      playlist_t *playlist, size_t idx_a, size_t idx_b);
 
 void playlist_get_crc32(playlist_t *playlist, size_t idx,
       const char **crc32);
