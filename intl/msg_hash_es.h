@@ -2613,6 +2613,10 @@ MSG_HASH(
    "Conversión de entrada analógica a digital"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Utiliza el stick analógico especificado como señal de entrada para la cruceta. Si el núcleo tiene soporte nativo para control analógico, las asignaciones de la cruceta se desactivarán salvo que se haya seleccionado una opción forzada. Al forzar las asignaciones de cruceta, el núcleo no recibirá ninguna entrada analógica del stick especificado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Índice del dispositivo"
    )
@@ -7530,6 +7534,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Analógico derecho"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Analógico izquierdo (forzada)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Analógico derecho (forzada)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

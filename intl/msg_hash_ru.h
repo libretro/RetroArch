@@ -2629,6 +2629,10 @@ MSG_HASH(
    "Аналого-цифровой тип"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Использовать указанный аналоговый стик для d-pad. Если ядро нативно поддерживает аналоговый ввод, привязка к d-pad не будет работать, пока не включена опция '(Принудительно)'. При форсировании привязки к d-pad ядро не будет обрабатывать события ввода от заданного стика."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Индекс устройства"
    )
@@ -7574,6 +7578,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Правый аналоговый стик"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Левый аналоговый стик (принудительно)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Правый аналоговый стик (принудительно)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

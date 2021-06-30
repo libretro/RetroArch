@@ -3378,7 +3378,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
-   "オーバーレイに登録された入力を表示します。'Touched' は押されたりクリックされたオーバーレイ要素を強調表示します. 'Physical (Controller)'は, 接続されたコントローラ/キーボードからコアに渡された実際の入力を強調表示します."
+   "オーバーレイに登録された入力を表示します. 'Touched' は押されたりクリックされたオーバーレイ要素を強調表示します. 'Physical (Controller)'は, 接続されたコントローラ/キーボードからコアに渡された実際の入力を強調表示します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
@@ -3438,7 +3438,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
-   "(横長画面/Landscape) オーバーレイ倍率"
+   "(横長画面) オーバーレイ倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
@@ -3446,7 +3446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-   "(横長画面/Landscape) オーバーレイアスペクト調整"
+   "(横長画面) オーバーレイアスペクト調整"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
@@ -3454,23 +3454,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "(横長画面/Landscape) オーバーレイの水平方向の分割"
+   "(横長画面) オーバーレイの水平方向の分割"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "現在のプリセットでサポートされている場合、横長画面時にオーバーレイの左右 UI 要素間の間隔を調整します. 正の値は, 各要素の距離を増加します (負の値は減少します)."
+   "現在のプリセットでサポートされている場合, 横長画面時にオーバーレイの左右 UI 要素間の間隔を調整します. 正の値は, 各要素の距離を増加します (負の値は減少します)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "(横長画面/Landscape) オーバーレイの垂直方向の分割"
+   "(横長画面) オーバーレイの垂直方向の分割"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "現在のプリセットでサポートされている場合、横長画面時にオーバーレイの上下 UI 要素間の間隔を調整します. 正の値は, 各要素の距離を増加します (負の値は減少します)."
+   "現在のプリセットでサポートされている場合, 横長画面時にオーバーレイの上下 UI 要素間の間隔を調整します. 正の値は, 各要素の距離を増加します (負の値は減少します)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
-   "(横長画面/Landscape) オーバーレイX方向オフセット"
+   "(横長画面) オーバーレイX方向オフセット"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
@@ -3478,7 +3478,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "(横長画面/Landscape) オーバーレイY方向オフセット"
+   "(横長画面) オーバーレイY方向オフセット"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
@@ -3486,7 +3486,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
-   "(縦長画面/Portrait) オーバーレイ倍率"
+   "(縦長画面) オーバーレイ倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
@@ -3494,7 +3494,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
-   "(縦長画面/Portrait) オーバーレイアスペクト調整"
+   "(縦長画面) オーバーレイアスペクト調整"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
@@ -3502,23 +3502,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
-   "(縦長画面/Portrait) オーバーレイの水平方向の分割"
+   "(縦長画面) オーバーレイの水平方向の分割"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
-   "現在のプリセットでサポートされている場合、縦長画面時にオーバーレイの左右 UI 要素間の間隔を調整します. 正の値は, 各要素の距離を増加します (負の値は減少します)."
+   "現在のプリセットでサポートされている場合, 縦長画面時にオーバーレイの左右 UI 要素間の間隔を調整します. 正の値は, 各要素の距離を増加します (負の値は減少します)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "(縦長画面/Portrait) オーバーレイの垂直方向の分割"
+   "(縦長画面) オーバーレイの垂直方向の分割"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "現在のプリセットでサポートされている場合、縦長画面時にオーバーレイの上下 UI 要素間の間隔を調整します. 正の値は, 各要素の距離を増加します (負の値は減少します)."
+   "現在のプリセットでサポートされている場合, 縦長画面時にオーバーレイの上下 UI 要素間の間隔を調整します. 正の値は, 各要素の距離を増加します (負の値は減少します)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
-   "(縦長画面/Portrait) オーバーレイX方向オフセット"
+   "(縦長画面) オーバーレイX方向オフセット"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
@@ -3526,7 +3526,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
-   "(縦長画面/Portrait) オーバーレイY方向オフセット"
+   "(縦長画面) オーバーレイY方向オフセット"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
@@ -5931,7 +5931,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RENAME_ENTRY,
-   "この項目のタイトルを変更します。"
+   "この項目のタイトルを変更します. "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
@@ -5939,7 +5939,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-   "この項目をプレイリストから削除します。"
+   "この項目をプレイリストから削除します. "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
@@ -8039,7 +8039,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   "横長画面表示中に、ナビゲーションバーを画面の右側に自動的に移動します."
+   "横長画面表示中に, ナビゲーションバーを画面の右側に自動的に移動します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
@@ -8079,7 +8079,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "リスト形式のサムネイル表示モードを使用している場合、2番目のサムネイルを表示します. この設定は, 画面に2つのサムネイルを表示するのに十分な幅がある場合のみ適用されます."
+   "リスト形式のサムネイル表示モードを使用している場合, 2番目のサムネイルを表示します. この設定は, 画面に2つのサムネイルを表示するのに十分な幅がある場合のみ適用されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -8087,7 +8087,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "サムネイル画像の背景に, 未使用領域のパディングを適用します. これにより, すべての画像の均一な表示サイズが確保され、異なるサイズのサムネイルを表示する際のメニュー外観が改善されます."
+   "サムネイル画像の背景に, 未使用領域のパディングを適用します. これにより, すべての画像の均一な表示サイズが確保され, 異なるサイズのサムネイルを表示する際のメニュー外観が改善されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,

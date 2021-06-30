@@ -2313,6 +2313,10 @@ MSG_HASH(
    "Тип пристрою"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Призначити стік для використання замість хрестовини. Якщо ядро має вбудовану підтримку аналогового вводу, то призначення стіка буде вимкнено, допоки не зробити це примусово відповідною опцією. При примусовому призначенні ядро не буде отримувати аналогові команди вводу [...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Номер пристрою"
    )
@@ -4122,6 +4126,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Правий аналог"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Лівий стік (Примусово)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Правий стік (Примусово)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

@@ -1398,6 +1398,10 @@ MSG_HASH(
    "Alterna para uma linha de modo em alta resolução para os menus quando o conteúdo não for carregado."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Taxa de atualização personalizada"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Use uma taxa de atualização personalizada especificada no arquivo de configuração, se necessário."
    )
@@ -2585,6 +2589,10 @@ MSG_HASH(
    "Tipo de analógico para digital"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Usa o direcional analógico especificado como sinal de entrada para o direcional digital. Se o núcleo tiver suporte nativo para controle analógico, os mapeamentos do direcional digital serão desativados a menos que a opção '(Forçado)' for selecionada. Ao forçar as atribuições do direcional digital, o núcleo não receberá nenhuma entrada analógica da vara especificada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Índice de dispositivo"
    )
@@ -2773,7 +2781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usar segunda instância para a antecipação de quadro"
+   "Usar segunda instância para a 'Execução antecipada'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -2781,7 +2789,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-   "Ocultar avisos de antecipação de quadro"
+   "Ocultar avisos de execução antecipada de quadros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
@@ -7494,6 +7502,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Analógico direito"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Analógico esquerdo (forçado)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Analógico direito (forçado)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

@@ -2609,6 +2609,10 @@ MSG_HASH(
    "Analog-Dijital Türü"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "D-Pad girişi için belirtilen analog çubuğu kullanın. Çekirdeğin yerel analog desteği varsa, bir '(Zorunlu)' seçeneği seçilmediği sürece D-Pad eşlemesi devre dışı bırakılır. D-Pad eşlemesi zorlanırsa, çekirdek belirtilen çubuktan hiçbir analog giriş almaz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Cihaz İndeksi"
    )
@@ -7546,6 +7550,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Sağ Analog"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Sol Analog (Zorunlu)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Sağ Analog (Zorunlu)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
