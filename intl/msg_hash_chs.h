@@ -2633,6 +2633,10 @@ MSG_HASH(
    "模拟转数字类型"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "使用指定的模拟摇杆进行方向键输入。如果内核支持本地模拟，除非“强制”打开，否则将禁用方向键映射。 如果强制使用方向键映射，核心将不会收到来自指定摇杆的模拟输入。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "设备编号"
    )
@@ -7614,6 +7618,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "右侧摇杆"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "左方向模拟（强制）"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "右方向模拟（强制）"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

@@ -2609,6 +2609,14 @@ MSG_HASH(
    "Laitteen indeksi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "Kartoitettu portti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Määrittää mikä 'ytimen' portti (yleisesti siis pelaajan numero) vastaanottaa syötteen käyttöliittymän ohjaimen portista %u."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
    "Aseta kaikki ohjaimet"
    )
@@ -7540,6 +7548,14 @@ MSG_HASH(
    "Oikea analoginen"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Vasen Analogi (Pakotettu)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Oikea Analogi (Pakotettu)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    "(Näppäin: %s)"
    )
@@ -11558,7 +11574,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
-   "Suorittimen säädin"
+   "Suorittimen hallinta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
