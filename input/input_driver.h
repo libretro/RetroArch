@@ -43,13 +43,6 @@
 
 RETRO_BEGIN_DECLS
 
-enum input_device_type
-{
-   INPUT_DEVICE_TYPE_NONE = 0,
-   INPUT_DEVICE_TYPE_KEYBOARD,
-   INPUT_DEVICE_TYPE_JOYPAD
-};
-
 enum input_toggle_type
 {
    INPUT_TOGGLE_NONE = 0,
