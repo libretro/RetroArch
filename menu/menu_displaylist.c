@@ -2857,10 +2857,29 @@ static int menu_displaylist_parse_load_content_settings(
             settings->bools.menu_content_show_favorites
          )
       {
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
-               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
-               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0) )
+         bool add_to_favorites_enabled = true;
+
+         /* Skip 'Add to Favourites' if we are currently
+          * viewing an entry of the favourites playlist */
+         if (horizontal)
+         {
+            playlist_t *playlist      = playlist_get_cached();
+            const char *playlist_path = playlist_get_conf_path(playlist);
+            const char *playlist_file = NULL;
+
+            if (!string_is_empty(playlist_path))
+               playlist_file = path_basename_nocompression(playlist_path);
+
+            if (!string_is_empty(playlist_file) &&
+                string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+               add_to_favorites_enabled = false;
+         }
+
+         if (add_to_favorites_enabled &&
+             menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
+                  MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0))
             count++;
       }
 
@@ -3083,8 +3102,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
    }
    else
    {
+      const char *playlist_path = NULL;
+      const char *playlist_file = NULL;
 #ifdef HAVE_AUDIOMIXER
-      const char *ext = NULL;
+      const char *ext           = NULL;
 
       if (entry && !string_is_empty(entry->path))
          ext = path_get_extension(entry->path);
@@ -3105,6 +3126,9 @@ static int menu_displaylist_parse_horizontal_content_actions(
                FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
       }
 #endif
+      playlist_path = playlist_get_conf_path(playlist);
+      if (!string_is_empty(playlist_path))
+         playlist_file = path_basename_nocompression(playlist_path);
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN),
@@ -3147,19 +3171,11 @@ static int menu_displaylist_parse_horizontal_content_actions(
                    * This breaks the above 'remove_entry_enabled' check for the
                    * history and favorites playlists. We therefore have to check
                    * the playlist file name as well... */
-                  if (!remove_entry_enabled && settings->bools.quick_menu_show_information)
-                  {
-                     const char *playlist_path = playlist_get_conf_path(playlist);
-
-                     if (!string_is_empty(playlist_path))
-                     {
-                        const char *playlist_file = path_basename_nocompression(playlist_path);
-
-                        if (!string_is_empty(playlist_file))
-                           remove_entry_enabled = string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY) ||
-                              string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
-                     }
-                  }
+                  if (!remove_entry_enabled &&
+                      settings->bools.quick_menu_show_information &&
+                      !string_is_empty(playlist_file))
+                     remove_entry_enabled = string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY) ||
+                        string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES);
                }
                break;
          }
@@ -3172,9 +3188,13 @@ static int menu_displaylist_parse_horizontal_content_actions(
                   MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
       }
 
+      /* Skip 'Add to Favourites' if we are currently
+       * viewing an entry of the favourites playlist */
       if (
             settings->bools.quick_menu_show_add_to_favorites &&
-            settings->bools.menu_content_show_favorites
+            settings->bools.menu_content_show_favorites &&
+            !(!string_is_empty(playlist_file) &&
+              string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
          )
       {
          menu_entries_append_enum(info->list,
