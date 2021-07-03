@@ -116,10 +116,7 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
          handle->state[map[index].id] = true;
    }
    else
-      RARCH_WARN("%s \"%s\" %s.\n",
-            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
-            tok,
-            msg_hash_to_str(MSG_RECEIVED));
+      RARCH_WARN(msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND), tok);
 }
 
 static void command_parse_msg(

@@ -454,22 +454,6 @@ MSG_HASH(
    "البرنامج الثابت فيرموير"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "مفقود"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "هديه"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "إختياري"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "مطلوب"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "قفل النواة المثبتة"
    )
@@ -8490,10 +8474,6 @@ MSG_HASH(
    "قراءة أول مسار بيانات..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "مستلم"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "انتهى التسجيل بسبب تغيير الحجم."
    )
@@ -8742,24 +8722,12 @@ MSG_HASH(
    "فشل حساب حجم العرض! سوف يستمر في استخدام البيانات الخام. ربما لن يعمل هذا بشكل صحيح..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "صورة القرص الافتراضي."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "إخراج"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "غلق"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "فشل"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "نجح"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

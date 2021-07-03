@@ -442,22 +442,6 @@ MSG_HASH(
    "Grafica API richiesta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Mancante"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Presente"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opzionale"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Richiesto"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Blocca Core Installato"
    )
@@ -10670,10 +10654,6 @@ MSG_HASH(
    "Lettura in corso della prima traccia di dati..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "ricevuto"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "La registrazione è terminata a causa del ridimensionamento."
    )
@@ -10922,24 +10902,12 @@ MSG_HASH(
    "Il calcolo della dimensione di visualizzazione è fallito! Continuerà ad utilizzare dati grezzi. Questo probabilmente non funzionerà correttamente..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "vassoio del disco virtuale."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "espelli"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "chiudi"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "fallito"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "ha avuto successo"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11362,10 +11330,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Splitta i Joy-Con"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Stato Memoria Interna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

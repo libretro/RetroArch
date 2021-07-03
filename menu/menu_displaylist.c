@@ -642,13 +642,15 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
             if (!core_info->firmware[i].desc)
                continue;
 
-            snprintf(tmp, sizeof(tmp), "(!) %s, %s: %s",
+            snprintf(tmp, sizeof(tmp), "(!) %s %s",
                   core_info->firmware[i].missing ?
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING) :
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT),
-                  core_info->firmware[i].optional ?
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPTIONAL) :
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REQUIRED),
+                  (core_info->firmware[i].optional ?
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL) :
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED))
+                  :
+                  (core_info->firmware[i].optional ?
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL) :
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED)),
                   core_info->firmware[i].desc ?
                   core_info->firmware[i].desc :
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME)
@@ -1352,8 +1354,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef ANDROID
    perms = test_permissions(internal_storage_path);
 
-   snprintf(tmp, sizeof(tmp), "%s: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
+   snprintf(tmp, sizeof(tmp), "%s",
          perms 
          ? msg_hash_to_str(MSG_READ_WRITE) 
          : msg_hash_to_str(MSG_READ_ONLY));
@@ -1440,8 +1441,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       if (input_config_get_device_autoconfigured(controller))
       {
-         snprintf(tmp, sizeof(tmp), "%s #%d device name: %s (#%d)",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+         snprintf(tmp, sizeof(tmp),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
             controller,
             input_config_get_device_name(controller),
             input_config_get_device_name_index(controller));
@@ -4583,8 +4584,7 @@ static int menu_displaylist_parse_input_device_index_list(
                strlcpy(device_label, device_name, sizeof(device_label));
          }
          else
-            snprintf(device_label, sizeof(device_label),
-                  "%s (%s #%u)",
+            snprintf(device_label, sizeof(device_label), "%s (%s %u)",
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
                   map);
@@ -6248,11 +6248,9 @@ unsigned menu_displaylist_build_list(
             for (p = 0; p < max_users; p++)
             {
                char val_s[16], val_d[16];
-               snprintf(val_s, sizeof(val_s), "%s %d %s",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
-                     p+1,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
-                     );
+               snprintf(val_s, sizeof(val_s),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS),
+                     p+1);
                snprintf(val_d, sizeof(val_d), "%d", p);
                if (menu_entries_append_enum(list, val_s, val_d,
                         MSG_UNKNOWN,
@@ -9989,7 +9987,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            && !settings->bools.menu_show_sublabels)
                      {
                         snprintf(desc_label, sizeof(desc_label),
-                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), port + 1);
+                               "%s [%s %u]", descriptor,
+                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), port + 1);
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
@@ -10039,9 +10038,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            && (max_users > 1)
                            && !settings->bools.menu_show_sublabels)
                      {
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s [%s %u]", descriptor,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), port + 1);
+                        snprintf(desc_label, sizeof(desc_label), "%s [%s %u]",
+                              descriptor,
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+                              port + 1);
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 

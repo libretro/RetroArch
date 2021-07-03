@@ -2514,23 +2514,20 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
                if (core_info->firmware[i].missing)
                {
                   missing        = true;
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_MISSING);
+                  if (core_info->firmware[i].optional)
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL);
+                  else
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED);
                }
                else
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_PRESENT);
-
-               labelText        += ", ";
-
-               if (core_info->firmware[i].optional)
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_OPTIONAL);
-               else
-                  labelText     += msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_REQUIRED);
-
-               labelText        += ":";
+                  if (core_info->firmware[i].optional)
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL);
+                  else
+                     labelText  += msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED);
 
                if (core_info->firmware[i].desc)
                   valueText      = core_info->firmware[i].desc;

@@ -454,22 +454,6 @@ MSG_HASH(
    "Системные файлы"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Отсутствует"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Присутствует"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Необязательно"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Требуется"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Заблокировать ядро"
    )
@@ -10878,10 +10862,6 @@ MSG_HASH(
    "Чтение начальной дорожки данных..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "получена"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Отмена записи из-за изменения размера окна."
    )
@@ -11134,24 +11114,12 @@ MSG_HASH(
    "Ошибка расчёта области отображения. Будут использованы необработанные данные. Возможны ошибки."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "виртуальный лоток привода."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "извлечь"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "закрыть"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "Не удалось"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "удалось"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11574,10 +11542,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Разделить Joy-Con"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Статус внутреннего хранилища"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

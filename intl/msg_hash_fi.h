@@ -454,22 +454,6 @@ MSG_HASH(
    "Laiteohjelmisto"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Puuttuvat"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Läsnä"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Valinnaiset"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Vaaditut"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Lukitse asennettu ydin"
    )
@@ -10778,10 +10762,6 @@ MSG_HASH(
    "Luetaan ensimmäistä dataraitaa..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "vastaanotettu"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Nauhoitus keskeytettiin koon muuttamisen vuoksi."
    )
@@ -11034,24 +11014,12 @@ MSG_HASH(
    "Ikkunan koon laskenta epäonnistui! jatketaan raakadatan käyttöä. Tämä ei varmaan toimi oikein..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   " virtuaalinen levyasema."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "poistamaan "
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "sulkemaan "
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "epäonnistui"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "onnistui"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11474,10 +11442,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Jaa Joy-Con"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Sisäisen tallennustilan tilanne"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

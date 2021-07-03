@@ -454,22 +454,6 @@ MSG_HASH(
    "ファームウェア"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "欠損"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "存在"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "任意"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "必須"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "インストール済みコアをロック"
    )
@@ -10334,24 +10318,12 @@ MSG_HASH(
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "仮想ディスクトレイ."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "取り出し"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "閉じる"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "失敗しました"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "成功しました"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -10751,10 +10723,6 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "内蔵ストレージ状態"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "スクリーン解像度"

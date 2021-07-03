@@ -430,18 +430,6 @@ MSG_HASH(
    "Benötigte Grafik-API"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Fehlt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Vorhanden"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Notwendig"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Installierten Core sperren"
    )
@@ -10418,10 +10406,6 @@ MSG_HASH(
    "Lese ersten Daten-Track..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "empfangen"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Aufzeichnung wurde wegen Größenänderung beendet."
    )
@@ -10670,24 +10654,12 @@ MSG_HASH(
    "Berechnung der Bildgröße fehlgeschlagen! Wird unter Verwendung von Rohdaten fortfahren. Dies wird wahrscheinlich nicht richtig funktionieren ..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "des virtuellen Laufwerkfachs."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "Auswerfen"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Schließen"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "fehlgeschlagen"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "erfolgreich"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11106,10 +11078,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Joy-Con teilen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Status des internen Speichers"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

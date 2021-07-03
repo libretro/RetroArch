@@ -446,22 +446,6 @@ MSG_HASH(
    "Ürün Yazılımı"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Eksik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Mevcut"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "İsteğe bağlı"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Gerekli"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Kurulu Çekirdeği Kilitle"
    )
@@ -10874,10 +10858,6 @@ MSG_HASH(
    "İlk veri parçasını okunuyor..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "alındı"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Kayıt yeniden boyutlandırma nedeniyle sonlandırıldı."
    )
@@ -11130,24 +11110,12 @@ MSG_HASH(
    "Görüntü alanı boyutu hesaplaması başarısız! Ham veriler kullanılmaya devam edilecek. Muhtemelen düzgün çalışmayacak..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "sanal disk tepsisi."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "çıkar"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "kapat"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "başarısız"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "başarılı"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11563,10 +11531,6 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Dahili Depolama Durumu"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    "Grafik Gereçleri Ölçeğini Özelleştir"
