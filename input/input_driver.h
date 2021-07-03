@@ -385,14 +385,6 @@ void hid_driver_reset_data(void);
 typedef void (*input_keyboard_line_complete_t)(void *userdata,
       const char *line);
 
-typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
-
-struct input_keyboard_ctx_wait
-{
-   void *userdata;
-   input_keyboard_press_t cb;
-};
-
 /**
  * input_keyboard_event:
  * @down                     : Keycode was pressed down?
