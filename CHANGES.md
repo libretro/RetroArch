@@ -1,6 +1,7 @@
 # Future
 
 # 1.9.6
+- ARCHIVE: Fix archive delimiter detection when file path contains no slashes
 - ANDROID: Do not duplicate port 0 mouse and gun inputs to other ports
 - AUDIO/XAUDIO2: Fail instead of crashing when disconnecting an audio device
 - CHEEVOS: Reset cached progress each time menu is opened
@@ -12,6 +13,7 @@
 - D3D12: Relcoated 'd3d12_gfx_sync'
 - D3D12: Fixed swap interval option
 - GFX: Fix uninitialized variables in gfx_display_draw_cursor
+- HISTORY: Hide 'Add to Favorites' when viewing an entry of the favorites playlist
 - INPUT: 'Analog to Digital Type' usability improvements
 - INPUT: Add support for mapping multiple controllers to a single input device
 - INPUT/REMAPPING: Add support for mapping multiple controllers to a single input device
@@ -21,11 +23,14 @@
 - INPUT/UDEV: Skip mouse with no button errors and keep the rest
 - INPUT/UDEV: Fix Game Focus mode
 - INPUT/UDEV/X11: Change udev driver for dual lightgun support in X11
+- LIBNX/SWITCH: Update to libnx 4.0.0
 - LOCALIZATION: Fetch translations from Crowdin
 - LOCALIZATION: Fix Switchres menu texts
 - MENU/OZONE: Ensure sidebar display status is updated correctly when performing rapid menu navigation
 - MENU/XMB: Dynamic wallpaper fix
 - MENU/XMB: Icon opacity fix
+- MENU/QT/WIMP: Fix default core detection when playlist file name does not match 'db_name'
+- PLAYLISTS: Optimise scanning of large rom sets
 - SECURITY: Plug so-called high-risk vulnerability related to Powershell - avoid injection - don't send speech input as commandline argument
 - UWP/XBOX: Add expanded resources Rescap to increase performance of UWP version in app mode on Xbox
 - WINDOWS/INSTALLER: Add smarter isEmptyDir reference implementation that looks for subdirectories from NSIS documentation
