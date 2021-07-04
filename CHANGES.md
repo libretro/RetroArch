@@ -10,7 +10,7 @@
 - D3D11: Disable DXGI's ALT+ENTER handling
 - D3D11: Don't pass ALLOW_TEARING when unsupported
 - D3D11: Fix non-vsynced output without flip, black screens in fullscreen
-- D3D12: Relcoated 'd3d12_gfx_sync'
+- D3D12: Relocated 'd3d12_gfx_sync'
 - D3D12: Fixed swap interval option
 - GFX: Fix uninitialized variables in gfx_display_draw_cursor
 - HISTORY: Hide 'Add to Favorites' when viewing an entry of the favorites playlist
