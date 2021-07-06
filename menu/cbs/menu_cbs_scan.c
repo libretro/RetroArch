@@ -24,6 +24,7 @@
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
+#include "../../input/input_remapping.h"
 
 #include "../../input/input_driver.h"
 
