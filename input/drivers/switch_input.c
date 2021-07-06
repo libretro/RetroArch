@@ -21,9 +21,9 @@
 /* Abstraction of pointer coords */
 #define TOUCH_AXIS_MAX 0x7fff
 /* Size of rarch_key_map_switch */
-#define SWITCH_NUM_SCANCODES 114 
+#define SWITCH_NUM_SCANCODES 110
 /* See https://switchbrew.github.io/libnx/hid_8h.html */
-#define SWITCH_MAX_SCANCODE 0xfb 
+#define SWITCH_MAX_SCANCODE 0xfb
 #define MOUSE_MAX_X 1920
 #define MOUSE_MAX_Y 1080
 
@@ -115,7 +115,7 @@ typedef struct switch_input
    bool mouse_button_left;
    bool mouse_button_right;
    bool mouse_button_middle;
-   uint64_t mouse_previous_report;
+   uint32_t mouse_previous_buttons;
 
    /* touch mouse */
    bool touch_mouse_indirect;
@@ -127,7 +127,7 @@ typedef struct switch_input
    int32_t simulated_click_start_time[2]; /* initiation time of last simulated left or right click (zero if no click) */
 
    /* sensor handles */
-   uint32_t sixaxis_handles[DEFAULT_MAX_PADS][4];
+   HidSixAxisSensorHandle sixaxis_handles[DEFAULT_MAX_PADS][4];
    unsigned sixaxis_handles_count[DEFAULT_MAX_PADS];
 #else
    void *empty;
@@ -150,14 +150,19 @@ static void finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTi
 #ifdef HAVE_LIBNX
 static void switch_input_poll(void *data)
 {
-   MousePosition mouse_pos;
+   HidTouchScreenState touch_screen_state;
+   HidKeyboardState kbd_state;
+   HidMouseState mouse_state;
+   uint32_t touch_count;
+   bool key_pressed;
    unsigned int i                = 0;
-   int keySym                    = 0;
-   unsigned keyCode              = 0;
+   int key_sym                   = 0;
+   unsigned key_code             = 0;
    uint16_t mod                  = 0;
-   uint64_t mouse_current_report = 0;
    switch_input_t *sw            = (switch_input_t*) data;
-   uint32_t touch_count          = hidTouchCount();
+
+   hidGetTouchScreenStates(&touch_screen_state, 1);
+   touch_count = MIN(MULTITOUCH_LIMIT, touch_screen_state.count);
    for (i = 0; i < MULTITOUCH_LIMIT; i++)
    {
       sw->previous_touch_state[i] = sw->touch_state[i];
@@ -166,13 +171,11 @@ static void switch_input_poll(void *data)
       if (sw->touch_state[i])
       {
          struct video_viewport vp;
-         touchPosition touch_position;
-         hidTouchRead(&touch_position, i);
 
          sw->touch_previous_x[i]     = sw->touch_x[i];
          sw->touch_previous_y[i]     = sw->touch_y[i];
-         sw->touch_x[i]              = touch_position.px;
-         sw->touch_y[i]              = touch_position.py;
+         sw->touch_x[i]              = touch_screen_state.touches[i].x;
+         sw->touch_y[i]              = touch_screen_state.touches[i].y;
 
          /* convert from event coordinates to core and screen coordinates */
          vp.x                        = 0;
@@ -184,8 +187,8 @@ static void switch_input_poll(void *data)
 
          video_driver_translate_coord_viewport_wrap(
             &vp,
-            touch_position.px,
-            touch_position.py,
+            touch_screen_state.touches[i].x,
+            touch_screen_state.touches[i].y,
             &sw->touch_x_viewport[i],
             &sw->touch_y_viewport[i],
             &sw->touch_x_screen[i],
@@ -194,69 +197,68 @@ static void switch_input_poll(void *data)
    }
 
    mod = 0;
-   if (hidKeyboardHeld(KBD_LEFTALT) || hidKeyboardHeld(KBD_RIGHTALT))
+   hidGetKeyboardStates(&kbd_state, 1);
+   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftAlt) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightAlt))
       mod |= RETROKMOD_ALT;
-   if (hidKeyboardHeld(KBD_LEFTCTRL) || hidKeyboardHeld(KBD_RIGHTCTRL))
+   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftControl) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightControl))
       mod |= RETROKMOD_CTRL;
-   if (hidKeyboardHeld(KBD_LEFTSHIFT) || hidKeyboardHeld(KBD_RIGHTSHIFT))
+   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftShift) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightShift))
       mod |= RETROKMOD_SHIFT;
 
    for (i = 0; i < SWITCH_NUM_SCANCODES; i++)
    {
-      keySym = rarch_key_map_switch[i].sym;
-      keyCode = input_keymaps_translate_keysym_to_rk(keySym);
-
-      if (hidKeyboardHeld(keySym) && !(sw->keyboard_state[keySym]))
+      key_sym = rarch_key_map_switch[i].sym;
+      key_code = input_keymaps_translate_keysym_to_rk(key_sym);
+      key_pressed = hidKeyboardStateGetKey(&kbd_state, key_sym);
+      if (key_pressed && !(sw->keyboard_state[key_sym]))
       {
-         sw->keyboard_state[keySym] = true;
-         input_keyboard_event(true, keyCode, 0, mod, RETRO_DEVICE_KEYBOARD);
+         sw->keyboard_state[key_sym] = true;
+         input_keyboard_event(true, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
       }
-      else if (!hidKeyboardHeld(keySym) && sw->keyboard_state[keySym])
+      else if (!key_pressed && sw->keyboard_state[key_sym])
       {
-         sw->keyboard_state[keySym] = false;
-         input_keyboard_event(false, keyCode, 0, mod, RETRO_DEVICE_KEYBOARD);
+         sw->keyboard_state[key_sym] = false;
+         input_keyboard_event(false, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
       }
    }
 
    /* update physical mouse buttons only when they change
     * this allows the physical mouse and touch mouse to coexist */
-   mouse_current_report = hidMouseButtonsHeld();
-   if ((mouse_current_report & MOUSE_LEFT) 
-         != (sw->mouse_previous_report & MOUSE_LEFT))
+   hidGetMouseStates(&mouse_state, 1);
+   if ((mouse_state.buttons & HidMouseButton_Left)
+         != (sw->mouse_previous_buttons & HidMouseButton_Left))
    {
-      if (mouse_current_report & MOUSE_LEFT)
+      if (mouse_state.buttons & HidMouseButton_Left)
          sw->mouse_button_left = true;
       else
          sw->mouse_button_left = false;
    }
 
-   if ((mouse_current_report & MOUSE_RIGHT) 
-         != (sw->mouse_previous_report & MOUSE_RIGHT))
+   if ((mouse_state.buttons & HidMouseButton_Right)
+         != (sw->mouse_previous_buttons & HidMouseButton_Right))
    {
-      if (mouse_current_report & MOUSE_RIGHT)
+      if (mouse_state.buttons & HidMouseButton_Right)
          sw->mouse_button_right = true;
       else
          sw->mouse_button_right = false;
    }
 
-   if ((mouse_current_report & MOUSE_MIDDLE) 
-         != (sw->mouse_previous_report & MOUSE_MIDDLE))
+   if ((mouse_state.buttons & HidMouseButton_Middle)
+         != (sw->mouse_previous_buttons & HidMouseButton_Middle))
    {
-      if (mouse_current_report & MOUSE_MIDDLE)
+      if (mouse_state.buttons & HidMouseButton_Middle)
          sw->mouse_button_middle = true;
       else
          sw->mouse_button_middle = false;
    }
-   sw->mouse_previous_report = mouse_current_report;
+   sw->mouse_previous_buttons = mouse_state.buttons;
 
    /* physical mouse position */
-   hidMouseRead(&mouse_pos);
+   sw->mouse_x_delta = mouse_state.delta_x;
+   sw->mouse_y_delta = mouse_state.delta_y;
 
-   sw->mouse_x_delta = mouse_pos.velocityX;
-   sw->mouse_y_delta = mouse_pos.velocityY;
-
-   sw->mouse_x += sw->mouse_x_delta;
-   sw->mouse_y += sw->mouse_y_delta;
+   sw->mouse_x = mouse_state.x;
+   sw->mouse_y = mouse_state.y;
 
    /* touch mouse events
     * handle_touch_mouse will update sw->mouse_* variables
@@ -275,7 +277,7 @@ static void switch_input_poll(void *data)
    else if (sw->mouse_y > MOUSE_MAX_Y)
       sw->mouse_y = MOUSE_MAX_Y;
 
-   sw->mouse_wheel = mouse_pos.scrollVelocityY;
+   sw->mouse_wheel = mouse_state.wheel_delta_y;
 }
 #endif
 
@@ -773,10 +775,6 @@ static void switch_input_free_input(void *data)
             hidStopSixAxisSensor(sw->sixaxis_handles[i][j]);
 
    free(sw);
-
-#ifdef HAVE_LIBNX
-   hidExit();
-#endif
 }
 
 static void* switch_input_init(const char *joypad_driver)
@@ -789,7 +787,9 @@ static void* switch_input_init(const char *joypad_driver)
       return NULL;
 
 #ifdef HAVE_LIBNX
-   hidInitialize();
+    hidInitializeTouchScreen();
+    hidInitializeMouse();
+    hidInitializeKeyboard();
 
    /*
       Here we assume that the touch screen is always 1280x720
@@ -802,7 +802,7 @@ static void* switch_input_init(const char *joypad_driver)
 
    sw->mouse_x                  = 0;
    sw->mouse_y                  = 0;
-   sw->mouse_previous_report    = 0;
+   sw->mouse_previous_buttons   = 0;
 
    /* touch mouse init */
    sw->touch_mouse_indirect     = true;
@@ -863,13 +863,13 @@ static bool switch_input_set_sensor_state(void *data, unsigned port,
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
          if(port < DEFAULT_MAX_PADS && sw->sixaxis_handles_count[port] == 0)
          {
-            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][0], 2, port, TYPE_JOYCON_PAIR);
+            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][0], 2, port, HidNpadStyleTag_NpadJoyDual);
 
-            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][2], 1, port, TYPE_PROCONTROLLER);
+            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][2], 1, port, HidNpadStyleTag_NpadFullKey);
 
             if(port == 0)
             {
-               hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][3], 1, CONTROLLER_HANDHELD, TYPE_HANDHELD);
+               hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][3], 1, HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld);
                handles_count = 4;
             }
             else
@@ -894,27 +894,34 @@ static float switch_input_get_sensor_input(void *data,
 {
 #ifdef HAVE_LIBNX
    float f;
-   SixAxisSensorValues sixaxis;
+   unsigned int i;
+   HidSixAxisSensorState sixaxis;
+   switch_input_t *sw = (switch_input_t*) data;
 
-   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z
+      && port < DEFAULT_MAX_PADS)
    {
-      hidSixAxisSensorValuesRead(&sixaxis,
-            port == 0 ? CONTROLLER_P1_AUTO : port, 1);
+      for(i = 0; i < sw->sixaxis_handles_count[port]; i++)
+      {
+         hidGetSixAxisSensorStates(sw->sixaxis_handles[port][i], &sixaxis, 1);
+         if(sixaxis.delta_time)
+            break;
+      }
 
       switch(id)
       {
          case RETRO_SENSOR_ACCELEROMETER_X:
-            return sixaxis.accelerometer.x;
+            return sixaxis.acceleration.x;
          case RETRO_SENSOR_ACCELEROMETER_Y:
-            return sixaxis.accelerometer.y;
+            return sixaxis.acceleration.y;
          case RETRO_SENSOR_ACCELEROMETER_Z:
-            return sixaxis.accelerometer.z;
+            return sixaxis.acceleration.z;
          case RETRO_SENSOR_GYROSCOPE_X:
-            return sixaxis.gyroscope.x;
+            return sixaxis.angular_velocity.x;
          case RETRO_SENSOR_GYROSCOPE_Y:
-            return sixaxis.gyroscope.y;
+            return sixaxis.angular_velocity.y;
          case RETRO_SENSOR_GYROSCOPE_Z:
-            return sixaxis.gyroscope.z;
+            return sixaxis.angular_velocity.z;
       }
    }
 

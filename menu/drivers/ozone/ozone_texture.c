@@ -453,6 +453,7 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_SETTING_ACTION:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_SETTINGS_INPUT_LIBRETRO_DEVICE:
+      case MENU_SETTINGS_INPUT_INPUT_REMAP_PORT:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
@@ -518,17 +519,11 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          {
             /* Quickmenu controls repeats the same icons for all users*/
             if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
-            {
                input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-               while (type > (input_id + 23))
-                  input_id = (input_id + 24);
-            }
             else
-            {
                input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
-               while (type > (input_id + 15))
-                  input_id = (input_id + 16);
-            }
+            while (type > (input_id + 23))
+               input_id = (input_id + 24);
 
             /* Human readable bind order */
             if (type < (input_id + RARCH_ANALOG_BIND_LIST_END))

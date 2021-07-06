@@ -102,27 +102,7 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
   if (ret != RC_OK)
     return ret;
 
-  switch (self->size) {
-    case RC_MEMSIZE_BIT_0:
-    case RC_MEMSIZE_BIT_1:
-    case RC_MEMSIZE_BIT_2:
-    case RC_MEMSIZE_BIT_3:
-    case RC_MEMSIZE_BIT_4:
-    case RC_MEMSIZE_BIT_5:
-    case RC_MEMSIZE_BIT_6:
-    case RC_MEMSIZE_BIT_7:
-    case RC_MEMSIZE_LOW:
-    case RC_MEMSIZE_HIGH:
-    case RC_MEMSIZE_BITCOUNT:
-      /* these can all share an 8-bit memref and just mask off the appropriate data in rc_evaluate_operand */
-      size = RC_MEMSIZE_8_BITS;
-      break;
-
-    default:
-      size = self->size;
-      break;
-  }
-
+  size = rc_memref_shared_size(self->size);
   self->value.memref = rc_alloc_memref(parse, address, size, is_indirect);
   if (parse->offset < 0)
     return parse->offset;
@@ -295,8 +275,6 @@ int rc_operand_is_memref(rc_operand_t* self) {
   }
 }
 
-static const unsigned char rc_bits_set[16] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4 };
-
 unsigned rc_evaluate_operand(rc_operand_t* self, rc_eval_state_t* eval_state) {
 #ifndef RC_DISABLE_LUA
   rc_luapeek_t luapeek;
@@ -348,56 +326,7 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_eval_state_t* eval_state) {
   }
 
   /* step 2: mask off appropriate bits */
-  switch (self->size)
-  {
-    case RC_MEMSIZE_BIT_0:
-      value = (value >> 0) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_1:
-      value = (value >> 1) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_2:
-      value = (value >> 2) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_3:
-      value = (value >> 3) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_4:
-      value = (value >> 4) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_5:
-      value = (value >> 5) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_6:
-      value = (value >> 6) & 1;
-      break;
-
-    case RC_MEMSIZE_BIT_7:
-      value = (value >> 7) & 1;
-      break;
-
-    case RC_MEMSIZE_LOW:
-      value = value & 0x0f;
-      break;
-
-    case RC_MEMSIZE_HIGH:
-      value = (value >> 4) & 0x0f;
-      break;
-
-    case RC_MEMSIZE_BITCOUNT:
-      value = rc_bits_set[(value & 0x0F)]
-            + rc_bits_set[((value >> 4) & 0x0F)];
-      break;
-
-    default:
-      break;
-  }
+  value = rc_transform_memref_value(value, self->size);
 
   /* step 3: apply logic */
   switch (self->type)

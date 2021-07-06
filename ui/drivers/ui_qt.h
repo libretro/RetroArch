@@ -368,7 +368,7 @@ public:
    QToolButton* runPushButton();
    QToolButton* stopPushButton();
    QTabWidget* browserAndPlaylistTabWidget();
-   QString getPlaylistDefaultCore(QString dbName);
+   QString getPlaylistDefaultCore(QString plName);
    ViewOptionsDialog* viewOptionsDialog();
    QSettings* settings();
    QVector<QHash<QString, QString> > getCoreInfo();

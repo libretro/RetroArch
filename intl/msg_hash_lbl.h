@@ -1491,6 +1491,22 @@ MSG_HASH(
    "input_libretro_device_p%u"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE,
+   "input_player%u_analog_dpad_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DEVICE_INDEX,
+   "input_device_p%u"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_MOUSE_INDEX,
+   "input_player%u_mouse_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_REMAP_PORT,
+   "input_remap_port_p%u"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_MAX_USERS,
    "input_max_users"
    )
@@ -1533,10 +1549,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,
    "input_overlay_auto_scale"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE,
-   "input_player%u_analog_dpad_mode"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,

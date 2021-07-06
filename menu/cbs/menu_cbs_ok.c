@@ -3416,32 +3416,30 @@ static int generic_action_ok_remap_file_operation(const char *path,
    {
       if (input_remapping_remove_file(file, path_dir_input_remapping))
       {
-#ifdef HAVE_CONFIGFILE
          switch (action_type)
          {
             case ACTION_OK_REMAP_FILE_REMOVE_CORE:
                if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
                {
                   input_remapping_deinit();
-                  input_remapping_set_defaults();
+                  input_remapping_set_defaults(false);
                }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_GAME:
                if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
                {
                   input_remapping_deinit();
-                  input_remapping_set_defaults();
+                  input_remapping_set_defaults(false);
                }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
                if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
                {
                   input_remapping_deinit();
-                  input_remapping_set_defaults();
+                  input_remapping_set_defaults(false);
                }
                break;
          }
-#endif
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
@@ -6525,7 +6523,7 @@ static int action_ok_push_dropdown_item_input_device_index(const char *path,
    if (!setting)
       return menu_cbs_exit();
 
-   settings->uints.input_joypad_map[setting->index_offset] = (unsigned)entry_idx;
+   settings->uints.input_joypad_index[setting->index_offset] = (unsigned)entry_idx;
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -6577,9 +6575,9 @@ static int action_ok_push_dropdown_item_input_description_kbd(
 
    /* Determine user/button indices */
    user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) 
-      / RARCH_FIRST_CUSTOM_BIND;
+      / RARCH_ANALOG_BIND_LIST_END;
    btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) 
-      - RARCH_FIRST_CUSTOM_BIND * user_idx;
+      - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
    if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return menu_cbs_exit();

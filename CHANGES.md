@@ -1,5 +1,49 @@
 # Future
+
+# 1.9.6
+- ARCHIVE: Fix archive delimiter detection when file path contains no slashes
+- ANDROID: Do not duplicate port 0 mouse and gun inputs to other ports
+- AUDIO/XAUDIO2: Fail instead of crashing when disconnecting an audio device
+- CHEEVOS: Reset cached progress each time menu is opened
+- CRT/SWITCHRES: Add support for switchres.ini core and directory overrides
+- D3D11: Don't use allow tearing flag with blit swap chains. Also disables the flip model if the allow tearing flag is not supported.
+- D3D11: Disable DXGI's ALT+ENTER handling
+- D3D11: Don't pass ALLOW_TEARING when unsupported
+- D3D11: Fix non-vsynced output without flip, black screens in fullscreen
+- D3D12: Relocated 'd3d12_gfx_sync'
+- D3D12: Fixed swap interval option
+- GFX: Fix uninitialized variables in gfx_display_draw_cursor
+- HISTORY: Hide 'Add to Favorites' when viewing an entry of the favorites playlist
+- INPUT: 'Analog to Digital Type' usability improvements
+- INPUT: Add support for mapping multiple controllers to a single input device
+- INPUT/REMAPPING: Add support for mapping multiple controllers to a single input device
+- INPUT/LIGHTGUN: Bind lightgun trigger to first mouse button by default
+- INPUT/WINDOWS/RAWINPUT: Mouse access violation fix
+- INPUT/UDEV: Only add mouse if it has buttons and add vebose device friendly names
+- INPUT/UDEV: Skip mouse with no button errors and keep the rest
+- INPUT/UDEV: Fix Game Focus mode
+- INPUT/UDEV/X11: Change udev driver for dual lightgun support in X11
+- LIBNX/SWITCH: Update to libnx 4.0.0
+- LOCALIZATION: Fetch translations from Crowdin
+- LOCALIZATION: Fix Switchres menu texts
+- MENU/OZONE: Ensure sidebar display status is updated correctly when performing rapid menu navigation
+- MENU/XMB: Dynamic wallpaper fix
+- MENU/XMB: Icon opacity fix
+- MENU/QT/WIMP: Fix default core detection when playlist file name does not match 'db_name'
+- PLAYLISTS: Optimise scanning of large rom sets
+- SECURITY: Plug so-called high-risk vulnerability related to Powershell - avoid injection - don't send speech input as commandline argument
+- UWP/XBOX: Add expanded resources Rescap to increase performance of UWP version in app mode on Xbox
+- WINDOWS/INSTALLER: Add smarter isEmptyDir reference implementation that looks for subdirectories from NSIS documentation
+- WINDOWS/INSTALLER: Register new function DirectorySet that is called when pressing the "Next" button on the MUI_PAGE_DIRECTORY, aka the install folder selection GUI. DirectorySet contains the criteria for an acceptable folder, which are:
+  - `IfFileExists "$INSTDIR\retroarch.exe"` returns 1
+  - `IfFileExists "$INSTDIR\*.*` returns 0, there is no existing folder
+  - `IfFileExists "$INSTDIR\*.*"` returns 1, there is a folder, and `isEmptyDir` returns 1, therefore the folder is empty, including of subdirectories
+- X11: Fix threaded video segfault
+
+# 1.9.5
+- ALSATHREAD: Make alsathread default for all ALSA devices with threads
 - ARCHIVE: Fix loading of archived content with file names containing '#' characters
+- CHEEVOS: Upgrade to rcheevos 10.1 
 - CHEEVOS: Challenge indicators
 - CHEEVOS: Group achievements by category in quick menu
 - CHEEVOS: Relabel 'Start Active' with 'Encore Mode'
@@ -11,7 +55,10 @@
 - CRT/SWITCHRES: New implementation
 - FONTS: Improve message wrapping with CJK languages
 - FONTS: Fix garbled characters when converting encodings
+- INPUT: Allow the 8 analog stick directions to be used as keys for core keyboard mappings
 - LIBRETRO: Add API extension for setting 'need_fullpath' based on content file extension and to request persistent frontend content data buffers
+- MENU/SEARCH: Add enhanced search functionality to the 'Manage Cores' menu
+- OPENDINGUX: Fix black screens when triggering gfx driver initialisation via menu actions 
 - UNIX: Get better battery stats on sysfs nodes
 - VIDEO: Extend Frame Delay range to 19 to accommodate PAL land too 
 - WIFI/LAKKA: Add nmcli to wifi drivers

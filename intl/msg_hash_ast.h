@@ -1516,6 +1516,10 @@ MSG_HASH(
    "Nome"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "Entrada: %lu/%lu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "Nucleu"
    )
@@ -1648,7 +1652,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 
 /* Quick Menu > Shaders > Remove */
@@ -1662,10 +1666,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    "Los llogros nun puen activase col usu d'esti nucleu"

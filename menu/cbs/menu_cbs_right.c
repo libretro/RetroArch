@@ -149,8 +149,8 @@ static int action_right_input_desc_kbd(unsigned type, const char *label,
    if (!settings)
       return 0;
 
-   user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
-   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_FIRST_CUSTOM_BIND * user_idx;
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
    remap_id =
       settings->uints.input_keymapper_ids[user_idx][btn_idx];
@@ -177,13 +177,18 @@ static int action_right_input_desc(unsigned type, const char *label,
 {
    rarch_system_info_t *system           = runloop_get_system_info();
    settings_t *settings                  = config_get_ptr();
-   unsigned btn_idx, user_idx, remap_idx, bind_idx;
+   unsigned btn_idx;
+   unsigned user_idx;
+   unsigned remap_idx;
+   unsigned bind_idx;
+   unsigned mapped_port;
 
    if (!settings || !system)
       return 0;
 
-   user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   mapped_port = settings->uints.input_remap_ports[user_idx];
 
    remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
    for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
@@ -221,7 +226,7 @@ static int action_right_input_desc(unsigned type, const char *label,
       also skip all the axes until analog remapping is implemented */
    if (remap_idx != RARCH_UNMAPPED)
    {
-      if ((string_is_empty(system->input_desc_btn[user_idx][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
+      if ((string_is_empty(system->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
          action_right_input_desc(type, label, wraparound);
    }
 
@@ -1030,6 +1035,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
          case MENU_SETTING_ACTION_FAVORITES_DIR:
+         case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
             if (
                      string_ends_with_size(menu_label, "_tab",
                         strlen(menu_label), STRLEN_CONST("_tab"))

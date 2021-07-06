@@ -1407,6 +1407,7 @@ static int16_t android_input_state(
       case RETRO_DEVICE_MOUSE:
          {
             int val = 0;
+            if(port > 0) return 0; /* TODO: implement mouse for additional ports/players */
             switch (id)
             {
                case RETRO_DEVICE_ID_MOUSE_LEFT:
@@ -1439,6 +1440,7 @@ static int16_t android_input_state(
       case RETRO_DEVICE_LIGHTGUN:
          {
             int val = 0;
+            if(port > 0) return 0; /* TODO: implement lightgun for additional ports/players */
             switch (id)
             {
                case RETRO_DEVICE_ID_LIGHTGUN_X:

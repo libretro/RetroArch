@@ -296,6 +296,7 @@
  * Can reduce latency at cost of higher risk of stuttering.
  */
 #define DEFAULT_FRAME_DELAY 0
+#define MAXIMUM_FRAME_DELAY 19
 
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 

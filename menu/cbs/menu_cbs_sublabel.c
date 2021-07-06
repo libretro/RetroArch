@@ -292,6 +292,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_runahead_toggle,       ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ai_service,            MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_menu_toggle,           MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_adc_type,                   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE)
 #ifdef HAVE_MATERIALUI
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_playlist_icons_enable, MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE)
@@ -1138,7 +1139,7 @@ static int action_bind_sublabel_remap_kbd_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
+   unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
 
    snprintf(s, len, "%s #%d: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
@@ -1199,18 +1200,67 @@ static int action_bind_sublabel_remap_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
-      / (RARCH_FIRST_CUSTOM_BIND + 8);
+   settings_t *settings = config_get_ptr();
+   unsigned port        = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
+         / (RARCH_FIRST_CUSTOM_BIND + 8);
+
+   if (!settings || (port >= MAX_USERS))
+      return 0;
+
+   /* Device name is set per-port
+    * If the user changes the device index for
+    * a port, then we are effectively changing
+    * the port to which the corresponding
+    * controller is connected... */
+   port = settings->uints.input_joypad_index[port];
 
    snprintf(s, len, "%s #%d: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
-         offset + 1,
-         input_config_get_device_display_name(offset) ?
-         input_config_get_device_display_name(offset) :
-         (input_config_get_device_name(offset) ?
-          input_config_get_device_name(offset) :
+         port + 1,
+         input_config_get_device_display_name(port) ?
+         input_config_get_device_display_name(port) :
+         (input_config_get_device_name(port) ?
+          input_config_get_device_name(port) :
           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
    return 0;
+}
+
+static int action_bind_sublabel_input_remap_port(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned display_port = 0;
+   menu_entry_t entry;
+
+   MENU_ENTRY_INIT(entry);
+   entry.path_enabled       = false;
+   entry.label_enabled      = true;
+   entry.rich_label_enabled = false;
+   entry.value_enabled      = false;
+   entry.sublabel_enabled   = false;
+   menu_entry_get(&entry, 0, i, NULL, false);
+
+   /* We need the actual frontend port index.
+    * This is difficult to obtain here - the only
+    * way to get it is to parse the entry label
+    * (input_remap_port_p<port_index+1>) */
+   if (string_is_empty(entry.label) ||
+       (sscanf(entry.label,
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
+                  &display_port) != 1) ||
+       (display_port >= MAX_USERS + 1))
+      return 0;
+
+   snprintf(s, len,
+         msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
+         display_port);
+
+   /* We can safely cache the sublabel here, since
+    * frontend port index cannot change while the
+    * current menu is displayed */
+   return 1;
 }
 
 #ifdef HAVE_CHEATS
@@ -1627,6 +1677,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
        (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option);
+      return 0;
+   }
+
+   /* Mapped input ports require special handling */
+   if (type == MENU_SETTINGS_INPUT_INPUT_REMAP_PORT)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remap_port);
       return 0;
    }
 
@@ -4252,8 +4309,33 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_backup_entry);
             break;
          default:
-         case MSG_UNKNOWN:
             return -1;
+      }
+   }
+   else
+   {
+      /* Per-port 'Analog to Digital Type' entries
+       * require special handling */
+      if (string_starts_with_size(label, "input_player",
+            STRLEN_CONST("input_player")) &&
+         string_ends_with_size(label, "_analog_dpad_mode",
+               strlen(label), STRLEN_CONST("_analog_dpad_mode")))
+      {
+         unsigned i;
+         for (i = 0; i < MAX_USERS; i++)
+         {
+            char key_input_adc_type[64];
+            key_input_adc_type[0] = '\0';
+
+            snprintf(key_input_adc_type, sizeof(key_input_adc_type),
+                  "input_player%u_analog_dpad_mode", i + 1);
+
+            if (!string_is_equal(label, key_input_adc_type))
+               continue;
+
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_adc_type);
+            return 0;
+         }
       }
    }
 

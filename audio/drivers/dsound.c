@@ -546,7 +546,8 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
             break;
 
          if (avail == 0)
-            WaitForSingleObject(ds->event, INFINITE);
+            if (!(WaitForSingleObject(ds->event, 50) == WAIT_OBJECT_0))
+               return -1;
       }
    }
 

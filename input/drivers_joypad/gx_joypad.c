@@ -220,7 +220,7 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
 static void check_port0_active(uint8_t pad_count)
 {
    settings_t *settings = config_get_ptr();
-   int idx = settings->uints.input_joypad_map[0];
+   int idx = settings->uints.input_joypad_index[0];
 
    if(pad_count < 2 && idx != 0)
    {
@@ -229,7 +229,7 @@ static void check_port0_active(uint8_t pad_count)
 #else
       pad_type[0] = WPAD_EXP_GAMECUBE;
 #endif
-      settings->uints.input_joypad_map[0] = 0;
+      settings->uints.input_joypad_index[0] = 0;
                
       input_autoconfigure_connect(
             gx_joypad_name(0),

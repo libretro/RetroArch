@@ -1391,6 +1391,7 @@ typedef struct
       float                       clearcolor[4];
       int                         frame_index;
       bool                        vsync;
+      unsigned                    swap_interval;
    } chain;
 
    struct

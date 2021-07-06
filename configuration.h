@@ -122,7 +122,7 @@ typedef struct settings
       unsigned placeholder;
 
       unsigned input_split_joycon[MAX_USERS];
-      unsigned input_joypad_map[MAX_USERS];
+      unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
       /* Set by autoconfiguration in joypad_autoconfig_dir.
@@ -130,9 +130,10 @@ typedef struct settings
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
 
-      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
-
+      unsigned input_remap_ports[MAX_USERS];
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_remap_port_map[MAX_USERS][MAX_USERS + 1];
 
       unsigned led_map[MAX_LEDS];
 

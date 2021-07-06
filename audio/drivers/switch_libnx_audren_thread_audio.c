@@ -144,7 +144,7 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
    int mpid;
    size_t mempool_size;
    unsigned real_latency;
-   uint32_t thread_priority;
+   int32_t thread_priority;
 
    RARCH_LOG("[Audio]: Using libnx_audren_thread driver\n");
 

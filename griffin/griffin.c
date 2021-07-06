@@ -192,7 +192,6 @@ ACHIEVEMENTS
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_menu.c"
-#include "../cheevos/cheevos_memory.c"
 #include "../cheevos/cheevos_parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
@@ -204,6 +203,7 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/lboard.c"
 #include "../deps/rcheevos/src/rcheevos/memref.c"
 #include "../deps/rcheevos/src/rcheevos/operand.c"
+#include "../deps/rcheevos/src/rcheevos/rc_libretro.c"
 #include "../deps/rcheevos/src/rcheevos/richpresence.c"
 #include "../deps/rcheevos/src/rcheevos/runtime.c"
 #include "../deps/rcheevos/src/rcheevos/runtime_progress.c"

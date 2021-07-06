@@ -943,17 +943,36 @@ static bool terminate_win32_process(PROCESS_INFORMATION pi)
 
 static PROCESS_INFORMATION g_pi;
 
-static bool create_win32_process(char* cmd)
+static bool create_win32_process(char* cmd, const char * input)
 {
    STARTUPINFO si;
+   HANDLE rd = NULL;
+   bool ret;
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
    memset(&g_pi, 0, sizeof(g_pi));
 
-   if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
-                      NULL, NULL, &si, &g_pi))
-      return false;
-   return true;
+   if (input)
+   {
+      DWORD dummy;
+      HANDLE wr;
+      if (!CreatePipe(&rd, &wr, NULL, strlen(input))) return false;
+      
+      SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+      
+      WriteFile(wr, input, strlen(input), &dummy, NULL);
+      CloseHandle(wr);
+      
+      si.dwFlags |= STARTF_USESTDHANDLES;
+      si.hStdInput = rd;
+      si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+      si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+   }
+
+   ret = CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NO_WINDOW,
+                      NULL, NULL, &si, &g_pi);
+   if (rd) CloseHandle(rd);
+   return ret;
 }
 
 static bool is_narrator_running_windows(void)
@@ -1011,7 +1030,7 @@ static bool is_narrator_running_windows(void)
 static bool accessibility_speak_windows(int speed,
       const char* speak_text, int priority)
 {
-   char *cmd = NULL;
+   char cmd[512];
    const char *voice      = get_user_language_iso639_1(true);
    const char *language   = accessibility_win_language_code(voice);
    const char *langid     = accessibility_win_language_id(voice);
@@ -1035,36 +1054,16 @@ static bool accessibility_speak_windows(int speed,
    
    if (USE_POWERSHELL)
    {
-      if (strlen(language) > 0) 
-      {
-         nbytes_cmd = snprintf(NULL, 0, 
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text) + 1;
-         if (!(cmd = malloc(nbytes_cmd)))
-            return false;
-         snprintf(cmd, nbytes_cmd, 
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text);
-      }
+      const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
+      const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
+      if (strlen(language) > 0)
+         snprintf(cmd, sizeof(cmd), template_lang, language, speeds[speed-1]);
       else
-      {
-         nbytes_cmd = snprintf(NULL, 0,
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text) + 1;
-         if (!(cmd = malloc(nbytes_cmd)))
-            return false;
-         snprintf(cmd, nbytes_cmd,
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
-      }
+         snprintf(cmd, sizeof(cmd), template_nolang, speeds[speed-1]);
 
       if (pi_set)
          terminate_win32_process(g_pi);
-      res = create_win32_process(cmd);
-      free(cmd);
-      cmd = NULL;
-      if (!res)
-      {
-         pi_set = false;
-         return true;
-      }
-      pi_set = true;
+      pi_set = create_win32_process(cmd, speak_text);
    }
 #ifdef HAVE_NVDA
    else if (USE_NVDA)

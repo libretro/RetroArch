@@ -479,9 +479,10 @@ static void udev_handle_mouse(void *data,
    }
 }
 
-static bool udev_input_add_device(udev_input_t *udev,
+static int udev_input_add_device(udev_input_t *udev,
       enum udev_input_dev_type type, const char *devnode, device_handle_cb cb)
 {
+   unsigned char keycaps[(KEY_MAX / 8) + 1];
    int fd;
    struct stat st;
 #if defined(HAVE_EPOLL)
@@ -516,6 +517,9 @@ static bool udev_input_add_device(udev_input_t *udev,
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
    if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD )
    {
+      if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof (keycaps)), keycaps) == -1)
+        return -1;  /* gotta have some buttons!  return -1 to skip error logging for this:)  */
+
       if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
       {
          if (absinfo.minimum >= absinfo.maximum )
@@ -807,9 +811,7 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
 static int16_t udev_lightgun_aiming_state(
       udev_input_t *udev, unsigned port, unsigned id )
 {
-#ifdef HAVE_X11
-   struct video_viewport vp;
-#endif
+
    const int edge_detect       = 32700;
    bool inside                 = false;
    int16_t res_x               = 0;
@@ -819,28 +821,11 @@ static int16_t udev_lightgun_aiming_state(
 
    udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
 
-#ifdef HAVE_X11
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
-#endif
-
    if (!mouse)
       return 0;
 
-#ifdef HAVE_X11
-   /* udev->pointer_x and y is only set in X11 */
-   if (!(video_driver_translate_coord_viewport_wrap(
-               &vp, udev->pointer_x, udev->pointer_y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-#else
-   res_x  = udev_mouse_get_pointer_x(mouse, false);
-   res_y  = udev_mouse_get_pointer_y(mouse, false);
-#endif
+   res_x = udev_mouse_get_pointer_x(mouse, false);
+   res_y = udev_mouse_get_pointer_y(mouse, false);
 
    inside =    (res_x >= -edge_detect) 
             && (res_y >= -edge_detect)
@@ -850,11 +835,9 @@ static int16_t udev_lightgun_aiming_state(
    switch ( id )
    {
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         if (inside)
             return res_x;
          break;
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         if (inside)
             return res_y;
          break;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
@@ -1055,8 +1038,14 @@ static int16_t udev_input_state(
                if ( 
                      (binds[port][id].key < RETROK_LAST) && 
                      udev_keyboard_pressed(udev, binds[port][id].key)
-                     && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                        || !keyboard_mapping_blocked)
+                     && ((    id != RARCH_GAME_FOCUS_TOGGLE) 
+                        && !keyboard_mapping_blocked)
+                     )
+                  return 1;
+               else if ( 
+                     (binds[port][id].key < RETROK_LAST) && 
+                     udev_keyboard_pressed(udev, binds[port][id].key)
+                     && (    id == RARCH_GAME_FOCUS_TOGGLE)
                      )
                   return 1;
                else if (udev_mouse_button_pressed(udev, port,
@@ -1227,10 +1216,8 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
-#ifdef DEBUG
-   int device_index                 = 0;
-#endif
-
+   static int device_keyboard                 = 0;
+   static int device_mouse                    = 0;
    if (!enumerate)
       return false;
 
@@ -1253,16 +1240,34 @@ static bool open_devices(udev_input_t *udev,
 
          if (fd != -1)
          {
-            bool check = udev_input_add_device(udev, type, devnode, cb);
-#ifdef DEBUG
-            if (!check)
-               RARCH_ERR("[udev] Failed to open device: %s (%s).\n",
+            int check = udev_input_add_device(udev, type, devnode, cb);
+            if (!check && check != -1 )
+               RARCH_DBG("[udev] udev_input_add_device error : %s (%s).\n",
                      devnode, strerror(errno));
-            else
-               RARCH_LOG("[udev]: %s #%d (%s).\n",
-                     type == UDEV_INPUT_KEYBOARD ? "Keyboard" : "Mouse",
-                     device_index++, devnode);
-#endif
+            else if (check != -1 && check != 0)  
+            {
+               char ident[255];
+               if (ioctl(fd, EVIOCGNAME(sizeof(ident)), ident) < 0)
+                  ident[0] = '\0';
+               if ( type == UDEV_INPUT_KEYBOARD)
+               {
+                  RARCH_LOG("[udev]: Added Device Keyboard#%d %s (%s) .\n",
+                     device_keyboard,
+                     ident,
+                     devnode);
+                   device_keyboard++;
+               }                     
+               else
+               {
+                  RARCH_LOG("[udev]: Added Device mouse#%d %s (%s) .\n",
+                     device_mouse,
+                     ident,
+                     devnode);
+                     device_mouse++;
+               }                     
+                  
+            }
+
             (void)check;
             close(fd);
          }

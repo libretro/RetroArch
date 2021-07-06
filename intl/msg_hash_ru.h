@@ -1406,6 +1406,14 @@ MSG_HASH(
    "Выберите подходящую настройку площадки строчного гасящего импульса для изменения размеров изображения."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Меню высокого разрешения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Переключаться на модлайн высокого разрешения при отсутствии загруженного контента."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Ручная установка частоты обновления"
    )
@@ -1528,6 +1536,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Ручная установка высоты для неоконного полноэкранного режима. Если не задано, будет использоваться разрешение рабочего стола."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Принудительное разрешение на UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Принудительная установка разрешения на весь экран. При значении 0 будет использован режим 3840 x 2160."
    )
 
 /* Settings > Video > Windowed Mode */
@@ -2196,7 +2212,7 @@ MSG_HASH(
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-   "Интенсивность виброотклика (требуется перезапуск)"
+   "Сила виброотдачи (требуется перезапуск)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
@@ -2613,8 +2629,20 @@ MSG_HASH(
    "Аналого-цифровой тип"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Использовать указанный аналоговый стик для d-pad. Если ядро нативно поддерживает аналоговый ввод, привязка к d-pad не будет работать, пока не включена опция '(Принудительно)'. При форсировании привязки к d-pad ядро не будет обрабатывать события ввода от заданного стика."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Индекс устройства"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "Порт привязки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Указывает, какой порт ядра (обычно номер игрока) будет получать события ввода с порта контроллера %u фронтенда."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -2865,7 +2893,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
-   "Перезапускать RetroArch при запуске контента, даже если загружено требуемое ядро. Может повысить стабильность системы, но увеличивает время загрузки."
+   "При запуске контента перезагружать RetroArch, даже если требуемое ядро уже загружено. Может повысить стабильность системы, но увеличивает время загрузки."
    )
 #endif
 MSG_HASH(
@@ -3154,7 +3182,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
-   "Фильтрировать по текущему ядру"
+   "Фильтрация по текущему ядру"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
@@ -3232,7 +3260,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "Объём памяти (в Мб), зарезервированный для буфера обратной перемотки. Повышение значения расширяет историю перемотки."
+   "Объём памяти (в Мб), резервируемый для буфера обратной перемотки. Повышение значения увеличивает историю перемотки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
@@ -3393,20 +3421,28 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
    "Показывать нажатия на оверлее"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Отображать на оверлее нажатия клавиш клавиатуры/контроллера."
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   "Отображать события ввода на экранном оверлее. При значении 'Сенсор' подсвечиваются нажатия на элементы оверлея. При значении 'Контроллер' подсвечиваются фактические нажатия на подключенном геймпаде/клавиатуре."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Показывать порт прослушки ввода"
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "Сенсор"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Выбор порта для отслеживания нажатий, если включено 'Показывать нажатия на оверлее'."
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "Контроллер"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Показывать нажатия с порта"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Укажите порт прослушивания устройства ввода, если для опции 'Показывать нажатия на оверлее' выбрано значение 'Контроллер'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -3561,7 +3597,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "Макеты используются для отображения рамок и иных элементов оформления."
+   "Макеты используются для отображения рамок и прочих элементов оформления."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
@@ -3867,11 +3903,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-   "Внешний вид"
+   "Оформление"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-   "Настройка параметров оформления меню."
+   "Настройка внешнего вида меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
@@ -3903,7 +3939,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Переход к началу/концу при достижении горизонтальной или вертикальной границы списка."
+   "Переходить в начало/конец списка при достижении горизонтальной или вертикальной границ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
@@ -4222,11 +4258,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   "Показывать 'История'"
+   "Показывать 'История запуска'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Показывать вкладку 'История' (требуется перезапуск в Ozone/XMB)."
+   "Показывать вкладку с историей запуска (требуется перезагрузка для Ozone/XMB)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
@@ -4920,13 +4956,21 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    "Автоматически делать снимок экрана при получении достижения."
    )
-MSG_HASH(
+MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
    MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "Начать активный сеанс"
+   "Режим переигровки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
    "Запустить игру со всеми действующими достижениями (включая открытые ранее)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "Индикаторы испытаний"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "Отображать на экране индикатор, когда есть возможность получить достижение."
    )
 
 /* Settings > Network */
@@ -5159,7 +5203,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "История"
+   "История запуска"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -5167,11 +5211,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-   "Размер истории"
+   "Размер истории запуска"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-   "Предельное количество записей для плейлиста истории запуска."
+   "Предельное количество записей для плейлиста истории запуска игр, музыки и видео."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
@@ -5250,6 +5294,14 @@ MSG_HASH(
    "Время запуска:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   "Показывать номер записи в плейлисте"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "Отображать номера записей при просмотре плейлистов. Формат вывода зависит от текущего драйвера меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Метка времени работы в плейлистах"
    )
@@ -5271,7 +5323,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "При поиске в плейлистах записей, связанных с архивами, искать соответствия только по имени файла с архивом вместо [имя файла]+[контент]. Включите, чтобы избежать повторных записей в истории запуска при загрузке сжатых файлов."
+   "При поиске в плейлистах записей, связанных с архивами, искать совпадения только по имени архива вместо [имя файла]+[контент]. Включите, чтобы избежать повторных записей в истории запуска при загрузке сжатых файлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -6084,6 +6136,10 @@ MSG_HASH(
    "Путь к файлу"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "Запись: %lu/%lu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    "Ядро"
    )
@@ -6820,7 +6876,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Простые пресеты"
    )
-   
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Сохранять пресет шейдера со ссылкой на оригинальный пресет и набором параметров, изменённых пользователем."
@@ -6945,10 +7001,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
    "Нет доступных достижений"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
@@ -7476,6 +7528,18 @@ MSG_HASH(
    "Не поддерживается"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
+   "Недавно открытые"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
+   "Почти у цели"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
+   "Активные испытания"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
    "Только трекеры"
    )
@@ -7514,6 +7578,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Правый аналоговый стик"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Левый аналоговый стик (принудительно)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Правый аналоговый стик (принудительно)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -7744,7 +7816,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
-   "Выбор другой цветовой темы. Значение 'Пользовательский' позволяет загружать пресеты оформления меню."
+   "Выбор цветовой темы. Значение 'Пользовательский' позволяет загружать пресеты оформления меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
@@ -8451,7 +8523,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Включить эффекты сглаживания для переходов между уровнями меню."
+   "Включить эффекты сглаживания анимации переходов по уровням меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
@@ -9244,7 +9316,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "История"
+   "История запуска"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
@@ -9668,6 +9740,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Конфигурация"
    )
+MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+   "Загрузки"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
    "Настройки Netplay"
@@ -9760,7 +9836,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
-   "Видеодрайвер системы несовместим с текущим видеодрайвером RetroArch, будет использован драйвер %s. Пожалуйста, перезапустите RetroArch для вступления изменений в силу."
+   "Графический драйвер системы несовместим с текущим видеодрайвером RetroArch. Будет использован драйвер %s. Пожалуйста, перезапустите RetroArch для применения изменений."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
@@ -10108,11 +10184,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "Ошибка сохранения файла автоконфигурации."
+   "Ошибка сохранения профиля контроллера."
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Автоконфигурация успешно сохранена."
+   "Профиль контроллера успешно сохранён."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
@@ -11260,7 +11336,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRUNING_CORE_BACKUP_HISTORY,
-   "Удаление неактуальных копий: "
+   "Удаление устаревших копий: "
    )
 MSG_HASH(
    MSG_CORE_BACKUP_COMPLETE,
@@ -11558,7 +11634,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
-   "Выход и перезапуск RetroArch. Требуется для применения отдельных настроек (например при смене драйвера меню)."
+   "Выход и перезапуск RetroArch. Требуется для применения некоторых настроек (например при смене драйвера меню)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,

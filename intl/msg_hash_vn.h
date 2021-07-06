@@ -985,10 +985,6 @@ MSG_HASH(
    "Mục Cursor"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "Input Autoconfig Danh mục"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Playlists Danh mục"
    )
@@ -1180,7 +1176,7 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
-   
+
 
 
 /* Quick Menu > Shaders > Remove */
@@ -1194,10 +1190,6 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
-   )
 
 /* Quick Menu > Information */
 
@@ -1420,6 +1412,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Config Danh mục"
    )
+MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+   "Mục Downloads"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
    "Netplay thiết lập"
@@ -1525,14 +1521,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_UNMUTED,
    "Âm thanh unmuted."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "Tập tin Autoconfig bị lỗi khi lưu."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Tập tin Autoconfig đã lưu thành công."
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,

@@ -2731,12 +2731,19 @@ QHash<QString, QString> MainWindow::getSelectedCore()
          break;
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
+         QString plName;
          QString defaultCorePath;
 
-         if (contentHash.isEmpty() || contentHash["db_name"].isEmpty())
+         if (contentHash.isEmpty())
             break;
 
-         defaultCorePath = getPlaylistDefaultCore(contentHash["db_name"]);
+         plName = contentHash["pl_name"].isEmpty() ?
+               contentHash["db_name"] : contentHash["pl_name"];
+
+         if (plName.isEmpty())
+            break;
+
+         defaultCorePath = getPlaylistDefaultCore(plName);
 
          if (!defaultCorePath.isEmpty())
             coreHash["core_path"] = defaultCorePath;
@@ -2845,7 +2852,10 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
          break;
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
-         QString defaultCorePath = getPlaylistDefaultCore(contentHash["db_name"]);
+         QString plName = contentHash["pl_name"].isEmpty() ?
+               contentHash["db_name"] : contentHash["pl_name"];
+
+         QString defaultCorePath = getPlaylistDefaultCore(plName);
 
          if (!defaultCorePath.isEmpty())
          {
@@ -3034,7 +3044,8 @@ void MainWindow::setCoreActions()
    switch(m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
-         currentPlaylistFileName = hash["db_name"];
+         currentPlaylistFileName = hash["pl_name"].isEmpty() ?
+               hash["db_name"] : hash["pl_name"];
          break;
       case BROWSER_TYPE_FILES:
          currentPlaylistFileName = m_fileModel->rootDirectory().dirName();

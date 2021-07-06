@@ -491,23 +491,32 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
 
     old_state = trigger->state;
     new_state = rc_evaluate_trigger(trigger, peek, ud, L);
+
+    /* the trigger state doesn't actually change to RESET, RESET just serves as a notification.
+     * handle the notification, then look at the actual state */
+    if (new_state == RC_TRIGGER_STATE_RESET)
+    {
+      runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_RESET;
+      runtime_event.id = self->triggers[i].id;
+      event_handler(&runtime_event);
+
+      new_state = trigger->state;
+    }
+
+    /* if the state hasn't changed, there won't be any events raised */
     if (new_state == old_state)
       continue;
 
+    /* raise an UNPRIMED event when changing from UNPRIMED to anything else */
     if (old_state == RC_TRIGGER_STATE_PRIMED) {
       runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_UNPRIMED;
       runtime_event.id = self->triggers[i].id;
       event_handler(&runtime_event);
     }
 
+    /* raise events for each of the possible new states */
     switch (new_state)
     {
-      case RC_TRIGGER_STATE_RESET:
-        runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_RESET;
-        runtime_event.id = self->triggers[i].id;
-        event_handler(&runtime_event);
-        break;
-
       case RC_TRIGGER_STATE_TRIGGERED:
         runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_TRIGGERED;
         runtime_event.id = self->triggers[i].id;
@@ -527,6 +536,8 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
         break;
 
       case RC_TRIGGER_STATE_ACTIVE:
+        /* only raise ACTIVATED event when transitioning from an inactive state.
+         * note that inactive in this case means active but cannot trigger. */
         if (old_state == RC_TRIGGER_STATE_WAITING || old_state == RC_TRIGGER_STATE_PAUSED) {
           runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_ACTIVATED;
           runtime_event.id = self->triggers[i].id;
@@ -667,32 +678,8 @@ static int rc_trigger_contains_memref(const rc_trigger_t* trigger, const rc_memr
   return 0;
 }
 
-void rc_runtime_invalidate_address(rc_runtime_t* self, unsigned address) {
+static void rc_runtime_invalidate_memref(rc_runtime_t* self, rc_memref_t* memref) {
   unsigned i;
-  rc_memref_t* memref;
-  rc_memref_t** last_memref;
-
-  if (!self->memrefs)
-    return;
-
-  /* remove the invalid memref from the chain so we don't try to evaluate it in the future.
-   * it's still there, so anything referencing it will continue to fetch 0.
-   */
-  last_memref = &self->memrefs;
-  memref = *last_memref;
-  do {
-    if (memref->address == address && !memref->value.is_indirect) {
-      *last_memref = memref->next;
-      break;
-    }
-
-    last_memref = &memref->next;
-    memref = *last_memref;
-  } while (memref);
-
-  /* if the address is only used indirectly, don't disable anything dependent on it */
-  if (!memref)
-    return;
 
   /* disable any achievements dependent on the address */
   for (i = 0; i < self->trigger_count; ++i) {
@@ -722,6 +709,83 @@ void rc_runtime_invalidate_address(rc_runtime_t* self, unsigned address) {
 
         if (rc_value_contains_memref(&lboard->value, memref))
           self->lboards[i].invalid_memref = memref;
+      }
+    }
+  }
+}
+
+void rc_runtime_invalidate_address(rc_runtime_t* self, unsigned address) {
+  rc_memref_t** last_memref = &self->memrefs;
+  rc_memref_t* memref = self->memrefs;
+
+  while (memref) {
+    if (memref->address == address && !memref->value.is_indirect) {
+      /* remove the invalid memref from the chain so we don't try to evaluate it in the future.
+       * it's still there, so anything referencing it will continue to fetch 0.
+       */
+      *last_memref = memref->next;
+
+      rc_runtime_invalidate_memref(self, memref);
+      break;
+    }
+
+    last_memref = &memref->next;
+    memref = *last_memref;
+  }
+}
+
+void rc_runtime_validate_addresses(rc_runtime_t* self, rc_runtime_event_handler_t event_handler, 
+    rc_runtime_validate_address_t validate_handler) {
+  rc_memref_t** last_memref = &self->memrefs;
+  rc_memref_t* memref = self->memrefs;
+  int num_invalid = 0;
+
+  while (memref) {
+    if (!memref->value.is_indirect && !validate_handler(memref->address)) {
+      /* remove the invalid memref from the chain so we don't try to evaluate it in the future.
+       * it's still there, so anything referencing it will continue to fetch 0.
+       */
+      *last_memref = memref->next;
+
+      rc_runtime_invalidate_memref(self, memref);
+      ++num_invalid;
+    }
+    else {
+      last_memref = &memref->next;
+    }
+
+    memref = *last_memref;
+  }
+
+  if (num_invalid) {
+    rc_runtime_event_t runtime_event;
+    int i;
+
+    for (i = self->trigger_count - 1; i >= 0; --i) {
+      rc_trigger_t* trigger = self->triggers[i].trigger;
+      if (trigger && self->triggers[i].invalid_memref) {
+        runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_DISABLED;
+        runtime_event.id = self->triggers[i].id;
+        runtime_event.value = self->triggers[i].invalid_memref->address;
+
+        trigger->state = RC_TRIGGER_STATE_DISABLED;
+        self->triggers[i].invalid_memref = NULL;
+
+        event_handler(&runtime_event);
+      }
+    }
+
+    for (i = self->lboard_count - 1; i >= 0; --i) {
+      rc_lboard_t* lboard = self->lboards[i].lboard;
+      if (lboard && self->lboards[i].invalid_memref) {
+        runtime_event.type = RC_RUNTIME_EVENT_LBOARD_DISABLED;
+        runtime_event.id = self->lboards[i].id;
+        runtime_event.value = self->lboards[i].invalid_memref->address;
+
+        lboard->state = RC_LBOARD_STATE_DISABLED;
+        self->lboards[i].invalid_memref = NULL;
+
+        event_handler(&runtime_event);
       }
     }
   }

@@ -43,13 +43,6 @@
 
 RETRO_BEGIN_DECLS
 
-enum input_device_type
-{
-   INPUT_DEVICE_TYPE_NONE = 0,
-   INPUT_DEVICE_TYPE_KEYBOARD,
-   INPUT_DEVICE_TYPE_JOYPAD
-};
-
 enum input_toggle_type
 {
    INPUT_TOGGLE_NONE = 0,
@@ -117,7 +110,7 @@ struct retro_keybind
 
    uint16_t id;
 
-   uint16_t mbutton;
+   uint16_t mbutton; /* mouse button ID */
 
    /* Joypad key. Joypad POV (hats)
     * are embedded into this key as well. */
@@ -129,6 +122,9 @@ struct retro_keybind
 
    bool valid;
 };
+
+extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 
 struct rarch_joypad_info
 {
@@ -145,24 +141,70 @@ typedef struct
    char joypad_driver[32];
    char name[256];
    char display_name[256];
-   char config_path[PATH_MAX_LENGTH];
-   char config_name[PATH_MAX_LENGTH];
+   char config_path[PATH_MAX_LENGTH]; /* Path to the RetroArch config file */
+   char config_name[PATH_MAX_LENGTH]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
 
+/**
+ * input_driver:
+ * Organizes the functions and data structures of each driver that are accessed
+ * by other parts of the input code. The input_driver structs are the "interface"
+ * between RetroArch and the input driver.
+ * Every driver must establish an input_driver struct with pointers to its own 
+ * implementations of these functions, and each of those input_driver structs is
+ * declared below.
+ */
 struct input_driver
 {
-   /* Inits input driver.
+   /** 
+    * init: Initializes input driver.
+    * 
+    * PARAMETERS
+    * @joypad_driver: Name of the joypad driver associated with the input driver
     */
    void *(*init)(const char *joypad_driver);
 
-   /* Polls input. Called once every frame. */
+  /**
+    * poll: Called once every frame to poll input. This function pointer can be set 
+    * to NULL if not supported by the input driver, for example if a joypad driver
+    * is responsible for polling on a particular driver/platform.
+    *
+    * PARAMETERS
+    * @data:   the input state struct
+    */
    void (*poll)(void *data);
 
-   /* Queries input state for a certain key on a certain player.
-    * Players are 1 - MAX_USERS.
-    * For digital inputs, pressed key is 1, not pressed key is 0.
-    * Analog values have same range as a signed 16-bit integer.
+   /** 
+    * input_state: Queries state for a specified control on a specified input port.
+    * This function pointer can be set to NULL if not supported by the input driver,
+    * for example if a joypad driver is responsible for quering state for a particular
+    * driver/platform.
+    *
+    * PARAMETERS
+    * @joypad_data:      The input state struct, defined by the input driver
+    * @sec_joypad_data:  The input state struct of any secondary input device
+    *                    (e.g. MFi controllers), defined by a secondary input driver.
+    *                    May be NULL. Queried state to be returned is the logical 
+    *                    OR of 'joypad_data' and 'sec_joypad_data'
+    * @joypad_info:      Info struct for the controller to be queried, containing
+    *                    physical (hardware) device index and autoconfig input mapping.
+    * @retro_keybinds:   Data structure for control mappings for all libretro
+    *                    input device abstractions
+    * @keyboard_mapping_blocked: 
+    *                    If true, disregard custom keyboard mapping
+    * @port:             Which RetroArch port is being polled
+    * @device:           Which libretro abstraction is being polled 
+                         (RETRO_DEVICE_ID_RETROPAD, RETRO_DEVICE_ID_MOUSE, etc)
+    * @index:            For controls that support more than one axis or can return 
+    *                    multiple simultaneous inputs, such as an analog joystick
+    *                    or touchpad.
+    * @id:               Which control is being polled (eg RETRO_DEVICE_ID_JOYPAD_START)
+    *
+    * RETURNS
+    * Digital controls:  Returns 1 for a pressed control and 0 otherwise.
+    * Analog controls:   Retruns values in the range of a signed 16-bit integer,
+    *                    [-0x8000, 0x7fff]
     */
    int16_t (*input_state)(void *data,
          const input_device_driver_t *joypad_data,
@@ -172,16 +214,85 @@ struct input_driver
          bool keyboard_mapping_blocked,
          unsigned port, unsigned device, unsigned index, unsigned id);
 
-   /* Frees the input struct. */
+   /**
+    * free: Frees the input struct.
+    * 
+    * PARAMETERS
+    * @data:   The input state struct
+    */
    void (*free)(void *data);
 
+   /**
+    * set_sensor_state: Sets the state related for sensors, such
+    * as polling rate or enabling/disable the sensor entirely, etc.
+    * This function pointer may be set to NULL if setting sensor
+    * values is not supported.
+    * 
+    * PARAMETERS
+    * @data:   The input state struct
+    * @port:   Input port
+    * @effect: Sensor action
+    * @rate:   Sensor rate update
+    * 
+    * RETURNS
+    * Boolean true if the operation is successful. 
+   **/
    bool (*set_sensor_state)(void *data, unsigned port,
          enum retro_sensor_action action, unsigned rate);
+
+   /**
+    * get_sensor_input: Retrieves the sensor state associated with
+    * the provided port and ID. This function pointer may be set to 
+    * NULL if retreiving sensor state is not supported.
+    * 
+    * PARAMETERS
+    * @data:   The input state struct
+    * @port:   Input port
+    * @id:     Sensor ID
+    * 
+    * RETURNS
+    * The current state associated with the port and ID as a float.
+   **/
    float (*get_sensor_input)(void *data, unsigned port, unsigned id);
+
+   /**
+    * get_capabilities: The means for an input driver to indicate to RetroArch
+    *                   which libretro input abstractions the driver supports
+    * PARAMETERS
+    * @data:  The input state struct
+    * 
+    * RETURNS
+    * a unit64_t composed via bitwise operators
+    */
    uint64_t (*get_capabilities)(void *data);
+
+   /**
+    * ident: The human-readable name of the input driver
+    */
    const char *ident;
 
+   /**
+    * grab_mouse: Grab or ungrab the mouse according to the value of `state`.
+    * This function pointer can be set to NULL if the driver does not support
+    * grabbing the mouse.
+    * 
+    * PARAMETERS
+    * @data:  The input state struct
+    * @state: True to grab the mouse, false to ungrab
+    */
    void (*grab_mouse)(void *data, bool state);
+
+   /**
+    * grab_stdin: Check to see if the input driver has claimed stdin, and
+    * therefore it is not available for other input. This function pointer
+    * can be set to NULL if the driver does not support claiming stdin.
+    * 
+    * PARAMETERS
+    * @data:  The input state struct
+    * 
+    * RETURNS
+    * True if the input driver has claimed stdin. This function pointer 
+    */
    bool (*grab_stdin)(void *data);
 };
 
@@ -413,9 +524,6 @@ struct input_keyboard_ctx_wait
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
-extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
-extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
-
 const char *input_config_bind_map_get_base(unsigned i);
 
 unsigned input_config_bind_map_get_meta(unsigned i);
@@ -433,7 +541,7 @@ void input_config_get_bind_string(char *buf,
  * input_config_translate_str_to_rk:
  * @str                            : String to translate to key ID.
  *
- * Translates tring representation to key identifier.
+ * Translates string representation to key identifier.
  *
  * Returns: key identifier.
  **/

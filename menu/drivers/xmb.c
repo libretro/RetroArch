@@ -325,6 +325,9 @@ typedef struct xmb_handle
    size_t selection_ptr_old;
    size_t fullscreen_thumbnail_selection;
 
+   /* size of the current list */
+   size_t list_size;
+
    int depth;
    int old_depth;
    int icon_size;
@@ -373,6 +376,10 @@ typedef struct xmb_handle
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
 
    char title_name[255];
+
+   /* Cached texts showing current entry index / current list size */
+   char entry_index_str[32];
+
    /* These have to be huge, because global->name.savestate
     * has a hard-coded size of 8192...
     * (the extra space here is required to silence compiler
@@ -388,10 +395,17 @@ typedef struct xmb_handle
    bool use_ps3_layout;
    bool last_use_ps3_layout;
    bool assets_missing;
+
+   /* Favorites, History, Images, Music, Videos, user generated */
    bool is_playlist;
    bool is_db_manager_list;
+
+   /* Load Content file browser */
    bool is_file_list;
    bool is_quick_menu;
+
+   /* Whether to show entry index for current list */
+   bool entry_idx_enabled;
 } xmb_handle_t;
 
 static float xmb_scale_mod[8] = {
@@ -1066,6 +1080,60 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
+static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
+{
+   char path[PATH_MAX_LENGTH];
+   char       *tmp                    = string_replace_substring(xmb->title_name, "/", " ");
+   settings_t *settings               = config_get_ptr();
+   const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
+
+   path[0]          = '\0';
+
+   if (tmp)
+   {
+      fill_pathname_join_noext(
+            path,
+            dir_dynamic_wallpapers,
+            tmp,
+            sizeof(path));
+      free(tmp);
+   }
+
+   strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
+
+   if (!path_is_valid(path))
+      fill_pathname_application_special(path, sizeof(path),
+            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+
+   return strdup(path);
+}
+
+static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb)
+{
+   char *path;
+   settings_t *settings               = config_get_ptr();
+
+   if (!settings->bools.menu_dynamic_wallpaper_enable)
+      return;
+
+   path = xmb_path_dynamic_wallpaper(xmb);
+   if (!string_is_equal(path, xmb->bg_file_path))
+   {
+      if (path_is_valid(path))
+      {
+         task_push_image_load(path,
+               video_driver_supports_rgba(), 0,
+               menu_display_handle_wallpaper_upload, NULL);
+         if (!string_is_empty(xmb->bg_file_path))
+            free(xmb->bg_file_path);
+         xmb->bg_file_path = strdup(path);
+      }
+   }
+
+   free(path);
+   path = NULL;
+}
+
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings = config_get_ptr();
@@ -1398,6 +1466,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    }
 }
 
+/* Is called when the pointer position changes within a list/sub-list (vertically) */
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
@@ -1439,8 +1508,17 @@ static void xmb_selection_pointer_changed(
          unsigned     depth      = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
          unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
 
+         /* Update entry index text */
+         if (xmb->entry_idx_enabled)
+         {
+            snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
+                     "%lu/%lu", (unsigned long)selection + 1,
+                                (unsigned long)xmb->list_size);
+         }
+
          ia                      = xmb->items_active_alpha;
          iz                      = xmb->items_active_zoom;
+
          if (
                gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) || 
                gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
@@ -1813,46 +1891,6 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 {
    unsigned i, first, last, height;
    size_t end                         = 0;
-   settings_t *settings               = config_get_ptr();
-   bool menu_dynamic_wallpaper_enable = settings->bools.menu_dynamic_wallpaper_enable;
-   const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
-
-   if (menu_dynamic_wallpaper_enable)
-   {
-      char path[PATH_MAX_LENGTH];
-      char       *tmp  = string_replace_substring(xmb->title_name, "/", " ");
-
-      path[0]          = '\0';
-
-      if (tmp)
-      {
-         fill_pathname_join_noext(
-               path,
-               dir_dynamic_wallpapers,
-               tmp,
-               sizeof(path));
-         free(tmp);
-      }
-
-      strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
-
-      if (!path_is_valid(path))
-         fill_pathname_application_special(path, sizeof(path),
-               APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
-
-      if (!string_is_equal(path, xmb->bg_file_path))
-      {
-         if (path_is_valid(path))
-         {
-            task_push_image_load(path,
-                  video_driver_supports_rgba(), 0,
-                  menu_display_handle_wallpaper_upload, NULL);
-            if (!string_is_empty(xmb->bg_file_path))
-               free(xmb->bg_file_path);
-            xmb->bg_file_path = strdup(path);
-         }
-      }
-   }
 
    end   = list ? list->size : 0;
 
@@ -2394,11 +2432,15 @@ static void xmb_list_open(xmb_handle_t *xmb)
    xmb->old_depth = xmb->depth;
 }
 
+/* Is called whenever the list/sub-list changes */
 static void xmb_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   xmb_handle_t *xmb    = (xmb_handle_t*)data;
+   settings_t *settings = config_get_ptr();
+   bool show_entry_idx  = settings ? settings->bools.playlist_show_entry_idx : false;
+   unsigned    depth    = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
    unsigned xmb_system_tab;
 
    if (!xmb)
@@ -2407,15 +2449,23 @@ static void xmb_populate_entries(void *data,
    /* Determine whether this is a playlist */
    xmb_system_tab   = xmb_get_system_tab(xmb,
          (unsigned)xmb->categories_selection_ptr);
-   xmb->is_playlist = (xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES) ||
-                      (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY) ||
+   xmb->is_playlist = (depth == 1
+                      && ((xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES)
+                      || (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY)
 #ifdef HAVE_IMAGEVIEWER
-                      (xmb_system_tab == XMB_SYSTEM_TAB_IMAGES) ||
+                      || (xmb_system_tab == XMB_SYSTEM_TAB_IMAGES)
 #endif
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) ||
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
-                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST));
+                      || (xmb_system_tab == XMB_SYSTEM_TAB_MUSIC)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+                      || (xmb_system_tab == XMB_SYSTEM_TAB_VIDEO)
+#endif
+                      ))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
+                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
    xmb->is_playlist = xmb->is_playlist && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL));
 
    /* Determine whether this is a database manager list */
@@ -2434,6 +2484,7 @@ static void xmb_populate_entries(void *data,
                         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS));
 
    xmb_set_title(xmb);
+   xmb_update_dynamic_wallpaper(xmb);
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
@@ -2446,6 +2497,18 @@ static void xmb_populate_entries(void *data,
       xmb_list_switch(xmb);
    else
       xmb_list_open(xmb);
+
+   /* Determine whether to show entry index */
+   xmb->entry_idx_enabled = show_entry_idx && xmb->is_playlist;
+
+   /* Update list size & entry index texts */
+   if (xmb->entry_idx_enabled)
+   {
+      xmb->list_size = menu_entries_get_size();
+      snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
+      "%lu/%lu", (unsigned long)menu_navigation_get_selection() + 1,
+                 (unsigned long)xmb->list_size);
+   }
 
    /* By default, fullscreen thumbnails are only
     * enabled on playlists, database manager
@@ -2898,6 +2961,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_ROOM_RELAY];
 #endif
       case MENU_SETTINGS_INPUT_LIBRETRO_DEVICE:
+      case MENU_SETTINGS_INPUT_INPUT_REMAP_PORT:
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE:
          return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
@@ -2963,17 +3027,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          {
             /* Quickmenu controls repeats the same icons for all users */
             if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
-            {
                input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
-               while (type > (input_id + 23))
-                  input_id = (input_id + 24);
-            }
             else
-            {
                input_id = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
-               while (type > (input_id + 15))
-                  input_id = (input_id + 16);
-            }
+            while (type > (input_id + 23))
+               input_id = (input_id + 24);
 
             /* Human readable bind order */
             if (type < (input_id + RARCH_ANALOG_BIND_LIST_END))
@@ -3384,6 +3442,30 @@ static int xmb_draw_item(
                      width, height, xmb->font2);
          }
       }
+   }
+
+   /* Draw entry index of current selection */
+   if (i == current && xmb->entry_idx_enabled)
+   {
+      /* Calculate position depending on the current
+       * list and if Thumbnail Vertical Disposition
+       * is enabled (branchless version) */
+      float x_position         = (video_width - xmb->margins_title_left/4) *
+                                       !menu_xmb_vertical_thumbnails +
+                                 (node->x + xmb->margins_screen_left +
+                                 xmb->icon_spacing_horizontal -
+                                 xmb->margins_label_left) *
+                                       menu_xmb_vertical_thumbnails;
+      float y_position         = (video_height - xmb->margins_title_bottom/4) *
+                                       !menu_xmb_vertical_thumbnails +
+                                 (xmb->margins_screen_top + xmb->margins_label_top +
+                                 xmb->icon_spacing_vertical * xmb->active_item_factor) *
+                                       menu_xmb_vertical_thumbnails;
+
+      xmb_draw_text(xmb_shadows_enable, xmb, settings,
+            xmb->entry_index_str, x_position, y_position,
+            1, menu_xmb_vertical_thumbnails ? node->label_alpha : 1,
+            TEXT_ALIGN_RIGHT, width, height, xmb->font);
    }
 
    xmb_draw_text(xmb_shadows_enable, xmb, settings, tmp,
@@ -5075,7 +5157,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          size_t x_pos      = xmb->icon_size / 6;
          size_t x_pos_icon = xmb->margins_title_left;
 
-         if (xmb_coord_white[3] != 0 &&  !xmb->assets_missing)
+         if (!xmb->assets_missing)
          {
             if (dispctx && dispctx->blend_begin)
                dispctx->blend_begin(userdata);
@@ -5126,7 +5208,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       char timedate[255];
       int x_pos = 0;
 
-      if (xmb_coord_white[3] != 0 && !xmb->assets_missing)
+      if (!xmb->assets_missing)
       {
          int x_pos = 0;
 
@@ -5180,7 +5262,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    gfx_display_set_alpha(item_color,
          MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
-   if (xmb_coord_white[3] != 0 && !xmb->assets_missing)
+   if (!xmb->assets_missing)
    {
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
@@ -6256,12 +6338,26 @@ error:
    RARCH_WARN("[XMB] Critical asset missing, no icons will be drawn\n");
 }
 
-static void xmb_context_reset_background(const char *iconpath)
+static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath)
 {
+   char path[PATH_MAX_LENGTH];
    settings_t *settings        = config_get_ptr();
    const char *path_menu_wp    = settings->paths.path_menu_wallpaper;
 
-   if (!string_is_empty(path_menu_wp))
+   path[0] = '\0';
+
+   /* Dynamic wallpaper takes precedence as reset background,
+    * then comes 'menu_wallpaper', and then iconset 'bg.png' */
+   if (settings->bools.menu_dynamic_wallpaper_enable)
+      strlcpy(path, xmb_path_dynamic_wallpaper(xmb), sizeof(path));
+
+   if (!string_is_empty(path) && path_is_valid(path))
+   {
+      task_push_image_load(path,
+            video_driver_supports_rgba(), 0,
+            menu_display_handle_wallpaper_upload, NULL);
+   }
+   else if (!string_is_empty(path_menu_wp))
    {
       if (path_is_valid(path_menu_wp))
          task_push_image_load(path_menu_wp,
@@ -6270,11 +6366,9 @@ static void xmb_context_reset_background(const char *iconpath)
    }
    else if (!string_is_empty(iconpath))
    {
-      char path[PATH_MAX_LENGTH];
-      path[0] = '\0';
-
       fill_pathname_join(path, iconpath,
             FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
+
       if (path_is_valid(path))
          task_push_image_load(path,
                video_driver_supports_rgba(), 0,
@@ -6345,7 +6439,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    if (reinit_textures)
    {
       xmb_context_reset_textures(xmb, iconpath);
-      xmb_context_reset_background(iconpath);
+      xmb_context_reset_background(xmb, iconpath);
    }
 
    xmb_context_reset_horizontal_list(xmb);

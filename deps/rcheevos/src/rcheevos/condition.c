@@ -239,10 +239,18 @@ int rc_evaluate_condition_value(rc_condition_t* self, rc_eval_state_t* eval_stat
 
   switch (self->oper) {
     case RC_OPERATOR_MULT:
-      if (self->operand2.type == RC_OPERAND_FP)
+      if (self->operand2.type == RC_OPERAND_FP) {
         value = (int)((double)value * self->operand2.value.dbl);
-      else
+      }
+      else {
+        /* the c standard for unsigned multiplication is well defined as non-overflowing truncation
+         * to the type's size. this allows negative multiplication through twos-complements. i.e.
+         *   1 * -1 (0xFFFFFFFF) = 0xFFFFFFFF = -1
+         *   3 * -2 (0xFFFFFFFE) = 0x2FFFFFFFA & 0xFFFFFFFF = 0xFFFFFFFA = -6
+         *  10 * -5 (0xFFFFFFFB) = 0x9FFFFFFCE & 0xFFFFFFFF = 0xFFFFFFCE = -50
+         */
         value *= rc_evaluate_operand(&self->operand2, eval_state);
+      }
       break;
 
     case RC_OPERATOR_DIV:

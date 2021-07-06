@@ -328,6 +328,11 @@ static int action_get_title_dropdown_item(
                       (enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST))
                      enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX;
 
+                  /* Mapped Port (virtual -> 'physical' port mapping) */
+                  if ((enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT) &&
+                      (enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
+                     enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT;
+
                   {
                      const char *title = msg_hash_to_str(enum_idx);
 
@@ -561,7 +566,6 @@ DEFAULT_TITLE_MACRO(action_get_online_updater_list,             MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_netplay_list,                    MENU_ENUM_LABEL_VALUE_NETPLAY)
 DEFAULT_TITLE_MACRO(action_get_online_thumbnails_updater_list,  MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_online_pl_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST)
-DEFAULT_TITLE_MACRO(action_get_core_manager_list,               MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
 DEFAULT_TITLE_MACRO(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
 DEFAULT_TITLE_MACRO(action_get_core_options_list,               MENU_ENUM_LABEL_VALUE_CORE_OPTIONS)
@@ -744,6 +748,7 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_images_list,    MENU
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_music_list,     MENU_ENUM_LABEL_VALUE_GOTO_MUSIC)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_video_list,     MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_manager_list,             MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
 
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_video_shader_preset,    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load,        MENU_ENUM_LABEL_VALUE_CHEAT_FILE)

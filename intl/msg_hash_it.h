@@ -1382,8 +1382,16 @@ MSG_HASH(
    "Scorri queste opzioni per regolare le impostazioni del portico per cambiare la dimensione dell'immagine."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Usa menu ad alta risoluzione"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Passa alla modalità ad alta risoluzione per l'uso con menu ad alta risoluzione quando non viene caricato alcun contenuto."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Utilizza la frequenza di aggiornamento personalizzata"
+   "Frequenza d'aggiornamento personalizzato"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -1496,6 +1504,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Imposta la dimensione personalizzata dell'altezza per la modalità a schermo intero senza finestra. Lasciandolo a 0 utilizzerà la risoluzione del desktop"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "Forza risoluzione su UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Forza la risoluzione alla dimensione dello schermo intero, se impostata a 0, verrà utilizzato un valore fisso di 3840 x 2160."
    )
 
 /* Settings > Video > Windowed Mode */
@@ -2267,7 +2283,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Schermo intero (Attiva / Disattiva)"
+   "Schermo Intero (Attiva / Disattiva)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -2547,11 +2563,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
-   "Anticipazione predittiva (Abilita)"
+   "Run-Ahead (Attiva / Disattiva)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
-   "Attiva/disattiva Anticipazione predittiva."
+   "Attiva o disattiva la funzione di Run-Ahead."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -2573,8 +2589,20 @@ MSG_HASH(
    "Da analogico a digitale"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Usa il supporto analogico specificato per l'input D-Pad. Se il core ha il supporto analogico nativo, la mappatura D-Pad sarà disabilitata a meno che non sia selezionata un'opzione '(forzato)'. Se la mappatura dei D-Pad è forzata, il core non riceverà alcun input analogico da un bastone specificato."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Indice del dispositivo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "Porta Mappata"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Specifica quale porta 'core' (tipicamente numero di giocatore) riceverà input dalla porta del controller frontend %u."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -2737,7 +2765,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Anticipazione per Ridurre la Latenza"
+   "Run-Ahead - Riduzione della Latenza"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
@@ -2745,7 +2773,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
-   "Numero di Fotogrammi da Anticipare"
+   "Run-Ahead - Numero di Frame da Anticipare"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
@@ -2753,7 +2781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usa una Seconda Istanza per l'Anticipazione"
+   "Run-Ahead - Usa una Seconda Istanza"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -3349,20 +3377,28 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Visualizza Input sulle coperture"
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "Mostra gli input in sovrapposizione"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-   "Mostra gli input della tastiera/controller sulla copertura tramite lo schermo."
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   "Mostra gli input registrati nella sovrapposizione sullo schermo. 'Toccato' evidenzia gli elementi di sovrapposizione che vengono premuti/cliccati. 'Physical (Controller)' evidenzia l'ingresso effettivo passato ai core, tipicamente da un controller/tastiera collegata."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Visualizza Porta ascoltata d'input"
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "Toccato"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Selezionare la porta per la sovrapposizione da ascoltare se 'Mostra input in sovrapposizione' è abilitato."
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "Fisico (Controller)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Mostra Input Dalla Porta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   "Selezionare la porta del dispositivo di input da monitorare quando 'Mostra input in sovrapposizione' è impostato su 'Physical (Controller)'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -4508,11 +4544,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
-   "Mostra 'Nucleo'"
+   "Mostra 'Core'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
-   "Mostra le impostazioni 'Nucleo'."
+   "Mostra le impostazioni 'Core'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
@@ -4636,7 +4672,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
-   "Mostra Cartelle"
+   "Mostra 'Cartella'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
@@ -4734,7 +4770,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME What does the Narrator mode do? */
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Mostra la traduzione come una sovrapposizione di testo (modalità immagine), o giocare come Text-To-Speech (modalità pech)."
+   "Mostra la traduzione come una sovrapposizione di testo (modalità immagine), o gioca come sintesi vocale (modalità vocale)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -4750,15 +4786,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
-   "Abilita il Servizio IA per eseguirlo quando si preme il tasto di scelta rapida Servizio IA."
+   "Abilita il Servizio IA per eseguirlo quando si preme il tasto scorciatoia del Servizio IA."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
-   "Pausa Durante La Traduzione"
+   "Pausa durante la traduzione"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
-   "Metti in pausa il nucleo mentre lo schermo viene tradotto."
+   "Metti in pausa il core mentre lo schermo viene tradotto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
@@ -4785,15 +4821,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
-   "Abilita la pronuncia per aiutare nella navigazione del menu."
+   "Abilita la sintesi vocale per aiutare nella navigazione del menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-   "Velocità del sintetizzatore vocale"
+   "Velocità della sintesi vocale"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-   "La velocità per la voce del sintetizzatore vocale."
+   "La velocità per la voce della sintesi vocale."
    )
 
 /* Settings > Power Management */
@@ -4814,7 +4850,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Raddoppia la quantità di punti guadagnati. Disabilita lo stato di salvataggio, i tradimenti, il riavvolgimento, la pausa e il rallentamento per tutti i giochi. Attivando questa impostazione all'esecuzione si riavvierà la partita."
+   "Raddoppia la quantità di punti guadagnati. Disabilita gli stati di salvataggio, i trucchi, il riavvolgimento, la pausa e il rallentamento per tutti i giochi. Attivando questa impostazione all'esecuzione si riavvierà la partita."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -4850,7 +4886,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Emette un suono quando un'obiettivo è sbloccato."
+   "Emette un suono quando un trofeo è sbloccato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -4869,12 +4905,16 @@ MSG_HASH(
    "Fai automaticamente uno screenshot quando viene ottenuto un trofeo."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "Attiva all'Avvio"
+   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
+   "Inizia la sessione con tutti i trofei attivi (anche quelli precedentemente sbloccati)."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   "Inizia la sessione con tutti gli obiettivi attivi (anche quelli precedentemente sbloccati)."
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "Indicatori di sfida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "Consente di visualizzare un indicatore sullo schermo mentre il trofeo può essere ottenuto."
    )
 
 /* Settings > Network */
@@ -4897,7 +4937,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Posizione Del Server Relè"
+   "Posizione del Server Relè"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
@@ -5194,6 +5234,14 @@ MSG_HASH(
    "Ultima Riproduzione:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   "Mostra l'Indice Voce della scaletta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "Mostra i numeri di voci quando si visualizzano le scalette. Il formato di visualizzazione dipende dal driver di menu attualmente selezionato."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Durata delle sotto-etichetta della scaletta"
    )
@@ -5313,7 +5361,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   "Inserisci il tuo nome utente qui. Questo sarà utilizzato per le sessioni netplay e per altre cose."
+   "Inserisci il tuo nome utente qui. Verrà utilizzato per le sessioni netplay e per altre cose."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
@@ -5562,7 +5610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "Configurazione automatica dei comandi"
+   "Profili del controller"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
@@ -6015,6 +6063,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
    "Percorso File"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "Voce: %lu/%lu"
+   )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
    "Tempo di Gioco"
@@ -6412,7 +6464,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
-   "Maggiore di o uguale a prima"
+   "Maggiore o uguale a prima"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
@@ -6420,7 +6472,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
-   "Uguale a Prima"
+   "Uguale a prima"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
@@ -6436,7 +6488,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
-   "Premere sinistra o destra per modificare il valore."
+   "Premi sinistra o destra per modificare il valore."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
@@ -6448,7 +6500,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
-   "Premere sinistra o destra per modificare il valore."
+   "Premi sinistra o destra per modificare il valore."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
@@ -6628,7 +6680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
-   "Aggiungere Immagine disco"
+   "Inserire disco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
@@ -6636,7 +6688,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-   "Carica Nuovo Disco"
+   "Carica nuovo disco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
@@ -6659,7 +6711,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-   "Shaders video"
+   "Shader video"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
@@ -6740,7 +6792,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Preimpostazioni Semplici"
    )
-   
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Salva una preimpostazione shader che ha un collegamento alla preimpostazione originale caricata e include solo le modifiche apportate ai parametri."
@@ -6865,10 +6917,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
    "Nessun achievements da visualizzare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
@@ -7372,6 +7420,18 @@ MSG_HASH(
    "Non Supportato"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
+   "Sbloccato Di Recente"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
+   "Ci siamo quasi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
+   "Sfide Attive"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
    "Solo Tracker"
    )
@@ -7410,6 +7470,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Analogico Destro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Analogico Sinistro (forzato)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Analogico Destro (forzato)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -9468,6 +9536,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
    "Configurazione"
    )
+MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
+   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
+   "Scaricati"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
    "Impostazioni Netplay"
@@ -9908,11 +9980,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "Errore durante il salvataggio del file autoconf."
+   "Errore nel salvataggio del profilo del controller."
    )
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-   "Il file di autoconfigurazione è stato salvato correttamente."
+   "Profilo controller salvato con successo."
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
@@ -10820,31 +10892,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
-   "Anticipazione predittiva abilitata. Fotogrammi di latenza eliminati: %u."
+   "Funzione di Run-Ahead attivata. Frame di latenza eliminati: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
-   "Anticipazione predittiva abilitata con una Instanza Secondaria. Fotogrammi di latenza elimitati: %u."
+   "Funzione di Run-Ahead attivata con una Seconda Istanza. Frame di latenza elimitati: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
-   "Anticipazione predittiva disattivata."
+   "Funzione di Run-Ahead disattivata."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "L'Anticipazione è stata disattivata perché il core non supporta le istantanee."
+   "La funzione di Run-Ahead è stata disattivata perché questo core non supporta le Istantanee."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Impossibile salvare lo stato. Esecuzione anticipata è stata disabilitata."
+   "Impossibile salvare l'Istantanea. La funzione di Run-Ahead è stata disabilitata."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Impossibile caricare lo stato. L'esecuzione anticipata è stata disabilitata."
+   "Impossibile caricare l'Istantanea. La funzione di Run-Ahead è stata disabilitata."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Creazione della seconda istanza non riuscita. L'esecuzione anticipata ora userà solo un'istanza."
+   "Impossibile creare una Seconda Istanza. La funzione di Run-Ahead ora utilizzerà una sola Istanza."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

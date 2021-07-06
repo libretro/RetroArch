@@ -48,9 +48,33 @@ bool input_remapping_save_file(const char *path);
 bool input_remapping_remove_file(const char *path,
       const char *dir_input_remapping);
 
-void input_remapping_deinit(void);
+/* Caches any global configuration settings that
+ * should not be overwritten by input remap
+ * changes made while content is running.
+ * Must be called on each core init. */
+void input_remapping_cache_global_config(void);
+/* Sets flags to enable the restoration of
+ * global configuration settings from the
+ * internal cache. Should be called independently
+ * from 'input_remapping_cache_global_config()'.
+ * Must be called:
+ * - Whenever content is loaded
+ * - Whenever a remap file is loaded */
+void input_remapping_enable_global_config_restore(void);
+/* Restores any cached global configuration settings
+ * *if* 'input_remapping_enable_global_config_restore()'
+ * has been called.
+ * Must be called on core deint.
+ * If 'clear_cache' is true, function becomes a NOOP
+ * until the next time input_remapping_cache_global_config()
+ * and input_remapping_enable_global_config_restore()
+ * are called. */
+void input_remapping_restore_global_config(bool clear_cache);
 
-void input_remapping_set_defaults(void);
+void input_remapping_update_port_map(void);
+
+void input_remapping_deinit(void);
+void input_remapping_set_defaults(bool clear_cache);
 
 RETRO_END_DECLS
 

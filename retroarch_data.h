@@ -1702,10 +1702,10 @@ struct runloop
    bool autosave;
 #ifdef HAVE_CONFIGFILE
    bool overrides_active;
+#endif
    bool remaps_core_active;
    bool remaps_game_active;
    bool remaps_content_dir_active;
-#endif
 #ifdef HAVE_SCREENSHOTS
    bool max_frames_screenshot;
    char max_frames_screenshot_path[PATH_MAX_LENGTH];
@@ -2287,6 +2287,7 @@ struct rarch_state
    bool input_driver_block_libretro_input;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
+   bool input_driver_analog_requested[MAX_USERS];
 
    input_game_focus_state_t game_focus_state; /* bool alignment */
 
