@@ -1676,7 +1676,7 @@
 					"-DIOS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES3",
+					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
