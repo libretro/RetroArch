@@ -55,6 +55,7 @@ enum aspect_ratio
    ASPECT_RATIO_SQUARE,
    ASPECT_RATIO_CORE,
    ASPECT_RATIO_CUSTOM,
+   ASPECT_RATIO_FULL,
 
    ASPECT_RATIO_END
 };
@@ -116,7 +117,7 @@ enum text_alignment
 #define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
 #endif
 
-#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
+#define LAST_ASPECT_RATIO ASPECT_RATIO_FULL
 
 /* ABGR color format defines */
 
