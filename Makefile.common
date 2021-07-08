@@ -829,7 +829,9 @@ ifeq ($(HAVE_ALSA), 1)
 
    ifneq ($(HAVE_HAKCHI), 1)
       ifneq ($(HAVE_SEGAM), 1)
-         OBJ += midi/drivers/alsa_midi.o
+         ifneq ($(DINGUX), 1)
+            OBJ += midi/drivers/alsa_midi.o
+         endif
       endif
    endif
 
