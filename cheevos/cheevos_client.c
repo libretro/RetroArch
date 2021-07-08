@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2021-2021 - Brian Weiss
+ *  Copyright (C) 2019-2021 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -371,9 +371,9 @@ static void rcheevos_async_http_task_callback(
       /* Call appropriate handler to process the response */
       if (request->handler)
       {
-         /* NOTE: data->data is not null-terminated. Assume response is
-          * properly formatted or will encounter a parse failure before
-          * reading past the end of the data */
+         /* NOTE: data->data is not null-terminated. Most handlers assume the
+          * response is properly formatted or will encounter a parse failure
+          * before reading past the end of the data */
          request->handler(request->id, data, buffer, sizeof(buffer));
       }
    }
@@ -422,12 +422,12 @@ static void rcheevos_async_begin_request(rcheevos_async_io_request* request,
       rcheevos_async_handler handler, char type, int id,
       const char* success_message, const char* failure_message)
 {
-   request->type = type;
-   request->handler = handler;
-   request->id = id;
+   request->handler         = handler;
+   request->type            = type;
+   request->id              = id;
    request->success_message = success_message;
    request->failure_message = failure_message;
-   request->attempt_count = 0;
+   request->attempt_count   = 0;
 
    if (!request->user_agent)
       request->user_agent = get_rcheevos_locals()->user_agent_core;
@@ -501,13 +501,13 @@ static retro_time_t rcheevos_client_prepare_ping(rcheevos_async_io_request* requ
 {
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    const settings_t *settings = config_get_ptr();
-   rc_api_ping_request_t api_params;
-   char buffer[256] = "";
    const bool cheevos_richpresence_enable = 
          settings->bools.cheevos_richpresence_enable;
+   rc_api_ping_request_t api_params;
+   char buffer[256] = "";
 
    memset(&api_params, 0, sizeof(api_params));
-   api_params.username  = settings->arrays.cheevos_username;
+   api_params.username  = rcheevos_locals->username;
    api_params.api_token = rcheevos_locals->token;
    api_params.game_id   = request->id;
 
@@ -575,11 +575,10 @@ void rcheevos_client_award_achievement(unsigned achievement_id)
    else 
    {
       const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-      const settings_t *settings = config_get_ptr();
       rc_api_award_achievement_request_t api_params;
 
       memset(&api_params, 0, sizeof(api_params));
-      api_params.username       = settings->arrays.cheevos_username;
+      api_params.username       = rcheevos_locals->username;
       api_params.api_token      = rcheevos_locals->token;
       api_params.achievement_id = achievement_id;
       api_params.hardcore       = rcheevos_locals->hardcore_active ? 1 : 0;
@@ -627,11 +626,10 @@ void rcheevos_client_submit_lboard_entry(unsigned leaderboard_id, int value)
    else 
    {
       const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-      const settings_t *settings = config_get_ptr();
       rc_api_submit_lboard_entry_request_t api_params;
 
       memset(&api_params, 0, sizeof(api_params));
-      api_params.username       = settings->arrays.cheevos_username;
+      api_params.username       = rcheevos_locals->username;
       api_params.api_token      = rcheevos_locals->token;
       api_params.leaderboard_id = leaderboard_id;
       api_params.score          = value;

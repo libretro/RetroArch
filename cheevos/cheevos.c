@@ -98,7 +98,8 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* task_lock */
    CMD_EVENT_NONE, /* queued_command */
 #endif
-   {0},  /* token */
+   "",   /* username */
+   "",   /* token */
    "N/A",/* hash */
    "",   /* user_agent_prefix */
    "",   /* user_agent_core */
@@ -1532,7 +1533,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 
       CORO_GOSUB(RCHEEVOS_LOGIN);
 
-      ret = rc_url_get_patch(coro->url, sizeof(coro->url), coro->settings->arrays.cheevos_username, rcheevos_locals.token, coro->gameid);
+      ret = rc_url_get_patch(coro->url, sizeof(coro->url), rcheevos_locals.username, rcheevos_locals.token, coro->gameid);
 
       if (ret < 0)
       {
@@ -1750,7 +1751,9 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          CORO_STOP();
       }
 
-      ret = rcheevos_get_token(coro->json, tok, sizeof(tok));
+      ret = rcheevos_get_token(coro->json,
+            rcheevos_locals.username, sizeof(rcheevos_locals.username),
+            tok, sizeof(tok));
 
       if (ret != 0)
       {
@@ -1773,12 +1776,12 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          char msg[256];
          snprintf(msg, sizeof(msg),
                "RetroAchievements: Logged in as \"%s\".",
-               coro->settings->arrays.cheevos_username);
+               rcheevos_locals.username);
          msg[sizeof(msg) - 1] = 0;
          runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
-      CHEEVOS_LOG(RCHEEVOS_TAG "logged in successfully\n");
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s logged in successfully\n", rcheevos_locals.username);
       strlcpy(rcheevos_locals.token, tok,
             sizeof(rcheevos_locals.token));
 
@@ -1906,7 +1909,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          for (coro->i = 0; coro->i < 2; coro->i++)
          {
             ret = rc_url_get_unlock_list(coro->url, sizeof(coro->url),
-                  coro->settings->arrays.cheevos_username,
+                  rcheevos_locals.username,
                   rcheevos_locals.token, coro->gameid, coro->i);
 
             if (ret < 0)
@@ -1941,7 +1944,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
 
       {
          int ret = rc_url_post_playing(coro->url, sizeof(coro->url),
-            coro->settings->arrays.cheevos_username,
+            rcheevos_locals.username,
             rcheevos_locals.token, coro->gameid);
 
          if (ret < 0)

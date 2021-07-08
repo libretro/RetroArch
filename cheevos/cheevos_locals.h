@@ -133,6 +133,7 @@ typedef struct rcheevos_locals_t
    enum event_command queued_command; /* action queued by background thread to be run on main thread */
 #endif
 
+   char username[32];                 /* case-corrected username */
    char token[32];                    /* user's session token */
    char hash[33];                     /* retroachievements hash for current content */
    char user_agent_prefix[128];       /* RetroArch/OS version information */
