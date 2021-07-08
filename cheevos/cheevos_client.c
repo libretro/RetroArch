@@ -261,63 +261,46 @@ static void rcheevos_log_post_url(const char* url, const char* post)
  * dispatch                 *
  ****************************/
 
-static void rcheevos_async_dispatch_scheduled_request(retro_task_t* task)
+static void rcheevos_async_retry_request(retro_task_t* task)
 {
    rcheevos_async_io_request* request = (rcheevos_async_io_request*)
       task->user_data;
 
-   switch (request->type)
+   if (request->type == CHEEVOS_ASYNC_RICHPRESENCE)
    {
-      case CHEEVOS_ASYNC_RICHPRESENCE:
-      {
-         const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-         if (request->id != (int)rcheevos_locals->patchdata.game_id)
-         {
-            /* game changed; stop the recurring task - a new one will
-             * be scheduled for the next game */
-            task_set_finished(task, 1);
-            free(request);
-            return;
-         }
-
-         if (request->attempt_count > 0)
-         {
-            /* this is a retry attempt, discard the previous request and
-             * generate a new one. mark the retry task as completed - the
-             * periodic task still exists */
-            rc_api_destroy_request(&request->request);
-            rcheevos_client_prepare_ping(request);
-            task_set_finished(task, 1);
-         }
-         else
-         {
-            /* update the request and set the task to fire again in
-             * two minutes */
-            task->when = rcheevos_client_prepare_ping(request);
-         }
-         break;
-      }
-
-      default:
-         /* this is a retry attempt, mark the task as completed */
-         task_set_finished(task, 1);
-         break;
+      /* this is a ping retry. discard the previous request and
+       * generate a new one. note the periodic task is still
+       * active for the requet */
+      rc_api_destroy_request(&request->request);
+      rcheevos_client_prepare_ping(request);
    }
 
-   /* start the HTTP request */
+   /* the timer task has done its job. let it dispose itself */
+   task_set_finished(task, 1);
+
+   /* start a new task for the HTTP call */
    task_push_http_post_transfer_with_user_agent(request->request.url,
          request->request.post_data, true, "POST", request->user_agent,
          rcheevos_async_http_task_callback, request);
 }
 
-static void rcheevos_async_schedule(
-      rcheevos_async_io_request* request, retro_time_t delay)
+static void rcheevos_async_retry_request_after_delay(rcheevos_async_io_request* request)
 {
    retro_task_t* task = task_init();
-   task->when         = cpu_features_get_time_usec() + delay;
-   task->handler      = rcheevos_async_dispatch_scheduled_request;
+
+   /* Double the wait between each attempt until we hit
+    * a maximum delay of two minutes.
+    * 250ms -> 500ms -> 1s -> 2s -> 4s -> 8s -> 16s -> 32s -> 64s -> 120s -> 120s... */
+   retro_time_t retry_delay = (request->attempt_count > 8)
+      ? (120 * 1000 * 1000)
+      : ((250 * 1000) << request->attempt_count);
+
+   task->when         = cpu_features_get_time_usec() + retry_delay;
+   task->handler      = rcheevos_async_retry_request;
    task->user_data    = request;
    task->progress     = -1;
+
+   ++request->attempt_count;
    task_queue_push(task);
 }
 
@@ -328,21 +311,13 @@ static void rcheevos_async_http_task_callback(
    http_transfer_data_t      *data    = (http_transfer_data_t*)task_data;
    char buffer[224];
 
-   /* if there was a communication error, automatically retry the request */
    if (error)
    {
-      /* Double the wait between each attempt until we hit
-       * a maximum delay of two minutes.
-       * 250ms -> 500ms -> 1s -> 2s -> 4s -> 8s -> 16s -> 32s -> 64s -> 120s -> 120s... */
-      retro_time_t retry_delay = (request->attempt_count > 8)
-         ? (120 * 1000 * 1000)
-         : ((250 * 1000) << request->attempt_count);
-
-      ++request->attempt_count;
-      rcheevos_async_schedule(request, retry_delay);
-
+      /* there was a communication error. automatically retry the request */
       CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s\n", request->failure_message,
             request->id, error);
+
+      rcheevos_async_retry_request_after_delay(request);
       return;
    }
 
@@ -459,41 +434,6 @@ static bool rcheevos_async_succeeded(int result,
 
 
 /****************************
- * start session            *
- ****************************/
-
-void rcheevos_client_start_session(unsigned game_id)
-{
-   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-
-   /* the core won't change while a session is active, so only
-    * calculate the user agent once */
-   rcheevos_get_user_agent(rcheevos_locals,
-         rcheevos_locals->user_agent_core,
-         sizeof(rcheevos_locals->user_agent_core));
-
-   /* schedule the first rich presence call in 30 seconds */
-   {
-      rcheevos_async_io_request *request = (rcheevos_async_io_request*)
-            calloc(1, sizeof(rcheevos_async_io_request));
-      if (!request)
-      {
-         CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate rich presence request\n");
-      }
-      else
-      {
-         request->id              = game_id;
-         request->type            = CHEEVOS_ASYNC_RICHPRESENCE;
-         request->user_agent      = rcheevos_locals->user_agent_core;
-         request->failure_message = "Error sending ping";
-
-         rcheevos_async_schedule(request, CHEEVOS_PING_FREQUENCY / 4);
-      }
-   }
-}
-
-
-/****************************
  * ping                     *
  ****************************/
 
@@ -532,6 +472,74 @@ static retro_time_t rcheevos_client_prepare_ping(rcheevos_async_io_request* requ
 
    /* Send ping every four minutes */
    return cpu_features_get_time_usec() + CHEEVOS_PING_FREQUENCY * 2;
+}
+
+static void rcheevos_async_ping_handler(retro_task_t* task)
+{
+   rcheevos_async_io_request* request = (rcheevos_async_io_request*)
+      task->user_data;
+
+   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   if (request->id != (int)rcheevos_locals->patchdata.game_id)
+   {
+      /* game changed; stop the recurring task - a new one will
+       * be scheduled if a new game is loaded */
+      task_set_finished(task, 1);
+      free(request);
+      return;
+   }
+
+   /* update the request and set the task to fire again in
+    * two minutes */
+   task->when = rcheevos_client_prepare_ping(request);
+
+   /* start the HTTP request */
+   task_push_http_post_transfer_with_user_agent(request->request.url,
+         request->request.post_data, true, "POST", request->user_agent,
+         rcheevos_async_http_task_callback, request);
+}
+
+
+/****************************
+ * start session            *
+ ****************************/
+
+void rcheevos_client_start_session(unsigned game_id)
+{
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+
+   /* the core won't change while a session is active, so only
+    * calculate the user agent once */
+   rcheevos_get_user_agent(rcheevos_locals,
+         rcheevos_locals->user_agent_core,
+         sizeof(rcheevos_locals->user_agent_core));
+
+   /* schedule the first rich presence call in 30 seconds */
+   {
+      rcheevos_async_io_request *request = (rcheevos_async_io_request*)
+            calloc(1, sizeof(rcheevos_async_io_request));
+      if (!request)
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate rich presence request\n");
+      }
+      else
+      {
+         retro_task_t* task       = task_init();
+
+         request->id              = game_id;
+         request->type            = CHEEVOS_ASYNC_RICHPRESENCE;
+         request->user_agent      = rcheevos_locals->user_agent_core;
+         request->failure_message = "Error sending ping";
+
+         task->handler            = rcheevos_async_ping_handler;
+         task->user_data          = request;
+         task->progress           = -1;
+         task->when               = cpu_features_get_time_usec() +
+                                    CHEEVOS_PING_FREQUENCY / 4;
+
+         task_queue_push(task);
+      }
+   }
 }
 
 
