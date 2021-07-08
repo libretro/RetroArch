@@ -650,16 +650,31 @@ bool path_is_absolute(const char *path)
 char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
-   char tmp[PATH_MAX_LENGTH];
 #ifdef _WIN32
-   strlcpy(tmp, buf, sizeof(tmp));
-   if (!_fullpath(buf, tmp, size))
+   char *ret = NULL;
+   wchar_t abs_path[PATH_MAX_LENGTH];
+   wchar_t *rel_path = utf8_to_utf16_string_alloc(buf);
+
+   if (rel_path)
    {
-      strlcpy(buf, tmp, size);
-      return NULL;
+      if (_wfullpath(abs_path, rel_path, PATH_MAX_LENGTH))
+      {
+         char *tmp = utf16_to_utf8_string_alloc(abs_path);
+
+         if (tmp)
+         {
+            strlcpy(buf, tmp, size);
+            free(tmp);
+            ret = buf;
+         }
+      }
+
+      free(rel_path);
    }
-   return buf;
+
+   return ret;
 #else
+   char tmp[PATH_MAX_LENGTH];
    size_t t;
    char *p;
    const char *next;
