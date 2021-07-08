@@ -201,16 +201,21 @@
 
 /* To start in Fullscreen, or not. */
 
-#if defined(HAVE_STEAM) || defined(DINGUX)
-/* Start in fullscreen mode for Steam and
- * Dingux builds */
+#if defined(HAVE_STEAM) || defined(DINGUX) || defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+/* Start in fullscreen mode for Steam and Dingux
+ * WinRT and Winapi Family builds */
 #define DEFAULT_FULLSCREEN true
 #else
 #define DEFAULT_FULLSCREEN false
 #endif
 
 /* To use windowed mode or not when going fullscreen. */
-#define DEFAULT_WINDOWED_FULLSCREEN true
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+/* Do not use windowed mode for WinRT and Winapi Family builds on the Xbox UWP with fixed resolution shrinks the image into the left top corner of the screen with some libretro cores */
+#define DEFAULT_WINDOWED_FULLSCREEN false
+#else
+#define DEFAULT_WINDOWED_FULLSCREEN true 
+#endif 
 
 /* Which monitor to prefer. 0 is any monitor, 1 and up selects
  * specific monitors, 1 being the first monitor. */
@@ -227,6 +232,9 @@
 #if defined(DINGUX)
 #define DEFAULT_FULLSCREEN_X 320
 #define DEFAULT_FULLSCREEN_Y 240
+#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_FULLSCREEN_X 1920
+#define DEFAULT_FULLSCREEN_Y 1080
 #else
 #define DEFAULT_FULLSCREEN_X 0
 #define DEFAULT_FULLSCREEN_Y 0
