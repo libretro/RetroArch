@@ -514,6 +514,9 @@ void rcheevos_client_start_session(unsigned game_id)
          rcheevos_locals->user_agent_core,
          sizeof(rcheevos_locals->user_agent_core));
 
+   /* force non-HTTPS until everything uses RAPI */
+   rc_api_set_host("http://retroachievements.org");
+
    /* schedule the first rich presence call in 30 seconds */
    {
       rcheevos_async_io_request *request = (rcheevos_async_io_request*)
