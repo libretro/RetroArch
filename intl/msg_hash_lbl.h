@@ -3315,6 +3315,10 @@ MSG_HASH(
    "video_scale_integer"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "video_scale_integer_overscale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SETTINGS,
    "video_settings"
    )
