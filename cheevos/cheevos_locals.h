@@ -136,6 +136,7 @@ typedef struct rcheevos_locals_t
    char token[32];                    /* user's session token */
    char hash[33];                     /* retroachievements hash for current content */
    char user_agent_prefix[128];       /* RetroArch/OS version information */
+   char user_agent_core[256];         /* RetroArch/OS/Core version information */
 
 #ifdef HAVE_MENU
    rcheevos_menuitem_t* menuitems;    /* array of items for the achievements quick menu */

@@ -57,17 +57,13 @@
 #include "../file_path_special.h"
 #include "../paths.h"
 #include "../command.h"
-#include "../dynamic.h"
 #include "../configuration.h"
 #include "../performance_counters.h"
 #include "../msg_hash.h"
 #include "../retroarch.h"
 #include "../core.h"
 #include "../core_option_manager.h"
-#include "../version.h"
 
-#include "../frontend/frontend_driver.h"
-#include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
 #include "../deps/rcheevos/include/rc_runtime.h"
@@ -105,6 +101,7 @@ static rcheevos_locals_t rcheevos_locals =
    {0},  /* token */
    "N/A",/* hash */
    "",   /* user_agent_prefix */
+   "",   /* user_agent_core */
 #ifdef HAVE_MENU
    NULL, /* menuitems */
    0,    /* menuitem_capacity */
@@ -248,7 +245,6 @@ static unsigned rcheevos_peek(unsigned address, unsigned num_bytes, void* ud)
 
    return 0;
 }
-
 
 static void rcheevos_activate_achievements(rcheevos_locals_t *locals,
       rcheevos_racheevo_t* cheevo, unsigned count, unsigned flags)
@@ -410,7 +406,7 @@ static int rcheevos_parse(rcheevos_locals_t *locals, const char* json)
       }
    }
 
-   rcheevos_start_session(locals->patchdata.game_id);
+   rcheevos_client_start_session(locals->patchdata.game_id);
 
    /* validate the memrefs */
    if (rcheevos_locals.memory.count != 0)
@@ -446,7 +442,85 @@ static rcheevos_racheevo_t* rcheevos_find_cheevo(unsigned id)
    return NULL;
 }
 
+void rcheevos_award_achievement(rcheevos_locals_t* locals,
+      rcheevos_racheevo_t* cheevo, bool widgets_ready)
+{
+   const settings_t *settings = config_get_ptr();
 
+   if (!cheevo)
+      return;
+
+   CHEEVOS_LOG(RCHEEVOS_TAG "Awarding achievement %u: %s (%s)\n",
+         cheevo->id, cheevo->title, cheevo->description);
+
+   /* Deactivates the acheivement. */
+   rc_runtime_deactivate_achievement(&locals->runtime, cheevo->id);
+
+   cheevo->active &= ~RCHEEVOS_ACTIVE_SOFTCORE;
+   if (locals->hardcore_active)
+      cheevo->active &= ~RCHEEVOS_ACTIVE_HARDCORE;
+
+   cheevo->unlock_time = cpu_features_get_time_usec();
+
+   /* Show the on screen message. */
+#if defined(HAVE_GFX_WIDGETS)
+   if (widgets_ready)
+   {
+      gfx_widgets_push_achievement(cheevo->title, cheevo->badge);
+   }
+   else
+#endif
+   {
+      char buffer[256];
+      snprintf(buffer, sizeof(buffer), "%s: %s", 
+            msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), cheevo->title);
+      runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(cheevo->description, 0, 3 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+
+   /* Start the award task (unofficial achievement unlocks are not submitted). */
+   if (!(cheevo->active & RCHEEVOS_ACTIVE_UNOFFICIAL))
+      rcheevos_client_award_achievement(cheevo->id);
+
+   /* play the unlock sound */
+#ifdef HAVE_AUDIOMIXER
+   if (settings->bools.cheevos_unlock_sound_enable)
+      audio_driver_mixer_play_menu_sound(
+            AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK);
+#endif
+
+   /* Take a screenshot of the achievement. */
+#ifdef HAVE_SCREENSHOTS
+   if (settings->bools.cheevos_auto_screenshot)
+   {
+      size_t shotname_len  = sizeof(char) * 8192;
+      char *shotname       = (char*)malloc(shotname_len);
+
+      if (shotname)
+      {
+         snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
+               settings->paths.directory_screenshot,
+               path_basename(path_get(RARCH_PATH_BASENAME)),
+               cheevo->id);
+         shotname[shotname_len - 1] = '\0';
+
+         if (take_screenshot(settings->paths.directory_screenshot,
+                  shotname, true,
+                  video_driver_cached_frame_has_valid_framebuffer(),
+                  false, true))
+            CHEEVOS_LOG(RCHEEVOS_TAG "Captured screenshot for achievement %u\n",
+                  cheevo->id);
+         else
+            CHEEVOS_LOG(RCHEEVOS_TAG "Failed to capture screenshot for achievement %u\n",
+                  cheevo->id);
+
+         free(shotname);
+      }
+   }
+#endif
+}
 
 static rcheevos_ralboard_t* rcheevos_find_lboard(unsigned id)
 {
@@ -460,6 +534,33 @@ static rcheevos_ralboard_t* rcheevos_find_lboard(unsigned id)
    }
 
    return NULL;
+}
+
+static void rcheevos_lboard_submit(rcheevos_locals_t* locals,
+      rcheevos_ralboard_t* lboard, int value, bool widgets_ready)
+{
+   char buffer[256];
+   char formatted_value[16];
+
+   rc_runtime_format_lboard_value(formatted_value, sizeof(formatted_value),
+         value, lboard->format);
+   CHEEVOS_LOG(RCHEEVOS_TAG "Submitting %s for leaderboard %u\n",
+         formatted_value, lboard->id);
+
+   /* Show the on-screen message (regardless of notifications setting). */
+   snprintf(buffer, sizeof(buffer), "Submitted %s for %s",
+         formatted_value, lboard->title);
+   runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#if defined(HAVE_GFX_WIDGETS)
+   /* Hide the tracker */
+   if (gfx_widgets_ready())
+      gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+#endif
+
+   /* Start the submit task */
+   rcheevos_client_submit_lboard_entry(lboard->id, value);
 }
 
 static void rcheevos_lboard_canceled(rcheevos_ralboard_t * lboard,
@@ -949,7 +1050,7 @@ static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_eve
 #endif
 
       case RC_RUNTIME_EVENT_ACHIEVEMENT_TRIGGERED:
-         rcheevos_award_achievement(rcheevos_find_cheevo(runtime_event->id));
+         rcheevos_award_achievement(&rcheevos_locals, rcheevos_find_cheevo(runtime_event->id), widgets_ready);
          break;
 
       case RC_RUNTIME_EVENT_LBOARD_STARTED:
@@ -962,7 +1063,7 @@ static void rcheevos_runtime_event_handler(const rc_runtime_event_t* runtime_eve
          break;
 
       case RC_RUNTIME_EVENT_LBOARD_TRIGGERED:
-         rcheevos_lboard_submit(rcheevos_find_lboard(runtime_event->id), runtime_event->value);
+         rcheevos_lboard_submit(&rcheevos_locals, rcheevos_find_lboard(runtime_event->id), runtime_event->value, widgets_ready);
          break;
 
       case RC_RUNTIME_EVENT_ACHIEVEMENT_DISABLED:

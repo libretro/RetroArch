@@ -19,20 +19,11 @@
 
 #include "cheevos_locals.h"
 
-
-/* Define this macro to log URLs. */
-#undef CHEEVOS_LOG_URLS
-
-/* Define this macro to have the password and token logged. THIS WILL DISCLOSE
- * THE USER'S PASSWORD, TAKE CARE! */
-#undef CHEEVOS_LOG_PASSWORD
-
-
 RETRO_BEGIN_DECLS
 
-void rcheevos_start_session(unsigned game_id);
-void rcheevos_award_achievement(rcheevos_racheevo_t* cheevo);
-void rcheevos_lboard_submit(rcheevos_ralboard_t* lboard, int value);
+void rcheevos_client_start_session(unsigned game_id);
+void rcheevos_client_award_achievement(unsigned achievement_id);
+void rcheevos_client_submit_lboard_entry(unsigned leaderboard_id, int value);
 
 void rcheevos_log_url(const char* api, const char* url);
 void rcheevos_get_user_agent(rcheevos_locals_t *locals, char *buffer, size_t len);
