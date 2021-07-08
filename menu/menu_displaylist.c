@@ -112,6 +112,7 @@
 #include "../manual_content_scan.h"
 #include "../core_backup.h"
 #include "../misc/cpufreq/cpufreq.h"
+#include "../input/input_remapping.h" 
 
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */

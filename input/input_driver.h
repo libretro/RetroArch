@@ -524,46 +524,6 @@ struct input_keyboard_ctx_wait
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
-const char *input_config_bind_map_get_base(unsigned i);
-
-unsigned input_config_bind_map_get_meta(unsigned i);
-
-const char *input_config_bind_map_get_desc(unsigned i);
-
-uint8_t input_config_bind_map_get_retro_key(unsigned i);
-
-/* auto_bind can be NULL. */
-void input_config_get_bind_string(char *buf,
-      const struct retro_keybind *bind,
-      const struct retro_keybind *auto_bind, size_t size);
-
-/**
- * input_config_translate_str_to_rk:
- * @str                            : String to translate to key ID.
- *
- * Translates string representation to key identifier.
- *
- * Returns: key identifier.
- **/
-enum retro_key input_config_translate_str_to_rk(const char *str);
-
-/**
- * input_config_translate_str_to_bind_id:
- * @str                            : String to translate to bind ID.
- *
- * Translate string representation to bind ID.
- *
- * Returns: Bind ID value on success, otherwise
- * RARCH_BIND_LIST_END on not found.
- **/
-unsigned input_config_translate_str_to_bind_id(const char *str);
-
-void config_read_keybinds_conf(void *data);
-
-/* Note: 'data' is an object of type config_file_t
- * > We assume it was done like this to avoid including
- *   config_file.h... */
-void input_config_set_autoconfig_binds(unsigned port, void *data);
 
 /* Set input_device_info */
 void input_config_set_device_name(unsigned port, const char *name);

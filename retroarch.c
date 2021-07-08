@@ -26510,46 +26510,46 @@ void input_keyboard_event(bool down, unsigned code,
    }
 }
 
-static bool input_config_bind_map_get_valid(unsigned i)
+static bool input_config_bind_map_get_valid(unsigned bind_index)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
    if (!keybind)
       return false;
    return keybind->valid;
 }
 
-unsigned input_config_bind_map_get_meta(unsigned i)
+unsigned input_config_bind_map_get_meta(unsigned bind_index)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
    if (!keybind)
       return 0;
    return keybind->meta;
 }
 
-const char *input_config_bind_map_get_base(unsigned i)
+const char *input_config_bind_map_get_base(unsigned bind_index)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
    if (!keybind)
       return NULL;
    return keybind->base;
 }
 
-const char *input_config_bind_map_get_desc(unsigned i)
+const char *input_config_bind_map_get_desc(unsigned bind_index)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
    if (!keybind)
       return NULL;
    return msg_hash_to_str(keybind->desc);
 }
 
-uint8_t input_config_bind_map_get_retro_key(unsigned i)
+uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(bind_index);
    if (!keybind)
       return 0;
    return keybind->retro_key;
