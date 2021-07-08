@@ -2373,7 +2373,8 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { 0.0f,            "Config"        },
    { 1.0f,            "Square pixel"  },
    { 1.0f,            "Core provided" },
-   { 0.0f,            "Custom"        }
+   { 0.0f,            "Custom"        },
+   { 1.3333f,         "Full" }
 };
 
 static gfx_api_gpu_map gpu_map[] = {

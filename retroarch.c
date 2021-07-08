@@ -31379,6 +31379,21 @@ void video_driver_set_viewport_core(void)
          (float)geom->base_width / geom->base_height;
 }
 
+void video_driver_set_viewport_full()
+{
+   unsigned width = 0;
+   unsigned height = 0;   
+
+   video_driver_get_size(&width, &height);
+
+   if (width == 0 || height == 0)
+   {
+      return;
+   }
+
+   aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
+}
+
 void video_driver_reset_custom_viewport(void)
 {
    struct rarch_state *p_rarch      = &rarch_st;
@@ -31471,6 +31486,10 @@ void video_driver_set_aspect_ratio(void)
                &p_rarch->video_driver_av_info.geometry,
                settings->floats.video_aspect_ratio,
                settings->bools.video_aspect_ratio_auto);
+         break;
+
+      case ASPECT_RATIO_FULL:
+         video_driver_set_viewport_full();
          break;
 
       default:
@@ -38006,6 +38025,34 @@ static enum runloop_state runloop_check_state(
       }
    }
 #endif
+
+   /*
+   * If the Aspect Ratio is FULL then update the aspect ratio to the 
+   * current video driver aspect ratio (The full window)
+   * 
+   * TODO/FIXME 
+   *      Should possibly be refactored to have last width & driver width & height
+   *      only be done once when we are using an overlay OR using aspect ratio
+   *      full
+   */
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_FULL)
+   {
+      static unsigned last_width                     = 0;
+      static unsigned last_height                    = 0;
+      unsigned video_driver_width                    = p_rarch->video_driver_width;
+      unsigned video_driver_height                   = p_rarch->video_driver_height;
+
+      /* Check whether video aspect has changed */
+      if ((video_driver_width  != last_width) ||
+          (video_driver_height != last_height))
+      {
+         /* Update set aspect ratio so the full matches the current video width & height */
+         command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+
+         last_width  = video_driver_width;
+         last_height = video_driver_height;
+      }
+   }
 
    /* Check quit key */
    {

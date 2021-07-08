@@ -1352,6 +1352,7 @@ AspectRatioGroup::AspectRatioGroup(const QString &title, QWidget *parent) :
    QHBoxLayout *custom         = new QHBoxLayout;
    QVBoxLayout *customRadio    = new QVBoxLayout;
    QHBoxLayout *config         = new QHBoxLayout;
+   QHBoxLayout *full           = new QHBoxLayout;
    QHBoxLayout *aspectL        = new QHBoxLayout;
    FormLayout *leftAspectForm  = new FormLayout;
    FormLayout *rightAspectForm = new FormLayout;
@@ -1382,6 +1383,8 @@ AspectRatioGroup::AspectRatioGroup(const QString &title, QWidget *parent) :
    config->setStretch(1, 1);
    config->setSizeConstraint(QLayout::SetMinimumSize);
 
+   full->addWidget(new UIntRadioButton(MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX, ASPECT_RATIO_FULL));
+
    leftAspect->addRow(new UIntRadioButton(MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX, ASPECT_RATIO_CORE));
    leftAspect->addRow(preset);
 
@@ -1394,6 +1397,7 @@ AspectRatioGroup::AspectRatioGroup(const QString &title, QWidget *parent) :
    aspectL->addLayout(rightAspect);
 
    addRow(aspectL);
+   addRow(full);
    addRow(custom);
 
    connect(m_radioButton, SIGNAL(clicked(bool)), this, SLOT(onAspectRadioClicked(bool)));
