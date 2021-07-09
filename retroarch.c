@@ -18137,7 +18137,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                     DRIVERS_CMD_ALL & ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK | DRIVER_MENU_MASK)
                   : DRIVERS_CMD_ALL;
 
-            RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO.\n");
+            RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO: %ux%u, aspect: %.3f, fps: %.3f, sample rate: %.2f Hz.\n",
+                  (*info)->geometry.base_width, (*info)->geometry.base_height,
+                  (*info)->geometry.aspect_ratio,
+                  (*info)->timing.fps,
+                  (*info)->timing.sample_rate);
 
             memcpy(av_info, *info, sizeof(*av_info));
             command_event(CMD_EVENT_REINIT, &reinit_flags);
