@@ -668,7 +668,7 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
       DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
    endif
 
-   # MinGW requires this for some reason, 
+   # MinGW requires this for some reason,
 	# even though the include paths are relative to the source
    INCLUDE_DIRS += -Ideps/mbedtls
 
@@ -1228,7 +1228,6 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland/xdg-shell.o \
-        gfx/common/wayland/xdg-shell-unstable-v6.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o
 
@@ -2294,9 +2293,9 @@ ifeq ($(HAVE_CRTSWITCHRES), 1)
              $(DEPS_DIR)/switchres/resync_windows.o
    endif
    ifneq ($(findstring Linux,$(OS)),)
-      OBJ += $(DEPS_DIR)/switchres/display_linux.o 
+      OBJ += $(DEPS_DIR)/switchres/display_linux.o
       ifeq ($(HAVE_X11)$(HAVE_XRANDR), 11)
-         OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o 
+         OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o
          DEFINES += -DSR_WITH_XRANDR
       endif
    endif
@@ -2323,9 +2322,9 @@ ifeq ($(HAVE_COCOA_COMMON),1)
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
           ui/drivers/cocoa/cocoa_common.o
-          
+
    ifeq ($(HAVE_OPENGL), 1)
-           DEFINES += -DGL_SILENCE_DEPRECATION	 
+           DEFINES += -DGL_SILENCE_DEPRECATION
 	   OBJ += gfx/drivers_context/cocoa_gl_ctx.o
    endif
    ifeq ($(HAVE_VULKAN), 1)
