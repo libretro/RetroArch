@@ -1349,15 +1349,15 @@ static void frontend_unix_set_screen_brightness(int value)
    char *buffer = NULL;
    char svalue[16] = {0};
    unsigned int max_brightness = 100;
-   #if !defined(HAVE_LAKKA_SWITCH)
-   filestream_read_file("/sys/devices/platform/backlight/backlight/backlight/max_brightness",
+
+   /* Device tree should have 'label = "backlight";' if control is desirable */
+   filestream_read_file("/sys/class/backlight/backlight/max_brightness",
                         &buffer, NULL);
    if (buffer)
    {
       sscanf(buffer, "%u", &max_brightness);
       free(buffer);
    }
-   #endif
 
    /* Calculate the brightness */
    value = (value * max_brightness) / 100;
@@ -2827,7 +2827,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || (defined(HAVE_LAKKA) && defined(HAVE_ODROIDGO2))
    frontend_unix_set_screen_brightness,/* set_screen_brightness */
-#else 
+#else
    NULL,                         /* set_screen_brightness */
 #endif
    frontend_unix_watch_path_for_changes,
