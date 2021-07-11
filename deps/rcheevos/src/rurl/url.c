@@ -6,6 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#if HAVE_SSL
+  #define RCHEEVOS_URL_PROTOCOL "https://"
+#else
+  #define RCHEEVOS_URL_PROTOCOL "http://"
+#endif
+
 static int rc_url_encode(char* encoded, size_t len, const char* str) {
   for (;;) {
     switch (*str) {
@@ -67,7 +73,7 @@ int rc_url_award_cheevo(char* buffer, size_t size, const char* user_name, const 
   written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=awardachievement&u=%s&t=%s&a=%u&h=%d",
+    RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php?r=awardachievement&u=%s&t=%s&a=%u&h=%d",
     urle_user_name,
     urle_login_token,
     cheevo_id,
@@ -106,7 +112,7 @@ int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const
   written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=submitlbentry&u=%s&t=%s&i=%u&s=%d&v=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+    RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php?r=submitlbentry&u=%s&t=%s&i=%u&s=%d&v=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
     urle_user_name,
     urle_login_token,
     lboard_id,
@@ -122,7 +128,7 @@ int rc_url_get_gameid(char* buffer, size_t size, const char* hash) {
   int written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=gameid&m=%s",
+    RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php?r=gameid&m=%s",
     hash
   );
 
@@ -145,7 +151,7 @@ int rc_url_get_patch(char* buffer, size_t size, const char* user_name, const cha
   written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=patch&u=%s&t=%s&g=%u",
+    RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php?r=patch&u=%s&t=%s&g=%u",
     urle_user_name,
     urle_login_token,
     gameid
@@ -158,7 +164,7 @@ int rc_url_get_badge_image(char* buffer, size_t size, const char* badge_name) {
   int written = snprintf(
     buffer,
     size,
-    "http://i.retroachievements.org/Badge/%s",
+    RCHEEVOS_URL_PROTOCOL"i.retroachievements.org/Badge/%s",
     badge_name
   );
 
@@ -181,7 +187,7 @@ int rc_url_login_with_password(char* buffer, size_t size, const char* user_name,
   written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
+    RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
     urle_user_name,
     urle_password
   );
@@ -205,7 +211,7 @@ int rc_url_login_with_token(char* buffer, size_t size, const char* user_name, co
   written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=login&u=%s&t=%s",
+    RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php?r=login&u=%s&t=%s",
     urle_user_name,
     urle_login_token
   );
@@ -229,7 +235,7 @@ int rc_url_get_unlock_list(char* buffer, size_t size, const char* user_name, con
   written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=%d",
+    RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=%d",
     urle_user_name,
     urle_login_token,
     gameid,
@@ -255,7 +261,7 @@ int rc_url_post_playing(char* buffer, size_t size, const char* user_name, const 
   written = snprintf(
     buffer,
     size,
-    "http://retroachievements.org/dorequest.php?r=postactivity&u=%s&t=%s&a=3&m=%u",
+    RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php?r=postactivity&u=%s&t=%s&a=3&m=%u",
     urle_user_name,
     urle_login_token,
     gameid
@@ -333,7 +339,7 @@ static int rc_url_append_str(char* buffer, size_t buffer_size, size_t* buffer_of
 static int rc_url_build_dorequest(char* url_buffer, size_t url_buffer_size, size_t* buffer_offset,
    const char* api, const char* user_name)
 {
-  const char* base_url = "http://retroachievements.org/dorequest.php";
+  const char* base_url = RCHEEVOS_URL_PROTOCOL"retroachievements.org/dorequest.php";
   size_t written = strlen(base_url);
   int failure = 0;
 
