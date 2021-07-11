@@ -197,6 +197,13 @@ else ifeq ($(LIBRETRO), genesis_plus_gx)
 	APP_ICON             = pkg/ctr/assets/genesis_plus_gx.png
 	APP_BANNER           = pkg/ctr/assets/genesis_plus_gx_banner.png
 
+else ifeq ($(LIBRETRO), genesis_plus_gx_wide)
+	APP_TITLE            = Genesis Plus GX Libretro Wide
+	APP_PRODUCT_CODE     = RARCH-GENPLUSGXWIDE
+	APP_UNIQUE_ID        = 0xBACE0
+	APP_ICON             = pkg/ctr/assets/genesis_plus_gx.png
+	APP_BANNER           = pkg/ctr/assets/genesis_plus_gx_banner.png
+
 else ifeq ($(LIBRETRO), gme)
 	APP_TITLE            = GME
 	APP_PRODUCT_CODE     = RARCH-GME
@@ -631,6 +638,7 @@ else ifeq ($(LIBRETRO), x1)
 	APP_UNIQUE_ID        = 0xBAC99
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), xrick)
 	APP_TITLE            = XRick
 	APP_PRODUCT_CODE     = RARCH-XRICK
