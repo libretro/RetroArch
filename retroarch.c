@@ -32861,6 +32861,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
       case GFX_CTX_METAL_API:
+      case GFX_CTX_RSX_API:
          return gl_context_driver_init_first(
                p_rarch, settings,
                data, ident, api, major, minor,

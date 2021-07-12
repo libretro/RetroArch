@@ -839,7 +839,8 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D12_API,
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
-   GFX_CTX_METAL_API
+   GFX_CTX_METAL_API,
+   GFX_CTX_RSX_API
 };
 
 enum display_metric_types

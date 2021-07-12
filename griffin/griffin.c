@@ -268,7 +268,9 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/qnx_ctx.c"
 #elif defined(EMSCRIPTEN)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
-#elif defined(__PS3__) && !defined(__PSL1GHT__)
+#elif defined(__PSL1GHT__)
+#include "../gfx/drivers_context/psl1ght_ctx.c"
+#elif defined(__PS3__)
 #include "../gfx/drivers_context/ps3_ctx.c"
 #endif
 
