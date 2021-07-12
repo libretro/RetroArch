@@ -1750,7 +1750,15 @@ static void ozone_render(void *data,
       bool is_idle)
 {
    size_t i;
-   float scale_factor;
+   /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
+    * On some platforms (e.g. 32-bit x86 without SSE),
+    * gcc can produce inconsistent floating point results
+    * depending upon optimisation level. This can break
+    * floating point variable comparisons. A workaround is
+    * to declare the affected variable as 'volatile', which
+    * disables optimisations and removes excess precision
+    * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
+   volatile float scale_factor;
    unsigned entries_end             = (unsigned)menu_entries_get_size();
    bool pointer_enabled             = false;
    unsigned language                = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
