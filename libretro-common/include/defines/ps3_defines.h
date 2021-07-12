@@ -660,6 +660,9 @@ extern int audioAddData(uint32_t portNum, float *data,
 #define CELL_SYSMODULE_SYSUTIL_NP SYSMODULE_SYSUTIL_NP
 #define CELL_SYSMODULE_JPGDEC SYSMODULE_JPGDEC
 #define CELL_SYSMODULE_PNGDEC SYSMODULE_PNGDEC
+#define CELL_SYSMODULE_FONT SYSMODULE_FONT
+#define CELL_SYSMODULE_FREETYPE SYSMODULE_FREETYPE
+#define CELL_SYSMODULE_FONTFT SYSMODULE_FONTFT
 
 #define cellSysmoduleLoadModule sysModuleLoad
 #define cellSysmoduleUnloadModule sysModuleUnload
