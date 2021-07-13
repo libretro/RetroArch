@@ -10954,7 +10954,8 @@ static bool setting_append_list(
             }
 
 #if defined(DINGUX) && defined(DINGUX_BETA)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
+                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_UINT(
                      list, list_info,
@@ -11209,7 +11210,8 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if defined(DINGUX)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
+                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -14935,10 +14937,11 @@ static bool setting_append_list(
                   general_read_handler);
             MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
 
-            /* ps2 and sdl_dingux gfx drivers do not support
-             * menu framebuffer transparency */
+            /* ps2 and sdl_dingux/sdl_rs90 gfx drivers do
+             * not support menu framebuffer transparency */
             if (!string_is_equal(settings->arrays.video_driver, "ps2") &&
-                !string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+                !string_is_equal(settings->arrays.video_driver, "sdl_dingux") &&
+                !string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_BOOL(
                      list, list_info,

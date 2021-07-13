@@ -80,6 +80,22 @@
 #define RGUI_MIN_FB_WIDTH 256
 #define RGUI_MAX_FB_WIDTH 426
 
+#if defined(DINGUX)
+#if defined(RS90)
+/* The RS-90 uses a fixed framebuffer size
+ * of 240x160 */
+#define RGUI_DINGUX_ASPECT_RATIO RGUI_ASPECT_RATIO_3_2
+#define RGUI_DINGUX_FB_WIDTH     240
+#define RGUI_DINGUX_FB_HEIGHT    160
+#else
+/* Other Dingux devices (RG350 etc.) use a
+ * fixed framebuffer size of 320x240 */
+#define RGUI_DINGUX_ASPECT_RATIO RGUI_ASPECT_RATIO_4_3
+#define RGUI_DINGUX_FB_WIDTH     320
+#define RGUI_DINGUX_FB_HEIGHT    240
+#endif
+#endif
+
 /* Maximum entry value length in characters
  * when using fixed with layouts
  * (i.e. Maximum possible 'spacing' as
@@ -1502,20 +1518,21 @@ static bool rgui_set_pixel_format_function(void)
       return transparency_supported;
    }
    
-   if (     string_is_equal(driver_ident, "ps2"))        /* PS2 */
+   if (     string_is_equal(driver_ident, "ps2"))             /* PS2 */
    {
       argb32_to_pixel_platform_format = argb32_to_abgr1555;
       transparency_supported          = false;
    }
-   else if (string_is_equal(driver_ident, "gx"))         /* GEKKO */
+   else if (string_is_equal(driver_ident, "gx"))              /* GEKKO */
       argb32_to_pixel_platform_format = argb32_to_rgb5a3;
-   else if (string_is_equal(driver_ident, "psp1"))       /* PSP */
+   else if (string_is_equal(driver_ident, "psp1"))            /* PSP */
       argb32_to_pixel_platform_format = argb32_to_abgr4444;
-   else if (string_is_equal(driver_ident, "d3d10") ||    /* D3D10/11/12 */
+   else if (string_is_equal(driver_ident, "d3d10") ||         /* D3D10/11/12 */
             string_is_equal(driver_ident, "d3d11") ||
             string_is_equal(driver_ident, "d3d12"))
       argb32_to_pixel_platform_format = argb32_to_bgra4444;
-   else if (string_is_equal(driver_ident, "sdl_dingux")) /* DINGUX SDL */
+   else if (string_is_equal(driver_ident, "sdl_dingux") ||    /* DINGUX SDL */
+            string_is_equal(driver_ident, "sdl_rs90"))
    {
       argb32_to_pixel_platform_format = argb32_to_rgb565;
       transparency_supported          = false;
@@ -3006,7 +3023,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    const char *wallpaper_key   = NULL;
    bool success                = false;
 #if defined(DINGUX)
-   unsigned aspect_ratio       = RGUI_ASPECT_RATIO_4_3;
+   unsigned aspect_ratio       = RGUI_DINGUX_ASPECT_RATIO;
 #else
    settings_t *settings        = config_get_ptr();
    unsigned aspect_ratio       = settings->uints.menu_rgui_aspect_ratio;
@@ -5435,15 +5452,14 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
     * width value must be zero... */
    unsigned max_frame_buf_width = 424;
 #elif defined(DINGUX)
-   /* Dingux devices use a fixed framebuffer size
-    * of 320x240 */
-   unsigned max_frame_buf_width = 320;
+   /* Dingux devices use a fixed framebuffer size */
+   unsigned max_frame_buf_width = RGUI_DINGUX_FB_WIDTH;
 #else
    struct video_viewport vp;
    unsigned max_frame_buf_width = RGUI_MAX_FB_WIDTH;
 #endif
 #if defined(DINGUX)
-   unsigned aspect_ratio        = RGUI_ASPECT_RATIO_4_3;
+   unsigned aspect_ratio        = RGUI_DINGUX_ASPECT_RATIO;
    unsigned aspect_ratio_lock   = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
    settings_t       *settings   = config_get_ptr();
@@ -5469,9 +5485,8 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
     * values */
    rgui->frame_buf.height = p_disp->framebuf_height;
 #elif defined(DINGUX)
-   /* Dingux devices use a fixed framebuffer size
-    * of 320x240 */
-   rgui->frame_buf.height = 240;
+   /* Dingux devices use a fixed framebuffer size */
+   rgui->frame_buf.height = RGUI_DINGUX_FB_HEIGHT;
 #else
    /* If window height is less than RGUI default
     * height of 240, allow the frame buffer to
@@ -6587,7 +6602,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    bool bg_filler_thickness_enable     = settings->bools.menu_rgui_background_filler_thickness_enable;
    bool border_filler_thickness_enable = settings->bools.menu_rgui_border_filler_thickness_enable;
 #if defined(DINGUX)
-   unsigned aspect_ratio               = RGUI_ASPECT_RATIO_4_3;
+   unsigned aspect_ratio               = RGUI_DINGUX_ASPECT_RATIO;
    unsigned aspect_ratio_lock          = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
    unsigned aspect_ratio               = settings->uints.menu_rgui_aspect_ratio;
@@ -6714,7 +6729,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    if ((rgui->window_width  != video_width) ||
        (rgui->window_height != video_height))
    {
-#if !defined(GEKKO)
+#if !defined(GEKKO) && !defined(DINGUX)
       /* If window width or height are less than the
        * RGUI default size of (320-426)x240, must enable
        * dynamic menu 'downscaling'.
@@ -6744,7 +6759,6 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          case RGUI_ASPECT_RATIO_5_3_CENTRE:
             default_fb_width = 400;
             break;
-
          default:
             /* 4:3 */
             default_fb_width = 320;

@@ -70,6 +70,7 @@ enum video_driver_enum
    VIDEO_SDL,
    VIDEO_SDL2,
    VIDEO_SDL_DINGUX,
+   VIDEO_SDL_RS90,
    VIDEO_EXT,
    VIDEO_WII,
    VIDEO_WIIU,
@@ -311,7 +312,11 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
 #elif defined(HAVE_SDL_DINGUX)
+#if defined(RS90)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_RS90;
+#else
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_DINGUX;
+#endif
 #elif defined(_WIN32) && !defined(_XBOX)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GDI;
 #elif defined(DJGPP)
@@ -388,7 +393,9 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
 
-#if defined(PSP) || defined(EMSCRIPTEN)
+#if defined(RS90)
+static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_NEAREST;
+#elif defined(PSP) || defined(EMSCRIPTEN)
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_CC;
 #else
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_SINC;
@@ -852,6 +859,8 @@ const char *config_get_default_video(void)
          return "xvideo";
       case VIDEO_SDL_DINGUX:
          return "sdl_dingux";
+      case VIDEO_SDL_RS90:
+         return "sdl_rs90";
       case VIDEO_SDL:
          return "sdl";
       case VIDEO_SDL2:
