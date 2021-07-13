@@ -7768,7 +7768,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          {
 #if defined(DINGUX)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
+                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,

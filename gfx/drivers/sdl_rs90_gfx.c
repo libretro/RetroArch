@@ -3,6 +3,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2011-2017 - Higor Euripedes
  *  Copyright (C) 2019-2021 - James Leaver
+ *  Copyright (C)      2021 - John Parton
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -50,39 +51,43 @@
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
-#define SDL_DINGUX_MENU_WIDTH  320
-#define SDL_DINGUX_MENU_HEIGHT 240
+#define SDL_RS90_WIDTH  240
+#define SDL_RS90_HEIGHT 160
 
-#define SDL_DINGUX_NUM_FONT_GLYPHS 256
+#define SDL_RS90_NUM_FONT_GLYPHS 256
 
-typedef struct sdl_dingux_video
+typedef struct sdl_rs90_video
 {
    retro_time_t last_frame_time;
    retro_time_t ff_frame_time_min;
    SDL_Surface *screen;
    bitmapfont_lut_t *osd_font;
+   /* Scaling/padding/cropping parameters */
+   unsigned content_width;
+   unsigned content_height;
    unsigned frame_width;
    unsigned frame_height;
    unsigned frame_padding_x;
    unsigned frame_padding_y;
-   enum dingux_ipu_filter_type filter_type;
+   unsigned frame_crop_x;
+   unsigned frame_crop_y;
 #if defined(DINGUX_BETA)
    enum dingux_refresh_rate refresh_rate;
 #endif
    uint32_t font_colour32;
    uint16_t font_colour16;
-   uint16_t menu_texture[SDL_DINGUX_MENU_WIDTH * SDL_DINGUX_MENU_HEIGHT];
+   uint16_t menu_texture[SDL_RS90_WIDTH * SDL_RS90_HEIGHT];
    bool rgb32;
    bool vsync;
    bool keep_aspect;
-   bool integer_scaling;
+   bool scale_integer;
    bool menu_active;
    bool was_in_menu;
    bool quitting;
    bool mode_valid;
-} sdl_dingux_video_t;
+} sdl_rs90_video_t;
 
-static void sdl_dingux_init_font_color(sdl_dingux_video_t *vid)
+static void sdl_rs90_init_font_color(sdl_rs90_video_t *vid)
 {
    settings_t *settings = config_get_ptr();
    uint32_t red         = 0xFF;
@@ -107,8 +112,8 @@ static void sdl_dingux_init_font_color(sdl_dingux_video_t *vid)
    vid->font_colour16 = (red << 11) | (green << 6) | blue;
 }
 
-static void sdl_dingux_blit_text16(
-      sdl_dingux_video_t *vid,
+static void sdl_rs90_blit_text16(
+      sdl_rs90_video_t *vid,
       unsigned x, unsigned y,
       const char *str)
 {
@@ -119,8 +124,8 @@ static void sdl_dingux_blit_text16(
    bool **font_lut              = vid->osd_font->lut;
    /* 16 bit - divide pitch by 2 */
    uint16_t screen_stride       = (uint16_t)(vid->screen->pitch >> 1);
-   uint16_t screen_width        = vid->screen->w;
-   uint16_t screen_height       = vid->screen->h;
+   uint16_t screen_width        = vid->frame_width;
+   uint16_t screen_height       = vid->frame_height;
    unsigned x_pos               = x + vid->frame_padding_x;
    unsigned y_pos               = (y > (screen_height >> 1)) ?
          (y - vid->frame_padding_y) : (y + vid->frame_padding_y);
@@ -160,7 +165,7 @@ static void sdl_dingux_blit_text16(
          if (symbol == 338) /* Latin capital ligature oe */
             symbol = 140;
 
-         if (symbol >= SDL_DINGUX_NUM_FONT_GLYPHS)
+         if (symbol >= SDL_RS90_NUM_FONT_GLYPHS)
             continue;
 
          symbol_lut = font_lut[symbol];
@@ -190,8 +195,8 @@ static void sdl_dingux_blit_text16(
    }
 }
 
-static void sdl_dingux_blit_text32(
-      sdl_dingux_video_t *vid,
+static void sdl_rs90_blit_text32(
+      sdl_rs90_video_t *vid,
       unsigned x, unsigned y,
       const char *str)
 {
@@ -243,7 +248,7 @@ static void sdl_dingux_blit_text32(
          if (symbol == 338) /* Latin capital ligature oe */
             symbol = 140;
 
-         if (symbol >= SDL_DINGUX_NUM_FONT_GLYPHS)
+         if (symbol >= SDL_RS90_NUM_FONT_GLYPHS)
             continue;
 
          symbol_lut = font_lut[symbol];
@@ -273,7 +278,7 @@ static void sdl_dingux_blit_text32(
    }
 }
 
-static void sdl_dingux_blit_video_mode_error_msg(sdl_dingux_video_t *vid)
+static void sdl_rs90_blit_video_mode_error_msg(sdl_rs90_video_t *vid)
 {
    const char *error_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
    char display_mode[64];
@@ -292,45 +297,32 @@ static void sdl_dingux_blit_video_mode_error_msg(sdl_dingux_video_t *vid)
    /* Print error message */
    if (vid->rgb32)
    {
-      sdl_dingux_blit_text32(vid,
+      sdl_rs90_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
             error_msg);
 
-      sdl_dingux_blit_text32(vid,
+      sdl_rs90_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
             display_mode);
    }
    else
    {
-      sdl_dingux_blit_text16(vid,
+      sdl_rs90_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
             error_msg);
 
-      sdl_dingux_blit_text16(vid,
+      sdl_rs90_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
             display_mode);
    }
 }
 
-static void sdl_dingux_gfx_free(void *data)
+static void sdl_rs90_gfx_free(void *data)
 {
-   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
 
    if (!vid)
       return;
-
-   /* It is good manners to leave IPU scaling
-    * parameters in the default state when
-    * shutting down */
-#if defined(DINGUX_BETA)
-   dingux_ipu_reset();
-#else
-   if (!vid->keep_aspect || vid->integer_scaling)
-      dingux_ipu_set_scaling_mode(true, false);
-
-   if (vid->filter_type != DINGUX_IPU_FILTER_BICUBIC)
-      dingux_ipu_set_filter_type(DINGUX_IPU_FILTER_BICUBIC);
-#endif
 
    if (vid->osd_font)
       bitmapfont_free_lut(vid->osd_font);
@@ -338,7 +330,7 @@ static void sdl_dingux_gfx_free(void *data)
    free(vid);
 }
 
-static void sdl_dingux_input_driver_init(
+static void sdl_rs90_input_driver_init(
       const char *input_driver_name, const char *joypad_driver_name,
       input_driver_t **input, void **input_data)
 {
@@ -405,14 +397,12 @@ static void sdl_dingux_input_driver_init(
 #endif
 }
 
-static void *sdl_dingux_gfx_init(const video_info_t *video,
+static void *sdl_rs90_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   sdl_dingux_video_t *vid                       = NULL;
+   sdl_rs90_video_t *vid                         = NULL;
    uint32_t sdl_subsystem_flags                  = SDL_WasInit(0);
    settings_t *settings                          = config_get_ptr();
-   bool ipu_keep_aspect                          = settings->bools.video_dingux_ipu_keep_aspect;
-   bool ipu_integer_scaling                      = settings->bools.video_scale_integer;
 #if defined(DINGUX_BETA)
    enum dingux_refresh_rate current_refresh_rate = DINGUX_REFRESH_RATE_60HZ;
    enum dingux_refresh_rate target_refresh_rate  = (enum dingux_refresh_rate)
@@ -420,8 +410,6 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    bool refresh_rate_valid                       = false;
    float hw_refresh_rate                         = 0.0f;
 #endif
-   enum dingux_ipu_filter_type ipu_filter_type   = (enum dingux_ipu_filter_type)
-         settings->uints.video_dingux_ipu_filter_type;
    const char *input_driver_name                 = settings->arrays.input_driver;
    const char *joypad_driver_name                = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync) ?
@@ -440,13 +428,10 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
          return NULL;
    }
 
-   vid = (sdl_dingux_video_t*)calloc(1, sizeof(*vid));
+   vid = (sdl_rs90_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
       return NULL;
 
-   dingux_ipu_set_downscaling_enable(true);
-   dingux_ipu_set_scaling_mode(ipu_keep_aspect, ipu_integer_scaling);
-   dingux_ipu_set_filter_type(ipu_filter_type);
 #if defined(DINGUX_BETA)
    /* Get current refresh rate */
    refresh_rate_valid = dingux_get_video_refresh_rate(&current_refresh_rate);
@@ -493,7 +478,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 #endif
 
    vid->screen = SDL_SetVideoMode(
-         SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT,
+         SDL_RS90_WIDTH, SDL_RS90_HEIGHT,
          video->rgb32 ? 32 : 16,
          surface_flags);
 
@@ -503,13 +488,14 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
       goto error;
    }
 
-   vid->frame_width     = SDL_DINGUX_MENU_WIDTH;
-   vid->frame_height    = SDL_DINGUX_MENU_HEIGHT;
+   vid->content_width   = SDL_RS90_WIDTH;
+   vid->content_height  = SDL_RS90_HEIGHT;
+   vid->frame_width     = SDL_RS90_WIDTH;
+   vid->frame_height    = SDL_RS90_HEIGHT;
    vid->rgb32           = video->rgb32;
    vid->vsync           = video->vsync;
-   vid->keep_aspect     = ipu_keep_aspect;
-   vid->integer_scaling = ipu_integer_scaling;
-   vid->filter_type     = ipu_filter_type;
+   vid->keep_aspect     = settings->bools.video_dingux_ipu_keep_aspect;
+   vid->scale_integer   = settings->bools.video_scale_integer;
    vid->menu_active     = false;
    vid->was_in_menu     = false;
    vid->quitting        = false;
@@ -518,17 +504,17 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    SDL_ShowCursor(SDL_DISABLE);
 
-   sdl_dingux_input_driver_init(input_driver_name,
+   sdl_rs90_input_driver_init(input_driver_name,
          joypad_driver_name, input, input_data);
 
    /* Initialise OSD font */
-   sdl_dingux_init_font_color(vid);
+   sdl_rs90_init_font_color(vid);
 
    vid->osd_font = bitmapfont_get_lut();
 
    if (!vid->osd_font ||
        vid->osd_font->glyph_max <
-            (SDL_DINGUX_NUM_FONT_GLYPHS - 1))
+            (SDL_RS90_NUM_FONT_GLYPHS - 1))
    {
       RARCH_ERR("[SDL1]: Failed to init OSD font\n");
       goto error;
@@ -537,105 +523,90 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    return vid;
 
 error:
-   sdl_dingux_gfx_free(vid);
+   sdl_rs90_gfx_free(vid);
    return NULL;
 }
 
-/* Certain display resolutions are forbidden on
- * OpenDingux, due to incompatibilities with the
- * hardware IPU scaler. Invalid widths will
- * generate a kernel segfault. Invalid heights
- * will cause image distortion, or are entirely
- * unsupported on OpenDingux Beta releases. This
- * function 'sanitises' the requested resolution.
- * Note that this requires some unavoidable
- * hard-coded blacklisting... */
-static void sdl_dingux_sanitize_frame_dimensions(
-      sdl_dingux_video_t* vid,
-      unsigned width, unsigned height,
-      unsigned *sanitized_width, unsigned *sanitized_height)
-{
-   /*** WIDTH ***/
-
-   /* SDL surface width must be rounded up to
-    * the nearest multiple of 16 */
-   *sanitized_width = (width + 0xF) & ~0xF;
-
-   /* Blacklist */
-
-   /* Neo Geo @ 304x224 */
-   if (!vid->integer_scaling && (width == 304) && (height == 224))
-      *sanitized_width = 320;
-#if defined(DINGUX_BETA)
-   else if (vid->keep_aspect && !vid->integer_scaling)
-   {
-      /* Neo Geo Pocket (x2) @ 320x304 */
-      if ((width == 320) && (height == 304))
-         *sanitized_width = 336;
-      /* GB/GBC/GG @ 160x144 */
-      else if ((width == 160) && (height == 144))
-         *sanitized_width = 176;
-      /* GB/GBC/GG (x2) @ 320x288 */
-      else if ((width == 320) && (height == 288))
-         *sanitized_width = 336;
-      /* GB/GBC/GG (x3) @ 480x432 */
-      else if ((width == 480) && (height == 432))
-         *sanitized_width = 496;
-   }
-#endif
-
-   /*** HEIGHT ***/
-   *sanitized_height = height;
-
-   /* Blacklist */
-#if defined(DINGUX_BETA)
-   /* Neo Geo Pocket @ 160x152 */
-   if ((width == 160) && (height == 152))
-      *sanitized_height = 154;
-   /* TIC-80 @ 240x136 */
-   else if ((width == 240) && (height == 136))
-      *sanitized_height = 144;
-   else if (vid->keep_aspect && !vid->integer_scaling)
-   {
-      /* GBA @ 240x160 */
-      if ((width == 240) && (height == 160))
-         *sanitized_height = 162;
-      /* GBA (x2) @ 480x320 */
-      else if ((width == 480) && (height == 320))
-         *sanitized_height = 324;
-   }
-#else
-   /* Neo Geo Pocket @ 160x152 */
-   if (!vid->integer_scaling && (width == 160) && (height == 152))
-      *sanitized_height = 160;
-#endif
-}
-
-static void sdl_dingux_set_output(
-      sdl_dingux_video_t* vid,
+static void sdl_rs90_set_output(
+      sdl_rs90_video_t* vid,
       unsigned width, unsigned height, bool rgb32)
 {
-   unsigned sanitized_width;
-   unsigned sanitized_height;
    uint32_t surface_flags = (vid->vsync) ?
          (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
-   /* Cache set parameters */
-   vid->frame_width  = width;
-   vid->frame_height = height;
+   vid->content_width  = width;
+   vid->content_height = height;
 
-   /* Reset frame padding */
-   vid->frame_padding_x = 0;
-   vid->frame_padding_y = 0;
+   /* Technically, "scale_integer" here just means "do not scale"
+    * If the content is larger, we crop, otherwise we just centre
+    * it in the frame.
+    * If we want to support a core with an absolutely tiny screen
+    * (i.e. less than 120x80), we should do actual integer scaling
+    * (PokeMini @ 96x64 and VeMUlator @ 48x32 are probably the
+    * only cores where this is an issue, but PokeMini at least
+    * offers internal upscaling...) */
+   if (vid->scale_integer)
+   {
+      if (width > SDL_RS90_WIDTH)
+      {
+         vid->frame_width     = SDL_RS90_WIDTH;
+         vid->frame_crop_x    = (width - SDL_RS90_WIDTH) >> 1;
+         vid->frame_padding_x = 0;
+      }
+      else
+      {
+         vid->frame_width     = width;
+         vid->frame_crop_x    = 0;
+         vid->frame_padding_x = (SDL_RS90_WIDTH - width) >> 1;
+      }
 
-   /* Ensure we request valid surface dimensions */
-   sdl_dingux_sanitize_frame_dimensions(vid,
-         width, height, &sanitized_width, &sanitized_height);
+      if (height > SDL_RS90_HEIGHT)
+      {
+         vid->frame_height    = SDL_RS90_HEIGHT;
+         vid->frame_crop_y    = (height - SDL_RS90_HEIGHT) >> 1;
+         vid->frame_padding_y = 0;
+      }
+      else
+      {
+         vid->frame_height    = height;
+         vid->frame_crop_y    = 0;
+         vid->frame_padding_y = (SDL_RS90_HEIGHT - height) >> 1;
+      }
+   }
+   else
+   {
+      /* Normal scaling */
+      if (vid->keep_aspect)
+      {
+         if (height * SDL_RS90_WIDTH > width * SDL_RS90_HEIGHT)
+         {
+            /* Integer math is fine */
+            vid->frame_width  = (width * SDL_RS90_HEIGHT) / height;
+            vid->frame_height = SDL_RS90_HEIGHT;
+         }
+         else
+         {
+            /* Integer math is fine */
+            vid->frame_width  = SDL_RS90_WIDTH;
+            vid->frame_height = (height * SDL_RS90_WIDTH) / width;
+         }
+      }
+      else
+      {
+         vid->frame_width  = SDL_RS90_WIDTH;
+         vid->frame_height = SDL_RS90_HEIGHT;
+      }
+
+      vid->frame_crop_x    = 0;
+      vid->frame_padding_x = (SDL_RS90_WIDTH - vid->frame_width) >> 1;
+      vid->frame_crop_y    = 0;
+      vid->frame_padding_y = (SDL_RS90_HEIGHT - vid->frame_height) >> 1;
+   }
 
    /* Attempt to change video mode */
    vid->screen = SDL_SetVideoMode(
-         sanitized_width, sanitized_height,
+         SDL_RS90_WIDTH, SDL_RS90_HEIGHT,
          rgb32 ? 32 : 16,
          surface_flags);
 
@@ -643,33 +614,14 @@ static void sdl_dingux_set_output(
    if (unlikely(!vid->screen))
    {
       RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
-
-      /* We must have a valid SDL surface
-       * > Use known good fallback display mode
-       *   (i.e. menu resolution)
-       * > Other than logging a message, we do not
-       *   handle errors here, because this cannot
-       *   fail - and if it did, there is nothing
-       *   we can do about it anyway... */
-      vid->screen = SDL_SetVideoMode(
-            SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT,
-            rgb32 ? 32 : 16,
-            surface_flags);
-
-      if (unlikely(!vid->screen))
-         RARCH_ERR("[SDL1]: Critical - Failed to init fallback SDL surface: %s\n", SDL_GetError());
-
       vid->mode_valid = false;
    }
    else
    {
       /* Determine whether frame padding is required */
-      if ((sanitized_width  != width) ||
-          (sanitized_height != height))
+      if ((vid->frame_padding_x > 0) ||
+          (vid->frame_padding_y > 0))
       {
-         vid->frame_padding_x = (sanitized_width  - width)  >> 1;
-         vid->frame_padding_y = (sanitized_height - height) >> 1;
-
          /* To prevent garbage pixels in the padding
           * region, must zero out pixel buffer */
          if (SDL_MUSTLOCK(vid->screen))
@@ -686,83 +638,213 @@ static void sdl_dingux_set_output(
    }
 }
 
-static void sdl_dingux_blit_frame16(sdl_dingux_video_t *vid,
+/* Approximate nearest-neighbour scaling using
+ * bitshifts and integer math */
+static void sdl_rs90_blit_frame16_scale(sdl_rs90_video_t *vid,
       uint16_t* src, unsigned width, unsigned height,
       unsigned src_pitch)
 {
-   unsigned dst_pitch = vid->screen->pitch;
-   uint16_t *in_ptr   = src;
-   uint16_t *out_ptr  = (uint16_t*)(vid->screen->pixels +
-         (vid->frame_padding_y * dst_pitch));
+   uint32_t x_step      = (((uint32_t)(width)  << 16) + 1) / vid->frame_width;
+   uint32_t y_step      = (((uint32_t)(height) << 16) + 1) / vid->frame_height;
 
-   /* If source and destination buffers have the
-    * same pitch, perform fast copy of raw pixel data */
-   if (src_pitch == dst_pitch)
-      memcpy(out_ptr, in_ptr, src_pitch * height);
-   else
+   /* 16 bit - divide pitch by 2 */
+   size_t in_stride     = (size_t)(src_pitch >> 1);
+   size_t out_stride    = (size_t)(vid->screen->pitch >> 1);
+
+   /* Apply x/y padding offset */
+   uint16_t *top_corner = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         out_stride * vid->frame_padding_y;
+
+   /* Temporary pointers */
+   uint16_t *in_ptr     = NULL;
+   uint16_t *out_ptr    = NULL;
+
+   uint32_t y           = 0;
+   size_t row;
+
+   /* TODO/FIXME: Optimize these loops further.
+    * Consider saving these computations in an array
+    * and indexing over them.
+    * Would likely be slower due to cache (non-)locality,
+    * but it's worth a shot.
+    * Tons of -> operations. */
+   for (row = 0; row < vid->frame_height; row++)
    {
-      /* Otherwise copy pixel data line-by-line */
+      size_t col = vid->frame_width;
+      uint32_t x = 0;
 
-      /* 16 bit - divide pitch by 2 */
-      uint16_t in_stride  = (uint16_t)(src_pitch >> 1);
-      uint16_t out_stride = (uint16_t)(dst_pitch >> 1);
-      size_t y;
+      out_ptr    = top_corner + out_stride * row;
+      in_ptr     = src + (y >> 16) * in_stride;
 
-      /* If SDL surface has horizontal padding,
-       * shift output image to the right */
-      out_ptr += vid->frame_padding_x;
-
-      for (y = 0; y < height; y++)
+      do
       {
-         memcpy(out_ptr, in_ptr, width * sizeof(uint16_t));
-         in_ptr  += in_stride;
-         out_ptr += out_stride;
+        *out_ptr = in_ptr[x >> 16];
+        x       += x_step;
+        out_ptr++;
       }
+      while (--col);
+
+      y += y_step;
    }
 }
 
-static void sdl_dingux_blit_frame32(sdl_dingux_video_t *vid,
+static void sdl_rs90_blit_frame16_no_scale(sdl_rs90_video_t *vid,
+      uint16_t* src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   /* 16 bit - divide pitch by 2 */
+   size_t in_stride  = (size_t)(src_pitch >> 1);
+   size_t out_stride = (size_t)(vid->screen->pitch >> 1);
+
+   /* Manipulate offsets so that padding/crop
+    * are applied correctly */
+   uint16_t *in_ptr  = src + vid->frame_crop_x + vid->frame_crop_y * in_stride;
+   uint16_t *out_ptr = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         out_stride * vid->frame_padding_y;
+
+   size_t y          = vid->frame_height;
+
+   /* TODO/FIXME: Optimize this loop */
+   do
+   {
+      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint16_t));
+      in_ptr  += in_stride;
+      out_ptr += out_stride;
+   }
+   while (--y);
+}
+
+static void sdl_rs90_blit_frame16(sdl_rs90_video_t *vid,
+      uint16_t* src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   /* If source and destination buffers have the
+    * same pitch, perform fast copy of raw pixel data */
+   /* TODO/FIXME: Make sure this code path is used for
+    * GBA content */
+   if (src_pitch == vid->screen->pitch &&
+       height == SDL_RS90_HEIGHT)
+      memcpy(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
+   else
+   {
+      if (vid->scale_integer)
+         sdl_rs90_blit_frame16_no_scale(
+            vid, src, width, height, src_pitch);
+      else
+         sdl_rs90_blit_frame16_scale(
+            vid, src, width, height, src_pitch);
+   }
+}
+
+static void sdl_rs90_blit_frame32_scale(sdl_rs90_video_t *vid,
       uint32_t* src, unsigned width, unsigned height,
       unsigned src_pitch)
 {
-   unsigned dst_pitch = vid->screen->pitch;
-   uint32_t *in_ptr   = src;
-   uint32_t *out_ptr  = (uint32_t*)(vid->screen->pixels +
-         (vid->frame_padding_y * dst_pitch));
+   uint32_t x_step      = (((uint32_t)(width)  << 16) + 1) / vid->frame_width;
+   uint32_t y_step      = (((uint32_t)(height) << 16) + 1) / vid->frame_height;
 
-   /* If source and destination buffers have the
-    * same pitch, perform fast copy of raw pixel data */
-   if (src_pitch == dst_pitch)
-      memcpy(out_ptr, in_ptr, src_pitch * height);
-   else
+   /* 32 bit - divide pitch by 4 */
+   size_t in_stride     = (size_t)(src_pitch >> 2);
+   size_t out_stride    = (size_t)(vid->screen->pitch >> 2);
+
+   /* Apply x/y padding offset */
+   uint32_t *top_corner = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         out_stride * vid->frame_padding_y;
+
+   /* Temporary pointers */
+   uint32_t *in_ptr     = NULL;
+   uint32_t *out_ptr    = NULL;
+
+   uint32_t y           = 0;
+   size_t row;
+
+   /* TODO/FIXME: Optimize these loops further.
+    * Consider saving these computations in an array
+    * and indexing over them.
+    * Would likely be slower due to cache (non-)locality,
+    * but it's worth a shot.
+    * Tons of -> operations. */
+   for (row = 0; row < vid->frame_height; row++)
    {
-      /* Otherwise copy pixel data line-by-line */
+      size_t col = vid->frame_width;
+      uint32_t x = 0;
 
-      /* 32 bit - divide pitch by 4 */
-      uint32_t in_stride  = (uint32_t)(src_pitch >> 2);
-      uint32_t out_stride = (uint32_t)(dst_pitch >> 2);
-      size_t y;
+      out_ptr    = top_corner + out_stride * row;
+      in_ptr     = src + (y >> 16) * in_stride;
 
-      /* If SDL surface has horizontal padding,
-       * shift output image to the right */
-      out_ptr += vid->frame_padding_x;
-
-      for (y = 0; y < height; y++)
+      do
       {
-         memcpy(out_ptr, in_ptr, width * sizeof(uint32_t));
-         in_ptr  += in_stride;
-         out_ptr += out_stride;
+        *out_ptr = in_ptr[x >> 16];
+        x       += x_step;
+        out_ptr++;
       }
+      while (--col);
+
+      y += y_step;
    }
 }
 
-static bool sdl_dingux_gfx_frame(void *data, const void *frame,
+static void sdl_rs90_blit_frame32_no_scale(sdl_rs90_video_t *vid,
+      uint32_t* src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   /* 32 bit - divide pitch by 4 */
+   size_t in_stride  = (size_t)(src_pitch >> 2);
+   size_t out_stride = (size_t)(vid->screen->pitch >> 2);
+
+   /* Manipulate offsets so that padding/crop
+    * are applied correctly */
+   uint32_t *in_ptr  = src + vid->frame_crop_x + vid->frame_crop_y * in_stride;
+   uint32_t *out_ptr = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         out_stride * vid->frame_padding_y;
+
+   size_t y          = vid->frame_height;
+
+   /* TODO/FIXME: Optimize this loop */
+   do
+   {
+      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint32_t));
+      in_ptr  += in_stride;
+      out_ptr += out_stride;
+   }
+   while (--y);
+}
+
+static void sdl_rs90_blit_frame32(sdl_rs90_video_t *vid,
+      uint32_t* src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   /* If source and destination buffers have the
+    * same pitch, perform fast copy of raw pixel data */
+   /* TODO/FIXME: Make sure this code path is used for
+    * GBA content */
+   if ((src_pitch == vid->screen->pitch) &&
+       (height == SDL_RS90_HEIGHT))
+      memcpy(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
+   else
+   {
+      if (vid->scale_integer)
+         sdl_rs90_blit_frame32_no_scale(
+            vid, src, width, height, src_pitch);
+      else
+         sdl_rs90_blit_frame32_scale(
+            vid, src, width, height, src_pitch);
+   }
+}
+
+static bool sdl_rs90_gfx_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
+   sdl_rs90_video_t* vid = (sdl_rs90_video_t*)data;
 
-   if (unlikely(!vid))
+   /* Return early if:
+    * - Input sdl_rs90_video_t struct is NULL
+    *   (cannot realistically happen)
+    * - Menu is inactive and input 'content' frame
+    *   data is NULL (may happen when e.g. a running
+    *   core skips a frame) */
+   if (unlikely(!vid || (!frame && !vid->menu_active)))
       return true;
 
    /* If fast forward is currently active, we may
@@ -795,9 +877,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
        * the previous frame, or width/height have changed */
       if (unlikely(
             vid->was_in_menu ||
-            (vid->frame_width  != width) ||
-            (vid->frame_height != height)))
-         sdl_dingux_set_output(vid, width, height, vid->rgb32);
+            (vid->content_width  != width) ||
+            (vid->content_height != height)))
+         sdl_rs90_set_output(vid, width, height, vid->rgb32);
 
       /* Must always lock SDL surface before
        * manipulating raw pixel buffer */
@@ -806,21 +888,18 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
 
       if (likely(vid->mode_valid))
       {
-         if (likely(frame))
-         {
-            /* Blit frame to SDL surface */
-            if (vid->rgb32)
-               sdl_dingux_blit_frame32(vid, (uint32_t*)frame,
-                     width, height, pitch);
-            else
-               sdl_dingux_blit_frame16(vid, (uint16_t*)frame,
-                     width, height, pitch);
-         }
+         /* Blit frame to SDL surface */
+         if (vid->rgb32)
+            sdl_rs90_blit_frame32(vid, (uint32_t*)frame,
+                  width, height, pitch);
+         else
+            sdl_rs90_blit_frame16(vid, (uint16_t*)frame,
+                  width, height, pitch);
       }
       /* If current display mode is invalid,
        * just display an error message */
       else
-         sdl_dingux_blit_video_mode_error_msg(vid);
+         sdl_rs90_blit_video_mode_error_msg(vid);
 
       vid->was_in_menu = false;
    }
@@ -830,8 +909,8 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
        * is active, update video mode */
       if (!vid->was_in_menu)
       {
-         sdl_dingux_set_output(vid,
-               SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT, false);
+         sdl_rs90_set_output(vid,
+               SDL_RS90_WIDTH, SDL_RS90_HEIGHT, false);
 
          vid->was_in_menu = true;
       }
@@ -840,9 +919,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
          SDL_LockSurface(vid->screen);
 
       /* Blit menu texture to SDL surface */
-      sdl_dingux_blit_frame16(vid, vid->menu_texture,
-            SDL_DINGUX_MENU_WIDTH, SDL_DINGUX_MENU_HEIGHT,
-            SDL_DINGUX_MENU_WIDTH * sizeof(uint16_t));
+      sdl_rs90_blit_frame16(vid, vid->menu_texture,
+            SDL_RS90_WIDTH, SDL_RS90_HEIGHT,
+            SDL_RS90_WIDTH * sizeof(uint16_t));
    }
 
    /* Print OSD text, if required */
@@ -851,10 +930,10 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
       /* If menu is active, colour depth is overridden
        * to 16 bit */
       if (vid->rgb32 && !vid->menu_active)
-         sdl_dingux_blit_text32(vid, FONT_WIDTH_STRIDE,
+         sdl_rs90_blit_text32(vid, FONT_WIDTH_STRIDE,
                vid->screen->h - (FONT_HEIGHT + FONT_WIDTH_STRIDE), msg);
       else
-         sdl_dingux_blit_text16(vid, FONT_WIDTH_STRIDE,
+         sdl_rs90_blit_text16(vid, FONT_WIDTH_STRIDE,
                vid->screen->h - (FONT_HEIGHT + FONT_WIDTH_STRIDE), msg);
    }
 
@@ -868,9 +947,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void sdl_dingux_set_texture_enable(void *data, bool state, bool full_screen)
+static void sdl_rs90_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
 
    if (unlikely(!vid))
       return;
@@ -878,26 +957,26 @@ static void sdl_dingux_set_texture_enable(void *data, bool state, bool full_scre
    vid->menu_active = state;
 }
 
-static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb32,
+static void sdl_rs90_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
 
    if (unlikely(
          !vid ||
          rgb32 ||
-         (width > SDL_DINGUX_MENU_WIDTH) ||
-         (height > SDL_DINGUX_MENU_HEIGHT)))
+         (width > SDL_RS90_WIDTH) ||
+         (height > SDL_RS90_HEIGHT)))
       return;
 
    memcpy(vid->menu_texture, frame, width * height * sizeof(uint16_t));
 }
 
-static void sdl_dingux_gfx_set_nonblock_state(void *data, bool toggle,
+static void sdl_rs90_gfx_set_nonblock_state(void *data, bool toggle,
       bool adaptive_vsync_enabled, unsigned swap_interval)
 {
-   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
-   bool vsync              = !toggle;
+   sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
+   bool vsync            = !toggle;
 
    if (unlikely(!vid))
       return;
@@ -905,11 +984,15 @@ static void sdl_dingux_gfx_set_nonblock_state(void *data, bool toggle,
    /* Check whether vsync status has changed */
    if (vid->vsync != vsync)
    {
-      unsigned current_width  = vid->frame_width;
-      unsigned current_height = vid->frame_height;
+      unsigned current_width  = vid->content_width;
+      unsigned current_height = vid->content_height;
       vid->vsync              = vsync;
 
       /* Update video mode */
+
+      /* TODO/FIXME: The following workaround is required
+       * on GCW0 devices; check whether it is required on
+       * the RS-90, and remove if not */
 
       /* Note that a tedious workaround is required...
        * - Calling SDL_SetVideoMode() with the currently
@@ -926,20 +1009,20 @@ static void sdl_dingux_gfx_set_nonblock_state(void *data, bool toggle,
        * applied in all cases. We can only do this by forcing
        * a 'real' video mode update, which means adjusting the
        * video resolution. We therefore end up calling
-       * sdl_dingux_set_output() *twice*, setting the dimensions
+       * sdl_rs90_set_output() *twice*, setting the dimensions
        * to an arbitrary value before restoring the actual
        * desired width/height */
-      sdl_dingux_set_output(vid,
+      sdl_rs90_set_output(vid,
             current_width,
             (current_height > 4) ? (current_height - 2) : 16,
             vid->rgb32);
 
-      sdl_dingux_set_output(vid,
+      sdl_rs90_set_output(vid,
             current_width, current_height, vid->rgb32);
    }
 }
 
-static void sdl_dingux_gfx_check_window(sdl_dingux_video_t *vid)
+static void sdl_rs90_gfx_check_window(sdl_rs90_video_t *vid)
 {
    SDL_Event event;
 
@@ -954,35 +1037,35 @@ static void sdl_dingux_gfx_check_window(sdl_dingux_video_t *vid)
    }
 }
 
-static bool sdl_dingux_gfx_alive(void *data)
+static bool sdl_rs90_gfx_alive(void *data)
 {
-   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
 
    if (unlikely(!vid))
       return false;
 
-   sdl_dingux_gfx_check_window(vid);
+   sdl_rs90_gfx_check_window(vid);
    return !vid->quitting;
 }
 
-static bool sdl_dingux_gfx_focus(void *data)
+static bool sdl_rs90_gfx_focus(void *data)
 {
    return true;
 }
 
-static bool sdl_dingux_gfx_suppress_screensaver(void *data, bool enable)
+static bool sdl_rs90_gfx_suppress_screensaver(void *data, bool enable)
 {
    return false;
 }
 
-static bool sdl_dingux_gfx_has_windowed(void *data)
+static bool sdl_rs90_gfx_has_windowed(void *data)
 {
    return false;
 }
 
-static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void sdl_rs90_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
-   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
 
    if (unlikely(!vid))
       return;
@@ -993,10 +1076,10 @@ static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->frame_height;
 }
 
-static float sdl_dingux_get_refresh_rate(void *data)
+static float sdl_rs90_get_refresh_rate(void *data)
 {
 #if defined(DINGUX_BETA)
-   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
 
    if (!vid)
       return 0.0f;
@@ -1013,85 +1096,52 @@ static float sdl_dingux_get_refresh_rate(void *data)
    return 60.0f;
 }
 
-static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
+static void sdl_rs90_apply_state_changes(void *data)
 {
-   sdl_dingux_video_t *vid                     = (sdl_dingux_video_t*)data;
-   settings_t *settings                        = config_get_ptr();
-   enum dingux_ipu_filter_type ipu_filter_type = (settings) ?
-         (enum dingux_ipu_filter_type)settings->uints.video_dingux_ipu_filter_type :
-         DINGUX_IPU_FILTER_BICUBIC;
+   sdl_rs90_video_t *vid  = (sdl_rs90_video_t*)data;
+   settings_t *settings   = config_get_ptr();
+   bool keep_aspect       = (settings) ? settings->bools.video_dingux_ipu_keep_aspect : true;
+   bool integer_scaling   = (settings) ? settings->bools.video_scale_integer : false;
 
    if (!vid || !settings)
       return;
 
-   /* Update IPU filter setting, if required */
-   if (vid->filter_type != ipu_filter_type)
+   if ((vid->keep_aspect != keep_aspect) ||
+       (vid->scale_integer != integer_scaling))
    {
-      dingux_ipu_set_filter_type(ipu_filter_type);
-      vid->filter_type = ipu_filter_type;
+      vid->keep_aspect   = keep_aspect;
+      vid->scale_integer = integer_scaling;
+
+      /* Aspect/scaling changes require all frame
+       * dimension/padding/cropping parameters to
+       * be recalculated. Easiest method is to just
+       * (re-)set the current output video mode */
+      sdl_rs90_set_output(vid, vid->content_width,
+            vid->content_height, vid->rgb32);
    }
 }
 
-static void sdl_dingux_apply_state_changes(void *data)
-{
-   sdl_dingux_video_t *vid  = (sdl_dingux_video_t*)data;
-   settings_t *settings     = config_get_ptr();
-   bool ipu_keep_aspect     = (settings) ? settings->bools.video_dingux_ipu_keep_aspect : true;
-   bool ipu_integer_scaling = (settings) ? settings->bools.video_scale_integer : false;
-
-   if (!vid || !settings)
-      return;
-
-   /* Update IPU scaling mode, if required */
-   if ((vid->keep_aspect != ipu_keep_aspect) ||
-       (vid->integer_scaling != ipu_integer_scaling))
-   {
-      unsigned current_width  = vid->frame_width;
-      unsigned current_height = vid->frame_height;
-      unsigned screen_width   = vid->screen->w;
-      unsigned screen_height  = vid->screen->h;
-      unsigned sanitized_width;
-      unsigned sanitized_height;
-
-      dingux_ipu_set_scaling_mode(ipu_keep_aspect, ipu_integer_scaling);
-      vid->keep_aspect     = ipu_keep_aspect;
-      vid->integer_scaling = ipu_integer_scaling;
-
-      /* Scaling mode can affect supported display
-       * resolutions. In such cases, update the video
-       * display mode */
-      sdl_dingux_sanitize_frame_dimensions(vid,
-            current_width, current_height,
-            &sanitized_width, &sanitized_height);
-
-      if ((screen_width  != sanitized_width) ||
-          (screen_height != sanitized_height))
-         sdl_dingux_set_output(vid,
-               current_width, current_height, vid->rgb32);
-   }
-}
-
-static uint32_t sdl_dingux_get_flags(void *data)
+static uint32_t sdl_rs90_get_flags(void *data)
 {
    return 0;
 }
 
-static const video_poke_interface_t sdl_dingux_poke_interface = {
-   sdl_dingux_get_flags,
+static const video_poke_interface_t sdl_rs90_poke_interface = {
+   sdl_rs90_get_flags,
    NULL,
    NULL,
    NULL,
-   sdl_dingux_get_refresh_rate,
-   sdl_dingux_set_filtering,
+   sdl_rs90_get_refresh_rate,
+   NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
    NULL,
-   sdl_dingux_apply_state_changes,
-   sdl_dingux_set_texture_frame,
-   sdl_dingux_set_texture_enable,
+   sdl_rs90_apply_state_changes,
+   sdl_rs90_set_texture_frame,
+   sdl_rs90_set_texture_enable,
    NULL,
    NULL, /* sdl_show_mouse */
    NULL, /* sdl_grab_mouse_toggle */
@@ -1100,31 +1150,31 @@ static const video_poke_interface_t sdl_dingux_poke_interface = {
    NULL  /* get_hw_render_interface */
 };
 
-static void sdl_dingux_get_poke_interface(void *data, const video_poke_interface_t **iface)
+static void sdl_rs90_get_poke_interface(void *data, const video_poke_interface_t **iface)
 {
-   *iface = &sdl_dingux_poke_interface;
+   *iface = &sdl_rs90_poke_interface;
 }
 
-static bool sdl_dingux_gfx_set_shader(void *data,
+static bool sdl_rs90_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
    return false;
 }
 
-video_driver_t video_sdl_dingux = {
-   sdl_dingux_gfx_init,
-   sdl_dingux_gfx_frame,
-   sdl_dingux_gfx_set_nonblock_state,
-   sdl_dingux_gfx_alive,
-   sdl_dingux_gfx_focus,
-   sdl_dingux_gfx_suppress_screensaver,
-   sdl_dingux_gfx_has_windowed,
-   sdl_dingux_gfx_set_shader,
-   sdl_dingux_gfx_free,
-   "sdl_dingux",
+video_driver_t video_sdl_rs90 = {
+   sdl_rs90_gfx_init,
+   sdl_rs90_gfx_frame,
+   sdl_rs90_gfx_set_nonblock_state,
+   sdl_rs90_gfx_alive,
+   sdl_rs90_gfx_focus,
+   sdl_rs90_gfx_suppress_screensaver,
+   sdl_rs90_gfx_has_windowed,
+   sdl_rs90_gfx_set_shader,
+   sdl_rs90_gfx_free,
+   "sdl_rs90",
    NULL,
    NULL, /* set_rotation */
-   sdl_dingux_gfx_viewport_info,
+   sdl_rs90_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
@@ -1133,5 +1183,5 @@ video_driver_t video_sdl_dingux = {
 #ifdef HAVE_VIDEO_LAYOUT
   NULL,
 #endif
-   sdl_dingux_get_poke_interface
+   sdl_rs90_get_poke_interface
 };

@@ -467,6 +467,14 @@ VIDEO DRIVER
 #include "../gfx/common/sdl2_common.c"
 #endif
 
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+#if defined(RS90)
+#include "../gfx/drivers/sdl_rs90_gfx.c"
+#else
+#include "../gfx/drivers/sdl_dingux_gfx.c"
+#endif
+#endif
+
 #ifdef HAVE_VG
 #include "../gfx/drivers/vg.c"
 #endif
