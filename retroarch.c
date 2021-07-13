@@ -35213,6 +35213,15 @@ static bool retroarch_parse_input_and_config(
       config_load(&p_rarch->g_extern);
    }
 
+   /* Override settings via environment variables */
+   if (getenv("LIBRETRO_DIRECTORY")) {
+      settings_t *settings = p_rarch->configuration_settings;
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
+      configuration_set_string(settings,
+            settings->paths.directory_libretro,
+            getenv("LIBRETRO_DIRECTORY"));
+   }
+
    /* Second pass: All other arguments override the config file */
    optind = 1;
 
