@@ -450,35 +450,6 @@ const void *hid_driver_get_data(void);
 void hid_driver_reset_data(void);
 #endif
 
-/** Line complete callback.
- * Calls back after return is pressed with the completed line.
- * Line can be NULL.
- **/
-typedef void (*input_keyboard_line_complete_t)(void *userdata,
-      const char *line);
-
-typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
-
-struct input_keyboard_ctx_wait
-{
-   void *userdata;
-   input_keyboard_press_t cb;
-};
-
-/**
- * input_keyboard_event:
- * @down                     : Keycode was pressed down?
- * @code                     : Keycode.
- * @character                : Character inputted.
- * @mod                      : TODO/FIXME: ???
- *
- * Keyboard event utils. Called by drivers when keyboard events are fired.
- * This interfaces with the global driver struct and libretro callbacks.
- **/
-void input_keyboard_event(bool down, unsigned code, uint32_t character,
-      uint16_t mod, unsigned device);
-
-
 /* Set input_device_info */
 void input_config_set_device_name(unsigned port, const char *name);
 void input_config_set_device_display_name(unsigned port, const char *name);
@@ -536,6 +507,26 @@ void input_config_reset(void);
 
 void set_connection_listener(pad_connection_listener_t *listener);
 
+typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
+
+struct input_keyboard_ctx_wait
+{
+   void *userdata;
+   input_keyboard_press_t cb;
+};
+
+/**
+ * Called by drivers when keyboard events are fired. Interfaces with the global
+ * driver struct and libretro callbacks.
+ * 
+ * @param down       Was Keycode pressed down?
+ * @param code       Keycode.
+ * @param character  Character inputted.
+ * @param mod        TODO/FIXME/???
+ **/
+void input_keyboard_event(bool down, unsigned code, uint32_t character,
+      uint16_t mod, unsigned device);
+
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;
 extern input_device_driver_t parport_joypad;
@@ -590,31 +581,6 @@ extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
 #endif
-
-typedef struct menu_input_ctx_line
-{
-   const char *label;
-   const char *label_setting;
-   unsigned type;
-   unsigned idx;
-   input_keyboard_line_complete_t cb;
-} menu_input_ctx_line_t;
-
-const char *menu_input_dialog_get_label_setting_buffer(void);
-
-const char *menu_input_dialog_get_label_buffer(void);
-
-const char *menu_input_dialog_get_buffer(void);
-
-unsigned menu_input_dialog_get_kb_idx(void);
-
-bool menu_input_dialog_start_search(void);
-
-bool menu_input_dialog_get_display_kb(void);
-
-bool menu_input_dialog_start(menu_input_ctx_line_t *line);
-
-void menu_input_dialog_end(void);
 
 RETRO_END_DECLS
 

@@ -24507,18 +24507,18 @@ static unsigned menu_event(
    return ret;
 }
 
-void menu_input_get_pointer_state(menu_input_pointer_t *pointer)
+void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
 {
    struct rarch_state  *p_rarch   = &rarch_st;
    menu_input_t       *menu_input = &p_rarch->menu_input_state;
 
-   if (!pointer)
+   if (!copy_target)
       return;
 
    /* Copy parameters from global menu_input_state
     * (i.e. don't pass by reference)
     * This is a fast operation */
-   memcpy(pointer, &menu_input->pointer, sizeof(menu_input_pointer_t));
+   memcpy(copy_target, &menu_input->pointer, sizeof(menu_input_pointer_t));
 }
 
 unsigned menu_input_get_pointer_selection(void)
