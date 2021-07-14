@@ -4736,7 +4736,9 @@ static void rgui_render(void *data,
       unsigned title_y               = rgui->term_layout.start_y - rgui->font_height_stride;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
       unsigned timedate_x            = term_end_x - (5 * rgui->font_width_stride);
-      unsigned core_name_len         = ((timedate_x - rgui->term_layout.start_x) / rgui->font_width_stride) - 3;
+      unsigned core_name_len         = menu_timedate_enable ?
+            ((timedate_x - rgui->term_layout.start_x) / rgui->font_width_stride) - 3 :
+                  rgui->term_layout.width - 1;
       bool show_mini_thumbnails      = rgui->is_playlist && rgui_inline_thumbnails;
       bool show_thumbnail            = false;
       bool show_left_thumbnail       = false;
