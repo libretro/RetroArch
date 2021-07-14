@@ -24,9 +24,13 @@
 
 RETRO_BEGIN_DECLS
 
+#ifdef HAVE_LIBNX
+#define MAX_USERS                      8
+#define MAX_INPUT_DEVICES              8
+#else /* HAVE_LIBNX */
 #define MAX_USERS                      16
-
 #define MAX_INPUT_DEVICES              16
+#endif /* !HAVE_LIBNX */
 
 #define RARCH_MAX_KEYS 137
 
