@@ -1324,6 +1324,14 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned gfx_thumbnail_upscale_threshold = 0;
 
 #ifdef HAVE_MENU
+#if defined(RS90)
+/* The RS-90 has a hardware clock that is neither
+ * configurable nor persistent, rendering it useless.
+ * We therefore hide it in the menu by default. */
+#define DEFAULT_MENU_TIMEDATE_ENABLE false
+#else
+#define DEFAULT_MENU_TIMEDATE_ENABLE true
+#endif
 #define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
 #define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #endif
