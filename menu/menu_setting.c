@@ -16430,7 +16430,7 @@ static bool setting_append_list(
                &settings->bools.menu_timedate_enable,
                MENU_ENUM_LABEL_TIMEDATE_ENABLE,
                MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
-               true,
+               DEFAULT_MENU_TIMEDATE_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
