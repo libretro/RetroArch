@@ -124,8 +124,8 @@ static void sdl_rs90_blit_text16(
    bool **font_lut              = vid->osd_font->lut;
    /* 16 bit - divide pitch by 2 */
    uint16_t screen_stride       = (uint16_t)(vid->screen->pitch >> 1);
-   uint16_t screen_width        = vid->frame_width;
-   uint16_t screen_height       = vid->frame_height;
+   uint16_t screen_width        = vid->screen->w;
+   uint16_t screen_height       = vid->screen->h;
    unsigned x_pos               = x + vid->frame_padding_x;
    unsigned y_pos               = (y > (screen_height >> 1)) ?
          (y - vid->frame_padding_y) : (y + vid->frame_padding_y);
