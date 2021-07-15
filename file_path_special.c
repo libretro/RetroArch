@@ -37,6 +37,10 @@
 #include <kernel/image.h>
 #endif
 
+#if defined(DINGUX)
+#include "dingux/dingux_utils.h"
+#endif
+
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
@@ -104,13 +108,8 @@ bool fill_pathname_application_data(char *s, size_t len)
       return true;
    }
 #elif defined(DINGUX)
-   const char *appdata = getenv("HOME");
-
-   if (appdata)
-   {
-      fill_pathname_join(s, appdata, "/.retroarch", len);
-      return true;
-   }
+   dingux_get_base_path(s, len);
+   return true;
 #elif !defined(RARCH_CONSOLE)
    const char *xdg     = getenv("XDG_CONFIG_HOME");
    const char *appdata = getenv("HOME");
