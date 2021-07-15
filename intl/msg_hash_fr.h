@@ -1580,6 +1580,14 @@ MSG_HASH(
    "Mettre la vidéo à l'échelle sur un nombre entier uniquement. La taille de base dépend de la géométrie et du rapport d'aspect détectés par le système. Si 'Forcer le rapport d'aspect' est désactivé, X/Y seront mis à l'échelle à l'entier indépendamment."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Échelle à l'entier surdimensionnée"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Force la mise à l'échelle sur l'entier à arrondir au prochain entier supérieur plutôt qu'inférieur."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Rapport d'aspect"
    )
