@@ -581,6 +581,12 @@ static void sdl_dingux_sanitize_frame_dimensions(
       /* GB/GBC/GG (x3) @ 480x432 */
       else if ((width == 480) && (height == 432))
          *sanitized_width = 496;
+      /* SNES/Genesis @ 256x224 */
+      else if ((width == 256) && (height == 224))
+         *sanitized_width = 288;
+      /* SNES/Genesis (x2) @ 512x448 */
+      else if ((width == 512) && (height == 448))
+         *sanitized_width = 560;
    }
 #endif
 
