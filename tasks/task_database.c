@@ -81,11 +81,14 @@ int gdi_find_track(const char *gdi_path, bool first,
       char *track_path, uint64_t max_len);
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *path, uint64_t max_len);
-int detect_system(intfstream_t *fd, const char** system_name);
-int detect_ps1_game(intfstream_t *fd, char *game_id);
-int detect_psp_game(intfstream_t *fd, char *game_id);
-int detect_gc_game(intfstream_t *fd, char *game_id);
-int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
+int detect_system(intfstream_t *fd, const char** system_name, const char *filename);
+int detect_ps1_game(intfstream_t *fd, char *serial, const char *filename);
+int detect_psp_game(intfstream_t *fd, char *serial, const char *filename);
+int detect_gc_game(intfstream_t *fd, char *serial, const char *filename);
+int detect_scd_game(intfstream_t *fd, char *serial, const char *filename);
+int detect_sat_game(intfstream_t *fd, char *serial, const char *filename);
+int detect_dc_game(intfstream_t *fd, char *serial, const char *filename);
+int detect_wii_game(intfstream_t *fd, char *serial, const char *filename);
 
 static const char *database_info_get_current_name(
       database_state_handle_t *handle)
@@ -145,47 +148,68 @@ static int task_database_iterate_start(retro_task_t *task,
    return 0;
 }
 
-static int intfstream_get_serial(intfstream_t *fd, char *serial)
+static int intfstream_get_serial(intfstream_t *fd, char *serial, const char *filename)
 {
-  const char *system_name = NULL;
+   const char *system_name = NULL;
+   if (detect_system(fd, &system_name, filename) >= 1)
+   {
 
-  /* Check if the system was not auto-detected. */
-  if (detect_system(fd, &system_name) < 0)
-  {
-    /* Attempt to read an ASCII serial, like Wii. */
-    if (detect_serial_ascii_game(fd, serial))
-    {
-      /* ASCII serial (Wii) was detected. */
-      RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+   }
+   else
+   {
       return 0;
-    }
+   }
 
-    /* Any other non-system specific detection methods? */
-    return 0;
-  }
-
-  if (string_is_equal(system_name, "psp"))
-  {
-    if (detect_psp_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else if (string_is_equal(system_name, "ps1"))
-  {
-    if (detect_ps1_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else if (string_is_equal(system_name, "gc"))
-  {
-    if (detect_gc_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else
-    return 0;
-
-  return 1;
+   if (string_is_equal(system_name, "Sony - PlayStation Portable"))
+   {
+      if (detect_psp_game(fd, serial, filename) == 0)
+         return 0;
+      RARCH_LOG("[Scanner] Serial: %s\n", serial);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Sony - PlayStation"))
+   {
+      if (detect_ps1_game(fd, serial, filename) == 0)
+         return 0;
+      RARCH_LOG("[Scanner] Serial: %s\n", serial);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Nintendo - GameCube"))
+   {
+      if (detect_gc_game(fd, serial, filename) == 0)
+         return 0;
+      RARCH_LOG("[Scanner] Serial: %s\n", serial);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Sega - Mega-CD - Sega CD"))
+   {
+      if (detect_scd_game(fd, serial, filename) == 0)
+         return 0;
+      RARCH_LOG("[Scanner] Serial: %s\n", serial);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Sega - Saturn"))
+   {
+      if (detect_sat_game(fd, serial, filename) == 0)
+         return 0;
+      RARCH_LOG("[Scanner] Serial: %s\n", serial);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Sega - Dreamcast"))
+   {
+      if (detect_dc_game(fd, serial, filename) == 0)
+         return 0;
+      RARCH_LOG("[Scanner] Serial: %s\n", serial);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Nintendo - Wii"))
+   {
+      if (detect_wii_game(fd, serial, filename) == 0)
+         return 0;
+      RARCH_LOG("[Scanner] Serial: %s\n", serial);
+      return 1;
+   }
+   return 0;
 }
 
 static bool intfstream_file_get_serial(const char *name,
@@ -236,7 +260,7 @@ static bool intfstream_file_get_serial(const char *name,
       }
    }
 
-   rv = intfstream_get_serial(fd, serial);
+   rv = intfstream_get_serial(fd, serial, name);
    intfstream_close(fd);
    free(fd);
    free(data);
@@ -305,7 +329,7 @@ static int task_database_chd_get_serial(const char *name, char* serial)
    if (!fd)
       return 0;
 
-   result = intfstream_get_serial(fd, serial);
+   result = intfstream_get_serial(fd, serial, name);
    intfstream_close(fd);
    free(fd);
    return result;
@@ -617,6 +641,7 @@ static int task_database_iterate_playlist(
          db->type            = DATABASE_TYPE_ITERATE_LUTRO;
          break;
       default:
+         db_state->serial[0] = '\0';
          db->type            = DATABASE_TYPE_CRC_LOOKUP;
          return intfstream_file_get_crc(name, 0, SIZE_MAX, &db_state->crc);
    }
@@ -708,15 +733,10 @@ static int database_info_list_iterate_found_match(
       const char *archive_name
       )
 {
-   /* TODO/FIXME - heap allocations are done here to avoid
-    * running out of stack space on systems with a limited stack size.
-    * We should use less fullsize paths in the future so that we don't
-    * need to have all these big char arrays here */
-   size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
-   char* db_crc                   = (char*)malloc(str_len);
-   char* db_playlist_base_str     = (char*)malloc(str_len);
-   char* db_playlist_path         = (char*)malloc(str_len);
-   char* entry_path_str           = (char*)malloc(str_len);
+   char db_crc[PATH_MAX_LENGTH];
+   char db_playlist_base_str[PATH_MAX_LENGTH];
+   char db_playlist_path[PATH_MAX_LENGTH];
+   char entry_path_str[PATH_MAX_LENGTH];
    char *hash                     = NULL;
    playlist_t   *playlist         = NULL;
    const char         *db_path    =
@@ -732,25 +752,31 @@ static int database_info_list_iterate_found_match(
    entry_path_str[0]              = '\0';
 
    fill_short_pathname_representation_noext(db_playlist_base_str,
-         db_path, str_len);
+         db_path, sizeof(db_playlist_base_str));
 
-   strlcat(db_playlist_base_str, ".lpl", str_len);
+   strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
 
    if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join(db_playlist_path, _db->playlist_directory,
-            db_playlist_base_str, str_len);
+            db_playlist_base_str, sizeof(db_playlist_path));
 
    playlist_config_set_path(&_db->playlist_config, db_playlist_path);
    playlist = playlist_init(&_db->playlist_config);
 
-   snprintf(db_crc, str_len, "%08X|crc", db_info_entry->crc32);
+   if (!string_is_empty(db_state->serial))
+      snprintf(db_crc, PATH_MAX_LENGTH * sizeof(char),
+         "%s|serial", db_state->serial);
+   else
+   {
+      snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
+   }
 
    if (entry_path)
-      strlcpy(entry_path_str, entry_path, str_len);
+      strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
 
    if (!string_is_empty(archive_name))
       fill_pathname_join_delim(entry_path_str,
-            entry_path_str, archive_name, '#', str_len);
+            entry_path_str, archive_name, '#', sizeof(entry_path_str));
 
    if (core_info_database_match_archive_member(
          db_state->list->elems[db_state->list_index].data) &&
@@ -831,10 +857,6 @@ static int database_info_list_iterate_found_match(
       db_state->list->elems[0] = entry;
    }
 
-   free(db_crc);
-   free(db_playlist_base_str);
-   free(db_playlist_path);
-   free(entry_path_str);
    return 0;
 }
 
