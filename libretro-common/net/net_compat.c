@@ -264,6 +264,25 @@ void freeaddrinfo_retro(struct addrinfo *res)
 #endif
 }
 
+#if defined(WIIU)
+#include <malloc.h>
+
+static OSThread wiiu_net_cmpt_thread;
+static void wiiu_net_cmpt_thread_cleanup(OSThread *thread, void *stack) {
+   free(stack);
+}
+static int wiiu_net_cmpt_thread_entry(int argc, const char** argv) {
+   const int buf_size = WIIU_RCVBUF + WIIU_SNDBUF;
+   void* buf = memalign(128, buf_size);
+   if (!buf) return -1;
+
+   somemopt(1, buf, buf_size, 0);
+
+   free(buf);
+   return 0;
+}
+#endif
+
 /**
  * network_init:
  *
@@ -332,6 +351,18 @@ bool network_init(void)
       return false;
 #elif defined(WIIU)
    socket_lib_init();
+
+   const int stack_size = 4096;
+   void* stack = malloc(stack_size);
+   if (stack && OSCreateThread(&wiiu_net_cmpt_thread,
+      wiiu_net_cmpt_thread_entry, 0, NULL, stack+stack_size, stack_size,
+      3, OS_THREAD_ATTRIB_AFFINITY_ANY)) {
+
+      OSSetThreadName(&wiiu_net_cmpt_thread, "Network compat thread");
+      OSSetThreadDeallocator(&wiiu_net_cmpt_thread,
+         wiiu_net_cmpt_thread_cleanup);
+      OSResumeThread(&wiiu_net_cmpt_thread);
+   }
 #elif defined(_3DS)
     _net_compat_net_memory = (u32*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
 	if (!_net_compat_net_memory)
