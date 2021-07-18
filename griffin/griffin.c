@@ -1515,9 +1515,9 @@ DEPENDENCIES
 #endif
 
 #ifdef WANT_IOSUHAX
-#include "../deps/libiosuhax/iosuhax.c"
-#include "../deps/libiosuhax/iosuhax_devoptab.c"
-#include "../deps/libiosuhax/iosuhax_disc_interface.c"
+#include "../deps/libiosuhax/source/iosuhax.c"
+#include "../deps/libiosuhax/source/iosuhax_devoptab.c"
+#include "../deps/libiosuhax/source/iosuhax_disc_interface.c"
 #endif
 
 /*============================================================
