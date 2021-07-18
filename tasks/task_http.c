@@ -133,7 +133,7 @@ static int task_http_iterate_transfer(retro_task_t *task)
          task_set_progress(task, (signed)(pos * 100 / tot));
       else
          /* but invert the logic if it would cause an overflow */
-         task_set_progress(task, MAX((signed)pos / (tot / 100), 100));
+         task_set_progress(task, MIN((signed)pos / (tot / 100), 100));
       return -1;
    }
 
