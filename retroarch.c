@@ -39375,6 +39375,12 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"vi", RETRO_LANGUAGE_VIETNAMESE},
       {"ar", RETRO_LANGUAGE_ARABIC},
       {"el", RETRO_LANGUAGE_GREEK},
+      {"tr", RETRO_LANGUAGE_TURKISH},
+      {"sk", RETRO_LANGUAGE_SLOVAK},
+      {"fa", RETRO_LANGUAGE_PERSIAN},
+      {"he", RETRO_LANGUAGE_HEBREW},
+      {"ast", RETRO_LANGUAGE_ASTURIAN},
+      {"fi", RETRO_LANGUAGE_FINNISH},
    };
 
    if (string_is_empty(iso639))
