@@ -266,15 +266,6 @@ static void rcheevos_async_retry_request(retro_task_t* task)
    rcheevos_async_io_request* request = (rcheevos_async_io_request*)
       task->user_data;
 
-   if (request->type == CHEEVOS_ASYNC_RICHPRESENCE)
-   {
-      /* this is a ping retry. discard the previous request and
-       * generate a new one. note the periodic task is still
-       * active for the requet */
-      rc_api_destroy_request(&request->request);
-      rcheevos_client_prepare_ping(request);
-   }
-
    /* the timer task has done its job. let it dispose itself */
    task_set_finished(task, 1);
 
@@ -284,7 +275,7 @@ static void rcheevos_async_retry_request(retro_task_t* task)
          rcheevos_async_http_task_callback, request);
 }
 
-static void rcheevos_async_retry_request_after_delay(rcheevos_async_io_request* request)
+static void rcheevos_async_retry_request_after_delay(rcheevos_async_io_request* request, const char* error)
 {
    retro_task_t* task = task_init();
 
@@ -294,6 +285,9 @@ static void rcheevos_async_retry_request_after_delay(rcheevos_async_io_request* 
    retro_time_t retry_delay = (request->attempt_count > 8)
       ? (120 * 1000 * 1000)
       : ((250 * 1000) << request->attempt_count);
+
+   CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s (automatic retry in %dms)\n", request->failure_message,
+      request->id, error, (int)retry_delay / 1000);
 
    task->when         = cpu_features_get_time_usec() + retry_delay;
    task->handler      = rcheevos_async_retry_request;
@@ -313,11 +307,19 @@ static void rcheevos_async_http_task_callback(
 
    if (error)
    {
-      /* there was a communication error. automatically retry the request */
-      CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s\n", request->failure_message,
+      /* there was a communication error */
+      if (request->type == CHEEVOS_ASYNC_RICHPRESENCE && request->attempt_count > 0)
+      {
+         /* only retry the ping once (in case of network hiccup), otherwise let
+          * the timer handle it after the normal ping period has elapsed */
+         CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s\n", request->failure_message,
             request->id, error);
-
-      rcheevos_async_retry_request_after_delay(request);
+      }
+      else
+      {
+         /* automatically retry the request */
+         rcheevos_async_retry_request_after_delay(request, error);
+      }
       return;
    }
 
@@ -485,6 +487,7 @@ static void rcheevos_async_ping_handler(retro_task_t* task)
       /* game changed; stop the recurring task - a new one will
        * be scheduled if a new game is loaded */
       task_set_finished(task, 1);
+      /* request->request was destroyed in rcheevos_async_http_task_callback */
       free(request);
       return;
    }
