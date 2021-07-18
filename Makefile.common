@@ -2377,10 +2377,10 @@ endif
 
 ifeq ($(WANT_IOSUHAX), 1)
    DEFINES += -DHAVE_IOSUHAX
-   INCLUDE_DIRS += -I$(DEPS_DIR)/libiosuhax
-   OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
-          $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
-          $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
+   INCLUDE_DIRS += -I$(DEPS_DIR)/libiosuhax/include
+   OBJ += $(DEPS_DIR)/libiosuhax/source/iosuhax.o \
+          $(DEPS_DIR)/libiosuhax/source/iosuhax_devoptab.o \
+          $(DEPS_DIR)/libiosuhax/source/iosuhax_disc_interface.o
 endif
 
 ifeq ($(WANT_LIBFAT), 1)
