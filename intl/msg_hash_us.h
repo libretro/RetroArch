@@ -10536,11 +10536,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Port Mapping Successful"
+   "Netplay Port Mapping Successful"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Port Mapping Failed"
+   "Netplay UPNP Port Mapping Failed"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
