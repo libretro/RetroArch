@@ -151,6 +151,10 @@ static struct save_state_buf undo_save_buf;
  * Can be restored with undo_load_state(). */
 static struct save_state_buf undo_load_buf;
 
+/* Buffer that stores state instead of file.
+ * This is useful for devices with slow I/O. */
+static struct save_state_buf ram_buf;
+
 #ifdef HAVE_THREADS
 /* TODO/FIXME - global state - perhaps move outside this file */
 static struct autosave_st autosave_state;
@@ -1669,6 +1673,15 @@ bool content_reset_savestate_backups(void)
    undo_load_buf.path[0] = '\0';
    undo_load_buf.size    = 0;
 
+   if (ram_buf.data)
+   {
+      free(ram_buf.data);
+      ram_buf.data       = NULL;
+   }
+
+   ram_buf.path[0]       = '\0';
+   ram_buf.size          = 0;
+
    return true;
 }
 
@@ -1806,6 +1819,148 @@ static bool dump_to_file_desperate(const void *data,
 
    RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
    return true;
+}
+
+/**
+ * content_load_state_from_ram:
+ * Load a state from ram.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
+bool content_load_state_from_ram(void)
+{
+   size_t temp_data_size;
+   bool ret                  = false;
+   void* temp_data           = NULL;
+
+   RARCH_LOG("[State]: %s, %u %s.\n",
+         msg_hash_to_str(MSG_LOADING_STATE),
+         (unsigned)ram_buf.size,
+         msg_hash_to_str(MSG_BYTES));
+
+   /* We need to make a temporary copy of the buffer, to allow the swap below */
+   temp_data              = malloc(ram_buf.size);
+   temp_data_size         = ram_buf.size;
+   memcpy(temp_data, ram_buf.data, ram_buf.size);
+
+   /* Swap the current state with the backup state. This way, we can undo
+   what we're undoing */
+   content_save_state("RAM", false, false);
+
+   ret                    = content_deserialize_state(temp_data, temp_data_size);
+
+   /* Clean up the temporary copy */
+   free(temp_data);
+   temp_data              = NULL;
+
+   if (!ret)
+   {
+      RARCH_ERR("[State]: %s.\n",
+         msg_hash_to_str(MSG_FAILED_TO_LOAD_SRAM));
+   }
+
+   return ret;
+}
+
+/**
+ * content_save_state_from_ram:
+ * Save a state to ram.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
+bool content_save_state_to_ram(void)
+{
+   retro_ctx_size_info_t info;
+   void *data  = NULL;
+   size_t serial_size;
+
+   core_serialize_size(&info);
+
+   if (info.size == 0)
+      return false;
+   serial_size = info.size;
+
+   if (!save_state_in_background)
+   {
+      data = content_get_serialized_data(&serial_size);
+
+      if (!data)
+      {
+         RARCH_ERR("[State]: %s.\n",
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
+         return false;
+      }
+
+      RARCH_LOG("[State]: %s, %u %s.\n",
+            msg_hash_to_str(MSG_SAVING_STATE),
+            (unsigned)serial_size,
+            msg_hash_to_str(MSG_BYTES));
+   }
+
+   if (!data)
+      data = content_get_serialized_data(&serial_size);
+
+   if (!data)
+   {
+      RARCH_ERR("[State]: %s.\n",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
+      return false;
+   }
+
+   /* If we were holding onto an old state already, clean it up first */
+   if (ram_buf.data)
+   {
+      free(ram_buf.data);
+      ram_buf.data = NULL;
+   }
+
+   ram_buf.data = malloc(serial_size);
+   if (!ram_buf.data)
+   {
+      free(data);
+      return false;
+   }
+
+   memcpy(ram_buf.data, data, serial_size);
+   free(data);
+   ram_buf.size = serial_size;
+
+   return true;
+}
+
+/**
+ * content_ram_state_to_file:
+ * @path             : path of ram state that shall be written to.
+ * Save a ram state from memory to disk.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
+bool content_ram_state_to_file(const char *path)
+{
+   settings_t *settings            = config_get_ptr();
+#if defined(HAVE_ZLIB)
+   bool compress_files             = settings->bools.save_file_compression;
+#else
+   bool compress_files             = false;
+#endif
+   bool write_success;
+
+   if (!path)
+      return false;
+
+   if (!ram_buf.data)
+      return false;
+
+#if defined(HAVE_ZLIB)
+   if (compress_files)
+      write_success = rzipstream_write_file(
+         path, ram_buf.data, ram_buf.size);
+   else
+#endif
+      write_success = filestream_write_file(
+         path, ram_buf.data, ram_buf.size);
+
+   return write_success;
 }
 
 /**

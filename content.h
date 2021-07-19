@@ -45,6 +45,15 @@ bool content_load_ram_file(unsigned slot);
 /* Save a RAM state from memory to disk. */
 bool content_save_ram_file(unsigned slot, bool compress);
 
+/* Load a state from memory. */
+bool content_load_state_from_ram(void);
+
+/* Save a state to memory. */
+bool content_save_state_to_ram(void);
+
+/* Save a ram state from memory to disk. */
+bool content_ram_state_to_file(const char *path);
+
 /* Load a state from disk to memory. */
 bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
