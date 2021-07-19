@@ -12034,6 +12034,10 @@ MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Unsupported video mode"
    )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Cannot write to core info directory - core info cache will be disabled"
+   )
 
 /* Lakka */
 
