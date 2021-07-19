@@ -680,7 +680,7 @@ static void sdl_rs90_blit_frame16_scale(sdl_rs90_video_t *vid,
       {
         *out_ptr = in_ptr[x >> 16];
         x       += x_step;
-        out_ptr++;
+        out_ptr++;  // ??? Can this be combined with previous line as *out_ptr++
       }
       while (--col);
 
@@ -714,6 +714,118 @@ static void sdl_rs90_blit_frame16_no_scale(sdl_rs90_video_t *vid,
    while (--y);
 }
 
+
+// Masks The RGB pixels, divides them by two, and then adds two together
+// #define AVERAGE(z, x) ((((z) & 0xF7DEF7DE) >> 1) + (((x) & 0xF7DEF7DE) >> 1))
+#define AVERAGE(a, b) ( ((((a) ^ (b)) & 0xf7deU) >> 1) + ((a) & (b)) )
+
+// Scales a single horizontal line using approximate linear scaling
+// Image Scaling with Bresenham
+// https://www.drdobbs.com/image-scaling-with-bresenham/184405045
+static void scale_line_average(uint16_t *target, uint16_t *src, unsigned width, unsigned target_width, unsigned int_part, unsigned fract_part, unsigned midpoint)
+{
+   // If width == target_width, we can do a memcpy
+   // But that logic isn't implemented
+   unsigned num_pixels = target_width;
+
+   unsigned E = 0; // Make better variable name
+
+   if (target_width > width)
+      num_pixels--;
+
+   do {
+      *target++ = E >= midpoint ? AVERAGE(*src, *(src+1)) : *src;
+      src += int_part;
+
+      E += fract_part;
+      if (E >= target_width) {
+         E -= target_width;
+         src++;
+      } /* if */
+   } while (--num_pixels);
+
+   if (target_width > width)
+      *target = *src;
+}
+
+
+static void scale_rect(
+   uint16_t *target,
+   unsigned target_width,
+   unsigned target_height,
+   size_t out_stride,
+   // unsigned target_pitch,
+
+   uint16_t *src,
+   unsigned width,
+   unsigned height,
+   unsigned src_pitch)
+{
+   /* 16 bit - divide pitch by 2 */
+   size_t in_stride  = (size_t)(src_pitch >> 1);
+
+   unsigned num_lines = target_height;
+   unsigned int_part = (height / target_height) * in_stride;
+   unsigned fract_part = height % target_height;
+   int E = 0;  // TODO Better variable name -- 'error' ?
+   uint16_t *prev_src = NULL;
+
+   // Enhance midpoint selection as described in addendum
+   // TODO Test this
+   // int col_midpoint = target_width > width
+   //    ? target_width - 3 * (target_width - width) / 2
+   //    : (int)(target_width) + 1 * ((int)(target_width) - (int)(width));
+   unsigned col_midpoint = target_width >> 1;
+
+   unsigned col_int_part = width / target_width;
+   unsigned col_fract_part = width % target_width;
+
+   while (num_lines--) {
+      // If line is supposed to be identical to prev line, just
+      // copy it
+      if (src == prev_src) {
+         memcpy(target, target - out_stride, sizeof(uint16_t) * target_width);
+      } else {
+         scale_line_average(target, src, width, target_width, col_int_part, col_fract_part, col_midpoint);
+         prev_src = src;
+      } /* if */
+
+      target += out_stride;
+      src += int_part;
+      E += fract_part;
+
+      if (E >= target_height) {
+         E -= target_height;
+         src += in_stride;
+      } /* if */
+  } /* while */
+}
+
+static void sdl_rs90_blit_frame16_scale_smooth_scanline(
+   sdl_rs90_video_t *vid,
+   uint16_t* src,
+   unsigned width,
+   unsigned height,
+   unsigned src_pitch)
+{
+   /* 16 bit - divide pitch by 2 */
+   size_t out_stride = (size_t)(vid->screen->pitch >> 1);
+
+   // TODO Remove the scale_rect function
+   // and refactor that logic so that it's inline here
+   scale_rect(
+      // x/y padding
+      (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x + out_stride * vid->frame_padding_y,
+      vid->frame_width,
+      vid->frame_height,
+      out_stride,
+      src,
+      width,
+      height,
+      src_pitch
+   );
+}
+
 static void sdl_rs90_blit_frame16(sdl_rs90_video_t *vid,
       uint16_t* src, unsigned width, unsigned height,
       unsigned src_pitch)
@@ -731,8 +843,11 @@ static void sdl_rs90_blit_frame16(sdl_rs90_video_t *vid,
          sdl_rs90_blit_frame16_no_scale(
             vid, src, width, height, src_pitch);
       else
-         sdl_rs90_blit_frame16_scale(
+         // For testing
+         sdl_rs90_blit_frame16_scale_smooth_scanline(
             vid, src, width, height, src_pitch);
+         // sdl_rs90_blit_frame16_scale(
+         //    vid, src, width, height, src_pitch);
    }
 }
 
