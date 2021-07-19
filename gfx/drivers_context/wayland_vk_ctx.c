@@ -36,9 +36,6 @@
 /* Generated from idle-inhibit-unstable-v1.xml */
 #include "../common/wayland/idle-inhibit-unstable-v1.h"
 
-/* Generated from xdg-shell-unstable-v6.xml */
-#include "../common/wayland/xdg-shell-unstable-v6.h"
-
 /* Generated from xdg-shell.xml */
 #include "../common/wayland/xdg-shell.h"
 
@@ -98,21 +95,9 @@ static void handle_toplevel_config(void *data,
    handle_toplevel_config_common(data, toplevel, width, height, states);
 }
 
-static void handle_zxdg_toplevel_config(
-      void *data, struct zxdg_toplevel_v6 *toplevel,
-      int32_t width, int32_t height, struct wl_array *states)
-{
-   handle_toplevel_config_common(data, toplevel, width, height, states);
-}
-
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     handle_toplevel_config,
     handle_toplevel_close,
-};
-
-static const struct zxdg_toplevel_v6_listener zxdg_toplevel_v6_listener = {
-    handle_zxdg_toplevel_config,
-    handle_zxdg_toplevel_close,
 };
 
 static void gfx_ctx_wl_get_video_size(void *data,
@@ -154,22 +139,16 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_seat_destroy(wl->seat);
    if (wl->xdg_shell)
       xdg_wm_base_destroy(wl->xdg_shell);
-   if (wl->zxdg_shell)
-      zxdg_shell_v6_destroy(wl->zxdg_shell);
    if (wl->compositor)
       wl_compositor_destroy(wl->compositor);
    if (wl->registry)
       wl_registry_destroy(wl->registry);
    if (wl->xdg_surface)
       xdg_surface_destroy(wl->xdg_surface);
-   if (wl->zxdg_surface)
-      zxdg_surface_v6_destroy(wl->zxdg_surface);
    if (wl->surface)
       wl_surface_destroy(wl->surface);
    if (wl->xdg_toplevel)
       xdg_toplevel_destroy(wl->xdg_toplevel);
-   if (wl->zxdg_toplevel)
-      zxdg_toplevel_v6_destroy(wl->zxdg_toplevel);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
    if (wl->deco)
@@ -186,14 +165,12 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    }
 
    wl->xdg_shell        = NULL;
-   wl->zxdg_shell       = NULL;
    wl->compositor       = NULL;
    wl->registry         = NULL;
    wl->input.dpy        = NULL;
    wl->xdg_surface      = NULL;
    wl->surface          = NULL;
    wl->xdg_toplevel     = NULL;
-   wl->zxdg_toplevel    = NULL;
 
    wl->width            = 0;
    wl->height           = 0;
@@ -263,18 +240,13 @@ static void gfx_ctx_wl_update_title(void *data)
 
    if (wl && title[0])
    {
-      if (wl->xdg_toplevel || wl->zxdg_toplevel)
-      {
-         if (wl->deco)
+      if (wl->deco)
          {
             zxdg_toplevel_decoration_v1_set_mode(wl->deco,
                   ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
          }
-      }
-      if (wl->xdg_toplevel)
-         xdg_toplevel_set_title(wl->xdg_toplevel, title);
-      else if (wl->zxdg_toplevel)
-         zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
+
+      xdg_toplevel_set_title(wl->xdg_toplevel, title);
    }
 }
 
@@ -354,12 +326,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
       goto error;
    }
 
-   if (!wl->xdg_shell && !!wl->zxdg_shell)
-   {
-      RARCH_LOG("[Wayland]: Using zxdg_shell_v6 interface.\n");
-   }
-
-   if (!wl->xdg_shell && !wl->zxdg_shell)
+   if (!wl->xdg_shell)
    {
 	   RARCH_ERR("[Wayland]: Failed to create shell.\n");
 	   goto error;
@@ -453,18 +420,16 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
 
-   if (wl->xdg_shell)
-   {
-      wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
-      xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
+   wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
+   xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
 
-      wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
-      xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
+   wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
+   xdg_toplevel_add_listener(wl->xdg_toplevel, &xdg_toplevel_listener, wl);
 
-      xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
-      xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
+   xdg_toplevel_set_app_id(wl->xdg_toplevel, "retroarch");
+   xdg_toplevel_set_title(wl->xdg_toplevel, "RetroArch");
 
-      if (wl->deco_manager)
+   if (wl->deco_manager)
       {
          wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
                wl->deco_manager, wl->xdg_toplevel);
@@ -479,39 +444,10 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
       wl_display_roundtrip(wl->input.dpy);
       xdg_wm_base_add_listener(wl->xdg_shell, &xdg_shell_listener, NULL);
-   }
-   else if (wl->zxdg_shell)
-   {
-      wl->zxdg_surface = zxdg_shell_v6_get_xdg_surface(wl->zxdg_shell, wl->surface);
-      zxdg_surface_v6_add_listener(wl->zxdg_surface, &zxdg_surface_v6_listener, wl);
-
-      wl->zxdg_toplevel = zxdg_surface_v6_get_toplevel(wl->zxdg_surface);
-      zxdg_toplevel_v6_add_listener(wl->zxdg_toplevel, &zxdg_toplevel_v6_listener, wl);
-
-      zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "retroarch");
-      zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, "RetroArch");
-
-      if (wl->deco_manager)
-         wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
-               wl->deco_manager, wl->xdg_toplevel);
-
-      /* Waiting for xdg_toplevel to be configured before starting to draw */
-      wl_surface_commit(wl->surface);
-      wl->configured = true;
-
-      while (wl->configured)
-         wl_display_dispatch(wl->input.dpy);
-
-      wl_display_roundtrip(wl->input.dpy);
-      zxdg_shell_v6_add_listener(wl->zxdg_shell, &zxdg_shell_v6_listener, NULL);
-   }
 
    if (fullscreen)
    {
-	   if (wl->xdg_toplevel)
-		   xdg_toplevel_set_fullscreen(wl->xdg_toplevel, NULL);
-	   else if (wl->zxdg_toplevel)
-		   zxdg_toplevel_v6_set_fullscreen(wl->zxdg_toplevel, NULL);
+	   xdg_toplevel_set_fullscreen(wl->xdg_toplevel, NULL);
 	}
 
    flush_wayland_fd(&wl->input);
