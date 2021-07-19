@@ -6242,7 +6242,7 @@ static void rgui_toggle_fs_thumbnail(void *userdata)
    }
 
    /* Note that we always load thumbnails immediately
-    * when toggling via the 'scan' button (scheduling a
+    * when toggling via a RetroPad button (scheduling a
     * delayed load here would make for a poor user
     * experience...) */
    rgui_scan_selected_entry_thumbnail(rgui, true);
@@ -6944,8 +6944,22 @@ static enum menu_action rgui_parse_menu_entry_action(
          }
          break;
       case MENU_ACTION_SCAN:
-         /* If this is a playlist, 'scan' command is
-          * used to toggle fullscreen thumbnail view */
+      case MENU_ACTION_START:
+         /* If this is a playlist, both the 'scan'
+          * command and 'start' action are used to
+          * toggle the fullscreen thumbnail view
+          * > 'scan' is more ergonomic, which is a
+          *   benefit for RGUI because its low
+          *   resolution framebuffer means fullscreen
+          *   thumbnails are likely to be viewed far
+          *   more often than with other menu drivers
+          * > 'start' is the regular toggle button
+          *   for all other menu drivers, and is
+          *   included as a fallback here for users
+          *   with gamepads with limited numbers of
+          *   face buttons (e.g. a NES-style pad
+          *   does not possess a RetroPad Y/'scan'
+          *   button) */
          if (rgui->is_playlist)
          {
             rgui_toggle_fs_thumbnail(rgui);
