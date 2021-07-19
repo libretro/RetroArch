@@ -304,6 +304,21 @@ void fill_pathname_application_special(char *s,
             strlcpy(s, dir_assets, len);
             fill_pathname_slash(s, len);
 
+#if defined(WIIU) || defined(VITA)
+            /* Smaller 46x46 icons look better on low-dpi devices */
+            /* ozone */
+            strlcat(s, "ozone", len);
+            fill_pathname_slash(s, len);
+
+            /* png */
+            strlcat(s, "png", len);
+            fill_pathname_slash(s, len);
+
+            /* Icons path */
+            strlcat(s, "icons", len);
+            fill_pathname_slash(s, len);
+#else
+            /* Otherwise, use large 256x256 icons */
             /* xmb */
             strlcat(s, "xmb", len);
             fill_pathname_slash(s, len);
@@ -315,6 +330,7 @@ void fill_pathname_application_special(char *s,
             /* Icons path */
             strlcat(s, "png", len);
             fill_pathname_slash(s, len);
+#endif
          }
 #endif
          break;
