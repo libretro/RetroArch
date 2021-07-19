@@ -454,22 +454,6 @@ MSG_HASH(
    "Λογισμικό"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Λείπει"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Παρόν"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Προεραιτικό"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Απαραίτητο"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Κλείδωμα Εγκατεστημένο Πυρήνα"
    )
@@ -5171,10 +5155,6 @@ MSG_HASH(
    "Παύση."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "ελήφθη"
-   )
-MSG_HASH(
    MSG_RECORDING_TO,
    "Εγγραφή σε"
    )
@@ -5225,14 +5205,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "κλείσει"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "απέτυχε"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "επιτεύχθηκε"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

@@ -249,11 +249,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
    "Engedélyek"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Hiányzó"
-   )
-
 /* Main Menu > Information > System Information */
 
 

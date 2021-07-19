@@ -298,19 +298,16 @@ bool disk_control_set_eject_state(
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
       snprintf(
-            msg, sizeof(msg), "%s %s",
+            msg, sizeof(msg), "%s",
             eject ? msg_hash_to_str(MSG_DISK_EJECTED) :
-                  msg_hash_to_str(MSG_DISK_CLOSED),
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
+                  msg_hash_to_str(MSG_DISK_CLOSED));
    else
    {
       error = true;
       snprintf(
-            msg, sizeof(msg), "%s %s %s",
-            msg_hash_to_str(MSG_FAILED_TO),
+            msg, sizeof(msg), "%s",
             eject ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT) :
-                  msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE),
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
+                  msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE));
    }
 
    if (!string_is_empty(msg))

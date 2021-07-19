@@ -450,22 +450,6 @@ MSG_HASH(
    "API gráficas necesarias"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Faltante"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Presente"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opcional"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Necesario"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Proteger núcleo instalado"
    )
@@ -10639,10 +10623,6 @@ MSG_HASH(
    "Leyendo la primera pista de datos..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "recibido"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Grabación terminada debido al cambio de tamaño."
    )
@@ -10891,24 +10871,12 @@ MSG_HASH(
    "¡Error al calcular el tamaño de la ventana! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "la bandeja de discos virtual."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "expulsar"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "cerrar"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "fallida"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "completada"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11323,10 +11291,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Joy-Con separados"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Estado del almacenamiento interno"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

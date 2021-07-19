@@ -987,8 +987,8 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    {
       if (input_config_get_device_autoconfigured(controller))
       {
-            snprintf(tmp, sizeof(tmp), "%s #%d device name: %s (#%d)",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+            snprintf(tmp, sizeof(tmp),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
                controller,
                input_config_get_device_name(controller),
                input_config_get_device_name_index(controller));
@@ -1143,8 +1143,7 @@ static int action_bind_sublabel_remap_kbd_sublabel(
 {
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
 
-   snprintf(s, len, "%s #%d: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+   snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_NUMBER),
          user_idx + 1,
          input_config_get_device_display_name(user_idx) ?
          input_config_get_device_display_name(user_idx) :
@@ -1216,8 +1215,7 @@ static int action_bind_sublabel_remap_sublabel(
     * controller is connected... */
    port = settings->uints.input_joypad_index[port];
 
-   snprintf(s, len, "%s #%d: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+   snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_NUMBER),
          port + 1,
          input_config_get_device_display_name(port) ?
          input_config_get_device_display_name(port) :

@@ -131,11 +131,9 @@ static int action_get_title_remap_port(
       unsigned menu_type, char *s, size_t len)
 {
    char lbl[128];
-   snprintf(lbl, sizeof(lbl), "%s %d %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
-         atoi(path) + 1,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
-         );
+   snprintf(lbl, sizeof(lbl),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS),
+         atoi(path) + 1);
    SANITIZE_TO_STRING(s, lbl, len);
    return 1;
 }

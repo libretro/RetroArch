@@ -454,22 +454,6 @@ MSG_HASH(
    "Прошивка(и)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Відсутнє"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Присутнє"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Вибіркове"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Необхідне"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Блокувати встановлене ядро"
    )
@@ -6215,10 +6199,6 @@ MSG_HASH(
    "Призупинено."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "отримано"
-   )
-MSG_HASH(
    MSG_RECORDING_TO,
    "Запис до"
    )
@@ -6313,14 +6293,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "закрити"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "помилка"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "успішно"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

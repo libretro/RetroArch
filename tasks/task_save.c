@@ -978,10 +978,8 @@ static void task_load_handler(retro_task_t *task)
 
          snprintf(msg,
                8192 * sizeof(char),
-               "%s \"%s\" %s.",
-               msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-               state->path,
-               msg_hash_to_str(MSG_FAILED));
+               msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FAILED),
+               state->path);
          task_set_error(task, strdup(msg));
          free(msg);
       }
@@ -1007,10 +1005,8 @@ static void task_load_handler(retro_task_t *task)
 
          if (state->autoload)
             snprintf(msg, msg_size - 1,
-                  "%s \"%s\" %s.",
-                  msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-                  state->path,
-                  msg_hash_to_str(MSG_SUCCEEDED));
+                  msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_SUCCEEDED),
+                  state->path);
          else
          {
             if (state->state_slot < 0)
