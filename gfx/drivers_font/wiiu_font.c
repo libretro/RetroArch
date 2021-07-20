@@ -65,7 +65,7 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
    font->texture.viewNumSlices       = 1;
 
    font->texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R8;
-   font->texture.compMap          = GX2_COMP_SEL(_R, _R, _R, _R);
+   font->texture.compMap          = GX2_COMP_SEL(_1, _1, _1, _R);
 
    GX2CalcSurfaceSizeAndAlignment(&font->texture.surface);
    GX2InitTextureRegs(&font->texture);
