@@ -35197,6 +35197,22 @@ static bool retroarch_parse_input_and_config(
                retroarch_override_setting_set(
                      RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
                break;
+            case 'v':
+               verbosity_enable();
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+               break;
+            case RA_OPT_LOG_FILE:
+               /* Enable 'log to file' */
+               configuration_set_bool(p_rarch->configuration_settings,
+                     p_rarch->configuration_settings->bools.log_to_file, true);
+
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL);
+
+               /* Cache log file path override */
+               rarch_log_file_set_override(optarg);
+               break;
 
             /* Must handle '?' otherwise you get an infinite loop */
             case '?':
@@ -35207,6 +35223,13 @@ static bool retroarch_parse_input_and_config(
          }
       }
    }
+   verbosity_enabled = verbosity_is_enabled();
+   
+   if (verbosity_enabled)
+      rarch_log_file_init(
+            p_rarch->configuration_settings->bools.log_to_file,
+            p_rarch->configuration_settings->bools.log_to_file_timestamp,
+            p_rarch->configuration_settings->paths.log_dir);
 
    /* Flush out some states that could have been set
     * by core environment variables. */
@@ -35226,6 +35249,15 @@ static bool retroarch_parse_input_and_config(
       config_load(&p_rarch->g_extern);
    }
 
+   verbosity_enabled = verbosity_is_enabled();
+   /* Init logging after config load only if not overridden by command line argument 
+    * This handles when logging is set in the config but not via the --log-file option. */
+   if (verbosity_enabled && !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL))
+      rarch_log_file_init(
+            p_rarch->configuration_settings->bools.log_to_file,
+            p_rarch->configuration_settings->bools.log_to_file_timestamp,
+            p_rarch->configuration_settings->paths.log_dir);
+            
    /* Second pass: All other arguments override the config file */
    optind = 1;
 
@@ -35293,9 +35325,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case 'v':
-               verbosity_enable();
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+               /* Handled in the first pass */
                break;
 
             case 'N':
@@ -35603,15 +35633,7 @@ static bool retroarch_parse_input_and_config(
                exit(0);
 
             case RA_OPT_LOG_FILE:
-               /* Enable 'log to file' */
-               configuration_set_bool(p_rarch->configuration_settings,
-                     p_rarch->configuration_settings->bools.log_to_file, true);
-
-               retroarch_override_setting_set(
-                     RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL);
-
-               /* Cache log file path override */
-               rarch_log_file_set_override(optarg);
+               /*Move the first pass */
                break;
 
             case 'h':
@@ -35640,14 +35662,6 @@ static bool retroarch_parse_input_and_config(
          }
       }
    }
-
-   verbosity_enabled = verbosity_is_enabled();
-
-   if (verbosity_enabled)
-      rarch_log_file_init(
-            p_rarch->configuration_settings->bools.log_to_file,
-            p_rarch->configuration_settings->bools.log_to_file_timestamp,
-            p_rarch->configuration_settings->paths.log_dir);
 
 #ifdef HAVE_GIT_VERSION
    RARCH_LOG("RetroArch %s (Git %s)\n",
