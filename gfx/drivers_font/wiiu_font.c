@@ -258,7 +258,7 @@ static void wiiu_font_render_message(
       return;
    }
 
-   line_height = scale / line_metrics->height;
+   line_height = line_metrics->height * scale / wiiu->vp.height;
 
    for (;;)
    {
