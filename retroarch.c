@@ -31396,7 +31396,7 @@ void video_driver_set_viewport_core(void)
          (float)geom->base_width / geom->base_height;
 }
 
-void video_driver_set_viewport_full()
+void video_driver_set_viewport_full(void)
 {
    unsigned width = 0;
    unsigned height = 0;   
@@ -31404,9 +31404,7 @@ void video_driver_set_viewport_full()
    video_driver_get_size(&width, &height);
 
    if (width == 0 || height == 0)
-   {
       return;
-   }
 
    aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
 }
