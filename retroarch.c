@@ -14296,12 +14296,25 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 
             if (!string_is_empty(dir_libretro))
+            {
+               bool cache_supported = false;
+
                core_info_init_list(path_libretro_info,
                      dir_libretro,
                      ext_name,
                      show_hidden_files,
-                     core_info_cache_enable
-                     );
+                     core_info_cache_enable,
+                     &cache_supported);
+
+               /* If core info cache is enabled but cache
+                * functionality is unsupported (i.e. because
+                * the core info directory is on read-only
+                * storage), force-disable the setting to
+                * avoid repeated failures */
+               if (core_info_cache_enable && !cache_supported)
+                  configuration_set_bool(settings,
+                        settings->bools.core_info_cache_enable, false);
+            }
          }
          break;
       case CMD_EVENT_CORE_DEINIT:

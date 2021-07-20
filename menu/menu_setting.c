@@ -7959,8 +7959,24 @@ static void general_write_handler(rarch_setting_t *setting)
              * force a cache refresh on the next
              * core info initialisation */
             if (*setting->value.target.boolean)
-               core_info_cache_force_refresh(!string_is_empty(path_libretro_info) ?
-                     path_libretro_info : dir_libretro);
+               if (!core_info_cache_force_refresh(!string_is_empty(path_libretro_info) ?
+                     path_libretro_info : dir_libretro))
+               {
+                  /* core_info_cache_force_refresh() will fail
+                   * if we cannot write to the the core_info
+                   * directory. This will typically only happen
+                   * on platforms where the core_info directory
+                   * is explicitly (and intentionally) placed on
+                   * read-only storage. In this case, core info
+                   * caching cannot function correctly anyway,
+                   * so we simply force-disable the feature */
+                  configuration_set_bool(settings,
+                        settings->bools.core_info_cache_enable, false);
+                  runloop_msg_queue_push(
+                        msg_hash_to_str(MSG_CORE_INFO_CACHE_UNSUPPORTED),
+                        1, 100, true,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
          }
          break;
       default:
