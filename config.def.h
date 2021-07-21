@@ -420,6 +420,11 @@
  * in Dingux devices */
 #define DEFAULT_DINGUX_REFRESH_RATE DINGUX_REFRESH_RATE_60HZ
 #endif
+#if defined(RS90)
+/* Sets image filtering method on the RS90
+ * when integer scaling is disabled */
+#define DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE DINGUX_RS90_SOFTFILTER_POINT
+#endif
 #endif
 
 /* Save configuration file on exit. */

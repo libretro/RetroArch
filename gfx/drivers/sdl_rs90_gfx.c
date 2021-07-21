@@ -56,11 +56,18 @@
 
 #define SDL_RS90_NUM_FONT_GLYPHS 256
 
-typedef struct sdl_rs90_video
+typedef struct sdl_rs90_video sdl_rs90_video_t;
+struct sdl_rs90_video
 {
    retro_time_t last_frame_time;
    retro_time_t ff_frame_time_min;
    SDL_Surface *screen;
+   void (*scale_frame16)(sdl_rs90_video_t *vid,
+         uint16_t *src, unsigned width, unsigned height,
+         unsigned src_pitch);
+   void (*scale_frame32)(sdl_rs90_video_t *vid,
+         uint32_t *src, unsigned width, unsigned height,
+         unsigned src_pitch);
    bitmapfont_lut_t *osd_font;
    /* Scaling/padding/cropping parameters */
    unsigned content_width;
@@ -71,6 +78,7 @@ typedef struct sdl_rs90_video
    unsigned frame_padding_y;
    unsigned frame_crop_x;
    unsigned frame_crop_y;
+   enum dingux_rs90_softfilter_type softfilter_type;
 #if defined(DINGUX_BETA)
    enum dingux_refresh_rate refresh_rate;
 #endif
@@ -85,7 +93,380 @@ typedef struct sdl_rs90_video
    bool was_in_menu;
    bool quitting;
    bool mode_valid;
-} sdl_rs90_video_t;
+};
+
+/* Image interpolation START */
+
+static void sdl_rs90_scale_frame16_integer(sdl_rs90_video_t *vid,
+      uint16_t *src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   /* 16 bit - divide pitch by 2 */
+   size_t in_stride  = (size_t)(src_pitch >> 1);
+   size_t out_stride = (size_t)(vid->screen->pitch >> 1);
+
+   /* Manipulate offsets so that padding/crop
+    * are applied correctly */
+   uint16_t *in_ptr  = src + vid->frame_crop_x + vid->frame_crop_y * in_stride;
+   uint16_t *out_ptr = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         out_stride * vid->frame_padding_y;
+
+   size_t y          = vid->frame_height;
+
+   /* TODO/FIXME: Optimize this loop */
+   do
+   {
+      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint16_t));
+      in_ptr  += in_stride;
+      out_ptr += out_stride;
+   }
+   while (--y);
+}
+
+static void sdl_rs90_scale_frame32_integer(sdl_rs90_video_t *vid,
+      uint32_t *src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   /* 32 bit - divide pitch by 4 */
+   size_t in_stride  = (size_t)(src_pitch >> 2);
+   size_t out_stride = (size_t)(vid->screen->pitch >> 2);
+
+   /* Manipulate offsets so that padding/crop
+    * are applied correctly */
+   uint32_t *in_ptr  = src + vid->frame_crop_x + vid->frame_crop_y * in_stride;
+   uint32_t *out_ptr = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         out_stride * vid->frame_padding_y;
+
+   size_t y          = vid->frame_height;
+
+   /* TODO/FIXME: Optimize this loop */
+   do
+   {
+      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint32_t));
+      in_ptr  += in_stride;
+      out_ptr += out_stride;
+   }
+   while (--y);
+}
+
+/* Approximate nearest-neighbour scaling using
+ * bitshifts and integer math */
+static void sdl_rs90_scale_frame16_point(sdl_rs90_video_t *vid,
+      uint16_t *src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   uint32_t x_step      = (((uint32_t)(width)  << 16) + 1) / vid->frame_width;
+   uint32_t y_step      = (((uint32_t)(height) << 16) + 1) / vid->frame_height;
+
+   /* 16 bit - divide pitch by 2 */
+   size_t in_stride     = (size_t)(src_pitch >> 1);
+   size_t out_stride    = (size_t)(vid->screen->pitch >> 1);
+
+   /* Apply x/y padding offset */
+   uint16_t *top_corner = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         out_stride * vid->frame_padding_y;
+
+   /* Temporary pointers */
+   uint16_t *in_ptr     = NULL;
+   uint16_t *out_ptr    = NULL;
+
+   uint32_t y           = 0;
+   size_t row;
+
+   /* TODO/FIXME: Optimize these loops further.
+    * Consider saving these computations in an array
+    * and indexing over them.
+    * Would likely be slower due to cache (non-)locality,
+    * but it's worth a shot.
+    * Tons of -> operations. */
+   for (row = 0; row < vid->frame_height; row++)
+   {
+      size_t col = vid->frame_width;
+      uint32_t x = 0;
+
+      out_ptr    = top_corner + out_stride * row;
+      in_ptr     = src + (y >> 16) * in_stride;
+
+      do
+      {
+        *(out_ptr++) = in_ptr[x >> 16];
+        x           += x_step;
+      }
+      while (--col);
+
+      y += y_step;
+   }
+}
+
+static void sdl_rs90_scale_frame32_point(sdl_rs90_video_t *vid,
+      uint32_t *src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   uint32_t x_step      = (((uint32_t)(width)  << 16) + 1) / vid->frame_width;
+   uint32_t y_step      = (((uint32_t)(height) << 16) + 1) / vid->frame_height;
+
+   /* 32 bit - divide pitch by 4 */
+   size_t in_stride     = (size_t)(src_pitch >> 2);
+   size_t out_stride    = (size_t)(vid->screen->pitch >> 2);
+
+   /* Apply x/y padding offset */
+   uint32_t *top_corner = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         out_stride * vid->frame_padding_y;
+
+   /* Temporary pointers */
+   uint32_t *in_ptr     = NULL;
+   uint32_t *out_ptr    = NULL;
+
+   uint32_t y           = 0;
+   size_t row;
+
+   /* TODO/FIXME: Optimize these loops further.
+    * Consider saving these computations in an array
+    * and indexing over them.
+    * Would likely be slower due to cache (non-)locality,
+    * but it's worth a shot.
+    * Tons of -> operations. */
+   for (row = 0; row < vid->frame_height; row++)
+   {
+      size_t col = vid->frame_width;
+      uint32_t x = 0;
+
+      out_ptr    = top_corner + out_stride * row;
+      in_ptr     = src + (y >> 16) * in_stride;
+
+      do
+      {
+        *(out_ptr++) = in_ptr[x >> 16];
+        x           += x_step;
+      }
+      while (--col);
+
+      y += y_step;
+   }
+}
+
+/* Produces a 50:50 mix of pixels a and b
+ * > c.f. "Mixing Packed RGB Pixels Efficiently"
+ *        http://blargg.8bitalley.com/info/rgb_mixing.html */
+#define SDL_RS90_PIXEL_AVERAGE_16(a, b) (((a) + (b) + (((a) ^ (b)) & 0x821))   >> 1)
+#define SDL_RS90_PIXEL_AVERAGE_32(a, b) (((a) + (b) + (((a) ^ (b)) & 0x10101)) >> 1)
+
+/* Scales a single horizontal line using approximate
+ * linear scaling
+ * > c.f. "Image Scaling with Bresenham"
+ *        https://www.drdobbs.com/image-scaling-with-bresenham/184405045 */
+static void sdl_rs90_scale_line_bresenham16(uint16_t *target, uint16_t *src,
+      unsigned src_width, unsigned target_width,
+      unsigned int_part, unsigned fract_part, unsigned midpoint)
+{
+   unsigned num_pixels = target_width;
+   unsigned E = 0; /* TODO/FIXME: Determine better variable name - 'error'? */
+
+   /* If source and target have the same width,
+    * can perform a fast copy of raw pixel data */
+   if (src_width == target_width)
+   {
+      memcpy(target, src, target_width * sizeof(uint16_t));
+      return;
+   }
+   else if (target_width > src_width)
+      num_pixels--;
+
+   do
+   {
+      *(target++) = (E >= midpoint) ?
+            SDL_RS90_PIXEL_AVERAGE_16(*src, *(src + 1)) : *src;
+
+      src += int_part;
+      E   += fract_part;
+
+      if (E >= target_width)
+      {
+         E -= target_width;
+         src++;
+      }
+   }
+   while (--num_pixels);
+
+   if (target_width > src_width)
+      *target = *src;
+}
+
+static void sdl_rs90_scale_frame16_bresenham_horz(sdl_rs90_video_t *vid,
+      uint16_t *src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   /* 16 bit - divide pitch by 2 */
+   size_t in_stride        = (size_t)(src_pitch >> 1);
+   size_t out_stride       = (size_t)(vid->screen->pitch >> 1);
+
+   uint16_t *prev_src      = NULL;
+
+   /* Account for x/y padding */
+   uint16_t *target        = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         (out_stride * vid->frame_padding_y);
+   unsigned target_width   = vid->frame_width;
+   unsigned target_height  = vid->frame_height;
+
+   unsigned num_lines      = target_height;
+   unsigned int_part       = (height / target_height) * in_stride;
+   unsigned fract_part     = height % target_height;
+   unsigned E              = 0; /* TODO/FIXME: Determine better variable name - 'error'? */
+
+   unsigned col_int_part   = width / target_width;
+   unsigned col_fract_part = width % target_width;
+   /* Enhance midpoint selection as described in
+    * https://www.compuphase.com/graphic/scale1errata.htm */
+   int col_midpoint        = (target_width > width) ?
+         ((int)target_width - 3 * ((int)target_width - (int)width)) >> 1 :
+               (int)(target_width << 1) - (int)width;
+   /* Clamp lower bound to (target_width / 2) */
+   if (col_midpoint < (int)(target_width >> 1))
+      col_midpoint = (int)(target_width >> 1);
+
+   while (num_lines--)
+   {
+      /* If line is supposed to be identical to
+       * previous line, just copy it */
+      if (src == prev_src)
+         memcpy(target, target - out_stride, target_width * sizeof(uint16_t));
+      else
+      {
+         sdl_rs90_scale_line_bresenham16(target, src, width, target_width,
+               col_int_part, col_fract_part, (unsigned)col_midpoint);
+         prev_src = src;
+      }
+
+      target += out_stride;
+      src    += int_part;
+      E      += fract_part;
+
+      if (E >= target_height)
+      {
+         E   -= target_height;
+         src += in_stride;
+      }
+   }
+}
+
+static void sdl_rs90_scale_line_bresenham32(uint32_t *target, uint32_t *src,
+      unsigned src_width, unsigned target_width,
+      unsigned int_part, unsigned fract_part, unsigned midpoint)
+{
+   unsigned num_pixels = target_width;
+   unsigned E = 0; /* TODO/FIXME: Determine better variable name - 'error'? */
+
+   /* If source and target have the same width,
+    * can perform a fast copy of raw pixel data */
+   if (src_width == target_width)
+   {
+      memcpy(target, src, target_width * sizeof(uint32_t));
+      return;
+   }
+   else if (target_width > src_width)
+      num_pixels--;
+
+   do
+   {
+      *(target++) = (E >= midpoint) ?
+            SDL_RS90_PIXEL_AVERAGE_32(*src, *(src + 1)) : *src;
+
+      src += int_part;
+      E   += fract_part;
+
+      if (E >= target_width)
+      {
+         E -= target_width;
+         src++;
+      }
+   }
+   while (--num_pixels);
+
+   if (target_width > src_width)
+      *target = *src;
+}
+
+static void sdl_rs90_scale_frame32_bresenham_horz(sdl_rs90_video_t *vid,
+      uint32_t *src, unsigned width, unsigned height,
+      unsigned src_pitch)
+{
+   /* 32 bit - divide pitch by 4 */
+   size_t in_stride        = (size_t)(src_pitch >> 2);
+   size_t out_stride       = (size_t)(vid->screen->pitch >> 2);
+
+   uint32_t *prev_src      = NULL;
+
+   /* Account for x/y padding */
+   uint32_t *target        = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
+         (out_stride * vid->frame_padding_y);
+   unsigned target_width   = vid->frame_width;
+   unsigned target_height  = vid->frame_height;
+
+   unsigned num_lines      = target_height;
+   unsigned int_part       = (height / target_height) * in_stride;
+   unsigned fract_part     = height % target_height;
+   unsigned E              = 0; /* TODO/FIXME: Determine better variable name - 'error'? */
+
+   unsigned col_int_part   = width / target_width;
+   unsigned col_fract_part = width % target_width;
+   /* Enhance midpoint selection as described in
+    * https://www.compuphase.com/graphic/scale1errata.htm */
+   int col_midpoint        = (target_width > width) ?
+         ((int)target_width - 3 * ((int)target_width - (int)width)) >> 1 :
+               (int)(target_width << 1) - (int)width;
+   /* Clamp lower bound to (target_width / 2) */
+   if (col_midpoint < (int)(target_width >> 1))
+      col_midpoint = (int)(target_width >> 1);
+
+   while (num_lines--)
+   {
+      /* If line is supposed to be identical to
+       * previous line, just copy it */
+      if (src == prev_src)
+         memcpy(target, target - out_stride, target_width * sizeof(uint32_t));
+      else
+      {
+         sdl_rs90_scale_line_bresenham32(target, src, width, target_width,
+               col_int_part, col_fract_part, (unsigned)col_midpoint);
+         prev_src = src;
+      }
+
+      target += out_stride;
+      src    += int_part;
+      E      += fract_part;
+
+      if (E >= target_height)
+      {
+         E   -= target_height;
+         src += in_stride;
+      }
+   }
+}
+
+static void sdl_rs90_set_scale_frame_functions(sdl_rs90_video_t *vid)
+{
+   /* Set integer scaling by default */
+   vid->scale_frame16 = sdl_rs90_scale_frame16_integer;
+   vid->scale_frame32 = sdl_rs90_scale_frame32_integer;
+
+   if (!vid->scale_integer)
+   {
+      switch (vid->softfilter_type)
+      {
+         case DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ:
+            vid->scale_frame16 = sdl_rs90_scale_frame16_bresenham_horz;
+            vid->scale_frame32 = sdl_rs90_scale_frame32_bresenham_horz;
+            break;
+         case DINGUX_RS90_SOFTFILTER_POINT:
+         default:
+            vid->scale_frame16 = sdl_rs90_scale_frame16_point;
+            vid->scale_frame32 = sdl_rs90_scale_frame32_point;
+            break;
+      }
+   }
+}
+
+/* Image interpolation END */
 
 static void sdl_rs90_init_font_color(sdl_rs90_video_t *vid)
 {
@@ -496,6 +877,8 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
    vid->vsync           = video->vsync;
    vid->keep_aspect     = settings->bools.video_dingux_ipu_keep_aspect;
    vid->scale_integer   = settings->bools.video_scale_integer;
+   vid->softfilter_type = (enum dingux_rs90_softfilter_type)
+         settings->uints.video_dingux_rs90_softfilter_type;
    vid->menu_active     = false;
    vid->was_in_menu     = false;
    vid->quitting        = false;
@@ -519,6 +902,9 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
       RARCH_ERR("[SDL1]: Failed to init OSD font\n");
       goto error;
    }
+
+   /* Assign frame scaling function pointers */
+   sdl_rs90_set_scale_frame_functions(vid);
 
    return vid;
 
@@ -638,82 +1024,6 @@ static void sdl_rs90_set_output(
    }
 }
 
-/* Approximate nearest-neighbour scaling using
- * bitshifts and integer math */
-static void sdl_rs90_blit_frame16_scale(sdl_rs90_video_t *vid,
-      uint16_t* src, unsigned width, unsigned height,
-      unsigned src_pitch)
-{
-   uint32_t x_step      = (((uint32_t)(width)  << 16) + 1) / vid->frame_width;
-   uint32_t y_step      = (((uint32_t)(height) << 16) + 1) / vid->frame_height;
-
-   /* 16 bit - divide pitch by 2 */
-   size_t in_stride     = (size_t)(src_pitch >> 1);
-   size_t out_stride    = (size_t)(vid->screen->pitch >> 1);
-
-   /* Apply x/y padding offset */
-   uint16_t *top_corner = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
-         out_stride * vid->frame_padding_y;
-
-   /* Temporary pointers */
-   uint16_t *in_ptr     = NULL;
-   uint16_t *out_ptr    = NULL;
-
-   uint32_t y           = 0;
-   size_t row;
-
-   /* TODO/FIXME: Optimize these loops further.
-    * Consider saving these computations in an array
-    * and indexing over them.
-    * Would likely be slower due to cache (non-)locality,
-    * but it's worth a shot.
-    * Tons of -> operations. */
-   for (row = 0; row < vid->frame_height; row++)
-   {
-      size_t col = vid->frame_width;
-      uint32_t x = 0;
-
-      out_ptr    = top_corner + out_stride * row;
-      in_ptr     = src + (y >> 16) * in_stride;
-
-      do
-      {
-        *out_ptr = in_ptr[x >> 16];
-        x       += x_step;
-        out_ptr++;
-      }
-      while (--col);
-
-      y += y_step;
-   }
-}
-
-static void sdl_rs90_blit_frame16_no_scale(sdl_rs90_video_t *vid,
-      uint16_t* src, unsigned width, unsigned height,
-      unsigned src_pitch)
-{
-   /* 16 bit - divide pitch by 2 */
-   size_t in_stride  = (size_t)(src_pitch >> 1);
-   size_t out_stride = (size_t)(vid->screen->pitch >> 1);
-
-   /* Manipulate offsets so that padding/crop
-    * are applied correctly */
-   uint16_t *in_ptr  = src + vid->frame_crop_x + vid->frame_crop_y * in_stride;
-   uint16_t *out_ptr = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
-         out_stride * vid->frame_padding_y;
-
-   size_t y          = vid->frame_height;
-
-   /* TODO/FIXME: Optimize this loop */
-   do
-   {
-      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint16_t));
-      in_ptr  += in_stride;
-      out_ptr += out_stride;
-   }
-   while (--y);
-}
-
 static void sdl_rs90_blit_frame16(sdl_rs90_video_t *vid,
       uint16_t* src, unsigned width, unsigned height,
       unsigned src_pitch)
@@ -726,88 +1036,7 @@ static void sdl_rs90_blit_frame16(sdl_rs90_video_t *vid,
        height == SDL_RS90_HEIGHT)
       memcpy(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
    else
-   {
-      if (vid->scale_integer)
-         sdl_rs90_blit_frame16_no_scale(
-            vid, src, width, height, src_pitch);
-      else
-         sdl_rs90_blit_frame16_scale(
-            vid, src, width, height, src_pitch);
-   }
-}
-
-static void sdl_rs90_blit_frame32_scale(sdl_rs90_video_t *vid,
-      uint32_t* src, unsigned width, unsigned height,
-      unsigned src_pitch)
-{
-   uint32_t x_step      = (((uint32_t)(width)  << 16) + 1) / vid->frame_width;
-   uint32_t y_step      = (((uint32_t)(height) << 16) + 1) / vid->frame_height;
-
-   /* 32 bit - divide pitch by 4 */
-   size_t in_stride     = (size_t)(src_pitch >> 2);
-   size_t out_stride    = (size_t)(vid->screen->pitch >> 2);
-
-   /* Apply x/y padding offset */
-   uint32_t *top_corner = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
-         out_stride * vid->frame_padding_y;
-
-   /* Temporary pointers */
-   uint32_t *in_ptr     = NULL;
-   uint32_t *out_ptr    = NULL;
-
-   uint32_t y           = 0;
-   size_t row;
-
-   /* TODO/FIXME: Optimize these loops further.
-    * Consider saving these computations in an array
-    * and indexing over them.
-    * Would likely be slower due to cache (non-)locality,
-    * but it's worth a shot.
-    * Tons of -> operations. */
-   for (row = 0; row < vid->frame_height; row++)
-   {
-      size_t col = vid->frame_width;
-      uint32_t x = 0;
-
-      out_ptr    = top_corner + out_stride * row;
-      in_ptr     = src + (y >> 16) * in_stride;
-
-      do
-      {
-        *out_ptr = in_ptr[x >> 16];
-        x       += x_step;
-        out_ptr++;
-      }
-      while (--col);
-
-      y += y_step;
-   }
-}
-
-static void sdl_rs90_blit_frame32_no_scale(sdl_rs90_video_t *vid,
-      uint32_t* src, unsigned width, unsigned height,
-      unsigned src_pitch)
-{
-   /* 32 bit - divide pitch by 4 */
-   size_t in_stride  = (size_t)(src_pitch >> 2);
-   size_t out_stride = (size_t)(vid->screen->pitch >> 2);
-
-   /* Manipulate offsets so that padding/crop
-    * are applied correctly */
-   uint32_t *in_ptr  = src + vid->frame_crop_x + vid->frame_crop_y * in_stride;
-   uint32_t *out_ptr = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
-         out_stride * vid->frame_padding_y;
-
-   size_t y          = vid->frame_height;
-
-   /* TODO/FIXME: Optimize this loop */
-   do
-   {
-      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint32_t));
-      in_ptr  += in_stride;
-      out_ptr += out_stride;
-   }
-   while (--y);
+      vid->scale_frame16(vid, src, width, height, src_pitch);
 }
 
 static void sdl_rs90_blit_frame32(sdl_rs90_video_t *vid,
@@ -822,14 +1051,7 @@ static void sdl_rs90_blit_frame32(sdl_rs90_video_t *vid,
        (height == SDL_RS90_HEIGHT))
       memcpy(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
    else
-   {
-      if (vid->scale_integer)
-         sdl_rs90_blit_frame32_no_scale(
-            vid, src, width, height, src_pitch);
-      else
-         sdl_rs90_blit_frame32_scale(
-            vid, src, width, height, src_pitch);
-   }
+      vid->scale_frame32(vid, src, width, height, src_pitch);
 }
 
 static bool sdl_rs90_gfx_frame(void *data, const void *frame,
@@ -1096,6 +1318,25 @@ static float sdl_rs90_get_refresh_rate(void *data)
    return 60.0f;
 }
 
+static void sdl_rs90_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
+{
+   sdl_rs90_video_t *vid                            = (sdl_rs90_video_t*)data;
+   settings_t *settings                             = config_get_ptr();
+   enum dingux_rs90_softfilter_type softfilter_type = (settings) ?
+         (enum dingux_rs90_softfilter_type)settings->uints.video_dingux_rs90_softfilter_type :
+               DINGUX_RS90_SOFTFILTER_POINT;
+
+   if (!vid || !settings)
+      return;
+
+   /* Update software filter setting, if required */
+   if (vid->softfilter_type != softfilter_type)
+   {
+      vid->softfilter_type = softfilter_type;
+      sdl_rs90_set_scale_frame_functions(vid);
+   }
+}
+
 static void sdl_rs90_apply_state_changes(void *data)
 {
    sdl_rs90_video_t *vid  = (sdl_rs90_video_t*)data;
@@ -1112,12 +1353,17 @@ static void sdl_rs90_apply_state_changes(void *data)
       vid->keep_aspect   = keep_aspect;
       vid->scale_integer = integer_scaling;
 
+      /* Reassign frame scaling function pointers */
+      sdl_rs90_set_scale_frame_functions(vid);
+
       /* Aspect/scaling changes require all frame
        * dimension/padding/cropping parameters to
        * be recalculated. Easiest method is to just
-       * (re-)set the current output video mode */
+       * (re-)set the current output video mode
+       * Note: If menu is active, colour depth is
+       * overridden to 16 bit */
       sdl_rs90_set_output(vid, vid->content_width,
-            vid->content_height, vid->rgb32);
+            vid->content_height, vid->menu_active ? false : vid->rgb32);
    }
 }
 
@@ -1132,7 +1378,7 @@ static const video_poke_interface_t sdl_rs90_poke_interface = {
    NULL,
    NULL,
    sdl_rs90_get_refresh_rate,
-   NULL, /* set_filtering */
+   sdl_rs90_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
