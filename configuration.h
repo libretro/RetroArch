@@ -209,6 +209,7 @@ typedef struct settings
       unsigned video_3ds_display_mode;
       unsigned video_dingux_ipu_filter_type;
       unsigned video_dingux_refresh_rate;
+      unsigned video_dingux_rs90_softfilter_type;
 #ifdef HAVE_VIDEO_LAYOUT
       unsigned video_layout_selected_view;
 #endif

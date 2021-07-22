@@ -5200,6 +5200,32 @@ static void setting_get_string_representation_uint_video_dingux_refresh_rate(
    }
 }
 #endif
+
+#if defined(RS90)
+static void setting_get_string_representation_uint_video_dingux_rs90_softfilter_type(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case DINGUX_RS90_SOFTFILTER_POINT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT),
+               len);
+         break;
+      case DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ),
+               len);
+         break;
+   }
+}
+#endif
 #endif
 
 static void setting_get_string_representation_uint_input_auto_game_focus(
@@ -7615,10 +7641,14 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
 #if defined(DINGUX)
       case MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE:
+#if defined(RS90)
+      case MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE:
+#endif
 #endif
          {
             settings_t *settings       = config_get_ptr();
-            video_driver_set_filtering(1, settings->bools.video_ctx_scaling, settings->bools.video_ctx_scaling);
+            video_driver_set_filtering(1, settings->bools.video_smooth,
+                  settings->bools.video_ctx_scaling);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
@@ -11482,7 +11512,28 @@ static bool setting_append_list(
                menu_settings_list_current_add_range(list, list_info, 0, DINGUX_IPU_FILTER_LAST - 1, 1, true, true);
                (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             }
-            else if (!string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+#if defined(RS90)
+            else if (string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            {
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_dingux_rs90_softfilter_type,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+                     DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_uint_video_dingux_rs90_softfilter_type;
+               menu_settings_list_current_add_range(list, list_info, 0, DINGUX_RS90_SOFTFILTER_LAST - 1, 1, true, true);
+               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            }
+#endif
+            else
 #endif
             {
                CONFIG_BOOL(

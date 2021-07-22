@@ -2137,6 +2137,9 @@ static struct config_uint_setting *populate_settings_uint(
 #if defined(DINGUX_BETA)
    SETTING_UINT("video_dingux_refresh_rate",    &settings->uints.video_dingux_refresh_rate, true, DEFAULT_DINGUX_REFRESH_RATE, false);
 #endif
+#if defined(RS90)
+   SETTING_UINT("video_dingux_rs90_softfilter_type", &settings->uints.video_dingux_rs90_softfilter_type, true, DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE, false);
+#endif
 #endif
 
 #ifdef HAVE_MENU
