@@ -53,7 +53,9 @@ typedef struct
    double view_abs_ratio_x;
    double view_abs_ratio_y;
    HWND window;
-   RECT rect; /* Needed for checking for a windows size change */
+   RECT active_rect; /* Needed for checking for a windows size change */
+   RECT prev_rect; /* Needed for checking for a windows size change */
+   int rect_delay; /* Needed to delay resize of window */
    winraw_mouse_t *mice;
    unsigned mouse_cnt;
    winraw_keyboard_t keyboard;
@@ -338,14 +340,25 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
-   RECT tmp_rect;
 
    /* used for fixing cordinates after switching resolutions */
-   GetClientRect((HWND)video_driver_window_get(), &tmp_rect);
-   if (!EqualRect(&wr->rect, &tmp_rect))
+   GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
+
+   if (!EqualRect(&wr->active_rect, &wr->prev_rect))
    {
-      wr->rect = tmp_rect;
-      winraw_init_mouse_xy_mapping(wr);
+      if (wr->rect_delay < 10 )
+      {
+          RARCH_LOG("[CRT][WINRAW]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
+          winraw_init_mouse_xy_mapping(wr); /* Tiggering a fewe times seens to fix the issue. forcing resize whihe resolution is changing */
+          wr->rect_delay ++;
+      }else{
+         int bottom = wr->prev_rect.bottom;
+         int right = wr->prev_rect.right;
+         RARCH_LOG("[CRT][WINRAW]: Resizing RECT for absolute co-ords to match new resolution - %dx%d \n", right ,bottom);
+         wr->active_rect = wr->prev_rect;
+         winraw_init_mouse_xy_mapping(wr);
+         wr->rect_delay = 0;
+      }
    }
 
    if (state->usFlags & MOUSE_MOVE_ABSOLUTE)
