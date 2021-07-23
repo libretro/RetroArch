@@ -37,6 +37,10 @@
 #include <kernel/image.h>
 #endif
 
+#if defined(DINGUX)
+#include "dingux/dingux_utils.h"
+#endif
+
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
@@ -104,13 +108,8 @@ bool fill_pathname_application_data(char *s, size_t len)
       return true;
    }
 #elif defined(DINGUX)
-   const char *appdata = getenv("HOME");
-
-   if (appdata)
-   {
-      fill_pathname_join(s, appdata, "/.retroarch", len);
-      return true;
-   }
+   dingux_get_base_path(s, len);
+   return true;
 #elif !defined(RARCH_CONSOLE)
    const char *xdg     = getenv("XDG_CONFIG_HOME");
    const char *appdata = getenv("HOME");
@@ -305,6 +304,21 @@ void fill_pathname_application_special(char *s,
             strlcpy(s, dir_assets, len);
             fill_pathname_slash(s, len);
 
+#if defined(WIIU) || defined(VITA)
+            /* Smaller 46x46 icons look better on low-dpi devices */
+            /* ozone */
+            strlcat(s, "ozone", len);
+            fill_pathname_slash(s, len);
+
+            /* png */
+            strlcat(s, "png", len);
+            fill_pathname_slash(s, len);
+
+            /* Icons path */
+            strlcat(s, "icons", len);
+            fill_pathname_slash(s, len);
+#else
+            /* Otherwise, use large 256x256 icons */
             /* xmb */
             strlcat(s, "xmb", len);
             fill_pathname_slash(s, len);
@@ -316,6 +330,7 @@ void fill_pathname_application_special(char *s,
             /* Icons path */
             strlcat(s, "png", len);
             fill_pathname_slash(s, len);
+#endif
          }
 #endif
          break;

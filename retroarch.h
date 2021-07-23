@@ -839,7 +839,8 @@ enum gfx_ctx_api
    GFX_CTX_DIRECT3D12_API,
    GFX_CTX_OPENVG_API,
    GFX_CTX_VULKAN_API,
-   GFX_CTX_METAL_API
+   GFX_CTX_METAL_API,
+   GFX_CTX_RSX_API
 };
 
 enum display_metric_types
@@ -1873,6 +1874,7 @@ extern video_driver_t video_xvideo;
 extern video_driver_t video_sdl;
 extern video_driver_t video_sdl2;
 extern video_driver_t video_sdl_dingux;
+extern video_driver_t video_sdl_rs90;
 extern video_driver_t video_vg;
 extern video_driver_t video_omap;
 extern video_driver_t video_exynos;

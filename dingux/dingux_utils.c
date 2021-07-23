@@ -17,11 +17,12 @@
 
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-
-#if defined(DINGUX_BETA)
 #include <string/stdstring.h>
-#include <stdlib.h>
+#if defined(RS90)
+#include <lists/dir_list.h>
 #endif
+
+#include <stdlib.h>
 
 #include "dingux_utils.h"
 
@@ -31,6 +32,14 @@
 #define DINGUX_SHARPNESS_UPSCALING_FILE   "/sys/devices/platform/jz-lcd.0/sharpness_upscaling"
 #define DINGUX_SHARPNESS_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/sharpness_downscaling"
 #define DINGUX_BATTERY_CAPACITY_FILE      "/sys/class/power_supply/battery/capacity"
+
+/* Base path defines */
+#define DINGUX_HOME_ENVAR                 "HOME"
+#define DINGUX_BASE_DIR                   "retroarch"
+#define DINGUX_BASE_DIR_HIDDEN            ".retroarch"
+#define DINGUX_RS90_MEDIA_PATH            "/media"
+#define DINGUX_RS90_DEFAULT_SD_PATH       "/media/mmcblk0p1"
+#define DINGUX_RS90_DATA_PATH             "/media/data"
 
 /* OpenDingux Beta defines */
 #define DINGUX_BATTERY_VOLTAGE_MIN        "/sys/class/power_supply/jz-battery/voltage_min_design"
@@ -301,4 +310,81 @@ int dingux_get_battery_level(void)
 #else
    return dingux_read_battery_sys_file(DINGUX_BATTERY_CAPACITY_FILE);
 #endif
+}
+
+/* Fetches the path of the base 'retroarch'
+ * directory */
+void dingux_get_base_path(char *path, size_t len)
+{
+   const char *home             = NULL;
+#if defined(RS90)
+   struct string_list *dir_list = NULL;
+#endif
+
+   if (!path || (len < 1))
+      return;
+
+#if defined(RS90)
+   /* The RS-90 home directory is located on the
+    * device's internal storage. This has limited
+    * space (a total of only 256MB), such that it
+    * is impractical to store cores and user files
+    * here. We therefore attempt to use a base
+    * path on the external microsd card */
+
+   /* Get list of directories in /media */
+   dir_list = dir_list_new(DINGUX_RS90_MEDIA_PATH,
+         NULL, true, true, false, false);
+
+   if (dir_list)
+   {
+      size_t i;
+      bool path_found = false;
+
+      for (i = 0; i < dir_list->size; i++)
+      {
+         const char *dir_path = dir_list->elems[i].data;
+         int dir_type         = dir_list->elems[i].attr.i;
+
+         /* Skip files and invalid entries */
+         if ((dir_type != RARCH_DIRECTORY) ||
+             string_is_empty(dir_path) ||
+             string_is_equal(dir_path, DINGUX_RS90_DATA_PATH))
+            continue;
+
+         /* Build 'retroarch' subdirectory path */
+         snprintf(path, len, "%s%c%s", dir_path,
+               PATH_DEFAULT_SLASH_C(), DINGUX_BASE_DIR);
+
+         /* We can use this subdirectory path if:
+          * - Directory corresponds to an unlabelled
+          *   microsd card
+          * - Subdirectory already exists */
+         if (string_is_equal(dir_path, DINGUX_RS90_DEFAULT_SD_PATH) ||
+             path_is_directory(path))
+         {
+            path_found = true;
+            break;
+         }
+      }
+
+      dir_list_free(dir_list);
+
+      if (path_found)
+         return;
+   }
+#endif
+   /* Get home directory */
+   home = getenv(DINGUX_HOME_ENVAR);
+
+   /* If a home directory is found (which should
+    * always be the case), base path is "$HOME/.retroarch"
+    * > If home path is unset, use existing UNIX frontend
+    *   driver default of "retroarch" (this will ultimately
+    *   fail, but there is nothing else we can do...) */
+   if (home)
+      snprintf(path, len, "%s%c%s", home,
+            PATH_DEFAULT_SLASH_C(), DINGUX_BASE_DIR_HIDDEN);
+   else
+      strlcpy(path, DINGUX_BASE_DIR, len);
 }

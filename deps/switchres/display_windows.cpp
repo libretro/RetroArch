@@ -16,6 +16,11 @@
 #include "display_windows.h"
 #include "log.h"
 
+typedef struct ENUM_INFO
+{
+	int index;
+	HMONITOR h_monitor;
+} ENUM_INFO;
 
 //============================================================
 //  windows_display::windows_display
@@ -41,8 +46,54 @@ windows_display::~windows_display()
 //  windows_display::init
 //============================================================
 
+int CALLBACK monitor_by_index(HMONITOR h_monitor, HDC, LPRECT, LPARAM data)
+{
+	ENUM_INFO *mon_info = (ENUM_INFO*) data;
+	if (--mon_info->index < 0)
+	{
+		mon_info->h_monitor = h_monitor;
+		return false;
+	}
+	return true;
+}
+
 bool windows_display::init()
 {
+	char display[32] = {};
+
+	// If monitor is passed by index, find the matching device
+	if (strlen(m_ds.screen) == 1)
+	{
+		int monitor_index = m_ds.screen[0] - '0';
+		if (monitor_index < 0 || monitor_index > 9)
+		{
+			log_error("Switchres: bad monitor index %d\n", monitor_index);
+			return false;
+		}
+
+		ENUM_INFO mon_info;
+		mon_info.index = monitor_index;
+		mon_info.h_monitor = NULL;
+
+		EnumDisplayMonitors(NULL, NULL, monitor_by_index, (LPARAM)&mon_info);
+		if (mon_info.h_monitor != NULL)
+		{
+			MONITORINFOEXA info = {};
+			info.cbSize = sizeof(info);
+			GetMonitorInfoA(mon_info.h_monitor, &info);
+			snprintf(display, sizeof(display) -1, "%s", info.szDevice);
+			log_info("display %s\n", display);
+		}
+		else
+		{
+			log_error("Swichres: couldn't find handle for monitor index %d\n", monitor_index);
+			return false;
+		}
+	}
+	else
+		strncpy(display, m_ds.screen, sizeof(display)-1);
+
+	// Find the display by device name, or "auto" for primary display
 	DISPLAY_DEVICEA lpDisplayDevice[DISPLAY_MAX];
 	int idev = 0;
 	int found = -1;
@@ -55,8 +106,8 @@ bool windows_display::init()
 		if (EnumDisplayDevicesA(NULL, idev, &lpDisplayDevice[idev], 0) == FALSE)
 			break;
 
-		if ((!strcmp(m_ds.screen, "auto") && (lpDisplayDevice[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
-			|| !strcmp(m_ds.screen, lpDisplayDevice[idev].DeviceName) || m_ds.screen[0] - '0' == idev)
+		if ((!strcmp(display, "auto") && (lpDisplayDevice[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
+			|| !strcmp(display, lpDisplayDevice[idev].DeviceName))
 			found = idev;
 
 		idev++;

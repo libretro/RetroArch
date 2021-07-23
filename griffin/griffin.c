@@ -268,7 +268,9 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/qnx_ctx.c"
 #elif defined(EMSCRIPTEN)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
-#elif defined(__PS3__) && !defined(__PSL1GHT__)
+#elif defined(__PSL1GHT__)
+#include "../gfx/drivers_context/psl1ght_ctx.c"
+#elif defined(__PS3__)
 #include "../gfx/drivers_context/ps3_ctx.c"
 #endif
 
@@ -463,6 +465,14 @@ VIDEO DRIVER
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
 #include "../gfx/common/sdl2_common.c"
+#endif
+
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+#if defined(RS90)
+#include "../gfx/drivers/sdl_rs90_gfx.c"
+#else
+#include "../gfx/drivers/sdl_dingux_gfx.c"
+#endif
 #endif
 
 #ifdef HAVE_VG
@@ -1505,9 +1515,9 @@ DEPENDENCIES
 #endif
 
 #ifdef WANT_IOSUHAX
-#include "../deps/libiosuhax/iosuhax.c"
-#include "../deps/libiosuhax/iosuhax_devoptab.c"
-#include "../deps/libiosuhax/iosuhax_disc_interface.c"
+#include "../deps/libiosuhax/source/iosuhax.c"
+#include "../deps/libiosuhax/source/iosuhax_devoptab.c"
+#include "../deps/libiosuhax/source/iosuhax_disc_interface.c"
 #endif
 
 /*============================================================

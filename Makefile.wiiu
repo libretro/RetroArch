@@ -102,7 +102,7 @@ endif
 
       INCDIRS += -Ilibretro-common/include/compat/zlib
       # for stb, libfat, iosuhax
-      INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libiosuhax
+      INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libiosuhax/include
       # pad_functions uses wiiu/input.h
       INCDIRS += -Iinput/include
       INCDIRS += -Ideps/SPIRV-Cross

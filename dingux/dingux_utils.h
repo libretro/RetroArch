@@ -101,6 +101,10 @@ bool dingux_ipu_reset(void);
 /* Fetches internal battery level */
 int dingux_get_battery_level(void);
 
+/* Fetches the path of the base 'retroarch'
+ * directory */
+void dingux_get_base_path(char *path, size_t len);
+
 RETRO_END_DECLS
 
 #endif

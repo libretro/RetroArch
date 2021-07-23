@@ -3181,6 +3181,12 @@ MSG_HASH(
    "video_dingux_refresh_rate"
    )
 #endif
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "video_dingux_rs90_softfilter_type"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,

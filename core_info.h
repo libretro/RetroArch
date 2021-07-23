@@ -157,7 +157,8 @@ bool core_info_get_current_core(core_info_t **core);
 void core_info_deinit_list(void);
 
 bool core_info_init_list(const char *path_info, const char *dir_cores,
-      const char *exts, bool show_hidden_files, bool enable_cache);
+      const char *exts, bool show_hidden_files,
+      bool enable_cache, bool *cache_supported);
 
 bool core_info_get_list(core_info_list_t **core);
 

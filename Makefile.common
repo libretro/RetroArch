@@ -668,7 +668,7 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
       DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
    endif
 
-   # MinGW requires this for some reason, 
+   # MinGW requires this for some reason,
 	# even though the include paths are relative to the source
    INCLUDE_DIRS += -Ideps/mbedtls
 
@@ -1576,8 +1576,14 @@ else ifeq ($(HAVE_SDL), 1)
 else ifeq ($(HAVE_SDL_DINGUX), 1)
    HAVE_SDL_COMMON = 1
    DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
-   OBJ += gfx/drivers/sdl_dingux_gfx.o \
-          input/drivers/sdl_dingux_input.o \
+
+   ifeq ($(RS90), 1)
+      OBJ += gfx/drivers/sdl_rs90_gfx.o
+   else
+      OBJ += gfx/drivers/sdl_dingux_gfx.o
+   endif
+
+   OBJ += input/drivers/sdl_dingux_input.o \
           input/drivers_joypad/sdl_dingux_joypad.o
    DEF_FLAGS += $(SDL_DINGUX_CFLAGS)
    LIBS += $(SDL_DINGUX_LIBS)
@@ -2296,9 +2302,9 @@ ifeq ($(HAVE_CRTSWITCHRES), 1)
              $(DEPS_DIR)/switchres/resync_windows.o
    endif
    ifneq ($(findstring Linux,$(OS)),)
-      OBJ += $(DEPS_DIR)/switchres/display_linux.o 
+      OBJ += $(DEPS_DIR)/switchres/display_linux.o
       ifeq ($(HAVE_X11)$(HAVE_XRANDR), 11)
-         OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o 
+         OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o
          DEFINES += -DSR_WITH_XRANDR
       endif
    endif
@@ -2325,9 +2331,9 @@ ifeq ($(HAVE_COCOA_COMMON),1)
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
           ui/drivers/cocoa/cocoa_common.o
-          
+
    ifeq ($(HAVE_OPENGL), 1)
-           DEFINES += -DGL_SILENCE_DEPRECATION	 
+           DEFINES += -DGL_SILENCE_DEPRECATION
 	   OBJ += gfx/drivers_context/cocoa_gl_ctx.o
    endif
    ifeq ($(HAVE_VULKAN), 1)
@@ -2371,10 +2377,10 @@ endif
 
 ifeq ($(WANT_IOSUHAX), 1)
    DEFINES += -DHAVE_IOSUHAX
-   INCLUDE_DIRS += -I$(DEPS_DIR)/libiosuhax
-   OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
-          $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
-          $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
+   INCLUDE_DIRS += -I$(DEPS_DIR)/libiosuhax/include
+   OBJ += $(DEPS_DIR)/libiosuhax/source/iosuhax.o \
+          $(DEPS_DIR)/libiosuhax/source/iosuhax_devoptab.o \
+          $(DEPS_DIR)/libiosuhax/source/iosuhax_disc_interface.o
 endif
 
 ifeq ($(WANT_LIBFAT), 1)
@@ -2482,4 +2488,3 @@ ifeq ($(HAVE_ODROIDGO2), 1)
 endif
 
 ##################################
-

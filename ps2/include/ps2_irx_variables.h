@@ -51,8 +51,14 @@ extern unsigned int size_ps2fs_irx;
 extern unsigned char usbd_irx;
 extern unsigned int size_usbd_irx;
 
-extern unsigned char usbhdfsd_irx;
-extern unsigned int size_usbhdfsd_irx;
+extern unsigned char bdm_irx;
+extern unsigned int size_bdm_irx;
+
+extern unsigned char bdmfs_vfat_irx;
+extern unsigned int size_bdmfs_vfat_irx;
+
+extern unsigned char usbmass_bd_irx;
+extern unsigned int size_usbmass_bd_irx;
 
 extern unsigned char cdfs_irx;
 extern unsigned int size_cdfs_irx;

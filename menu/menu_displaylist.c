@@ -6028,6 +6028,12 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
+#if defined(RS90)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+#endif
 #endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
@@ -7768,7 +7774,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          {
 #if defined(DINGUX)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
+                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,

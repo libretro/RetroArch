@@ -21,6 +21,10 @@ extern "C" {
 /* #define MSG_DONTWAIT    0x0004 */
 
 #define SO_REUSEADDR    0x0004
+#define SO_WINSCALE     0x0400
+#define SO_TCPSACK      0x0200
+#define SO_SNDBUF       0x1001
+#define SO_RCVBUF       0x1002
 #define SO_NBIO         0x1014
 #define SO_NONBLOCK     0x1016
 
@@ -70,6 +74,7 @@ int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t
 int shutdown(int sockfd, int how);
 int socket(int domain, int type, int protocol);
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+int somemopt (int req_type, char* mem, unsigned int memlen, int flags);
 
 int socketlasterr(void);
 

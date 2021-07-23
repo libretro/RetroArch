@@ -257,6 +257,20 @@ int socket_connect(int fd, void *data, bool timeout_enable)
       setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
    }
 #endif
+#if defined(WIIU)
+   int op = 1;
+   setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
+   if (addr->ai_socktype == SOCK_STREAM) {
+      setsockopt(fd, SOL_SOCKET, SO_TCPSACK, &op, sizeof(op));
+
+      setsockopt(fd, SOL_SOCKET, 0x10000, &op, sizeof(op));
+      int recvsz = WIIU_RCVBUF;
+      setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &recvsz, sizeof(recvsz));
+      int sendsz = WIIU_SNDBUF;
+      setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sendsz, sizeof(sendsz));
+   }
+
+#endif
 
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
 }

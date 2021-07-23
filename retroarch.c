@@ -14296,12 +14296,25 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 
             if (!string_is_empty(dir_libretro))
+            {
+               bool cache_supported = false;
+
                core_info_init_list(path_libretro_info,
                      dir_libretro,
                      ext_name,
                      show_hidden_files,
-                     core_info_cache_enable
-                     );
+                     core_info_cache_enable,
+                     &cache_supported);
+
+               /* If core info cache is enabled but cache
+                * functionality is unsupported (i.e. because
+                * the core info directory is on read-only
+                * storage), force-disable the setting to
+                * avoid repeated failures */
+               if (core_info_cache_enable && !cache_supported)
+                  configuration_set_bool(settings,
+                        settings->bools.core_info_cache_enable, false);
+            }
          }
          break;
       case CMD_EVENT_CORE_DEINIT:
@@ -31383,7 +31396,7 @@ void video_driver_set_viewport_core(void)
          (float)geom->base_width / geom->base_height;
 }
 
-void video_driver_set_viewport_full()
+void video_driver_set_viewport_full(void)
 {
    unsigned width = 0;
    unsigned height = 0;   
@@ -31391,9 +31404,7 @@ void video_driver_set_viewport_full()
    video_driver_get_size(&width, &height);
 
    if (width == 0 || height == 0)
-   {
       return;
-   }
 
    aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
 }
@@ -32861,6 +32872,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
       case GFX_CTX_METAL_API:
+      case GFX_CTX_RSX_API:
          return gl_context_driver_init_first(
                p_rarch, settings,
                data, ident, api, major, minor,
@@ -39374,6 +39386,12 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
       {"vi", RETRO_LANGUAGE_VIETNAMESE},
       {"ar", RETRO_LANGUAGE_ARABIC},
       {"el", RETRO_LANGUAGE_GREEK},
+      {"tr", RETRO_LANGUAGE_TURKISH},
+      {"sk", RETRO_LANGUAGE_SLOVAK},
+      {"fa", RETRO_LANGUAGE_PERSIAN},
+      {"he", RETRO_LANGUAGE_HEBREW},
+      {"ast", RETRO_LANGUAGE_ASTURIAN},
+      {"fi", RETRO_LANGUAGE_FINNISH},
    };
 
    if (string_is_empty(iso639))

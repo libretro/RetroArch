@@ -14,8 +14,8 @@
 
 #include "log.h"
 
-enum log_verbosity { NONE, ERROR, INFO, DBG };
-static log_verbosity log_level = INFO;
+enum log_verbosity { NONE, SR_ERROR, SR_INFO, SR_DEBUG };
+static log_verbosity log_level = SR_INFO;
 
 void log_dummy(const char *, ...) {}
 
@@ -36,21 +36,21 @@ LOG_ERROR log_error_bak = &log_dummy;
 
 void set_log_verbose(void *func_ptr)
 {
-	if (log_level >= DBG)
+	if (log_level >= SR_DEBUG)
 		log_verbose = (LOG_VERBOSE)func_ptr;
 	log_verbose_bak = (LOG_VERBOSE)func_ptr;
 }
 
 void set_log_info(void *func_ptr)
 {
-	if (log_level >= INFO)
+	if (log_level >= SR_INFO)
 		log_info = (LOG_INFO)func_ptr;
 	log_info_bak = (LOG_INFO)func_ptr;
 }
 
 void set_log_error(void *func_ptr)
 {
-	if (log_level >= ERROR)
+	if (log_level >= SR_ERROR)
 		log_error = (LOG_ERROR)func_ptr;
 	log_error_bak = (LOG_ERROR)func_ptr;
 }
@@ -60,19 +60,19 @@ void set_log_verbosity(int level)
 	// Keep the log in the enum bounds
 	if (level < NONE)
 		level = NONE;
-	if(level > DBG)
-		level = DBG;
+	if(level > SR_DEBUG)
+		level = SR_DEBUG;
 
 	log_error = &log_dummy;
 	log_info = &log_dummy;
 	log_verbose = &log_dummy;
 
-	if (level >= ERROR)
+	if (level >= SR_ERROR)
 		log_error = log_error_bak;
 
-	if (level >= INFO)
+	if (level >= SR_INFO)
 		log_info = log_info_bak;
 
-	if (level >= DBG)
+	if (level >= SR_DEBUG)
 		log_verbose = log_verbose_bak;
 }

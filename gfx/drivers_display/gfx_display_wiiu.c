@@ -283,7 +283,7 @@ static void gfx_display_wiiu_scissor_begin(
       int x, int y,
       unsigned width, unsigned height)
 {
-   GX2SetScissor(MAX(x, 0), MAX(video_height - y - height, 0), MIN(width, video_width), MIN(height, video_height));
+   GX2SetScissor(MAX(x, 0), MAX(y, 0), MIN(width, video_width), MIN(height, video_height));
 }
 
 static void gfx_display_wiiu_scissor_end(
