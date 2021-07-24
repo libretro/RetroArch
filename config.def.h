@@ -201,16 +201,21 @@
 
 /* To start in Fullscreen, or not. */
 
-#if defined(HAVE_STEAM) || defined(DINGUX)
-/* Start in fullscreen mode for Steam and
- * Dingux builds */
+#if defined(HAVE_STEAM) || defined(DINGUX) || defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+/* Start in fullscreen mode for Steam and Dingux
+ * WinRT and Winapi Family builds */
 #define DEFAULT_FULLSCREEN true
 #else
 #define DEFAULT_FULLSCREEN false
 #endif
 
 /* To use windowed mode or not when going fullscreen. */
-#define DEFAULT_WINDOWED_FULLSCREEN true
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+/* Do not use windowed mode for WinRT and Winapi Family builds on the Xbox UWP with fixed resolution shrinks the image into the left top corner of the screen with some libretro cores */
+#define DEFAULT_WINDOWED_FULLSCREEN false
+#else
+#define DEFAULT_WINDOWED_FULLSCREEN true 
+#endif 
 
 /* Which monitor to prefer. 0 is any monitor, 1 and up selects
  * specific monitors, 1 being the first monitor. */
@@ -227,6 +232,9 @@
 #if defined(DINGUX)
 #define DEFAULT_FULLSCREEN_X 320
 #define DEFAULT_FULLSCREEN_Y 240
+#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_FULLSCREEN_X 1920
+#define DEFAULT_FULLSCREEN_Y 1080
 #else
 #define DEFAULT_FULLSCREEN_X 0
 #define DEFAULT_FULLSCREEN_Y 0
@@ -380,8 +388,10 @@
 /* Only scale in integer steps.
  * The base size depends on system-reported geometry and aspect ratio.
  * If video_force_aspect is not set, X/Y will be integer scaled independently.
+ * Overscale rounds up instead of down, default is downscale.
  */
 #define DEFAULT_SCALE_INTEGER false
+#define DEFAULT_SCALE_INTEGER_OVERSCALE false
 
 /* Controls aspect ratio handling. */
 
@@ -409,6 +419,11 @@
 /* Sets refresh rate of integral LCD panel
  * in Dingux devices */
 #define DEFAULT_DINGUX_REFRESH_RATE DINGUX_REFRESH_RATE_60HZ
+#endif
+#if defined(RS90)
+/* Sets image filtering method on the RS90
+ * when integer scaling is disabled */
+#define DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE DINGUX_RS90_SOFTFILTER_POINT
 #endif
 #endif
 
@@ -729,7 +744,9 @@ static const bool default_savefiles_in_content_dir = false;
 static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
-#if defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
+#if defined(RS90)
+#define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_START_SELECT
+#elif defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_L3_R3
 #elif defined(PS2) || defined(PSP)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_HOLD_START
@@ -1312,6 +1329,14 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned gfx_thumbnail_upscale_threshold = 0;
 
 #ifdef HAVE_MENU
+#if defined(RS90)
+/* The RS-90 has a hardware clock that is neither
+ * configurable nor persistent, rendering it useless.
+ * We therefore hide it in the menu by default. */
+#define DEFAULT_MENU_TIMEDATE_ENABLE false
+#else
+#define DEFAULT_MENU_TIMEDATE_ENABLE true
+#endif
 #define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
 #define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #endif

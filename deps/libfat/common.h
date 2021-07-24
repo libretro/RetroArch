@@ -63,8 +63,8 @@
 
 /* Platform specific options */
 #if   defined (__wiiu__)
-   #define DEFAULT_CACHE_PAGES 4
-   #define DEFAULT_SECTORS_PAGE 64
+   #define DEFAULT_CACHE_PAGES 512
+   #define DEFAULT_SECTORS_PAGE 128
 #if 0
 #define USE_LWP_LOCK
 #define USE_RTC_TIME

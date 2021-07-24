@@ -279,47 +279,56 @@ static ssize_t sd_fat_write_r (struct _reent *r, void* fd, const char *ptr, size
 
     OSLockMutex(file->dev->pMutex);
 
-    size_t len_aligned = FS_ALIGN(len);
-    if(len_aligned > 0x4000)
-        len_aligned = 0x4000;
-
-    unsigned char *tmpBuf = (unsigned char *)memalign(FS_ALIGNMENT, len_aligned);
-    if(!tmpBuf) {
-        r->_errno = ENOMEM;
-        OSUnlockMutex(file->dev->pMutex);
-        return 0;
-    }
-
     size_t done = 0;
 
-    while(done < len)
-    {
-        size_t write_size = (len_aligned < (len - done)) ? len_aligned : (len - done);
-        memcpy(tmpBuf, ptr + done, write_size);
-
-        int result = FSWriteFile(file->dev->pClient, file->dev->pCmd, tmpBuf, 0x01, write_size, file->fd, 0, -1);
-#if 0
-        FSFlushFile(file->dev->pClient, file->dev->pCmd, file->fd, -1);
-#endif
-        if(result < 0)
-        {
+    /* fast path: buffer is already correctly aligned */
+    if (!((uintptr_t)ptr & (FS_ALIGNMENT-1))) {
+        int result = FSWriteFile(file->dev->pClient, file->dev->pCmd, (uint8_t*)ptr, 1, len, file->fd, 0, -1);
+        if(result < 0) {
             r->_errno = result;
-            break;
-        }
-        else if(result == 0)
-        {
-            if(write_size > 0)
-                done = 0;
-            break;
-        }
-        else
-        {
-            done += result;
+        } else {
+            done = result;
             file->pos += result;
         }
+    } else {
+        size_t len_aligned = FS_ALIGN(len);
+        if(len_aligned > 0x4000)
+            len_aligned = 0x4000;
+
+        unsigned char *tmpBuf = (unsigned char *)memalign(FS_ALIGNMENT, len_aligned);
+        if(!tmpBuf) {
+            r->_errno = ENOMEM;
+            OSUnlockMutex(file->dev->pMutex);
+            return 0;
+        }
+
+        while(done < len)
+        {
+            size_t write_size = (len_aligned < (len - done)) ? len_aligned : (len - done);
+            memcpy(tmpBuf, ptr + done, write_size);
+
+            int result = FSWriteFile(file->dev->pClient, file->dev->pCmd, tmpBuf, 0x01, write_size, file->fd, 0, -1);
+            if(result < 0)
+            {
+                r->_errno = result;
+                break;
+            }
+            else if(result == 0)
+            {
+                if(write_size > 0)
+                    done = 0;
+                break;
+            }
+            else
+            {
+                done += result;
+                file->pos += result;
+            }
+        }
+
+        free(tmpBuf);
     }
 
-    free(tmpBuf);
     OSUnlockMutex(file->dev->pMutex);
     return done;
 }
@@ -340,44 +349,56 @@ static ssize_t sd_fat_read_r (struct _reent *r, void* fd, char *ptr, size_t len)
 
     OSLockMutex(file->dev->pMutex);
 
-    size_t len_aligned = FS_ALIGN(len);
-    if(len_aligned > 0x4000)
-        len_aligned = 0x4000;
-
-    unsigned char *tmpBuf = (unsigned char *)memalign(FS_ALIGNMENT, len_aligned);
-    if(!tmpBuf) {
-        r->_errno = ENOMEM;
-        OSUnlockMutex(file->dev->pMutex);
-        return 0;
-    }
-
     size_t done = 0;
 
-    while(done < len)
-    {
-        size_t read_size = (len_aligned < (len - done)) ? len_aligned : (len - done);
-
-        int result = FSReadFile(file->dev->pClient, file->dev->pCmd, tmpBuf, 0x01, read_size, file->fd, 0, -1);
-        if(result < 0)
-        {
+    /* fast path: buffer is already correctly aligned */
+    if (!((uintptr_t)ptr & (FS_ALIGNMENT-1))) {
+        int result = FSReadFile(file->dev->pClient, file->dev->pCmd, (uint8_t*)ptr, 1, len, file->fd, 0, -1);
+        if(result < 0) {
             r->_errno = result;
-            done = 0;
-            break;
-        }
-        else if(result == 0)
-        {
-            /*! TODO: error on read_size > 0 */
-            break;
-        }
-        else
-        {
-            memcpy(ptr + done, tmpBuf, read_size);
-            done += result;
+        } else {
+            done = result;
             file->pos += result;
         }
+    } else {
+        size_t len_aligned = FS_ALIGN(len);
+        if(len_aligned > 0x4000)
+            len_aligned = 0x4000;
+
+        unsigned char *tmpBuf = (unsigned char *)memalign(FS_ALIGNMENT, len_aligned);
+        if(!tmpBuf) {
+            r->_errno = ENOMEM;
+            OSUnlockMutex(file->dev->pMutex);
+            return 0;
+        }
+
+        while(done < len)
+        {
+            size_t read_size = (len_aligned < (len - done)) ? len_aligned : (len - done);
+
+            int result = FSReadFile(file->dev->pClient, file->dev->pCmd, tmpBuf, 0x01, read_size, file->fd, 0, -1);
+            if(result < 0)
+            {
+                r->_errno = result;
+                done = 0;
+                break;
+            }
+            else if(result == 0)
+            {
+                /*! TODO: error on read_size > 0 */
+                break;
+            }
+            else
+            {
+                memcpy(ptr + done, tmpBuf, read_size);
+                done += result;
+                file->pos += result;
+            }
+        }
+
+        free(tmpBuf);
     }
 
-    free(tmpBuf);
     OSUnlockMutex(file->dev->pMutex);
     return done;
 }

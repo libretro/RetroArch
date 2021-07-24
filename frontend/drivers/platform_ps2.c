@@ -127,7 +127,9 @@ static void load_modules()
 
    /* USB */
    SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&bdm_irx, size_bdm_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&bdmfs_vfat_irx, size_bdmfs_vfat_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&usbmass_bd_irx, size_usbmass_bd_irx, 0, NULL, NULL);
 
 #if !defined(DEBUG)
    /* CDFS */

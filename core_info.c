@@ -732,17 +732,18 @@ end:
    return core_info_cache_list;
 }
 
-static void core_info_cache_write(core_info_cache_list_t *list, const char *info_dir)
+static bool core_info_cache_write(core_info_cache_list_t *list, const char *info_dir)
 {
    intfstream_t *file    = NULL;
    rjsonwriter_t *writer = NULL;
+   bool success          = false;
    char file_path[PATH_MAX_LENGTH];
    size_t i, j;
 
    file_path[0] = '\0';
 
    if (!list)
-      return;
+      return false;
 
    /* Open info cache file */
    if (string_is_empty(info_dir))
@@ -763,7 +764,7 @@ static void core_info_cache_write(core_info_cache_list_t *list, const char *info
    if (!file)
    {
       RARCH_ERR("[Core Info] Failed to write to core info cache file: %s\n", file_path);
-      return;
+      return false;
    }
 
    /* Write info cache */
@@ -1068,6 +1069,7 @@ static void core_info_cache_write(core_info_cache_list_t *list, const char *info
    rjsonwriter_free(writer);
 
    RARCH_LOG("[Core Info] Wrote to cache file: %s\n", file_path);
+   success = true;
 
    /* Remove 'force refresh' file, if required */
    file_path[0] = '\0';
@@ -1086,6 +1088,7 @@ end:
    free(file);
 
    list->refresh = false;
+   return success;
 }
 
 static void core_info_check_uninstalled(core_info_cache_list_t *list)
@@ -1774,7 +1777,8 @@ static core_info_list_t *core_info_list_new(const char *path,
       const char *libretro_info_dir,
       const char *exts,
       bool dir_show_hidden_files,
-      bool enable_cache)
+      bool enable_cache,
+      bool *cache_supported)
 {
    size_t i;
    core_path_list_t *path_list                  = NULL;
@@ -1906,12 +1910,14 @@ static core_info_list_t *core_info_list_new(const char *path,
     *   a refresh)
     * > Write new cache to disk if updates are
     *   required */
+   *cache_supported = true;
    if (core_info_cache_list)
    {
       core_info_check_uninstalled(core_info_cache_list);
 
       if (core_info_cache_list->refresh)
-         core_info_cache_write(core_info_cache_list, info_dir);
+         *cache_supported = core_info_cache_write(
+               core_info_cache_list, info_dir);
 
       core_info_cache_list_free(core_info_cache_list);
    }
@@ -2104,14 +2110,16 @@ void core_info_deinit_list(void)
 }
 
 bool core_info_init_list(const char *path_info, const char *dir_cores,
-      const char *exts, bool dir_show_hidden_files, bool enable_cache)
+      const char *exts, bool dir_show_hidden_files,
+      bool enable_cache, bool *cache_supported)
 {
    core_info_state_t *p_coreinfo = coreinfo_get_ptr();
    if (!(p_coreinfo->curr_list = core_info_list_new(dir_cores,
                !string_is_empty(path_info) ? path_info : dir_cores,
                exts,
                dir_show_hidden_files,
-               enable_cache)))
+               enable_cache,
+               cache_supported)))
       return false;
    return true;
 }

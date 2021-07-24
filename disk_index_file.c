@@ -47,11 +47,9 @@ static bool DCifJSONObjectMemberHandler(void* context, const char *pValue, size_
 {
    DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
+   /* something went wrong */
    if (pCtx->current_entry_str_val)
-   {
-      /* something went wrong */
       return false;
-   }
 
    if (length)
    {

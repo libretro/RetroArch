@@ -28,6 +28,7 @@
 #include "tasks_internal.h"
 
 #include "../input/input_overlay.h"
+#include "../input/input_remapping.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 

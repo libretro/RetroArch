@@ -1365,8 +1365,13 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "The base size depends on system-reported \n"
                              "geometry and aspect ratio.\n"
                              " \n"
-                             "If Force Aspect is not set, X/Y will be \n"
+                             "If 'Force Aspect Ratio' is not set, X/Y will be \n"
                              "integer scaled independently.");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE:
+            snprintf(s, len,
+                     "Force integer scaling to round up \n"
+                             " to the next larger integer instead of rounding down.");
             break;
         case MENU_ENUM_LABEL_AUDIO_VOLUME:
             snprintf(s, len,

@@ -3971,7 +3971,15 @@ static void xmb_render(void *data,
    /* 'i' must be of 'size_t', since it is passed
     * by reference to menu_entries_ctl() */
    size_t i;
-   float scale_factor;
+   /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
+    * On some platforms (e.g. 32-bit x86 without SSE),
+    * gcc can produce inconsistent floating point results
+    * depending upon optimisation level. This can break
+    * floating point variable comparisons. A workaround is
+    * to declare the affected variable as 'volatile', which
+    * disables optimisations and removes excess precision
+    * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
+   volatile float scale_factor;
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
    size_t      end          = menu_entries_get_size();

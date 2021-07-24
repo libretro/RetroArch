@@ -22,6 +22,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#if defined(WIIU)
+#include <malloc.h>
+#endif
 
 #include <file/nbio.h>
 #include <encodings/utf.h>
@@ -130,8 +133,14 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
 
    handle->mode          = mode;
 
+#if defined(WIIU)
+   /* hit the aligned-buffer fast path on Wii U */
+   if (len)
+      buf                = memalign(0x40, (size_t)len);
+#else
    if (len)
       buf                = malloc((size_t)len);
+#endif
 
    if (len && !buf)
       goto error;

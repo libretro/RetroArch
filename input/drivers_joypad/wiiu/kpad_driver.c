@@ -251,6 +251,12 @@ static void kpad_poll(void)
       }
       poll_failures[channel] = 0;
 
+      /* Several reads when a device is connected or an attachment added give */
+      /* bogus results, try to weed them out */
+      if (kpad.wpad_error || kpad.device_type == 255) {
+         continue;
+      }
+
       kpad_poll_one_channel(channel, &kpad);
    }
 }
