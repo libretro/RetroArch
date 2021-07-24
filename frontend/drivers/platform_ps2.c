@@ -210,14 +210,10 @@ static void frontend_ps2_init(void *data)
    }
 #endif
 
-#if defined(BUILD_FOR_PCSX2)
-   strlcpy(cwd, rootDevicePath(BOOT_DEVICE_MC0), sizeof(cwd));
-#else
    getcwd(cwd, sizeof(cwd));
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
    // If it is not salamander we need to go one level up for set the CWD.
    path_parent_dir(cwd);
-#endif
 #endif
 
 #if !defined(DEBUG)
