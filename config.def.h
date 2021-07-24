@@ -797,6 +797,8 @@ static const unsigned input_backtouch_toggle       = false;
 /* Font size for on-screen messages. */
 #if defined(DINGUX)
 #define DEFAULT_FONT_SIZE 12
+#elif defined(PS2)
+#define DEFAULT_FONT_SIZE 16
 #else
 #define DEFAULT_FONT_SIZE 32
 #endif
