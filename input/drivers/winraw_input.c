@@ -341,7 +341,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
 {
    POINT crs_pos;
 
-   /* used for fixing cordinates after switching resolutions */
+   /* Used for fixing coordinates after switching resolutions */
    GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
 
    if (!EqualRect(&wr->active_rect, &wr->prev_rect))
@@ -349,15 +349,17 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       if (wr->rect_delay < 10 )
       {
           RARCH_LOG("[CRT][WINRAW]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
-          winraw_init_mouse_xy_mapping(wr); /* Tiggering a fewe times seens to fix the issue. forcing resize whihe resolution is changing */
+          winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
           wr->rect_delay ++;
-      }else{
-         int bottom = wr->prev_rect.bottom;
-         int right = wr->prev_rect.right;
-         RARCH_LOG("[CRT][WINRAW]: Resizing RECT for absolute co-ords to match new resolution - %dx%d \n", right ,bottom);
-         wr->active_rect = wr->prev_rect;
-         winraw_init_mouse_xy_mapping(wr);
-         wr->rect_delay = 0;
+      }
+      else
+      {
+	      int bottom = wr->prev_rect.bottom;
+	      int right = wr->prev_rect.right;
+	      RARCH_LOG("[CRT][WINRAW]: Resizing RECT for absolute coordinates to match new resolution - %dx%d\n", right ,bottom);
+	      wr->active_rect = wr->prev_rect;
+	      winraw_init_mouse_xy_mapping(wr);
+	      wr->rect_delay = 0;
       }
    }
 
@@ -874,10 +876,10 @@ static int16_t winraw_input_state(
 				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
 				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
 				case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               if (mouse)
-                  return winraw_lightgun_aiming_state(wr, mouse, port, id);
-               break;
-				/*buttons*/
+					if (mouse)
+						return winraw_lightgun_aiming_state(wr, mouse, port, id);
+					break;
+					/*buttons*/
 				case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
 				case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
@@ -890,38 +892,38 @@ static int16_t winraw_input_state(
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
 				case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
-               {
-                  unsigned new_id                = winraw_retro_id_to_rarch(id);
-                  const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
-                  const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
-                  const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
-                  const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
-                  uint16_t port                  = joypad_info->joy_idx;
-                  float axis_threshold           = joypad_info->axis_threshold;
-                  const uint64_t joykey          = (bind_joykey != NO_BTN)
-                     ? bind_joykey  : autobind_joykey;
-                  const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
-                     ? bind_joyaxis : autobind_joyaxis;
-                  return winraw_input_lightgun_state(
-                        wr, mouse, joypad,
-                        joypad_info,
-                        binds,
-                        keyboard_mapping_blocked,
-                        port, 
-                        new_id,
-                        axis_threshold,
-                        joykey,
-                        joyaxis);
-               }
-				/*deprecated*/
+					{
+						unsigned new_id                = winraw_retro_id_to_rarch(id);
+						const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
+						const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
+						const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
+						const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
+						uint16_t port                  = joypad_info->joy_idx;
+						float axis_threshold           = joypad_info->axis_threshold;
+						const uint64_t joykey          = (bind_joykey != NO_BTN)
+							? bind_joykey  : autobind_joykey;
+						const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+							? bind_joyaxis : autobind_joyaxis;
+						return winraw_input_lightgun_state(
+								wr, mouse, joypad,
+								joypad_info,
+								binds,
+								keyboard_mapping_blocked,
+								port, 
+								new_id,
+								axis_threshold,
+								joykey,
+								joyaxis);
+					}
+					/*deprecated*/
 				case RETRO_DEVICE_ID_LIGHTGUN_X:
-               if (mouse)
-                  return mouse->dlt_x;
-               break;
+					if (mouse)
+						return mouse->dlt_x;
+					break;
 				case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               if (mouse)
-                  return mouse->dlt_y;
-               break;
+					if (mouse)
+						return mouse->dlt_y;
+					break;
 			}
 			break;
    }
