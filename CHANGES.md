@@ -1,5 +1,101 @@
 # Future
 
+# 1.9.7
+- 3DS: Add unique ID's
+- CRT/SWITCHRES: Fixed some Monitor index bugs ad updated to the latest SR2
+- CRT/SWITCHRES: Fixed monitor index corruption on Windows and added correct fractal scaling. Only used when required
+- CRT/SWITCHRES: Updated log defines to match SR upstream.
+- CRT/SWITCHRES: Added new SR_CONFIG_PATHS for non Windows and Linux systems.
+Not that SR works on them but to fix RA compile issues
+- CRT/SWITCHRES: Updated SR2 code base to latest. Added supprt for windows monitor indexing. Fixed monitor index bug where index 1 was not being used correctly and "auto" was not being sent.
+- CRT/SWITCHRES: Updated swithres for x86 windows fix
+- CRT/SWITCHRES: fixed SR2 auto issue
+- CRT/SWITCHRES: Fixed auto monitor bug
+- CRT/SWITCHRES: Fixed monitor index corruption on Windows
+- CRT/SWITCHRES: Fixed buffer size bug
+- CRT/SWITCHRES: Added correct fractal scalling. only used when required.
+- CORE INFO: Automatically disable core info cache when core info directory is read-only
+- EMSCRIPTEN: add MAME2003 / MAME2003-plus to web.libretro
+- INPUT/UDEV: udev fixes add pointer pressed to pointer device to allow udev users to access this device
+- LIBNX/SWITCH: Enable 7zip support
+- LINUX/XDG: Prevent xdg-screensaver's "Protocol error" messages
+- LOCALIZATION: Fetch translations from Crowdin
+- LOCALIZATION: Add missing languages for the first startup
+- MENU/XMB/WIDGETS: Add workaround for FPU bug that breaks scale factor comparisons on certain platforms (fixes XMB thumbnails on 32bit Linux/Windows)
+- MENU/RGUI: Enable fullscreen thumbnail toggle using RetroPad 'start' button
+- MENU/RGUI: Fix sublabel length when menu clock is disabled
+- NETWORK/HTTP: Fix HTTP progress indication for large files on 32-bit systems
+- NETWORK/NATT: implement natt fix from void()
+- OPENDINGUX: Fix display when cores 'drop' frames
+- OPENDINGUX BETA: Use ALSA audio driver by default
+- OPENDINGUX BETA: Fix IPU scaling when running 256x224 (SNES/Genesis) content
+- PATHS: Fix garbled path string
+- PS2: Implement proper ps2_font driver instead of using the font driver from gskit
+- PS2: Use BDM for increasing up USB stability
+- PS3: First basic RSX driver for PSL1GHT
+- RS90: Initial port
+- RS90: Fix offset of OSD text
+- RS90: Disable menu clock by default
+- RS90: Hide 'Bilinear Filtering' video option
+- RS90: Move appdata (retroarch) base directory to external microsd card
+- RS90: Add optional approximate 'semi-linear' scaling filter
+- SHADERS: Max Shader Parameters increased to 1024
+- VIDEO: Add 'Integer Scale Overlay' - Force integer scaling to round up to the next larger integer instead of rounding down
+- VIDEO: New 'Full' aspect ratio added. This aspect ratio is useful when used with a shader which has a border in it. The aspect ratio is set to the full window area, so that the viewport spans the whole viewport. When using a border type shader like the Mega Bezel this allows the graphics to span the whole window regardless of the user's monitor aspect ratio
+- VITA: Wrong flags for not piglet version
+- UNIX: Correct backlight max_brightness path
+- UWP/XBOX: Default to Direct3D11 driver on UWP builds
+- UWP/XBOX: Do not use windowed mode on UWP/Xbox by default, set default resolution to 1920x1080 by default. Should fix display issues with Dolphin/PCSX2 on Xbox
+- WIIU: Fix inputs breaking when connecting/disconnecting remotes
+- WIIU: Input - ignore some bogus KPAD results
+- WIIU: Font rendering fixes - render font lines with correct spacing, and only sample alpha channel when rendering fonts
+- WIIU/NETWORK: Network speed optimisations - WINSCALE, TCP sACK, large buffers
+- WIIU/LIBFAT: Increase cache size on WiiU
+- WIIU/FILE IO: Filesystem optimisations - add fast path for already aligned buffers
+- WIIU/FILE IO: Use 128K vbufs for WiiU - we have loads of RAM and large vbufs are very beneficial
+- WIIU/MENU/OZONE: Fix Ozone rendering error (scissor fix)
+- WIIU/MENU/OZONE: Use Ozone icons instead of XMB Monochrome
+
+# 1.9.6
+- ARCHIVE: Fix archive delimiter detection when file path contains no slashes
+- ANDROID: Do not duplicate port 0 mouse and gun inputs to other ports
+- AUDIO/XAUDIO2: Fail instead of crashing when disconnecting an audio device
+- CHEEVOS: Reset cached progress each time menu is opened
+- CRT/SWITCHRES: Add support for switchres.ini core and directory overrides
+- D3D11: Don't use allow tearing flag with blit swap chains. Also disables the flip model if the allow tearing flag is not supported.
+- D3D11: Disable DXGI's ALT+ENTER handling
+- D3D11: Don't pass ALLOW_TEARING when unsupported
+- D3D11: Fix non-vsynced output without flip, black screens in fullscreen
+- D3D12: Relocated 'd3d12_gfx_sync'
+- D3D12: Fixed swap interval option
+- GFX: Fix uninitialized variables in gfx_display_draw_cursor
+- HISTORY: Hide 'Add to Favorites' when viewing an entry of the favorites playlist
+- INPUT: 'Analog to Digital Type' usability improvements
+- INPUT: Add support for mapping multiple controllers to a single input device
+- INPUT/REMAPPING: Add support for mapping multiple controllers to a single input device
+- INPUT/LIGHTGUN: Bind lightgun trigger to first mouse button by default
+- INPUT/WINDOWS/RAWINPUT: Mouse access violation fix
+- INPUT/UDEV: Only add mouse if it has buttons and add vebose device friendly names
+- INPUT/UDEV: Skip mouse with no button errors and keep the rest
+- INPUT/UDEV: Fix Game Focus mode
+- INPUT/UDEV/X11: Change udev driver for dual lightgun support in X11
+- LIBNX/SWITCH: Update to libnx 4.0.0
+- LOCALIZATION: Fetch translations from Crowdin
+- LOCALIZATION: Fix Switchres menu texts
+- MENU/OZONE: Ensure sidebar display status is updated correctly when performing rapid menu navigation
+- MENU/XMB: Dynamic wallpaper fix
+- MENU/XMB: Icon opacity fix
+- MENU/QT/WIMP: Fix default core detection when playlist file name does not match 'db_name'
+- PLAYLISTS: Optimise scanning of large rom sets
+- SECURITY: Plug so-called high-risk vulnerability related to Powershell - avoid injection - don't send speech input as commandline argument
+- UWP/XBOX: Add expanded resources Rescap to increase performance of UWP version in app mode on Xbox
+- WINDOWS/INSTALLER: Add smarter isEmptyDir reference implementation that looks for subdirectories from NSIS documentation
+- WINDOWS/INSTALLER: Register new function DirectorySet that is called when pressing the "Next" button on the MUI_PAGE_DIRECTORY, aka the install folder selection GUI. DirectorySet contains the criteria for an acceptable folder, which are:
+  - `IfFileExists "$INSTDIR\retroarch.exe"` returns 1
+  - `IfFileExists "$INSTDIR\*.*` returns 0, there is no existing folder
+  - `IfFileExists "$INSTDIR\*.*"` returns 1, there is a folder, and `isEmptyDir` returns 1, therefore the folder is empty, including of subdirectories
+- X11: Fix threaded video segfault
+
 # 1.9.5
 - ALSATHREAD: Make alsathread default for all ALSA devices with threads
 - ARCHIVE: Fix loading of archived content with file names containing '#' characters

@@ -1401,12 +1401,12 @@ void MainWindow::deleteCurrentPlaylistItem()
    reloadPlaylists();
 }
 
-QString MainWindow::getPlaylistDefaultCore(QString dbName)
+QString MainWindow::getPlaylistDefaultCore(QString plName)
 {
    playlist_config_t playlist_config;
    char playlistPath[PATH_MAX_LENGTH];
-   QByteArray dbNameByteArray          = dbName.toUtf8();
-   const char *dbNameCString           = dbNameByteArray.data();
+   QByteArray plNameByteArray          = plName.toUtf8();
+   const char *plNameCString           = plNameByteArray.data();
    playlist_t *cachedPlaylist          = playlist_get_cached();
    playlist_t *playlist                = NULL;
    bool loadPlaylist                   = true;
@@ -1421,13 +1421,13 @@ QString MainWindow::getPlaylistDefaultCore(QString dbName)
 
    playlistPath[0] = '\0';
 
-   if (!settings || string_is_empty(dbNameCString))
+   if (!settings || string_is_empty(plNameCString))
       return corePath;
 
    /* Get playlist path */
    fill_pathname_join(
       playlistPath,
-      settings->paths.directory_playlist, dbNameCString,
+      settings->paths.directory_playlist, plNameCString,
       sizeof(playlistPath));
    strlcat(playlistPath, ".lpl", sizeof(playlistPath));
 
@@ -1479,6 +1479,7 @@ void PlaylistModel::getPlaylistItems(QString path)
    QByteArray pathArray;
    playlist_config_t playlist_config;
    const char *pathData                = NULL;
+   const char *playlistName            = NULL;
    playlist_t *playlist                = NULL;
    unsigned playlistSize               = 0;
    unsigned            i               = 0;
@@ -1492,6 +1493,8 @@ void PlaylistModel::getPlaylistItems(QString path)
 
    pathArray.append(path);
    pathData              = pathArray.constData();
+   if (!string_is_empty(pathData))
+      playlistName       = path_basename(pathData);
 
    playlist_config_set_path(&playlist_config, pathData);
    playlist              = playlist_init(&playlist_config);
@@ -1534,6 +1537,12 @@ void PlaylistModel::getPlaylistItems(QString path)
       {
          hash["db_name"]     = entry->db_name;
          hash["db_name"].remove(".lpl");
+      }
+
+      if (!string_is_empty(playlistName))
+      {
+         hash["pl_name"]     = playlistName;
+         hash["pl_name"].remove(".lpl");
       }
 
       m_contents.append(hash);

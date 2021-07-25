@@ -1588,6 +1588,14 @@ MSG_HASH(
    "Limita el escalado de vídeo a múltiplos enteros. El tamaño base dependerá de la geometría indicada por el sistema y la relación de aspecto. Si la opción «Forzar relación de aspecto» está desactivada, los valores X e Y serán escalados individualmente."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Sobreescalar imagen al usar números enteros"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Hace que el escalado por números enteros redondee siempre a un valor superior en vez de a uno inferior."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Relación de aspecto"
    )
@@ -2611,6 +2619,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "Conversión de entrada analógica a digital"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Utiliza el stick analógico especificado como señal de entrada para la cruceta. Si el núcleo tiene soporte nativo para control analógico, las asignaciones de la cruceta se desactivarán salvo que se haya seleccionado una opción forzada. Al forzar las asignaciones de cruceta, el núcleo no recibirá ninguna entrada analógica del stick especificado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -4031,7 +4043,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Retraso al desplazar el menú"
+   "Retraso para desplazar el menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -7530,6 +7542,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Analógico derecho"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Analógico izquierdo (forzada)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Analógico derecho (forzada)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

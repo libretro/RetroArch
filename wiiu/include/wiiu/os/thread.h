@@ -133,7 +133,7 @@ typedef struct
 
 #define OS_THREAD_TAG 0x74487244u
 #pragma pack(push, 1)
-typedef struct OSThread
+typedef struct __attribute__ ((aligned (8))) OSThread
 {
    OSContext context;
 

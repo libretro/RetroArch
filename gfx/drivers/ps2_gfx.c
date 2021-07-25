@@ -46,6 +46,8 @@ typedef struct ps2_video
    int menu_filter;
    int core_filter;
 
+   video_viewport_t vp;
+
    /* Palette in the cores */
    struct retro_hw_render_interface_gskit_ps2 iface;
 
@@ -145,7 +147,14 @@ static void init_ps2_video(ps2_video_t *ps2)
 {
    ps2->gsGlobal    = init_GSGlobal();
    gsKit_TexManager_init(ps2->gsGlobal);
-   
+
+   ps2->vp.x                = 0;
+   ps2->vp.y                = 0;
+   ps2->vp.width            = ps2->gsGlobal->Width;
+   ps2->vp.height           = ps2->gsGlobal->Height;
+   ps2->vp.full_width       = ps2->gsGlobal->Width;
+   ps2->vp.full_height      = ps2->gsGlobal->Height;
+
    ps2->vsync_callback_id = gsKit_add_vsync_handler(vsync_handler);
    ps2->menuTexture = prepare_new_texture();
    ps2->coreTexture = prepare_new_texture();

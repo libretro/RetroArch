@@ -111,7 +111,7 @@ static void on_applet_hook(AppletHookType hook, void *param)
       case AppletHookType_OnFocusState:
          focus_state = appletGetFocusState();
          RARCH_LOG("Got AppletHook OnFocusState - new focus state is %d\n", focus_state);
-         platform_switch_has_focus = focus_state == AppletFocusState_Focused;
+         platform_switch_has_focus = focus_state == AppletFocusState_InFocus;
 
          if (!platform_switch_has_focus)
          {
@@ -133,11 +133,6 @@ static void on_applet_hook(AppletHookType hook, void *param)
 
          /* Performance mode */
       case AppletHookType_OnPerformanceMode:
-         {
-            /* 0 == Handheld, 1 == Docked
-             * Since CPU doesn't change we just re-apply */
-            u32 performance_mode = appletGetPerformanceMode();
-         }
          libnx_apply_overclock();
          break;
 
@@ -795,7 +790,7 @@ static enum frontend_powerstate
 frontend_switch_get_powerstate(int *seconds, int *percent)
 {
    uint32_t pct;
-   ChargerType ct;
+   PsmChargerType ct;
    Result rc;
    if (!psmInitialized)
       return FRONTEND_POWERSTATE_NONE;
@@ -815,8 +810,8 @@ frontend_switch_get_powerstate(int *seconds, int *percent)
 
    switch (ct)
    {
-      case ChargerType_Charger:
-      case ChargerType_Usb:
+      case PsmChargerType_EnoughPower:
+      case PsmChargerType_LowPower:
          return FRONTEND_POWERSTATE_CHARGING;
       default:
          break;

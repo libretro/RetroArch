@@ -34,13 +34,6 @@ else ifeq ($(LIBRETRO), bluemsx)
 	APP_ICON             = pkg/ctr/assets/bluemsx.png
 	APP_BANNER           = pkg/ctr/assets/bluemsx_banner.png
 
-else ifeq ($(LIBRETRO), chailove)
-	APP_TITLE            = ChaiLove
-	APP_PRODUCT_CODE     = RARCH-CHAILOVE
-	APP_UNIQUE_ID        = 0xBACB2
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
-
 else ifeq ($(LIBRETRO), cap32)
 	APP_TITLE            = Caprice32
 	APP_AUTHOR           = various
@@ -48,6 +41,13 @@ else ifeq ($(LIBRETRO), cap32)
 	APP_UNIQUE_ID        = 0xBAC3E
 	APP_ICON             = pkg/ctr/assets/Caprice32.png
 	APP_BANNER           = pkg/ctr/assets/Caprice32_banner.png
+
+else ifeq ($(LIBRETRO), chailove)
+	APP_TITLE            = ChaiLove
+	APP_PRODUCT_CODE     = RARCH-CHAILOVE
+	APP_UNIQUE_ID        = 0xBACB2
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), crocods)
 	APP_TITLE            = CROCODS
@@ -88,15 +88,6 @@ else ifeq ($(LIBRETRO), fbalpha2012)
 	APP_ICON             = pkg/ctr/assets/fbalpha2012.png
 	APP_BANNER           = pkg/ctr/assets/fbalpha2012_banner.png
 
-else ifeq ($(LIBRETRO), fbalpha2012_neogeo)
-	APP_TITLE            = Final Burn Alpha 2012 - NeoGeo
-	APP_AUTHOR           = Team FB Alpha
-	APP_PRODUCT_CODE     = RARCH-FBANEOGEO
-	APP_UNIQUE_ID        = 0xBAC10
-	APP_ICON             = pkg/ctr/assets/fbalpha2012_neogeo.png
-	APP_BANNER           = pkg/ctr/assets/fbalpha2012_neogeo_banner.png
-	APP_SYSTEM_MODE      = 80MB
-
 else ifeq ($(LIBRETRO), fbalpha2012_cps1)
 	APP_TITLE            = Final Burn Alpha 2012 - CPS-1
 	APP_AUTHOR           = Team FB Alpha
@@ -121,6 +112,15 @@ else ifeq ($(LIBRETRO), fbalpha2012_cps3)
 	APP_UNIQUE_ID        = 0xBAC92
 	APP_ICON             = pkg/ctr/assets/fbalpha2012_cps3.png
 	APP_BANNER           = pkg/ctr/assets/fbalpha2012_cps3_banner.png
+	APP_SYSTEM_MODE      = 80MB
+
+else ifeq ($(LIBRETRO), fbalpha2012_neogeo)
+	APP_TITLE            = Final Burn Alpha 2012 - NeoGeo
+	APP_AUTHOR           = Team FB Alpha
+	APP_PRODUCT_CODE     = RARCH-FBANEOGEO
+	APP_UNIQUE_ID        = 0xBAC10
+	APP_ICON             = pkg/ctr/assets/fbalpha2012_neogeo.png
+	APP_BANNER           = pkg/ctr/assets/fbalpha2012_neogeo_banner.png
 	APP_SYSTEM_MODE      = 80MB
 
 else ifeq ($(LIBRETRO), fbneo)
@@ -160,13 +160,6 @@ else ifeq ($(LIBRETRO), freechaf)
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
-else ifeq ($(LIBRETRO), frodo)
-	APP_TITLE            = Frodo
-	APP_PRODUCT_CODE     = RARCH-FRODO
-	APP_UNIQUE_ID        = 0xBACB9
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
-
 else ifeq ($(LIBRETRO), freeintv)
 	APP_TITLE            = FreeIntv
 	APP_AUTHOR           = various
@@ -174,6 +167,13 @@ else ifeq ($(LIBRETRO), freeintv)
 	APP_UNIQUE_ID        = 0xBAC21
 	APP_ICON             = pkg/ctr/assets/freeintv.png
 	APP_BANNER           = pkg/ctr/assets/freeintv_banner.png
+
+else ifeq ($(LIBRETRO), frodo)
+	APP_TITLE            = Frodo
+	APP_PRODUCT_CODE     = RARCH-FRODO
+	APP_UNIQUE_ID        = 0xBACB9
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), fuse)
 	APP_TITLE            = Fuse
@@ -194,6 +194,13 @@ else ifeq ($(LIBRETRO), genesis_plus_gx)
 	APP_TITLE            = Genesis Plus GX Libretro
 	APP_PRODUCT_CODE     = RARCH-GENPLUSGX
 	APP_UNIQUE_ID        = 0xBAC06
+	APP_ICON             = pkg/ctr/assets/genesis_plus_gx.png
+	APP_BANNER           = pkg/ctr/assets/genesis_plus_gx_banner.png
+
+else ifeq ($(LIBRETRO), genesis_plus_gx_wide)
+	APP_TITLE            = Genesis Plus GX Libretro Wide
+	APP_PRODUCT_CODE     = RARCH-GENPLUSGXWIDE
+	APP_UNIQUE_ID        = 0xBACE0
 	APP_ICON             = pkg/ctr/assets/genesis_plus_gx.png
 	APP_BANNER           = pkg/ctr/assets/genesis_plus_gx_banner.png
 
@@ -225,6 +232,13 @@ else ifeq ($(LIBRETRO), handy)
 	APP_UNIQUE_ID        = 0xBAC7C
 	APP_ICON             = pkg/ctr/assets/handy.png
 	APP_BANNER           = pkg/ctr/assets/handy_banner.png
+
+else ifeq ($(LIBRETRO), lowresnx)
+	APP_TITLE            = LowRes NX
+	APP_PRODUCT_CODE     = RARCH-LOWRESNX
+	APP_UNIQUE_ID        = 0xBACD1
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), hatari)
 	APP_TITLE            = Hatari
@@ -301,14 +315,6 @@ else ifeq ($(LIBRETRO), mgba)
 	APP_ICON             = pkg/ctr/assets/mgba.png
 	APP_BANNER           = pkg/ctr/assets/mgba_banner.png
 
-else ifeq ($(LIBRETRO), nekop2)
-	APP_TITLE            = Neko Project 2
-	APP_AUTHOR           = various
-	APP_PRODUCT_CODE     = RARCH-NP2
-	APP_UNIQUE_ID        = 0xBAC1C
-	APP_ICON             = pkg/ctr/assets/nekop2.png
-	APP_BANNER           = pkg/ctr/assets/nekop2_banner.png
-
 else ifeq ($(LIBRETRO), mrboom)
 	APP_TITLE            = MrBoom
 	APP_PRODUCT_CODE     = RARCH-MRBOOM
@@ -322,6 +328,14 @@ else ifeq ($(LIBRETRO), mu)
 	APP_UNIQUE_ID        = 0xBAC2F
 	APP_ICON             = pkg/ctr/assets/MU.png
 	APP_BANNER           = pkg/ctr/assets/MU_banner.png
+
+else ifeq ($(LIBRETRO), nekop2)
+	APP_TITLE            = Neko Project 2
+	APP_AUTHOR           = various
+	APP_PRODUCT_CODE     = RARCH-NP2
+	APP_UNIQUE_ID        = 0xBAC1C
+	APP_ICON             = pkg/ctr/assets/nekop2.png
+	APP_BANNER           = pkg/ctr/assets/nekop2_banner.png
 
 else ifeq ($(LIBRETRO), neocd)
 	APP_TITLE            = NeoCD
@@ -391,7 +405,6 @@ else ifeq ($(LIBRETRO), pocketcdg)
 	APP_UNIQUE_ID        = 0xBACAC
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
-
 
 else ifeq ($(LIBRETRO), pokemini)
 	APP_TITLE            = PokeMini
@@ -597,6 +610,13 @@ else ifeq ($(LIBRETRO), vice_xcbm2)
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
+else ifeq ($(LIBRETRO), vice_xcbm5x0)
+	APP_TITLE            = VICE xcbm5x0
+	APP_PRODUCT_CODE     = RARCH-VICE-XCBM5X0
+	APP_UNIQUE_ID        = 0xBACD2
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), vice_xpet)
 	APP_TITLE            = VICE xpet
 	APP_PRODUCT_CODE     = RARCH-VICE-XPET
@@ -608,6 +628,13 @@ else ifeq ($(LIBRETRO), vice_xplus4)
 	APP_TITLE            = VICE xplus4
 	APP_PRODUCT_CODE     = RARCH-VICE-XPLUS4
 	APP_UNIQUE_ID        = 0xBACA4
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vice_xscpu64)
+	APP_TITLE            = VICE xscpu64
+	APP_PRODUCT_CODE     = RARCH-VICE-XSCPU64
+	APP_UNIQUE_ID        = 0xBACD3
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
@@ -631,6 +658,7 @@ else ifeq ($(LIBRETRO), x1)
 	APP_UNIQUE_ID        = 0xBAC99
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), xrick)
 	APP_TITLE            = XRick
 	APP_PRODUCT_CODE     = RARCH-XRICK

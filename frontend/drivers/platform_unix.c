@@ -1349,15 +1349,15 @@ static void frontend_unix_set_screen_brightness(int value)
    char *buffer = NULL;
    char svalue[16] = {0};
    unsigned int max_brightness = 100;
-   #if !defined(HAVE_LAKKA_SWITCH)
-   filestream_read_file("/sys/devices/platform/backlight/backlight/backlight/max_brightness",
+
+   /* Device tree should have 'label = "backlight";' if control is desirable */
+   filestream_read_file("/sys/class/backlight/backlight/max_brightness",
                         &buffer, NULL);
    if (buffer)
    {
       sscanf(buffer, "%u", &max_brightness);
       free(buffer);
    }
-   #endif
 
    /* Calculate the brightness */
    value = (value * max_brightness) / 100;
@@ -1792,6 +1792,9 @@ static void frontend_unix_get_env(int *argc,
    }
 #else
    char base_path[PATH_MAX] = {0};
+#if defined(DINGUX)
+   dingux_get_base_path(base_path, sizeof(base_path));
+#else
    const char *xdg          = getenv("XDG_CONFIG_HOME");
    const char *home         = getenv("HOME");
 
@@ -1803,14 +1806,11 @@ static void frontend_unix_get_env(int *argc,
    else if (home)
    {
       strlcpy(base_path, home, sizeof(base_path));
-#if defined(DINGUX)
-      strlcat(base_path, "/.retroarch", sizeof(base_path));
-#else
       strlcat(base_path, "/.config/retroarch", sizeof(base_path));
-#endif
    }
    else
       strcpy_literal(base_path, "retroarch");
+#endif
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
          "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -2154,9 +2154,13 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 #else
    char base_path[PATH_MAX] = {0};
    char udisks_media_path[PATH_MAX] = {0};
-   const char *xdg          = getenv("XDG_CONFIG_HOME");
    const char *home         = getenv("HOME");
    const char *user         = getenv("USER");
+
+#if defined(DINGUX)
+   dingux_get_base_path(base_path, sizeof(base_path));
+#else
+   const char *xdg          = getenv("XDG_CONFIG_HOME");
 
    if (xdg)
    {
@@ -2166,12 +2170,9 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    else if (home)
    {
       strlcpy(base_path, home, sizeof(base_path));
-#if defined(DINGUX)
-      strlcat(base_path, "/.retroarch", sizeof(base_path));
-#else
       strlcat(base_path, "/.config/retroarch", sizeof(base_path));
-#endif
    }
+#endif
 
    strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
    if (user)
@@ -2827,7 +2828,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || (defined(HAVE_LAKKA) && defined(HAVE_ODROIDGO2))
    frontend_unix_set_screen_brightness,/* set_screen_brightness */
-#else 
+#else
    NULL,                         /* set_screen_brightness */
 #endif
    frontend_unix_watch_path_for_changes,

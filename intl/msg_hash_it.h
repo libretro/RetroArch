@@ -1568,6 +1568,14 @@ MSG_HASH(
    "Scala video solo con passaggi interi. La dimensione di base dipende dalla geometria e dal rapporto di aspetto riportati dal sistema. Se 'Force Aspect Ratio' non è impostato, X/Y sarà scalato in modo indipendente."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Overscale A Scala Intera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Forza il ridimensionamento degli interi per arrotondare al prossimo numero intero maggiore invece di arrotondare."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Rapporto d'aspetto"
    )
@@ -2587,6 +2595,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "Da analogico a digitale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Usa il supporto analogico specificato per l'input D-Pad. Se il core ha il supporto analogico nativo, la mappatura D-Pad sarà disabilitata a meno che non sia selezionata un'opzione '(forzato)'. Se la mappatura dei D-Pad è forzata, il core non riceverà alcun input analogico da un bastone specificato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -7466,6 +7478,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Analogico Destro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Analogico Sinistro (forzato)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Analogico Destro (forzato)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

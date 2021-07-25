@@ -923,16 +923,8 @@ MSG_HASH(
    "Die von diesem System verwendeten Treiber ändern."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   "Videotreiber"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    "Videoausgabe-Einstellungen ändern."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   "Audiotreiber"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
@@ -1534,6 +1526,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    "Das Bild in ganzzahligen Schritten skalieren. Die Basisgröße hängt von der vom System gemeldeten Geometrie und dem Seitenverhältnis ab. Wenn \"Seitenverhältnis erzwingen\" nicht gewählt ist, werden Höhe u. Breite unabhängig skaliert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Aufgerundete ganzzahlige Skalierung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Bei ganzzahliger Skalierung den Skalierungsfaktor aufrunden, statt ihn abzurunden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2541,6 +2541,10 @@ MSG_HASH(
    "Analog-zu-Digital-Typ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Angegebenen Analog-Stick für Steuerkreuz-Eingabe verwenden. Wenn der Core eine native Analog-Unterstützung besitzt, wird das Steuerkreuz-Mapping deaktiviert, außer eine '(Erzwungen)'-Option ist ausgewählt. Wird das Steuerkreuz-Mapping erzwungen, erhält der Core keine Analogeingabe vom angegebenen Stick."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Geräteindex"
    )
@@ -2550,7 +2554,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "Bestimmt, welcher \"Core-Port\" (typischerweise Spielernummer) Eingaben vom Frontend-Controller-Port %u erhält."
+   "Bestimmt, welcher 'Core-Port' (typischerweise Spielernummer) Eingaben vom Frontend-Controller-Port %u erhält."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -4854,7 +4858,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "Ermöglicht Errungenschaften, einen Indikator auf dem Bildschirm anzuzeigen, während die Errungenschaft verdient werden kann."
+   "Ermöglicht Errungenschaften einen Indikator auf dem Bildschirm anzuzeigen, während die Errungenschaft verdient werden kann."
    )
 
 /* Settings > Network */
@@ -7340,6 +7344,14 @@ MSG_HASH(
    "Rechter Analogstick"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Analog links (Erzwungen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Analog rechts (Erzwungen)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    "(Taste: %s)"
    )
@@ -7703,7 +7715,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Pixelgenaue Bildskalierung"
+   "Ganzzahlige Skalierung"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,

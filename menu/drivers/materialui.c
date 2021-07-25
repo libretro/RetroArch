@@ -3512,7 +3512,15 @@ static void materialui_render(void *data,
 {
    size_t i;
    float bottom;
-   float scale_factor;
+   /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
+    * On some platforms (e.g. 32-bit x86 without SSE),
+    * gcc can produce inconsistent floating point results
+    * depending upon optimisation level. This can break
+    * floating point variable comparisons. A workaround is
+    * to declare the affected variable as 'volatile', which
+    * disables optimisations and removes excess precision
+    * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
+   volatile float scale_factor;
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;
    gfx_display_t *p_disp    = disp_get_ptr();

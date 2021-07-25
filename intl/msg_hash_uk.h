@@ -1604,6 +1604,14 @@ MSG_HASH(
    "Масштабуйте відео лише цілими кроками. Базовий розмір залежить від геометрії та співвідношення сторін, про які повідомляє система. Якщо не встановлено \"Примусове співвідношення сторін\", X / Y буде цілочисельним масштабом незалежно."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Масштаб Цілочисельной Шкали"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Примусово масштабувати ціле число для округлення до наступного більшого цілого числа замість округлення вниз."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Співвідношення сторін"
    )
@@ -2311,6 +2319,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
    "Тип пристрою"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Призначити стік для використання замість хрестовини. Якщо ядро має вбудовану підтримку аналогового вводу, то призначення стіка буде вимкнено, допоки не зробити це примусово відповідною опцією. При примусовому призначенні ядро не буде отримувати аналогові команди вводу [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -4122,6 +4134,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Правий аналог"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Лівий стік (Примусово)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Правий стік (Примусово)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

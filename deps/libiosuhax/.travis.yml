@@ -1,0 +1,29 @@
+language: cpp
+
+os: linux
+sudo: false
+dist: trusty
+
+env:
+  global:
+    - DEVKITPRO=/opt/devkitpro    
+    - DEVKITPPC=/opt/devkitpro/devkitPPC
+
+cache:
+  directories:
+    - "$HOME/.local"
+    - "$DEVKITPRO"
+
+addons:
+  apt:
+    packages:
+    - p7zip-full
+
+before_install:
+  - mkdir -p "${DEVKITPRO}"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://github.com/devkitPro/pacman/releases/download/devkitpro-pacman-1.0.1/devkitpro-pacman.deb -O /tmp/devkitpro-pacman.deb; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo dpkg -i /tmp/devkitpro-pacman.deb; fi
+  - yes | sudo dkp-pacman -Syu devkitPPC --needed
+
+script:
+  - make && make install

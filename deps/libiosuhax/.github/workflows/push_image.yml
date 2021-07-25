@@ -1,0 +1,25 @@
+name: Publish Docker Image
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Get release version
+      id: get_release_tag
+      run: |
+        echo RELEASE_VERSION=$(echo $(date '+%Y%m%d')) >> $GITHUB_ENV
+        echo REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//" | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+        echo REPOSITORY_OWNER=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $1}' |  sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+    - name: Publish to Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: ${{ env.REPOSITORY_OWNER }}/${{ env.REPOSITORY_NAME }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        snapshot: true
+        cache: true
+        tags: "latest, ${{ env.RELEASE_VERSION }}"

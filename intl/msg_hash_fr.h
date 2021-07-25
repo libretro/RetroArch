@@ -1580,6 +1580,14 @@ MSG_HASH(
    "Mettre la vidéo à l'échelle sur un nombre entier uniquement. La taille de base dépend de la géométrie et du rapport d'aspect détectés par le système. Si 'Forcer le rapport d'aspect' est désactivé, X/Y seront mis à l'échelle à l'entier indépendamment."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Échelle à l'entier surdimensionnée"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Force la mise à l'échelle sur l'entier à arrondir au prochain entier supérieur plutôt qu'inférieur."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Rapport d'aspect"
    )
@@ -2599,6 +2607,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "Analogique vers numérique"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Utilise le stick analogique spécifié pour les entrées de la croix directionnelle. Si le cœur prend en charge l'analogique nativement, le mappage de la croix directionnelle sera désactivé sauf si une option '(Forcé)' est sélectionnée. Si le mappage de la croix directionnelle est forcé, le cœur ne recevra aucune entrée analogique à partir du stick spécifié."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -7518,6 +7530,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Analogique droite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Analogique gauche (Forcé)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Analogique droite (Forcé)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

@@ -1373,6 +1373,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Nearest Neighbor"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Image Interpolation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Specify image interpolation method when 'Integer Scale' is disabled. 'Nearest Neighbor' has the least performance impact."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Nearest Neighbor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Semi-Linear"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1630,6 +1648,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    "Scale video in integer steps only. The base size depends on system-reported geometry and aspect ratio. If 'Force Aspect Ratio' is not set, X/Y will be integer scaled independently."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Integer Scale Overscale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Force integer scaling to round up to the next larger integer instead of rounding down."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -10528,11 +10554,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Port Mapping Successful"
+   "Netplay Port Mapping Successful"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Port Mapping Failed"
+   "Netplay UPNP Port Mapping Failed"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -12029,6 +12055,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Unsupported video mode"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Cannot write to core info directory - core info cache will be disabled"
    )
 
 /* Lakka */

@@ -23,11 +23,12 @@
 extern uint64_t lifecycle_state;
 
 /* TODO/FIXME - static globals */
-static uint16_t pad_state[DEFAULT_MAX_PADS];
+static uint16_t button_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 #ifdef HAVE_LIBNX
-static u32 vibration_handles[DEFAULT_MAX_PADS][2];
-static u32 vibration_handleheld[2];
+static PadState pad_states[DEFAULT_MAX_PADS];
+static HidVibrationDeviceHandle vibration_handles[DEFAULT_MAX_PADS][2];
+static HidVibrationDeviceHandle vibration_handleheld[2];
 static HidVibrationValue vibration_values[DEFAULT_MAX_PADS][2];
 static HidVibrationValue vibration_stop;
 static int previous_handheld                         = -1; 
@@ -55,7 +56,7 @@ static void *switch_joypad_init(void *data)
 {
 #ifdef HAVE_LIBNX
    unsigned i;
-   hidScanInput();
+   padConfigureInput(DEFAULT_MAX_PADS, HidNpadStyleSet_NpadStandard);
 
    /* Switch like stop behavior with muted band channels 
     * and frequencies set to default. */
@@ -66,17 +67,23 @@ static void *switch_joypad_init(void *data)
 
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
+      if(i == 0)
+         padInitializeDefault(&pad_states[0]);
+      else
+         padInitialize(&pad_states[i], i);
+
+      padUpdate(&pad_states[i]);
       switch_joypad_autodetect_add(i);
       hidInitializeVibrationDevices(
             vibration_handles[i], 2, i,
-            TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+            HidNpadStyleTag_NpadHandheld | HidNpadStyleTag_NpadJoyDual);
       memcpy(&vibration_values[i][0],
             &vibration_stop, sizeof(HidVibrationValue));
       memcpy(&vibration_values[i][1],
             &vibration_stop, sizeof(HidVibrationValue));
    }
    hidInitializeVibrationDevices(vibration_handleheld,
-         2, CONTROLLER_HANDHELD, TYPE_HANDHELD | TYPE_JOYCON_PAIR);
+         2, HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld | HidNpadStyleTag_NpadJoyDual);
 #else
    hid_init();
    switch_joypad_autodetect_add(0);
@@ -90,14 +97,14 @@ static int16_t switch_joypad_button(unsigned port_num, uint16_t joykey)
 {
    if (port_num >= DEFAULT_MAX_PADS)
       return 0;
-   return (pad_state[port_num] & (1 << joykey));
+   return (button_state[port_num] & (1 << joykey));
 }
 
 static void switch_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
    if (port_num < DEFAULT_MAX_PADS)
    {
-      BITS_COPY16_PTR(state, pad_state[port_num]);
+      BITS_COPY16_PTR(state, button_state[port_num]);
    }
    else
    {
@@ -170,7 +177,7 @@ static int16_t switch_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && (pad_state[port_idx] & (1 << (uint16_t)joykey))
+            && (button_state[port_idx] & (1 << (uint16_t)joykey))
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
@@ -184,7 +191,7 @@ static int16_t switch_joypad_state(
 
 static bool switch_joypad_query_pad(unsigned pad)
 {
-   return pad < DEFAULT_MAX_PADS && pad_state[pad];
+   return pad < DEFAULT_MAX_PADS && button_state[pad];
 }
 
 static void switch_joypad_destroy(void)
@@ -218,10 +225,10 @@ static void switch_joypad_poll(void)
    int i, handheld;
    settings_t *settings = config_get_ptr();
 
-   hidScanInput();
+   padUpdate(&pad_states[0]);
 
-   handheld = hidGetHandheldMode();
-   
+   handheld = padIsHandheld(&pad_states[0]);
+
    if (previous_handheld == -1)
    {
       /* First call of this function, apply joycon settings 
@@ -237,7 +244,7 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeSingleByDefault(i);
                hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-               hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+               hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
             } 
             else if (!input_split_joycon)
             {
@@ -265,7 +272,7 @@ static void switch_joypad_poll(void)
          {
             hidSetNpadJoyAssignmentModeSingleByDefault(i);
             hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-            hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+            hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
          }
       }
    }
@@ -282,11 +289,11 @@ static void switch_joypad_poll(void)
 
          for (id_0 = 0; id_0 < MAX_USERS; id_0++)
          {
-            if (hidGetControllerType(id_0) & TYPE_JOYCON_LEFT)
+            if (hidGetNpadStyleSet(id_0) & HidNpadStyleTag_NpadJoyLeft)
             {
                for (id_1 = last_right_id - 1; id_1 >= 0; id_1--)
                {
-                  if (hidGetControllerType(id_1) & TYPE_JOYCON_RIGHT)
+                  if (hidGetNpadStyleSet(id_1) & HidNpadStyleTag_NpadJoyRight)
                   {
                      /* prevent missing player numbers */
                      last_right_id = id_1;
@@ -312,7 +319,7 @@ static void switch_joypad_poll(void)
          {
             hidSetNpadJoyAssignmentModeSingleByDefault(i);
             hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-            hidSetNpadJoyHoldType(HidJoyHoldType_Horizontal);
+            hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
          } 
          else if (!input_split_joycon
                && previous_split_joycon_setting[i])
@@ -330,21 +337,18 @@ static void switch_joypad_poll(void)
 
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
-      JoystickPosition joy_position_left, joy_position_right;
-      HidControllerID target        = (i == 0) ? CONTROLLER_P1_AUTO : i;
-      pad_state[i]                  = hidKeysDown(target) | hidKeysHeld(target);
-
-      hidJoystickRead(&joy_position_left, target, JOYSTICK_LEFT);
-      hidJoystickRead(&joy_position_right, target, JOYSTICK_RIGHT);
+      HidAnalogStickState stick_left_state = padGetStickPos(&pad_states[i], 0);
+      HidAnalogStickState stick_right_state = padGetStickPos(&pad_states[i], 1);
+      button_state[i] = padGetButtons(&pad_states[i]);
 
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]
-         [RETRO_DEVICE_ID_ANALOG_X] = joy_position_left.dx;
+         [RETRO_DEVICE_ID_ANALOG_X] = stick_left_state.x;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]
-         [RETRO_DEVICE_ID_ANALOG_Y] = -joy_position_left.dy;
+         [RETRO_DEVICE_ID_ANALOG_Y] = -stick_left_state.y;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT]
-         [RETRO_DEVICE_ID_ANALOG_X] = joy_position_right.dx;
+         [RETRO_DEVICE_ID_ANALOG_X] = stick_right_state.x;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT]
-         [RETRO_DEVICE_ID_ANALOG_Y] = -joy_position_right.dy;
+         [RETRO_DEVICE_ID_ANALOG_Y] = -stick_right_state.y;
    }
 }
 #else
@@ -355,7 +359,7 @@ static void switch_joypad_poll(void)
    hid_controller_t           *cont  = &controllers[0];
    hid_controller_state_entry_t ent  = cont->main.entries[cont->main.latest_idx];
    hid_controller_state_entry_t ent8 = (cont+8)->main.entries[(cont+8)->main.latest_idx];
-   pad_state[0]                      = ent.button_state | ent8.button_state;
+   button_state[0]                   = ent.button_state | ent8.button_state;
 
    lsx                               = ent.left_stick_x;
    lsy                               = ent.left_stick_y;
@@ -365,15 +369,15 @@ static void switch_joypad_poll(void)
    if (ent8.left_stick_x != 0 || ent8.left_stick_y != 0)
    {
       /* handheld overrides player 1 */
-	   lsx                            = ent8.left_stick_x;
-	   lsy                            = ent8.left_stick_y;
+      lsx                            = ent8.left_stick_x;
+      lsy                            = ent8.left_stick_y;
    }
 
    if (ent8.right_stick_x != 0 || ent8.right_stick_y != 0)
    {
       /* handheld overrides player 1 */
-	   rsx                            = ent8.right_stick_x;
-	   rsy                            = ent8.right_stick_y;
+      rsx                            = ent8.right_stick_x;
+      rsy                            = ent8.right_stick_y;
    }
 
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT]
@@ -391,7 +395,7 @@ static void switch_joypad_poll(void)
 bool switch_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect type, uint16_t strength)
 {
-   u32* handle;
+   HidVibrationDeviceHandle* handle;
    float amp;
 
    if (pad >= DEFAULT_MAX_PADS || !vibration_handles[pad])
@@ -411,26 +415,26 @@ bool switch_joypad_set_rumble(unsigned pad,
       vibration_values[pad][1].amp_high = amp;
    }
 
-   handle = (pad == 0 && hidGetHandheldMode()) 
+   handle = (pad == 0 && !padIsNpadActive(&pad_states[0], HidNpadIdType_No1))
       ? vibration_handleheld : vibration_handles[pad];
    return R_SUCCEEDED(hidSendVibrationValues(handle, vibration_values[pad], 2));
 }
 #endif
 
 input_device_driver_t switch_joypad = {
-	switch_joypad_init,
-	switch_joypad_query_pad,
-	switch_joypad_destroy,
-	switch_joypad_button,
+   switch_joypad_init,
+   switch_joypad_query_pad,
+   switch_joypad_destroy,
+   switch_joypad_button,
    switch_joypad_state,
-	switch_joypad_get_buttons,
-	switch_joypad_axis,
-	switch_joypad_poll,
+   switch_joypad_get_buttons,
+   switch_joypad_axis,
+   switch_joypad_poll,
 #ifdef HAVE_LIBNX
    switch_joypad_set_rumble,
 #else
-	NULL, /* set_rumble */
+   NULL, /* set_rumble */
 #endif
-	switch_joypad_name,
-	"switch"
+   switch_joypad_name,
+   "switch"
 };

@@ -1580,6 +1580,14 @@ MSG_HASH(
    "Videoyu yalnızca tamsayı adımlarla ölçeklendirir. Temel boyut, sistem tarafından bildirilen geometriye ve en/boy oranına bağlıdır. 'En/Boy Oranını Zorla' ayarlanmazsa, X/Y birbirlerinden bağımsız, tamsayı katlarıyla ölçeklendirilirler."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Tamsayı Ölçeği Aşırı Ölçek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Aşağı yuvarlamak yerine bir sonraki daha büyük tam sayıya yuvarlamak için tamsayı ölçeklendirmeyi zorlayın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "En Boy Oranı"
    )
@@ -2607,6 +2615,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "Analog-Dijital Türü"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "D-Pad girişi için belirtilen analog çubuğu kullanın. Çekirdeğin yerel analog desteği varsa, bir '(Zorunlu)' seçeneği seçilmediği sürece D-Pad eşlemesi devre dışı bırakılır. D-Pad eşlemesi zorlanırsa, çekirdek belirtilen çubuktan hiçbir analog giriş almaz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -7546,6 +7558,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Sağ Analog"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Sol Analog (Zorunlu)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Sağ Analog (Zorunlu)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

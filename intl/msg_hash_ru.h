@@ -1600,6 +1600,14 @@ MSG_HASH(
    "Масштабировать изображение с целочисленным интервалом. Базовый размер зависит от геометрии и соотношения сторон системы. Если не включена 'Принудительная установка' для соотношения сторон, значения X/Y будут меняться независимо друг от друга."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Повышать целочисленное масштабирование"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "При целочисленном масштабировании делать округление в сторону ближайшего большего целого числа."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Соотношение сторон"
    )
@@ -2627,6 +2635,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "Аналого-цифровой тип"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Использовать указанный аналоговый стик для d-pad. Если ядро нативно поддерживает аналоговый ввод, привязка к d-pad не будет работать, пока не включена опция '(Принудительно)'. При форсировании привязки к d-pad ядро не будет обрабатывать события ввода от заданного стика."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -7574,6 +7586,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
    "Правый аналоговый стик"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Левый аналоговый стик (принудительно)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Правый аналоговый стик (принудительно)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

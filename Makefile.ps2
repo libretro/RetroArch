@@ -24,7 +24,6 @@ endif
 
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
 INCDIR += -Ips2/include -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
-INCDIR += -Ideps/pthreads -Ideps/pthreads/platform/ps2 -Ideps/pthreads/platform/helper
 CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
@@ -50,7 +49,7 @@ CFLAGS += $(RARCH_DEFINES)
 # All the IRX objects
 EE_OBJS += $(IRX_DIR)/sio2man_irx.o $ $(IRX_DIR)/iomanX_irx.o $(IRX_DIR)/fileXio_irx.o
 EE_OBJS += $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o
-EE_OBJS += $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/usbhdfsd_irx.o
+EE_OBJS += $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/bdm_irx.o $(IRX_DIR)/bdmfs_vfat_irx.o $(IRX_DIR)/usbmass_bd_irx.o
 EE_OBJS += $(IRX_DIR)/libsd_irx.o $(IRX_DIR)/audsrv_irx.o
 EE_OBJS += $(IRX_DIR)/cdfs_irx.o
 EE_OBJS += $(IRX_DIR)/mtapman_irx.o $(IRX_DIR)/padman_irx.o
