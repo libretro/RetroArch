@@ -17510,6 +17510,27 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                settings->paths.directory_runtime_log,
                settings->paths.directory_playlist);
 
+         /* Similarly, since the CMD_EVENT_CORE_DEINIT will
+          * be called *after* the runloop state has been
+          * cleared, must also perform the following actions
+          * here:
+          * - Disable any active config overrides
+          * - Unload any active input remaps */
+#ifdef HAVE_CONFIGFILE
+         if (runloop_state.overrides_active)
+            command_event_disable_overrides(p_rarch);
+#endif
+         if (     runloop_state.remaps_core_active
+               || runloop_state.remaps_content_dir_active
+               || runloop_state.remaps_game_active
+            )
+         {
+            input_remapping_deinit();
+            input_remapping_set_defaults(true);
+         }
+         else
+            input_remapping_restore_global_config(true);
+
          runloop_state.shutdown_initiated      = true;
          runloop_state.core_shutdown_initiated = true;
          break;
@@ -36065,6 +36086,25 @@ bool retroarch_main_init(int argc, char *argv[])
          )
 #endif
       {
+         /* Before initialising the dummy core, ensure
+          * that we:
+          * - Disable any active config overrides
+          * - Unload any active input remaps */
+#ifdef HAVE_CONFIGFILE
+         if (runloop_state.overrides_active)
+            command_event_disable_overrides(p_rarch);
+#endif
+         if (     runloop_state.remaps_core_active
+               || runloop_state.remaps_content_dir_active
+               || runloop_state.remaps_game_active
+            )
+         {
+            input_remapping_deinit();
+            input_remapping_set_defaults(true);
+         }
+         else
+            input_remapping_restore_global_config(true);
+
          /* Attempt initializing dummy core */
          p_rarch->current_core_type = CORE_TYPE_DUMMY;
          if (!command_event(CMD_EVENT_CORE_INIT, &p_rarch->current_core_type))
