@@ -414,7 +414,12 @@
 #define DEFAULT_DINGUX_IPU_KEEP_ASPECT true
 /* Sets image filtering method when using the
  * IPU hardware scaler in Dingux devices */
+#if defined(RETROFW)
+#define DEFAULT_DINGUX_IPU_FILTER_TYPE DINGUX_IPU_FILTER_NEAREST
+#else
 #define DEFAULT_DINGUX_IPU_FILTER_TYPE DINGUX_IPU_FILTER_BICUBIC
+#endif
+
 #if defined(DINGUX_BETA)
 /* Sets refresh rate of integral LCD panel
  * in Dingux devices */
@@ -744,7 +749,7 @@ static const bool default_savefiles_in_content_dir = false;
 static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
-#if defined(RS90)
+#if defined(RS90) || defined(RETROFW)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_START_SELECT
 #elif defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_L3_R3
@@ -954,7 +959,7 @@ static const bool audio_enable_menu_bgm    = false;
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
-#elif defined(_3DS)
+#elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
@@ -965,7 +970,7 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(EMSCRIPTEN)
+#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #else
@@ -1038,6 +1043,13 @@ static const bool audio_enable_menu_bgm    = false;
 /* When set, all enabled cheats are auto-applied when a game is loaded. */
 #define DEFAULT_APPLY_CHEATS_AFTER_LOAD false
 
+
+#if defined(RETROFW)
+/*RETROFW jz4760 has signficant slowdown with default settings */
+#define DEFAULT_REWIND_BUFFER_SIZE (1 << 20)
+#define DEFAULT_REWIND_BUFFER_SIZE_STEP 1 
+#define DEFAULT_REWIND_GRANULARITY 6
+#else
 /* The buffer size for the rewind buffer. This needs to be about
  * 15-20MB per minute. Very game dependant. */
 #define DEFAULT_REWIND_BUFFER_SIZE (20 << 20) /* 20MiB */
@@ -1047,7 +1059,7 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* How many frames to rewind at a time. */
 #define DEFAULT_REWIND_GRANULARITY 1
-
+#endif
 /* Pause gameplay when gameplay loses focus. */
 #ifdef EMSCRIPTEN
 #define DEFAULT_PAUSE_NONACTIVE false
