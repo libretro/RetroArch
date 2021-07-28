@@ -56,6 +56,7 @@ static void *switch_joypad_init(void *data)
 {
 #ifdef HAVE_LIBNX
    unsigned i;
+   hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
    padConfigureInput(DEFAULT_MAX_PADS, HidNpadStyleSet_NpadStandard);
 
    /* Switch like stop behavior with muted band channels 
@@ -225,7 +226,8 @@ static void switch_joypad_poll(void)
    int i, handheld;
    settings_t *settings = config_get_ptr();
 
-   padUpdate(&pad_states[0]);
+   for(i = 0; i < DEFAULT_MAX_PADS; i++)
+      padUpdate(&pad_states[i]);
 
    handheld = padIsHandheld(&pad_states[0]);
 
@@ -244,7 +246,6 @@ static void switch_joypad_poll(void)
             {
                hidSetNpadJoyAssignmentModeSingleByDefault(i);
                hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-               hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
             } 
             else if (!input_split_joycon)
             {
@@ -272,39 +273,12 @@ static void switch_joypad_poll(void)
          {
             hidSetNpadJoyAssignmentModeSingleByDefault(i);
             hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-            hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
          }
-      }
-   }
-   else if (handheld && !previous_handheld)
-   {
-      /* switching into handheld, so make sure all split joycons are joined */
-      for (i = 0; i < MAX_USERS; i += 2)
-      {
-         /* find all left/right single JoyCon pairs and join them together */
-         int id, id_0, id_1;
-         int last_right_id = MAX_USERS;
-         for (id = 0; id < MAX_USERS; id++)
-            hidSetNpadJoyAssignmentModeDual(id);
-
-         for (id_0 = 0; id_0 < MAX_USERS; id_0++)
+         else
          {
-            if (hidGetNpadStyleSet(id_0) & HidNpadStyleTag_NpadJoyLeft)
-            {
-               for (id_1 = last_right_id - 1; id_1 >= 0; id_1--)
-               {
-                  if (hidGetNpadStyleSet(id_1) & HidNpadStyleTag_NpadJoyRight)
-                  {
-                     /* prevent missing player numbers */
-                     last_right_id = id_1;
-                     if (id_0 < id_1)
-                        hidMergeSingleJoyAsDualJoy(id_0, id_1);
-                     else if (id_0 > id_1)
-                        hidMergeSingleJoyAsDualJoy(id_1, id_0);
-                     break;
-                  }
-               }
-            }
+            hidSetNpadJoyAssignmentModeDual(i);
+            hidSetNpadJoyAssignmentModeDual(i + 1);
+            hidMergeSingleJoyAsDualJoy(i, i + 1);
          }
       }
    }
@@ -319,7 +293,6 @@ static void switch_joypad_poll(void)
          {
             hidSetNpadJoyAssignmentModeSingleByDefault(i);
             hidSetNpadJoyAssignmentModeSingleByDefault(i + 1);
-            hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
          } 
          else if (!input_split_joycon
                && previous_split_joycon_setting[i])
