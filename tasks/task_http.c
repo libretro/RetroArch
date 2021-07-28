@@ -282,11 +282,13 @@ static void* task_push_http_transfer_generic(
 {
    retro_task_t  *t        = NULL;
    http_handle_t *http     = NULL;
+   const char    *method   = NULL;
 
    if (!conn)
       return NULL;
 
-   if (conn->methodcopy && (conn->methodcopy[0] == 'P' || conn->methodcopy[0] == 'p'))
+   method = net_http_connection_method(conn);
+   if (method && (method[0] == 'P' || method[0] == 'p'))
    {
       /* POST requests usually mutate the server, so assume multiple calls are
        * intended, even if they're duplicated. Additionally, they may differ
