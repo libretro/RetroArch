@@ -182,21 +182,73 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-/* Provides access to all pointer device parameters */
-void menu_input_get_pointer_state(menu_input_pointer_t *pointer);
+/**
+ * Copy parameters from the global menu_input_state to a menu_input_pointer_t
+ * in order to provide access to all pointer device parameters.
+ * 
+ * @param copy_target  menu_input_pointer_t struct where values will be copied
+ **/
+void menu_input_get_pointer_state(menu_input_pointer_t *copy_target);
 
-/* Getters/setters for menu item (index) currently
- * selected/highlighted (hovered over) by the pointer
- * device
- * Note: Each menu driver is responsible for setting this */
+/**
+ * Get the menu item index currently selected or hovered over by the pointer.
+ * 
+ * @return the selected menu index
+ **/
 unsigned menu_input_get_pointer_selection(void);
 
+/**
+ * Set the menu item index that is currently selected or hovered over by the
+ * pointer. Note: Each menu driver is responsible for setting this.
+ *
+ * @param selection  the selected menu index
+ **/
 void menu_input_set_pointer_selection(unsigned selection);
 
-/* Allows pointer y acceleration to be overridden
- * (typically want to set acceleration to zero when
- * calling populate entries) */
+/**
+ * Allows the pointer's y acceleration to be overridden. For example, menu
+ * drivers typically set acceleration to zero when populating entries.
+ * 
+ * @param y_accel
+ **/
 void menu_input_set_pointer_y_accel(float y_accel);
+
+/**
+ * Line complete callback. Calls back after return is pressed with the
+ * completed line. Line can be NULL. (Meaning that it might return a NULL
+ * pointer instead of an empty string?)
+ * 
+ * @param userdata
+ * @param line      a string representation of the completed line
+ *                  (FIXME it might return a NULL pointer instead of an empty
+ *                  string?)
+ **/
+typedef void (*input_keyboard_line_complete_t)(void *userdata, const char *line);
+
+typedef struct menu_input_ctx_line
+{
+   const char *label;
+   const char *label_setting;
+   unsigned type;
+   unsigned idx;
+   input_keyboard_line_complete_t cb;
+} menu_input_ctx_line_t;
+
+bool menu_input_dialog_start(menu_input_ctx_line_t *line);
+
+const char *menu_input_dialog_get_label_setting_buffer(void);
+
+const char *menu_input_dialog_get_label_buffer(void);
+
+const char *menu_input_dialog_get_buffer(void);
+
+unsigned menu_input_dialog_get_kb_idx(void);
+
+bool menu_input_dialog_start_search(void);
+
+bool menu_input_dialog_get_display_kb(void);
+
+void menu_input_dialog_end(void);
 
 RETRO_END_DECLS
 

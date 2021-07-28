@@ -407,41 +407,6 @@ const input_device_driver_t *input_joypad_init_driver(
 void input_pad_connect(unsigned port, input_device_driver_t *driver);
 
 
-/*****************************************************************************/
-#ifdef HAVE_HID
-#include "include/hid_driver.h"
-
-/**
- * Get an enumerated list of all HID driver names
- * 
- * @return String listing of all HID driver names, separated by '|'.
- **/
-const char* config_get_hid_driver_options(void);
-
-/**
- * Finds first suitable HID driver and initializes.
- *
- * @return HID driver if found, otherwise NULL.
- **/
-const hid_driver_t *input_hid_init_first(void);
-
-/**
- * Get a pointer to the HID driver data structure
- * 
- * @return Pointer to hid_data struct
- **/
-const void *hid_driver_get_data(void);
-
-/**
- * This should be called after we've invoked free() on the HID driver; the
- * memory will have already been freed so we need to reset the pointer.
- */
-void hid_driver_reset_data(void);
-
-#endif /* HAVE_HID */
-/*****************************************************************************/
-
-
 /**
  * line_complete callback (when carriage return is pressed)
  *
@@ -476,6 +441,42 @@ struct input_keyboard_ctx_wait
  **/
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
+
+
+/*************************************/
+#ifdef HAVE_HID
+#include "include/hid_driver.h"
+
+/**
+ * Get an enumerated list of all HID driver names
+ * 
+ * @return String listing of all HID driver names, separated by '|'.
+ **/
+const char* config_get_hid_driver_options(void);
+
+/**
+ * Finds first suitable HID driver and initializes.
+ *
+ * @return HID driver if found, otherwise NULL.
+ **/
+const hid_driver_t *input_hid_init_first(void);
+
+/**
+ * Get a pointer to the HID driver data structure
+ * 
+ * @return Pointer to hid_data struct
+ **/
+const void *hid_driver_get_data(void);
+
+/**
+ * This should be called after we've invoked free() on the HID driver; the
+ * memory will have already been freed so we need to reset the pointer.
+ */
+void hid_driver_reset_data(void);
+
+#endif /* HAVE_HID */
+/*************************************/
+
 
 /**
  * Set the name of the device in the specified port
@@ -774,31 +775,6 @@ extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
 #endif /* HAVE_HID */
-
-typedef struct menu_input_ctx_line
-{
-   const char *label;
-   const char *label_setting;
-   unsigned type;
-   unsigned idx;
-   input_keyboard_line_complete_t cb;
-} menu_input_ctx_line_t;
-
-const char *menu_input_dialog_get_label_setting_buffer(void);
-
-const char *menu_input_dialog_get_label_buffer(void);
-
-const char *menu_input_dialog_get_buffer(void);
-
-unsigned menu_input_dialog_get_kb_idx(void);
-
-bool menu_input_dialog_start_search(void);
-
-bool menu_input_dialog_get_display_kb(void);
-
-bool menu_input_dialog_start(menu_input_ctx_line_t *line);
-
-void menu_input_dialog_end(void);
 
 RETRO_END_DECLS
 
