@@ -1,5 +1,9 @@
 # Future
 
+# 1.9.8
+- LIBNX/SWITCH: Fix poll missing for controller 2-8
+- LIBNX/SWITCH: Fix layout not applied correctly and hangs when splitting joycons
+
 # 1.9.7
 - 3DS: Add unique ID's
 - CRT/SWITCHRES: Fixed some Monitor index bugs ad updated to the latest SR2
