@@ -229,7 +229,7 @@ ifeq ($(STRIP_BIN),1)
 	$(STRIP) --strip-unneeded retroarch
 endif
 	$(GCW0_MK_SQUASH_FS) retroarch default.retrofw.desktop retroarch.png $(OPK_NAME) -all-root -no-xattrs -noappend -no-exports
-	rm -f default.retrofw.desktop retroarch retroarch.png
+	rm -f default.retrofw.desktop retroarch.png
 
 .PHONY: all clean opk
 
