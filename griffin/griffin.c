@@ -191,9 +191,13 @@ ACHIEVEMENTS
 #include "../network/net_http_special.c"
 
 #include "../cheevos/cheevos.c"
+#include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
 #include "../cheevos/cheevos_parser.c"
 
+#include "../deps/rcheevos/src/rapi/rc_api_common.c"
+#include "../deps/rcheevos/src/rapi/rc_api_runtime.c"
+#include "../deps/rcheevos/src/rapi/rc_api_user.c"
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
 #include "../deps/rcheevos/src/rcheevos/compat.c"
 #include "../deps/rcheevos/src/rcheevos/condition.c"

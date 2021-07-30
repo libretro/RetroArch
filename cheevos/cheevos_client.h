@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2015-2018 - Andre Leiradella
+ *  Copyright (C) 2019-2021 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,27 +13,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_CHEEVOS_PARSER_H
-#define __RARCH_CHEEVOS_PARSER_H
+#ifndef __RARCH_CHEEVOS_CLIENT_H
+#define __RARCH_CHEEVOS_CLIENT_H
 
 #include "cheevos_locals.h"
 
 RETRO_BEGIN_DECLS
 
-typedef void (*rcheevos_unlock_cb_t)(unsigned id, void* userdata);
+void rcheevos_client_start_session(unsigned game_id);
+void rcheevos_client_award_achievement(unsigned achievement_id);
+void rcheevos_client_submit_lboard_entry(unsigned leaderboard_id, int value);
 
-int rcheevos_get_json_error(const char* json, char* token, size_t length);
-
-int rcheevos_get_token(const char* json, char* username, size_t username_length,
-      char* token, size_t length);
-
-int  rcheevos_get_patchdata(const char* json, rcheevos_rapatchdata_t* patchdata);
-void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata);
-
-void rcheevos_deactivate_unlocks(const char* json, rcheevos_unlock_cb_t unlock_cb, void* userdata);
-
-unsigned chevos_get_gameid(const char* json);
+void rcheevos_log_url(const char* api, const char* url);
+void rcheevos_get_user_agent(rcheevos_locals_t *locals, char *buffer, size_t len);
 
 RETRO_END_DECLS
 
-#endif
+#endif /* __RARCH_CHEEVOS_MENU_H */
