@@ -15127,7 +15127,9 @@ bool command_event(enum event_command cmd, void *data)
                   input_driver_grab_mouse(p_rarch);
                   video_driver_hide_mouse();
                }
-               else if (!video_fullscreen)
+               /* Ungrab only if windowed and auto mouse grab is disabled */
+               else if (!video_fullscreen &&
+                     !settings->bools.input_auto_mouse_grab)
                {
                   input_driver_ungrab_mouse(p_rarch);
                   video_driver_show_mouse();
@@ -38026,6 +38028,14 @@ static enum runloop_state runloop_check_state(
 
    /* Check mouse grab toggle */
    HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
+
+   /* Automatic mouse grab on focus */
+   if (settings->bools.input_auto_mouse_grab &&
+         is_focused &&
+         is_focused != runloop_state.focused &&
+         !p_rarch->input_driver_grab_mouse_state)
+      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   runloop_state.focused = is_focused;
 
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)

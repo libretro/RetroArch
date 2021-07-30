@@ -528,6 +528,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_autodetect_enable,       MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_nowinkey_enable,         MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_sensors_enable,          MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_mouse_grab,         MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_game_focus,         MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_libretro,                MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO)
@@ -3060,6 +3061,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #endif
          case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_sensors_enable);
+            break;
+         case MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_auto_mouse_grab);
             break;
          case MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_auto_game_focus);

@@ -1409,6 +1409,10 @@ MSG_HASH(
    "input_sensors_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
+   "input_auto_mouse_grab"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,
    "input_auto_game_focus"
    )

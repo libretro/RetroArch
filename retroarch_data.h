@@ -1695,6 +1695,7 @@ struct runloop
    bool force_nonblock;
    bool paused;
    bool idle;
+   bool focused;
    bool slowmotion;
    bool fastmotion;
    bool shutdown_initiated;

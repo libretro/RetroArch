@@ -558,6 +558,7 @@ typedef struct settings
       bool input_backtouch_toggle;
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
+      bool input_auto_mouse_grab;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
 #endif

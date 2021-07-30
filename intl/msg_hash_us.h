@@ -2137,6 +2137,14 @@ MSG_HASH(
    "Enable input from accelerometer, gyroscope and illuminance sensors, if supported by the current hardware. May have a performance impact and/or increase power drain on some platforms."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Automatic Mouse Grab"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Enable mouse grab on application focus."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "Auto Enable 'Game Focus' Mode"
    )
