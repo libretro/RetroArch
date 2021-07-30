@@ -44,7 +44,17 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "wiiu/wiiu_dbg.h"
+#include "../common/d3d_common.h"
+#include "../common/d3d12_common.h"
+#include "../common/dxgi_common.h"
+#include "../common/d3dcompiler_common.h"
+#ifdef HAVE_SLANG
+#include "../drivers_shader/slang_process.h"
+#endif
+
+#ifdef __WINRT__
+#include "../../uwp/uwp_func.h"
+#endif
 
 /* Temporary workaround for d3d12 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d12_fake_context;
