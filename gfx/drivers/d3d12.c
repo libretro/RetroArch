@@ -22,20 +22,7 @@
 #include <file/file_path.h>
 #include <formats/image.h>
 
-#include "../font_driver.h"
-#include "../common/d3d_common.h"
-#include "../common/win32_common.h"
-#include "../common/dxgi_common.h"
-#include "../common/d3d12_common.h"
-#include "../common/d3dcompiler_common.h"
-
-#include "../../driver.h"
-#include "../../verbosity.h"
-#include "../../configuration.h"
-#include "../../retroarch.h"
-#ifdef HAVE_REWIND
-#include "../../state_manager.h"
-#endif
+#include <dxgi.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -44,9 +31,23 @@
 #include "../gfx_widgets.h"
 #endif
 
+#include "../../driver.h"
+#include "../../verbosity.h"
+#include "../../configuration.h"
+#include "../../retroarch.h"
+#include "../font_driver.h"
+#include "../common/win32_common.h"
+#include "../../performance_counters.h"
+#include "../../menu/menu_driver.h"
+#include "../video_shader_parse.h"
+#include "../drivers_shader/slang_process.h"
+#ifdef HAVE_REWIND
+#include "../../state_manager.h"
+#endif
+
 #include "../common/d3d_common.h"
-#include "../common/d3d12_common.h"
 #include "../common/dxgi_common.h"
+#include "../common/d3d12_common.h"
 #include "../common/d3dcompiler_common.h"
 #ifdef HAVE_SLANG
 #include "../drivers_shader/slang_process.h"
