@@ -1452,7 +1452,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->catch_up)
       {
          netplay->catch_up = false;
-         input_driver_unset_nonblock_state();
+         input_unset_nonblock_state();
          driver_set_nonblock_state();
       }
       return;
@@ -1645,7 +1645,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->self_frame_count + 1 >= lo_frame_count)
       {
          netplay->catch_up = false;
-         input_driver_unset_nonblock_state();
+         input_unset_nonblock_state();
          driver_set_nonblock_state();
       }
 
@@ -1674,7 +1674,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
                /* We're definitely falling behind! */
                netplay->catch_up      = true;
                netplay->catch_up_time = 0;
-               input_driver_set_nonblock_state();
+               input_set_nonblock_state();
                driver_set_nonblock_state();
             }
             else

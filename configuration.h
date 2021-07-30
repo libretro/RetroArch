@@ -165,6 +165,7 @@ typedef struct settings
       unsigned input_poll_type_behavior;
       unsigned input_dingux_rumble_gain;
       unsigned input_auto_game_focus;
+      unsigned input_max_users;
 
       unsigned netplay_port;
       unsigned netplay_input_latency_frames_min;
@@ -350,6 +351,7 @@ typedef struct settings
       float slowmotion_ratio;
       float fastforward_ratio;
       float input_analog_deadzone;
+      float input_axis_threshold;
       float input_analog_sensitivity;
    } floats;
 

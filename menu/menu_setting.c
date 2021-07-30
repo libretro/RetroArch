@@ -7956,11 +7956,11 @@ static void general_write_handler(rarch_setting_t *setting)
             {
                /* Event rate does not matter when disabling
                 * sensors - set to zero */
-               input_sensor_set_state(i,
+               input_set_sensor_state(i,
                      RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
-               input_sensor_set_state(i,
+               input_set_sensor_state(i,
                      RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
-               input_sensor_set_state(i,
+               input_set_sensor_state(i,
                      RETRO_SENSOR_ILLUMINANCE_DISABLE, 0);
             }
          }
@@ -12483,7 +12483,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  input_driver_get_uint(INPUT_ACTION_MAX_USERS),
+                  &settings->uints.input_max_users,
                   MENU_ENUM_LABEL_INPUT_MAX_USERS,
                   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
                   input_max_users,
@@ -12909,7 +12909,7 @@ static bool setting_append_list(
 
             CONFIG_FLOAT(
                   list, list_info,
-                  input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD),
+                  &settings->floats.input_axis_threshold,
                   MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
                   DEFAULT_AXIS_THRESHOLD,
@@ -18877,7 +18877,7 @@ static bool setting_append_list(
             /* TODO/FIXME - add enum_idx */
 
             {
-               unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+               unsigned max_users        = settings->uints.input_max_users;
                for (user = 0; user < max_users; user++)
                {
                   char s1[64], s2[64];
