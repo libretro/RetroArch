@@ -685,6 +685,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
    "Billinial"
    )
+#if defined(RS90)
+#endif
 #endif
 
 /* Settings > Video > CRT SwitchRes */
@@ -967,6 +969,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
    "Reafitar los controles"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
+   "Botón A (Derecha)"
    )
 
 /* Settings > Latency */
@@ -1379,6 +1385,10 @@ MSG_HASH( /* FIXME Not RGUI specific */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
    "Información de nucelos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
+   "Asolombradores de videu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -1806,6 +1816,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
    "N/D"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+   "(Tecla: %s)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,

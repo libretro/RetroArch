@@ -1329,6 +1329,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Au plus proche"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Interpolation de l'image"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Spécifier la méthode d'interpolation d'image lorsque l'option 'Échelle à l'entier' est désactivée. 'Au plus proche' a le moins d'impact sur les performances."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Au plus proche"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Semi-linéaire"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -9812,11 +9830,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Mappage de port réussi"
+   "Mappage du port Netplay réussi"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Mappage de port échoué"
+   "Mappage du port Netplay UPNP échoué"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -11297,6 +11315,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Mode vidéo non pris en charge"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Impossible d'écrire dans le dossier des informations de cœurs - la mise en cache des informations de cœurs sera désactivée"
    )
 
 /* Lakka */
