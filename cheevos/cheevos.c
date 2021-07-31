@@ -111,6 +111,7 @@ static rcheevos_locals_t rcheevos_locals =
    false,/* hardcore_active */
    false,/* loaded */
    true, /* core_supports */
+   false,/* network_error */
    false,/* leaderboards_enabled */
    false,/* leaderboard_notifications */
    false /* leaderboard_trackers */
@@ -1271,6 +1272,11 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       if (!coro->settings->bools.cheevos_enable)
          CORO_STOP();
 
+      /* reset the network error flag */
+      rcheevos_locals.network_error = false;
+      /* reset the identified game id */
+      rcheevos_locals.patchdata.game_id = 0;
+
       /* iterate over the possible hashes for the file being loaded */
       rc_hash_initialize_iterator(&coro->iterator, coro->path, (uint8_t*)coro->data, coro->len);
 #ifdef CHEEVOS_TIME_HASH
@@ -1299,6 +1305,9 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
          rcheevos_pause_hardcore();
          CORO_STOP();
       }
+
+      /* capture the identified game id in case we bail before fetching the patch data (not logged in) */
+      rcheevos_locals.patchdata.game_id = coro->gameid;
 
 #ifdef CHEEVOS_JSON_OVERRIDE
       {
@@ -1890,6 +1899,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       }
 
       CHEEVOS_LOG(RCHEEVOS_TAG "Couldn't connect to server after 5 tries\n");
+      rcheevos_locals.network_error = true;
       CORO_RET();
 
 
