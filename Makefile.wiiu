@@ -327,17 +327,23 @@ $(BUILD_DIR)/$(TARGET).rpx.elf: $(OBJ) $(RPX_OBJ) libretro_wiiu.a wiiu/link_elf.
 	@$(if $(Q), echo LD $@,)
 	$(Q)$(LD) $(OBJ) $(RPX_OBJ) $(LDFLAGS) $(RPX_LDFLAGS) $(LIBDIRS)  $(LIBS) -o $@
 
-$(BUILD_DIR)/$(TARGET).rpx: $(BUILD_DIR)/$(TARGET).rpx.elf $(ELF2RPL) .$(TARGET).rpx.last
+$(BUILD_DIR)/$(TARGET).large.rpx: $(BUILD_DIR)/$(TARGET).rpx.elf $(ELF2RPL) .$(TARGET).rpx.large.last
 	@$(if $(Q), echo ELF2RPL $@,)
-	@touch .$(TARGET).rpx.last
+	@touch .$(TARGET).rpx.large.last
 	$(Q)-$(ELF2RPL) $< $@
+
+$(BUILD_DIR)/$(TARGET).rpx: $(BUILD_DIR)/$(TARGET).large.rpx .$(TARGET).rpx.last
+	@$(if $(Q), echo COMPRESS $@,)
+	@touch .$(TARGET).rpx.large.last
+	$(Q)wiiurpxtool -c $< $@
 
 clean:
 	@$(if $(Q), echo $@,)
 	$(Q)rm -f $(OBJ) $(RPX_OBJ) $(HBL_ELF_OBJ) $(TARGET).elf $(TARGET).rpx.elf $(TARGET).rpx
-	$(Q)rm -f $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).rpx.elf $(BUILD_DIR)/$(TARGET).rpx
-	$(Q)rm -f .$(TARGET).elf.last .$(TARGET).rpx.elf.last .$(TARGET).rpx.last
+	$(Q)rm -f $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).rpx.elf $(BUILD_DIR)/$(TARGET).large.rpx $(BUILD_DIR)/$(TARGET).rpx
+	$(Q)rm -f .$(TARGET).elf.last .$(TARGET).rpx.elf.last .$(TARGET).rpx.large.last .$(TARGET).rpx.last
 	$(Q)rm -f $(OBJ:.o=.depend) $(RPX_OBJ:.o=.depend) $(HBL_ELF_OBJ:.o=.depend)
+	$(Q)$(MAKE) -C wiiu/wut/elf2rpl/ clean
 
 .PHONY: clean all
 .PRECIOUS: %.depend %.last
