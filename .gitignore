@@ -223,3 +223,4 @@ param.sfo
 *.elf
 *.self
 *.vpk
+/.vs
