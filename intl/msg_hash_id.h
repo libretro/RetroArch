@@ -1273,6 +1273,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Tetangga Terdekat"
    )
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1332,6 +1334,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Gunakan menu resolusi tinggi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Ganti ke modeline beresolusi tinggi agar dapat menampilkan menu beresolusi tinggi ketika tidak ada konten yang dimuat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Refresh Rate Kustom"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -1764,6 +1774,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    "Sinkronkan audio. Direkomendasikan."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   "Memperhalus sinkornisasi waktu agar selaras antara suara dan video. Patut diperhatikan jika fitur ini dimatikan, maka sinkornisasi akan sulit dilakukan."
+   )
 
 /* Settings > Audio > MIDI */
 
@@ -1771,17 +1785,69 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    "Masukan"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   "Pilih perangkat masukan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "Keluaran"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   "Pilih perangkat luaran."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   "Atur volume luaran (dalam satuan persen)."
+   )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   "Putar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   "Putar (Berulang)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   "Hentikan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   "Hapus"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+   "Nyalakan efek suara 'OK'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+   "Nyalakan efek suara 'Batal'"
+   )
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   "Atur ulang letak kontroler untuk Inti ini"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+   "Konfik otomatis"
+   )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   "Atur berapa detik yang dibutuhkan untuk melakukan binding selanjutnya."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
    "Tahan Tombol"
@@ -1912,6 +1978,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Tutup RetroArch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   "Ambil Tangkapan Layar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,

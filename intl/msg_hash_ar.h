@@ -1349,6 +1349,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "أقرب جوار"
    )
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -7721,14 +7723,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
    "حصلت على اتصال من: \"%s (%s)\""
-   )
-MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "تم تخطيط المنفذ بنجاح"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "فشل تخطيط المنفذ"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,

@@ -1053,6 +1053,8 @@ MSG_HASH(
    "Zabránit aktivaci spořiče obrazovky."
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 
 /* Settings > Video > CRT SwitchRes */

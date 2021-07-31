@@ -1341,6 +1341,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Метод ближайшего соседа"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Интерполяция изображения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Выбор метода интерполяции изображения при выключенном целочисленном масштабировании. Метод ближайшего соседа оказывает наименьшее влияние на производительность."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Метод ближайшего соседа"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Полулинейная"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -9920,11 +9938,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Публичный адрес"
+   "Порт для сетевой игры успешно привязан"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Переадресация порта не удалась"
+   "Ошибка привязки порта UPnP для сетевой игры"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -11413,6 +11431,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Неподдерживаемый видеорежим"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Ошибка записи в каталог с инфо-файлами ядер - кэш инфо-файлов будет отключен"
    )
 
 /* Lakka */

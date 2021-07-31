@@ -1357,6 +1357,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "최근접 이웃"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "이미지 보간"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "'정수 단위 화면 크기'를 사용하지 않을 때 이미지를 보간할 방식을 지정합니다. '최근접 이웃'이 성능에 가장 영향이 적습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "최근접 이웃"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "반선형"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -2095,6 +2113,14 @@ MSG_HASH(
    "가능한 경우 가속도계, 자이로스코프, 조도 센서로부터의 입력을 사용합니다. 일부 플랫폼에서는 성능에 영향을 미치거나 전력 사용량이 증가할 수 있습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "자동 마우스 잡기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "앱이 활성화될 때 자동으로 마우스 잡기를 활성화합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "게임 포커스 모드 자동 활성화"
    )
@@ -2575,11 +2601,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "마우스 (켜기/끄기)"
+   "마우스 잡기 (켜기/끄기)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "마우스를 사용하거나 사용해제 합니다. 사용시에는 시스템 커서는 숨겨지고 RetroArch 화면내로 움직임이 제한됩니다."
+   "마우스 잡기를 사용하거나 사용해제합니다. 사용 시 시스템 커서가 숨겨지고 마우스 움직임이 RetroArch 창 내로 제한되어 상대적 입력이 향상됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
@@ -9924,11 +9950,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "공개 주소"
+   "넷플레이 포트 매핑 성공"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "포트 맵핑 실패"
+   "넷플레이 UPNP 포트 매핑 실패"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -11417,6 +11443,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "지원되지 않는 비디오 모드"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "코어 정보 디렉토리에 쓸 수 없음 - 코어 정보 캐시가 비활성화됩니다"
    )
 
 /* Lakka */

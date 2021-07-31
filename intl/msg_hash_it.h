@@ -273,7 +273,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Scaricatore di Core"
+   "Scarica Core"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
@@ -1317,6 +1317,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Vicino Più Vicino"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Interpolazione Immagine"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Specifica il metodo di interpolazione dell'immagine quando 'Scala intera' è disabilitata. 'Vicino più vicino' ha il minor impatto sulle prestazioni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Vicino più vicino"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Semi-lineare"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -2041,6 +2059,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Abilita l'ingresso da accelerometro, giroscopio e sensori di illuminazione, se supportato dall'hardware corrente. Può avere un impatto sulle prestazioni e/o aumentare lo scarico di potenza su alcune piattaforme."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Cattura Automatica Del Mouse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Abilita la cattura del mouse quando l'applicazione è in primo piano."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -4977,7 +5003,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-   "Password solo per il server"
+   "Password del Server (solo per Spettatori)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
@@ -5392,7 +5418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
-   "Abilita Discord"
+   "Abilita la Rich Presence su Discord"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
@@ -8692,10 +8718,6 @@ MSG_HASH(
    "Browser Dei Contenuti"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
-   "Schermata"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    "Schermata del Titolo"
    )
@@ -9613,11 +9635,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
-   "Nel Gioco"
+   "In Gioco"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-   "Nel Gioco (In Pausa)"
+   "In Gioco (Pausa)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
@@ -9716,11 +9738,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Indirizzo pubblico"
+   "Mappatura Porta Netplay Riuscita"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Mappatura Porta Non Riuscita"
+   "Mappatura Porta UPNP Netplay Non Riuscita"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -10868,7 +10890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
-   "Password non corretta."
+   "Password errata."
    )
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD,
@@ -10880,7 +10902,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-   "Password non corretta."
+   "Password errata."
    )
 MSG_HASH(
    MSG_CONFIG_OVERRIDE_LOADED,
@@ -11205,6 +11227,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Modalità video non supportata"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Impossibile scrivere nella directory delle informazioni del nucleo - la cache delle informazioni del core sarà disabilitata"
    )
 
 /* Lakka */
