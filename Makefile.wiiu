@@ -338,6 +338,7 @@ clean:
 	$(Q)rm -f $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).rpx.elf $(BUILD_DIR)/$(TARGET).rpx
 	$(Q)rm -f .$(TARGET).elf.last .$(TARGET).rpx.elf.last .$(TARGET).rpx.last
 	$(Q)rm -f $(OBJ:.o=.depend) $(RPX_OBJ:.o=.depend) $(HBL_ELF_OBJ:.o=.depend)
+	$(Q)$(MAKE) -C wiiu/wut/elf2rpl/ clean
 
 .PHONY: clean all
 .PRECIOUS: %.depend %.last
