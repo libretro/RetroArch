@@ -117,6 +117,11 @@ extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 #endif
 
+#if !defined(_XBOX)
+extern bool winraw_handle_message(UINT message,
+      WPARAM wParam, LPARAM lParam);
+#endif
+
 typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM
 {
    UINT32 Numerator;
@@ -1033,7 +1038,6 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_POINTERDOWN:
       case WM_POINTERUP:
       case WM_POINTERUPDATE:
-      case WM_DEVICECHANGE:
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:
       case WM_NCLBUTTONDBLCLK:
@@ -1071,6 +1075,12 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
 #endif
       case WM_DISPLAYCHANGE:  /* fix size after display mode switch when using SR */
          win32_resize_after_display_change(hwnd);
+         break;
+      case WM_DEVICECHANGE:
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
          break;
    }
 

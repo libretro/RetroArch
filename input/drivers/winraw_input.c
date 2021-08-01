@@ -21,6 +21,10 @@ extern "C" {
 
 #include <hidsdi.h>
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+#include <dbt.h>
+#endif
+
 #ifdef CXX_BUILD
 }
 #endif
@@ -930,6 +934,31 @@ static int16_t winraw_input_state(
 
    return 0;
 }
+
+#if !defined(_XBOX)
+bool winraw_handle_message(UINT message,
+      WPARAM wParam, LPARAM lParam)
+{
+   winraw_input_t *wr = (winraw_input_t*)(LONG_PTR)
+         GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+
+   switch (message)
+   {
+      case WM_DEVICECHANGE:
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+         if (wParam == DBT_DEVICEARRIVAL ||
+             wParam == DBT_DEVICEREMOVECOMPLETE)
+         {
+            PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
+            if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+               joypad_driver_reinit(wr, NULL);
+         }
+#endif
+         break;
+   }
+   return false;
+}
+#endif
 
 static void winraw_free(void *data)
 {
