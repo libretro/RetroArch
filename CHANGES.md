@@ -1,6 +1,7 @@
 # Future
 
 # 1.9.8
+- DUMMY CORE: Skip state_manager_event_{deinit/init} when core type is dummy, should skip warning spam 'Implementation uses threaded audio. Cannot use rewind..' when using rewind
 - LIBNX/SWITCH: Fix poll missing for controller 2-8
 - LIBNX/SWITCH: Fix layout not applied correctly and hangs when splitting joycons
 - WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
