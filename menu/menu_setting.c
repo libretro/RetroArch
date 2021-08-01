@@ -4672,6 +4672,11 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA), len);
          break;
+      case OZONE_COLOR_THEME_OCEAN_BLUE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_OCEAN_BLUE), len);
+         break;
       case OZONE_COLOR_THEME_BASIC_WHITE:
       default:
          strlcpy(s,
@@ -7589,7 +7594,7 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
-         command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
          break;
       case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
       case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
@@ -18037,7 +18042,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
          }
-
+         
          CONFIG_UINT(
                list, list_info,
                &settings->uints.playlist_sublabel_runtime_type,
