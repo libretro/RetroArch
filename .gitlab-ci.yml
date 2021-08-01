@@ -783,7 +783,7 @@ build-static-retroarch-wiiu:
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
 build-static-retroarch-dummy-wiiu:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-wiiu:latest
   stage: build
   variables:
     MEDIA_PATH: .media
