@@ -3,6 +3,8 @@
 # 1.9.8
 - LIBNX/SWITCH: Fix poll missing for controller 2-8
 - LIBNX/SWITCH: Fix layout not applied correctly and hangs when splitting joycons
+- WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
+- WIIU: Compress RPX libretro cores
 
 # 1.9.7
 - 3DS: Add unique ID's
