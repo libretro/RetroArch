@@ -1234,6 +1234,7 @@ static bool open_devices(udev_input_t *udev,
       return false;
 
    udev_enumerate_add_match_property(enumerate, type_str, "1");
+   udev_enumerate_add_match_subsystem(enumerate, "input");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
 

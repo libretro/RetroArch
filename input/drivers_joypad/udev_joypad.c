@@ -574,6 +574,7 @@ static void *udev_joypad_init(void *data)
       goto error;
 
    udev_enumerate_add_match_property(enumerate, "ID_INPUT_JOYSTICK", "1");
+   udev_enumerate_add_match_subsystem(enumerate, "input");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
 
