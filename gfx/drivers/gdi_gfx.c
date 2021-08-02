@@ -104,6 +104,11 @@ static bool gfx_ctx_gdi_init(void)
 #ifdef HAVE_DINPUT
    if (string_is_equal(settings->arrays.input_driver, "dinput"))
       wndclass.lpfnWndProc   = wnd_proc_gdi_dinput;
+   else
+#endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      wndclass.lpfnWndProc   = wnd_proc_gdi_winraw;
 #endif
    if (!win32_window_init(&wndclass, true, NULL))
       return false;
