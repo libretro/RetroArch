@@ -68,7 +68,6 @@ extern ozone_theme_t ozone_theme_boysenberry;
 extern ozone_theme_t ozone_theme_hacking_the_kernel;
 extern ozone_theme_t ozone_theme_twilight_zone;
 extern ozone_theme_t ozone_theme_dracula;
-extern ozone_theme_t ozone_theme_ocean_blue;
 
 extern ozone_theme_t *ozone_themes[];
 
