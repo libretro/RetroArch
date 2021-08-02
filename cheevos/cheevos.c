@@ -671,11 +671,21 @@ void rcheevos_reset_game(bool widgets_ready)
    /* Hide any visible trackers */
    if (widgets_ready)
    {
-      rcheevos_ralboard_t* lboard = rcheevos_locals.patchdata.lboards;
+      rcheevos_ralboard_t* lboard;
+      rcheevos_racheevo_t* cheevo;
       unsigned i;
 
+      lboard = rcheevos_locals.patchdata.lboards;
       for (i = 0; i < rcheevos_locals.patchdata.lboard_count; ++i, ++lboard)
          gfx_widgets_set_leaderboard_display(lboard->id, NULL);
+
+      cheevo = rcheevos_locals.patchdata.core;
+      for (i = 0; i < rcheevos_locals.patchdata.core_count; ++i, ++cheevo)
+         gfx_widgets_set_challenge_display(cheevo->id, NULL);
+
+      cheevo = rcheevos_locals.patchdata.unofficial;
+      for (i = 0; i < rcheevos_locals.patchdata.unofficial_count; ++i, ++cheevo)
+         gfx_widgets_set_challenge_display(cheevo->id, NULL);
    }
 #endif
 
