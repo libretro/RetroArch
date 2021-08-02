@@ -222,7 +222,6 @@ static void *gfx_ctx_w_vk_init(void *video_driver)
 #ifdef HAVE_DINPUT
       if (string_is_equal(settings->arrays.input_driver, "dinput"))
          wndclass.lpfnWndProc   = wnd_proc_vk_dinput;
-      else
 #endif
 #ifdef HAVE_WINRAWINPUT
       if (string_is_equal(settings->arrays.input_driver, "raw"))
