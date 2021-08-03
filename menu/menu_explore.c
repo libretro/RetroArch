@@ -596,7 +596,7 @@ static explore_state_t *explore_build_list(settings_t *settings)
             key_str                         = key->val.string.buff;
             if (string_is_equal(key_str, "crc"))
             {
-               switch (strlen(val->val.binary.buff))
+               switch (val->val.binary.len)
                {
                   case 1:
                      crc32 = *(uint8_t*)val->val.binary.buff;
