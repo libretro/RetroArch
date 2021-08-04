@@ -19,7 +19,7 @@
 
 #include <compat/strl.h>
 
-#include "SDL.h"
+#include "SDL/SDL.h"
 
 #include "../input_driver.h"
 

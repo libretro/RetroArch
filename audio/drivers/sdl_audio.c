@@ -28,8 +28,14 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+#if defined (MIYOO)
+#include "SDL/SDL.h"
+#include "SDL/SDL_audio.h"
+#else
 #include "SDL.h"
 #include "SDL_audio.h"
+#endif
+
 
 typedef struct sdl_audio
 {

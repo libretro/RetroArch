@@ -31,7 +31,7 @@
 #include "../../configuration.h"
 #endif
 
-#if defined(RS90) || defined (RETROFW)
+#if defined(RS90) || defined (RETROFW) || defined (MIYOO)
    #define SDL_DINGUX_HAS_ANALOG      0
    #define SDL_DINGUX_HAS_MENU_TOGGLE 0
 #else
@@ -549,6 +549,18 @@ static void sdl_dingux_joypad_poll(void)
     * - Down:   SDLK_DOWN
     * - Left:   SDLK_LEFT
     * - Menu:   SDLK_HOME
+
+    * For Miyoo ( Pocketgo, Powkiddy V90 & Q90)
+    * - X:      SDLK_LSHIFT
+    * - A:      SDLK_LALT
+    * - B:      SDLK_LCTRL
+    * - Y:      SDLK_SPACE
+    * - L:      SDLK_TAB
+    * - R:      SDLK_BACKSPACE
+    * - Select: SDLK_ESCAPE
+    * - Start:  SDLK_RETURN
+    * - Menu:   SDLK_RCTRL      
+
     */
 	while (SDL_PollEvent(&event))
 	{
@@ -558,16 +570,32 @@ static void sdl_dingux_joypad_poll(void)
             switch (event.key.keysym.sym)
             {
                case SDLK_SPACE:
+                  #if defined (MIYOO)
+                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
+                  #else
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
+                  #endif
                   break;
                case SDLK_LCTRL:
+                  #if defined (MIYOO)
+                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
+                  #else
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
+                  #endif
                   break;
                case SDLK_LALT:
+                  #if defined (MIYOO)
+                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
+                  #else
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
+                  #endif
                   break;
                case SDLK_LSHIFT:
+                  #if defined (MIYOO)
+                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
+                  #else
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
+                  #endif
                   break;
                case SDLK_TAB:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
@@ -606,7 +634,12 @@ static void sdl_dingux_joypad_poll(void)
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_LEFT);
                   break;
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
+
+            #if defined(MIYOO)
+               case SDLK_RCTRL:
+            #else
                case SDLK_HOME:
+            #endif
                   BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
                   joypad->menu_toggle = true;
                   break;

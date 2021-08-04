@@ -26,7 +26,11 @@
 #include "../../verbosity.h"
 #include "../common/gl_common.h"
 
+#if defined (MIYOO)
+#include "SDL/SDL.h"
+#else
 #include "SDL.h"
+#endif
 
 #ifdef HAVE_SDL2
 #include "../common/sdl2_common.h"

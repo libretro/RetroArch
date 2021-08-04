@@ -425,7 +425,11 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    const char *input_driver_name                 = settings->arrays.input_driver;
    const char *joypad_driver_name                = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync) ?
+         #if defined (MIYOO)
+         (SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN) :
+         #else
          (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
+         #endif
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
    /* Initialise graphics subsystem, if required */
@@ -624,7 +628,11 @@ static void sdl_dingux_set_output(
    unsigned sanitized_width;
    unsigned sanitized_height;
    uint32_t surface_flags = (vid->vsync) ?
+         #if defined (MIYOO)
+         (SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN) :
+         #else
          (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
+         #endif
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
    /* Cache set parameters */

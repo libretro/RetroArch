@@ -22,7 +22,11 @@
 #include <string/stdstring.h>
 #include <libretro.h>
 
+#if defined (MIYOO)
+#include "SDL/SDL.h"
+#else
 #include "SDL.h"
+#endif
 
 #include "../input_keymaps.h"
 

@@ -36,7 +36,12 @@
 #include "../common/x11_common.h"
 #endif
 
+#if defined (MIYOO)
+#include "SDL/SDL.h"
+#else
 #include "SDL.h"
+#endif
+
 #include "SDL_syswm.h"
 
 #include "../font_driver.h"
