@@ -398,7 +398,7 @@ error:
 
 static int read_uint(RFILE *fd, uint64_t *out, size_t size)
 {
-   uint64_t tmp;
+   union { uint64_t u64; uint32_t u32; uint16_t u16; uint8_t u8; } tmp;
 
    if (filestream_read(fd, &tmp, size) == -1)
       goto error;
@@ -406,16 +406,16 @@ static int read_uint(RFILE *fd, uint64_t *out, size_t size)
    switch (size)
    {
       case 1:
-         *out = *(uint8_t *)(&tmp);
+         *out = tmp.u8;
          break;
       case 2:
-         *out = swap_if_little16((uint16_t)tmp);
+         *out = swap_if_little16(tmp.u16);
          break;
       case 4:
-         *out = swap_if_little32((uint32_t)tmp);
+         *out = swap_if_little32(tmp.u32);
          break;
       case 8:
-         *out = swap_if_little64(tmp);
+         *out = swap_if_little64(tmp.u64);
          break;
    }
    return 0;
@@ -426,32 +426,24 @@ error:
 
 static int read_int(RFILE *fd, int64_t *out, size_t size)
 {
-   uint8_t tmp8 = 0;
-   uint16_t tmp16;
-   uint32_t tmp32;
-   uint64_t tmp64;
+   union { uint64_t u64; uint32_t u32; uint16_t u16; uint8_t u8; } tmp;
 
-   if (filestream_read(fd, &tmp64, size) == -1)
+   if (filestream_read(fd, &tmp, size) == -1)
       goto error;
-
-   (void)tmp8;
 
    switch (size)
    {
       case 1:
-         *out = *((int8_t *)(&tmp64));
+         *out = (int8_t)tmp.u8;
          break;
       case 2:
-         tmp16 = swap_if_little16((uint16_t)tmp64);
-         *out = *((int16_t *)(&tmp16));
+         *out = (int16_t)swap_if_little16(tmp.u16);
          break;
       case 4:
-         tmp32 = swap_if_little32((uint32_t)tmp64);
-         *out = *((int32_t *)(&tmp32));
+         *out = (int32_t)swap_if_little32(tmp.u32);
          break;
       case 8:
-         tmp64 = swap_if_little64(tmp64);
-         *out = *((int64_t *)(&tmp64));
+         *out = (int64_t)swap_if_little64(tmp.u64);
          break;
    }
    return 0;
