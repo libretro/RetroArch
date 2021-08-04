@@ -549,7 +549,7 @@ static void sdl_dingux_joypad_poll(void)
     * - Down:   SDLK_DOWN
     * - Left:   SDLK_LEFT
     * - Menu:   SDLK_HOME
-
+    *
     * For Miyoo ( Pocketgo, Powkiddy V90 & Q90)
     * - X:      SDLK_LSHIFT
     * - A:      SDLK_LALT
@@ -560,7 +560,7 @@ static void sdl_dingux_joypad_poll(void)
     * - Select: SDLK_ESCAPE
     * - Start:  SDLK_RETURN
     * - Menu:   SDLK_RCTRL      
-
+    *
     */
 	while (SDL_PollEvent(&event))
 	{
@@ -569,34 +569,38 @@ static void sdl_dingux_joypad_poll(void)
 			case SDL_KEYDOWN:
             switch (event.key.keysym.sym)
             {
+               #if defined (MIYOO)
+
                case SDLK_SPACE:
-                  #if defined (MIYOO)
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
-                  #else
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
-                  #endif
                   break;
                case SDLK_LCTRL:
-                  #if defined (MIYOO)
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
-                  #else
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
-                  #endif
                   break;
                case SDLK_LALT:
-                  #if defined (MIYOO)
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
-                  #else
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
-                  #endif
                   break;
                case SDLK_LSHIFT:
-                  #if defined (MIYOO)
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
-                  #else
-                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
-                  #endif
                   break;
+
+               #else
+
+               case SDLK_SPACE:
+                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
+                  break;
+               case SDLK_LCTRL:
+                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
+                  break;
+               case SDLK_LALT:
+                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
+                  break;
+               case SDLK_LSHIFT:
+                  BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
+                  break;
+
+               #endif
+               
                case SDLK_TAB:
                   BIT16_SET(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
                   break;
@@ -651,6 +655,24 @@ static void sdl_dingux_joypad_poll(void)
 			case SDL_KEYUP:
             switch (event.key.keysym.sym)
             {
+
+               #if defined (MIYOO)
+               
+               case SDLK_SPACE:
+                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
+                  break;
+               case SDLK_LCTRL:
+                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_B);
+                  break;
+               case SDLK_LALT:
+                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_A);
+                  break;
+               case SDLK_LSHIFT:
+                  BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
+                  break;
+
+               #else
+
                case SDLK_SPACE:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_X);
                   break;
@@ -663,6 +685,8 @@ static void sdl_dingux_joypad_poll(void)
                case SDLK_LSHIFT:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_Y);
                   break;
+
+               #endif
                case SDLK_TAB:
                   BIT16_CLEAR(joypad->pad_state, RETRO_DEVICE_ID_JOYPAD_L);
                   break;
