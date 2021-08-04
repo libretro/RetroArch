@@ -473,14 +473,43 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
       }
    }
 }
-
-static void iohidmanager_hid_device_remove(void *data,
-      IOReturn result, void* sender)
+static void list_controllers()
 {
-   struct iohidmanager_hid_adapter *adapter =
-      (struct iohidmanager_hid_adapter*)data;
-   iohidmanager_hid_t *hid = (iohidmanager_hid_t*)
-      hid_driver_get_data();
+	iohidmanager_hid_t *hid = (iohidmanager_hid_t*)   hid_driver_get_data();
+	if (!hid)
+		return;
+	for (int i=0; i<4; i++)
+	{
+		struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
+		if (!a)
+		{
+			printf("Port %d is not assigned to a controller on HID %p \n", i, hid);
+			continue;
+		}
+		else
+			printf("Port %d is assigned to device %p on HID %p \n", i, a->handle, hid);
+	}
+	printf("\n");
+}
+static void iohidmanager_hid_device_remove(IOHIDDeviceRef *device, iohidmanager_hid_t* hid)
+{
+	struct iohidmanager_hid_adapter *adapter = NULL;
+	//loop though the controller ports and find the device with a matching IOHINDeviceRef
+	for (int i=0; i<MAX_USERS; i++)
+	{
+		struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
+		if (!a)
+			continue;
+		if (a->handle == device)
+		{
+			adapter = a;
+			break;
+		}
+	}
+	if (!adapter)
+	{
+		printf("Error removing device %p from HID %p\n",device, hid);
+	}
 
    if (hid && adapter && (adapter->slot < MAX_USERS))
    {
@@ -517,6 +546,7 @@ static void iohidmanager_hid_device_remove(void *data,
       }
       free(adapter);
    }
+	list_controllers();
 }
 
 static int32_t iohidmanager_hid_device_get_int_property(
@@ -581,11 +611,9 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
 }
 
 
-static void iohidmanager_hid_device_add_device(IOHIDDeviceRef device, iohidmanager_hid_t* hid)
+static void iohidmanager_hid_device_add(IOHIDDeviceRef* device, iohidmanager_hid_t* hid)
 {
    int i;
-
-
 
     static const uint32_t axis_use_ids[11] =
     {
@@ -633,8 +661,6 @@ static void iohidmanager_hid_device_add_device(IOHIDDeviceRef device, iohidmanag
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
          kCFRunLoopCommonModes);
-   IOHIDDeviceRegisterRemovalCallback(device,
-         iohidmanager_hid_device_remove, adapter);
 
 #ifndef IOS
    iohidmanager_hid_device_get_product_string(device, adapter->name,
@@ -863,7 +889,7 @@ static void iohidmanager_hid_device_add_device(IOHIDDeviceRef device, iohidmanag
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);
-
+	list_controllers();
    return;
 
 error:
@@ -904,11 +930,15 @@ error:
 }
 
 
-static void iohidmanager_hid_device_add(void *data, IOReturn result,
-   void* sender, IOHIDDeviceRef device)
+static void iohidmanager_hid_device_matched(iohidmanager_hid_t *hid, IOReturn result, void* sender, IOHIDDeviceRef device)
 {
-	iohidmanager_hid_t *hid = (iohidmanager_hid_t*)	hid_driver_get_data();
-	iohidmanager_hid_device_add_device(device, hid);
+	printf("Adding device %p to HID %p\n", device, hid);
+	iohidmanager_hid_device_add(device, hid);
+}
+static void iohidmanager_hid_device_removed(iohidmanager_hid_t *hid, IOReturn result, void* sender, IOHIDDeviceRef device)
+{
+	printf("Removing device %p from HID %p\n", device, hid);
+	iohidmanager_hid_device_remove(device, hid);
 }
 
 
@@ -1027,7 +1057,7 @@ static int iohidmanager_hid_manager_set_device_matching(
 	while (ptr != NULL)
 	{
 
-		iohidmanager_hid_device_add_device(ptr->device, hid);
+		iohidmanager_hid_device_add(ptr->device, hid);
 
 
 		ptr = ptr->next;
@@ -1055,8 +1085,8 @@ static int iohidmanager_hid_manager_set_device_matching(
 		kHIDUsage_GD_GamePad);
 
 	IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
-	IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,
-		iohidmanager_hid_device_add, 0);
+	IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,iohidmanager_hid_device_matched, hid);
+	IOHIDManagerRegisterDeviceRemovalCallback(hid->ptr,iohidmanager_hid_device_removed, hid);
 
 	CFRelease(matcher);
 

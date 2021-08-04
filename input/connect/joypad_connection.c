@@ -183,6 +183,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 
          if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          {
+			 printf("Pad was matched to \"%s\". Setting up an interface.\n", name_match);
             s->iface      = pad_map[i].iface;
             s->data       = s->iface->init(data, pad, driver);
             s->connected  = true;
@@ -203,11 +204,20 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
        * set up one without an interface */
       if (!s->connected)
       {
+		  printf("Pad was not matched. Setting up without an interface.\n");
          s->iface     = NULL;
          s->data      = data;
          s->connected = true;
       }
    }
+	/* This was added to override the pad-matching code.
+	 Something in the pad-matching code overwrites
+	 our iohidmanager_hid_adapter with a pad_connection struct
+	 resulting in the loss of the IOHIDDeviceRef required to
+	 identify when a specific controller is disconnected*/
+	s->iface     = NULL; //delete these three lines to re-enable pad-matching
+	s->data      = data; //delete these three lines to re-enable pad-matching
+	s->connected = true; //delete these three lines to re-enable pad-matching
 
    return pad;
 }
