@@ -4068,36 +4068,34 @@ static unsigned menu_displaylist_parse_content_information(
    }
 
    /* Content label */
-   if (!string_is_empty(content_label))
-   {
-      tmp[0]   = '\0';
-      snprintf(tmp, sizeof(tmp),
-            "%s: %s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
-            content_label
-            );
-      if (menu_entries_append_enum(info->list, tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
-            MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
-            0, 0, 0))
-         count++;
-   }
+   tmp[0]   = '\0';
+   snprintf(tmp, sizeof(tmp),
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
+         !string_is_empty(content_label)
+               ? content_label
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         );
+   if (menu_entries_append_enum(info->list, tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
+         MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
+         0, 0, 0))
+      count++;
 
    /* Content path */
-   if (!string_is_empty(content_path))
-   {
-      tmp[0]   = '\0';
-      snprintf(tmp, sizeof(tmp),
-            "%s: %s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
-            content_path
-            );
-      if (menu_entries_append_enum(info->list, tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
-            MENU_ENUM_LABEL_CONTENT_INFO_PATH,
-            0, 0, 0))
-         count++;
-   }
+   tmp[0]   = '\0';
+   snprintf(tmp, sizeof(tmp),
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
+         !string_is_empty(content_path)
+               ? content_path
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         );
+   if (menu_entries_append_enum(info->list, tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
+         MENU_ENUM_LABEL_CONTENT_INFO_PATH,
+         0, 0, 0))
+      count++;
 
    /* Core name */
    if (!string_is_empty(core_name) &&
