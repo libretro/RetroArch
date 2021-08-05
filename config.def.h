@@ -749,7 +749,7 @@ static const bool default_savefiles_in_content_dir = false;
 static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
-#if defined(RS90) || defined(RETROFW)
+#if defined(RS90) || defined(RETROFW) || defined(MIYOO)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_START_SELECT
 #elif defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_L3_R3
@@ -959,7 +959,7 @@ static const bool audio_enable_menu_bgm    = false;
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
-#elif defined(_3DS) || defined(RETROFW)
+#elif defined(_3DS) || defined(RETROFW) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
@@ -970,7 +970,7 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW)
+#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #else
@@ -1044,7 +1044,7 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_APPLY_CHEATS_AFTER_LOAD false
 
 
-#if defined(RETROFW)
+#if defined(RETROFW) || defined(MIYOO)
 /*RETROFW jz4760 has signficant slowdown with default settings */
 #define DEFAULT_REWIND_BUFFER_SIZE (1 << 20)
 #define DEFAULT_REWIND_BUFFER_SIZE_STEP 1 
