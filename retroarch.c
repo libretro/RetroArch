@@ -27161,6 +27161,14 @@ const char *input_config_get_device_display_name(unsigned port)
    return p_rarch->input_device_info[port].display_name;
 }
 
+const char *input_config_get_mouse_display_name(unsigned port)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   if (string_is_empty(p_rarch->input_mouse_info[port].display_name))
+      return NULL;
+   return p_rarch->input_mouse_info[port].display_name;
+}
+
 const char *input_config_get_device_config_path(unsigned port)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -27246,6 +27254,14 @@ void input_config_set_device_display_name(unsigned port, const char *name)
    if (!string_is_empty(name))
       strlcpy(p_rarch->input_device_info[port].display_name, name,
             sizeof(p_rarch->input_device_info[port].display_name));
+}
+
+void input_config_set_mouse_display_name(unsigned port, const char *name)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   if (!string_is_empty(name))
+      strlcpy(p_rarch->input_mouse_info[port].display_name, name,
+            sizeof(p_rarch->input_mouse_info[port].display_name));
 }
 
 void input_config_set_device_config_path(unsigned port, const char *path)

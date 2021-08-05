@@ -164,6 +164,8 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
       if (!name[0])
          snprintf(name, sizeof(name), "%s", "<name not found>");
 
+      input_config_set_mouse_display_name(i, name);
+
       RARCH_LOG("[WINRAW]: Mouse #%u: \"%s\".\n", i, name);
    }
 }
