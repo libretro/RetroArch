@@ -1061,12 +1061,29 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       UINT message, WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
-   bool keydown                  = true;
    bool quit                     = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
    switch (message)
    {
+      case WM_KEYUP:                /* Key released */
+      case WM_SYSKEYUP:             /* Key released */
+         /* fall-through */
+      case WM_KEYDOWN:              /* Key pressed  */
+      case WM_SYSKEYDOWN:           /* Key pressed  */
+         quit                     = true;
+         {
+            if (message != WM_SYSKEYDOWN)
+               return 0;
+
+            if (
+                  wparam == VK_F10  ||
+                  wparam == VK_MENU ||
+                  wparam == VK_RSHIFT
+               )
+               return 0;
+         }
+         break;
       case WM_MOUSEMOVE:
       case WM_POINTERDOWN:
       case WM_POINTERUP:
