@@ -277,6 +277,7 @@ OBJ += \
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/linked_list.o \
+       $(LIBRETRO_COMM_DIR)/lists/nested_list.o \
        $(LIBRETRO_COMM_DIR)/queues/generic_queue.o
 
 ifneq ($(findstring Linux,$(OS)),)
@@ -336,6 +337,7 @@ endif
 OBJ += \
        core_info.o \
        core_backup.o \
+       core_option_manager.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \

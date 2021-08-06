@@ -15786,776 +15786,6 @@ int main(int argc, char *argv[])
 }
 #endif
 
-/* CORE OPTIONS */
-static const char *core_option_manager_parse_value_label(
-      const char *value, const char *value_label)
-{
-   /* 'value_label' may be NULL */
-   const char *label = string_is_empty(value_label) ?
-         value : value_label;
-
-   if (string_is_empty(label))
-      return NULL;
-
-   /* Any label starting with a digit (or +/-)
-    * cannot be a boolean string, and requires
-    * no further processing */
-   if (ISDIGIT((unsigned char)*label) ||
-       (*label == '+') ||
-       (*label == '-'))
-      return label;
-
-   /* Core devs have a habit of using arbitrary
-    * strings to label boolean values (i.e. enabled,
-    * Enabled, on, On, ON, true, True, TRUE, disabled,
-    * Disabled, off, Off, OFF, false, False, FALSE).
-    * These should all be converted to standard ON/OFF
-    * strings
-    * > Note: We require some duplication here
-    *   (e.g. MENU_ENUM_LABEL_ENABLED *and*
-    *    MENU_ENUM_LABEL_VALUE_ENABLED) in order
-    *   to match both localised and non-localised
-    *   strings. This function is not performance
-    *   critical, so these extra comparisons do
-    *   no harm */
-   if (string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-       string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ENABLED)) ||
-       string_is_equal_noncase(label, "enable") ||
-       string_is_equal_noncase(label, "on") ||
-       string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)) ||
-       string_is_equal_noncase(label, "true") ||
-       string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE)))
-      label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
-   else if (string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-            string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED)) ||
-            string_is_equal_noncase(label, "disable") ||
-            string_is_equal_noncase(label, "off") ||
-            string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)) ||
-            string_is_equal_noncase(label, "false") ||
-            string_is_equal_noncase(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE)))
-      label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
-
-   return label;
-}
-
-static bool core_option_manager_parse_variable(
-      core_option_manager_t *opt, size_t idx,
-      const struct retro_variable *var,
-      config_file_t *config_src)
-{
-   size_t i;
-   union string_list_elem_attr attr;
-   const char *val_start      = NULL;
-   char *value                = NULL;
-   char *desc_end             = NULL;
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
-   struct config_entry_list
-      *entry                  = NULL;
-
-   /* All options are visible by default */
-   option->visible            = true;
-
-   if (!string_is_empty(var->key))
-      option->key             = strdup(var->key);
-   if (!string_is_empty(var->value))
-      value                   = strdup(var->value);
-
-   if (!string_is_empty(value))
-      desc_end                = strstr(value, "; ");
-
-   if (!desc_end)
-      goto error;
-
-   *desc_end    = '\0';
-
-   if (!string_is_empty(value))
-      option->desc    = strdup(value);
-
-   val_start          = desc_end + 2;
-   option->vals       = string_split(val_start, "|");
-
-   if (!option->vals)
-      goto error;
-
-   /* Legacy core option interface has no concept
-    * of value labels
-    * > Use actual values for display purposes */
-   attr.i             = 0;
-   option->val_labels = string_list_new();
-
-   if (!option->val_labels)
-      goto error;
-
-   /* > Loop over values and 'extract' labels */
-   for (i = 0; i < option->vals->size; i++)
-   {
-      const char *value       = option->vals->elems[i].data;
-      const char *value_label = core_option_manager_parse_value_label(
-            value, NULL);
-
-      /* Redundant safely check... */
-      value_label = string_is_empty(value_label) ?
-            value : value_label;
-
-      /* Append value label string */
-      string_list_append(option->val_labels, value_label, attr);
-   }
-
-   /* Legacy core option interface always uses first
-    * defined value as the default */
-   option->default_index = 0;
-   option->index         = 0;
-
-   if (config_src)
-      entry              = config_get_entry(config_src, option->key);
-   else
-      entry              = config_get_entry(opt->conf,  option->key);
-
-   /* Set current config value */
-   if (entry && !string_is_empty(entry->value))
-   {
-      for (i = 0; i < option->vals->size; i++)
-      {
-         if (string_is_equal(option->vals->elems[i].data, entry->value))
-         {
-            option->index = i;
-            break;
-         }
-      }
-   }
-
-   free(value);
-
-   return true;
-
-error:
-   free(value);
-   return false;
-}
-
-static bool core_option_manager_parse_option(
-      core_option_manager_t *opt, size_t idx,
-      const struct retro_core_option_definition *option_def,
-      config_file_t *config_src)
-{
-   size_t i;
-   union string_list_elem_attr attr;
-   struct config_entry_list
-      *entry                  = NULL;
-   size_t num_vals            = 0;
-   struct core_option *option = (struct core_option*)&opt->opts[idx];
-   const struct retro_core_option_value
-      *values                 = option_def->values;
-
-   /* All options are visible by default */
-   option->visible            = true;
-
-   if (!string_is_empty(option_def->key))
-      option->key             = strdup(option_def->key);
-
-   if (!string_is_empty(option_def->desc))
-      option->desc            = strdup(option_def->desc);
-
-   if (!string_is_empty(option_def->info))
-      option->info            = strdup(option_def->info);
-
-   /* Get number of values */
-   for (;;)
-   {
-      if (string_is_empty(values[num_vals].value))
-         break;
-      num_vals++;
-   }
-
-   if (num_vals < 1)
-      return false;
-
-   /* Initialise string lists */
-   attr.i             = 0;
-   option->vals       = string_list_new();
-   option->val_labels = string_list_new();
-
-   if (!option->vals || !option->val_labels)
-      return false;
-
-   /* Initialise default value */
-   option->default_index = 0;
-   option->index         = 0;
-
-   /* Extract value/label pairs */
-   for (i = 0; i < num_vals; i++)
-   {
-      const char *value       = values[i].value;
-      const char *value_label = values[i].label;
-
-      /* Append value string
-       * > We know that 'value' is always valid */
-      string_list_append(option->vals, value, attr);
-
-      /* Value label requires additional processing */
-      value_label = core_option_manager_parse_value_label(
-            value, value_label);
-
-      /* > Redundant safely check... */
-      value_label = string_is_empty(value_label) ?
-            value : value_label;
-
-      /* Append value label string */
-      string_list_append(option->val_labels, value_label, attr);
-
-      /* Check whether this value is the default setting */
-      if (!string_is_empty(option_def->default_value))
-      {
-         if (string_is_equal(option_def->default_value, value))
-         {
-            option->default_index = i;
-            option->index         = i;
-         }
-      }
-   }
-
-   if (config_src)
-      entry              = config_get_entry(config_src, option->key);
-   else
-      entry              = config_get_entry(opt->conf,  option->key);
-
-   /* Set current config value */
-   if (entry && !string_is_empty(entry->value))
-   {
-      for (i = 0; i < option->vals->size; i++)
-      {
-         if (string_is_equal(option->vals->elems[i].data, entry->value))
-         {
-            option->index = i;
-            break;
-         }
-      }
-   }
-
-   return true;
-}
-
-/**
- * core_option_manager_free:
- * @opt              : options manager handle
- *
- * Frees core option manager handle.
- **/
-static void core_option_manager_free(core_option_manager_t *opt)
-{
-   size_t i;
-
-   if (!opt)
-      return;
-
-   for (i = 0; i < opt->size; i++)
-   {
-      if (opt->opts[i].desc)
-         free(opt->opts[i].desc);
-      if (opt->opts[i].info)
-         free(opt->opts[i].info);
-      if (opt->opts[i].key)
-         free(opt->opts[i].key);
-
-      if (opt->opts[i].vals)
-         string_list_free(opt->opts[i].vals);
-      if (opt->opts[i].val_labels)
-         string_list_free(opt->opts[i].val_labels);
-
-      opt->opts[i].desc = NULL;
-      opt->opts[i].info = NULL;
-      opt->opts[i].key  = NULL;
-      opt->opts[i].vals = NULL;
-   }
-
-   if (opt->conf)
-      config_file_free(opt->conf);
-   free(opt->opts);
-   free(opt);
-}
-
-/**
- * core_option_manager_new_vars:
- * @conf_path        : Filesystem path to write core option config file to.
- * @src_conf_path    : Filesystem path from which to load initial config settings.
- * @vars             : Pointer to variable array handle.
- *
- * Legacy version of core_option_manager_new().
- * Creates and initializes a core manager handle.
- *
- * Returns: handle to new core manager handle, otherwise NULL.
- **/
-static core_option_manager_t *core_option_manager_new_vars(
-      const char *conf_path, const char *src_conf_path,
-      const struct retro_variable *vars)
-{
-   const struct retro_variable *var;
-   size_t size                       = 0;
-   config_file_t *config_src         = NULL;
-   core_option_manager_t *opt        = (core_option_manager_t*)
-      malloc(sizeof(*opt));
-
-   if (!opt)
-      return NULL;
-
-   opt->conf                         = NULL;
-   opt->conf_path[0]                 = '\0';
-   opt->opts                         = NULL;
-   opt->size                         = 0;
-   opt->updated                      = false;
-
-   if (!string_is_empty(conf_path))
-      if (!(opt->conf = config_file_new_from_path_to_string(conf_path)))
-         if (!(opt->conf = config_file_new_alloc()))
-            goto error;
-
-   strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
-
-   /* Load source config file, if required */
-   if (!string_is_empty(src_conf_path))
-      config_src = config_file_new_from_path_to_string(src_conf_path);
-
-   for (var = vars; var->key && var->value; var++)
-      size++;
-
-   if (size == 0)
-      goto error;
-
-   opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts));
-   if (!opt->opts)
-      goto error;
-
-   opt->size = size;
-   size      = 0;
-
-   for (var = vars; var->key && var->value; size++, var++)
-   {
-      if (!core_option_manager_parse_variable(opt, size, var, config_src))
-         goto error;
-   }
-
-   if (config_src)
-      config_file_free(config_src);
-
-   return opt;
-
-error:
-   if (config_src)
-      config_file_free(config_src);
-   core_option_manager_free(opt);
-   return NULL;
-}
-
-/**
- * core_option_manager_new:
- * @conf_path        : Filesystem path to write core option config file to.
- * @src_conf_path    : Filesystem path from which to load initial config settings.
- * @option_defs      : Pointer to variable array handle.
- *
- * Creates and initializes a core manager handle.
- *
- * Returns: handle to new core manager handle, otherwise NULL.
- **/
-static core_option_manager_t *core_option_manager_new(
-      const char *conf_path, const char *src_conf_path,
-      const struct retro_core_option_definition *option_defs)
-{
-   const struct retro_core_option_definition *option_def;
-   size_t size                       = 0;
-   config_file_t *config_src         = NULL;
-   core_option_manager_t *opt        = (core_option_manager_t*)
-      malloc(sizeof(*opt));
-
-   if (!opt)
-      return NULL;
-
-   opt->conf                         = NULL;
-   opt->conf_path[0]                 = '\0';
-   opt->opts                         = NULL;
-   opt->size                         = 0;
-   opt->updated                      = false;
-
-   if (!string_is_empty(conf_path))
-      if (!(opt->conf = config_file_new_from_path_to_string(conf_path)))
-         if (!(opt->conf = config_file_new_alloc()))
-            goto error;
-
-   strlcpy(opt->conf_path, conf_path, sizeof(opt->conf_path));
-
-   /* Load source config file, if required */
-   if (!string_is_empty(src_conf_path))
-      config_src = config_file_new_from_path_to_string(src_conf_path);
-
-   /* Note: 'option_def->info == NULL' is valid */
-   for (option_def = option_defs;
-        option_def->key && option_def->desc && option_def->values[0].value;
-        option_def++)
-      size++;
-
-   if (size == 0)
-      goto error;
-
-   opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts));
-   if (!opt->opts)
-      goto error;
-
-   opt->size = size;
-   size      = 0;
-
-   /* Note: 'option_def->info == NULL' is valid */
-   for (option_def = option_defs;
-        option_def->key && option_def->desc && option_def->values[0].value;
-        size++, option_def++)
-      if (!core_option_manager_parse_option(opt, size, option_def, config_src))
-         goto error;
-
-   if (config_src)
-      config_file_free(config_src);
-
-   return opt;
-
-error:
-   if (config_src)
-      config_file_free(config_src);
-   core_option_manager_free(opt);
-   return NULL;
-}
-
-/**
- * core_option_manager_flush:
- * @opt              : options manager handle
- *
- * Writes core option key-pair values to file.
- **/
-static void core_option_manager_flush(
-      config_file_t *conf,
-      core_option_manager_t *opt)
-{
-   size_t i;
-
-   for (i = 0; i < opt->size; i++)
-   {
-      struct core_option *option = (struct core_option*)&opt->opts[i];
-
-      if (option)
-         config_set_string(conf, option->key,
-               opt->opts[i].vals->elems[opt->opts[i].index].data);
-   }
-}
-
-/**
- * core_option_manager_get_desc:
- * @opt              : options manager handle
- * @index            : index identifier of the option
- *
- * Gets description for an option.
- *
- * Returns: Description for an option.
- **/
-const char *core_option_manager_get_desc(
-      core_option_manager_t *opt, size_t idx)
-{
-   if (!opt)
-      return NULL;
-   if (idx >= opt->size)
-      return NULL;
-   return opt->opts[idx].desc;
-}
-
-/**
- * core_option_manager_get_info:
- * @opt              : options manager handle
- * @idx              : idx identifier of the option
- *
- * Gets information text for an option.
- *
- * Returns: Information text for an option.
- **/
-const char *core_option_manager_get_info(
-      core_option_manager_t *opt, size_t idx)
-{
-   if (!opt)
-      return NULL;
-   if (idx >= opt->size)
-      return NULL;
-   return opt->opts[idx].info;
-}
-
-/**
- * core_option_manager_get_val:
- * @opt              : options manager handle
- * @index            : index identifier of the option
- *
- * Gets value for an option.
- *
- * Returns: Value for an option.
- **/
-const char *core_option_manager_get_val(core_option_manager_t *opt, size_t idx)
-{
-   struct core_option *option = NULL;
-   if (!opt)
-      return NULL;
-   if (idx >= opt->size)
-      return NULL;
-   option = (struct core_option*)&opt->opts[idx];
-   return option->vals->elems[option->index].data;
-}
-
-/**
- * core_option_manager_get_val_label:
- * @opt              : options manager handle
- * @idx              : idx identifier of the option
- *
- * Gets value label for an option.
- *
- * Returns: Value label for an option.
- **/
-const char *core_option_manager_get_val_label(core_option_manager_t *opt, size_t idx)
-{
-   struct core_option *option = NULL;
-   if (!opt)
-      return NULL;
-   if (idx >= opt->size)
-      return NULL;
-   option = (struct core_option*)&opt->opts[idx];
-   return option->val_labels->elems[option->index].data;
-}
-
-/**
- * core_option_manager_get_visible:
- * @opt              : options manager handle
- * @idx              : idx identifier of the option
- *
- * Gets whether option should be visible when displaying
- * core options in the frontend
- *
- * Returns: 'true' if option should be displayed by the frontend.
- **/
-bool core_option_manager_get_visible(core_option_manager_t *opt,
-      size_t idx)
-{
-   if (!opt)
-      return false;
-   if (idx >= opt->size)
-      return false;
-   return opt->opts[idx].visible;
-}
-
-void core_option_manager_set_val(core_option_manager_t *opt,
-      size_t idx, size_t val_idx)
-{
-   struct core_option *option = NULL;
-
-   if (!opt)
-      return;
-   if (idx >= opt->size)
-      return;
-
-   option        = (struct core_option*)&opt->opts[idx];
-   option->index = val_idx % option->vals->size;
-
-   opt->updated  = true;
-
-#ifdef HAVE_CHEEVOS
-   rcheevos_validate_config_settings();
-#endif
-}
-
-static void core_option_manager_adjust_val(core_option_manager_t* opt,
-   size_t idx, int adjustment)
-{
-   struct core_option* option = NULL;
-
-   if (!opt)
-      return;
-   if (idx >= opt->size)
-      return;
-
-   option = (struct core_option*)&opt->opts[idx];
-   option->index = (option->index + option->vals->size + adjustment) % option->vals->size;
-
-   opt->updated = true;
-
-#ifdef HAVE_CHEEVOS
-   rcheevos_validate_config_settings();
-#endif
-}
-
-/**
- * core_option_manager_set_default:
- * @opt                   : pointer to core option manager object.
- * @idx                   : index of core option to be reset to defaults.
- *
- * Reset core option specified by @idx and sets default value for option.
- **/
-void core_option_manager_set_default(core_option_manager_t *opt, size_t idx)
-{
-   if (!opt)
-      return;
-   if (idx >= opt->size)
-      return;
-
-   opt->opts[idx].index = opt->opts[idx].default_index;
-   opt->updated         = true;
-
-#ifdef HAVE_CHEEVOS
-   rcheevos_validate_config_settings();
-#endif
-}
-
-static struct retro_core_option_definition *core_option_manager_get_definitions(
-      const struct retro_core_options_intl *core_options_intl)
-{
-   size_t i;
-   size_t num_options                                     = 0;
-   struct retro_core_option_definition *option_defs_us    = NULL;
-   struct retro_core_option_definition *option_defs_local = NULL;
-   struct retro_core_option_definition *option_defs       = NULL;
-
-   if (!core_options_intl)
-      return NULL;
-
-   option_defs_us    = core_options_intl->us;
-   option_defs_local = core_options_intl->local;
-
-   if (!option_defs_us)
-      return NULL;
-
-   /* Determine number of options */
-   for (;;)
-   {
-      if (string_is_empty(option_defs_us[num_options].key))
-         break;
-      num_options++;
-   }
-
-   if (num_options < 1)
-      return NULL;
-
-   /* Allocate output option_defs array
-    * > One extra entry required for terminating NULL entry
-    * > Note that calloc() sets terminating NULL entry and
-    *   correctly 'nullifies' each values array */
-   option_defs = (struct retro_core_option_definition *)calloc(
-         num_options + 1, sizeof(struct retro_core_option_definition));
-
-   if (!option_defs)
-      return NULL;
-
-   /* Loop through options... */
-   for (i = 0; i < num_options; i++)
-   {
-      size_t j;
-      size_t num_values                            = 0;
-      const char *key                              = option_defs_us[i].key;
-      const char *local_desc                       = NULL;
-      const char *local_info                       = NULL;
-      struct retro_core_option_value *local_values = NULL;
-
-      /* Key is always taken from us english defs */
-      option_defs[i].key = key;
-
-      /* Default value is always taken from us english defs */
-      option_defs[i].default_value = option_defs_us[i].default_value;
-
-      /* Try to find corresponding entry in local defs array */
-      if (option_defs_local)
-      {
-         size_t index = 0;
-
-         for (;;)
-         {
-            const char *local_key = option_defs_local[index].key;
-
-            if (string_is_empty(local_key))
-               break;
-
-            if (string_is_equal(key, local_key))
-            {
-               local_desc   = option_defs_local[index].desc;
-               local_info   = option_defs_local[index].info;
-               local_values = option_defs_local[index].values;
-               break;
-            }
-
-            index++;
-         }
-      }
-
-      /* Set desc and info strings */
-      option_defs[i].desc = string_is_empty(local_desc) ? option_defs_us[i].desc : local_desc;
-      option_defs[i].info = string_is_empty(local_info) ? option_defs_us[i].info : local_info;
-
-      /* Determine number of values
-       * (always taken from us english defs) */
-      for (;;)
-      {
-         if (string_is_empty(option_defs_us[i].values[num_values].value))
-            break;
-         num_values++;
-      }
-
-      /* Copy values */
-      for (j = 0; j < num_values; j++)
-      {
-         const char *value       = option_defs_us[i].values[j].value;
-         const char *local_label = NULL;
-
-         /* Value string is always taken from us english defs */
-         option_defs[i].values[j].value = value;
-
-         /* Try to find corresponding entry in local defs values array */
-         if (local_values)
-         {
-            size_t value_index = 0;
-
-            for (;;)
-            {
-               const char *local_value = local_values[value_index].value;
-
-               if (string_is_empty(local_value))
-                  break;
-
-               if (string_is_equal(value, local_value))
-               {
-                  local_label = local_values[value_index].label;
-                  break;
-               }
-
-               value_index++;
-            }
-         }
-
-         /* Set value label string */
-         option_defs[i].values[j].label = string_is_empty(local_label) ?
-               option_defs_us[i].values[j].label : local_label;
-      }
-   }
-
-   return option_defs;
-}
-
-static void core_option_manager_set_display(core_option_manager_t *opt,
-      const char *key, bool visible)
-{
-   size_t i;
-
-   if (!opt || string_is_empty(key))
-      return;
-
-   for (i = 0; i < opt->size; i++)
-   {
-      if (string_is_empty(opt->opts[i].key))
-         continue;
-
-      if (string_is_equal(opt->opts[i].key, key))
-      {
-         opt->opts[i].visible = visible;
-         return;
-      }
-   }
-}
-
 /* DYNAMIC LIBRETRO CORE  */
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
@@ -17214,6 +16444,20 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
    if (ignore_environment_cb)
       return false;
 
+   /* RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE gets called
+    * by every core on every frame. Handle it first,
+    * to avoid the overhead of traversing the subsequent
+    * (enormous) case statement */
+   if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE)
+   {
+      if (runloop_state.core_options)
+         *(bool*)data = runloop_state.core_options->updated;
+      else
+         *(bool*)data = false;
+
+      return true;
+   }
+
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
@@ -17234,6 +16478,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          {
             unsigned log_level         = settings->uints.libretro_log_level;
             struct retro_variable *var = (struct retro_variable*)data;
+            size_t opt_idx;
 
             if (!var)
                return true;
@@ -17247,47 +16492,29 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                return true;
             }
 
-            {
-               size_t i;
-
 #ifdef HAVE_RUNAHEAD
-               if (runloop_state.core_options->updated)
-                  p_rarch->has_variable_update = true;
+            if (runloop_state.core_options->updated)
+               p_rarch->has_variable_update = true;
 #endif
+            runloop_state.core_options->updated = false;
 
-               runloop_state.core_options->updated   = false;
-
-               for (i = 0; i < runloop_state.core_options->size; i++)
-               {
-                  if (!string_is_empty(runloop_state.core_options->opts[i].key))
-                     if (string_is_equal(
-                              runloop_state.core_options->opts[i].key, var->key))
-                     {
-                        var->value = runloop_state.core_options->opts[i].vals->elems[
-                           runloop_state.core_options->opts[i].index].data;
-                        break;
-                     }
-               }
-            }
+            if (core_option_manager_get_idx(runloop_state.core_options,
+                  var->key, &opt_idx))
+               var->value = core_option_manager_get_val(
+                     runloop_state.core_options, opt_idx);
 
             if (log_level == RETRO_LOG_DEBUG)
             {
                char s[128];
                s[0] = '\0';
 
-               snprintf(s, sizeof(s), "[Environ]: GET_VARIABLE %s:\n\t%s\n", var->key, var->value ? var->value :
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+               snprintf(s, sizeof(s), "[Environ]: GET_VARIABLE %s:\n\t%s\n",
+                     var->key, var->value ? var->value :
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
                RARCH_LOG(s);
             }
          }
 
-         break;
-
-      case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
-         if (runloop_state.core_options)
-            *(bool*)data = runloop_state.core_options->updated;
-         else
-            *(bool*)data = false;
          break;
 
       /* SET_VARIABLES: Legacy path */
@@ -17296,47 +16523,101 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          if (runloop_state.core_options)
             retroarch_deinit_core_options(p_rarch,
-                  path_get(RARCH_PATH_CORE_OPTIONS)
-                  );
-         retroarch_init_core_variables(
-               p_rarch,
+                  path_get(RARCH_PATH_CORE_OPTIONS));
+
+         retroarch_init_core_variables(p_rarch,
                (const struct retro_variable *)data);
+
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS:
          RARCH_LOG("[Environ]: SET_CORE_OPTIONS.\n");
 
-         if (runloop_state.core_options)
-            retroarch_deinit_core_options(p_rarch,
-                  path_get(RARCH_PATH_CORE_OPTIONS)
-                  );
-         rarch_init_core_options(p_rarch,
-               (const struct retro_core_option_definition*)data);
+         {
+            /* Parse core_option_definition array to
+             * create retro_core_options_v2 struct */
+            struct retro_core_options_v2 *options_v2 =
+                  core_option_manager_convert_v1(
+                        (const struct retro_core_option_definition*)data);
 
+            if (runloop_state.core_options)
+               retroarch_deinit_core_options(p_rarch,
+                     path_get(RARCH_PATH_CORE_OPTIONS));
+
+            if (options_v2)
+            {
+               /* Initialise core options */
+               rarch_init_core_options(p_rarch, options_v2);
+
+               /* Clean up */
+               core_option_manager_free_converted(options_v2);
+            }
+         }
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL:
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
 
          {
-            struct retro_core_option_definition *option_defs =
-               core_option_manager_get_definitions((const struct retro_core_options_intl*)data);
+            /* Parse core_options_intl to create
+             * retro_core_options_v2 struct */
+            struct retro_core_options_v2 *options_v2 =
+                  core_option_manager_convert_v1_intl(
+                        (const struct retro_core_options_intl*)data);
 
             if (runloop_state.core_options)
                retroarch_deinit_core_options(p_rarch,
-                     path_get(RARCH_PATH_CORE_OPTIONS)
-                     );
+                     path_get(RARCH_PATH_CORE_OPTIONS));
 
-            /* Parse core_options_intl to create option definitions array */
-            if (option_defs)
+            if (options_v2)
             {
                /* Initialise core options */
-               rarch_init_core_options(p_rarch, option_defs);
+               rarch_init_core_options(p_rarch, options_v2);
 
                /* Clean up */
-               free(option_defs);
+               core_option_manager_free_converted(options_v2);
             }
+         }
+         break;
 
+      case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2:
+         RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2.\n");
+
+         {
+            const struct retro_core_options_v2 *options_v2 =
+                  (const struct retro_core_options_v2 *)data;
+
+            if (runloop_state.core_options)
+               retroarch_deinit_core_options(p_rarch,
+                     path_get(RARCH_PATH_CORE_OPTIONS));
+
+            if (options_v2)
+               rarch_init_core_options(p_rarch, options_v2);
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL:
+         RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL.\n");
+
+         {
+            /* Parse retro_core_options_v2_intl to create
+             * retro_core_options_v2 struct */
+            struct retro_core_options_v2 *options_v2 =
+                  core_option_manager_convert_v2_intl(
+                        (const struct retro_core_options_v2_intl*)data);
+
+            if (runloop_state.core_options)
+               retroarch_deinit_core_options(p_rarch,
+                     path_get(RARCH_PATH_CORE_OPTIONS));
+
+            if (options_v2)
+            {
+               /* Initialise core options */
+               rarch_init_core_options(p_rarch, options_v2);
+
+               /* Clean up */
+               core_option_manager_free_converted(options_v2);
+            }
          }
          break;
 
@@ -17344,10 +16625,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_DBG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.\n");
 
          {
-            const struct retro_core_option_display *core_options_display = (const struct retro_core_option_display *)data;
+            const struct retro_core_option_display *core_options_display =
+                  (const struct retro_core_option_display *)data;
 
             if (runloop_state.core_options && core_options_display)
-               core_option_manager_set_display(
+               core_option_manager_set_visible(
                      runloop_state.core_options,
                      core_options_display->key,
                      core_options_display->visible);
@@ -18661,8 +17943,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION:
          RARCH_LOG("[Environ]: GET_CORE_OPTIONS_VERSION.\n");
-         /* Current API version is 1 */
-         *(unsigned *)data = 1;
+         /* Current API version is 2 */
+         *(unsigned *)data = 2;
          break;
 
       case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
@@ -36706,7 +35988,7 @@ static void rarch_init_core_options_path(
 
 static void rarch_init_core_options(
       struct rarch_state *p_rarch,
-      const struct retro_core_option_definition *option_defs)
+      const struct retro_core_options_v2 *options_v2)
 {
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
@@ -36717,12 +35999,13 @@ static void rarch_init_core_options(
 
    /* Get core options file path */
    rarch_init_core_options_path(p_rarch,
-      options_path, sizeof(options_path),
-      src_options_path, sizeof(src_options_path));
+         options_path, sizeof(options_path),
+         src_options_path, sizeof(src_options_path));
 
    if (!string_is_empty(options_path))
       runloop_state.core_options =
-            core_option_manager_new(options_path, src_options_path, option_defs);
+            core_option_manager_new(options_path,
+                  src_options_path, options_v2);
 }
 
 void retroarch_init_task_queue(void)
@@ -37022,8 +36305,8 @@ static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
       if (conf_tmp)
       {
          core_option_manager_flush(
-               conf_tmp,
-               runloop_state.core_options);
+               runloop_state.core_options,
+               conf_tmp);
          RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
                runloop_state.game_options_active ? "game" : "folder", path_core_options);
          config_file_write(conf_tmp, path_core_options, true);
@@ -37036,8 +36319,8 @@ static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
    {
       const char *path = runloop_state.core_options->conf_path;
       core_option_manager_flush(
-            runloop_state.core_options->conf,
-            runloop_state.core_options);
+            runloop_state.core_options,
+            runloop_state.core_options->conf);
       RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
       config_file_write(runloop_state.core_options->conf, path, true);
    }
@@ -40054,7 +39337,7 @@ bool core_options_create_override(bool game_specific)
          goto error;
 
    /* Write config file */
-   core_option_manager_flush(conf, runloop_state.core_options);
+   core_option_manager_flush(runloop_state.core_options, conf);
 
    if (!config_file_write(conf, options_path, true))
       goto error;

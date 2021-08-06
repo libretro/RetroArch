@@ -51,7 +51,7 @@ static void retroarch_init_core_variables(
       const struct retro_variable *vars);
 static void rarch_init_core_options(
       struct rarch_state *p_rarch,
-      const struct retro_core_option_definition *option_defs);
+      const struct retro_core_options_v2 *options_v2);
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch,

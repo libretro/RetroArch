@@ -681,7 +681,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config_override_content
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config_override_game,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_options,                        MENU_ENUM_SUBLABEL_SHADER_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_input_remapping_options,          MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options,                          MENU_ENUM_SUBLABEL_CORE_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_override_list,             MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options_reset,                    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_show_advanced_settings,                MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS)
@@ -1506,6 +1505,41 @@ static int action_bind_sublabel_playlist_entry(
    return 0;
 }
 
+static int action_bind_sublabel_core_options(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   const char *category = path;
+   const char *info     = NULL;
+
+   /* If this is an options subcategory, fetch
+    * the category info string */
+   if (!string_is_empty(category))
+   {
+      core_option_manager_t *coreopts = NULL;
+
+      if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+         info = core_option_manager_get_category_info(
+               coreopts, category);
+   }
+
+   /* If this isn't a subcategory (or something
+    * went wrong...), use top level core options
+    * menu sublabel */
+   if (string_is_empty(info))
+      info = msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_OPTIONS);
+
+   if (!string_is_empty(info))
+   {
+      strlcpy(s, info, len);
+      return 1;
+   }
+
+   return 0;
+}
+
 static int action_bind_sublabel_core_option(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1518,7 +1552,8 @@ static int action_bind_sublabel_core_option(
    if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
       return 0;
 
-   info = core_option_manager_get_info(opt, type - MENU_SETTINGS_CORE_OPTION_START);
+   info = core_option_manager_get_info(opt,
+         type - MENU_SETTINGS_CORE_OPTION_START, true);
 
    if (!string_is_empty(info))
       strlcpy(s, info, len);
