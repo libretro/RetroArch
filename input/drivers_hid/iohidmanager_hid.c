@@ -491,7 +491,7 @@ static void list_controllers()
 	}
 	printf("\n");
 }
-static void iohidmanager_hid_device_remove(IOHIDDeviceRef *device, iohidmanager_hid_t* hid)
+static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_hid_t *hid)
 {
 	struct iohidmanager_hid_adapter *adapter = NULL;
 	//loop though the controller ports and find the device with a matching IOHINDeviceRef
@@ -611,7 +611,7 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
 }
 
 
-static void iohidmanager_hid_device_add(IOHIDDeviceRef* device, iohidmanager_hid_t* hid)
+static void iohidmanager_hid_device_add(void* device, iohidmanager_hid_t* hid)
 {
    int i;
 
@@ -930,7 +930,7 @@ error:
 }
 
 
-static void iohidmanager_hid_device_matched(iohidmanager_hid_t *hid, IOReturn result, void* sender, IOHIDDeviceRef device)
+static void iohidmanager_hid_device_matched(iohidmanager_hid_t *hid, IOReturn result, void* sender, IOHIDDeviceRef *device)
 {
 	printf("Adding device %p to HID %p\n", device, hid);
 	iohidmanager_hid_device_add(device, hid);
