@@ -53,11 +53,20 @@ typedef struct
    bool btn_l, btn_m, btn_r, btn_b4, btn_b5;
 } winraw_mouse_t;
 
+struct pointer_status
+{
+   struct pointer_status *next;
+   int pointer_id;
+   int pointer_x;
+   int pointer_y;
+};
+
 typedef struct
 {
    double view_abs_ratio_x;
    double view_abs_ratio_y;
    HWND window;
+   struct pointer_status pointer_head;  /* dummy head for easier iteration */
    RECT active_rect; /* Needed for checking for a windows size change */
    RECT prev_rect; /* Needed for checking for a windows size change */
    int rect_delay; /* Needed to delay resize of window */
@@ -685,7 +694,8 @@ static int16_t winraw_input_state(
          (device == RETRO_DEVICE_JOYPAD)
       || (device == RETRO_DEVICE_MOUSE)
       || (device == RARCH_DEVICE_MOUSE_SCREEN)
-      || (device == RETRO_DEVICE_LIGHTGUN);
+      || (device == RETRO_DEVICE_LIGHTGUN)
+      || (device == RETRO_DEVICE_POINTER);
 
    if (port >= MAX_USERS)
       return 0;
@@ -804,6 +814,74 @@ static int16_t winraw_input_state(
             }
          }
          break;
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         {
+            struct video_viewport vp;
+            bool pointer_down           = false;
+            bool inside                 = false;
+            int x                       = 0;
+            int y                       = 0;
+            int16_t res_x               = 0;
+            int16_t res_y               = 0;
+            int16_t res_screen_x        = 0;
+            int16_t res_screen_y        = 0;
+            unsigned num                = 0;
+            struct pointer_status *
+               check_pos                = wr->pointer_head.next;
+
+            vp.x                        = 0;
+            vp.y                        = 0;
+            vp.width                    = 0;
+            vp.height                   = 0;
+            vp.full_width               = 0;
+            vp.full_height              = 0;
+
+            while (check_pos && num < idx)
+            {
+               num++;
+               check_pos    = check_pos->next;
+            }
+            if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
+               return 0;
+
+            x               = mouse->x;
+            y               = mouse->y;
+            pointer_down    = mouse->btn_l;
+
+            if (check_pos)
+            {
+               x            = check_pos->pointer_x;
+               y            = check_pos->pointer_y;
+               pointer_down = true;
+            }
+
+            if (!(video_driver_translate_coord_viewport_wrap(&vp, x, y,
+                        &res_x, &res_y, &res_screen_x, &res_screen_y)))
+               return 0;
+
+            if (device == RARCH_DEVICE_POINTER_SCREEN)
+            {
+               res_x        = res_screen_x;
+               res_y        = res_screen_y;
+            }
+
+            if (!(inside = (res_x >= -0x7fff) && (res_y >= -0x7fff)))
+               return 0;
+
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return res_x;
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return res_y;
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return pointer_down;
+               default:
+                  break;
+            }
+         }
+         break;
       case RETRO_DEVICE_LIGHTGUN:
 			switch ( id )
 			{
@@ -911,6 +989,7 @@ static uint64_t winraw_get_capabilities(void *u)
           (1 << RETRO_DEVICE_MOUSE)    |
           (1 << RETRO_DEVICE_JOYPAD)   |
           (1 << RETRO_DEVICE_ANALOG)   |
+          (1 << RETRO_DEVICE_POINTER)  |
           (1 << RETRO_DEVICE_LIGHTGUN);
 }
 

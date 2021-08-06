@@ -2495,7 +2495,7 @@ void config_set_defaults(void *data)
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
 #endif
       input_config_set_device(i, RETRO_DEVICE_JOYPAD);
-      settings->uints.input_mouse_index[i] = 0;
+      settings->uints.input_mouse_index[i] = i;
    }
 
    video_driver_reset_custom_viewport();

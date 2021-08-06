@@ -7072,7 +7072,7 @@ static int setting_action_start_mouse_index(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   settings->uints.input_mouse_index[setting->index_offset] = 0;
+   settings->uints.input_mouse_index[setting->index_offset] = setting->index_offset;
    settings->modified = true;
    return 0;
 }
@@ -8473,7 +8473,7 @@ static bool setting_append_list_input_player_options(
             &settings->uints.input_mouse_index[user],
             mouse_index[user],
             label_mouse_index[user],
-            0,
+            user,
             &group_info,
             &subgroup_info,
             parent_group,
