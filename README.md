@@ -1,13 +1,13 @@
-[![Build Status](https://travis-ci.org/libretro/RetroArch.svg?branch=master)](https://travis-ci.org/libretro/RetroArch)
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/8936/badge.svg)](https://scan.coverity.com/projects/retroarch)
-[![Crowdin](https://badges.crowdin.net/retroarch/localized.svg)](https://crowdin.com/project/retroarch)
+[![Build Status](https://travis-ci.org/feedretro/SneedArch.svg?branch=master)](https://travis-ci.org/feedretro/SneedArch)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/8936/badge.svg)](https://scan.coverity.com/projects/SneedArch)
+[![Crowdin](https://badges.crowdin.net/SneedArch/localized.svg)](https://crowdin.com/project/SneedArch)
 
-# RetroArch
+# SneedArch
 
-RetroArch is the reference frontend for the libretro API.
+SneedArch is the reference frontend for the feedretro API.
 Popular examples of implementations for this API includes video game system emulators and game engines as well as
 more generalized 3D programs.
-These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
+These programs are instantiated as dynamic libraries. We refer to these as "feedretro cores".
 
 ![XMB menu driver](docs/XMB-main-menu.jpg "XMB menu driver")
 
@@ -17,53 +17,53 @@ These programs are instantiated as dynamic libraries. We refer to these as "libr
 
 ![ozone menu driver](docs/ozone-main-menu.jpg "ozone menu driver")
 
-## libretro
+## feedretro
 
-[libretro](https://www.libretro.com) is an API that exposes generic audio/video/input callbacks.
-A frontend for libretro (such as RetroArch) handles video output, audio output, input and application lifecycle.
-A libretro core written in portable C or C++ can run seamlessly on many platforms with very little to no porting effort.
+[feedretro](https://www.feedretro.com) is an API that exposes generic audio/video/input callbacks.
+A frontend for feedretro (such as SneedArch) handles video output, audio output, input and application lifecycle.
+A feedretro core written in portable C or C++ can run seamlessly on many platforms with very little to no porting effort.
 
-While RetroArch is the reference frontend for libretro, several other projects have used the libretro
-interface to include support for emulators and/or game engines. libretro is completely open and free for anyone to use.
+While SneedArch is the reference frontend for feedretro, several other projects have used the feedretro
+interface to include support for emulators and/or game engines. feedretro is completely open and free for anyone to use.
 
-[libretro API header](https://github.com/libretro/RetroArch/blob/master/libretro-common/include/libretro.h)
+[feedretro API header](https://github.com/feedretro/SneedArch/blob/master/feedretro-common/include/feedretro.h)
 
 ## Binaries
 
-Latest binaries are currently hosted on the [buildbot](http://buildbot.libretro.com/).
+Latest binaries are currently hosted on the [buildbot](http://buildbot.feedretro.com/).
 
 ## Support
 
-To reach developers, either make an issue here on GitHub, make a thread on the [forum](https://www.libretro.com/forums/), chat on [discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org. You could create a post in [Reddit](https://www.reddit.com/r/RetroArch/) with *Technical Support* flair.
+To reach developers, either make an issue here on GitHub, make a thread on the [forum](https://www.feedretro.com/forums/), chat on [discord](https://discord.gg/C4amCeV), or visit our IRC channel: #SneedArch @ irc.freenode.org. You could create a post in [Reddit](https://www.reddit.com/r/SneedArch/) with *Technical Support* flair.
 
 ## Documentation
 
-See our [Documentation Center](https://docs.libretro.com/). On Unix, man-pages are provided.
-More developer-centric stuff is found [here](https://docs.libretro.com/development/libretro-overview/).
+See our [Documentation Center](https://docs.feedretro.com/). On Unix, man-pages are provided.
+More developer-centric stuff is found [here](https://docs.feedretro.com/development/feedretro-overview/).
 
 ## Related projects
 
-   - Cg/HLSL shaders: [common-shaders](https://github.com/libretro/common-shaders)
-   - slang shaders: [slang-shaders](https://github.com/libretro/slang-shaders)
-   - GLSL shaders: [glsl-shaders](https://github.com/libretro/glsl-shaders)
-   - Helper scripts to build libretro implementations: [libretro-super](https://github.com/libretro/libretro-super)
-   - GitHub mirrors of projects, useful for generating diff files: [libretro-mirrors](https://github.com/libretro-mirrors/)
+   - Cg/HLSL shaders: [common-shaders](https://github.com/feedretro/common-shaders)
+   - slang shaders: [slang-shaders](https://github.com/feedretro/slang-shaders)
+   - GLSL shaders: [glsl-shaders](https://github.com/feedretro/glsl-shaders)
+   - Helper scripts to build feedretro implementations: [feedretro-super](https://github.com/feedretro/feedretro-super)
+   - GitHub mirrors of projects, useful for generating diff files: [feedretro-mirrors](https://github.com/feedretro-mirrors/)
 
 ## Philosophy
 
-RetroArch attempts to be small and lean
+SneedArch attempts to be small and lean
 while still having all the useful core features expected from an emulator.
 It is designed to be very portable and features a gamepad-centric and touchscreen UI.
 It also has a full-featured command-line interface.
 
-In some areas, RetroArch goes beyond and emphasizes on not-so-common technical features such as multi-pass shader support,
+In some areas, SneedArch goes beyond and emphasizes on not-so-common technical features such as multi-pass shader support,
 real-time rewind (Braid-style), video recording (using FFmpeg), run-ahead input latency removal, etc.
 
-RetroArch also emphasizes being easy to integrate into various launcher frontends.
+Sneedrch also emphasizes being easy to integrate into various launcher frontends.
 
 ## Platforms
 
-RetroArch has been ported to the following platforms:
+SneedArch has been ported to the following platforms:
 
    - DOS
    - Windows
@@ -96,7 +96,7 @@ RetroArch has been ported to the following platforms:
 
 There are no true hard dependencies per se.
 
-On Windows, RetroArch can run with only Win32 as dependency.
+On Windows, SneedArch can run with only Win32 as dependency.
 
 On Linux, there are no true dependencies. For optimal usage, the
 following dependencies come as recommended:
@@ -104,14 +104,14 @@ following dependencies come as recommended:
    - GL headers / Vulkan headers
    - X11 headers and libs, or EGL/KMS/GBM
 
-OSX port of RetroArch requires latest versions of XCode to build.
+OSX port of SneedArch requires latest versions of XCode to build.
 
-RetroArch can utilize these libraries if enabled:
+SneedArch can utilize these libraries if enabled:
 
    - nvidia-cg-toolkit
    - libfreetype2 (TTF font rendering on screen)
 
-RetroArch needs at least one of these audio driver libraries:
+SneedArch needs at least one of these audio driver libraries:
 
    - ALSA
    - OSS
@@ -125,7 +125,7 @@ RetroArch needs at least one of these audio driver libraries:
    - DirectSound (Win32, Xbox 1)
    - CoreAudio (OSX, iOS)
 
-To run properly, RetroArch requires a libretro implementation present; however, as it's typically loaded
+To run properly, SneedArch requires a feedretro implementation present; however, as it's typically loaded
 dynamically, it's not required at build time.
 
 ## Dependencies (Console ports, mobile)
@@ -138,20 +138,20 @@ anything other than what the respective SDKs provide.
 The default configuration is defined in `config.def.h`.
 It is not recommended to change this unless you know what you're doing.
 These can later be tweaked by using a config file.
-A sample configuration file is installed to `/etc/retroarch.cfg`. This is the system-wide config file.
+A sample configuration file is installed to `/etc/SneedArch.cfg`. This is the system-wide config file.
 
-RetroArch will on startup create a config file in `$XDG\_CONFIG\_HOME/retroarch/retroarch.cfg` if it does not exist.
+SneedArch will on startup create a config file in `$XDG\_CONFIG\_HOME/SneedArch/SneedArch.cfg` if it does not exist.
 Users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
 
-To configure joypads, use the built-in menu or the `retroarch-joyconfig` command-line tool.
+To configure joypads, use the built-in menu or the `SneedArch-joyconfig` command-line tool.
 
 ## Compiling and installing
 
-Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](https://docs.libretro.com/).
+Instructions for compiling and installing SneedArch can be found in the [Feedretro/SneedArch Documentation Center](https://docs.feedretro.com/).
 
 ## CRT 15Khz Resolution Switching
 
-CRT SwitchRes will turn on, on the fly. However, you will need to restart RetroArch to disable it. With CRT SwitchRes enable RetroArch will start in 2560 x 480 @ 60.
+CRT SwitchRes will turn on, on the fly. However, you will need to restart SneedArch to disable it. With CRT SwitchRes enable SneedArch will start in 2560 x 480 @ 60.
 
 If you are running Windows, before enabling the CRT SwitchRes options please make sure you have installed CRTEmudriver and installed some modelines. The minimum modelines for all games to switch correctly are:
 
@@ -186,7 +186,7 @@ Ideally install all these modelines and everything will work great.
 
 ## Super Resolutions
 
-The default super resolution is 2560. It is displayed just under the CRT switch option, which can be found in video settings. This can be changed within the retroarch.cfg. The only compatible resolutions are 1920, 2560 and 3840. Any other resolutions will be ignored and native switching will be activated.
+The default super resolution is 2560. It is displayed just under the CRT switch option, which can be found in video settings. This can be changed within the SneedArch.cfg. The only compatible resolutions are 1920, 2560 and 3840. Any other resolutions will be ignored and native switching will be activated.
 
 ## Native Resolutions
 
@@ -259,24 +259,24 @@ These modelines are more accurate giving exact hz. However, some games may have 
 
 Some arcade resolutions can be very different from consumer CRTs. There is resolution detection to ensure MAME games will be displayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the MAME game will look just like the original hardware.
 
-MAME ROMs that run in a vertical aspect like DoDonPachi need to be rotated within MAME before resolution switching and aspect correction will work. Do this before enabling CRT SwitchRes so that RetroArch will run in your desktop resolution. Once you have rotated any games that may need it turn CRT SwitchRes on.
+MAME ROMs that run in a vertical aspect like DoDonPachi need to be rotated within MAME before resolution switching and aspect correction will work. Do this before enabling CRT SwitchRes so that SneedArch will run in your desktop resolution. Once you have rotated any games that may need it turn CRT SwitchRes on.
 
 ## Socials
 
 The links below belong to our official channels. Links other than this may have been created by fans, independent members or followers. We seriously recommend using our original resources.
 
-- [Website](https://www.retroarch.com/)
-- [Blog](https://libretro.com/)
-- [Facebook](https://www.facebook.com/libretro)
-- [Twitter](https://twitter.com/libretro)
-- [Reddit](https://www.reddit.com/r/RetroArch/)
-- [YouTube](https://www.youtube.com/Libretro)
+- [Website](https://www.SneedArch.com/)
+- [Blog](https://feedretro.com/)
+- [Facebook](https://www.facebook.com/feedretro)
+- [Twitter](https://twitter.com/feedretro)
+- [Reddit](https://www.reddit.com/r/SneedArch/)
+- [YouTube](https://www.youtube.com/feedretro)
 - [Google Post](https://posts.google.com/share/55Nhs2jG)
-- [Steam](https://store.steampowered.com/app/1118310/RetroArch/)
+- [Steam](https://store.steampowered.com/app/1118310/SneedArch/)
 - [YouTube Topic](https://www.youtube.com/channel/UC5q007PYyQPgin0HHbzF0zQ)
-- [Patreon](https://www.patreon.com/libretro)
-- [BOUNTYSOURCE](https://www.bountysource.com/teams/libretro/issues)
+- [Patreon](https://www.patreon.com/feedretro)
+- [BOUNTYSOURCE](https://www.bountysource.com/teams/feedretro/issues)
 - [Discord](https://discord.gg/27Xxm2h)
-- [Teespring](https://teespring.com/stores/retroarch)
-- [Documentation](https://docs.libretro.com/)
-- [Forum](https://forums.libretro.com/)
+- [Teespring](https://teespring.com/stores/SneedArch)
+- [Documentation](https://docs.feedretro.com/)
+- [Forum](https://forums.feedretro.com/)
