@@ -13,7 +13,7 @@ EXTERN_C_BEGIN
 typedef struct _CLzmaEncProps
 {
   int level;       /* 0 <= level <= 9 */
-  UInt32 dictSize; /* (1 << 12) <= dictSize <= (1 << 27) for 32-bit version
+  uint32_t dictSize; /* (1 << 12) <= dictSize <= (1 << 27) for 32-bit version
                       (1 << 12) <= dictSize <= (3 << 29) for 64-bit version
                       default = (1 << 24) */
   int lc;          /* 0 <= lc <= 8, default = 3 */
@@ -23,17 +23,17 @@ typedef struct _CLzmaEncProps
   int fb;          /* 5 <= fb <= 273, default = 32 */
   int btMode;      /* 0 - hashChain Mode, 1 - binTree mode - normal, default = 1 */
   int numHashBytes; /* 2, 3 or 4, default = 4 */
-  UInt32 mc;       /* 1 <= mc <= (1 << 30), default = 32 */
+  uint32_t mc;       /* 1 <= mc <= (1 << 30), default = 32 */
   unsigned writeEndMark;  /* 0 - do not write EOPM, 1 - write EOPM, default = 0 */
   int numThreads;  /* 1 or 2, default = 2 */
 
-  UInt64 reduceSize; /* estimated size of data that will be compressed. default = (UInt64)(Int64)-1.
+  uint64_t reduceSize; /* estimated size of data that will be compressed. default = (uint64_t)(Int64)-1.
                         Encoder uses this value to reduce dictionary size */
 } CLzmaEncProps;
 
 void LzmaEncProps_Init(CLzmaEncProps *p);
 void LzmaEncProps_Normalize(CLzmaEncProps *p);
-UInt32 LzmaEncProps_GetDictSize(const CLzmaEncProps *props2);
+uint32_t LzmaEncProps_GetDictSize(const CLzmaEncProps *props2);
 
 
 /* ---------- CLzmaEncHandle Interface ---------- */
@@ -55,7 +55,7 @@ CLzmaEncHandle LzmaEnc_Create(ISzAllocPtr alloc);
 void LzmaEnc_Destroy(CLzmaEncHandle p, ISzAllocPtr alloc, ISzAllocPtr allocBig);
 
 SRes LzmaEnc_SetProps(CLzmaEncHandle p, const CLzmaEncProps *props);
-void LzmaEnc_SetDataSize(CLzmaEncHandle p, UInt64 expectedDataSiize);
+void LzmaEnc_SetDataSize(CLzmaEncHandle p, uint64_t expectedDataSiize);
 SRes LzmaEnc_WriteProperties(CLzmaEncHandle p, Byte *properties, SizeT *size);
 unsigned LzmaEnc_IsWriteEndMark(CLzmaEncHandle p);
 
