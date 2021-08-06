@@ -51,6 +51,7 @@ struct iohidmanager_hid_adapter
 {
    uint32_t slot;
    IOHIDDeviceRef handle;
+	uint32_t locationId;
    char name[PATH_MAX_LENGTH];
    apple_input_rec_t *axes;
    apple_input_rec_t *hats;
@@ -491,7 +492,7 @@ static void list_controllers()
 	}
 	printf("\n");
 }
-static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_hid_t *hid)
+static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_hid_t* hid)
 {
 	struct iohidmanager_hid_adapter *adapter = NULL;
 	//loop though the controller ports and find the device with a matching IOHINDeviceRef
@@ -630,7 +631,22 @@ static void iohidmanager_hid_device_add(void* device, iohidmanager_hid_t* hid)
         kHIDUsage_Sim_Brake
     };
 
-
+	/* check if pad was already registered previously when the application was started (by deterministic method)
+	 * if so do not re-add the pad */
+	uint32_t deviceLocationId = iohidmanager_hid_device_get_location_id(device);
+	for (i=0; i<MAX_USERS; i++)
+	{
+		struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
+		if (!a)
+			continue;
+		if (a->locationId == deviceLocationId)
+		{
+			a->handle = device;
+//			while we're not re-adding the controller, we are re-assigning the handle
+//			so it can be removed properly upon disconnect
+			return;
+		}
+	}
 
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
@@ -652,6 +668,7 @@ static void iohidmanager_hid_device_add(void* device, iohidmanager_hid_t* hid)
       goto error;
 
    adapter->handle        = device;
+	adapter->locationId = deviceLocationId;
 
    ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
 
@@ -673,7 +690,8 @@ static void iohidmanager_hid_device_add(void* device, iohidmanager_hid_t* hid)
    adapter->slot = pad_connection_pad_init(hid->slots,
          adapter->name, dev_vid, dev_pid, adapter,
          &iohidmanager_hid);
-
+	printf("uniqueid = %d\n",iohidmanager_hid_device_get_int_property(device,CFSTR(kIOHIDUniqueIDKey)));
+	printf("locationID = %d\n", iohidmanager_hid_device_get_int_property(device,CFSTR(kIOHIDLocationIDKey)));
    if (adapter->slot == -1)
       goto error;
 
