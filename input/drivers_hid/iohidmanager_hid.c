@@ -477,9 +477,12 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 static void list_controllers()
 {
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*)   hid_driver_get_data();
+   int i;
+   
    if (!hid)
       return;
-   for (int i=0; i<4; i++)
+   
+   for (i=0; i<4; i++)
    {
       struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
       if (!a)
@@ -495,8 +498,10 @@ static void list_controllers()
 static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_hid_t* hid)
 {
    struct iohidmanager_hid_adapter *adapter = NULL;
-   //loop though the controller ports and find the device with a matching IOHINDeviceRef
-   for (int i=0; i<MAX_USERS; i++)
+   int i;
+   
+   /*loop though the controller ports and find the device with a matching IOHINDeviceRef*/
+   for (i=0; i<MAX_USERS; i++)
    {
       struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
       if (!a)
@@ -631,8 +636,8 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
         kHIDUsage_Sim_Brake
     };
 
-   /* check if pad was already registered previously when the application was started (by deterministic method)
-    * if so do not re-add the pad */
+   /* check if pad was already registered previously when the application was
+    started (by deterministic method). if so do not re-add the pad */
    uint32_t deviceLocationId = iohidmanager_hid_device_get_location_id(device);
    for (i=0; i<MAX_USERS; i++)
    {
@@ -642,8 +647,8 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
       if (a->locationId == deviceLocationId)
       {
          a->handle = device;
-//       while we're not re-adding the controller, we are re-assigning the handle
-//       so it can be removed properly upon disconnect
+       /* while we're not re-adding the controller, we are re-assigning the
+        handle so it can be removed properly upon disconnect */
          return;
       }
    }
@@ -948,13 +953,15 @@ error:
 }
 
 
-static void iohidmanager_hid_device_matched(void *data, IOReturn result, void* sender, IOHIDDeviceRef device)
+static void iohidmanager_hid_device_matched(void *data, IOReturn result,
+                                            void* sender, IOHIDDeviceRef device)
 {
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*) hid_driver_get_data();
    printf("Adding device %p to HID %p\n", device, hid);
    iohidmanager_hid_device_add(device, hid);
 }
-static void iohidmanager_hid_device_removed(void *data, IOReturn result, void* sender, IOHIDDeviceRef device)
+static void iohidmanager_hid_device_removed(void *data, IOReturn result,
+                                            void* sender, IOHIDDeviceRef device)
 {
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*) hid_driver_get_data();
    printf("Removing device %p from HID %p\n", device, hid);
