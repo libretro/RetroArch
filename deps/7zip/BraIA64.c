@@ -6,7 +6,7 @@
 #include "CpuArch.h"
 #include "Bra.h"
 
-SizeT IA64_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
+SizeT IA64_Convert(Byte *data, SizeT size, uint32_t ip, int encoding)
 {
   SizeT i;
   if (size < 16)
@@ -15,7 +15,7 @@ SizeT IA64_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
   i = 0;
   do
   {
-    unsigned m = ((UInt32)0x334B0000 >> (data[i] & 0x1E)) & 3;
+    unsigned m = ((uint32_t)0x334B0000 >> (data[i] & 0x1E)) & 3;
     if (m)
     {
       m++;
@@ -23,7 +23,7 @@ SizeT IA64_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
       {
         Byte *p = data + (i + (size_t)m * 5 - 8);
         if (((p[3] >> m) & 15) == 5
-            && (((p[-1] | ((UInt32)p[0] << 8)) >> m) & 0x70) == 0)
+            && (((p[-1] | ((uint32_t)p[0] << 8)) >> m) & 0x70) == 0)
         {
           unsigned raw = GetUi32(p);
           unsigned v = raw >> m;
@@ -31,15 +31,15 @@ SizeT IA64_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
           
           v <<= 4;
           if (encoding)
-            v += ip + (UInt32)i;
+            v += ip + (uint32_t)i;
           else
-            v -= ip + (UInt32)i;
+            v -= ip + (uint32_t)i;
           v >>= 4;
           
           v &= 0x1FFFFF;
           v += 0x700000;
           v &= 0x8FFFFF;
-          raw &= ~((UInt32)0x8FFFFF << m);
+          raw &= ~((uint32_t)0x8FFFFF << m);
           raw |= (v << m);
           SetUi32(p, raw);
         }

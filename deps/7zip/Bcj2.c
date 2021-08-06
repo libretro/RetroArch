@@ -6,10 +6,10 @@
 #include "Bcj2.h"
 #include "CpuArch.h"
 
-#define CProb UInt16
+#define CProb uint16_t
 
 #undef  kTopValue
-#define kTopValue ((UInt32)1 << 24)
+#define kTopValue ((uint32_t)1 << 24)
 #define kNumModelBits 11
 #undef  kBitModelTotal
 #define kBitModelTotal (1 << kNumModelBits)
@@ -78,7 +78,7 @@ SRes Bcj2Dec_Decode(CBcj2Dec *p)
     p->bufs[p->state] = cur + 4;
     
     {
-      UInt32 val;
+      uint32_t val;
       Byte *dest;
       SizeT rem;
       
@@ -176,7 +176,7 @@ SRes Bcj2Dec_Decode(CBcj2Dec *p)
         {
           p->temp[3] = src[-1];
           p->bufs[BCJ2_STREAM_MAIN] = src;
-          p->ip += (UInt32)num;
+          p->ip += (uint32_t)num;
           p->dest += num;
           p->state =
             p->bufs[BCJ2_STREAM_MAIN] ==
@@ -187,7 +187,7 @@ SRes Bcj2Dec_Decode(CBcj2Dec *p)
         }
         
         {
-          UInt32 bound, ttt;
+          uint32_t bound, ttt;
           CProb *prob;
           Byte b = src[0];
           Byte prev = (Byte)(num == 0 ? p->temp[3] : src[-1]);
@@ -195,7 +195,7 @@ SRes Bcj2Dec_Decode(CBcj2Dec *p)
           p->temp[3] = b;
           p->bufs[BCJ2_STREAM_MAIN] = src + 1;
           num++;
-          p->ip += (UInt32)num;
+          p->ip += (uint32_t)num;
           p->dest += num;
           
           prob = p->probs + (unsigned)(b == 0xE8 ? 2 + (unsigned)prev : (b == 0xE9 ? 1 : 0));
@@ -212,7 +212,7 @@ SRes Bcj2Dec_Decode(CBcj2Dec *p)
     }
 
     {
-      UInt32 val;
+      uint32_t val;
       unsigned cj = (p->temp[3] == 0xE8) ? BCJ2_STREAM_CALL : BCJ2_STREAM_JUMP;
       const Byte *cur = p->bufs[cj];
       Byte *dest;
