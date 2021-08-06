@@ -26,6 +26,7 @@
 
 #include "menu_defines.h"
 #include "../input/input_types.h"
+#include "../input/input_driver.h"
 
 RETRO_BEGIN_DECLS
 
@@ -212,18 +213,6 @@ void menu_input_set_pointer_selection(unsigned selection);
  * @param y_accel
  **/
 void menu_input_set_pointer_y_accel(float y_accel);
-
-/**
- * Line complete callback. Calls back after return is pressed with the
- * completed line. Line can be NULL. (Meaning that it might return a NULL
- * pointer instead of an empty string?)
- * 
- * @param userdata
- * @param line      a string representation of the completed line
- *                  (FIXME it might return a NULL pointer instead of an empty
- *                  string?)
- **/
-typedef void (*input_keyboard_line_complete_t)(void *userdata, const char *line);
 
 typedef struct menu_input_ctx_line
 {

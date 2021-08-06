@@ -41,7 +41,8 @@ extern "C" {
 
 typedef struct
 {
-   uint8_t keys[256];
+   uint8_t keys[SC_LAST];
+   bool pause;
 } winraw_keyboard_t;
 
 typedef struct
@@ -162,6 +163,8 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
       if (!name[0])
          snprintf(name, sizeof(name), "%s", "<name not found>");
+
+      input_config_set_mouse_display_name(i, name);
 
       RARCH_LOG("[WINRAW]: Mouse #%u: \"%s\".\n", i, name);
    }
@@ -440,89 +443,11 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    }
 }
 
-static void winraw_keyboard_mods(RAWINPUT *ri)
-{
-   unsigned flags = ri->data.keyboard.Flags;
-
-   switch (ri->data.keyboard.MakeCode)
-   {
-      /* Left Control + Right Control */
-      case 29:
-         input_keyboard_event(
-               (flags & RI_KEY_BREAK) ? 0 : 1,
-               input_keymaps_translate_keysym_to_rk(
-                     (flags & RI_KEY_E0) ? VK_RCONTROL : VK_LCONTROL),
-               0, RETROKMOD_CTRL, RETRO_DEVICE_KEYBOARD);
-         break;
-
-      /* Left Shift */
-      case 42:
-         input_keyboard_event(
-               (flags & RI_KEY_BREAK) ? 0 : 1,
-               input_keymaps_translate_keysym_to_rk(VK_LSHIFT),
-               0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
-         break;
-
-      /* Right Shift */
-      case 54:
-         input_keyboard_event(
-               (flags & RI_KEY_BREAK) ? 0 : 1,
-               input_keymaps_translate_keysym_to_rk(VK_RSHIFT),
-               0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
-         break;
-
-      /* Left Alt + Right Alt */
-      case 56:
-         input_keyboard_event(
-               (flags & RI_KEY_BREAK) ? 0 : 1,
-               input_keymaps_translate_keysym_to_rk(
-                     (flags & RI_KEY_E0) ? VK_RMENU : VK_LMENU),
-               0, RETROKMOD_ALT, RETRO_DEVICE_KEYBOARD);
-         break;
-   }
-}
-
-static void winraw_keyboard_keypad(unsigned *vkey, unsigned flags)
-{
-   bool event = true;
-
-   /* Keypad key positions regardless of NumLock */
-   switch (*vkey)
-   {
-      case VK_INSERT: *vkey = (flags & RI_KEY_E0) ? VK_INSERT : VK_NUMPAD0; break;
-      case VK_DELETE: *vkey = (flags & RI_KEY_E0) ? VK_DELETE : VK_DECIMAL; break;
-
-      case VK_HOME:   *vkey = (flags & RI_KEY_E0) ? VK_HOME   : VK_NUMPAD7; break;
-      case VK_END:    *vkey = (flags & RI_KEY_E0) ? VK_END    : VK_NUMPAD1; break;
-
-      case VK_PRIOR:  *vkey = (flags & RI_KEY_E0) ? VK_PRIOR  : VK_NUMPAD9; break;
-      case VK_NEXT:   *vkey = (flags & RI_KEY_E0) ? VK_NEXT   : VK_NUMPAD3; break;
-
-      case VK_UP:     *vkey = (flags & RI_KEY_E0) ? VK_UP     : VK_NUMPAD8; break;
-      case VK_DOWN:   *vkey = (flags & RI_KEY_E0) ? VK_DOWN   : VK_NUMPAD2; break;
-
-      case VK_LEFT:   *vkey = (flags & RI_KEY_E0) ? VK_LEFT   : VK_NUMPAD4; break;
-      case VK_RIGHT:  *vkey = (flags & RI_KEY_E0) ? VK_RIGHT  : VK_NUMPAD6; break;
-
-      case VK_CLEAR:  *vkey = (flags & RI_KEY_E0) ? VK_CLEAR  : VK_NUMPAD5; break;
-      case VK_RETURN: *vkey = (flags & RI_KEY_E0) ? 0xE0      : VK_RETURN;  break;
-
-      default:
-         event = false;
-         break;
-   }
-
-   if (event)
-      input_keyboard_event(flags & RI_KEY_BREAK ? 0 : 1,
-            input_keymaps_translate_keysym_to_rk(*vkey),
-            0, 0, RETRO_DEVICE_KEYBOARD);
-}
-
 static LRESULT CALLBACK winraw_callback(
       HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
 {
    unsigned i;
-   unsigned vkey, flags;
+   unsigned mcode, flags, kdown;
    static uint8_t data[1024];
    RAWINPUT       *ri = (RAWINPUT*)data;
    UINT size          = sizeof(data);
@@ -544,36 +469,42 @@ static LRESULT CALLBACK winraw_callback(
    switch (ri->header.dwType)
    {
       case RIM_TYPEKEYBOARD:
-         vkey  = ri->data.keyboard.VKey;
+         mcode = ri->data.keyboard.MakeCode;
          flags = ri->data.keyboard.Flags;
+         kdown = (flags & RI_KEY_BREAK) ? 0 : 1;
 
-         /* Stop sending forced Left Shift when NumLock is enabled
-          * (VKey 0xFF does not actually exist) */
-         if (vkey == 0xFF)
-            break;
+         /* Extended scancodes */
+         if (flags & RI_KEY_E0)
+            mcode |= 0xE000;
+         else if (flags & RI_KEY_E1)
+            mcode |= 0xE100;
 
-         /* following keys are not handled by windows raw input api */
-         wr->keyboard.keys[VK_LCONTROL] = GetAsyncKeyState(VK_LCONTROL) >> 1 ? 1 : 0;
-         wr->keyboard.keys[VK_RCONTROL] = GetAsyncKeyState(VK_RCONTROL) >> 1 ? 1 : 0;
-         wr->keyboard.keys[VK_LMENU]    = GetAsyncKeyState(VK_LMENU)    >> 1 ? 1 : 0;
-         wr->keyboard.keys[VK_RMENU]    = GetAsyncKeyState(VK_RMENU)    >> 1 ? 1 : 0;
-         wr->keyboard.keys[VK_LSHIFT]   = GetAsyncKeyState(VK_LSHIFT)   >> 1 ? 1 : 0;
-         wr->keyboard.keys[VK_RSHIFT]   = GetAsyncKeyState(VK_RSHIFT)   >> 1 ? 1 : 0;
-
-         winraw_keyboard_mods(ri);
-         winraw_keyboard_keypad(&vkey, flags);
-
-         switch (ri->data.keyboard.Message)
+         /* Special pause-key handling due to
+          * scancode 0xE11D45 incoming separately */
+         if (wr->keyboard.pause)
          {
-            case WM_KEYDOWN:
-            case WM_SYSKEYDOWN:
-               wr->keyboard.keys[vkey] = 1;
-               break;
-            case WM_KEYUP:
-            case WM_SYSKEYUP:
-               wr->keyboard.keys[vkey] = 0;
-               break;
+            wr->keyboard.pause = false;
+            if (mcode == SC_NUMLOCK)
+               mcode = SC_PAUSE;
          }
+         else if (mcode == 0xE11D)
+            wr->keyboard.pause = true;
+
+         /* Ignored scancodes */
+         switch (mcode)
+         {
+            case 0xE11D:
+            case 0xE02A:
+            case 0xE036:
+            case 0xE0AA:
+            case 0xE0B6:
+               return 0;
+         }
+
+         wr->keyboard.keys[mcode] = kdown;
+         input_keyboard_event(kdown,
+               input_keymaps_translate_keysym_to_rk(mcode),
+               0, 0, RETRO_DEVICE_KEYBOARD);
          break;
       case RIM_TYPEMOUSE:
          for (i = 0; i < wr->mouse_cnt; ++i)

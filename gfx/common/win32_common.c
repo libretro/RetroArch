@@ -978,8 +978,8 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          quit                     = true;
          {
             uint16_t mod          = 0;
-            unsigned keycode      = 0;
-            unsigned keysym       = (lparam >> 16) & 0xff;
+            unsigned keysym       = (unsigned)wparam;
+            unsigned keycode      = input_keymaps_translate_keysym_to_rk(keysym);
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
@@ -993,32 +993,6 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
                mod |= RETROKMOD_SCROLLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
-
-            keysym             = (unsigned)wparam;
-            /* fix key binding issues on winraw when 
-             * DirectInput is not available */
-            switch (keysym)
-            {
-               /* Mod & Keypad handling done in winraw_callback */
-               case VK_SHIFT:
-               case VK_CONTROL:
-               case VK_MENU:
-               case VK_INSERT:
-               case VK_DELETE:
-               case VK_HOME:
-               case VK_END:
-               case VK_PRIOR:
-               case VK_NEXT:
-               case VK_UP:
-               case VK_DOWN:
-               case VK_LEFT:
-               case VK_RIGHT:
-               case VK_CLEAR:
-               case VK_RETURN:
-                  return 0;
-            }
-
-            keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1087,7 +1061,6 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       UINT message, WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
-   bool keydown                  = true;
    bool quit                     = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
 
@@ -1095,58 +1068,11 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
    {
       case WM_KEYUP:                /* Key released */
       case WM_SYSKEYUP:             /* Key released */
-         keydown                  = false;
          /* fall-through */
       case WM_KEYDOWN:              /* Key pressed  */
       case WM_SYSKEYDOWN:           /* Key pressed  */
          quit                     = true;
          {
-            uint16_t mod          = 0;
-            unsigned keycode      = 0;
-            unsigned keysym       = (lparam >> 16) & 0xff;
-
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
-
-            keysym             = (unsigned)wparam;
-            /* fix key binding issues on winraw when 
-             * DirectInput is not available */
-            switch (keysym)
-            {
-               /* Mod & Keypad handling done in winraw_callback */
-               case VK_SHIFT:
-               case VK_CONTROL:
-               case VK_MENU:
-               case VK_INSERT:
-               case VK_DELETE:
-               case VK_HOME:
-               case VK_END:
-               case VK_PRIOR:
-               case VK_NEXT:
-               case VK_UP:
-               case VK_DOWN:
-               case VK_LEFT:
-               case VK_RIGHT:
-               case VK_CLEAR:
-               case VK_RETURN:
-                  return 0;
-            }
-
-            keycode = input_keymaps_translate_keysym_to_rk(keysym);
-
-            input_keyboard_event(keydown, keycode,
-                  0, mod, RETRO_DEVICE_KEYBOARD);
-
             if (message != WM_SYSKEYDOWN)
                return 0;
 
@@ -1235,19 +1161,6 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             unsigned keycode      = 0;
             unsigned keysym       = (lparam >> 16) & 0xff;
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
-
             /* extended keys will map to dinput if the high bit is set */
             if ((lparam >> 24 & 0x1))
                keysym |= 0x80;
@@ -1260,6 +1173,19 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                case RETROK_RSHIFT:
                   return 0;
             }
+
+            if (GetKeyState(VK_SHIFT)   & 0x80)
+               mod |= RETROKMOD_SHIFT;
+            if (GetKeyState(VK_CONTROL) & 0x80)
+               mod |= RETROKMOD_CTRL;
+            if (GetKeyState(VK_MENU)    & 0x80)
+               mod |= RETROKMOD_ALT;
+            if (GetKeyState(VK_CAPITAL) & 0x81)
+               mod |= RETROKMOD_CAPSLOCK;
+            if (GetKeyState(VK_SCROLL)  & 0x81)
+               mod |= RETROKMOD_SCROLLOCK;
+            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+               mod |= RETROKMOD_META;
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
