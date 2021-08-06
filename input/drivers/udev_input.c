@@ -1262,23 +1262,24 @@ static bool open_devices(udev_input_t *udev,
                char ident[255];
                if (ioctl(fd, EVIOCGNAME(sizeof(ident)), ident) < 0)
                   ident[0] = '\0';
-               if ( type == UDEV_INPUT_KEYBOARD)
+               if (type == UDEV_INPUT_KEYBOARD)
                {
-                  RARCH_LOG("[udev]: Added Device Keyboard#%d %s (%s) .\n",
+                  RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
                      device_keyboard,
                      ident,
                      devnode);
                    device_keyboard++;
                }                     
-               else if (type == UDEV_INPUT_MOUSE || type== UDEV_INPUT_TOUCHPAD)
+               else if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD)
                {
-                  RARCH_LOG("[udev]: Added Device mouse#%d %s (%s) .\n",
+                  input_config_set_mouse_display_name(device_mouse, ident);
+
+                  RARCH_LOG("[udev]: Mouse #%u: \"%s\" (%s).\n",
                      device_mouse,
                      ident,
                      devnode);
                      device_mouse++;
                }                     
-                  
             }
 
             (void)check;

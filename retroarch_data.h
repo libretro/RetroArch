@@ -2023,6 +2023,7 @@ struct rarch_state
 #endif
 
    input_device_info_t input_device_info[MAX_INPUT_DEVICES];
+   input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
                                           /* unsigned alignment */
 #ifdef HAVE_MENU
    menu_dialog_t dialog_st;               /* unsigned alignment */

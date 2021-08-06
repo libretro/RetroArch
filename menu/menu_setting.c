@@ -7298,6 +7298,36 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
 
+static void get_string_representation_mouse_index(rarch_setting_t *setting, char *s,
+      size_t len)
+{
+   unsigned index_offset, map = 0;
+   unsigned max_devices       = MAX_USERS;
+   settings_t      *settings  = config_get_ptr();
+
+   if (!setting)
+      return;
+
+   index_offset = setting->index_offset;
+   map          = settings->uints.input_mouse_index[index_offset];
+
+   if (map < max_devices)
+   {
+      const char *device_name = input_config_get_mouse_display_name(map);
+
+      if (!string_is_empty(device_name))
+         strlcpy(s, device_name, len);
+      else
+         snprintf(s, len,
+               "%s (#%u)",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               map);
+   }
+   else
+      snprintf(s, len,
+         "#%u", map);
+}
+
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
@@ -8456,6 +8486,8 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_right_mouse_index;
       (*list)[list_info->index - 1].action_select = &setting_action_right_mouse_index;
       (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      (*list)[list_info->index - 1].get_string_representation =
+         &get_string_representation_mouse_index;
       menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));

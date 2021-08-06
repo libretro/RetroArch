@@ -120,6 +120,11 @@ typedef struct
    bool autoconfigured;
 } input_device_info_t;
 
+typedef struct
+{
+   char display_name[256];
+} input_mouse_info_t;
+
 /**
  * Organizes the functions and data structures of each driver that are accessed
  * by other parts of the input code. The input_driver structs are the "interface"
@@ -491,6 +496,7 @@ void input_config_set_device_name(unsigned port, const char *name);
  * @param port
  */
 void input_config_set_device_display_name(unsigned port, const char *name);
+void input_config_set_mouse_display_name(unsigned port, const char *name);
 
 /**
  * Set the configuration path for the device in the specified port
@@ -580,6 +586,7 @@ unsigned input_config_get_device(unsigned port);
 /* Get input_device_info */
 const char *input_config_get_device_name(unsigned port);
 const char *input_config_get_device_display_name(unsigned port);
+const char *input_config_get_mouse_display_name(unsigned port);
 const char *input_config_get_device_config_path(unsigned port);
 const char *input_config_get_device_config_name(unsigned port);
 const char *input_config_get_device_joypad_driver(unsigned port);
