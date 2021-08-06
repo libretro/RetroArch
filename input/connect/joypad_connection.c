@@ -211,14 +211,6 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
          s->connected = true;
       }
    }
-	/* This was added to override the pad-matching code.
-	 Something in the pad-matching code overwrites
-	 our iohidmanager_hid_adapter with a pad_connection struct
-	 resulting in the loss of the IOHIDDeviceRef required to
-//	 identify when a specific controller is disconnected*/
-//	s->iface     = NULL; //delete these three lines to re-enable pad-matching
-//	s->data      = data; //delete these three lines to re-enable pad-matching
-//	s->connected = true; //delete these three lines to re-enable pad-matching
 
    return pad;
 }
