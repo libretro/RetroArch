@@ -231,6 +231,7 @@ void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)
 
    joyconn->iface     = NULL;
    joyconn->connected = false;
+   joyconn->connection = NULL;
 }
 
 void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
