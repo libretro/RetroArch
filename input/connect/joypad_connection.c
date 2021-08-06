@@ -183,7 +183,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 
          if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          {
-            printf("Pad was matched to \"%s\". Setting up an interface.\n", name_match);
+            RARCH_DBG("Pad was matched to \"%s\". Setting up an interface.\n", name_match);
             s->iface      = pad_map[i].iface;
             s->data       = data;
             s->connection = s->iface->init(data, pad, driver);
@@ -205,7 +205,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
        * set up one without an interface */
       if (!s->connected)
       {
-        printf("Pad was not matched. Setting up without an interface.\n");
+        RARCH_DBG("Pad was not matched. Setting up without an interface.\n");
          s->iface     = NULL;
          s->data      = data;
          s->connected = true;

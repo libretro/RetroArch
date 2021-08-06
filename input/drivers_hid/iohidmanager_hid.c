@@ -474,27 +474,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
       }
    }
 }
-static void list_controllers()
-{
-   iohidmanager_hid_t *hid = (iohidmanager_hid_t*)   hid_driver_get_data();
-   int i;
-   
-   if (!hid)
-      return;
-   
-   for (i=0; i<4; i++)
-   {
-      struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
-      if (!a)
-      {
-         printf("Port %d is not assigned to a controller on HID %p \n", i, hid);
-         continue;
-      }
-      else
-         printf("Port %d is assigned to device %p on HID %p \n", i, a->handle, hid);
-   }
-   printf("\n");
-}
+
 static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_hid_t* hid)
 {
    struct iohidmanager_hid_adapter *adapter = NULL;
@@ -514,9 +494,10 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
    }
    if (!adapter)
    {
-      printf("Error removing device %p from HID %p\n",device, hid);
+      RARCH_LOG("Error removing device %p\n",device, hid);
+      return;
    }
-
+   int slot = adapter->slot;
    if (hid && adapter && (adapter->slot < MAX_USERS))
    {
       input_autoconfigure_disconnect(adapter->slot, adapter->name);
@@ -552,7 +533,7 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
       }
       free(adapter);
    }
-   list_controllers();
+   RARCH_LOG("Device removed from port %d\n", slot);
 }
 
 static int32_t iohidmanager_hid_device_get_int_property(
@@ -695,8 +676,7 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    adapter->slot = pad_connection_pad_init(hid->slots,
          adapter->name, dev_vid, dev_pid, adapter,
          &iohidmanager_hid);
-   printf("uniqueid = %d\n",iohidmanager_hid_device_get_int_property(device,CFSTR(kIOHIDUniqueIDKey)));
-   printf("locationID = %d\n", iohidmanager_hid_device_get_int_property(device,CFSTR(kIOHIDLocationIDKey)));
+
    if (adapter->slot == -1)
       goto error;
 
@@ -912,7 +892,6 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);
-   list_controllers();
    return;
 
 error:
@@ -957,14 +936,13 @@ static void iohidmanager_hid_device_matched(void *data, IOReturn result,
                                             void* sender, IOHIDDeviceRef device)
 {
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*) hid_driver_get_data();
-   printf("Adding device %p to HID %p\n", device, hid);
+   
    iohidmanager_hid_device_add(device, hid);
 }
 static void iohidmanager_hid_device_removed(void *data, IOReturn result,
                                             void* sender, IOHIDDeviceRef device)
 {
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*) hid_driver_get_data();
-   printf("Removing device %p from HID %p\n", device, hid);
    iohidmanager_hid_device_remove(device, hid);
 }
 
@@ -1000,7 +978,6 @@ static int iohidmanager_hid_manager_init(iohidmanager_hid_t *hid)
 
    if (!hid->ptr)
       return -1;
-
    IOHIDManagerSetDeviceMatching(hid->ptr, NULL);
    IOHIDManagerScheduleWithRunLoop(hid->ptr, CFRunLoopGetCurrent(),
          kCFRunLoopDefaultMode);
