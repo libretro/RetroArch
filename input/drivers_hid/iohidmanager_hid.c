@@ -612,7 +612,7 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
 }
 
 
-static void iohidmanager_hid_device_add(void* device, iohidmanager_hid_t* hid)
+static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_t* hid)
 {
    int i;
 
@@ -948,13 +948,15 @@ error:
 }
 
 
-static void iohidmanager_hid_device_matched(iohidmanager_hid_t *hid, IOReturn result, void* sender, IOHIDDeviceRef *device)
+static void iohidmanager_hid_device_matched(void *data, IOReturn result, void* sender, IOHIDDeviceRef device)
 {
+	iohidmanager_hid_t *hid = (iohidmanager_hid_t*)	hid_driver_get_data();
 	printf("Adding device %p to HID %p\n", device, hid);
 	iohidmanager_hid_device_add(device, hid);
 }
-static void iohidmanager_hid_device_removed(iohidmanager_hid_t *hid, IOReturn result, void* sender, IOHIDDeviceRef device)
+static void iohidmanager_hid_device_removed(void *data, IOReturn result, void* sender, IOHIDDeviceRef device)
 {
+	iohidmanager_hid_t *hid = (iohidmanager_hid_t*)	hid_driver_get_data();
 	printf("Removing device %p from HID %p\n", device, hid);
 	iohidmanager_hid_device_remove(device, hid);
 }
@@ -1101,11 +1103,11 @@ static int iohidmanager_hid_manager_set_device_matching(
 	iohidmanager_hid_append_matching_dictionary(matcher,
 		kHIDPage_GenericDesktop,
 		kHIDUsage_GD_GamePad);
-
+   
 	IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
-	IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,iohidmanager_hid_device_matched, hid);
-	IOHIDManagerRegisterDeviceRemovalCallback(hid->ptr,iohidmanager_hid_device_removed, hid);
-
+	IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,iohidmanager_hid_device_matched, 0);
+	IOHIDManagerRegisterDeviceRemovalCallback(hid->ptr,iohidmanager_hid_device_removed, 0);
+	
 	CFRelease(matcher);
 
 
