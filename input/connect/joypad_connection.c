@@ -183,10 +183,10 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 
          if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          {
-			 printf("Pad was matched to \"%s\". Setting up an interface.\n", name_match);
+            printf("Pad was matched to \"%s\". Setting up an interface.\n", name_match);
             s->iface      = pad_map[i].iface;
-			s->data      = data;
-			s->connection       = s->iface->init(data, pad, driver);
+            s->data       = data;
+            s->connection = s->iface->init(data, pad, driver);
             s->connected  = true;
 #if 0
             RARCH_LOG("%s found \n", pad_map[i].name);
@@ -205,7 +205,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
        * set up one without an interface */
       if (!s->connected)
       {
-		  printf("Pad was not matched. Setting up without an interface.\n");
+        printf("Pad was not matched. Setting up without an interface.\n");
          s->iface     = NULL;
          s->data      = data;
          s->connected = true;
@@ -229,8 +229,8 @@ void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)
          joyconn->iface->deinit(joyconn->connection);
    }
 
-   joyconn->iface     = NULL;
-   joyconn->connected = false;
+   joyconn->iface      = NULL;
+   joyconn->connected  = false;
    joyconn->connection = NULL;
 }
 
@@ -246,10 +246,10 @@ void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
 void pad_connection_get_buttons(joypad_connection_t *joyconn,
       unsigned pad, input_bits_t *state)
 {
-	if (joyconn && joyconn->iface)
-		joyconn->iface->get_buttons(joyconn->connection, state);
+   if (joyconn && joyconn->iface)
+      joyconn->iface->get_buttons(joyconn->connection, state);
    else
-		BIT256_CLEAR_ALL_PTR( state );
+      BIT256_CLEAR_ALL_PTR( state );
 }
 
 int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
