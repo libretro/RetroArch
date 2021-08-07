@@ -1010,6 +1010,7 @@ static int iohidmanager_hid_manager_set_device_matching(
 	CFIndex num_devices          = CFSetGetCount(set);
 	IOHIDDeviceRef *device_array = (IOHIDDeviceRef*)calloc(num_devices, sizeof(IOHIDDeviceRef));
 	CFSetGetValues(set, (const void **) device_array);
+        CFRelease(set);
 
 	/* re order device by location id */
 	typedef struct hid_list
