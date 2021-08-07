@@ -11,6 +11,7 @@
 - MOUSE: Change default mouse index to port index
 - MOUSE: Friendly names for mice where available
 - OSX: Fix some memory leaks
+- OSX: Fix controller duplication bug
 - PS2: Implement alpha for the video driver
 - WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
 - WINRAW: Alt sticky fix
