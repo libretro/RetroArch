@@ -79,6 +79,7 @@ typedef struct
 
 /* TODO/FIXME - static globals */
 static winraw_mouse_t *g_mice        = NULL;
+static bool winraw_focus             = false;
 
 #define WINRAW_KEYBOARD_PRESSED(wr, key) (wr->keyboard.keys[rarch_keysym_lut[(enum retro_key)(key)]])
 
@@ -362,9 +363,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
 
    if (!EqualRect(&wr->active_rect, &wr->prev_rect))
    {
-      if (wr->rect_delay < 10 )
+      if (wr->rect_delay < 10)
       {
-          RARCH_LOG("[CRT][WINRAW]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
+          RARCH_DBG("[CRT][WINRAW]: Resize RECT delay for absolute co-ords - %d \n", wr->rect_delay);
           winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
           wr->rect_delay ++;
       }
@@ -372,7 +373,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       {
 	      int bottom = wr->prev_rect.bottom;
 	      int right = wr->prev_rect.right;
-	      RARCH_LOG("[CRT][WINRAW]: Resizing RECT for absolute coordinates to match new resolution - %dx%d\n", right ,bottom);
+	      RARCH_DBG("[CRT][WINRAW]: Resizing RECT for absolute coordinates to match new resolution - %dx%d\n", right ,bottom);
 	      wr->active_rect = wr->prev_rect;
 	      winraw_init_mouse_xy_mapping(wr);
 	      wr->rect_delay = 0;
@@ -398,19 +399,10 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
       InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
 
-#ifdef DEBUG
       if (!GetCursorPos(&crs_pos))
-      {
-         RARCH_WARN("[WINRAW]: GetCursorPos failed with error %lu.\n", GetLastError());
-      }
+         RARCH_DBG("[WINRAW]: GetCursorPos failed with error %lu.\n", GetLastError());
       else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
-      {
-         RARCH_WARN("[WINRAW]: ScreenToClient failed with error %lu.\n", GetLastError());
-      }
-#else
-      if (!GetCursorPos(&crs_pos)) { }
-      else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos)) { }
-#endif
+         RARCH_DBG("[WINRAW]: ScreenToClient failed with error %lu.\n", GetLastError());
       else
       {
          mouse->x = crs_pos.x;
@@ -601,6 +593,16 @@ static void winraw_poll(void *data)
       wr->mice[i].btn_r           = g_mice[i].btn_r;
       wr->mice[i].btn_b4          = g_mice[i].btn_b4;
       wr->mice[i].btn_b5          = g_mice[i].btn_b5;
+   }
+
+   /* Prevent LAlt sticky after unfocusing with Alt-Tab */
+   if (!winraw_focus &&
+         wr->keyboard.keys[SC_LALT] && !(GetKeyState(VK_MENU) & 0x8000))
+   {
+      wr->keyboard.keys[SC_LALT] = 0;
+      input_keyboard_event(0,
+            input_keymaps_translate_keysym_to_rk(SC_LALT),
+            0, 0, RETRO_DEVICE_KEYBOARD);
    }
 }
 
@@ -883,7 +885,7 @@ static int16_t winraw_input_state(
          }
          break;
       case RETRO_DEVICE_LIGHTGUN:
-			switch ( id )
+			switch (id)
 			{
 				/*aiming*/
 				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
@@ -892,7 +894,7 @@ static int16_t winraw_input_state(
 					if (mouse)
 						return winraw_lightgun_aiming_state(wr, mouse, port, id);
 					break;
-					/*buttons*/
+				/*buttons*/
 				case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
 				case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
@@ -928,7 +930,7 @@ static int16_t winraw_input_state(
 								joykey,
 								joyaxis);
 					}
-					/*deprecated*/
+				/*deprecated*/
 				case RETRO_DEVICE_ID_LIGHTGUN_X:
 					if (mouse)
 						return mouse->dlt_x;
@@ -945,22 +947,26 @@ static int16_t winraw_input_state(
 }
 
 #if !defined(_XBOX)
-bool winraw_handle_message(UINT message,
-      WPARAM wParam, LPARAM lParam)
+bool winraw_handle_message(UINT msg,
+      WPARAM wpar, LPARAM lpar)
 {
-   winraw_input_t *wr = (winraw_input_t*)(LONG_PTR)
-         GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
-
-   switch (message)
+   switch (msg)
    {
+      case WM_SETFOCUS:
+         winraw_focus = true;
+         break;
+      case WM_KILLFOCUS:
+         winraw_focus = false;
+         break;
+
       case WM_DEVICECHANGE:
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-         if (wParam == DBT_DEVICEARRIVAL ||
-             wParam == DBT_DEVICEREMOVECOMPLETE)
+         if (wpar == DBT_DEVICEARRIVAL ||
+             wpar == DBT_DEVICEREMOVECOMPLETE)
          {
-            PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
+            PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lpar;
             if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-               joypad_driver_reinit(wr, NULL);
+               joypad_driver_reinit(NULL, NULL);
          }
 #endif
          break;
