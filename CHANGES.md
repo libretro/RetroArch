@@ -1,11 +1,23 @@
 # Future
-
-# 1.9.8
+- CHEEVOS: Hide challenge indicators when resetting
+- CONTENT INFORMATION: Show content info label+path rows always
 - DUMMY CORE: Skip state_manager_event_{deinit/init} when core type is dummy, should skip warning spam 'Implementation uses threaded audio. Cannot use rewind..' when using rewind
+- INPUT/UDEV: Limit udev device scan to subsystem 'input'
 - LIBNX/SWITCH: Fix poll missing for controller 2-8
 - LIBNX/SWITCH: Fix layout not applied correctly and hangs when splitting joycons
+- DATABASE/EXPLORE: Fix CRC32 reading in explore menu
+- DATABASE/LIBRETRODB: Fix writing of numerical values
+- DATABASE/LIBRETRODB: Fix libretro-db loading on big endian platforms
+- MOUSE: Change default mouse index to port index
+- MOUSE: Friendly names for mice where available
+- OSX: Fix some memory leaks
+- PS2: Implement alpha for the video driver
 - WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
+- WINRAW: Alt sticky fix
+- WINRAW: Prevent Alt getting stuck when Alt-Tabbing
+- WINRAW: Add pointer status
 - WIIU: Compress RPX libretro cores
+- WIIU: Add ICInvalidateRange (necessary for JITs)
 
 # 1.9.7
 - 3DS: Add unique ID's
