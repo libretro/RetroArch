@@ -6,7 +6,7 @@
 #include "CpuArch.h"
 #include "Bra.h"
 
-SizeT ARM_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
+SizeT ARM_Convert(Byte *data, SizeT size, uint32_t ip, int encoding)
 {
   Byte *p;
   const Byte *lim;
@@ -28,9 +28,9 @@ SizeT ARM_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
         break;
     }
     {
-      UInt32 v = GetUi32(p - 4);
+      uint32_t v = GetUi32(p - 4);
       v <<= 2;
-        v += ip + (UInt32)(p - data);
+        v += ip + (uint32_t)(p - data);
       v >>= 2;
       v &= 0x00FFFFFF;
       v |= 0xEB000000;
@@ -49,9 +49,9 @@ SizeT ARM_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
         break;
     }
     {
-      UInt32 v = GetUi32(p - 4);
+      uint32_t v = GetUi32(p - 4);
       v <<= 2;
-        v -= ip + (UInt32)(p - data);
+        v -= ip + (uint32_t)(p - data);
       v >>= 2;
       v &= 0x00FFFFFF;
       v |= 0xEB000000;
@@ -61,7 +61,7 @@ SizeT ARM_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 }
 
 
-SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
+SizeT ARMT_Convert(Byte *data, SizeT size, uint32_t ip, int encoding)
 {
   Byte *p;
   const Byte *lim;
@@ -73,10 +73,10 @@ SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
   
   for (;;)
   {
-    UInt32 b1;
+    uint32_t b1;
     for (;;)
     {
-      UInt32 b3;
+      uint32_t b3;
       if (p > lim)
         return p - data;
       b1 = p[1];
@@ -87,15 +87,15 @@ SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
         break;
     }
     {
-      UInt32 v =
-             ((UInt32)b1 << 19)
-          + (((UInt32)p[1] & 0x7) << 8)
-          + (((UInt32)p[-2] << 11))
+      uint32_t v =
+             ((uint32_t)b1 << 19)
+          + (((uint32_t)p[1] & 0x7) << 8)
+          + (((uint32_t)p[-2] << 11))
           + (p[0]);
 
       p += 2;
       {
-        UInt32 cur = (ip + (UInt32)(p - data)) >> 1;
+        uint32_t cur = (ip + (uint32_t)(p - data)) >> 1;
           v += cur;
       }
 
@@ -108,10 +108,10 @@ SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
   
   for (;;)
   {
-    UInt32 b1;
+    uint32_t b1;
     for (;;)
     {
-      UInt32 b3;
+      uint32_t b3;
       if (p > lim)
         return p - data;
       b1 = p[1];
@@ -122,21 +122,21 @@ SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
         break;
     }
     {
-      UInt32 v =
-             ((UInt32)b1 << 19)
-          + (((UInt32)p[1] & 0x7) << 8)
-          + (((UInt32)p[-2] << 11))
+      uint32_t v =
+             ((uint32_t)b1 << 19)
+          + (((uint32_t)p[1] & 0x7) << 8)
+          + (((uint32_t)p[-2] << 11))
           + (p[0]);
 
       p += 2;
       {
-        UInt32 cur = (ip + (UInt32)(p - data)) >> 1;
+        uint32_t cur = (ip + (uint32_t)(p - data)) >> 1;
           v -= cur;
       }
 
       /*
-      SetUi16(p - 4, (UInt16)(((v >> 11) & 0x7FF) | 0xF000));
-      SetUi16(p - 2, (UInt16)(v | 0xF800));
+      SetUi16(p - 4, (uint16_t)(((v >> 11) & 0x7FF) | 0xF000));
+      SetUi16(p - 2, (uint16_t)(v | 0xF800));
       */
       
       p[-4] = (Byte)(v >> 11);
@@ -148,7 +148,7 @@ SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 }
 
 
-SizeT PPC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
+SizeT PPC_Convert(Byte *data, SizeT size, uint32_t ip, int encoding)
 {
   Byte *p;
   const Byte *lim;
@@ -169,11 +169,11 @@ SizeT PPC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
         break;
     }
     {
-      UInt32 v = GetBe32(p - 4);
+      uint32_t v = GetBe32(p - 4);
       if (encoding)
-        v += ip + (UInt32)(p - data);
+        v += ip + (uint32_t)(p - data);
       else
-        v -= ip + (UInt32)(p - data);
+        v -= ip + (uint32_t)(p - data);
       v &= 0x03FFFFFF;
       v |= 0x48000000;
       SetBe32(p - 4, v);
@@ -182,7 +182,7 @@ SizeT PPC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 }
 
 
-SizeT SPARC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
+SizeT SPARC_Convert(Byte *data, SizeT size, uint32_t ip, int encoding)
 {
   Byte *p;
   const Byte *lim;
@@ -200,10 +200,10 @@ SizeT SPARC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
       /*
       v = GetBe32(p);
       p += 4;
-      m = v + ((UInt32)5 << 29);
-      m ^= (UInt32)7 << 29;
-      m += (UInt32)1 << 22;
-      if ((m & ((UInt32)0x1FF << 23)) == 0)
+      m = v + ((uint32_t)5 << 29);
+      m ^= (uint32_t)7 << 29;
+      m += (uint32_t)1 << 22;
+      if ((m & ((uint32_t)0x1FF << 23)) == 0)
         break;
       */
       p += 4;
@@ -212,15 +212,15 @@ SizeT SPARC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
         break;
     }
     {
-      UInt32 v = GetBe32(p - 4);
+      uint32_t v = GetBe32(p - 4);
       v <<= 2;
       if (encoding)
-        v += ip + (UInt32)(p - data);
+        v += ip + (uint32_t)(p - data);
       else
-        v -= ip + (UInt32)(p - data);
+        v -= ip + (uint32_t)(p - data);
       
       v &= 0x01FFFFFF;
-      v -= (UInt32)1 << 24;
+      v -= (uint32_t)1 << 24;
       v ^= 0xFF000000;
       v >>= 2;
       v |= 0x40000000;

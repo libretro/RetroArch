@@ -173,7 +173,7 @@ WRes File_Seek(CSzFile *p, Int64 *pos, ESzSeek origin)
   LARGE_INTEGER value;
   DWORD moveMethod;
   value.LowPart = (DWORD)*pos;
-  value.HighPart = (LONG)((UInt64)*pos >> 16 >> 16); /* for case when UInt64 is 32-bit only */
+  value.HighPart = (LONG)((uint64_t)*pos >> 16 >> 16); /* for case when uint64_t is 32-bit only */
   switch (origin)
   {
     case SZ_SEEK_SET: moveMethod = FILE_BEGIN; break;
@@ -209,7 +209,7 @@ WRes File_Seek(CSzFile *p, Int64 *pos, ESzSeek origin)
   #endif
 }
 
-WRes File_GetLength(CSzFile *p, UInt64 *length)
+WRes File_GetLength(CSzFile *p, uint64_t *length)
 {
   #ifdef USE_WINDOWS_FILE
   
@@ -221,7 +221,7 @@ WRes File_GetLength(CSzFile *p, UInt64 *length)
     if (res != NO_ERROR)
       return res;
   }
-  *length = (((UInt64)sizeHigh) << 32) + sizeLow;
+  *length = (((uint64_t)sizeHigh) << 32) + sizeLow;
   return 0;
   
   #else
