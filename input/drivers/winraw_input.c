@@ -79,6 +79,7 @@ typedef struct
 
 /* TODO/FIXME - static globals */
 static winraw_mouse_t *g_mice        = NULL;
+static bool winraw_focus             = false;
 
 #define WINRAW_KEYBOARD_PRESSED(wr, key) (wr->keyboard.keys[rarch_keysym_lut[(enum retro_key)(key)]])
 
@@ -602,6 +603,16 @@ static void winraw_poll(void *data)
       wr->mice[i].btn_b4          = g_mice[i].btn_b4;
       wr->mice[i].btn_b5          = g_mice[i].btn_b5;
    }
+
+   /* Prevent LAlt sticky after unfocusing with Alt-Tab */
+   if (!winraw_focus &&
+         wr->keyboard.keys[SC_LALT] && !(GetKeyState(VK_MENU) & 0x8000))
+   {
+      wr->keyboard.keys[SC_LALT] = 0;
+      input_keyboard_event(0,
+            input_keymaps_translate_keysym_to_rk(SC_LALT),
+            0, 0, RETRO_DEVICE_KEYBOARD);
+   }
 }
 
 static int16_t winraw_input_lightgun_state(
@@ -953,6 +964,13 @@ bool winraw_handle_message(UINT message,
 
    switch (message)
    {
+      case WM_SETFOCUS:
+         winraw_focus = true;
+         break;
+      case WM_KILLFOCUS:
+         winraw_focus = false;
+         break;
+
       case WM_DEVICECHANGE:
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
          if (wParam == DBT_DEVICEARRIVAL ||
