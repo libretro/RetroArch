@@ -128,28 +128,12 @@ static void CFSearchPathForDirectoriesInDomains(
 #else
    NSSearchPathDirectory dir = NSDocumentDirectory;
 #endif
-   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
+   CFTypeRef       array_val = (CFTypeRef)CFBridgingRetainCompat([
          NSSearchPathForDirectoriesInDomains(dir,
-            NSUserDomainMask, YES));
+            NSUserDomainMask, YES) firstObject]);
 
    if (array_val)
-   {
-      CFArrayRef   array  = CFRetain(array_val);
-      CFTypeRef path_val  = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
-
-      if (path_val)
-      {
-         CFStringRef path = CFRetain(path_val);
-         if (path)
-         {
-            CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
-            CFRelease(path);
-         }
-      }
-
-      if (array)
-         CFRelease(array);
-   }
+      CFStringGetCString(array_val, s, len, kCFStringEncodingUTF8);
 }
 
 static void CFTemporaryDirectory(char *s, size_t len)
