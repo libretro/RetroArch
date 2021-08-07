@@ -120,39 +120,18 @@ static int speak_pid                            = 0;
 
 static char darwin_cpu_model_name[64] = {0};
 
-static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
-{
-   switch (flags)
-   {
-      case CFDocumentDirectory:
-#if TARGET_OS_TV
-           return NSCachesDirectory;
-#else
-           return NSDocumentDirectory;
-#endif
-   }
-
-   return 0;
-}
-
-static NSSearchPathDomainMask NSConvertDomainFlagsCF(unsigned flags)
-{
-   switch (flags)
-   {
-      case CFUserDomainMask:
-         return NSUserDomainMask;
-   }
-
-   return 0;
-}
-
-static void CFSearchPathForDirectoriesInDomains(unsigned flags,
-      unsigned domain_mask, unsigned expand_tilde,
+static void CFSearchPathForDirectoriesInDomains(
       char *s, size_t len)
 {
+#if TARGET_OS_TV
    CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
-         NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags),
-            NSConvertDomainFlagsCF(domain_mask), (BOOL)expand_tilde));
+         NSSearchPathForDirectoriesInDomains(NSCachesDirectory,
+            NSUserDomainMask, (BOOL)1));
+#else
+   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
+         NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,
+            NSUserDomainMask, (BOOL)1));
+#endif
 
    if (array_val)
    {
@@ -388,8 +367,8 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
          resource_path_buf, sizeof(resource_path_buf), kCFStringEncodingUTF8);
    CFRelease(resource_path);
    fill_pathname_join(full_resource_path_buf, bundle_path_buf, resource_path_buf, sizeof(full_resource_path_buf));
-   CFSearchPathForDirectoriesInDomains(CFDocumentDirectory,
-         CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
+   CFSearchPathForDirectoriesInDomains(
+         home_dir_buf, sizeof(home_dir_buf));
 
 #if TARGET_OS_IPHONE
    if (realpath(home_dir_buf, resolved_home_dir_buf))
@@ -802,8 +781,8 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    CFStringGetCString(bundle_path, bundle_path_buf,
          sizeof(bundle_path_buf), kCFStringEncodingUTF8);
 
-   CFSearchPathForDirectoriesInDomains(CFDocumentDirectory,
-         CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
+   CFSearchPathForDirectoriesInDomains(
+         home_dir_buf, sizeof(home_dir_buf));
 
    menu_entries_append_enum(list,
          home_dir_buf,
