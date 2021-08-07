@@ -27,7 +27,7 @@ typedef struct _CLzmaEncProps
   unsigned writeEndMark;  /* 0 - do not write EOPM, 1 - write EOPM, default = 0 */
   int numThreads;  /* 1 or 2, default = 2 */
 
-  uint64_t reduceSize; /* estimated size of data that will be compressed. default = (uint64_t)(Int64)-1.
+  uint64_t reduceSize; /* estimated size of data that will be compressed. default = (uint64_t)(int64_t)-1.
                         Encoder uses this value to reduce dictionary size */
 } CLzmaEncProps;
 
