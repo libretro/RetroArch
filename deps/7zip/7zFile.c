@@ -166,7 +166,7 @@ WRes File_Write(CSzFile *p, const void *data, size_t *size)
   #endif
 }
 
-WRes File_Seek(CSzFile *p, Int64 *pos, ESzSeek origin)
+WRes File_Seek(CSzFile *p, int64_t *pos, ESzSeek origin)
 {
   #ifdef USE_WINDOWS_FILE
 
@@ -188,7 +188,7 @@ WRes File_Seek(CSzFile *p, Int64 *pos, ESzSeek origin)
     if (res != NO_ERROR)
       return res;
   }
-  *pos = ((Int64)value.HighPart << 32) | value.LowPart;
+  *pos = ((int64_t)value.HighPart << 32) | value.LowPart;
   return 0;
 
   #else
@@ -258,7 +258,7 @@ static SRes FileInStream_Read(const ISeekInStream *pp, void *buf, size_t *size)
   return (File_Read(&p->file, buf, size) == 0) ? SZ_OK : SZ_ERROR_READ;
 }
 
-static SRes FileInStream_Seek(const ISeekInStream *pp, Int64 *pos, ESzSeek origin)
+static SRes FileInStream_Seek(const ISeekInStream *pp, int64_t *pos, ESzSeek origin)
 {
   CFileInStream *p = CONTAINER_FROM_VTBL(pp, CFileInStream, vt);
   return File_Seek(&p->file, pos, origin);

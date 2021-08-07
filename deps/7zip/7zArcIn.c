@@ -1505,7 +1505,7 @@ static SRes SzArEx_Open2(
     ISzAllocPtr allocTemp)
 {
   Byte header[k7zStartHeaderSize];
-  Int64 startArcPos;
+  int64_t startArcPos;
   uint64_t nextHeaderOffset, nextHeaderSize;
   size_t nextHeaderSizeT;
   uint32_t nextHeaderCRC;
@@ -1541,7 +1541,7 @@ static SRes SzArEx_Open2(
     return SZ_ERROR_NO_ARCHIVE;
 
   {
-    Int64 pos = 0;
+    int64_t pos = 0;
     RINOK(ILookInStream_Seek(inStream, &pos, SZ_SEEK_END));
     if ((uint64_t)pos < startArcPos + nextHeaderOffset ||
         (uint64_t)pos < startArcPos + k7zStartHeaderSize + nextHeaderOffset ||

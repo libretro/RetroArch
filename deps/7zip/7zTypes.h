@@ -188,7 +188,7 @@ typedef struct ISeekInStream ISeekInStream;
 struct ISeekInStream
 {
   SRes (*Read)(const ISeekInStream *p, void *buf, size_t *size);  /* same as ISeqInStream::Read */
-  SRes (*Seek)(const ISeekInStream *p, Int64 *pos, ESzSeek origin);
+  SRes (*Seek)(const ISeekInStream *p, int64_t *pos, ESzSeek origin);
 };
 #define ISeekInStream_Read(p, buf, size)   (p)->Read(p, buf, size)
 #define ISeekInStream_Seek(p, pos, origin) (p)->Seek(p, pos, origin)
@@ -206,7 +206,7 @@ struct ILookInStream
 
   SRes (*Read)(const ILookInStream *p, void *buf, size_t *size);
     /* reads directly (without buffer). It's same as ISeqInStream::Read */
-  SRes (*Seek)(const ILookInStream *p, Int64 *pos, ESzSeek origin);
+  SRes (*Seek)(const ILookInStream *p, int64_t *pos, ESzSeek origin);
 };
 
 #define ILookInStream_Look(p, buf, size)   (p)->Look(p, buf, size)
@@ -267,7 +267,7 @@ struct ICompressProgress
 {
   SRes (*Progress)(const ICompressProgress *p, uint64_t inSize, uint64_t outSize);
     /* Returns: result. (result != SZ_OK) means break.
-       Value (uint64_t)(Int64)-1 for size means unknown value. */
+       Value (uint64_t)(int64_t)-1 for size means unknown value. */
 };
 #define ICompressProgress_Progress(p, inSize, outSize) (p)->Progress(p, inSize, outSize)
 
