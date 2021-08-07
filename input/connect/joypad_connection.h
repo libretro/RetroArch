@@ -59,6 +59,7 @@ struct joypad_connection
 {
     struct pad_connection_interface *iface;
     void* data;
+    void* connection;
     bool connected;
 };
 

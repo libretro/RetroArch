@@ -23,10 +23,10 @@
 
 #include "../../libretro-common/include/libretro_gskit_ps2.h"
 
-/* turn white GS Screen */
-#define GS_TEXT GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00)
-/* turn white GS Screen */
-#define GS_BLACK GS_SETREG_RGBAQ(0x00,0x00,0x00,0x00,0x00)
+/* Generic tint color */
+#define GS_TEXT GS_SETREG_RGBA(0x80,0x80,0x80,0x80)
+/* turn black GS Screen */
+#define GS_BLACK GS_SETREG_RGBA(0x00,0x00,0x00,0x80)
 
 #define NTSC_WIDTH  640
 #define NTSC_HEIGHT 448
@@ -67,6 +67,32 @@ static int vsync_handler()
    return 0;
 }
 
+// Copy of gsKit_sync_flip, but without the 'flip'
+static void gsKit_sync(GSGLOBAL *gsGlobal)
+{
+   if(!gsGlobal->FirstFrame)
+      WaitSema(vsync_sema_id);
+
+   while (PollSema(vsync_sema_id) >= 0);
+}
+
+static void gsKit_flip(GSGLOBAL *gsGlobal)
+{
+   if(!gsGlobal->FirstFrame)
+   {
+      if(gsGlobal->DoubleBuffering == GS_SETTING_ON)
+      {
+         GS_SET_DISPFB2( gsGlobal->ScreenBuffer[gsGlobal->ActiveBuffer & 1] / 8192,
+            gsGlobal->Width / 64, gsGlobal->PSM, 0, 0 );
+
+         gsGlobal->ActiveBuffer ^= 1;
+      }
+
+   }
+
+   gsKit_setactive(gsGlobal);
+}
+
 static GSGLOBAL *init_GSGlobal(void)
 {
    ee_sema_t sema;
@@ -75,6 +101,12 @@ static GSGLOBAL *init_GSGlobal(void)
    sema.option = 0;
    vsync_sema_id = CreateSema(&sema);
 
+	dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
+		    D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
+
+   /* Initialize the DMAC */
+	dmaKit_chan_init(DMA_CHANNEL_GIF);
+
    GSGLOBAL *gsGlobal        = gsKit_init_global();
 
    gsGlobal->Mode            = GS_MODE_NTSC;
@@ -82,22 +114,24 @@ static GSGLOBAL *init_GSGlobal(void)
    gsGlobal->Field           = GS_FIELD;
    gsGlobal->Width           = NTSC_WIDTH;
    gsGlobal->Height          = NTSC_HEIGHT;
-
-   gsGlobal->PSM             = GS_PSM_CT16;
-   gsGlobal->PSMZ            = GS_PSMZ_16;
-   gsGlobal->DoubleBuffering = GS_SETTING_OFF;
+   gsGlobal->PSM             = GS_PSM_CT32;
+   gsGlobal->PSMZ            = GS_PSMZ_16S;
+   gsGlobal->DoubleBuffering = GS_SETTING_ON;
    gsGlobal->ZBuffering      = GS_SETTING_OFF;
-   gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
+   gsGlobal->Dithering       = GS_SETTING_ON;
 
-   dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
-               D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
-
-   /* Initialize the DMAC */
-   dmaKit_chan_init(DMA_CHANNEL_GIF);
+   gsGlobal->Test->ATST = 7; // NOTEQUAL to AREF passes
+   gsGlobal->Test->AREF = 0x00;
+   gsGlobal->Test->AFAIL = 0; // KEEP
 
    gsKit_init_screen(gsGlobal);
    gsKit_mode_switch(gsGlobal, GS_ONESHOT);
+
+   gsKit_set_test(gsGlobal, GS_ZTEST_OFF);
+   gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
+
    gsKit_clear(gsGlobal, GS_BLACK);
+   gsKit_flip(gsGlobal);
 
    return gsGlobal;
 }
@@ -109,37 +143,9 @@ static void deinit_GSGlobal(GSGLOBAL *gsGlobal)
    gsKit_deinit_global(gsGlobal);
 }
 
-/* Copy of gsKit_sync_flip, but without the 'flip' */
-static void gsKit_sync(GSGLOBAL *gsGlobal)
-{
-   if (!gsGlobal->FirstFrame)
-      WaitSema(vsync_sema_id);
-
-   while (PollSema(vsync_sema_id) >= 0);
-}
-
-/* Copy of gsKit_sync_flip, but without the 'sync' */
-static void gsKit_flip(GSGLOBAL *gsGlobal)
-{
-   if (!gsGlobal->FirstFrame)
-   {
-      if (gsGlobal->DoubleBuffering == GS_SETTING_ON)
-      {
-         GS_SET_DISPFB2( gsGlobal->ScreenBuffer[
-               gsGlobal->ActiveBuffer & 1] / 8192,
-               gsGlobal->Width / 64, gsGlobal->PSM, 0, 0 );
-
-         gsGlobal->ActiveBuffer ^= 1;
-      }
-
-   }
-
-   gsKit_setactive(gsGlobal);
-}
-
 static GSTEXTURE *prepare_new_texture(void)
 {
-   GSTEXTURE *texture = (GSTEXTURE*)calloc(1, sizeof(*texture));
+   GSTEXTURE *texture = (GSTEXTURE*)calloc(1, sizeof(GSTEXTURE));
    return texture;
 }
 
@@ -223,13 +229,18 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
 
 static void refreshScreen(ps2_video_t *ps2)
 {
-   if (ps2->vsync)
-   {
-      gsKit_sync(ps2->gsGlobal);
-      gsKit_flip(ps2->gsGlobal);
-   }
+   // Draw everything
+   gsKit_set_finish(ps2->gsGlobal);
    gsKit_queue_exec(ps2->gsGlobal);
+   gsKit_finish();
+
+   // Let texture manager know we're moving to the next frame
    gsKit_TexManager_nextFrame(ps2->gsGlobal);
+
+   // Sync and flip
+   if (ps2->vsync)
+      gsKit_sync(ps2->gsGlobal);
+   gsKit_flip(ps2->gsGlobal);
 }
 
 static void *ps2_gfx_init(const video_info_t *video,
@@ -286,6 +297,8 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       printf("ps2_gfx_frame %llu\n", frame_count);
 #endif
 
+   gsKit_clear(ps2->gsGlobal, GS_BLACK);
+
    if (frame)
    {
       struct retro_hw_ps2_insets padding = empty_ps2_insets;
@@ -304,6 +317,10 @@ static bool ps2_gfx_frame(void *data, const void *frame,
          padding = ps2->iface.padding;
       }
 
+      /* Disable Alpha for cores */
+      ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
+      gsKit_set_test(ps2->gsGlobal, GS_ATEST_OFF);
+
       gsKit_TexManager_invalidate(ps2->gsGlobal, ps2->coreTexture);
       gsKit_TexManager_bind(ps2->gsGlobal, ps2->coreTexture);
       prim_texture(ps2->gsGlobal, ps2->coreTexture, 1, ps2->force_aspect, padding);
@@ -320,8 +337,7 @@ static bool ps2_gfx_frame(void *data, const void *frame,
    else if (statistics_show)
    {
       if (osd_params)
-         font_driver_render_msg(ps2, video_info->stat_text,
-               osd_params, NULL);
+         font_driver_render_msg(ps2, video_info->stat_text, osd_params, NULL);
    }
 
    if (!string_is_empty(msg))
@@ -405,6 +421,16 @@ static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
    ps2->fullscreen  = fullscreen;
 }
 
+static void ps2_set_osd_msg(void *data,
+      const char *msg,
+      const void *params, void *font)
+{
+   ps2_video_t *ps2 = (ps2_video_t*)data;
+
+   if (ps2)
+      font_driver_render_msg(data, msg, params, font);
+}
+
 static bool ps2_get_hw_render_interface(void* data,
       const struct retro_hw_render_interface** iface)
 {
@@ -431,7 +457,7 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL, /* apply_state_changes */
    ps2_set_texture_frame,
    ps2_set_texture_enable,
-   font_driver_render_msg,             /* set_osd_msg */
+   ps2_set_osd_msg,             /* set_osd_msg */
    NULL,                        /* show_mouse  */
    NULL,                        /* grab_mouse_toggle */
    NULL,                        /* get_current_shader */

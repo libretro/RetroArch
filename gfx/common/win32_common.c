@@ -1113,16 +1113,26 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
             taskbar_is_created = true;
 #endif
          break;
-#ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_mouse_grabbed())
             win32_clip_window(true);
+#endif
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
          break;
       case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_mouse_grabbed())
             win32_clip_window(false);
-         break;
 #endif
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
+         break;
       case WM_DISPLAYCHANGE:  /* fix size after display mode switch when using SR */
          win32_resize_after_display_change(hwnd);
          break;
