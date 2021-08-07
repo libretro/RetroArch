@@ -26,6 +26,10 @@
 #include <loadfile.h>
 #include <elf-loader.h>
 
+#if defined(SCREEN_DEBUG)
+#include <debug.h>
+#endif
+
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
@@ -189,6 +193,10 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 static void frontend_ps2_init(void *data)
 {
    reset_IOP();
+#if defined(SCREEN_DEBUG)
+   init_scr();
+   scr_printf("Starting RetroArch...\n");
+#endif
    load_modules();
 
 
