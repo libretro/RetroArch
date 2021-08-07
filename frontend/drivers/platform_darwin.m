@@ -156,8 +156,13 @@ static void CFSearchPathForDirectoriesInDomains(unsigned flags,
    CFArrayRef   array  = array_val ? CFRetain(array_val) : NULL;
    CFTypeRef path_val  = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
    CFStringRef    path = path_val ? CFRetain(path_val) : NULL;
+   CFRelease(array_val);
    if (!path || !array)
+   {
+      if (path)
+         CFRelease(path);
       return;
+   }
 
    CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
    CFRelease(path);
@@ -370,10 +375,13 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    resource_url = CFBundleCopyResourcesDirectoryURL(bundle);
    resource_path = CFURLCopyPath(resource_url);
 
+   CFRelease(resource_url);
+
    CFStringGetCString(bundle_path,
          bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    CFStringGetCString(resource_path,
          resource_path_buf, sizeof(resource_path_buf), kCFStringEncodingUTF8);
+   CFRelease(resource_path);
    fill_pathname_join(full_resource_path_buf, bundle_path_buf, resource_path_buf, sizeof(full_resource_path_buf));
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory,
          CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
