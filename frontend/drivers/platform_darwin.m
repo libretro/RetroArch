@@ -153,20 +153,25 @@ static void CFSearchPathForDirectoriesInDomains(unsigned flags,
    CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
          NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags),
             NSConvertDomainFlagsCF(domain_mask), (BOOL)expand_tilde));
-   CFArrayRef   array  = array_val ? CFRetain(array_val) : NULL;
-   CFTypeRef path_val  = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
-   CFStringRef    path = path_val ? CFRetain(path_val) : NULL;
-   CFRelease(array_val);
-   if (!path || !array)
-   {
-      if (path)
-         CFRelease(path);
-      return;
-   }
 
-   CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
-   CFRelease(path);
-   CFRelease(array);
+   if (array_val)
+   {
+      CFArrayRef   array  = CFRetain(array_val);
+      CFTypeRef path_val  = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
+
+      if (path_val)
+      {
+         CFStringRef path = CFRetain(path_val);
+         if (path)
+         {
+            CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
+            CFRelease(path);
+         }
+      }
+
+      if (array)
+         CFRelease(array);
+   }
 }
 
 static void CFTemporaryDirectory(char *s, size_t len)
