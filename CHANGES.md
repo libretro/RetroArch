@@ -11,6 +11,7 @@
 - DATABASE/EXPLORE: Fix CRC32 reading in explore menu
 - DATABASE/LIBRETRODB: Fix writing of numerical values
 - DATABASE/LIBRETRODB: Fix libretro-db loading on big endian platforms
+- METAL: Fixed font driver memory leaks
 - MOUSE: Change default mouse index to port index
 - MOUSE: Friendly names for mice where available
 - OSX: Fix some memory leaks
