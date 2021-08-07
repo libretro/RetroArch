@@ -124,14 +124,13 @@ static void CFSearchPathForDirectoriesInDomains(
       char *s, size_t len)
 {
 #if TARGET_OS_TV
-   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
-         NSSearchPathForDirectoriesInDomains(NSCachesDirectory,
-            NSUserDomainMask, (BOOL)1));
+   NSSearchPathDirectory dir = NSCachesDirectory;
 #else
-   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
-         NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,
-            NSUserDomainMask, (BOOL)1));
+   NSSearchPathDirectory dir = NSDocumentDirectory;
 #endif
+   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(
+         NSSearchPathForDirectoriesInDomains(dir,
+            NSUserDomainMask, YES));
 
    if (array_val)
    {
