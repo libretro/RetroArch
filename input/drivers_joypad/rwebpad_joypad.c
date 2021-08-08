@@ -88,7 +88,7 @@ static const char *rwebpad_joypad_name(unsigned pad)
    return "";
 }
 
-static int16_t rwebpad_joypad_button(unsigned port, uint16_t joykey)
+static int32_t rwebpad_joypad_button(unsigned port, uint16_t joykey)
 {
    EmscriptenGamepadEvent gamepad_state;
    EMSCRIPTEN_RESULT r                  = emscripten_get_gamepad_status(

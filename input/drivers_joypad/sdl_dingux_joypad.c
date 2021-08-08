@@ -394,7 +394,7 @@ static bool sdl_dingux_joypad_query_pad(unsigned port)
    return (port == 0) && joypad->connected;
 }
 
-static int16_t sdl_dingux_joypad_button(unsigned port, uint16_t joykey)
+static int32_t sdl_dingux_joypad_button(unsigned port, uint16_t joykey)
 {
    dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
 

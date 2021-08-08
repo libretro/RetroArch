@@ -42,7 +42,7 @@ static void *qnx_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int16_t qnx_joypad_button(unsigned port, uint16_t joykey)
+static int32_t qnx_joypad_button(unsigned port, uint16_t joykey)
 {
    qnx_input_device_t* controller       = NULL;
    qnx_input_t *qnx                     = (qnx_input_t*)input_driver_get_data();

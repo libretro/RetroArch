@@ -598,7 +598,7 @@ error:
    return NULL;
 }
 
-static int16_t udev_joypad_button_state(
+static int32_t udev_joypad_button_state(
       const struct udev_joypad *pad,
       unsigned port, uint16_t joykey)
 {
@@ -630,7 +630,7 @@ static int16_t udev_joypad_button_state(
    return 0;
 }
 
-static int16_t udev_joypad_button(unsigned port, uint16_t joykey)
+static int32_t udev_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct udev_joypad *pad        = (const struct udev_joypad*)
       &udev_pads[port];

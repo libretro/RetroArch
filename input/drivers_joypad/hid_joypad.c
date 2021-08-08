@@ -46,7 +46,7 @@ static void hid_joypad_free(void)
    generic_hid = NULL;
 }
 
-static int16_t hid_joypad_button(unsigned port, uint16_t joykey)
+static int32_t hid_joypad_button(unsigned port, uint16_t joykey)
 {
    if (generic_hid && generic_hid->button)
       return generic_hid->button((void*)hid_driver_get_data(), port, joykey);

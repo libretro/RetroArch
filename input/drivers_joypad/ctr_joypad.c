@@ -58,7 +58,7 @@ static void *ctr_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int16_t ctr_joypad_button(unsigned port_num, uint16_t joykey)
+static int32_t ctr_joypad_button(unsigned port_num, uint16_t joykey)
 {
    if (port_num >= DEFAULT_MAX_PADS)
       return 0;
