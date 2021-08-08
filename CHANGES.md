@@ -22,6 +22,7 @@
 - WINRAW: Alt sticky fix
 - WINRAW: Prevent Alt getting stuck when Alt-Tabbing
 - WINRAW: Add pointer status
+- WIIU: Fix L3/R3 buttons
 - WIIU: Compress RPX libretro cores
 - WIIU: Add ICInvalidateRange (necessary for JITs)
 
