@@ -35920,8 +35920,10 @@ bool retroarch_main_init(int argc, char *argv[])
    struct rarch_state *p_rarch  = &rarch_st;
    settings_t *settings         = p_rarch->configuration_settings;
    global_t            *global  = &p_rarch->g_extern;
+#ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable    = false;
    unsigned accessibility_narrator_speech_speed = 0;
+#endif
 
    p_rarch->osk_idx             = OSK_LOWERCASE_LATIN;
    p_rarch->video_driver_active = true;
