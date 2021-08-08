@@ -182,7 +182,7 @@ static const char *hid_null_get_name(void *data)
 /**
  * Read the state of a single button.
  */
-static int16_t hid_null_button(void *data, uint16_t joykey) { return 0; }
+static int32_t hid_null_button(void *data, uint16_t joykey) { return 0; }
 
 /**
  * Fill in the joypad interface

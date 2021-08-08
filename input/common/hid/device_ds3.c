@@ -327,7 +327,7 @@ static int16_t ds3_get_axis(void *data, unsigned axis)
 
 static const char *ds3_get_name(void *data) { return "Sony DualShock 3"; }
 
-static int16_t ds3_button(void *data, uint16_t joykey)
+static int32_t ds3_button(void *data, uint16_t joykey)
 {
    ds3_instance_t *pad = (ds3_instance_t *)data;
    if (!pad || joykey > 31)
