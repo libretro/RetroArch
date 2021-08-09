@@ -38,7 +38,7 @@ struct nested_list_item
 
 struct nested_list
 {
-   nested_list_item_t *items;
+   nested_list_item_t **items;
    nested_list_item_t **item_map;
 };
 
@@ -62,7 +62,6 @@ static void nested_list_free_item(nested_list_item_t *item)
    if (item->children)
    {
       nested_list_free_list(item->children);
-      free(item->children);
       item->children = NULL;
    }
 
@@ -73,6 +72,7 @@ static void nested_list_free_item(nested_list_item_t *item)
    }
 
    item->value = NULL;
+   free(item);
 }
 
 /* Frees contents of a nested list */
@@ -84,10 +84,11 @@ static void nested_list_free_list(nested_list_t *list)
       return;
 
    for (i = 0; i < RBUF_LEN(list->items); i++)
-      nested_list_free_item(&list->items[i]);
+      nested_list_free_item(list->items[i]);
 
    RBUF_FREE(list->items);
    RHMAP_FREE(list->item_map);
+   free(list);
 }
 
 /**
@@ -123,7 +124,6 @@ nested_list_t *nested_list_init(void)
 void nested_list_free(nested_list_t *list)
 {
    nested_list_free_list(list);
-   free(list);
 }
 
 /***********/
@@ -149,20 +149,23 @@ static nested_list_item_t *nested_list_add_item_to_list(nested_list_t *list,
    if (RHMAP_HAS_STR(list->item_map, id))
       goto end;
 
+   /* Attempt to allocate a buffer slot for the
+    * new item */
+   if (!RBUF_TRYFIT(list->items, num_items + 1))
+      goto end;
+
    /* Create new empty child list */
    child_list = nested_list_init();
    if (!child_list)
       goto end;
 
-   /* Attempt to allocate memory for new item */
-   if (!RBUF_TRYFIT(list->items, num_items + 1))
+   /* Create new list item */
+   new_item = (nested_list_item_t*)malloc(sizeof(*new_item));
+   if (!new_item)
+   {
+      nested_list_free(child_list);
       goto end;
-
-   /* Allocation successful - increment array size */
-   RBUF_RESIZE(list->items, num_items + 1);
-
-   /* Get handle of new entry at end of list */
-   new_item = &list->items[num_items];
+   }
 
    /* Assign members */
    new_item->parent_item = parent_item;
@@ -170,6 +173,12 @@ static nested_list_item_t *nested_list_add_item_to_list(nested_list_t *list,
    new_item->children    = child_list;
    new_item->id          = strdup(id);
    new_item->value       = value;
+
+   /* Increment item buffer size */
+   RBUF_RESIZE(list->items, num_items + 1);
+
+   /* Add new item to buffer */
+   list->items[num_items] = new_item;
 
    /* Update map */
    RHMAP_SET_STR(list->item_map, id, new_item);
@@ -418,7 +427,7 @@ nested_list_item_t *nested_list_get_item_idx(nested_list_t *list,
    if (!list || (idx >= RBUF_LEN(list->items)))
       return NULL;
 
-   return &list->items[idx];
+   return list->items[idx];
 }
 
 /**
