@@ -943,7 +943,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    core_option_manager_t *coreopts = NULL;
    struct core_option *option      = NULL;
    const char *val                 = NULL;
-   unsigned i, j;
+   unsigned j;
 
    /* Fetch options */
    rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
@@ -9618,7 +9618,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
       settings_t *settings)
 {
-   size_t i;
    menu_ctx_displaylist_t disp_list;
    bool load_content             = true;
    bool use_filebrowser          = false;
@@ -9638,6 +9637,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST:
 #ifdef HAVE_NETWORKING
          {
+            size_t i;
             bool include_everything        = false;
             file_list_t *list              = info->list;
             menu_displaylist_build_info_selective_t build_list[] = {
