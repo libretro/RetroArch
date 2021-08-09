@@ -75,12 +75,12 @@ static int rc_json_parse_field(const char** json_ptr, rc_json_field_t* field) {
       break;
 
     default: /* non-quoted text [true,false,null] */
-      if (!isalpha(**json_ptr))
+      if (!isalpha((unsigned char)**json_ptr))
         return RC_INVALID_JSON;
 
       do {
         ++(*json_ptr);
-      } while (isalnum(**json_ptr));
+      } while (isalnum((unsigned char)**json_ptr));
       break;
   }
 
@@ -101,7 +101,7 @@ static int rc_json_parse_array(const char** json_ptr, rc_json_field_t* field) {
   if (*json != ']') {
     do
     {
-      while (isspace(*json))
+      while (isspace((unsigned char)*json))
         ++json;
 
       result = rc_json_parse_field(&json, &unused_field);
@@ -110,7 +110,7 @@ static int rc_json_parse_array(const char** json_ptr, rc_json_field_t* field) {
 
       ++field->array_size;
 
-      while (isspace(*json))
+      while (isspace((unsigned char)*json))
         ++json;
 
       if (*json != ',')
@@ -149,7 +149,7 @@ static int rc_json_parse_object(const char** json_ptr, rc_json_field_t* fields, 
 
   do
   {
-    while (isspace(*json))
+    while (isspace((unsigned char)*json))
       ++json;
 
     if (*json != '"')
@@ -164,7 +164,7 @@ static int rc_json_parse_object(const char** json_ptr, rc_json_field_t* fields, 
     key_len = json - key_start;
     ++json;
 
-    while (isspace(*json))
+    while (isspace((unsigned char)*json))
       ++json;
 
     if (*json != ':')
@@ -172,7 +172,7 @@ static int rc_json_parse_object(const char** json_ptr, rc_json_field_t* fields, 
 
     ++json;
 
-    while (isspace(*json))
+    while (isspace((unsigned char)*json))
       ++json;
 
     field = &non_matching_field;
@@ -186,7 +186,7 @@ static int rc_json_parse_object(const char** json_ptr, rc_json_field_t* fields, 
     if (rc_json_parse_field(&json, field) < 0)
       return RC_INVALID_JSON;
 
-    while (isspace(*json))
+    while (isspace((unsigned char)*json))
       ++json;
 
     if (*json != ',')
@@ -277,12 +277,12 @@ static int rc_json_get_array_entry_value(rc_json_field_t* field, rc_json_field_t
   if (!iterator->array_size)
     return 0;
 
-  while (isspace(*iterator->value_start))
+  while (isspace((unsigned char)*iterator->value_start))
     ++iterator->value_start;
 
   rc_json_parse_field(&iterator->value_start, field);
 
-  while (isspace(*iterator->value_start))
+  while (isspace((unsigned char)*iterator->value_start))
     ++iterator->value_start;
 
   ++iterator->value_start; /* skip , or ] */
@@ -338,12 +338,12 @@ int rc_json_get_array_entry_object(rc_json_field_t* fields, size_t field_count, 
   if (!iterator->array_size)
     return 0;
 
-  while (isspace(*iterator->value_start))
+  while (isspace((unsigned char)*iterator->value_start))
     ++iterator->value_start;
 
   rc_json_parse_object(&iterator->value_start, fields, field_count);
 
-  while (isspace(*iterator->value_start))
+  while (isspace((unsigned char)*iterator->value_start))
     ++iterator->value_start;
 
   ++iterator->value_start; /* skip , or ] */

@@ -29,7 +29,7 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
     return RC_INVALID_LUA_OPERAND;
   }
 
-  if (!isalpha(*aux)) {
+  if (!isalpha((unsigned char)*aux)) {
     return RC_INVALID_LUA_OPERAND;
   }
 
@@ -37,7 +37,7 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
   id = aux;
 #endif
 
-  while (isalnum(*aux) || *aux == '_') {
+  while (isalnum((unsigned char)*aux) || *aux == '_') {
     aux++;
   }
 
