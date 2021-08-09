@@ -373,8 +373,6 @@ static INLINE void libretro_set_core_options(retro_environment_t environ_cb,
                /* Build values string */
                if (num_values > 0)
                {
-                  size_t j;
-
                   buf_len += num_values - 1;
                   buf_len += strlen(desc);
 
