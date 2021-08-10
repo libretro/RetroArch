@@ -45,6 +45,7 @@ struct core_option
     * option *value* indices */
    size_t default_index;
    size_t index;
+   uint32_t key_hash;
    bool visible;
 };
 
@@ -53,6 +54,7 @@ struct core_catagory
    char *key;
    char *desc;
    char *info;
+   uint32_t key_hash;
 };
 
 /* TODO/FIXME: This struct should be made
