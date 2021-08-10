@@ -380,7 +380,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    if (mode == RETRO_VFS_FILE_ACCESS_READ)
    {
       desireAccess        = GENERIC_READ;
-      creationDisposition = OPEN_ALWAYS;
+      creationDisposition = OPEN_EXISTING;
    }
    else
    {
