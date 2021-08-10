@@ -597,6 +597,16 @@ void core_option_manager_free_converted(
 /* Initialisation / De-Initialisation */
 /**************************************/
 
+/* Generates a hash key for the specified string */
+static uint32_t core_option_manager_hash_string(const char *str)
+{
+   unsigned char c;
+   uint32_t hash = (uint32_t)0x811c9dc5;
+   while ((c = (unsigned char)*(str++)) != '\0')
+      hash = ((hash * (uint32_t)0x01000193) ^ (uint32_t)c);
+   return (hash ? hash : 1);
+}
+
 /* Sanitises a core option value label, handling the case
  * where an explicit label is not provided and performing
  * conversion of various true/false identifiers to
@@ -677,7 +687,11 @@ static bool core_option_manager_parse_variable(
    option->visible            = true;
 
    if (!string_is_empty(var->key))
+   {
       option->key             = strdup(var->key);
+      option->key_hash        = core_option_manager_hash_string(var->key);
+   }
+
    if (!string_is_empty(var->value))
       value                   = strdup(var->value);
 
@@ -949,7 +963,8 @@ static bool core_option_manager_parse_option(
           strstr(key, CORE_OPTION_MANAGER_MAP_DELIM))
          return false;
 
-      option->key = strdup(key);
+      option->key      = strdup(key);
+      option->key_hash = core_option_manager_hash_string(key);
    }
 
    /* Get number of values */
@@ -1130,11 +1145,12 @@ core_option_manager_t *core_option_manager_new(
                   !string_is_empty(option_cat->desc);
            cats_size++, option_cat++)
       {
-         opt->cats[cats_size].key     = strdup(option_cat->key);
-         opt->cats[cats_size].desc    = strdup(option_cat->desc);
+         opt->cats[cats_size].key      = strdup(option_cat->key);
+         opt->cats[cats_size].key_hash = core_option_manager_hash_string(option_cat->key);
+         opt->cats[cats_size].desc     = strdup(option_cat->desc);
 
          if (!string_is_empty(option_cat->info))
-            opt->cats[cats_size].info = strdup(option_cat->info);
+            opt->cats[cats_size].info  = strdup(option_cat->info);
       }
    }
 
@@ -1284,22 +1300,24 @@ void core_option_manager_free(core_option_manager_t *opt)
 const char *core_option_manager_get_category_desc(core_option_manager_t *opt,
       const char *key)
 {
+   uint32_t key_hash;
    size_t i;
 
    if (!opt ||
        string_is_empty(key))
       return NULL;
 
+   key_hash = core_option_manager_hash_string(key);
+
    for (i = 0; i < opt->cats_size; i++)
    {
-      const char *cat_key = opt->cats[i].key;
+      struct core_catagory *catagory = &opt->cats[i];
 
-      if (string_is_empty(cat_key))
-         continue;
-
-      if (string_is_equal(key, cat_key))
+      if ((key_hash == catagory->key_hash) &&
+          !string_is_empty(catagory->key) &&
+          string_is_equal(key, catagory->key))
       {
-         return opt->cats[i].desc;
+         return catagory->desc;
       }
    }
 
@@ -1323,22 +1341,24 @@ const char *core_option_manager_get_category_desc(core_option_manager_t *opt,
 const char *core_option_manager_get_category_info(core_option_manager_t *opt,
       const char *key)
 {
+   uint32_t key_hash;
    size_t i;
 
    if (!opt ||
        string_is_empty(key))
       return NULL;
 
+   key_hash = core_option_manager_hash_string(key);
+
    for (i = 0; i < opt->cats_size; i++)
    {
-      const char *cat_key = opt->cats[i].key;
+      struct core_catagory *catagory = &opt->cats[i];
 
-      if (string_is_empty(cat_key))
-         continue;
-
-      if (string_is_equal(key, cat_key))
+      if ((key_hash == catagory->key_hash) &&
+          !string_is_empty(catagory->key) &&
+          string_is_equal(key, catagory->key))
       {
-         return opt->cats[i].info;
+         return catagory->info;
       }
    }
 
@@ -1423,6 +1443,7 @@ bool core_option_manager_get_category_visible(core_option_manager_t *opt,
 bool core_option_manager_get_idx(core_option_manager_t *opt,
       const char *key, size_t *idx)
 {
+   uint32_t key_hash;
    size_t i;
 
    if (!opt ||
@@ -1430,14 +1451,15 @@ bool core_option_manager_get_idx(core_option_manager_t *opt,
        !idx)
       return false;
 
+   key_hash = core_option_manager_hash_string(key);
+
    for (i = 0; i < opt->size; i++)
    {
-      const char *opt_key = opt->opts[i].key;
+      struct core_option *option = &opt->opts[i];
 
-      if (string_is_empty(opt_key))
-         continue;
-
-      if (string_is_equal(key, opt_key))
+      if ((key_hash == option->key_hash) &&
+          !string_is_empty(option->key) &&
+          string_is_equal(key, option->key))
       {
          *idx = i;
          return true;
@@ -1702,21 +1724,23 @@ void core_option_manager_set_default(core_option_manager_t *opt, size_t idx)
 void core_option_manager_set_visible(core_option_manager_t *opt,
       const char *key, bool visible)
 {
+   uint32_t key_hash;
    size_t i;
 
    if (!opt || string_is_empty(key))
       return;
 
+   key_hash = core_option_manager_hash_string(key);
+
    for (i = 0; i < opt->size; i++)
    {
-      const char *opt_key = opt->opts[i].key;
+      struct core_option *option = &opt->opts[i];
 
-      if (string_is_empty(opt_key))
-         continue;
-
-      if (string_is_equal(opt_key, key))
+      if ((key_hash == option->key_hash) &&
+          !string_is_empty(option->key) &&
+          string_is_equal(key, option->key))
       {
-         opt->opts[i].visible = visible;
+         option->visible = visible;
          return;
       }
    }
