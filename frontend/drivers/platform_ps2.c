@@ -231,6 +231,17 @@ static void frontend_ps2_init(void *data)
 
 static void frontend_ps2_deinit(void *data)
 {
+#ifndef IS_SALAMANDER
+   if (audsrv_quit())
+   {
+      RARCH_ERR("audsrv library not deinitalizated\n");
+   }
+
+   if (padEnd() != 1)
+   {
+      RARCH_ERR("padEnd library not deinitalizated\n");
+   }
+#endif
 }
 
 static void frontend_ps2_exec(const char *path, bool should_load_game)
