@@ -154,6 +154,8 @@ extension CocoaView {
    
    @objc func setupEmulatorKeyboard() {
       keyboardController = EmulatorKeyboardController(leftKeyboardModel: leftKeyboardModel, rightKeyboardModel: rightKeyboardModel)
+      keyboardController.leftKeyboardModel.delegate = self;
+      keyboardController.rightKeyboardModel.delegate = self;
       addChild(keyboardController)
       keyboardController.didMove(toParent: self)
       keyboardController.view.translatesAutoresizingMaskIntoConstraints = false
