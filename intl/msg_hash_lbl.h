@@ -3317,6 +3317,14 @@ MSG_HASH(
    "video_monitor_index"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
+   "video_window_offset_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y,
+   "video_window_offset_y"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,
    "video_post_filter_record"
    )

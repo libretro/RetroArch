@@ -935,6 +935,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_overscan_correction_top,    ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_overscan_correction_bottom, MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM)
 #endif
 
+#if defined(HAVE_WINDOW_OFFSET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_offset_x,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_offset_y,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y)
+#endif
+
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_show_sublabels,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_show_entry_idx,                       MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_rgui_border_filler_enable,                MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE)
@@ -3763,6 +3768,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_monitor_index);
             break;
+#if defined(HAVE_WINDOW_OFFSET)
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_offset_x);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_offset_y);
+            break;
+#endif
          case MENU_ENUM_LABEL_LOG_VERBOSITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_log_verbosity);
             break;
@@ -4240,6 +4253,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_overscan_correction_bottom);
+            break;
+#endif
+#if defined(HAVE_WINDOW_OFFSET)
+         case MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_offset_x);
+            break;
+         case MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_offset_y);
             break;
 #endif
          case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD:

@@ -141,6 +141,10 @@ typedef struct settings
 #ifdef HAVE_D3D12
       int d3d12_gpu_index;
 #endif
+#ifdef HAVE_WINDOW_OFFSET
+      int video_window_offset_x;
+      int video_window_offset_y;
+#endif
       int content_favorites_size;
    } ints;
 

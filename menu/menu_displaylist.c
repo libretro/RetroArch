@@ -7904,7 +7904,17 @@ unsigned menu_displaylist_build_list(
                            PARSE_ACTION, false) == 0)
                      count++;
                }
+#if defined(HAVE_WINDOW_OFFSET)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
 
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
+#endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_PAL60_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)

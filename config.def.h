@@ -280,6 +280,12 @@
 #define DEFAULT_FULLSCREEN_Y 0
 #endif
 
+#if defined(HAVE_WINDOW_OFFSET)
+/* Screen offsets to center content in CTRs */
+#define DEFAULT_WINDOW_OFFSET_X 0
+#define DEFAULT_WINDOW_OFFSET_Y 0
+#endif
+
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
 
