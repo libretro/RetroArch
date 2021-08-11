@@ -2,6 +2,10 @@
 - CHEEVOS: Hide challenge indicators when resetting
 - CONTENT INFORMATION: Show content info label+path rows always
 - CORE OPTIONS: Core option categories implemented
+- DATABASE: Fix heap-buffer-overflow when fetching CRC values
+- DATABASE/EXPLORE: Fix CRC32 reading in explore menu
+- DATABASE/LIBRETRODB: Fix writing of numerical values
+- DATABASE/LIBRETRODB: Fix libretro-db loading on big endian platforms
 - DUMMY CORE: Skip state_manager_event_{deinit/init} when core type is dummy, should skip warning spam 'Implementation uses threaded audio. Cannot use rewind..' when using rewind
 - INPUT/UDEV: Limit udev device scan to subsystem 'input'
 - INPUT/WAYLAND: Fixes a bug where the first player's mouse, pointer, and lightgun are echoed to the other ports. Now, those other ports correctly report zero. In the future support for multiple mouselike devices will need to be added, which is a bigger project
@@ -11,9 +15,6 @@
 - LIBNX/SWITCH: Fix layout not applied correctly and hangs when splitting joycons
 - LIBRETRO: Core options category API implemented
 - LINUX: In some Linux Desktop Environments, like Budgie, task bar feature is unable to pin applications. With StartupWMClass= present in .desktop file, it is possible to pin the application
-- DATABASE/EXPLORE: Fix CRC32 reading in explore menu
-- DATABASE/LIBRETRODB: Fix writing of numerical values
-- DATABASE/LIBRETRODB: Fix libretro-db loading on big endian platforms
 - METAL: Fixed font driver memory leaks
 - MOUSE: Change default mouse index to port index
 - MOUSE: Friendly names for mice where available
