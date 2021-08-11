@@ -20,7 +20,9 @@
 - OSX: Fix some memory leaks
 - OSX: Fix controller duplication bug
 - PS2: Implement alpha for the video driver
+- PS2: Aspect ratio handling
 - RETROFW: Initial port
+- WASAPI: Stop deactivating audio on fast forward
 - WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
 - WINRAW: Alt sticky fix
 - WINRAW: Prevent Alt getting stuck when Alt-Tabbing
