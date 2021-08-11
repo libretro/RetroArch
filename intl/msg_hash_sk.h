@@ -1301,6 +1301,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Najbližší sused"
    )
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -2565,14 +2567,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    "Súbor už existuje. Ukladám do záložného bufferu"
-   )
-MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Mapovanie portov bolo úspešné"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "Mapovanie portov zlyhalo"
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,

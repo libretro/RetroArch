@@ -112,6 +112,7 @@
 #include "../manual_content_scan.h"
 #include "../core_backup.h"
 #include "../misc/cpufreq/cpufreq.h"
+#include "../input/input_remapping.h" 
 
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
@@ -928,6 +929,96 @@ static unsigned menu_displaylist_parse_core_manager_list(
          count++;
 #endif
 
+   return count;
+}
+
+static unsigned menu_displaylist_parse_core_option_dropdown_list(
+      menu_displaylist_info_t *info)
+{
+   unsigned count                  = 0;
+   struct string_list tmp_str_list = {0};
+   unsigned option_index           = 0;
+   unsigned checked                = 0;
+   bool checked_found              = false;
+   core_option_manager_t *coreopts = NULL;
+   struct core_option *option      = NULL;
+   const char *val                 = NULL;
+   unsigned j;
+
+   /* Fetch options */
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+   if (!coreopts)
+      goto end;
+
+   /* Path string has the format core_option_<opt_idx>
+    * > Extract option index */
+   if (string_is_empty(info->path))
+      goto end;
+
+   string_list_initialize(&tmp_str_list);
+   string_split_noalloc(&tmp_str_list, info->path, "_");
+
+   if (tmp_str_list.size < 1)
+      goto end;
+
+   option_index = string_to_unsigned(
+         tmp_str_list.elems[tmp_str_list.size - 1].data);
+
+   /* Get option itself + current value */
+   option = (struct core_option*)&coreopts->opts[option_index];
+   val    = core_option_manager_get_val(coreopts, option_index);
+
+   if (!option ||
+       string_is_empty(val))
+      goto end;
+
+   /* Loop over all option values */
+   for (j = 0; j < option->vals->size; j++)
+   {
+      const char *val_str       = option->vals->elems[j].data;
+      const char *val_label_str = option->val_labels->elems[j].data;
+
+      if (!string_is_empty(val_label_str))
+      {
+         char val_d[256];
+
+         val_d[0] = '\0';
+         snprintf(val_d, sizeof(val_d), "%d", option_index);
+
+         if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
+            val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
+         else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
+            val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
+
+         if (menu_entries_append_enum(info->list,
+               val_label_str,
+               val_d,
+               MENU_ENUM_LABEL_NO_ITEMS,
+               MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, j, 0))
+            count++;
+
+         if (!checked_found && string_is_equal(val_str, val))
+         {
+            checked       = j;
+            checked_found = true;
+         }
+      }
+   }
+
+   if (checked_found)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            info->list->list[checked].actiondata;
+
+      if (cbs)
+         cbs->checked = true;
+
+      menu_navigation_set_selection(checked);
+   }
+
+end:
+   string_list_deinitialize(&tmp_str_list);
    return count;
 }
 
@@ -2928,8 +3019,10 @@ static int menu_displaylist_parse_load_content_settings(
 
       if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
       {
+         /* Empty 'path' string signifies top level
+          * core options menu */
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
+               "",
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
                MENU_ENUM_LABEL_CORE_OPTIONS,
                MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0))
@@ -4067,36 +4160,34 @@ static unsigned menu_displaylist_parse_content_information(
    }
 
    /* Content label */
-   if (!string_is_empty(content_label))
-   {
-      tmp[0]   = '\0';
-      snprintf(tmp, sizeof(tmp),
-            "%s: %s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
-            content_label
-            );
-      if (menu_entries_append_enum(info->list, tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
-            MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
-            0, 0, 0))
-         count++;
-   }
+   tmp[0]   = '\0';
+   snprintf(tmp, sizeof(tmp),
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
+         !string_is_empty(content_label)
+               ? content_label
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         );
+   if (menu_entries_append_enum(info->list, tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
+         MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
+         0, 0, 0))
+      count++;
 
    /* Content path */
-   if (!string_is_empty(content_path))
-   {
-      tmp[0]   = '\0';
-      snprintf(tmp, sizeof(tmp),
-            "%s: %s",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
-            content_path
-            );
-      if (menu_entries_append_enum(info->list, tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
-            MENU_ENUM_LABEL_CONTENT_INFO_PATH,
-            0, 0, 0))
-         count++;
-   }
+   tmp[0]   = '\0';
+   snprintf(tmp, sizeof(tmp),
+         "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
+         !string_is_empty(content_path)
+               ? content_path
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+         );
+   if (menu_entries_append_enum(info->list, tmp,
+         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
+         MENU_ENUM_LABEL_CONTENT_INFO_PATH,
+         0, 0, 0))
+      count++;
 
    /* Core name */
    if (!string_is_empty(core_name) &&
@@ -5890,63 +5981,58 @@ unsigned menu_displaylist_build_list(
             count++;
          break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MIDI_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MENU_SOUNDS,
-                  PARSE_ACTION, false) == 0)
-            count++;
+	 {
+		 bool audio_mute_enable      = *audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE);
+		 bool audio_mixer_mute_enable= *audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE);
+		 menu_displaylist_build_info_selective_t build_list[] = {
+			 {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true  },
+			 {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,        PARSE_ACTION,     true  },
+			 {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
+			 {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },
+			 {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,            PARSE_ACTION,     false },
+			 {MENU_ENUM_LABEL_MENU_SOUNDS,                     PARSE_ACTION,     true  },
+			 {MENU_ENUM_LABEL_AUDIO_MUTE,                      PARSE_ONLY_BOOL,  true  },
+			 {MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,                PARSE_ONLY_BOOL,  true  },
+			 {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,          PARSE_ONLY_BOOL,  true  },
+			 {MENU_ENUM_LABEL_AUDIO_VOLUME,                    PARSE_ONLY_FLOAT, false },
+			 {MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,              PARSE_ONLY_FLOAT, false },
+			 {MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,               PARSE_ONLY_BOOL,  true  },
+#ifdef HAVE_DSP_FILTER
+			 {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                PARSE_ONLY_PATH,  true  },
+#endif
+		 };
 
-         /* Volume */
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_MUTE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_VOLUME,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
+		 for (i = 0; i < ARRAY_SIZE(build_list); i++)
+		 {
+			 switch (build_list[i].enum_idx)
+			 {
+				 case MENU_ENUM_LABEL_AUDIO_VOLUME:
+				    if (!audio_mute_enable)
+				       build_list[i].checked = true;
+				    break;
+				 case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
+				 case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
+				    if (!audio_mixer_mute_enable)
+				       build_list[i].checked = true;
+				    break;
+				 default:
+				    break;
+			 }
+		 }
+
+		 for (i = 0; i < ARRAY_SIZE(build_list); i++)
+		 {
+			 if (!build_list[i].checked && !include_everything)
+				 continue;
+
+			 if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+						 build_list[i].enum_idx,  build_list[i].parse_type,
+						 false) == 0)
+				 count++;
+		 }
+	 }
 
 #ifdef HAVE_DSP_FILTER
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
-                  PARSE_ONLY_PATH, false) == 0)
-            count++;
-
          if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
             if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE),
@@ -6027,6 +6113,12 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
+#if defined(RS90)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+#endif
 #endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
@@ -6340,6 +6432,10 @@ unsigned menu_displaylist_build_list(
 #endif
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -7767,7 +7863,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          {
 #if defined(DINGUX)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
+                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
@@ -7785,6 +7882,11 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
+               if (settings->bools.video_scale_integer)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
                         PARSE_ONLY_UINT, false) == 0)
@@ -9516,7 +9618,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
       settings_t *settings)
 {
-   size_t i;
    menu_ctx_displaylist_t disp_list;
    bool load_content             = true;
    bool use_filebrowser          = false;
@@ -9536,6 +9637,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST:
 #ifdef HAVE_NETWORKING
          {
+            size_t i;
             bool include_everything        = false;
             file_list_t *list              = info->list;
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -11181,12 +11283,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
             {
-               size_t               num_opts = 0;
-               bool game_specific_options    = settings->bools.game_specific_options;
+               bool game_specific_options      = settings->bools.game_specific_options;
+               const char *category            = info->path;
+               bool is_category                = !string_is_empty(category);
+               core_option_manager_t *coreopts = NULL;
 
-               rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &num_opts);
-
-               if (game_specific_options)
+               if (game_specific_options && !is_category)
                   if (menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST),
                         msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST),
@@ -11194,20 +11296,73 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST, 0, 0))
                      count++;
 
-               if (num_opts != 0)
+               if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
                {
-                  core_option_manager_t *coreopts = NULL;
+                  nested_list_item_t *category_item = NULL;
+                  nested_list_t *option_list        = NULL;
+                  nested_list_item_t *option_item   = NULL;
+                  const struct core_option *option  = NULL;
+                  size_t i;
 
-                  if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+                  /* Empty 'category' string signifies top
+                   * level core options menu */
+                  if (!is_category)
+                     option_list = coreopts->option_map;
+                  else
                   {
-                     for (i = 0; i < num_opts; i++)
+                     category_item  = nested_list_get_item(coreopts->option_map,
+                           category, NULL);
+                     if (category_item)
+                        option_list = nested_list_item_get_children(category_item);
+                  }
+
+                  if (option_list)
+                  {
+                     /* Loop over child options */
+                     for (i = 0; i < nested_list_get_size(option_list); i++)
                      {
-                        if (core_option_manager_get_visible(coreopts, i))
-                           if (menu_entries_append_enum(info->list,
-                                 core_option_manager_get_desc(coreopts, i), "",
-                                 MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
-                                 (unsigned)(MENU_SETTINGS_CORE_OPTION_START + i), 0, 0))
-                              count++;
+                        option_item = nested_list_get_item_idx(option_list, i);
+                        option      = (const struct core_option *)
+                              nested_list_item_get_value(option_item);
+
+                        /* Check whether this is an option or a
+                         * subcategory */
+                        if (option)
+                        {
+                           /* This is a regular option */
+                           size_t opt_idx = option->opt_idx;
+
+                           if (core_option_manager_get_visible(coreopts, opt_idx))
+                              if (menu_entries_append_enum(info->list,
+                                    core_option_manager_get_desc(coreopts, opt_idx, true),
+                                    "", MENU_ENUM_LABEL_CORE_OPTION_ENTRY,
+                                    (unsigned)(MENU_SETTINGS_CORE_OPTION_START + opt_idx),
+                                    0, 0))
+                                 count++;
+                        }
+                        else if (option_item)
+                        {
+                           /* This is a subcategory */
+                           const char *catgory_id = nested_list_item_get_id(option_item);
+                           bool category_visible  = core_option_manager_get_category_visible(
+                                 coreopts, catgory_id);
+
+                           /* Note: We use nested_list_item_get_id() because we
+                            * guarantee that the list can only be two levels
+                            * deep. If we supported arbitrary nesting, would
+                            * have to use nested_list_item_get_address() here */
+
+                           if (category_visible &&
+                               !string_is_empty(catgory_id))
+                           {
+                              if (menu_entries_append_enum(info->list,
+                                    catgory_id,
+                                    msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
+                                    MENU_ENUM_LABEL_CORE_OPTIONS,
+                                    MENU_SETTING_ACTION_CORE_OPTIONS, 0, 0))
+                                 count++;
+                           }
+                        }
                      }
                   }
                }
@@ -12463,107 +12618,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
             if (string_starts_with_size(info->path, "core_option_",
-                     STRLEN_CONST("core_option_")))
-            {
-               struct string_list tmp_str_list  = {0};
-               string_list_initialize(&tmp_str_list);
-               string_split_noalloc(&tmp_str_list, info->path, "_");
-
-               if (tmp_str_list.size > 0)
-               {
-                  core_option_manager_t *coreopts = NULL;
-                  const char *val                 = NULL;
-
-                  rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
-
-                  if (coreopts)
-                  {
-                     unsigned i;
-                     unsigned size                   = (unsigned)
-                        tmp_str_list.size;
-                     unsigned menu_index             = atoi(tmp_str_list.elems[size-1].data);
-                     unsigned visible_index          = 0;
-                     unsigned option_index           = 0;
-                     bool option_found               = false;
-                     struct core_option *option      = NULL;
-                     bool checked_found              = false;
-                     unsigned checked                = 0;
-                     bool game_specific_options      = settings->bools.game_specific_options;
-
-                     /* Note: Although we display value labels here,
-                      * most logic is performed using values. This seems
-                      * more appropriate somehow... */
-
-                     /* Convert menu index to option index */
-                     if (game_specific_options)
-                        menu_index--;
-
-                     for (i = 0; i < coreopts->size; i++)
-                     {
-                        if (core_option_manager_get_visible(coreopts, i))
-                        {
-                           if (visible_index == menu_index)
-                           {
-                              option_found = true;
-                              option_index = i;
-                              break;
-                           }
-                           visible_index++;
-                        }
-                     }
-
-                     if (option_found)
-                     {
-                        val    = core_option_manager_get_val(coreopts, option_index);
-                        option = (struct core_option*)&coreopts->opts[option_index];
-                     }
-
-                     if (option)
-                     {
-                        unsigned k;
-                        for (k = 0; k < option->vals->size; k++)
-                        {
-                           const char *val_str       = option->vals->elems[k].data;
-                           const char *val_label_str = option->val_labels->elems[k].data;
-
-                           if (!string_is_empty(val_label_str))
-                           {
-                              char val_d[256];
-                              snprintf(val_d, sizeof(val_d), "%d", option_index);
-
-                              if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
-                                 val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
-                              else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
-                                 val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
-
-                              if (menu_entries_append_enum(info->list,
-                                       val_label_str,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0))
-                                 count++;
-
-                              if (!checked_found && string_is_equal(val_str, val))
-                              {
-                                 checked = k;
-                                 checked_found = true;
-                              }
-                           }
-                        }
-
-                        if (checked_found)
-                        {
-                           menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
-                           if (cbs)
-                              cbs->checked = true;
-                           menu_navigation_set_selection(checked);
-                        }
-                     }
-                  }
-               }
-
-               string_list_deinitialize(&tmp_str_list);
-            }
+                  STRLEN_CONST("core_option_")))
+               count = menu_displaylist_parse_core_option_dropdown_list(info);
             else
             {
                enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
@@ -12920,106 +12976,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
          if (string_starts_with_size(info->path, "core_option_",
-                  STRLEN_CONST("core_option_")))
-         {
-            struct string_list tmp_str_list  = {0};
-
-            string_list_initialize(&tmp_str_list);
-            string_split_noalloc(&tmp_str_list, info->path, "_");
-
-            if (tmp_str_list.size > 0)
-            {
-               core_option_manager_t *coreopts = NULL;
-               const char *val                 = NULL;
-
-               rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
-
-               if (coreopts)
-               {
-                  unsigned size                   = (unsigned)
-                     tmp_str_list.size;
-                  unsigned menu_index             = atoi(tmp_str_list.elems[size-1].data);
-                  unsigned visible_index          = 0;
-                  unsigned option_index           = 0;
-                  bool option_found               = false;
-                  struct core_option *option      = NULL;
-                  bool checked_found              = false;
-                  unsigned checked                = 0;
-                  unsigned i;
-
-                  /* Note: Although we display value labels here,
-                   * most logic is performed using values. This seems
-                   * more appropriate somehow... */
-
-                  /* Convert menu index to option index */
-                  menu_index--;
-
-                  for (i = 0; i < coreopts->size; i++)
-                  {
-                     if (core_option_manager_get_visible(coreopts, i))
-                     {
-                        if (visible_index == menu_index)
-                        {
-                           option_found = true;
-                           option_index = i;
-                           break;
-                        }
-                        visible_index++;
-                     }
-                  }
-
-                  if (option_found)
-                  {
-                     val    = core_option_manager_get_val(coreopts, option_index);
-                     option = (struct core_option*)&coreopts->opts[option_index];
-                  }
-
-                  if (option)
-                  {
-                     unsigned k;
-                     for (k = 0; k < option->vals->size; k++)
-                     {
-                        const char *val_str       = option->vals->elems[k].data;
-                        const char *val_label_str = option->val_labels->elems[k].data;
-
-                        if (!string_is_empty(val_label_str))
-                        {
-                           char val_d[256];
-                           snprintf(val_d, sizeof(val_d), "%d", option_index);
-
-                           if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)))
-                              val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON);
-                           else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
-                              val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
-
-                           if (menu_entries_append_enum(info->list,
-                                 val_label_str,
-                                 val_d,
-                                 MENU_ENUM_LABEL_NO_ITEMS,
-                                 MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0))
-                              count++;
-
-                           if (!checked_found && string_is_equal(val_str, val))
-                           {
-                              checked = k;
-                              checked_found = true;
-                           }
-                        }
-                     }
-
-                     if (checked_found)
-                     {
-                        menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
-                        if (cbs)
-                           cbs->checked = true;
-                        menu_navigation_set_selection(checked);
-                     }
-                  }
-               }
-            }
-
-            string_list_deinitialize(&tmp_str_list);
-         }
+               STRLEN_CONST("core_option_")))
+            count = menu_displaylist_parse_core_option_dropdown_list(info);
          else
          {
             enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);

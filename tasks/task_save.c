@@ -738,7 +738,7 @@ static void task_save_handler(retro_task_t *task)
 
    if (!state->data)
    {
-      size_t size;
+      size_t size = 0;
       state->data = content_get_serialized_data(&size);
       state->size = (ssize_t)size;
    }

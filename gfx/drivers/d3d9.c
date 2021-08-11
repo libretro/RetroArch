@@ -1153,6 +1153,10 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    if (string_is_equal(settings->arrays.input_driver, "dinput"))
       d3d->windowClass.lpfnWndProc = wnd_proc_d3d_dinput;
 #endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      d3d->windowClass.lpfnWndProc = wnd_proc_d3d_winraw;
+#endif
    win32_window_init(&d3d->windowClass, true, NULL);
 #endif
 

@@ -22,20 +22,7 @@
 #include <file/file_path.h>
 #include <formats/image.h>
 
-#include "../font_driver.h"
-#include "../common/d3d_common.h"
-#include "../common/win32_common.h"
-#include "../common/dxgi_common.h"
-#include "../common/d3d12_common.h"
-#include "../common/d3dcompiler_common.h"
-
-#include "../../driver.h"
-#include "../../verbosity.h"
-#include "../../configuration.h"
-#include "../../retroarch.h"
-#ifdef HAVE_REWIND
-#include "../../state_manager.h"
-#endif
+#include <dxgi.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -44,7 +31,31 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "wiiu/wiiu_dbg.h"
+#include "../../driver.h"
+#include "../../verbosity.h"
+#include "../../configuration.h"
+#include "../../retroarch.h"
+#include "../font_driver.h"
+#include "../common/win32_common.h"
+#include "../../performance_counters.h"
+#include "../../menu/menu_driver.h"
+#include "../video_shader_parse.h"
+#include "../drivers_shader/slang_process.h"
+#ifdef HAVE_REWIND
+#include "../../state_manager.h"
+#endif
+
+#include "../common/d3d_common.h"
+#include "../common/dxgi_common.h"
+#include "../common/d3d12_common.h"
+#include "../common/d3dcompiler_common.h"
+#ifdef HAVE_SLANG
+#include "../drivers_shader/slang_process.h"
+#endif
+
+#ifdef __WINRT__
+#include "../../uwp/uwp_func.h"
+#endif
 
 /* Temporary workaround for d3d12 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d12_fake_context;
@@ -912,6 +923,10 @@ static void *d3d12_gfx_init(const video_info_t* video,
 #ifdef HAVE_DINPUT
    if (string_is_equal(settings->arrays.input_driver, "dinput"))
       wndclass.lpfnWndProc = wnd_proc_d3d_dinput;
+#endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      wndclass.lpfnWndProc = wnd_proc_d3d_winraw;
 #endif
 #ifdef HAVE_WINDOW
    win32_window_init(&wndclass, true, NULL);

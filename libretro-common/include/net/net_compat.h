@@ -158,6 +158,11 @@ static INLINE bool isagain(int bytes)
 #endif
 }
 
+#ifdef WIIU
+#define WIIU_RCVBUF (128 * 2 * 1024)
+#define WIIU_SNDBUF (128 * 2 * 1024)
+#endif
+
 #ifdef _XBOX
 #define socklen_t int
 

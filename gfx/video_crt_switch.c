@@ -87,15 +87,14 @@ static void crt_aspect_ratio_switch(
       videocrt_switch_t *p_switch,
       unsigned width, unsigned height, unsigned srm_width, unsigned srm_height)
 {
-  
    /* send aspect float to video_driver */
-   RARCH_LOG("[CRT]: Setting Video Screen Size to: %dx%d \n", width, height);
-   video_driver_set_size(srm_width , srm_height); 
-   video_driver_set_viewport(srm_width , srm_height,1,1);
-
    p_switch->fly_aspect = (float)width / (float)height;
    video_driver_set_aspect_ratio_value((float)p_switch->fly_aspect);
    RARCH_LOG("[CRT]: Setting Aspect Ratio: %f \n", (float)p_switch->fly_aspect);
+
+   RARCH_LOG("[CRT]: Setting Video Screen Size to: %dx%d \n", width, height);
+   video_driver_set_size(width , height); 
+   video_driver_set_viewport(width , height,1,1);
 
    video_driver_apply_state_changes();
    
@@ -103,20 +102,30 @@ static void crt_aspect_ratio_switch(
 
 static void set_aspect(videocrt_switch_t *p_switch, unsigned int width, 
       unsigned int height, unsigned int srm_width, unsigned srm_height,
-      unsigned int srm_xscale, unsigned srm_yscale)
+      unsigned int srm_xscale, unsigned srm_yscale, bool srm_isstretched )
 {
    unsigned int patched_width = 0;
    unsigned int patched_height = 0;
    int scaled_width = 0;
    int scaled_height = 0;
-   /* used to fix aspect shoule SR not find a resolution */
+
+   /* used to fix aspect should SR not find a resolution */
    if (srm_width == 0)
    {
       video_driver_get_size(&patched_width, &patched_height);
+      srm_xscale = 1;
+      srm_yscale = 1;
    }else{
+      /* use native values as we will be multiplying by srm scale later. */
       patched_width = width;
       patched_height = height;
    }
+   if (srm_isstretched && srm_width > 0)
+   {
+      srm_xscale = srm_width/width;
+      srm_yscale = srm_height/height;
+   }
+
    scaled_width = roundf(patched_width*srm_xscale);
    scaled_height = roundf(patched_height*srm_yscale);
 
@@ -127,21 +136,18 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch, int monitor_index, unsigne
 {
    const char* err_msg;
    char* mode;
-   char index = 0;
-   char mindex[1];
+   char index[10];
+  
 
    if (monitor_index+1 >= 0 && monitor_index+1 < 10)
-      index = monitor_index+48;
+      sprintf(index, "%d", monitor_index);
    else
-      index = '0';
-
-   mindex[0] = index;
+      sprintf(index, "%s", "0");
 
    if (!p_switch->sr2_active)
    {
 
       RARCH_LOG("[CRT]: SR init \n");
-
 
       sr_init();
       #if (__STDC_VERSION__ >= 199409L) /* no logs for C98 or less */
@@ -167,23 +173,22 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch, int monitor_index, unsigne
          RARCH_LOG("[CRT]: CRT Mode: %d - Selected from ini \n", crt_mode) ;
       }
 
-
       if (super_width >2 )
          sr_set_user_mode(super_width, 0, 0);
       
       RARCH_LOG("[CRT]: SR init_disp \n");
       if (monitor_index+1 > 0)
       {
-         RARCH_LOG("SRobj: RA Monitor Index: %s\n",mindex);
-         p_switch->rtn = sr_init_disp(mindex); 
-         RARCH_LOG("[CRT]: SR Disp Monitor Index: %s  \n", mindex);
+         RARCH_LOG("[CRT]: RA Monitor Index Manual: %s\n", &index[0]);
+         p_switch->rtn = sr_init_disp(index); 
+         RARCH_LOG("[CRT]: SR Disp Monitor Index Manual: %s  \n", &index[0]);
       }
 
       if (monitor_index == -1)
       {
-         RARCH_LOG("SRobj: RA Monitor Index: %s\n",NULL);
-         p_switch->rtn = sr_init_disp(NULL);
-         RARCH_LOG("[CRT]: SR Disp Monitor Index: Auto  \n");
+         RARCH_LOG("[CRT]: RA Monitor Index Auto: %s\n","auto");
+         p_switch->rtn = sr_init_disp("auto");
+         RARCH_LOG("[CRT]: SR Disp Monitor Index Auto: Auto  \n");
       }
 
       RARCH_LOG("[CRT]: SR rtn %d \n", p_switch->rtn);
@@ -247,12 +252,12 @@ static void switch_res_crt(
       }
       p_switch->sr_core_hz = srm.refresh;
 
-      set_aspect(p_switch, w , h, srm.width, srm.height, srm.x_scale, srm.y_scale);
+      set_aspect(p_switch, w , h, srm.width, srm.height, srm.x_scale, srm.y_scale, srm.is_stretched);
       
       RARCH_LOG("[CRT]: SR scaled  X:%d Y:%d \n",srm.x_scale, srm.y_scale);
 
    }else {
-      set_aspect(p_switch, width , height, width, height ,1,1);
+      set_aspect(p_switch, width , height, width, height ,1,1, false);
       video_driver_set_size(width , height); 
       video_driver_apply_state_changes();
 
@@ -305,7 +310,7 @@ static void crt_fix_hh_res(videocrt_switch_t *p_switch, int native_width, int wi
    int corrected_height = 240;
 
    switch_res_crt(p_switch, corrected_width, corrected_height , crt_mode, corrected_width, monitor_index-1, super_width);
-   set_aspect(p_switch, native_width , height, native_width, height ,1,1);
+   set_aspect(p_switch, native_width , height, native_width, height ,1,1, false);
    video_driver_set_size(native_width , height);
             
 
@@ -484,7 +489,7 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch, int width, int height, f
 
    set_aspect(p_switch, width, 
       height, width, height,
-      1, 1);
+      1, 1, false);
    int w = width;
    while (w < 1920) 
    {

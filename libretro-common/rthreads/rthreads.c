@@ -872,7 +872,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    int tickms = ps2_clock();
    now.tv_sec = tickms/1000;
    now.tv_nsec = tickms * 1000;
-#elif defined(__mips__) || defined(VITA) || defined(_3DS)
+#elif !defined(DINGUX_BETA) && (defined(__mips__) || defined(VITA) || defined(_3DS))
    struct timeval tm;
 
    gettimeofday(&tm, NULL);

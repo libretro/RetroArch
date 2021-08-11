@@ -35,9 +35,9 @@ SRes SeqInStream_ReadByte(const ISeqInStream *stream, Byte *buf)
 
 
 
-SRes LookInStream_SeekTo(const ILookInStream *stream, UInt64 offset)
+SRes LookInStream_SeekTo(const ILookInStream *stream, uint64_t offset)
 {
-  Int64 t = offset;
+  int64_t t = offset;
   return ILookInStream_Seek(stream, &t, SZ_SEEK_SET);
 }
 
@@ -134,7 +134,7 @@ static SRes LookToRead2_Read(const ILookInStream *pp, void *buf, size_t *size)
   return SZ_OK;
 }
 
-static SRes LookToRead2_Seek(const ILookInStream *pp, Int64 *pos, ESzSeek origin)
+static SRes LookToRead2_Seek(const ILookInStream *pp, int64_t *pos, ESzSeek origin)
 {
   GET_LookToRead2
   p->pos = p->size = 0;

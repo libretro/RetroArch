@@ -637,6 +637,10 @@ static void *gfx_ctx_wgl_init(void *video_driver)
       if (string_is_equal(settings->arrays.input_driver, "dinput"))
          wndclass.lpfnWndProc   = wnd_proc_wgl_dinput;
 #endif
+#ifdef HAVE_WINRAWINPUT
+      if (string_is_equal(settings->arrays.input_driver, "raw"))
+         wndclass.lpfnWndProc   = wnd_proc_wgl_winraw;
+#endif
    }
 
    if (!win32_window_init(&wndclass, true, NULL))

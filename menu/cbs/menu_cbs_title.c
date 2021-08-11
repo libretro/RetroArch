@@ -202,6 +202,39 @@ static int action_get_title_left_thumbnails(
    return 0;
 }
 
+static int action_get_title_core_options_list(
+      const char *path, const char *label, unsigned menu_type,
+      char *s, size_t len)
+{
+   const char *category = path;
+   const char *title    = NULL;
+
+   /* If this is an options subcategory, fetch
+    * the category description */
+   if (!string_is_empty(category))
+   {
+      core_option_manager_t *coreopts = NULL;
+
+      if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+         title = core_option_manager_get_category_desc(
+               coreopts, category);
+   }
+
+   /* If this isn't a subcategory (or something
+    * went wrong...), use top level core options
+    * menu label */
+   if (string_is_empty(title))
+      title = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS);
+
+   if (s && !string_is_empty(title))
+   {
+      strlcpy(s, title, len);
+      return 1;
+   }
+
+   return 0;
+}
+
 static int action_get_title_dropdown_item(
       const char *path, const char *label, unsigned menu_type,
       char *s, size_t len)
@@ -210,61 +243,32 @@ static int action_get_title_dropdown_item(
    if (string_is_empty(path))
       return 0;
 
-   if (string_starts_with_size(path, "core_option_", STRLEN_CONST("core_option_")))
+   if (string_starts_with_size(path, "core_option_",
+         STRLEN_CONST("core_option_")))
    {
       /* This is a core options item */
-      struct string_list tmp_str_list  = {0};
-      int ret                          = 0;
+      struct string_list tmp_str_list = {0};
+      core_option_manager_t *coreopts = NULL;
+      int ret                         = 0;
 
       string_list_initialize(&tmp_str_list);
       string_split_noalloc(&tmp_str_list, path, "_");
 
       if (tmp_str_list.size > 0)
       {
-         core_option_manager_t *coreopts = NULL;
-
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
          if (coreopts)
          {
-            unsigned i;
-            unsigned menu_index             = string_to_unsigned(
+            unsigned option_index = string_to_unsigned(
                   tmp_str_list.elems[(unsigned)tmp_str_list.size - 1].data);
-            unsigned visible_index          = 0;
-            unsigned option_index           = 0;
-            bool option_found               = false;
-            settings_t *settings            = config_get_ptr();
-            bool game_specific_options      = settings->bools.game_specific_options;
+            const char *title     = core_option_manager_get_desc(
+                  coreopts, option_index, true);
 
-            /* Convert menu index to option index */
-            if (game_specific_options)
-               menu_index--;
-
-            for (i = 0; i < coreopts->size; i++)
+            if (s && !string_is_empty(title))
             {
-               if (core_option_manager_get_visible(coreopts, i))
-               {
-                  if (visible_index == menu_index)
-                  {
-                     option_found = true;
-                     option_index = i;
-                     break;
-                  }
-                  visible_index++;
-               }
-            }
-
-            /* If option was found, title == option description */
-            if (option_found)
-            {
-               const char *title = core_option_manager_get_desc(
-                     coreopts, option_index);
-
-               if (s && !string_is_empty(title))
-               {
-                  SANITIZE_TO_STRING(s, title, len);
-                  ret = 1;
-               }
+               strlcpy(s, title, len);
+               ret = 1;
             }
          }
       }
@@ -568,7 +572,6 @@ DEFAULT_TITLE_MACRO(action_get_online_thumbnails_updater_list,  MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_online_pl_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
-DEFAULT_TITLE_MACRO(action_get_core_options_list,               MENU_ENUM_LABEL_VALUE_CORE_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_core_option_override_list,       MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST)
 DEFAULT_TITLE_MACRO(action_get_quick_menu_list,                 MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_input_remapping_options_list,    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
@@ -1130,7 +1133,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_ADD_CONTENT_LIST,
          action_get_add_content_list},
       {MENU_ENUM_LABEL_CORE_OPTIONS,
-         action_get_core_options_list},
+         action_get_title_core_options_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST,
          action_get_core_option_override_list},
       {MENU_ENUM_LABEL_CONTENT_SETTINGS,
@@ -1451,7 +1454,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_configurations_list);
             break;
          case MENU_ENUM_LABEL_CORE_OPTIONS:
-            BIND_ACTION_GET_TITLE(cbs, action_get_core_options_list);
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_core_options_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_option_override_list);

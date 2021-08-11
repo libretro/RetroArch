@@ -4,11 +4,8 @@
 #ifndef __7Z_TYPES_H
 #define __7Z_TYPES_H
 
-#ifdef _WIN32
-/* #include <windows.h> */
-#endif
-
 #include <stddef.h>
+#include <stdint.h>
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -67,15 +64,6 @@ typedef int WRes;
 typedef unsigned char Byte;
 #endif
 typedef short Int16;
-typedef unsigned short UInt16;
-
-#if defined(_LZMA_UINT32_IS_ULONG) && !defined(__LP64__)
-typedef long Int32;
-typedef unsigned long UInt32;
-#else
-typedef int Int32;
-typedef unsigned int UInt32;
-#endif
 
 #ifdef _SZ_NO_INT_64
 
@@ -83,24 +71,20 @@ typedef unsigned int UInt32;
    NOTES: Some code will work incorrectly in that case! */
 
 typedef long Int64;
-typedef unsigned long UInt64;
-
 #else
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64 Int64;
-typedef unsigned __int64 UInt64;
 #define UINT64_CONST(n) n
 #else
 typedef long long int Int64;
-typedef unsigned long long int UInt64;
 #define UINT64_CONST(n) n ## ULL
 #endif
 
 #endif
 
 #ifdef _LZMA_NO_SYSTEM_SIZE_T
-typedef UInt32 SizeT;
+typedef uint32_t SizeT;
 #else
 typedef size_t SizeT;
 #endif
@@ -204,7 +188,7 @@ typedef struct ISeekInStream ISeekInStream;
 struct ISeekInStream
 {
   SRes (*Read)(const ISeekInStream *p, void *buf, size_t *size);  /* same as ISeqInStream::Read */
-  SRes (*Seek)(const ISeekInStream *p, Int64 *pos, ESzSeek origin);
+  SRes (*Seek)(const ISeekInStream *p, int64_t *pos, ESzSeek origin);
 };
 #define ISeekInStream_Read(p, buf, size)   (p)->Read(p, buf, size)
 #define ISeekInStream_Seek(p, pos, origin) (p)->Seek(p, pos, origin)
@@ -222,7 +206,7 @@ struct ILookInStream
 
   SRes (*Read)(const ILookInStream *p, void *buf, size_t *size);
     /* reads directly (without buffer). It's same as ISeqInStream::Read */
-  SRes (*Seek)(const ILookInStream *p, Int64 *pos, ESzSeek origin);
+  SRes (*Seek)(const ILookInStream *p, int64_t *pos, ESzSeek origin);
 };
 
 #define ILookInStream_Look(p, buf, size)   (p)->Look(p, buf, size)
@@ -232,7 +216,7 @@ struct ILookInStream
 
 
 SRes LookInStream_LookRead(const ILookInStream *stream, void *buf, size_t *size);
-SRes LookInStream_SeekTo(const ILookInStream *stream, UInt64 offset);
+SRes LookInStream_SeekTo(const ILookInStream *stream, uint64_t offset);
 
 /* reads via ILookInStream::Read */
 SRes LookInStream_Read2(const ILookInStream *stream, void *buf, size_t size, SRes errorType);
@@ -281,9 +265,9 @@ typedef struct ICompressProgress ICompressProgress;
 
 struct ICompressProgress
 {
-  SRes (*Progress)(const ICompressProgress *p, UInt64 inSize, UInt64 outSize);
+  SRes (*Progress)(const ICompressProgress *p, uint64_t inSize, uint64_t outSize);
     /* Returns: result. (result != SZ_OK) means break.
-       Value (UInt64)(Int64)-1 for size means unknown value. */
+       Value (uint64_t)(int64_t)-1 for size means unknown value. */
 };
 #define ICompressProgress_Progress(p, inSize, outSize) (p)->Progress(p, inSize, outSize)
 

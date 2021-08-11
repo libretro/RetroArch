@@ -117,6 +117,11 @@ extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 #endif
 
+#if !defined(_XBOX)
+extern bool winraw_handle_message(UINT message,
+      WPARAM wParam, LPARAM lParam);
+#endif
+
 typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM
 {
    UINT32 Numerator;
@@ -973,8 +978,8 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          quit                     = true;
          {
             uint16_t mod          = 0;
-            unsigned keycode      = 0;
-            unsigned keysym       = (lparam >> 16) & 0xff;
+            unsigned keysym       = (unsigned)wparam;
+            unsigned keycode      = input_keymaps_translate_keysym_to_rk(keysym);
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
@@ -988,32 +993,6 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
                mod |= RETROKMOD_SCROLLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
-
-            keysym             = (unsigned)wparam;
-            /* fix key binding issues on winraw when 
-             * DirectInput is not available */
-            switch (keysym)
-            {
-               /* Mod & Keypad handling done in winraw_callback */
-               case VK_SHIFT:
-               case VK_CONTROL:
-               case VK_MENU:
-               case VK_INSERT:
-               case VK_DELETE:
-               case VK_HOME:
-               case VK_END:
-               case VK_PRIOR:
-               case VK_NEXT:
-               case VK_UP:
-               case VK_DOWN:
-               case VK_LEFT:
-               case VK_RIGHT:
-               case VK_CLEAR:
-               case VK_RETURN:
-                  return 0;
-            }
-
-            keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1077,6 +1056,98 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
+#ifdef HAVE_WINRAWINPUT
+static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
+      UINT message, WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   bool quit                     = false;
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   switch (message)
+   {
+      case WM_KEYUP:                /* Key released */
+      case WM_SYSKEYUP:             /* Key released */
+         /* fall-through */
+      case WM_KEYDOWN:              /* Key pressed  */
+      case WM_SYSKEYDOWN:           /* Key pressed  */
+         quit                     = true;
+         {
+            if (message != WM_SYSKEYDOWN)
+               return 0;
+
+            if (
+                  wparam == VK_F10  ||
+                  wparam == VK_MENU ||
+                  wparam == VK_RSHIFT
+               )
+               return 0;
+         }
+         break;
+      case WM_MOUSEMOVE:
+      case WM_POINTERDOWN:
+      case WM_POINTERUP:
+      case WM_POINTERUPDATE:
+      case WM_MOUSEWHEEL:
+      case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
+            taskbar_is_created = true;
+#endif
+         break;
+      case WM_DROPFILES:
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_MOVE:
+      case WM_SIZE:
+      case WM_COMMAND:
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
+            taskbar_is_created = true;
+#endif
+         break;
+      case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
+         if (input_mouse_grabbed())
+            win32_clip_window(true);
+#endif
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
+         break;
+      case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
+         if (input_mouse_grabbed())
+            win32_clip_window(false);
+#endif
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
+         break;
+      case WM_DISPLAYCHANGE:  /* fix size after display mode switch when using SR */
+         win32_resize_after_display_change(hwnd);
+         break;
+      case WM_DEVICECHANGE:
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
+         break;
+   }
+
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+#endif
+
 #ifdef HAVE_DINPUT
 static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       UINT message, WPARAM wparam, LPARAM lparam)
@@ -1100,19 +1171,6 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             unsigned keycode      = 0;
             unsigned keysym       = (lparam >> 16) & 0xff;
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
-
             /* extended keys will map to dinput if the high bit is set */
             if ((lparam >> 24 & 0x1))
                keysym |= 0x80;
@@ -1125,6 +1183,19 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                case RETROK_RSHIFT:
                   return 0;
             }
+
+            if (GetKeyState(VK_SHIFT)   & 0x80)
+               mod |= RETROKMOD_SHIFT;
+            if (GetKeyState(VK_CONTROL) & 0x80)
+               mod |= RETROKMOD_CTRL;
+            if (GetKeyState(VK_MENU)    & 0x80)
+               mod |= RETROKMOD_ALT;
+            if (GetKeyState(VK_CAPITAL) & 0x81)
+               mod |= RETROKMOD_CAPSLOCK;
+            if (GetKeyState(VK_SCROLL)  & 0x81)
+               mod |= RETROKMOD_SCROLLOCK;
+            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+               mod |= RETROKMOD_META;
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1216,6 +1287,25 @@ LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
    return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 
+#ifdef HAVE_WINRAWINPUT
+LRESULT CALLBACK wnd_proc_d3d_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   if (message == WM_CREATE)
+   {
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+
+      g_win32_inited        = true;
+      return 0;
+   }
+
+   return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -1249,10 +1339,30 @@ LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
       create_wgl_context(hwnd, &g_win32->quit);
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
+      g_win32_inited        = true;
       return 0;
    }
 
    return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+#ifdef HAVE_WINRAWINPUT
+LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   if (message == WM_CREATE)
+   {
+      create_wgl_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      g_win32_inited        = true;
+      return 0;
+   }
+
+   return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
@@ -1274,6 +1384,7 @@ LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
 #endif
 
 #ifdef HAVE_VULKAN
+
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -1285,10 +1396,30 @@ LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       create_vk_context(hwnd, &g_win32->quit);
       if (DragAcceptFiles_func)
          DragAcceptFiles_func(hwnd, true);
+      g_win32_inited        = true;
       return 0;
    }
 
    return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+#ifdef HAVE_WINRAWINPUT
+LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+   if (message == WM_CREATE)
+   {
+      create_vk_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      g_win32_inited        = true;
+      return 0;
+   }
+
+   return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
@@ -1310,6 +1441,7 @@ LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
 #endif
 
 #ifdef HAVE_GDI
+
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -1356,6 +1488,55 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
    }
 
    return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+#ifdef HAVE_WINRAWINPUT
+LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+   
+   if (message == WM_CREATE)
+   {
+      create_gdi_context(hwnd, &g_win32->quit);
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+      return 0;
+   }
+   else if (message == WM_PAINT)
+   {
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+
+      if (gdi && gdi->memDC)
+      {
+         gdi->bmp_old    = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+
+         /* Draw video content */
+         StretchBlt(
+               gdi->winDC,
+               0,
+               0,
+               gdi->screen_width,
+               gdi->screen_height,
+               gdi->memDC,
+               0,
+               0,
+               gdi->video_width,
+               gdi->video_height,
+               SRCCOPY);
+
+         SelectObject(gdi->memDC, gdi->bmp_old);
+      }
+
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+      if (     g_win32->taskbar_message 
+            && message == g_win32->taskbar_message)
+         taskbar_is_created = true;
+#endif
+   }
+
+   return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 

@@ -46,6 +46,8 @@ void net_http_connection_set_user_agent(struct http_connection_t* conn, const ch
 
 const char *net_http_connection_url(struct http_connection_t *conn);
 
+const char* net_http_connection_method(struct http_connection_t* conn);
+
 struct http_t *net_http_new(struct http_connection_t *conn);
 
 /* You can use this to call net_http_update

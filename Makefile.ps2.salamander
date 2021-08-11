@@ -1,5 +1,6 @@
 BUILD_FOR_PCSX2   = 0
 DEBUG             = 0
+SCREEN_DEBUG      = 0
 MUTE_WARNINGS     = 1
 PS2_IP = 192.168.1.150
 
@@ -32,6 +33,11 @@ LIBDIR =
 LDFLAGS =
 LIBS = -lelf-loader -lpatches
 
+ifeq ($(SCREEN_DEBUG), 1)
+LIBS += -ldebug
+RARCH_DEFINES += -DSCREEN_DEBUG
+endif
+
 ifeq ($(BUILD_FOR_PCSX2), 1)
 RARCH_DEFINES += -DBUILD_FOR_PCSX2
 endif
@@ -61,7 +67,8 @@ EE_OBJS = frontend/frontend_salamander.o \
 
 # Needed IRX objects
 EE_OBJS += $(IRX_DIR)/sio2man_irx.o $ $(IRX_DIR)/iomanX_irx.o $(IRX_DIR)/fileXio_irx.o 
-EE_OBJS += $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/usbhdfsd_irx.o
+EE_OBJS += $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o 
+EE_OBJS += $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/bdm_irx.o $(IRX_DIR)/bdmfs_vfat_irx.o $(IRX_DIR)/usbmass_bd_irx.o
 EE_OBJS += $(IRX_DIR)/cdfs_irx.o
 
 EE_CFLAGS = $(CFLAGS)

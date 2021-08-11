@@ -5200,6 +5200,32 @@ static void setting_get_string_representation_uint_video_dingux_refresh_rate(
    }
 }
 #endif
+
+#if defined(RS90)
+static void setting_get_string_representation_uint_video_dingux_rs90_softfilter_type(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case DINGUX_RS90_SOFTFILTER_POINT:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT),
+               len);
+         break;
+      case DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ),
+               len);
+         break;
+   }
+}
+#endif
 #endif
 
 static void setting_get_string_representation_uint_input_auto_game_focus(
@@ -7046,7 +7072,7 @@ static int setting_action_start_mouse_index(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   settings->uints.input_mouse_index[setting->index_offset] = 0;
+   settings->uints.input_mouse_index[setting->index_offset] = setting->index_offset;
    settings->modified = true;
    return 0;
 }
@@ -7270,6 +7296,36 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+}
+
+static void get_string_representation_mouse_index(rarch_setting_t *setting, char *s,
+      size_t len)
+{
+   unsigned index_offset, map = 0;
+   unsigned max_devices       = MAX_USERS;
+   settings_t      *settings  = config_get_ptr();
+
+   if (!setting)
+      return;
+
+   index_offset = setting->index_offset;
+   map          = settings->uints.input_mouse_index[index_offset];
+
+   if (map < max_devices)
+   {
+      const char *device_name = input_config_get_mouse_display_name(map);
+
+      if (!string_is_empty(device_name))
+         strlcpy(s, device_name, len);
+      else
+         snprintf(s, len,
+               "%s (#%u)",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               map);
+   }
+   else
+      snprintf(s, len,
+         "#%u", map);
 }
 
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
@@ -7615,10 +7671,14 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
 #if defined(DINGUX)
       case MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE:
+#if defined(RS90)
+      case MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE:
+#endif
 #endif
          {
             settings_t *settings       = config_get_ptr();
-            video_driver_set_filtering(1, settings->bools.video_ctx_scaling, settings->bools.video_ctx_scaling);
+            video_driver_set_filtering(1, settings->bools.video_smooth,
+                  settings->bools.video_ctx_scaling);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
@@ -7959,8 +8019,24 @@ static void general_write_handler(rarch_setting_t *setting)
              * force a cache refresh on the next
              * core info initialisation */
             if (*setting->value.target.boolean)
-               core_info_cache_force_refresh(!string_is_empty(path_libretro_info) ?
-                     path_libretro_info : dir_libretro);
+               if (!core_info_cache_force_refresh(!string_is_empty(path_libretro_info) ?
+                     path_libretro_info : dir_libretro))
+               {
+                  /* core_info_cache_force_refresh() will fail
+                   * if we cannot write to the the core_info
+                   * directory. This will typically only happen
+                   * on platforms where the core_info directory
+                   * is explicitly (and intentionally) placed on
+                   * read-only storage. In this case, core info
+                   * caching cannot function correctly anyway,
+                   * so we simply force-disable the feature */
+                  configuration_set_bool(settings,
+                        settings->bools.core_info_cache_enable, false);
+                  runloop_msg_queue_push(
+                        msg_hash_to_str(MSG_CORE_INFO_CACHE_UNSUPPORTED),
+                        1, 100, true,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
          }
          break;
       default:
@@ -8397,7 +8473,7 @@ static bool setting_append_list_input_player_options(
             &settings->uints.input_mouse_index[user],
             mouse_index[user],
             label_mouse_index[user],
-            0,
+            user,
             &group_info,
             &subgroup_info,
             parent_group,
@@ -8410,6 +8486,8 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_right_mouse_index;
       (*list)[list_info->index - 1].action_select = &setting_action_right_mouse_index;
       (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      (*list)[list_info->index - 1].get_string_representation =
+         &get_string_representation_mouse_index;
       menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
@@ -10954,7 +11032,8 @@ static bool setting_append_list(
             }
 
 #if defined(DINGUX) && defined(DINGUX_BETA)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
+                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_UINT(
                      list, list_info,
@@ -11209,7 +11288,8 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if defined(DINGUX)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
+                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -11366,6 +11446,28 @@ static bool setting_append_list(
                   list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_scale_integer_overscale,
+                  MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+                  DEFAULT_SCALE_INTEGER_OVERSCALE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
+                  list,
+                  list_info,
+                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+
 #ifdef GEKKO
             CONFIG_UINT(
                   list, list_info,
@@ -11442,6 +11544,27 @@ static bool setting_append_list(
                menu_settings_list_current_add_range(list, list_info, 0, DINGUX_IPU_FILTER_LAST - 1, 1, true, true);
                (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             }
+#if defined(RS90)
+            else if (string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            {
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_dingux_rs90_softfilter_type,
+                     MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+                     DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].get_string_representation =
+                     &setting_get_string_representation_uint_video_dingux_rs90_softfilter_type;
+               menu_settings_list_current_add_range(list, list_info, 0, DINGUX_RS90_SOFTFILTER_LAST - 1, 1, true, true);
+               (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            }
+#endif
             else
 #endif
             {
@@ -12730,6 +12853,22 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
                   DEFAULT_INPUT_SENSORS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_auto_mouse_grab,
+                  MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
+                  MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+                  false,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -14913,10 +15052,11 @@ static bool setting_append_list(
                   general_read_handler);
             MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
 
-            /* ps2 and sdl_dingux gfx drivers do not support
-             * menu framebuffer transparency */
+            /* ps2 and sdl_dingux/sdl_rs90 gfx drivers do
+             * not support menu framebuffer transparency */
             if (!string_is_equal(settings->arrays.video_driver, "ps2") &&
-                !string_is_equal(settings->arrays.video_driver, "sdl_dingux"))
+                !string_is_equal(settings->arrays.video_driver, "sdl_dingux") &&
+                !string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -16405,7 +16545,7 @@ static bool setting_append_list(
                &settings->bools.menu_timedate_enable,
                MENU_ENUM_LABEL_TIMEDATE_ENABLE,
                MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
-               true,
+               DEFAULT_MENU_TIMEDATE_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

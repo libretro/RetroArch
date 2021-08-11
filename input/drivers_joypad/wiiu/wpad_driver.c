@@ -277,7 +277,7 @@ static bool wpad_query_pad(unsigned port)
 
 static void wpad_destroy(void) { }
 
-static int16_t wpad_button(unsigned port, uint16_t joykey)
+static int32_t wpad_button(unsigned port, uint16_t joykey)
 {
    VPADChan channel;
    if (!wpad_query_pad(port))

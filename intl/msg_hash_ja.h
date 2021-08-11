@@ -1345,6 +1345,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
    "バイリニア (双線形)"
    )
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -9325,14 +9327,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
    "\"%s (%s)\" からの接続を確立:"
-   )
-MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "グローバルIPアドレス"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "ポートマッピングに失敗しました"
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,

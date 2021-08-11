@@ -59,7 +59,7 @@ struct sevenzip_context_t
    uint32_t parse_index;
    uint32_t decompress_index;
    uint32_t packIndex;
-   UInt32   block_index;
+   uint32_t   block_index;
 };
 
 static void *sevenzip_stream_alloc_impl(ISzAllocPtr p, size_t size)
@@ -200,7 +200,7 @@ static int64_t sevenzip_file_read(
       bool file_found      = false;
       uint16_t *temp       = NULL;
       size_t temp_size     = 0;
-      UInt32 block_index   = 0xFFFFFFFF;
+      uint32_t block_index   = 0xFFFFFFFF;
       SRes res             = SZ_OK;
 
       for (i = 0; i < db.NumFiles; i++)

@@ -51,11 +51,8 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
    struct nat_traversal_state_data *ntsd =
       (struct nat_traversal_state_data *) task->task_data;
 
-   natt_init();
-
    if (natt_new(ntsd->nat_traversal_state))
-      natt_open_port_any(ntsd->nat_traversal_state,
-            ntsd->port, SOCKET_PROTOCOL_TCP);
+      natt_init(ntsd->nat_traversal_state, ntsd->port, SOCKET_PROTOCOL_TCP);
 
    task_set_progress(task, 100);
    task_set_finished(task, true);

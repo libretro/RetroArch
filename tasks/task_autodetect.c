@@ -30,6 +30,7 @@
 #include "../list_special.h"
 #include "../retroarch.h"
 #include "../input/input_driver.h"
+#include "../input/input_remapping.h"
 
 #include "tasks_internal.h"
 #ifdef HAVE_BLISSBOX

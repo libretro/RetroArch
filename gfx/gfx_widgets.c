@@ -1037,9 +1037,15 @@ void gfx_widgets_iterate(
 {
    size_t i;
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
-   /* Check whether screen dimensions or menu scale
-    * factor have changed */
-   float scale_factor               = 0.0f;
+   /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
+    * On some platforms (e.g. 32-bit x86 without SSE),
+    * gcc can produce inconsistent floating point results
+    * depending upon optimisation level. This can break
+    * floating point variable comparisons. A workaround is
+    * to declare the affected variable as 'volatile', which
+    * disables optimisations and removes excess precision
+    * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
+   volatile float scale_factor      = 0.0f;
    gfx_display_t *p_disp            = (gfx_display_t*)data_disp;
    settings_t *settings             = (settings_t*)settings_data;
 #ifdef HAVE_XMB
@@ -1051,6 +1057,8 @@ void gfx_widgets_iterate(
       scale_factor                  = gfx_display_get_widget_dpi_scale(p_disp,
             settings, width, height, fullscreen);
 
+   /* Check whether screen dimensions or menu scale
+    * factor have changed */
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
        (width        != p_dispwidget->last_video_width) ||
        (height       != p_dispwidget->last_video_height))

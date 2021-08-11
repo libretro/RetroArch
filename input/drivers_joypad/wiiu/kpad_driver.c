@@ -92,7 +92,7 @@ static void kpad_destroy(void)
    kpad_ready = false;
 }
 
-static int16_t kpad_button(unsigned port, uint16_t joykey)
+static int32_t kpad_button(unsigned port, uint16_t joykey)
 {
    int channel;
    if (!kpad_query_pad(port))
@@ -250,6 +250,12 @@ static void kpad_poll(void)
          continue;
       }
       poll_failures[channel] = 0;
+
+      /* Several reads when a device is connected or an attachment added give */
+      /* bogus results, try to weed them out */
+      if (kpad.wpad_error || kpad.device_type == 255) {
+         continue;
+      }
 
       kpad_poll_one_channel(channel, &kpad);
    }

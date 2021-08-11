@@ -325,7 +325,7 @@ static const char *wiiu_gca_get_name(void *data)
  * 0x0008 - Y   0x0080 - up      0x0800 - L
  */
 
-static int16_t wiiu_gca_button(void *data, uint16_t joykey)
+static int32_t wiiu_gca_button(void *data, uint16_t joykey)
 {
    gca_pad_t *pad = (gca_pad_t *)data;
    if(!pad || joykey > 31)

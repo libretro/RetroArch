@@ -1163,7 +1163,7 @@ void CoreOptionsDialog::buildLayout()
             for (j = 0; j < opts; j++)
             {
                QString desc               = 
-                  core_option_manager_get_desc(coreopts, j);
+                  core_option_manager_get_desc(coreopts, j, false);
                QString val                = 
                   core_option_manager_get_val(coreopts, j);
                QComboBox *combo_box       = NULL;

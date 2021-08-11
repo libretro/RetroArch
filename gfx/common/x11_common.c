@@ -199,10 +199,26 @@ static void xdg_screensaver_inhibit(Window wnd)
 {
    int  ret;
    char cmd[64];
+   char title[128];
 
    cmd[0] = '\0';
+   title[0] = '\0';
 
    RARCH_LOG("[X11]: Suspending screensaver (X11, xdg-screensaver).\n");
+
+   if (g_x11_dpy && g_x11_win)
+   {
+      /* Make sure the window has a title, even if it's a bogus one, otherwise
+       * xdg-screensaver will fail and report to stderr, framing RA for its bug.
+       * A single space character is used so that the title bar stays visibly
+       * the same, as if there's no title at all. */
+      video_driver_get_window_title(title, sizeof(title));
+      if (strlen(title) == 0)
+         snprintf(title, sizeof(title), " ");
+      XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
+            8, PropModeReplace, (const unsigned char*) title,
+            strlen(title));
+   }
 
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);
 

@@ -112,6 +112,7 @@ typedef struct
    int32_t x_rel, y_rel;
    bool l, r, m, b4, b5;
    bool wu, wd, whu, whd;
+   bool pp;
 } udev_input_mouse_t;
 
 struct udev_input_device
@@ -252,7 +253,7 @@ static udev_input_mouse_t *udev_get_mouse(
 
 static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 {
-   video_viewport_t vp;
+    video_viewport_t vp;
 
    if (abs)
    {
@@ -427,7 +428,9 @@ static void udev_handle_mouse(void *data,
             case BTN_MIDDLE:
                mouse->m = event->value;
                break;
-
+            case BTN_TOUCH:
+               mouse->pp = event->value;
+               break;
             /*case BTN_??:
                mouse->b4 = event->value;
                break;*/
@@ -478,11 +481,14 @@ static void udev_handle_mouse(void *data,
          break;
    }
 }
+#define test_bit(array, bit)    (array[bit/8] & (1<<(bit%8)))
 
 static int udev_input_add_device(udev_input_t *udev,
       enum udev_input_dev_type type, const char *devnode, device_handle_cb cb)
 {
    unsigned char keycaps[(KEY_MAX / 8) + 1];
+   unsigned char abscaps[(ABS_MAX / 8) + 1];
+   int has_absolutes = 0;
    int fd;
    struct stat st;
 #if defined(HAVE_EPOLL)
@@ -494,6 +500,9 @@ static int udev_input_add_device(udev_input_t *udev,
    udev_input_device_t **tmp;
    udev_input_device_t *device = NULL;
 
+   memset(keycaps, '\0', sizeof (keycaps));
+   memset(keycaps, '\0', sizeof (abscaps));
+    
    st.st_dev                   = 0;
 
    if (stat(devnode, &st) < 0)
@@ -520,33 +529,36 @@ static int udev_input_add_device(udev_input_t *udev,
       if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof (keycaps)), keycaps) == -1)
         return -1;  /* gotta have some buttons!  return -1 to skip error logging for this:)  */
 
-      if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
-      {
-         if (absinfo.minimum >= absinfo.maximum )
-      	 {
-            device->mouse.x_min = -1;
-            device->mouse.x_max = -1;
-         }
-         else
-         {
-            device->mouse.x_min = absinfo.minimum;
-            device->mouse.x_max = absinfo.maximum;
-         }
-      }
 
-      if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) >= 0)
+
+      if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof (abscaps)), abscaps) != -1)
       {
-         if (absinfo.minimum >= absinfo.maximum )
-         {
-            device->mouse.y_min = -1;
-            device->mouse.y_max = -1;
-         }
-	     else
-         {
-           device->mouse.y_min = absinfo.minimum;
-           device->mouse.y_max = absinfo.maximum;
-         }
-      }
+          if ( (test_bit(abscaps, ABS_X)) && (test_bit(abscaps, ABS_Y)) )
+          {
+              /* might be a touchpad... */
+              if (test_bit(keycaps, BTN_TOUCH))
+              {
+                  /* touchpad, touchscreen, or tablet. */
+                  has_absolutes = 1;
+              } 
+          } 
+      } 
+      device->mouse.x_min = device->mouse.y_min = device->mouse.x_max = device->mouse.y_max = 0;
+
+      if (has_absolutes)
+      {
+          struct input_absinfo absinfo;
+          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
+              return 0;
+          device->mouse.x_min = absinfo.minimum;
+          device->mouse.x_max = absinfo.maximum;
+
+          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
+              return 0;
+          device->mouse.y_min = absinfo.minimum;
+          device->mouse.y_max = absinfo.maximum;
+      } 
+
    }
 
    tmp = ( udev_input_device_t**)realloc(udev->devices,
@@ -944,7 +956,7 @@ static int16_t udev_pointer_state(udev_input_t *udev,
       case RETRO_DEVICE_ID_POINTER_Y:
          return udev_mouse_get_pointer_y(mouse, screen);
       case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return mouse->l;
+         return mouse->pp;
    }
 
    return 0;
@@ -1222,6 +1234,7 @@ static bool open_devices(udev_input_t *udev,
       return false;
 
    udev_enumerate_add_match_property(enumerate, type_str, "1");
+   udev_enumerate_add_match_subsystem(enumerate, "input");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
 
@@ -1241,31 +1254,32 @@ static bool open_devices(udev_input_t *udev,
          if (fd != -1)
          {
             int check = udev_input_add_device(udev, type, devnode, cb);
-            if (!check && check != -1 )
-               RARCH_DBG("[udev] udev_input_add_device error : %s (%s).\n",
+            if (check == 0)
+               RARCH_LOG("[udev] udev_input_add_device error : %s (%s).\n",
                      devnode, strerror(errno));
-            else if (check != -1 && check != 0)  
+            else if (check == 1 )  
             {
                char ident[255];
                if (ioctl(fd, EVIOCGNAME(sizeof(ident)), ident) < 0)
                   ident[0] = '\0';
-               if ( type == UDEV_INPUT_KEYBOARD)
+               if (type == UDEV_INPUT_KEYBOARD)
                {
-                  RARCH_LOG("[udev]: Added Device Keyboard#%d %s (%s) .\n",
+                  RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
                      device_keyboard,
                      ident,
                      devnode);
                    device_keyboard++;
                }                     
-               else
+               else if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD)
                {
-                  RARCH_LOG("[udev]: Added Device mouse#%d %s (%s) .\n",
+                  input_config_set_mouse_display_name(device_mouse, ident);
+
+                  RARCH_LOG("[udev]: Mouse #%u: \"%s\" (%s).\n",
                      device_mouse,
                      ident,
                      devnode);
                      device_mouse++;
                }                     
-                  
             }
 
             (void)check;

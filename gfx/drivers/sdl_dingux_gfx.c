@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2011-2017 - Higor Euripedes
+ *  Copyright (C) 2019-2021 - James Leaver
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -580,6 +581,12 @@ static void sdl_dingux_sanitize_frame_dimensions(
       /* GB/GBC/GG (x3) @ 480x432 */
       else if ((width == 480) && (height == 432))
          *sanitized_width = 496;
+      /* SNES/Genesis @ 256x224 */
+      else if ((width == 256) && (height == 224))
+         *sanitized_width = 288;
+      /* SNES/Genesis (x2) @ 512x448 */
+      else if ((width == 512) && (height == 448))
+         *sanitized_width = 560;
    }
 #endif
 
@@ -761,7 +768,13 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
 {
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 
-   if (unlikely(!vid))
+   /* Return early if:
+    * - Input sdl_dingux_video_t struct is NULL
+    *   (cannot realistically happen)
+    * - Menu is inactive and input 'content' frame
+    *   data is NULL (may happen when e.g. a running
+    *   core skips a frame) */
+   if (unlikely(!vid || (!frame && !vid->menu_active)))
       return true;
 
    /* If fast forward is currently active, we may
@@ -805,16 +818,13 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
 
       if (likely(vid->mode_valid))
       {
-         if (likely(frame))
-         {
-            /* Blit frame to SDL surface */
-            if (vid->rgb32)
-               sdl_dingux_blit_frame32(vid, (uint32_t*)frame,
-                     width, height, pitch);
-            else
-               sdl_dingux_blit_frame16(vid, (uint16_t*)frame,
-                     width, height, pitch);
-         }
+         /* Blit frame to SDL surface */
+         if (vid->rgb32)
+            sdl_dingux_blit_frame32(vid, (uint32_t*)frame,
+                  width, height, pitch);
+         else
+            sdl_dingux_blit_frame16(vid, (uint16_t*)frame,
+                  width, height, pitch);
       }
       /* If current display mode is invalid,
        * just display an error message */

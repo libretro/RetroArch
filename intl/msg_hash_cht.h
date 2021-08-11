@@ -1245,6 +1245,8 @@ MSG_HASH(
    "硬件雙線性過濾"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -4553,10 +4555,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
    "連接來自： \"%s (%s)\""
-   )
-MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "連接埠映射成功"
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,

@@ -645,7 +645,11 @@ static const video_driver_t *video_drivers[] = {
    &video_sdl2,
 #endif
 #ifdef HAVE_SDL_DINGUX
+#if defined(RS90)
+   &video_sdl_rs90,
+#else
    &video_sdl_dingux,
+#endif
 #endif
 #ifdef HAVE_XVIDEO
    &video_xvideo,
@@ -995,7 +999,7 @@ static input_device_driver_t *joypad_drivers[] = {
 };
 
 #ifdef HAVE_HID
-static bool null_hid_joypad_query(void *data, unsigned pad) { 
+static bool null_hid_joypad_query(void *data, unsigned pad) {
    return pad < MAX_USERS; }
 static const char *null_hid_joypad_name(
       void *data, unsigned pad) { return NULL; }
@@ -1190,7 +1194,7 @@ static midi_driver_t midi_null = {
 };
 
 static midi_driver_t *midi_drivers[] = {
-#if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM)
+#if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM) && !defined(DINGUX)
    &midi_alsa,
 #endif
 #ifdef HAVE_WINMM
@@ -1665,7 +1669,7 @@ typedef struct discord_state discord_state_t;
 #endif
 
 struct runloop
-{ 
+{
    retro_usec_t frame_time_last;        /* int64_t alignment */
 
    msg_queue_t msg_queue;                        /* ptr alignment */
@@ -1691,6 +1695,7 @@ struct runloop
    bool force_nonblock;
    bool paused;
    bool idle;
+   bool focused;
    bool slowmotion;
    bool fastmotion;
    bool shutdown_initiated;
@@ -1733,7 +1738,7 @@ struct rarch_state
    menu_input_t menu_input_state;               /* retro_time_t alignment */
 #endif
 
-   
+
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
@@ -1911,7 +1916,7 @@ struct rarch_state
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
-   
+
    gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    content_state_t            content_st;                /* ptr alignment */
    midi_event_t midi_drv_input_event;                    /* ptr alignment */
@@ -1989,7 +1994,7 @@ struct rarch_state
    size_t runahead_save_state_size;
 #endif
 
-   jmp_buf error_sjlj_context;              /* 4-byte alignment, 
+   jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
 
    turbo_buttons_t input_driver_turbo_btns; /* int32_t alignment */
@@ -2017,7 +2022,8 @@ struct rarch_state
    int reannounce;
 #endif
 
-   input_device_info_t input_device_info[MAX_INPUT_DEVICES]; 
+   input_device_info_t input_device_info[MAX_INPUT_DEVICES];
+   input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
                                           /* unsigned alignment */
 #ifdef HAVE_MENU
    menu_dialog_t dialog_st;               /* unsigned alignment */
@@ -2093,7 +2099,7 @@ struct rarch_state
 #endif
 
 #ifdef HAVE_MENU
-   menu_input_pointer_hw_state_t menu_input_pointer_hw_state;  
+   menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
                                                 /* int16_t alignment */
 #endif
 
@@ -2373,7 +2379,8 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { 0.0f,            "Config"        },
    { 1.0f,            "Square pixel"  },
    { 1.0f,            "Core provided" },
-   { 0.0f,            "Custom"        }
+   { 0.0f,            "Custom"        },
+   { 1.3333f,         "Full" }
 };
 
 static gfx_api_gpu_map gpu_map[] = {

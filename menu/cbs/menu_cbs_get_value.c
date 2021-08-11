@@ -1498,6 +1498,41 @@ static void menu_action_setting_disp_set_label_core_options(
       const char *path,
       char *s2, size_t len2)
 {
+   const char *category = path;
+   const char *desc     = NULL;
+
+   /* Add 'more' value text */
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
+   *w = 19;
+
+   /* If this is an options subcategory, fetch
+    * the category description */
+   if (!string_is_empty(category))
+   {
+      core_option_manager_t *coreopts = NULL;
+
+      if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+         desc = core_option_manager_get_category_desc(
+               coreopts, category);
+   }
+
+   /* If this isn't a subcategory (or something
+    * went wrong...), use top level core options
+    * menu label */
+   if (string_is_empty(desc))
+      desc = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS);
+
+   strlcpy(s2, desc, len2);
+}
+
+static void menu_action_setting_disp_set_label_core_option(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
    core_option_manager_t *coreopts = NULL;
    const char *coreopt_label       = NULL;
 
@@ -1783,11 +1818,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_video_resolution);
             break;
+         case MENU_ENUM_LABEL_CORE_OPTIONS:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_core_options);
+            break;
          case MENU_ENUM_LABEL_PLAYLISTS_TAB:
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          case MENU_ENUM_LABEL_FAVORITES:
-         case MENU_ENUM_LABEL_CORE_OPTIONS:
          case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
@@ -2176,7 +2214,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
        (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_GET_VALUE(cbs,
-         menu_action_setting_disp_set_label_core_options);
+         menu_action_setting_disp_set_label_core_option);
       return 0;
    }
 

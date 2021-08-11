@@ -112,7 +112,11 @@ LD      := $(CXX)
 
 LIBDIRS := -L.
 
-ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
+ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA
+ifeq ($(HAVE_VITAGLES), 1)
+   ARCHFLAGS += -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
+endif
+
 CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
 
 ifeq ($(DEBUG), 1)

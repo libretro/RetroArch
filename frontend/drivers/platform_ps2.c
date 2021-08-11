@@ -26,6 +26,10 @@
 #include <loadfile.h>
 #include <elf-loader.h>
 
+#if defined(SCREEN_DEBUG)
+#include <debug.h>
+#endif
+
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
@@ -127,7 +131,9 @@ static void load_modules()
 
    /* USB */
    SifExecModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL, NULL);
-   SifExecModuleBuffer(&usbhdfsd_irx, size_usbhdfsd_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&bdm_irx, size_bdm_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&bdmfs_vfat_irx, size_bdmfs_vfat_irx, 0, NULL, NULL);
+   SifExecModuleBuffer(&usbmass_bd_irx, size_usbmass_bd_irx, 0, NULL, NULL);
 
 #if !defined(DEBUG)
    /* CDFS */
@@ -187,6 +193,10 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 static void frontend_ps2_init(void *data)
 {
    reset_IOP();
+#if defined(SCREEN_DEBUG)
+   init_scr();
+   scr_printf("Starting RetroArch...\n");
+#endif
    load_modules();
 
 
@@ -208,14 +218,10 @@ static void frontend_ps2_init(void *data)
    }
 #endif
 
-#if defined(BUILD_FOR_PCSX2)
-   strlcpy(cwd, rootDevicePath(BOOT_DEVICE_MC0), sizeof(cwd));
-#else
    getcwd(cwd, sizeof(cwd));
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
    // If it is not salamander we need to go one level up for set the CWD.
    path_parent_dir(cwd);
-#endif
 #endif
 
 #if !defined(DEBUG)
@@ -225,6 +231,17 @@ static void frontend_ps2_init(void *data)
 
 static void frontend_ps2_deinit(void *data)
 {
+#ifndef IS_SALAMANDER
+   if (audsrv_quit())
+   {
+      RARCH_ERR("audsrv library not deinitalizated\n");
+   }
+
+   if (padEnd() != 1)
+   {
+      RARCH_ERR("padEnd library not deinitalizated\n");
+   }
+#endif
 }
 
 static void frontend_ps2_exec(const char *path, bool should_load_game)

@@ -1345,6 +1345,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Метод сусідніх пікселів"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Інтерполяція зображення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Вкажіть метод інтерполяції зображення, коли вимкнено «Цілочисельне масштабування». Метод «Найближчий сусід» має найменший вплив на продуктивність."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Найближчий сусід"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Напівлінійна"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1602,6 +1620,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    "Масштабуйте відео лише цілими кроками. Базовий розмір залежить від геометрії та співвідношення сторін, про які повідомляє система. Якщо не встановлено \"Примусове співвідношення сторін\", X / Y буде цілочисельним масштабом незалежно."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Масштаб Цілочисельной Шкали"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Примусово масштабувати ціле число для округлення до наступного більшого цілого числа замість округлення вниз."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -5835,6 +5861,14 @@ MSG_HASH(
    "Рідний"
    )
 MSG_HASH(
+   MSG_PUBLIC_ADDRESS,
+   "Порт для мережевої гри призначено"
+   )
+MSG_HASH(
+   MSG_UPNP_FAILED,
+   "Не вдалося призначити порт UPNP"
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Ви покинули гру"
    )
@@ -6417,6 +6451,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Невдала спроба встановлення: "
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Неможливо писати в каталог інформації ядра. Кешування в каталог буде вимкнено"
    )
 
 /* Lakka */

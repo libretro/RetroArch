@@ -1,4 +1,91 @@
 # Future
+- CHEEVOS: Hide challenge indicators when resetting
+- CONTENT INFORMATION: Show content info label+path rows always
+- CORE OPTIONS: Core option categories implemented
+- DUMMY CORE: Skip state_manager_event_{deinit/init} when core type is dummy, should skip warning spam 'Implementation uses threaded audio. Cannot use rewind..' when using rewind
+- INPUT/UDEV: Limit udev device scan to subsystem 'input'
+- INPUT/WAYLAND: Fixes a bug where the first player's mouse, pointer, and lightgun are echoed to the other ports. Now, those other ports correctly report zero. In the future support for multiple mouselike devices will need to be added, which is a bigger project
+- INPUT/WAYLAND: The driver now respects keyboard_mapping_blocked
+- INPUT/WAYLAND: When possible, deprecated lightgun defines are replaced with the new ones. The coordinates are still using the old relative callbacks
+- LIBNX/SWITCH: Fix poll missing for controller 2-8
+- LIBNX/SWITCH: Fix layout not applied correctly and hangs when splitting joycons
+- LIBRETRO: Core options category API implemented
+- LINUX: In some Linux Desktop Environments, like Budgie, task bar feature is unable to pin applications. With StartupWMClass= present in .desktop file, it is possible to pin the application
+- DATABASE/EXPLORE: Fix CRC32 reading in explore menu
+- DATABASE/LIBRETRODB: Fix writing of numerical values
+- DATABASE/LIBRETRODB: Fix libretro-db loading on big endian platforms
+- METAL: Fixed font driver memory leaks
+- MOUSE: Change default mouse index to port index
+- MOUSE: Friendly names for mice where available
+- OSX: Fix some memory leaks
+- OSX: Fix controller duplication bug
+- PS2: Implement alpha for the video driver
+- PS2: Aspect ratio handling
+- RETROFW: Initial port
+- WASAPI: Stop deactivating audio on fast forward
+- WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
+- WINRAW: Alt sticky fix
+- WINRAW: Prevent Alt getting stuck when Alt-Tabbing
+- WINRAW: Add pointer status
+- WIIU: Fix L3/R3 buttons
+- WIIU: Compress RPX libretro cores
+- WIIU: Add ICInvalidateRange (necessary for JITs)
+
+# 1.9.7
+- 3DS: Add unique ID's
+- CRT/SWITCHRES: Fixed some Monitor index bugs ad updated to the latest SR2
+- CRT/SWITCHRES: Fixed monitor index corruption on Windows and added correct fractal scaling. Only used when required
+- CRT/SWITCHRES: Updated log defines to match SR upstream.
+- CRT/SWITCHRES: Added new SR_CONFIG_PATHS for non Windows and Linux systems.
+Not that SR works on them but to fix RA compile issues
+- CRT/SWITCHRES: Updated SR2 code base to latest. Added supprt for windows monitor indexing. Fixed monitor index bug where index 1 was not being used correctly and "auto" was not being sent.
+- CRT/SWITCHRES: Updated swithres for x86 windows fix
+- CRT/SWITCHRES: fixed SR2 auto issue
+- CRT/SWITCHRES: Fixed auto monitor bug
+- CRT/SWITCHRES: Fixed monitor index corruption on Windows
+- CRT/SWITCHRES: Fixed buffer size bug
+- CRT/SWITCHRES: Added correct fractal scalling. only used when required.
+- CORE INFO: Automatically disable core info cache when core info directory is read-only
+- EMSCRIPTEN: add MAME2003 / MAME2003-plus to web.libretro
+- INPUT/UDEV: udev fixes add pointer pressed to pointer device to allow udev users to access this device
+- LIBNX/SWITCH: Enable 7zip support
+- LINUX/XDG: Prevent xdg-screensaver's "Protocol error" messages
+- LOCALIZATION: Fetch translations from Crowdin
+- LOCALIZATION: Add missing languages for the first startup
+- MENU/XMB/WIDGETS: Add workaround for FPU bug that breaks scale factor comparisons on certain platforms (fixes XMB thumbnails on 32bit Linux/Windows)
+- MENU/RGUI: Enable fullscreen thumbnail toggle using RetroPad 'start' button
+- MENU/RGUI: Fix sublabel length when menu clock is disabled
+- NETWORK/HTTP: Fix HTTP progress indication for large files on 32-bit systems
+- NETWORK/NATT: implement natt fix from void()
+- OPENDINGUX: Fix display when cores 'drop' frames
+- OPENDINGUX BETA: Use ALSA audio driver by default
+- OPENDINGUX BETA: Fix IPU scaling when running 256x224 (SNES/Genesis) content
+- PATHS: Fix garbled path string
+- PS2: Implement proper ps2_font driver instead of using the font driver from gskit
+- PS2: Use BDM for increasing up USB stability
+- PS3: First basic RSX driver for PSL1GHT
+- RS90: Initial port
+- RS90: Fix offset of OSD text
+- RS90: Disable menu clock by default
+- RS90: Hide 'Bilinear Filtering' video option
+- RS90: Move appdata (retroarch) base directory to external microsd card
+- RS90: Add optional approximate 'semi-linear' scaling filter
+- SHADERS: Max Shader Parameters increased to 1024
+- VIDEO: Add 'Integer Scale Overlay' - Force integer scaling to round up to the next larger integer instead of rounding down
+- VIDEO: New 'Full' aspect ratio added. This aspect ratio is useful when used with a shader which has a border in it. The aspect ratio is set to the full window area, so that the viewport spans the whole viewport. When using a border type shader like the Mega Bezel this allows the graphics to span the whole window regardless of the user's monitor aspect ratio
+- VITA: Wrong flags for not piglet version
+- UNIX: Correct backlight max_brightness path
+- UWP/XBOX: Default to Direct3D11 driver on UWP builds
+- UWP/XBOX: Do not use windowed mode on UWP/Xbox by default, set default resolution to 1920x1080 by default. Should fix display issues with Dolphin/PCSX2 on Xbox
+- WIIU: Fix inputs breaking when connecting/disconnecting remotes
+- WIIU: Input - ignore some bogus KPAD results
+- WIIU: Font rendering fixes - render font lines with correct spacing, and only sample alpha channel when rendering fonts
+- WIIU/NETWORK: Network speed optimisations - WINSCALE, TCP sACK, large buffers
+- WIIU/LIBFAT: Increase cache size on WiiU
+- WIIU/FILE IO: Filesystem optimisations - add fast path for already aligned buffers
+- WIIU/FILE IO: Use 128K vbufs for WiiU - we have loads of RAM and large vbufs are very beneficial
+- WIIU/MENU/OZONE: Fix Ozone rendering error (scissor fix)
+- WIIU/MENU/OZONE: Use Ozone icons instead of XMB Monochrome
 
 # 1.9.6
 - ARCHIVE: Fix archive delimiter detection when file path contains no slashes

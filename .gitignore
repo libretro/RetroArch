@@ -94,7 +94,6 @@ database
 overlays
 playlists
 states
-system
 shaders/shaders_cg
 shaders/shaders_glsl
 shaders/shaders_slang
@@ -220,8 +219,8 @@ libretro-common/samples/streams/rzip/rzip
 
 #VITA
 param.sfo
-*.S
 *.wo
 *.elf
 *.self
 *.vpk
+/.vs

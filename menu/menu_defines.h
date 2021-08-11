@@ -416,6 +416,15 @@ enum quit_on_close_content_type
    QUIT_ON_CLOSE_CONTENT_LAST
 };
 
+#if defined(DINGUX) && defined(RS90)
+enum dingux_rs90_softfilter_type
+{
+   DINGUX_RS90_SOFTFILTER_POINT = 0,
+   DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   DINGUX_RS90_SOFTFILTER_LAST
+};
+#endif
+
 RETRO_END_DECLS
 
 #endif

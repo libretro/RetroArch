@@ -310,7 +310,7 @@ error:
 #endif
 }
 
-static int16_t sdl_joypad_button_state(
+static int32_t sdl_joypad_button_state(
       sdl_joypad_t *pad,
       unsigned port, uint16_t joykey)
 {
@@ -346,7 +346,7 @@ static int16_t sdl_joypad_button_state(
    return 0;
 }
 
-static int16_t sdl_joypad_button(unsigned port, uint16_t joykey)
+static int32_t sdl_joypad_button(unsigned port, uint16_t joykey)
 {
    sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad || !pad->joypad)

@@ -1305,6 +1305,8 @@ MSG_HASH(
    "Διγραμμικό Φιλτράρισμα"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -4877,14 +4879,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
    "Λήφθηκε σύνδεση από: \"%s (%s)\""
-   )
-MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Δημόσια διεύθυνση"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "Αποτυχία Καθορισμού Θυρών"
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
