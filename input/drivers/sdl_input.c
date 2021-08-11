@@ -35,6 +35,11 @@
 #include "../../gfx/common/sdl2_common.h"
 #endif
 
+#ifdef WEBOS
+#include <SDL_webOS.h>
+#include <dlfcn.h>
+#endif
+
 /* TODO/FIXME -
  * fix game focus toggle */
 
@@ -54,6 +59,15 @@ typedef struct sdl_input
    int mouse_wl;
    int mouse_wr;
 } sdl_input_t;
+
+#ifdef WEBOS
+enum sdl_webos_special_key {
+   sdl_webos_spkey_back,
+   sdl_webos_spkey_size,
+};
+
+static uint8_t sdl_webos_special_keymap[sdl_webos_spkey_size] = {0};
+#endif
 
 static void *sdl_input_init(const char *joypad_driver)
 {
@@ -75,6 +89,18 @@ static bool sdl_key_pressed(int key)
 #else
    const uint8_t *keymap = SDL_GetKeyState(&num_keys);
    unsigned sym          = rarch_keysym_lut[(enum retro_key)key];
+#endif
+
+#ifdef WEBOS
+   if (   (key == RETROK_BACKSPACE )
+       && sdl_webos_special_keymap[sdl_webos_spkey_back])
+   {
+      /* Reset to unpressed state */
+      sdl_webos_special_keymap[sdl_webos_spkey_back] = 0;
+      return true;
+   }
+   if (key == RETROK_F1 && keymap[SDL_WEBOS_SCANCODE_EXIT])
+      return true;
 #endif
 
    if (sym >= (unsigned)num_keys)
@@ -164,6 +190,27 @@ static int16_t sdl_input_state(
                   return sdl->mouse_l;
                case RETRO_DEVICE_ID_MOUSE_RIGHT:
                   return sdl->mouse_r;
+#ifdef WEBOS
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  /* Note: webOS wheel is reversed */
+                  if (sdl->mouse_wd != 0)
+                  {
+                      sdl->mouse_wd = 0;
+                      return 1;
+                  }
+                  return 0;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  if (sdl->mouse_wu != 0)
+                  {
+                      sdl->mouse_wu = 0;
+                      return 1;
+                  }
+                  return 0;
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return sdl->mouse_abs_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return sdl->mouse_abs_y;
+#else
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                   return sdl->mouse_wu;
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
@@ -172,6 +219,7 @@ static int16_t sdl_input_state(
                   return sdl->mouse_x;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   return sdl->mouse_y;
+#endif
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return sdl->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
@@ -330,9 +378,41 @@ static void sdl_input_poll(void *data)
    {
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
       {
-         uint16_t mod = 0;
+         uint16_t mod  = 0;
          unsigned code = input_keymaps_translate_keysym_to_rk(
                event.key.keysym.sym);
+#ifdef WEBOS
+         switch ((int) event.key.keysym.scancode)
+         {
+            case SDL_WEBOS_SCANCODE_BACK:
+               /* Because webOS is sending DOWN/UP at the same time, 
+                  we save this flag for later */
+               sdl_webos_special_keymap[sdl_webos_spkey_back] |= event.type == SDL_KEYDOWN;
+               code = RETROK_BACKSPACE;
+               break;
+            case SDL_WEBOS_SCANCODE_RED:
+               code = RETROK_x;
+               break;
+            case SDL_WEBOS_SCANCODE_GREEN:
+               code = RETROK_z;
+               break;
+            case SDL_WEBOS_SCANCODE_YELLOW:
+               code = RETROK_s;
+               break;
+            case SDL_WEBOS_SCANCODE_BLUE:
+               code = RETROK_a;
+               break;
+            case SDL_WEBOS_SCANCODE_EXIT:
+               code = RETROK_F1;
+               break;
+            default:
+               break;
+         }
+
+         /* Disable cursor when using the buttons */
+         if (code && code != RETROK_RETURN)
+            SDL_webOSCursorVisibility(0);
+#endif
 
          if (event.key.keysym.mod & KMOD_SHIFT)
             mod |= RETROKMOD_SHIFT;
@@ -396,3 +476,23 @@ input_driver_t input_sdl = {
 #endif
    NULL
 };
+
+#ifdef WEBOS
+SDL_bool SDL_webOSCursorVisibility(SDL_bool visible)
+{
+   static SDL_bool (*fn)(SDL_bool visible) = NULL;
+   static bool dlsym_called = false;
+   if (!dlsym_called)
+   {
+      fn           = dlsym(RTLD_NEXT, "SDL_webOSCursorVisibility");
+      dlsym_called = true;
+   }
+   if (!fn)
+   {
+      SDL_ShowCursor(SDL_DISABLE);
+      SDL_ShowCursor(SDL_ENABLE);
+      return SDL_TRUE;
+   }
+   return fn(visible);
+}
+#endif

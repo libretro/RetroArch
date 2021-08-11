@@ -2437,6 +2437,10 @@ ifeq ($(HAVE_VITAGLES), 1)
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 
+ifeq ($(HAVE_WEBOS), 1)
+  DEFINES += -DWEBOS
+endif
+
 #####################################
 ### Android Play Feature Delivery ###
 ### (Play Store build core        ###
