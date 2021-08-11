@@ -53,9 +53,9 @@ typedef struct
    bool btn_l, btn_m, btn_r, btn_b4, btn_b5;
 } winraw_mouse_t;
 
-struct pointer_status
+struct winraw_pointer_status
 {
-   struct pointer_status *next;
+   struct winraw_pointer_status *next;
    int pointer_id;
    int pointer_x;
    int pointer_y;
@@ -66,7 +66,7 @@ typedef struct
    double view_abs_ratio_x;
    double view_abs_ratio_y;
    HWND window;
-   struct pointer_status pointer_head;  /* dummy head for easier iteration */
+   struct winraw_pointer_status pointer_head;  /* dummy head for easier iteration */
    RECT active_rect; /* Needed for checking for a windows size change */
    RECT prev_rect; /* Needed for checking for a windows size change */
    int rect_delay; /* Needed to delay resize of window */
@@ -829,7 +829,7 @@ static int16_t winraw_input_state(
             int16_t res_screen_x        = 0;
             int16_t res_screen_y        = 0;
             unsigned num                = 0;
-            struct pointer_status *
+            struct winraw_pointer_status *
                check_pos                = wr->pointer_head.next;
 
             vp.x                        = 0;
