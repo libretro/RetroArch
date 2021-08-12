@@ -47,6 +47,7 @@ RETRO_BEGIN_DECLS
 #if !defined(_XBOX)
 extern unsigned g_win32_resize_width;
 extern unsigned g_win32_resize_height;
+extern float g_win32_refresh_rate;
 extern bool g_win32_inited;
 extern bool g_win32_restore_desktop;
 extern ui_window_win32_t main_window;

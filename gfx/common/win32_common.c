@@ -307,6 +307,7 @@ bool g_win32_restore_desktop        = false;
 bool g_win32_inited                 = false;
 unsigned g_win32_resize_width       = 0;
 unsigned g_win32_resize_height      = 0;
+float g_win32_refresh_rate          = 0;
 ui_window_win32_t main_window;
 
 /* TODO/FIXME - static globals */
@@ -2255,6 +2256,7 @@ bool win32_set_video_mode(void *data,
    mon_rect                    = current_mon.rcMonitor;
    g_win32_resize_width        = width;
    g_win32_resize_height       = height;
+   g_win32_refresh_rate        = settings->floats.video_refresh_rate;
 
    win32_set_style(&current_mon, &hm_to_use, &width, &height,
          fullscreen, windowed_full, &rect, &mon_rect, &style);
