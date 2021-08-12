@@ -1021,7 +1021,7 @@ int rc_api_init_fetch_image_request(rc_api_request_t* request, const rc_api_fetc
     case RC_IMAGE_TYPE_USER:
       rc_url_builder_append(&builder, "/UserPic/", 9);
       rc_url_builder_append(&builder, api_params->image_name, strlen(api_params->image_name));
-      rc_url_builder_append(&builder, ".png", 9);
+      rc_url_builder_append(&builder, ".png", 4);
       break;
 
     default:
