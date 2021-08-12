@@ -456,7 +456,11 @@ static void scan_tree (deflate_state *s, ct_data *tree, int max_code)
    int max_count = 7;         /* max repeat count */
    int min_count = 4;         /* min repeat count */
 
-   if (nextlen == 0) max_count = 138, min_count = 3;
+   if (nextlen == 0)
+   {
+      max_count = 138;
+      min_count = 3;
+   }
    tree[max_code+1].Len = (ush)0xffff; /* guard */
 
    for (n = 0; n <= max_code; n++) {
@@ -475,11 +479,14 @@ static void scan_tree (deflate_state *s, ct_data *tree, int max_code)
       }
       count = 0; prevlen = curlen;
       if (nextlen == 0) {
-         max_count = 138, min_count = 3;
+         max_count = 138;
+         min_count = 3;
       } else if (curlen == nextlen) {
-         max_count = 6, min_count = 3;
+         max_count = 6;
+         min_count = 3;
       } else {
-         max_count = 7, min_count = 4;
+         max_count = 7;
+         min_count = 4;
       }
    }
 }
@@ -499,7 +506,11 @@ static void send_tree (deflate_state *s, ct_data *tree, int max_code)
    int min_count = 4;         /* min repeat count */
 
    /* tree[max_code+1].Len = -1; */  /* guard already set */
-   if (nextlen == 0) max_count = 138, min_count = 3;
+   if (nextlen == 0)
+   {
+      max_count = 138;
+      min_count = 3;
+   }
 
    for (n = 0; n <= max_code; n++) {
       curlen = nextlen; nextlen = tree[n+1].Len;
@@ -523,11 +534,14 @@ static void send_tree (deflate_state *s, ct_data *tree, int max_code)
       }
       count = 0; prevlen = curlen;
       if (nextlen == 0) {
-         max_count = 138, min_count = 3;
+         max_count = 138;
+         min_count = 3;
       } else if (curlen == nextlen) {
-         max_count = 6, min_count = 3;
+         max_count = 6;
+         min_count = 3;
       } else {
-         max_count = 7, min_count = 4;
+         max_count = 7;
+         min_count = 4;
       }
    }
 }
