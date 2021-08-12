@@ -81,9 +81,9 @@
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
-#ifdef HAVE_NETPLAYDISCOVERY
+/* TODO/FIXME - we can't ifdef netplay_discovery.h because of these pesky globals 'netplay_room_count' and 'netplay_room_list' - let's please get rid of them */
 #include "../../network/netplay/netplay_discovery.h"
-#endif
+
 #include "../../wifi/wifi_driver.h"
 #endif
 
