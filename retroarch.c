@@ -2625,8 +2625,8 @@ int generic_menu_entry_action(
             p_rarch->accessibility_enabled)
          && !menu_input_dialog_get_display_kb())
    {
-      char current_label[255];
-      char current_value[255];
+      char current_label[128];
+      char current_value[128];
       char title_name[255];
       char speak_string[512];
 
