@@ -4689,7 +4689,7 @@ bool input_remapping_load_file(void *data, const char *path)
          }
          else
          {
-            char stk_ident[128];
+            char stk_ident[256];
             char key_ident[128];
             int stk_remap = -1;
             int key_remap = -1;
