@@ -45,7 +45,6 @@
 #include "paths.h"
 #include "retroarch.h"
 #include "verbosity.h"
-#include "lakka.h"
 
 #include "gfx/gfx_animation.h"
 
@@ -56,6 +55,12 @@
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
+#endif
+
+#include "lakka.h"
+
+#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#include "switch_performance_profiles.h"
 #endif
 
 enum video_driver_enum
