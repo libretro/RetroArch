@@ -238,7 +238,8 @@ static bool win32_display_server_set_resolution(void *data,
       serv->orig_width  = GetSystemMetrics(SM_CXSCREEN);
    if (serv->orig_height == 0)
       serv->orig_height = GetSystemMetrics(SM_CYSCREEN);
-   serv->orig_refresh   = dm.dmDisplayFrequency;
+   if (serv->orig_refresh == 0)
+      serv->orig_refresh = dm.dmDisplayFrequency;
 
    /* Used to stop super resolution bug */
    if (width == dm.dmPelsWidth)
