@@ -4769,14 +4769,12 @@ finish:
    if (transf)
       free(transf);
 }
-#endif
 
 static int action_ok_download_generic(const char *path,
       const char *label, const char *menu_label,
       unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums enum_idx)
 {
-#ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH];
    char s2[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
@@ -4868,7 +4866,6 @@ static int action_ok_download_generic(const char *path,
 
    task_push_http_transfer_file(s3, suppress_msg,
          msg_hash_to_str(enum_idx), cb, transf);
-#endif
    return 0;
 }
 
@@ -4890,7 +4887,6 @@ static int action_ok_core_content_download(const char *path,
 static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
    core_updater_list_t *core_list    = core_updater_list_get_cached();
    settings_t          *settings     = config_get_ptr();
    bool auto_backup                  = settings->bools.core_updater_auto_backup;
@@ -4914,11 +4910,9 @@ static int action_ok_core_updater_download(const char *path,
             auto_backup, (size_t)auto_backup_history_size,
             path_dir_libretro, path_dir_core_assets);
 
-#endif
    return 0;
 }
 
-#ifdef HAVE_NETWORKING
 static int action_ok_update_installed_cores(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4997,6 +4991,7 @@ static int action_ok_sideload_core(const char *path,
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_thumbnails_updater_download, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
@@ -5014,6 +5009,7 @@ DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_databases, MENU_ENUM_LABEL_CB_UPDATE
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_cheats, MENU_ENUM_LABEL_CB_UPDATE_CHEATS)
 #endif
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_autoconfig_profiles, MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES)
+#endif
 
 static int action_ok_game_specific_core_options_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5732,6 +5728,7 @@ static int action_ok_netplay_connect_room(const char *path,
    return 0;
 }
 
+#ifdef HAVE_NETPLAYDISCOVERY
 static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5755,6 +5752,63 @@ static int action_ok_netplay_lan_scan(const char *path,
       return generic_action_ok_command(CMD_EVENT_RESUME);
    return -1;
 }
+
+static void netplay_lan_scan_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   struct netplay_host_list *netplay_hosts = NULL;
+   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
+   unsigned menu_type                      = 0;
+   const char *label                       = NULL;
+   const char *path                        = NULL;
+
+   /* TODO/FIXME: I have no idea what this is supposed to be
+    * doing...
+    * As it stands, this function will never get past the
+    * following sanity check (i.e. netplay_lan_scan_callback()
+    * will never be called when we are viewing the 'lan scan
+    * settings' list, since this list doesn't even exist...).
+    * Moreover, any menu entries that get added here
+    * (menu_entries_append_enum()) will be erased by the
+    * subsequent netplay_refresh_rooms_cb() callback - and
+    * menu entries should never be added outside of
+    * menu_displaylist.c anyway.
+    * This is some legacy garbage, and someone who understands
+    * netplay needs to rip it all out. */
+
+   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
+
+   /* Don't push the results if we left the LAN scan menu */
+   if (!string_is_equal(label,
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
+      return;
+
+   if (!netplay_discovery_driver_ctl(
+            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
+            (void *) &netplay_hosts))
+      return;
+
+   if (netplay_hosts->size > 0)
+   {
+      unsigned i;
+      file_list_t *file_list = menu_entries_get_selection_buf_ptr(0);
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+
+      for (i = 0; i < netplay_hosts->size; i++)
+      {
+         struct netplay_host *host = &netplay_hosts->hosts[i];
+         menu_entries_append_enum(file_list,
+               host->nick,
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CONNECT_TO),
+               MENU_ENUM_LABEL_NETPLAY_CONNECT_TO,
+               MENU_NETPLAY_LAN_SCAN, 0, 0);
+      }
+   }
+}
+#endif
 
 static void netplay_refresh_rooms_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
@@ -5881,63 +5935,6 @@ finish:
       free(user_data);
 }
 
-#ifdef HAVE_NETPLAYDISCOVERY
-static void netplay_lan_scan_callback(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *error)
-{
-   struct netplay_host_list *netplay_hosts = NULL;
-   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
-   unsigned menu_type                      = 0;
-   const char *label                       = NULL;
-   const char *path                        = NULL;
-
-   /* TODO/FIXME: I have no idea what this is supposed to be
-    * doing...
-    * As it stands, this function will never get past the
-    * following sanity check (i.e. netplay_lan_scan_callback()
-    * will never be called when we are viewing the 'lan scan
-    * settings' list, since this list doesn't even exist...).
-    * Moreover, any menu entries that get added here
-    * (menu_entries_append_enum()) will be erased by the
-    * subsequent netplay_refresh_rooms_cb() callback - and
-    * menu entries should never be added outside of
-    * menu_displaylist.c anyway.
-    * This is some legacy garbage, and someone who understands
-    * netplay needs to rip it all out. */
-
-   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
-
-   /* Don't push the results if we left the LAN scan menu */
-   if (!string_is_equal(label,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
-      return;
-
-   if (!netplay_discovery_driver_ctl(
-            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
-            (void *) &netplay_hosts))
-      return;
-
-   if (netplay_hosts->size > 0)
-   {
-      unsigned i;
-      file_list_t *file_list = menu_entries_get_selection_buf_ptr(0);
-
-      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-
-      for (i = 0; i < netplay_hosts->size; i++)
-      {
-         struct netplay_host *host = &netplay_hosts->hosts[i];
-         menu_entries_append_enum(file_list,
-               host->nick,
-               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CONNECT_TO),
-               MENU_ENUM_LABEL_NETPLAY_CONNECT_TO,
-               MENU_NETPLAY_LAN_SCAN, 0, 0);
-      }
-   }
-}
-#endif
 
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -6996,17 +6993,15 @@ static int action_ok_manual_content_scan_start(const char *path,
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
 static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
    if (command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL))
       return generic_action_ok_command(CMD_EVENT_RESUME);
-#endif
    return -1;
 }
 
-#ifdef HAVE_NETWORKING
 static void action_ok_netplay_enable_client_hostname_cb(
    void *ignore, const char *hostname)
 {
@@ -7046,12 +7041,10 @@ static void action_ok_netplay_enable_client_hostname_cb(
    menu_input_dialog_end();
    retroarch_menu_running_finished(false);
 }
-#endif
 
 static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
    menu_input_ctx_line_t line;
    settings_t       *settings = config_get_ptr();
    const char *netplay_server = settings->paths.netplay_server;
@@ -7065,33 +7058,26 @@ static int action_ok_netplay_enable_client(const char *path,
       action_ok_netplay_enable_client_hostname_cb(NULL, netplay_server);
       return 0;
    }
-   else
-   {
-      line.label         = msg_hash_to_str(
+   line.label         = msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
-      line.label_setting = "no_setting";
-      line.type          = 0;
-      line.idx           = 0;
-      line.cb            = action_ok_netplay_enable_client_hostname_cb;
+   line.label_setting = "no_setting";
+   line.type          = 0;
+   line.idx           = 0;
+   line.cb            = action_ok_netplay_enable_client_hostname_cb;
 
-      if (menu_input_dialog_start(&line))
-         return 0;
-   }
-#endif
+   if (menu_input_dialog_start(&line))
+      return 0;
    return -1;
 }
 
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
    generic_action_ok_command(CMD_EVENT_NETPLAY_DISCONNECT);
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
-#else
-   return -1;
-#endif
 }
+#endif
 
 static int action_ok_core_create_backup(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -7339,10 +7325,10 @@ static int action_ok_delete_playlist(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+#ifdef HAVE_NETWORKING
 static int action_ok_pl_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
    settings_t *settings = config_get_ptr();
 
    if (settings)
@@ -7372,11 +7358,9 @@ static int action_ok_pl_content_thumbnails(const char *path,
          return 0;
       }
    }
-#endif
    return -1;
 }
 
-#ifdef HAVE_NETWORKING
 static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -7687,9 +7671,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_UPDATE_OVERLAYS,                     action_ok_update_overlays},
          {MENU_ENUM_LABEL_UPDATE_DATABASES,                    action_ok_update_databases},
          {MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,          action_ok_update_autoconfig_profiles},
+#ifdef HAVE_NETWORKING
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,                 action_ok_netplay_enable_host},
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,               action_ok_netplay_enable_client},
          {MENU_ENUM_LABEL_NETPLAY_DISCONNECT,                  action_ok_netplay_disconnect},
+#endif
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
          {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},
          {MENU_ENUM_LABEL_DELETE_PLAYLIST,                     action_ok_delete_playlist},
@@ -8207,16 +8193,22 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_core_content_download);
+#endif
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_thumbnails);
             break;
          case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_pl_content_thumbnails);
+#endif
             break;
          case FILE_TYPE_DOWNLOAD_CORE:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_core_updater_download);
+#endif
             break;
          case FILE_TYPE_SIDELOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_sideload_core);
@@ -8261,7 +8253,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #endif
             break;
          case MENU_NETPLAY_LAN_SCAN:
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY)
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
 #endif
             break;
