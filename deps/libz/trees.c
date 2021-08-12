@@ -262,7 +262,11 @@ static void gen_bitlen(deflate_state *s, tree_desc *desc)
    for (h = s->heap_max+1; h < HEAP_SIZE; h++) {
       n = s->heap[h];
       bits = tree[tree[n].Dad].Len + 1;
-      if (bits > max_length) bits = max_length, overflow++;
+      if (bits > max_length)
+      {
+         bits = max_length;
+         overflow++;
+      }
       tree[n].Len = (ush)bits;
       /* We overwrite tree[n].Dad which is no longer needed */
 
@@ -373,7 +377,8 @@ static void build_tree(deflate_state *s, tree_desc *desc)
     * heap[SMALLEST]. The sons of heap[n] are heap[2*n] and heap[2*n+1].
     * heap[0] is not used.
     */
-   s->heap_len = 0, s->heap_max = HEAP_SIZE;
+   s->heap_len = 0;
+   s->heap_max = HEAP_SIZE;
 
    for (n = 0; n < elems; n++) {
       if (tree[n].Freq != 0) {
@@ -856,7 +861,8 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf, ulg stored_len,
       register unsigned res = 0;
       do {
          res |= codes & 1;
-         codes >>= 1, res <<= 1;
+         codes >>= 1;
+         res   <<= 1;
       } while (--len > 0);
       return res >> 1;
    }
