@@ -7883,8 +7883,10 @@ static bool netplay_pre_frame(
 
    if (netplay->is_server && !netplay_use_mitm_server)
    {
+#ifdef HAVE_NETPLAYDISCOVERY
       /* Advertise our server */
       netplay_lan_ad_server(netplay);
+#endif
 
       /* NAT traversal if applicable */
       if (netplay->nat_traversal &&

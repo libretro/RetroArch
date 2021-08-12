@@ -81,7 +81,9 @@
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
+#ifdef HAVE_NETPLAYDISCOVERY
 #include "../../network/netplay/netplay_discovery.h"
+#endif
 #include "../../wifi/wifi_driver.h"
 #endif
 
@@ -5856,7 +5858,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
          int lan_room_count                   = 0;
          bool refresh                         = false;
 
-#ifndef RARCH_CONSOLE
+#ifdef HAVE_NETPLAYDISCOVERY
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
          if (lan_hosts)
             lan_room_count                    = (int)lan_hosts->size;
