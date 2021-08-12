@@ -2147,7 +2147,7 @@ struct rarch_state
 #endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
-   char subsystem_path[PATH_MAX_LENGTH];
+   char subsystem_path[256];
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
    char path_libretro[PATH_MAX_LENGTH];
