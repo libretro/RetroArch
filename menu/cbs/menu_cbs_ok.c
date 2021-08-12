@@ -5686,12 +5686,10 @@ static int action_ok_wifi_disconnect(const char *path,
    task_push_wifi_disconnect(wifi_menu_refresh_callback);
    return true;
 }
-#endif
 
 static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
    char tmp_hostname[4115];
    unsigned room_index = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
 
@@ -5731,17 +5729,12 @@ static int action_ok_netplay_connect_room(const char *path,
          netplay_room_list[room_index].corename,
          netplay_room_list[room_index].subsystem_name);
 
-#else
-   return -1;
-
-#endif
    return 0;
 }
 
 static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
    struct netplay_host_list *hosts = NULL;
    struct netplay_host *host       = NULL;
 
@@ -5760,15 +5753,9 @@ static int action_ok_netplay_lan_scan(const char *path,
    /* Enable Netplay */
    if (command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void *) host))
       return generic_action_ok_command(CMD_EVENT_RESUME);
-#endif
    return -1;
 }
 
-DEFAULT_ACTION_OK_DL_PUSH(action_ok_content_collection_list, FILEBROWSER_SELECT_COLLECTION, ACTION_OK_DL_CONTENT_COLLECTION_LIST, NULL)
-DEFAULT_ACTION_OK_DL_PUSH(action_ok_push_content_list, FILEBROWSER_SELECT_FILE, ACTION_OK_DL_CONTENT_LIST, settings->paths.directory_menu_content)
-DEFAULT_ACTION_OK_DL_PUSH(action_ok_push_scan_file, FILEBROWSER_SCAN_FILE, ACTION_OK_DL_CONTENT_LIST, settings->paths.directory_menu_content)
-
-#ifdef HAVE_NETWORKING
 static void netplay_refresh_rooms_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
@@ -5894,7 +5881,7 @@ finish:
       free(user_data);
 }
 
-#ifndef RARCH_CONSOLE
+#ifdef HAVE_NETPLAYDISCOVERY
 static void netplay_lan_scan_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -5956,13 +5943,18 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char url [2048] = "http://lobby.libretro.com/list/";
-#ifndef RARCH_CONSOLE
+#ifdef HAVE_NETPLAYDISCOVERY
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
    return 0;
 }
 #endif
+
+DEFAULT_ACTION_OK_DL_PUSH(action_ok_content_collection_list, FILEBROWSER_SELECT_COLLECTION, ACTION_OK_DL_CONTENT_COLLECTION_LIST, NULL)
+DEFAULT_ACTION_OK_DL_PUSH(action_ok_push_content_list, FILEBROWSER_SELECT_FILE, ACTION_OK_DL_CONTENT_LIST, settings->paths.directory_menu_content)
+DEFAULT_ACTION_OK_DL_PUSH(action_ok_push_scan_file, FILEBROWSER_SCAN_FILE, ACTION_OK_DL_CONTENT_LIST, settings->paths.directory_menu_content)
+
 
 static int action_ok_scan_directory_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -7811,11 +7803,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_WIFI_SETTINGS,                       action_ok_wifi_list},
          {MENU_ENUM_LABEL_WIFI_NETWORK_SCAN,                   action_ok_wifi_networks_list},
          {MENU_ENUM_LABEL_WIFI_DISCONNECT,                     action_ok_wifi_disconnect},
+         {MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,                action_ok_netplay_connect_room},
 #endif
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
-         {MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,                action_ok_netplay_connect_room},
          {MENU_ENUM_LABEL_LAKKA_SERVICES,                      action_ok_lakka_services},
          {MENU_ENUM_LABEL_NETPLAY_SETTINGS,                    action_ok_netplay_sublist},
          {MENU_ENUM_LABEL_USER_SETTINGS,                       action_ok_user_list},
@@ -8269,7 +8261,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #endif
             break;
          case MENU_NETPLAY_LAN_SCAN:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
+#endif
             break;
          case FILE_TYPE_CURSOR:
             if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))

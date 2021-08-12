@@ -55,6 +55,11 @@
 #define HAVE_INET6 1
 #endif
 
+/* TODO/FIXME - globals referenced outside */
+struct netplay_room *netplay_room_list = NULL;
+int netplay_room_count                 = 0;
+
+#ifdef HAVE_NETPLAYDISCOVERY
 struct ad_packet
 {
    uint32_t header;
@@ -71,11 +76,6 @@ struct ad_packet
    char subsystem_name[NETPLAY_HOST_STR_LEN];
 };
 
-/* TODO/FIXME - globals referenced outside */
-struct netplay_room *netplay_room_list = NULL;
-int netplay_room_count                 = 0;
-
-#ifdef HAVE_NETPLAYDISCOVERY
 /* TODO/FIXME - static globals */
 
 /* LAN discovery sockets */
@@ -89,7 +89,6 @@ static struct ad_packet ad_packet_buffer;
 static struct netplay_host_list discovered_hosts;
 
 static size_t discovered_hosts_allocated;
-#endif
 
 #ifdef HAVE_SOCKET_LEGACY
 
@@ -109,7 +108,6 @@ static int16_t htons_for_morons(int16_t value)
 
 #endif
 
-#ifdef HAVE_NETPLAYDISCOVERY
 static bool netplay_lan_ad_client(void)
 {
    unsigned i;
@@ -241,7 +239,6 @@ static bool netplay_lan_ad_client(void)
 
    return true;
 }
-#endif
 
 /** Initialize Netplay discovery (client) */
 bool init_netplay_discovery(void)
@@ -285,7 +282,6 @@ void deinit_netplay_discovery(void)
 bool netplay_discovery_driver_ctl(
       enum rarch_netplay_discovery_ctl_state state, void *data)
 {
-#ifdef HAVE_NETPLAYDISCOVERY
    int ret;
    char port_str[6];
    unsigned k = 0;
@@ -351,11 +347,9 @@ bool netplay_discovery_driver_ctl(
       default:
          return false;
    }
-#endif
    return true;
 }
 
-#ifdef HAVE_NETPLAYDISCOVERY
 static bool init_lan_ad_server_socket(netplay_t *netplay, uint16_t port)
 {
    struct addrinfo *addr = NULL;
@@ -380,7 +374,6 @@ error:
       freeaddrinfo_retro(addr);
    return false;
 }
-#endif
 
 /**
  * netplay_lan_ad_server
@@ -389,8 +382,7 @@ error:
  */
 bool netplay_lan_ad_server(netplay_t *netplay)
 {
-/* Todo: implement net_ifinfo and ntohs for consoles */
-#ifdef HAVE_NETPLAYDISCOVERY
+   /* TODO/FIXME: implement net_ifinfo and ntohs for consoles */
    fd_set fds;
    int ret;
    unsigned i;
@@ -557,6 +549,6 @@ bool netplay_lan_ad_server(netplay_t *netplay)
       }
    }
    net_ifinfo_free(&interfaces);
-#endif
    return true;
 }
+#endif
