@@ -4997,7 +4997,9 @@ static int action_ok_sideload_core(const char *path,
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_thumbnails_updater_download, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
+#ifdef HAVE_LAKKA
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD)
+#endif
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_assets, MENU_ENUM_LABEL_CB_UPDATE_ASSETS)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_core_info_files, MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_update_overlays, MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS)
@@ -8222,13 +8224,19 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_sideload_core);
             break;
          case FILE_TYPE_DOWNLOAD_URL:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_download_url);
+#endif
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL:
+#ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_download);
+#endif
             break;
          case FILE_TYPE_DOWNLOAD_LAKKA:
+#if defined(HAVE_NETWORKING) && defined(HAVE_LAKKA)
             BIND_ACTION_OK(cbs, action_ok_lakka_download);
+#endif
             break;
          case FILE_TYPE_DOWNLOAD_CORE_INFO:
             break;
