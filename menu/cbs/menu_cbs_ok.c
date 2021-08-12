@@ -6211,7 +6211,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       settings->uints.video_fullscreen_x = width;
       settings->uints.video_fullscreen_y = height;
 
-      return 1;
+      action_cancel_pop_default(NULL, NULL, 0, 0);
    }
 
    return 0;
