@@ -176,8 +176,6 @@ static void frontend_switch_get_env(
       int *argc, char *argv[], void *args, void *params_data)
 {
    unsigned i;
-   (void)args;
-
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
    logger_init();
@@ -320,16 +318,6 @@ static void frontend_switch_deinit(void *data)
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
    char game_path[PATH_MAX-4];
-#ifndef IS_SALAMANDER
-   const char *arg_data[3];
-   int args           = 0;
-   arg_data[0]        = NULL;
-
-   arg_data[args]     = elf_path_cst;
-   arg_data[args + 1] = NULL;
-   args++;
-#endif
-
    game_path[0]       = '\0';
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
@@ -338,9 +326,6 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
-      arg_data[args]     = game_path;
-      arg_data[args + 1] = NULL;
-      args++;
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
