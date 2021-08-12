@@ -117,6 +117,9 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
+#endif
+
+#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
 #include "switch_performance_profiles.h"
 #endif
 
@@ -15239,9 +15242,12 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AI_SERVICE_CALL:
          {
 #ifdef HAVE_TRANSLATE
+#ifdef HAVE_ACCESSIBILITY
             bool accessibility_enable = settings->bools.accessibility_enable;
             unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+#endif
             unsigned ai_service_mode  = settings->uints.ai_service_mode;
+
             if (ai_service_mode == 1 && is_ai_service_speech_running())
             {
 #ifdef HAVE_AUDIOMIXER

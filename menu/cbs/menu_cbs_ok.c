@@ -96,6 +96,10 @@
 #include "../../play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#include "../../switch_performance_profiles.h"
+#endif
+
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
