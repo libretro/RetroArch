@@ -1051,16 +1051,22 @@ static bool core_option_manager_parse_option(
  * @src_conf_path : Filesystem path from which to load
  *                  initial config settings.
  * @options_v2    : Pointer to retro_core_options_v2 struct
+ * @categorized   : Flag specifying whether core option
+ *                  category information should be read
+ *                  from @options_v2
  *
  * Creates and initializes a core manager handle. Parses
  * information from a retro_core_options_v2 struct.
+ * If @categorized is false, all option category
+ * assignments will be ignored.
  *
  * Returns: handle to new core manager handle if successful,
  * otherwise NULL.
  **/
 core_option_manager_t *core_option_manager_new(
       const char *conf_path, const char *src_conf_path,
-      const struct retro_core_options_v2 *options_v2)
+      const struct retro_core_options_v2 *options_v2,
+      bool categorized)
 {
    const struct retro_core_option_v2_category *option_cat   = NULL;
    const struct retro_core_option_v2_definition *option_def = NULL;
@@ -1107,9 +1113,9 @@ core_option_manager_t *core_option_manager_new(
    if (!string_is_empty(src_conf_path))
       config_src = config_file_new_from_path_to_string(src_conf_path);
 
-   /* Get number of categories
+   /* Get number of categories, if required
     * > Note: 'option_cat->info == NULL' is valid */
-   if (option_cats)
+   if (categorized && option_cats)
    {
       for (option_cat = option_cats;
            !string_is_empty(option_cat->key) &&

@@ -276,6 +276,10 @@
 #endif
 #define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
 
+/* Specifies whether cores are allowed to
+ * present core options in category submenus */
+#define DEFAULT_CORE_OPTION_CATEGORY_ENABLE true
+
 /* Specifies whether to cache core info
  * into a single (compressed) file for improved
  * load times on platforms with slow IO */

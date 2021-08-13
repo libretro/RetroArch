@@ -9636,9 +9636,9 @@ static bool setting_append_list(
          {
             unsigned i, listing = 0;
 #ifndef HAVE_DYNAMIC
-            struct bool_entry bool_entries[8];
+            struct bool_entry bool_entries[9];
 #else
-            struct bool_entry bool_entries[7];
+            struct bool_entry bool_entries[8];
 #endif
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -9691,6 +9691,13 @@ static bool setting_append_list(
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
             bool_entries[listing].default_value  = DEFAULT_ALLOW_ROTATE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.core_option_category_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE;
+            bool_entries[listing].default_value  = DEFAULT_CORE_OPTION_CATEGORY_ENABLE;
+            bool_entries[listing].flags          = SD_FLAG_NONE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.core_info_cache_enable;

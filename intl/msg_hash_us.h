@@ -2949,6 +2949,14 @@ MSG_HASH(
    "Check if all the required firmware is present before attempting to load content."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Core Option Categories"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Allow cores to present options in category-based submenus. NOTE: Core must be reloaded for changes to take effect."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
    "Cache Core Info Files"
    )
