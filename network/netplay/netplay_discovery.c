@@ -295,7 +295,6 @@ bool netplay_discovery_driver_ctl(
       {
          net_ifinfo_t interfaces;
          struct addrinfo hints = {0}, *addr;
-         int can_broadcast     = 1;
 
          if (!net_ifinfo_new(&interfaces))
             return false;
@@ -307,9 +306,12 @@ bool netplay_discovery_driver_ctl(
 
          /* Make it broadcastable */
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
-         if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST,
+         {
+            int can_broadcast     = 1;
+            if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST,
                   (const char *)&can_broadcast, sizeof(can_broadcast)) < 0)
-            RARCH_WARN("[Discovery] Failed to set netplay discovery port to broadcast\n");
+               RARCH_WARN("[Discovery] Failed to set netplay discovery port to broadcast\n");
+         }
 #endif
 
          /* Put together the request */
