@@ -7554,9 +7554,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,     action_ok_shader_preset_remove_core},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,   action_ok_shader_preset_remove_parent},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,     action_ok_shader_preset_remove_game},
+#ifdef HAVE_NETWORKING
          {MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,                 action_ok_update_shaders_glsl},
          {MENU_ENUM_LABEL_UPDATE_CG_SHADERS,                   action_ok_update_shaders_cg},
          {MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,                action_ok_update_shaders_slang},
+#endif
 #endif
 #ifdef HAVE_AUDIOMIXER
          {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,                action_ok_push_audio_mixer_settings_list},
