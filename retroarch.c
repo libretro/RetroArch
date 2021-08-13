@@ -16601,6 +16601,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          {
             const struct retro_core_options_v2 *options_v2 =
                   (const struct retro_core_options_v2 *)data;
+            bool categories_enabled                        =
+                  settings->bools.core_option_category_enable;
 
             if (runloop_state.core_options)
                retroarch_deinit_core_options(p_rarch,
@@ -16608,6 +16610,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
             if (options_v2)
                rarch_init_core_options(p_rarch, options_v2);
+
+            /* Return value does not indicate success.
+             * Callback returns 'true' if core option
+             * categories are supported/enabled,
+             * otherwise 'false'. */
+            return categories_enabled;
          }
          break;
 
@@ -16620,6 +16628,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             struct retro_core_options_v2 *options_v2 =
                   core_option_manager_convert_v2_intl(
                         (const struct retro_core_options_v2_intl*)data);
+            bool categories_enabled                  =
+                  settings->bools.core_option_category_enable;
 
             if (runloop_state.core_options)
                retroarch_deinit_core_options(p_rarch,
@@ -16633,6 +16643,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                /* Clean up */
                core_option_manager_free_converted(options_v2);
             }
+
+            /* Return value does not indicate success.
+             * Callback returns 'true' if core option
+             * categories are supported/enabled,
+             * otherwise 'false'. */
+            return categories_enabled;
          }
          break;
 
@@ -36010,12 +36026,14 @@ static void rarch_init_core_options(
       struct rarch_state *p_rarch,
       const struct retro_core_options_v2 *options_v2)
 {
+   settings_t *settings    = p_rarch->configuration_settings;
+   bool categories_enabled = settings->bools.core_option_category_enable;
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
 
    /* Ensure these are NULL-terminated */
-   options_path[0]                = '\0';
-   src_options_path[0]            = '\0';
+   options_path[0]     = '\0';
+   src_options_path[0] = '\0';
 
    /* Get core options file path */
    rarch_init_core_options_path(p_rarch,
@@ -36025,7 +36043,8 @@ static void rarch_init_core_options(
    if (!string_is_empty(options_path))
       runloop_state.core_options =
             core_option_manager_new(options_path,
-                  src_options_path, options_v2);
+                  src_options_path, options_v2,
+                  categories_enabled);
 }
 
 void retroarch_init_task_queue(void)
