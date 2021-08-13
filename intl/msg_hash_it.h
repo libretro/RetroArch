@@ -2869,6 +2869,14 @@ MSG_HASH(
    "Controlla che il firmware richiesto sia presente prima di tentare di caricare il contenuto."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Categorie di Opzioni dei Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Permetti ai core di presentare le opzioni in sotto-menu basati sulle categorie. NOTA: il core deve essere ricaricato perché le modifiche abbiano effetto."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
    "File Cache Informazioni Core"
    )
@@ -6987,6 +6995,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Accesso non effettuato"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Errore di Rete"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Gioco Sconosciuto"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,

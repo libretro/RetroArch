@@ -7009,6 +7009,14 @@ MSG_HASH(
    "Nie jesteś zalogowany"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Błąd sieci"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Nieznana gra"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    "Nie można aktywować osiągnięć używając tego rdzenia"
 )

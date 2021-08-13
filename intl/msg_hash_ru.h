@@ -1894,7 +1894,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Установка желаемой задержки звука в миллисекундах. Может не учитываться, если драйвер не может обеспечить указанную задержку."
+   "Желаемая задержка звука в миллисекундах. Не учитывается, если драйвер не поддерживает заданное значение."
    )
 
 /* Settings > Audio > Resampler */
@@ -2101,6 +2101,14 @@ MSG_HASH(
    "Включить ввод с акселерометра, гироскопа и датчика освещённости, если поддерживается устройством. Может влиять на производительность и энергопотребление на ряде платформ."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Автоматический захват курсора"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Включить захват курсора при фокусе на приложении."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "Автоматически включать 'Игровой фокус'"
    )
@@ -2142,7 +2150,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "Количество секунд ожидания до перехода к следующей привязке."
+   "Период ожидания (в секундах) до перехода к следующей привязке."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
@@ -2150,7 +2158,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-   "Количество секунд для привязки нажатой кнопки."
+   "Период ожидания (в секундах) для привязки нажатой кнопки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
@@ -2905,6 +2913,14 @@ MSG_HASH(
    "Перед загрузкой контента проверять наличие необходимых микропрограмм."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Категории опций ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Разрешить ядрам отображать опции в виде подменю по категориям. Примечание: ядро необходимо перезагрузить для применения изменений."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
    "Кэшировать информационные файлы ядер"
    )
@@ -3034,7 +3050,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "Сохранять энергонезависимую память автоматически с заданным интервалом (в секундах)."
+   "Автоматически сохранять энергонезависимую память с заданным интервалом (в секундах)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -7065,6 +7081,14 @@ MSG_HASH(
    "Вход не выполнен"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Ошибка сети"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Неизвестная игра"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    "Достижения для данного ядра недоступны"
 )
@@ -9394,7 +9418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
-   "секунды"
+   "секунд"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_CORE,

@@ -2081,6 +2081,14 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Автоматичне захоплення миші"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Увімкнути захоплення миші коли програма активна."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "ВИМК"
    )
@@ -3776,6 +3784,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
    "Немає досягнень, щоб показати"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Помилка мережі"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Невідома гра"
+)
 
 /* Quick Menu > Information */
 

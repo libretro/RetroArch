@@ -2073,6 +2073,10 @@ MSG_HASH(
    "Salli syöte kiihtyvyysmittarista, gyroskoopista ja valaistusantureista, jos nykyinen laitteisto niitä tukee. Saattaa vaikuttaa suorituskykyyn ja/tai lisätä virrankulutusta joillakin alustoilla."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Hiiren automaattinen kaappaus"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "Ota \"Peliin kohdistaminen\"-tila käyttöön automaattisesti"
    )
@@ -7033,6 +7037,14 @@ MSG_HASH(
    "Ei sisäänkirjautuneena"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Verkkovirhe"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Tuntematon peli"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    "Ei voida aktivoida saavutuksia käyttämällä tätä ydintä"
 )
@@ -11387,6 +11399,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Videotila ei ole tuettu"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Ei voida kirjoittaa ytimen tietoja kansioon - ytimen tietovälimuisti poistetaan käytöstä"
    )
 
 /* Lakka */

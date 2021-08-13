@@ -2061,6 +2061,14 @@ MSG_HASH(
    "Permite a entrada a partir dos sensores do acelerômetro, giroscópio e da iluminação caso seja compatível pelo hardware atual. Pode ter um impacto no desempenho e/ou aumentar o consumo de energia em algumas plataformas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Capturar mouse automaticamente"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Ativa a captura do mouse ao focar no do aplicativo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "Ative automaticamente o modo 'Foco do jogo'"
    )
@@ -6999,6 +7007,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Você não está logado"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Erro de rede"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Jogo desconhecido"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,

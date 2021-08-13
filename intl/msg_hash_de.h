@@ -2620,11 +2620,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
-   "Steuerkreuz hoch"
+   "Steuerkreuz oben"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
-   "Steuerkreuz runter"
+   "Steuerkreuz unten"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
@@ -2676,11 +2676,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-   "Linker Analogstick Y+ (runter)"
+   "Linker Analogstick Y+ (unten)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-   "Linker Analogstick Y- (hoch)"
+   "Linker Analogstick Y- (oben)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
@@ -2692,11 +2692,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-   "Rechter Analogstick Y+ (runter)"
+   "Rechter Analogstick Y+ (unten)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-   "Rechter Analogstick Y- (hoch)"
+   "Rechter Analogstick Y- (oben)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
@@ -2728,11 +2728,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-   "Pistole Steuerkreuz hoch"
+   "Pistole Steuerkreuz oben"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-   "Pistole Steuerkreuz runter"
+   "Pistole Steuerkreuz unten"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
@@ -3814,7 +3814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   "Benachrichtigungs-Hintergrund-Deckkraft"
+   "Benachrichtigungshintergrund-Deckkraft"
    )
 
 /* Settings > User Interface */
@@ -6865,6 +6865,14 @@ MSG_HASH(
    "Nicht eingeloggt"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Netzwerkfehler"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Unbekanntes Spiel"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    "Errungenschaften können mit diesem Core nicht aktiviert werden"
 )
@@ -7107,7 +7115,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
-   "Runter + Y + L1 + R1"
+   "Unten + Y + L1 + R1"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HOLD_START,
