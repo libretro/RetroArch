@@ -3107,7 +3107,16 @@ static bool config_load_file(global_t *global,
    struct config_size_setting *size_settings       = populate_settings_size  (settings, &size_settings_size);
    struct config_array_setting *array_settings     = populate_settings_array (settings, &array_settings_size);
    struct config_path_setting *path_settings       = populate_settings_path  (settings, &path_settings_size);
-   config_file_t *conf                             = path ? config_file_new_from_path_to_string(path) : open_default_config_file();
+   config_file_t *conf                             = NULL;
+
+   if (path && path_is_valid(path))
+   {
+      conf = config_file_new_from_path_to_string(path);
+   }
+   else
+   {
+      conf = open_default_config_file();
+   }
 
    tmp_str[0] = '\0';
 
