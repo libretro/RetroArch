@@ -1235,8 +1235,10 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
        * the core file extension - if there is none, then
        * it is impossible for RetroArch to populate a
        * core_info list */
+#if !defined(LOAD_WITHOUT_CORE_INFO)
       if (!frontend_driver_get_core_extension(exts, sizeof(exts)) ||
           string_is_empty(exts))
+#endif
       {
          struct retro_system_info *system = runloop_get_libretro_system_info();
          const char *core_path            = core_path_current;
