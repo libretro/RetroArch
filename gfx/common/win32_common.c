@@ -1905,8 +1905,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
        * for black frame insertion using video_refresh_rate set to a portion
        * of the display refresh rate, as well as higher vsync swap intervals. */
       float refresh_mod      = bfi + 1.0f;
-      unsigned refresh       = roundf(video_refresh * refresh_mod 
-            * swap_interval);
+      float refresh_rate     = (video_refresh * refresh_mod * swap_interval);
 
       if (windowed_full)
       {
@@ -1919,7 +1918,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          *style          = WS_POPUP | WS_VISIBLE;
 
          if (!win32_monitor_set_fullscreen(*width, *height,
-                  refresh, current_mon->szDevice)) { }
+               (int)refresh_rate, current_mon->szDevice)) { }
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(*hm_to_use, (LPMONITORINFO)current_mon);
