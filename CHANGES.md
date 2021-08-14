@@ -3,6 +3,7 @@
 - CHEEVOS: Support for more than 64 memory regions
 - CONTENT INFORMATION: Show content info label+path rows always
 - CORE OPTIONS: Core option categories implemented
+- CORE OPTIONS: Add option to disable core option categories
 - DATABASE: Fix heap-buffer-overflow when fetching CRC values
 - DATABASE/EXPLORE: Fix CRC32 reading in explore menu
 - DATABASE/LIBRETRODB: Fix writing of numerical values
@@ -16,6 +17,7 @@
 - LIBNX/SWITCH: Fix layout not applied correctly and hangs when splitting joycons
 - LIBRETRO: Core options category API implemented
 - LINUX: In some Linux Desktop Environments, like Budgie, task bar feature is unable to pin applications. With StartupWMClass= present in .desktop file, it is possible to pin the application
+- MENU/OZONE/VULKAN: Casting to unsigned caused an integer overflow and after float promotion would lead to 'x' being a garbage value, leading to problems when this value was passed to vkCmdSetViewport. This stops Vulkan validation layers from complaining about it
 - METAL: Fixed font driver memory leaks
 - MOUSE: Change default mouse index to port index
 - MOUSE: Friendly names for mice where available
@@ -24,7 +26,10 @@
 - PS2: Implement alpha for the video driver
 - PS2: Aspect ratio handling
 - RETROFW: Initial port
+- UWP/XBOX: fix issue where filesizes where not returned properly, this fixes loading arcade dat files
 - WASAPI: Stop deactivating audio on fast forward
+- WINDOWS: Remember original refresh rate
+- WINDOWS/VULKAN: Refresh rate fixes + cleanups
 - WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
 - WINRAW: Alt sticky fix
 - WINRAW: Prevent Alt getting stuck when Alt-Tabbing
@@ -32,6 +37,8 @@
 - WIIU: Fix L3/R3 buttons
 - WIIU: Compress RPX libretro cores
 - WIIU: Add ICInvalidateRange (necessary for JITs)
+- WIIU: Slight filesystem optimisation
+- WIIU: Add option for running without core info (emscripten-style)
 
 # 1.9.7
 - 3DS: Add unique ID's
