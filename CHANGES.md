@@ -1,5 +1,6 @@
 # Future
 - CHEEVOS: Hide challenge indicators when resetting
+- CHEEVOS: Support for more than 64 memory regions
 - CONTENT INFORMATION: Show content info label+path rows always
 - CORE OPTIONS: Core option categories implemented
 - DATABASE: Fix heap-buffer-overflow when fetching CRC values
