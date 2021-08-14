@@ -30077,6 +30077,9 @@ static bool video_driver_init_internal(
       scale  = p_rarch->video_driver_state_scale;
 #endif
 
+   RARCH_LOG("[Video]: Video max dimensions: %d, windowed scale: %d\n",
+      max_dim, scale);
+
    /* Update core-dependent aspect ratio values. */
    video_driver_set_viewport_square_pixel(geom);
    video_driver_set_viewport_core();
@@ -30105,10 +30108,11 @@ static bool video_driver_init_internal(
             aspectratio_lut[new_aspect_idx].value);
    }
 
-   if (settings->bools.video_fullscreen|| p_rarch->rarch_force_fullscreen)
+   if (settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen)
    {
       width  = settings->uints.video_fullscreen_x;
       height = settings->uints.video_fullscreen_y;
+      RARCH_LOG("[Video]: Set width and height to fullscreen values [%dx%d]\n", width, height);
    }
    else
    {
@@ -30119,6 +30123,7 @@ static bool video_driver_init_internal(
       {
          width  = settings->uints.window_position_width;
          height = settings->uints.window_position_height;
+	 RARCH_LOG("[Video]: Set width and height based on window position width [%dx%d]\n", width, height);
       }
       else
       {
@@ -30129,10 +30134,12 @@ static bool video_driver_init_internal(
             unsigned base_width =
                roundf(geom->base_height * p_rarch->video_driver_aspect_ratio);
             width  = roundf(base_width * video_scale);
+            RARCH_LOG("[Video]: Force video aspect\n");
          }
          else
             width  = roundf(geom->base_width   * video_scale);
          height    = roundf(geom->base_height  * video_scale);
+	 RARCH_LOG("[Video]: Set width and height based on window position width [%dx%d]\n", width, height);
       }
    }
 
@@ -30141,13 +30148,11 @@ static bool video_driver_init_internal(
    {
       width = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
       height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
+      RARCH_LOG("[Video]: Force resolution [%dx%d]\n", width, height);
    }
 #endif
 
-   if (width && height)
-      RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);
-   else
-      RARCH_LOG("[Video]: Video @ fullscreen\n");
+   RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);
 
    p_rarch->video_driver_display_type     = RARCH_DISPLAY_NONE;
    p_rarch->video_driver_display          = 0;
