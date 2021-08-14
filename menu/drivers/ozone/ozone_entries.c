@@ -624,7 +624,7 @@ border_iterate:
             userdata,
             video_width,
             video_height,
-            (unsigned) ozone->dimensions_sidebar_width 
+            ozone->dimensions_sidebar_width 
             + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
@@ -832,7 +832,7 @@ border_iterate:
                      ozone->dimensions.entry_icon_size,
                      ozone->dimensions.entry_icon_size,
                      texture,
-                     (unsigned)ozone->dimensions_sidebar_width 
+                     ozone->dimensions_sidebar_width 
                      + x_offset + entry_padding 
                      + ozone->dimensions.entry_icon_padding,
                      y + scroll_y + ozone->dimensions.entry_height 
