@@ -1004,21 +1004,20 @@ void rcheevos_hardcore_enabled_changed(void)
 void rcheevos_validate_config_settings(void)
 {
    const rc_disallowed_setting_t* disallowed_settings;
-   core_option_manager_t* coreopts = NULL;
+   core_option_manager_t* coreopts  = NULL;
    struct retro_system_info* system = runloop_get_libretro_system_info();
    int i;
 
    if (!system->library_name || !rcheevos_locals.hardcore_active)
       return;
 
-   disallowed_settings = rc_libretro_get_disallowed_settings(system->library_name);
-   if (disallowed_settings == NULL)
+   if (!(disallowed_settings = rc_libretro_get_disallowed_settings(system->library_name)))
       return;
 
    if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       return;
 
-   for (i = 0; i < coreopts->size; i++)
+   for (i = 0; i < (int)coreopts->size; i++)
    {
       const char* key = coreopts->opts[i].key;
       const char* val = core_option_manager_get_val(coreopts, i);
