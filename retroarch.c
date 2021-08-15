@@ -30046,6 +30046,102 @@ static void video_driver_set_viewport_square_pixel(struct retro_game_geometry *g
    aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
 }
 
+static void video_driver_init_internal_set_aspect(
+   struct retro_game_geometry *geom,
+   settings_t *settings
+)
+{
+   unsigned new_aspect_idx = settings->uints.video_aspect_ratio_idx;
+
+   /* Update core-dependent aspect ratio values. */
+   video_driver_set_viewport_square_pixel(geom);
+   video_driver_set_viewport_core();
+   video_driver_set_viewport_config(geom,
+         settings->floats.video_aspect_ratio,
+         settings->bools.video_aspect_ratio_auto);
+
+   /* Update CUSTOM viewport. */
+
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   {
+      video_viewport_t *custom_vp = &settings->video_viewport_custom;
+      float default_aspect        = aspectratio_lut[ASPECT_RATIO_CORE].value;
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+         (custom_vp->width && custom_vp->height) ?
+         (float)custom_vp->width / custom_vp->height : default_aspect;
+   }
+
+   /* Guard against aspect ratio index possibly being out of bounds */
+   if (new_aspect_idx > ASPECT_RATIO_END)
+      new_aspect_idx = settings->uints.video_aspect_ratio_idx = 0;
+
+   video_driver_set_aspect_ratio_value(
+            aspectratio_lut[new_aspect_idx].value);
+}
+
+static unsigned video_driver_init_internal_set_scaling(
+   struct rarch_state *p_rarch,
+   struct retro_game_geometry *core_geom,
+   struct retro_game_geometry *geom
+)
+{
+   unsigned max_dim, scale;
+#ifdef HAVE_VIDEO_FILTER
+   if (p_rarch->video_driver_state_filter)
+      return p_rarch->video_driver_state_scale;
+#endif
+   max_dim            = MAX(geom->max_width, geom->max_height);
+   scale              = next_pow2(max_dim) / RARCH_SCALE_BASE;
+   return MAX(scale, 1);
+}
+
+static void video_driver_init_internal_apply_scaling(
+   struct rarch_state *p_rarch,
+   settings_t *settings,
+   struct retro_game_geometry *geom,
+   unsigned *width,
+   unsigned *height)
+{
+   if (settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen)
+   {
+      *width  = settings->uints.video_fullscreen_x;
+      *height = settings->uints.video_fullscreen_y;
+   }
+   else
+   {
+      /* TODO: remove when the new window resizing core is hooked */
+      if (settings->bools.video_window_save_positions &&
+         (settings->uints.window_position_width ||
+          settings->uints.window_position_height))
+      {
+         *width  = settings->uints.window_position_width;
+         *height = settings->uints.window_position_height;
+      }
+      else
+      {
+         float video_scale = settings->floats.video_scale;
+         if (settings->bools.video_force_aspect)
+         {
+            /* Do rounding here to simplify integer scale correctness. */
+            unsigned base_width =
+               roundf(geom->base_height * p_rarch->video_driver_aspect_ratio);
+            *width  = roundf(base_width * video_scale);
+         }
+         else
+            *width   = roundf(geom->base_width   * video_scale);
+         *height     = roundf(geom->base_height  * video_scale);
+      }
+   }
+
+#ifdef __WINRT__
+   if (settings->bools.video_force_resolution)
+   {
+      *width = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : 3840;
+      *height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
+   }
+#endif
+}
+
 static bool video_driver_init_internal(
       struct rarch_state *p_rarch,
       settings_t *settings,
@@ -30055,113 +30151,32 @@ static bool video_driver_init_internal(
 {
    video_info_t video;
    struct retro_game_geometry geom;
-   unsigned max_dim, scale, width, height;
+   unsigned scale, width, height;
    video_viewport_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    struct retro_game_geometry *core_geom  = &p_rarch->video_driver_av_info.geometry;
    const enum retro_pixel_format
-      video_driver_pix_fmt                = p_rarch->video_driver_pix_fmt;
+      video_driver_pix_fmt                = 
+      p_rarch->video_driver_pix_fmt;
 #ifdef HAVE_VIDEO_FILTER
-   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
-
+   const char *path_softfilter_plugin     = 
+      settings->paths.path_softfilter_plugin;
    if (!string_is_empty(path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt, settings);
 #endif
 
-   geom.base_width                        = core_geom->base_width;
-   geom.base_height                       = core_geom->base_height;
-   geom.max_width                         = core_geom->max_width;
-   geom.max_height                        = core_geom->max_height;
-   geom.aspect_ratio                      = core_geom->aspect_ratio;
-
-   RARCH_LOG("[Video]: AV geometry base width: %d, base_height: %d\n", geom.base_width, geom.base_height);
-   RARCH_LOG("[Video]: AV geometry max_width: %d, max_height: %d, aspect: %.2f\n", geom.max_width, geom.max_height, geom.aspect_ratio);
-   max_dim   = MAX(geom.max_width, geom.max_height);
-   scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
-   scale     = MAX(scale, 1);
-
-#ifdef HAVE_VIDEO_FILTER
-   if (p_rarch->video_driver_state_filter)
-      scale  = p_rarch->video_driver_state_scale;
-#endif
-
-   RARCH_LOG("[Video]: Video max dimensions: %d, windowed scale: %d\n",
-      max_dim, scale);
-
-   /* Update core-dependent aspect ratio values. */
-   video_driver_set_viewport_square_pixel(&geom);
-   video_driver_set_viewport_core();
-   video_driver_set_viewport_config(&geom,
-         settings->floats.video_aspect_ratio,
-         settings->bools.video_aspect_ratio_auto);
-
-   /* Update CUSTOM viewport. */
-   custom_vp = &settings->video_viewport_custom;
-
-   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-   {
-      float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-         (custom_vp->width && custom_vp->height) ?
-         (float)custom_vp->width / custom_vp->height : default_aspect;
-   }
-
-   {
-      /* Guard against aspect ratio index possibly being out of bounds */
-      unsigned new_aspect_idx = settings->uints.video_aspect_ratio_idx;
-      if (new_aspect_idx > ASPECT_RATIO_END)
-         new_aspect_idx = settings->uints.video_aspect_ratio_idx = 0;
-
-      video_driver_set_aspect_ratio_value(
-            aspectratio_lut[new_aspect_idx].value);
-   }
-
-   if (settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen)
-   {
-      width  = settings->uints.video_fullscreen_x;
-      height = settings->uints.video_fullscreen_y;
-      RARCH_LOG("[Video]: Set width and height to fullscreen values [%dx%d]\n", width, height);
-   }
-   else
-   {
-      /* TODO: remove when the new window resizing core is hooked */
-      if (settings->bools.video_window_save_positions &&
-         (settings->uints.window_position_width ||
-          settings->uints.window_position_height))
-      {
-         width  = settings->uints.window_position_width;
-         height = settings->uints.window_position_height;
-	 RARCH_LOG("[Video]: Set width and height based on window position width [%dx%d]\n", width, height);
-      }
-      else
-      {
-         float video_scale = settings->floats.video_scale;
-         if (settings->bools.video_force_aspect)
-         {
-            /* Do rounding here to simplify integer scale correctness. */
-            unsigned base_width =
-               roundf(geom.base_height * p_rarch->video_driver_aspect_ratio);
-            width  = roundf(base_width * video_scale);
-            RARCH_LOG("[Video]: Force video aspect\n");
-         }
-         else
-            width  = roundf(geom.base_width   * video_scale);
-         height    = roundf(geom.base_height  * video_scale);
-	 RARCH_LOG("[Video]: Set width and height based on window position width [%dx%d]\n", width, height);
-      }
-   }
-
-#ifdef __WINRT__
-   if (settings->bools.video_force_resolution)
-   {
-      width = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
-      height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
-      RARCH_LOG("[Video]: Force resolution [%dx%d]\n", width, height);
-   }
-#endif
-
-   RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);
+   geom.base_width   = core_geom->base_width;
+   geom.base_height  = core_geom->base_height;
+   geom.max_width    = core_geom->max_width;
+   geom.max_height   = core_geom->max_height;
+   geom.aspect_ratio = core_geom->aspect_ratio;
+   scale             = video_driver_init_internal_set_scaling(p_rarch,
+      &geom, core_geom);
+   video_driver_init_internal_set_aspect(&geom, settings);
+   video_driver_init_internal_apply_scaling(p_rarch, settings, &geom,
+      &width, &height);
+   RARCH_LOG("[Video]: Video @ %ux%u using AV information (w=%d,h=%d,maxw=%d,maxh=%d,AR=%.2f)\n", width, height, geom.base_width, geom.base_height, geom.max_width, geom.max_height, geom.aspect_ratio);
 
    p_rarch->video_driver_display_type     = RARCH_DISPLAY_NONE;
    p_rarch->video_driver_display          = 0;
@@ -30253,15 +30268,19 @@ static bool video_driver_init_internal(
       p_rarch->current_video->poke_interface(
             p_rarch->video_driver_data, &p_rarch->video_driver_poke);
 
-   if (p_rarch->current_video->viewport_info &&
+   {
+      struct video_viewport *custom_vp = &settings->video_viewport_custom;
+
+      if (p_rarch->current_video->viewport_info &&
          (!custom_vp->width  ||
           !custom_vp->height))
-   {
-      /* Force custom viewport to have sane parameters. */
-      custom_vp->width = width;
-      custom_vp->height = height;
+      {
+         /* Force custom viewport to have sane parameters. */
+         custom_vp->width  = width;
+         custom_vp->height = height;
 
-      video_driver_get_viewport_info(custom_vp);
+         video_driver_get_viewport_info(custom_vp);
+      }
    }
 
    video_driver_set_rotation(retroarch_get_rotation() % 4);
