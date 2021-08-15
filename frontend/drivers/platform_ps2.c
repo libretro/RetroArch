@@ -45,7 +45,9 @@
 #include "../../verbosity.h"
 #include "../../paths.h"
 
+#if defined(DEBUG)
 #define DEFAULT_PARTITION "hdd0:__common:pfs"
+#endif
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 static char cwd[FILENAME_MAX];
@@ -231,7 +233,7 @@ static int mount_hdd_partition() {
       shouldMount = 1;
       strlcpy(mountPath, cwd, sizeof(mountPath));
    } 
-#if !defined(IS_SALAMANDER)
+#if !defined(IS_SALAMANDER) && defined(DEBUG)
    else 
    {
       // Even if we're booting from USB, try to mount default partition
