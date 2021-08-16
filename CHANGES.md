@@ -26,6 +26,7 @@
 - PS2: Implement alpha for the video driver
 - PS2: Aspect ratio handling
 - RETROFW: Initial port
+- UWP/XBOX: fix issue where files where opened as OPENALWAYS instead of OPENEXISTING this fixes beetle cores
 - UWP/XBOX: fix issue where filesizes where not returned properly, this fixes loading arcade dat files
 - WASAPI: Stop deactivating audio on fast forward
 - WINDOWS: Remember original refresh rate
