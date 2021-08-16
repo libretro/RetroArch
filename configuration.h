@@ -282,6 +282,8 @@ typedef struct settings
       unsigned window_position_y;
       unsigned window_position_width;
       unsigned window_position_height;
+      unsigned window_auto_width_max;
+      unsigned window_auto_height_max;
 
       unsigned video_record_threads;
 
@@ -826,6 +828,7 @@ typedef struct settings
 
       bool video_window_show_decorations;
       bool video_window_save_positions;
+      bool video_window_custom_size_enable;
 
       bool sustained_performance_mode;
       bool playlist_use_old_format;

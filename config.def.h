@@ -222,15 +222,50 @@
 #define DEFAULT_MONITOR_INDEX 0
 
 /* Window */
-/* Window size. A value of 0 uses window scale
- * multiplied by the core framebuffer size. */
+
+/* DEFAULT_WINDOW_DECORATIONS:
+   Whether to show the usual window decorations like border, titlebar etc. */
+#ifdef WEBOS
+#define DEFAULT_WINDOW_DECORATIONS false
+#else
+#define DEFAULT_WINDOW_DECORATIONS true
+#endif
+
+/* Amount of transparency to use for the main window.
+ * 1 is the most transparent while 100 is opaque. */
+#define DEFAULT_WINDOW_OPACITY 100
+
+/* DEFAULT_WINDOW_SAVE_POSITIONS:
+ * Whether to remember window positions
+ * NOTE: Only enabled for desktop Windows
+ * at present. */
+#define DEFAULT_WINDOW_SAVE_POSITIONS false
+
+/* Whether to use custom (fixed size)
+ * window dimensions in windowed mode. */
+#ifdef WEBOS
+#define DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE true
+#else
+#define DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE false
+#endif
+
+/* Window dimensions when using a fixed size
+ * window. A value of 0 disables fixed size
+ * windows, using nominal dimensions of
+ * window scale multiplied by the core
+ * framebuffer size. */
 #if defined(WEBOS)
-#define DEFAULT_WINDOW_WIDTH 1920
+#define DEFAULT_WINDOW_WIDTH  1920
 #define DEFAULT_WINDOW_HEIGHT 1080
 #else
-#define DEFAULT_WINDOW_WIDTH 1280
+#define DEFAULT_WINDOW_WIDTH  1280
 #define DEFAULT_WINDOW_HEIGHT 720
 #endif
+
+/* Maximum auto-set window dimensions
+ * when not using a fixed size window */
+#define DEFAULT_WINDOW_AUTO_WIDTH_MAX  1920
+#define DEFAULT_WINDOW_AUTO_HEIGHT_MAX 1080
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
@@ -250,24 +285,6 @@
 
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
-
-/* Amount of transparency to use for the main window.
- * 1 is the most transparent while 100 is opaque.
- */
-#define DEFAULT_WINDOW_OPACITY 100
-
-/* DEFAULT_WINDOW_DECORATIONS:
-   Whether to show the usual window decorations like border, titlebar etc. */
-/* DEFAULT_WINDOW_SAVE_POSITIONS:
-   Whether to remember window positions
- */
-#ifdef WEBOS
-#define DEFAULT_WINDOW_DECORATIONS false
-#define DEFAULT_WINDOW_SAVE_POSITIONS true
-#else
-#define DEFAULT_WINDOW_DECORATIONS true
-#define DEFAULT_WINDOW_SAVE_POSITIONS false
-#endif
 
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN false
