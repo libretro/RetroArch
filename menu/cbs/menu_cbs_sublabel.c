@@ -435,10 +435,13 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_screenshot_flash, 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_refresh_rate, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_width,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_height,           MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_auto_width_max,   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_auto_height_max,  MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen_x,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen_y,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_force_resolution,        MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_save_window_position,    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_custom_size_enable, MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_pos_x,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_pos_y,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_font_size,               MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE)
@@ -3374,6 +3377,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_height);
             break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_auto_width_max);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_auto_height_max);
+            break;
          case MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_fullscreen_x);
             break;
@@ -3385,6 +3394,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_save_window_position);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_custom_size_enable);
             break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_retroarch);

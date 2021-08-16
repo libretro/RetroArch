@@ -11355,6 +11355,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.window_position_width,
@@ -11369,6 +11370,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.window_position_height,
@@ -11383,6 +11385,37 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.window_auto_width_max,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+                     DEFAULT_WINDOW_AUTO_WIDTH_MAX,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+               menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.window_auto_height_max,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+                     DEFAULT_WINDOW_AUTO_HEIGHT_MAX,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+               menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.video_window_opacity,
@@ -11416,12 +11449,13 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_window_save_positions,
                   MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
                   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-                  false,
+                  DEFAULT_WINDOW_SAVE_POSITIONS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -11430,7 +11464,30 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+#else
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_window_custom_size_enable,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+                  DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+#endif
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_scale_integer,

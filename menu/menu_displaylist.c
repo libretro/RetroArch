@@ -7682,30 +7682,61 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_SCALE,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
+         {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+            bool window_custom_size_enable = settings->bools.video_window_save_positions;
+#else
+            bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
+#endif
+            menu_displaylist_build_info_selective_t build_list[] = {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,      PARSE_ONLY_BOOL,  true },
+#else
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE, PARSE_ONLY_BOOL,  true },
+#endif
+               {MENU_ENUM_LABEL_VIDEO_SCALE,                     PARSE_ONLY_FLOAT, false},
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,              PARSE_ONLY_UINT,  false},
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,             PARSE_ONLY_UINT,  false},
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,     PARSE_ONLY_UINT,  false},
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,    PARSE_ONLY_UINT,  false},
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,            PARSE_ONLY_UINT,  true },
+               {MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,   PARSE_ONLY_BOOL,  true },
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_VIDEO_SCALE:
+                     if (!window_custom_size_enable)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH:
+                  case MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT:
+                     if (window_custom_size_enable)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX:
+                  case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX:
+                     if (!window_custom_size_enable)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx, build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
          break;
       case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
