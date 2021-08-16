@@ -33,7 +33,7 @@
 
 typedef struct ps2_video
 {
-   /* I need to create this additional field 
+   /* I need to create this additional field
     * to be used in the font driver*/
    bool clearVRAM_font;
    bool menuVisible;
@@ -66,32 +66,6 @@ static int vsync_handler()
    return 0;
 }
 
-// Copy of gsKit_sync_flip, but without the 'flip'
-static void gsKit_sync(GSGLOBAL *gsGlobal)
-{
-   if(!gsGlobal->FirstFrame)
-      WaitSema(vsync_sema_id);
-
-   while (PollSema(vsync_sema_id) >= 0);
-}
-
-static void gsKit_flip(GSGLOBAL *gsGlobal)
-{
-   if(!gsGlobal->FirstFrame)
-   {
-      if(gsGlobal->DoubleBuffering == GS_SETTING_ON)
-      {
-         GS_SET_DISPFB2( gsGlobal->ScreenBuffer[gsGlobal->ActiveBuffer & 1] / 8192,
-            gsGlobal->Width / 64, gsGlobal->PSM, 0, 0 );
-
-         gsGlobal->ActiveBuffer ^= 1;
-      }
-
-   }
-
-   gsKit_setactive(gsGlobal);
-}
-
 static GSGLOBAL *init_GSGlobal(void)
 {
    ee_sema_t sema;
@@ -100,12 +74,6 @@ static GSGLOBAL *init_GSGlobal(void)
    sema.option = 0;
    vsync_sema_id = CreateSema(&sema);
 
-	dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
-		    D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
-
-   /* Initialize the DMAC */
-	dmaKit_chan_init(DMA_CHANNEL_GIF);
-
    GSGLOBAL *gsGlobal        = gsKit_init_global();
 
    gsGlobal->Mode            = GS_MODE_NTSC;
@@ -113,15 +81,18 @@ static GSGLOBAL *init_GSGlobal(void)
    gsGlobal->Field           = GS_FIELD;
    gsGlobal->Width           = NTSC_WIDTH;
    gsGlobal->Height          = NTSC_HEIGHT;
-   gsGlobal->PSM             = GS_PSM_CT32;
-   gsGlobal->PSMZ            = GS_PSMZ_16S;
-   gsGlobal->DoubleBuffering = GS_SETTING_ON;
-   gsGlobal->ZBuffering      = GS_SETTING_OFF;
-   gsGlobal->Dithering       = GS_SETTING_ON;
 
-   gsGlobal->Test->ATST = 7; // NOTEQUAL to AREF passes
-   gsGlobal->Test->AREF = 0x00;
-   gsGlobal->Test->AFAIL = 0; // KEEP
+   gsGlobal->PSM             = GS_PSM_CT16;
+   gsGlobal->PSMZ            = GS_PSMZ_16;
+   gsGlobal->DoubleBuffering = GS_SETTING_OFF;
+   gsGlobal->ZBuffering      = GS_SETTING_OFF;
+   gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
+
+   dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
+               D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
+
+   /* Initialize the DMAC */
+   dmaKit_chan_init(DMA_CHANNEL_GIF);
 
    gsKit_init_screen(gsGlobal);
    gsKit_mode_switch(gsGlobal, GS_ONESHOT);
@@ -130,7 +101,6 @@ static GSGLOBAL *init_GSGlobal(void)
    gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
 
    gsKit_clear(gsGlobal, GS_BLACK);
-   gsKit_flip(gsGlobal);
 
    return gsGlobal;
 }
@@ -140,6 +110,34 @@ static void deinit_GSGlobal(GSGLOBAL *gsGlobal)
    gsKit_clear(gsGlobal, GS_BLACK);
    gsKit_vram_clear(gsGlobal);
    gsKit_deinit_global(gsGlobal);
+}
+
+/* Copy of gsKit_sync_flip, but without the 'flip' */
+static void gsKit_sync(GSGLOBAL *gsGlobal)
+{
+   if (!gsGlobal->FirstFrame)
+      WaitSema(vsync_sema_id);
+
+   while (PollSema(vsync_sema_id) >= 0);
+}
+
+/* Copy of gsKit_sync_flip, but without the 'sync' */
+static void gsKit_flip(GSGLOBAL *gsGlobal)
+{
+   if (!gsGlobal->FirstFrame)
+   {
+      if (gsGlobal->DoubleBuffering == GS_SETTING_ON)
+      {
+         GS_SET_DISPFB2( gsGlobal->ScreenBuffer[
+               gsGlobal->ActiveBuffer & 1] / 8192,
+               gsGlobal->Width / 64, gsGlobal->PSM, 0, 0 );
+
+         gsGlobal->ActiveBuffer ^= 1;
+      }
+
+   }
+
+   gsKit_setactive(gsGlobal);
 }
 
 static GSTEXTURE *prepare_new_texture(void)
@@ -192,7 +190,7 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
    float visible_width  =  texture->Width - padding.left - padding.right;
    float visible_height =  texture->Height - padding.top - padding.bottom;
 
-   if (scale_integer) 
+   if (scale_integer)
    {
       float width_proportion  = (float)gsGlobal->Width / (float)visible_width;
       float height_proportion = (float)gsGlobal->Height / (float)visible_height;
@@ -204,7 +202,7 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
       y1 = (gsGlobal->Height - newHeight) / 2.0f;
       x2 = newWidth + x1;
       y2 = newHeight + y1;
-   } 
+   }
    else if (aspect_ratio > 0)
    {
       float gs_aspect_ratio = (float)gsGlobal->Width / (float)gsGlobal->Height;
@@ -239,18 +237,13 @@ static void prim_texture(GSGLOBAL *gsGlobal, GSTEXTURE *texture, int zPosition, 
 
 static void refreshScreen(ps2_video_t *ps2)
 {
-   // Draw everything
-   gsKit_set_finish(ps2->gsGlobal);
-   gsKit_queue_exec(ps2->gsGlobal);
-   gsKit_finish();
-
-   // Let texture manager know we're moving to the next frame
-   gsKit_TexManager_nextFrame(ps2->gsGlobal);
-
-   // Sync and flip
    if (ps2->vsync)
+   {
       gsKit_sync(ps2->gsGlobal);
-   gsKit_flip(ps2->gsGlobal);
+      gsKit_flip(ps2->gsGlobal);
+   }
+   gsKit_queue_exec(ps2->gsGlobal);
+   gsKit_TexManager_nextFrame(ps2->gsGlobal);
 }
 
 static void *ps2_gfx_init(const video_info_t *video,
@@ -307,17 +300,15 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       printf("ps2_gfx_frame %llu\n", frame_count);
 #endif
 
-   gsKit_clear(ps2->gsGlobal, GS_BLACK);
-
    if (frame)
    {
       struct retro_hw_ps2_insets padding = empty_ps2_insets;
       /* Checking if the transfer is done in the core */
       if (frame != RETRO_HW_FRAME_BUFFER_VALID)
-      { 
+      {
          /* calculate proper width based in the pitch */
          int shifh_per_bytes = (ps2->PSM == GS_PSM_CT32) ? 2 : 1;
-         int real_width      = pitch >> shifh_per_bytes; 
+         int real_width      = pitch >> shifh_per_bytes;
          set_texture(ps2->coreTexture, frame, real_width, height, ps2->PSM, ps2->core_filter);
 
          padding.right       = real_width - width;
@@ -448,7 +439,7 @@ static bool ps2_get_hw_render_interface(void* data,
 {
    ps2_video_t          *ps2 = (ps2_video_t*)data;
    ps2->iface.padding        = empty_ps2_insets;
-   *iface                    = 
+   *iface                    =
       (const struct retro_hw_render_interface*)&ps2->iface;
    return true;
 }
