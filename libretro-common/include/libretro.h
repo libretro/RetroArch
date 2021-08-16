@@ -3519,6 +3519,26 @@ struct retro_core_option_v2_definition
     * in the retro_core_option_value array, otherwise will be
     * ignored */
    const char *default_value;
+
+   /* Specify the type this option represents so the frontend
+    * can present the user an alternative input method besides
+    * a limited list of possible values.
+    * > If set to "int", all values need to be integers
+    *   and a frontend with support for numerical input will
+    *   allow input of any number betwen the lowest and
+    *   highest defined value.
+    * > If set to "float", all values need to be numbers
+    *   and a frontend with support for numerical input will
+    *   allow input of any number betwen the lowest and
+    *   highest defined value.
+    * > If set to "bool", there should be only two values
+    *   "true" and "false" (label can be anything)
+    *   The frontend can choose to show a checkbox for it.
+    * > If NULL or set to "enum", the frontend will show
+    *   the list of values and input will be limited to them.
+    * Future versions of the specs could allow this for more
+    * types or to be "TYPE:MORE:OPTIONS" */
+   const char *type_info;
 };
 
 struct retro_core_options_v2
