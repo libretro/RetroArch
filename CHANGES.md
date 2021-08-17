@@ -1,4 +1,6 @@
 # Future
+
+# 1.9.8
 - CHEEVOS: Hide challenge indicators when resetting
 - CHEEVOS: Support for more than 64 memory regions
 - CONTENT INFORMATION: Show content info label+path rows always
