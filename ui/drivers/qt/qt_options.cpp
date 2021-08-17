@@ -1225,6 +1225,10 @@ QWidget *VideoPage::widget()
    QHBoxLayout *windowedSizeLayout     = new QHBoxLayout;
    FormLayout *leftWindowedSizeForm    = new FormLayout;
    FormLayout *rightWindowedSizeForm   = new FormLayout;
+   QHBoxLayout *windowedCustomSizeLayout   = new QHBoxLayout;
+   FormLayout *leftWindowedCustomSizeForm  = new FormLayout;
+   FormLayout *rightWindowedCustomSizeForm = new FormLayout;
+   CheckableSettingsGroup *savePosGroup    = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION);
 
    SettingsGroup *syncGroup            = new SettingsGroup("Synchronization");
    CheckableSettingsGroup *vSyncGroup  = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
@@ -1277,18 +1281,26 @@ QWidget *VideoPage::widget()
    aspectGroup->addRow(new AspectRatioGroup("Aspect Ratio"));
 
    leftWindowedSizeForm->addRow("Scale:", new FloatSpinBox(MENU_ENUM_LABEL_VIDEO_SCALE));
-   leftWindowedSizeForm->addRow("Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH));
+   leftWindowedSizeForm->addRow("Max Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX));
 
    rightWindowedSizeForm->addRow("Opacity:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY));
-   rightWindowedSizeForm->addRow("Height:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT));
+   rightWindowedSizeForm->addRow("Max Height:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX));
 
    windowedSizeLayout->addLayout(leftWindowedSizeForm);
    windowedSizeLayout->addLayout(rightWindowedSizeForm);
 
    windowedGroup->addRow(windowedSizeLayout);
 
+   leftWindowedCustomSizeForm->addRow("Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH));
+   rightWindowedCustomSizeForm->addRow("Height:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT));
+
+   windowedCustomSizeLayout->addLayout(leftWindowedCustomSizeForm);
+   windowedCustomSizeLayout->addLayout(rightWindowedCustomSizeForm);
+
+   savePosGroup->addRow(windowedCustomSizeLayout);
+   windowedGroup->addRow(savePosGroup);
+
    windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
-   windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION);
 
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
