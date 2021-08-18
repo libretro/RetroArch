@@ -18,7 +18,7 @@
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include "../gfx_display.h"
