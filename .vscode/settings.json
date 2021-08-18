@@ -65,7 +65,9 @@
       "menu_input_dialog.h": "c",
       "ozone_sidebar.h": "c",
       "menu_thumbnail_path.h": "c",
-      "badges.h": "c"
+      "badges.h": "c",
+      "config.h": "c",
+      "s16_to_float.h": "c"
    },
    "C_Cpp.dimInactiveRegions": false,
 }
