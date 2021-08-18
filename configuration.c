@@ -3092,6 +3092,7 @@ static bool config_load_file(global_t *global,
    bool ret                                        = false;
    unsigned tmp_uint                               = 0;
    bool tmp_bool                                   = false;
+   static bool first_load                          = true;
    unsigned msg_color                              = 0;
    char *save                                      = NULL;
    char *override_username                         = NULL;
@@ -3183,12 +3184,23 @@ static bool config_load_file(global_t *global,
                settings->bools.network_remote_enable_user[i], tmp_bool);
    }
 #endif
-   if (config_get_bool(conf, "log_verbosity", &tmp_bool))
+   /* Set verbosity according to config only if the 'v' command line argument was not used
+    * or if it is not the first config load. */
+   if (config_get_bool(conf, "log_verbosity", &tmp_bool) &&
+      (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL) ||
+      !first_load))
    {
       if (tmp_bool)
          verbosity_enable();
       else
          verbosity_disable();
+   }
+   /* On first config load, make sure log_to_file is true if 'log-file' command line 
+    * argument was used. */
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL) &&
+      first_load)
+   {
+      configuration_set_bool(settings,settings->bools.log_to_file,true);
    }
    if (config_get_uint(conf, "frontend_log_level", &tmp_uint))
    {
@@ -3620,6 +3632,7 @@ end:
       free(path_settings);
    if (size_settings)
       free(size_settings);
+   first_load = false;
    return ret;
 }
 
@@ -3966,15 +3979,15 @@ success:
  */
 static void config_parse_file(global_t *global)
 {
+   const char *config_path = path_get(RARCH_PATH_CONFIG);
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[Config]: Loading default config.\n");
    }
+   else
+       RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
 
    {
-      const char *config_path = path_get(RARCH_PATH_CONFIG);
-      RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
-
       if (!config_load_file(global, config_path, config_get_ptr()))
       {
          RARCH_ERR("[Config]: Couldn't find config at path: \"%s\".\n",
