@@ -1341,8 +1341,8 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
       {
          cheat->rumble_primary_end_time   = current_time + (cheat->rumble_primary_duration * 1000);
          cheat->rumble_secondary_end_time = current_time + (cheat->rumble_secondary_duration * 1000);
-         input_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
-         input_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, cheat->rumble_secondary_strength);
+         input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
+         input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, cheat->rumble_secondary_strength);
       }
    }
    else
@@ -1354,24 +1354,24 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
    if (cheat->rumble_primary_end_time <= current_time)
    {
       if (cheat->rumble_primary_end_time != 0)
-         input_set_rumble_state(cheat->rumble_port,
+         input_driver_set_rumble_state(cheat->rumble_port,
                RETRO_RUMBLE_STRONG, 0);
       cheat->rumble_primary_end_time = 0;
    }
    else
    {
-      input_set_rumble_state(cheat->rumble_port,
+      input_driver_set_rumble_state(cheat->rumble_port,
             RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
    }
 
    if (cheat->rumble_secondary_end_time <= current_time)
    {
       if (cheat->rumble_secondary_end_time != 0)
-         input_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, 0);
+         input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, 0);
       cheat->rumble_secondary_end_time = 0;
    }
    else
-      input_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, cheat->rumble_secondary_strength);
+      input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, cheat->rumble_secondary_strength);
 }
 
 void cheat_manager_apply_retro_cheats(void)

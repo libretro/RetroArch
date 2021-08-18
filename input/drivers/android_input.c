@@ -385,12 +385,12 @@ static void android_input_poll_main_cmd(void)
             video_driver_unset_stub_frame();
 
             if (enable_accelerometer)
-               input_set_sensor_state(0,
+               input_sensor_set_state(0,
                      RETRO_SENSOR_ACCELEROMETER_ENABLE,
                      android_app->accelerometer_event_rate);
 
             if (enable_gyroscope)
-               input_set_sensor_state(0,
+               input_sensor_set_state(0,
                      RETRO_SENSOR_GYROSCOPE_ENABLE,
                      android_app->gyroscope_event_rate);
          }
@@ -415,12 +415,12 @@ static void android_input_poll_main_cmd(void)
 
             /* Avoid draining battery while app is not being used. */
             if (disable_accelerometer)
-               input_set_sensor_state(0,
+               input_sensor_set_state(0,
                      RETRO_SENSOR_ACCELEROMETER_DISABLE,
                      android_app->accelerometer_event_rate);
 
             if (disable_gyroscope)
-               input_set_sensor_state(0,
+               input_sensor_set_state(0,
                      RETRO_SENSOR_GYROSCOPE_DISABLE,
                      android_app->gyroscope_event_rate);
          }
