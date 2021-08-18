@@ -595,6 +595,11 @@ extern "C" {
 
 	bool win32_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
 	{
+		if (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == L"Windows.Xbox")
+		{
+			width = uwp_get_width();
+			height = uwp_get_height();
+		}
 		if (App::GetInstance()->IsInitialized())
 		{
 			if (fullscreen != ApplicationView::GetForCurrentView()->IsFullScreenMode)
@@ -632,8 +637,8 @@ extern "C" {
 	bool win32_get_metrics(void* data,
 		enum display_metric_types type, float* value)
 	{
-		int pixels_x        = DisplayInformation::GetForCurrentView()->ScreenWidthInRawPixels;
-		int pixels_y        = DisplayInformation::GetForCurrentView()->ScreenHeightInRawPixels;
+		int pixels_x		= uwp_get_width();
+		int pixels_y		= uwp_get_height();
 		int raw_dpi_x       = DisplayInformation::GetForCurrentView()->RawDpiX;
 		int raw_dpi_y       = DisplayInformation::GetForCurrentView()->RawDpiY;
 		int physical_width  = pixels_x / raw_dpi_x;
@@ -685,8 +690,11 @@ extern "C" {
 
 	void* uwp_get_corewindow(void)
 	{
+		ApplicationView::GetForCurrentView()->TryResizeView(Size(uwp_get_width(), uwp_get_height()));
 		return (void*)CoreWindow::GetForCurrentThread();
 	}
+
+
 
 	int uwp_get_height(void)
 	{
