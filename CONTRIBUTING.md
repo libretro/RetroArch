@@ -50,7 +50,7 @@ If you have contributed significantly
 We'd like your full name and email, and which features you have been part of.
 
 # IRC
-Active development happens on Discord. (https://discordapp.com/invite/27Xxm2h)
+Active development happens on [https://discordapp.com/invite/27Xxm2h Discord].
 We value discussing things in "real-time".
 
 # Commit Access
