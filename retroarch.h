@@ -44,6 +44,9 @@
 #include "core_type.h"
 #include "core.h"
 
+#include "input/input_driver.h"
+#include "input/input_types.h"
+
 #ifdef HAVE_MENU
 #include "menu/menu_defines.h"
 #endif
@@ -786,9 +789,6 @@ void recording_driver_update_streaming_url(void);
 
 #include "gfx/video_defines.h"
 #include "gfx/video_coord_array.h"
-
-#include "input/input_driver.h"
-#include "input/input_types.h"
 
 #define RARCH_SCALE_BASE 256
 
@@ -2011,14 +2011,37 @@ unsigned int retroarch_get_rotation(void);
 
 void retroarch_init_task_queue(void);
 
+/******************************************************************************
+ * BEGIN helper functions for input_driver refactoring
+ * 
+ * These functions have similar names and signatures to functions that now require
+ * an input_driver_state_t pointer to be passed to them. They essentially wrap
+ * the newer functions by grabbing pointer to the driver state struct and the
+ * settings struct.
+ ******************************************************************************/
+bool input_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength);
+
+float input_get_sensor_state(unsigned port, unsigned id);
+
+bool input_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+
+void input_set_nonblock_state(void);
+
+void input_unset_nonblock_state(void);
+
+/******************************************************************************
+ * END helper functions for input_driver refactoring
+ ******************************************************************************/
+
+
 bool input_key_pressed(int key, bool keyboard_pressed);
 
 bool input_mouse_grabbed(void);
 
 const char *joypad_driver_name(unsigned i);
 void joypad_driver_reinit(void *data, const char *joypad_driver_name);
-
-void input_driver_init_joypads(void);
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name);
 

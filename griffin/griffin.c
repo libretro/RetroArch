@@ -664,14 +664,18 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
+
+#include "../input/input_driver.c"
+#include "../input/input_keymaps.c"
 #include "../tasks/task_autodetect.c"
+
 #ifdef HAVE_BLISSBOX
 #include "../tasks/task_autodetect_blissbox.c"
 #endif
+
 #ifdef HAVE_AUDIOMIXER
 #include "../tasks/task_audio_mixer.c"
 #endif
-#include "../input/input_keymaps.c"
 
 #ifdef HAVE_OVERLAY
 #include "../led/drivers/led_overlay.c"
@@ -688,8 +692,6 @@ INPUT
 #include "../input/drivers/winraw_input.c"
 #endif
 #endif
-
-#include "../input/input_autodetect_builtin.c"
 
 #if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
