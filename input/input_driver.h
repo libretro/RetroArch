@@ -22,6 +22,8 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include "input_types.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -33,13 +35,11 @@
 #include <retro_miscellaneous.h>
 
 #include "input_defines.h"
-#include "input_types.h"
 
 #include "../msg_hash.h"
 #include "include/hid_types.h"
 #include "include/hid_driver.h"
 #include "include/gamepad.h"
-#include "configuration.h"
 
 RETRO_BEGIN_DECLS
 
@@ -279,21 +279,6 @@ struct rarch_joypad_driver
    const char *ident;
 };
 
-typedef struct
-{
-   /* pointers */
-   input_driver_t                *current_driver;
-   void                          *current_data;
-   const input_device_driver_t   *primary_joypad;        /* ptr alignment */
-   const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
-
-   /* primitives */
-   bool        nonblocking_flag;
-} input_driver_state_t;
-
-
-void input_driver_init_joypads(void);
-
 /**
  * Get an enumerated list of all input driver names
  *
@@ -302,54 +287,73 @@ void input_driver_init_joypads(void);
 const char* config_get_input_driver_options(void);
 
 /**
- * Sets the rumble state.
+ * Sets the rumble state. Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
  * 
- * @param driver_state
- * @param port          User number.
- * @param joy_idx
- * @param effect        Rumble effect.
- * @param strength      Strength of rumble effect.
+ * @param port      User number.
+ * @param effect    Rumble effect.
+ * @param strength  Strength of rumble effect.
  *
  * @return true if the rumble state has been successfully set
  **/
-bool input_driver_set_rumble(
-         input_driver_state_t *driver_state, unsigned port, unsigned joy_idx, 
-         enum retro_rumble_effect effect, uint16_t strength);
+bool input_driver_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength);
 
 /**
- * Sets the sensor state.
+ * Sets the sensor state. Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE.
  * 
- * @param driver_state
  * @param port
- * @param sensors_enable
- * @param effect        Sensor action
- * @param rate          Sensor rate update
+ * @param effect  Sensor action
+ * @param rate    Sensor rate update
  *
  * @return true if the sensor state has been successfully set
  **/
-bool input_driver_set_sensor(
-         input_driver_state_t *driver_state, unsigned port, bool sensors_enable,
-         enum retro_sensor_action action, unsigned rate);
+bool input_sensor_set_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
 
 /**
  * Retrieves the sensor state associated with the provided port and ID. 
  * 
- * @param driver_state
  * @param port
- * @param sensors_enable
- * @param id            Sensor ID
+ * @param id    Sensor ID
  *
  * @return The current state associated with the port and ID as a float
  **/
-float input_driver_get_sensor(
-         input_driver_state_t *driver_state,
-         unsigned port, bool sensors_enable, unsigned id);
+float input_sensor_get_input(unsigned port, unsigned id);
 
+/**
+ * Retrieves the input driver state struct
+ * 
+ * @return The input state struct
+ **/
+void *input_driver_get_data(void);
 
-bool input_driver_get_nonblocking(input_driver_state_t *driver_state);
+/**
+ * Sets the input_driver_nonblock_state flag to true
+ **/
+void input_driver_set_nonblock_state(void);
 
-void input_driver_set_nonblocking(input_driver_state_t *driver_state,
-                                 bool new_value);
+/**
+ * Sets the input_driver_nonblock_state flag to false
+ **/
+void input_driver_unset_nonblock_state(void);
+
+/**
+ * If the action is INPUT_ACTION_AXIS_THRESHOLD, return the current
+ * input_driver_axis_threshold.
+ * 
+ * @return value of input_driver_axis_threshold or NULL for actions other than
+ *          INPUT_ACTION_AXIS_THRESHOLD
+**/
+float *input_driver_get_float(enum input_action action);
+
+/**
+ * If the action is INPUT_ACTION_MAX_USERS, return the current
+ * input_driver_max_users.
+ * 
+ * @return value of input_driver_axis_threshold or NULL for actions other than
+ *          INPUT_ACTION_AXIS_THRESHOLD
+**/
+unsigned *input_driver_get_uint(enum input_action action);
 
 /**
  * Get an enumerated list of all joypad driver names
@@ -363,8 +367,6 @@ const char* config_get_joypad_driver_options(void);
  * zero-length string, equivalent to calling input_joypad_init_first().
  *
  * @param ident  identifier of driver to initialize.
- * @param data   joypad state data pointer, which can be NULL and will be
- *               initialized by the new joypad driver, if one is found.
  *
  * @return The joypad driver if found, otherwise NULL.
  **/
@@ -726,11 +728,28 @@ void input_config_reset(void);
 #define DEFAULT_MAX_PADS 16
 #endif /* defined(ANDROID) */
 
-extern input_device_driver_t *joypad_drivers[];
-extern input_driver_t *input_drivers[];
-#ifdef HAVE_HID
-extern hid_driver_t *hid_drivers[];
-#endif
+extern input_device_driver_t dinput_joypad;
+extern input_device_driver_t linuxraw_joypad;
+extern input_device_driver_t parport_joypad;
+extern input_device_driver_t udev_joypad;
+extern input_device_driver_t xinput_joypad;
+extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t sdl_dingux_joypad;
+extern input_device_driver_t ps4_joypad;
+extern input_device_driver_t ps3_joypad;
+extern input_device_driver_t psp_joypad;
+extern input_device_driver_t ps2_joypad;
+extern input_device_driver_t ctr_joypad;
+extern input_device_driver_t switch_joypad;
+extern input_device_driver_t xdk_joypad;
+extern input_device_driver_t gx_joypad;
+extern input_device_driver_t wiiu_joypad;
+extern input_device_driver_t hid_joypad;
+extern input_device_driver_t android_joypad;
+extern input_device_driver_t qnx_joypad;
+extern input_device_driver_t mfi_joypad;
+extern input_device_driver_t dos_joypad;
+extern input_device_driver_t rwebpad_joypad;
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
@@ -756,29 +775,6 @@ extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
-
-extern input_device_driver_t dinput_joypad;
-extern input_device_driver_t linuxraw_joypad;
-extern input_device_driver_t parport_joypad;
-extern input_device_driver_t udev_joypad;
-extern input_device_driver_t xinput_joypad;
-extern input_device_driver_t sdl_joypad;
-extern input_device_driver_t sdl_dingux_joypad;
-extern input_device_driver_t ps4_joypad;
-extern input_device_driver_t ps3_joypad;
-extern input_device_driver_t psp_joypad;
-extern input_device_driver_t ps2_joypad;
-extern input_device_driver_t ctr_joypad;
-extern input_device_driver_t switch_joypad;
-extern input_device_driver_t xdk_joypad;
-extern input_device_driver_t gx_joypad;
-extern input_device_driver_t wiiu_joypad;
-extern input_device_driver_t hid_joypad;
-extern input_device_driver_t android_joypad;
-extern input_device_driver_t qnx_joypad;
-extern input_device_driver_t mfi_joypad;
-extern input_device_driver_t dos_joypad;
-extern input_device_driver_t rwebpad_joypad;
 
 #ifdef HAVE_HID
 extern hid_driver_t iohidmanager_hid;

@@ -802,6 +802,256 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
    NULL
 };
 
+static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
+static void input_null_poll(void *data) { }
+static int16_t input_null_input_state(
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind **retro_keybinds,
+      bool keyboard_mapping_blocked,
+      unsigned port, unsigned device, unsigned index, unsigned id) { return 0; }
+static void input_null_free(void *data) { }
+static bool input_null_set_sensor_state(void *data, unsigned port,
+         enum retro_sensor_action action, unsigned rate) { return false; }
+static float input_null_get_sensor_input(void *data, unsigned port, unsigned id) { return 0.0; }
+static uint64_t input_null_get_capabilities(void *data) { return 0; }
+static void input_null_grab_mouse(void *data, bool state) { }
+static bool input_null_grab_stdin(void *data) { return false; }
+
+static input_driver_t input_null = {
+   input_null_init,
+   input_null_poll,
+   input_null_input_state,
+   input_null_free,
+   input_null_set_sensor_state,
+   input_null_get_sensor_input,
+   input_null_get_capabilities,
+   "null",
+   input_null_grab_mouse,
+   input_null_grab_stdin
+};
+
+static input_driver_t *input_drivers[] = {
+#ifdef ORBIS
+   &input_ps4,
+#endif
+#if defined(__PSL1GHT__) || defined(__PS3__)
+   &input_ps3,
+#endif
+#if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
+   &input_psp,
+#endif
+#if defined(PS2)
+   &input_ps2,
+#endif
+#if defined(_3DS)
+   &input_ctr,
+#endif
+#if defined(SWITCH)
+   &input_switch,
+#endif
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+   &input_sdl,
+#endif
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+   &input_sdl_dingux,
+#endif
+#ifdef HAVE_DINPUT
+   &input_dinput,
+#endif
+#ifdef HAVE_X11
+   &input_x,
+#endif
+#ifdef __WINRT__
+   &input_uwp,
+#endif
+#ifdef XENON
+   &input_xenon360,
+#endif
+#if defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1) || defined(__WINRT__)
+   &input_xinput,
+#endif
+#ifdef GEKKO
+   &input_gx,
+#endif
+#ifdef WIIU
+   &input_wiiu,
+#endif
+#ifdef ANDROID
+   &input_android,
+#endif
+#ifdef HAVE_UDEV
+   &input_udev,
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+   &input_linuxraw,
+#endif
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+   &input_cocoa,
+#endif
+#ifdef __QNX__
+   &input_qnx,
+#endif
+#ifdef EMSCRIPTEN
+   &input_rwebinput,
+#endif
+#ifdef DJGPP
+   &input_dos,
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+#ifdef HAVE_WINRAWINPUT
+   /* winraw only available since XP */
+   &input_winraw,
+#endif
+#endif
+   &input_null,
+   NULL,
+};
+
+static input_device_driver_t null_joypad = {
+   NULL, /* init */
+   NULL, /* query_pad */
+   NULL, /* destroy */
+   NULL, /* button */
+   NULL, /* state */
+   NULL, /* get_buttons */
+   NULL, /* axis */
+   NULL, /* poll */
+   NULL,
+   NULL, /* name */
+   "null",
+};
+
+static input_device_driver_t *joypad_drivers[] = {
+#ifdef HAVE_XINPUT
+   &xinput_joypad,
+#endif
+#ifdef GEKKO
+   &gx_joypad,
+#endif
+#ifdef WIIU
+   &wiiu_joypad,
+#endif
+#ifdef _XBOX1
+   &xdk_joypad,
+#endif
+#if defined(ORBIS)
+   &ps4_joypad,
+#endif
+#if defined(__PSL1GHT__) || defined(__PS3__)
+   &ps3_joypad,
+#endif
+#if defined(PSP) || defined(VITA)
+   &psp_joypad,
+#endif
+#if defined(PS2)
+   &ps2_joypad,
+#endif
+#ifdef _3DS
+   &ctr_joypad,
+#endif
+#ifdef SWITCH
+   &switch_joypad,
+#endif
+#ifdef HAVE_DINPUT
+   &dinput_joypad,
+#endif
+#ifdef HAVE_UDEV
+   &udev_joypad,
+#endif
+#if defined(__linux) && !defined(ANDROID)
+   &linuxraw_joypad,
+#endif
+#ifdef HAVE_PARPORT
+   &parport_joypad,
+#endif
+#ifdef ANDROID
+   &android_joypad,
+#endif
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+   &sdl_joypad,
+#endif
+#if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
+   &sdl_dingux_joypad,
+#endif
+#ifdef __QNX__
+   &qnx_joypad,
+#endif
+#ifdef HAVE_MFI
+   &mfi_joypad,
+#endif
+#ifdef DJGPP
+   &dos_joypad,
+#endif
+/* Selecting the HID gamepad driver disables the Wii U gamepad. So while
+ * we want the HID code to be compiled & linked, we don't want the driver
+ * to be selectable in the UI. */
+#if defined(HAVE_HID) && !defined(WIIU)
+   &hid_joypad,
+#endif
+#ifdef EMSCRIPTEN
+   &rwebpad_joypad,
+#endif
+   &null_joypad,
+   NULL,
+};
+
+#ifdef HAVE_HID
+static bool null_hid_joypad_query(void *data, unsigned pad) {
+   return pad < MAX_USERS; }
+static const char *null_hid_joypad_name(
+      void *data, unsigned pad) { return NULL; }
+static void null_hid_joypad_get_buttons(void *data,
+      unsigned port, input_bits_t *state) { BIT256_CLEAR_ALL_PTR(state); }
+static int16_t null_hid_joypad_button(
+      void *data, unsigned port, uint16_t joykey) { return 0; }
+static bool null_hid_joypad_rumble(void *data, unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength) { return false; }
+static int16_t null_hid_joypad_axis(
+      void *data, unsigned port, uint32_t joyaxis) { return 0; }
+static void *null_hid_init(void) { return (void*)-1; }
+static void null_hid_free(const void *data) { }
+static void null_hid_poll(void *data) { }
+static int16_t null_hid_joypad_state(
+      void *data,
+      rarch_joypad_info_t *joypad_info,
+      const void *binds_data,
+      unsigned port) { return 0; }
+
+static hid_driver_t null_hid = {
+   null_hid_init,               /* init */
+   null_hid_joypad_query,       /* joypad_query */
+   null_hid_free,               /* free */
+   null_hid_joypad_button,      /* button */
+   null_hid_joypad_state,       /* state */
+   null_hid_joypad_get_buttons, /* get_buttons */
+   null_hid_joypad_axis,        /* axis */
+   null_hid_poll,               /* poll */
+   null_hid_joypad_rumble,      /* rumble */
+   null_hid_joypad_name,        /* joypad_name */
+   "null",
+};
+
+static hid_driver_t *hid_drivers[] = {
+#if defined(HAVE_BTSTACK)
+   &btstack_hid,
+#endif
+#if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
+   &iohidmanager_hid,
+#endif
+#if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
+   &libusb_hid,
+#endif
+#ifdef HW_RVL
+   &wiiusb_hid,
+#endif
+   &null_hid,
+   NULL,
+};
+#endif
+
 static bluetooth_driver_t bluetooth_null = {
    NULL, /* init */
    NULL, /* free */
@@ -1487,8 +1737,6 @@ typedef struct runloop runloop_state_t;
 
 struct rarch_state
 {
-   input_driver_state_t input_driver_state;
-
    double audio_source_ratio_original;
    double audio_source_ratio_current;
    struct retro_system_av_info video_driver_av_info; /* double alignment */
@@ -1647,6 +1895,8 @@ struct rarch_state
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *input_driver_remote;
 #endif
+   input_driver_t *current_input;
+   void *current_input_data;
 
 #ifdef HAVE_HID
    const void *hid_data;
@@ -1689,6 +1939,10 @@ struct rarch_state
    midi_event_t midi_drv_output_event;                   /* ptr alignment */
    core_info_state_t core_info_st;                       /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
+   const input_device_driver_t *joypad;                  /* ptr alignment */
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad;              /* ptr alignment */
+#endif
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
 #endif
@@ -1814,6 +2068,7 @@ struct rarch_state
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
    unsigned input_driver_flushing_input;
+   unsigned input_driver_max_users;
    unsigned input_hotkey_block_counter;
 #ifdef HAVE_ACCESSIBILITY
    unsigned gamepad_input_override;
@@ -1838,6 +2093,8 @@ struct rarch_state
    float audio_driver_rate_control_delta;
    float audio_driver_input;
    float audio_driver_volume_gain;
+
+   float input_driver_axis_threshold;
 
    enum osk_type osk_idx;
    enum rarch_core_type current_core_type;
@@ -2050,6 +2307,7 @@ struct rarch_state
 
    bool input_driver_block_hotkey;
    bool input_driver_block_libretro_input;
+   bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
    bool input_driver_analog_requested[MAX_USERS];
 

@@ -264,8 +264,7 @@ UserBindsPage::UserBindsPage(QObject *parent) :
 QWidget *UserBindsPage::widget()
 {
    unsigned p, retro_id;
-   settings_t *settings      = config_get_ptr();
-   unsigned max_users    = settings->uints.input_max_users;
+   unsigned max_users    = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    QWidget *widget       = new QWidget;
    QGridLayout *layout   = new QGridLayout;
    QComboBox *userCombo  = new QComboBox;
