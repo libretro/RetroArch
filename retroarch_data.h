@@ -1668,6 +1668,20 @@ struct discord_state
 typedef struct discord_state discord_state_t;
 #endif
 
+/* Contains all callbacks associated with
+ * core options.
+ * > At present there is only a single
+ *   callback, 'update_display' - but we
+ *   may wish to add more in the future
+ *   (e.g. for directly informing a core of
+ *   core option value changes, or getting/
+ *   setting extended/non-standard option
+ *   value data types) */
+typedef struct core_options_callbacks
+{
+   retro_core_options_update_display_callback_t update_display;
+} core_options_callbacks_t;
+
 struct runloop
 {
    retro_usec_t frame_time_last;        /* int64_t alignment */
@@ -1679,6 +1693,8 @@ struct runloop
    size_t msg_queue_size;
 
    core_option_manager_t *core_options;
+   core_options_callbacks_t core_options_callback; /* ptr alignment */
+
    retro_keyboard_event_t key_event;             /* ptr alignment */
    retro_keyboard_event_t frontend_key_event;    /* ptr alignment */
 

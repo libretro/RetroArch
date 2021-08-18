@@ -1089,7 +1089,7 @@ void CoreOptionsDialog::onCoreOptionComboBoxCurrentIndexChanged(int index)
                      QString str = option->vals->elems[k].data;
 
                      if (!str.isEmpty() && str == val)
-                        core_option_manager_set_val(coreopts, i, k);
+                        core_option_manager_set_val(coreopts, i, k, true);
                   }
                }
             }

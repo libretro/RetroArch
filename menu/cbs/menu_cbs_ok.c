@@ -3826,7 +3826,7 @@ int action_ok_core_option_dropdown_list(const char *path,
 
    /* > Update value and return */
    core_option_manager_set_val(coreopts, option_index,
-         (option->index == 0) ? 1 : 0);
+         (option->index == 0) ? 1 : 0, true);
 
    return 0;
 
@@ -6051,7 +6051,8 @@ static int action_ok_push_dropdown_setting_core_options_item_special(
    if (!coreopts)
       return -1;
 
-   core_option_manager_set_val(coreopts, core_option_idx, idx);
+   core_option_manager_set_val(coreopts,
+         core_option_idx, idx, false);
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
@@ -6066,7 +6067,8 @@ static int action_ok_push_dropdown_setting_core_options_item(const char *path,
    if (!coreopts)
       return -1;
 
-   core_option_manager_set_val(coreopts, core_option_idx, idx);
+   core_option_manager_set_val(coreopts,
+         core_option_idx, idx, false);
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
