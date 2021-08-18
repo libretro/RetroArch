@@ -1473,7 +1473,7 @@ static int ozone_list_push(void *data, void *userdata,
                   MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0);
 
             core_info_get_list(&list);
-            if (list->info_count > 0)
+            if (list && list->info_count > 0)
             {
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
