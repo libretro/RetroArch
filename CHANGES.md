@@ -30,6 +30,7 @@
 - RETROFW: Initial port
 - UWP/XBOX: fix issue where files where opened as OPENALWAYS instead of OPENEXISTING this fixes beetle cores
 - UWP/XBOX: fix issue where filesizes where not returned properly, this fixes loading arcade dat files
+- UWP/TRANSLATION: Enabled translation services for both UWP MSVC2017 and 2019. No TTS speech yet.
 - WASAPI: Stop deactivating audio on fast forward
 - WINDOWS: Remember original refresh rate
 - WINDOWS/VULKAN: Refresh rate fixes + cleanups
