@@ -94,6 +94,8 @@ struct shader_uniforms
    int frame_count;
    int frame_direction;
 
+   int rotation;
+
    int lut_texture[GFX_MAX_TEXTURES];
    unsigned frame_count_mod;
 
@@ -642,6 +644,8 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
 
    uni->frame_count     = gl_glsl_get_uniform(glsl, prog, "FrameCount");
    uni->frame_direction = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
+
+   uni->rotation        = gl_glsl_get_uniform(glsl, prog, "Rotation");
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
@@ -1236,6 +1240,11 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       else
 #endif
          glUniform1i(uni->frame_direction, 1);
+   }
+
+   if (uni->rotation >= 0)
+   {
+      glUniform1i(uni->rotation, retroarch_get_rotation());
    }
 
    /* Set lookup textures. */
