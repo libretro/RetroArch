@@ -1682,6 +1682,16 @@ typedef struct core_options_callbacks
    retro_core_options_update_display_callback_t update_display;
 } core_options_callbacks_t;
 
+/* Contains the current retro_fastforwarding_override
+ * parameters along with any pending updates triggered
+ * by RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE */
+typedef struct fastmotion_overrides
+{
+   struct retro_fastforwarding_override current;
+   struct retro_fastforwarding_override next;
+   bool pending;
+} fastmotion_overrides_t;
+
 struct runloop
 {
    retro_usec_t frame_time_last;        /* int64_t alignment */
@@ -1705,7 +1715,7 @@ struct runloop
    unsigned max_frames;
    unsigned audio_latency;
 
-   struct retro_fastforwarding_override fastmotion_override; /* float alignment */
+   fastmotion_overrides_t fastmotion_override; /* float alignment */
 
    bool missing_bios;
    bool force_nonblock;

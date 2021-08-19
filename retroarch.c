@@ -12223,6 +12223,18 @@ static void command_event_deinit_core(
       p_rarch->current_core.retro_deinit();
    }
 
+   /* retro_deinit() may call
+    * RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
+    * (i.e. to ensure that fastforwarding is
+    * disabled on core close)
+    * > Check for any pending updates */
+   if (runloop_state.fastmotion_override.pending)
+   {
+      runloop_apply_fastmotion_override(p_rarch,
+            &runloop_state, p_rarch->configuration_settings);
+      runloop_state.fastmotion_override.pending = false;
+   }
+
    RARCH_LOG("[Core]: Unloading core symbols..\n");
    uninit_libretro_symbols(p_rarch, &p_rarch->current_core);
    p_rarch->current_core.symbols_inited = false;
@@ -12668,7 +12680,7 @@ static INLINE float retroarch_get_runloop_fastforward_ratio(
       runloop_state_t *p_runloop)
 {
    struct retro_fastforwarding_override *fastmotion_override =
-         &p_runloop->fastmotion_override;
+         &p_runloop->fastmotion_override.current;
 
    return (fastmotion_override->fastforward && (fastmotion_override->ratio >= 0.0f)) ?
          fastmotion_override->ratio : settings->floats.fastforward_ratio;
@@ -13508,14 +13520,21 @@ static void retroarch_fastmotion_override_free(struct rarch_state *p_rarch,
 {
    settings_t *settings    = p_rarch->configuration_settings;
    float fastforward_ratio = settings->floats.fastforward_ratio;
-   bool reset_frame_limit  = p_runloop->fastmotion_override.fastforward &&
-         (p_runloop->fastmotion_override.ratio >= 0.0f) &&
-         (p_runloop->fastmotion_override.ratio != fastforward_ratio);
+   bool reset_frame_limit  = p_runloop->fastmotion_override.current.fastforward &&
+         (p_runloop->fastmotion_override.current.ratio >= 0.0f) &&
+         (p_runloop->fastmotion_override.current.ratio != fastforward_ratio);
 
-   p_runloop->fastmotion_override.ratio          = 0.0f;
-   p_runloop->fastmotion_override.fastforward    = false;
-   p_runloop->fastmotion_override.notification   = false;
-   p_runloop->fastmotion_override.inhibit_toggle = false;
+   p_runloop->fastmotion_override.current.ratio          = 0.0f;
+   p_runloop->fastmotion_override.current.fastforward    = false;
+   p_runloop->fastmotion_override.current.notification   = false;
+   p_runloop->fastmotion_override.current.inhibit_toggle = false;
+
+   p_runloop->fastmotion_override.next.ratio             = 0.0f;
+   p_runloop->fastmotion_override.next.fastforward       = false;
+   p_runloop->fastmotion_override.next.notification      = false;
+   p_runloop->fastmotion_override.next.inhibit_toggle    = false;
+
+   p_runloop->fastmotion_override.pending                = false;
 
    if (reset_frame_limit)
       retroarch_set_frame_limit(p_rarch, fastforward_ratio);
@@ -17928,66 +17947,16 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_fastforwarding_override *fastforwarding_override =
                (struct retro_fastforwarding_override *)data;
 
+         /* Record new retro_fastforwarding_override parameters
+          * and schedule application on the the next call of
+          * runloop_check_state() */
          if (fastforwarding_override)
          {
-            runloop_state_t *p_runloop                         = &runloop_state;
-            bool frame_time_counter_reset_after_fastforwarding = settings ?
-                  settings->bools.frame_time_counter_reset_after_fastforwarding : false;
-            float fastforward_ratio_default                    = settings ?
-                  settings->floats.fastforward_ratio : 0.0f;
-            float fastforward_ratio_last                       =
-                     (p_runloop->fastmotion_override.fastforward &&
-                           (p_runloop->fastmotion_override.ratio >= 0.0f)) ?
-                                 p_runloop->fastmotion_override.ratio :
-                                       fastforward_ratio_default;
-            float fastforward_ratio_current;
-
-            memcpy(&p_runloop->fastmotion_override,
+            memcpy(&runloop_state.fastmotion_override.next,
                   fastforwarding_override,
-                  sizeof(p_runloop->fastmotion_override));
-
-            /* Check if 'fastmotion' state has changed */
-            if (p_runloop->fastmotion !=
-                  p_runloop->fastmotion_override.fastforward)
-            {
-               p_runloop->fastmotion =
-                     p_runloop->fastmotion_override.fastforward;
-
-               if (p_runloop->fastmotion)
-                  p_rarch->input_driver_nonblock_state = true;
-               else
-               {
-                  p_rarch->input_driver_nonblock_state = false;
-                  p_rarch->fastforward_after_frames    = 1;
-               }
-               driver_set_nonblock_state();
-
-               /* Reset frame time counter when toggling
-                * fast-forward off, if required */
-               if (!p_runloop->fastmotion &&
-                   frame_time_counter_reset_after_fastforwarding)
-                  p_rarch->video_driver_frame_time_count = 0;
-
-               /* Ensure fast forward widget is disabled when
-                * toggling fast-forward off
-                * (required if RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
-                * is called during core de-initialisation) */
-#if defined(HAVE_GFX_WIDGETS)
-               if (p_rarch->widgets_active && !p_runloop->fastmotion)
-                  p_rarch->gfx_widgets_fast_forward = false;
-#endif
-            }
-
-            /* Update frame limit, if required */
-            fastforward_ratio_current = (p_runloop->fastmotion_override.fastforward &&
-                  (p_runloop->fastmotion_override.ratio >= 0.0f)) ?
-                        p_runloop->fastmotion_override.ratio :
-                              fastforward_ratio_default;
-
-            if (fastforward_ratio_current != fastforward_ratio_last)
-               retroarch_set_frame_limit(p_rarch, fastforward_ratio_current);
+                  sizeof(runloop_state.fastmotion_override.next));
+            runloop_state.fastmotion_override.pending = true;
          }
-
          break;
       }
 
@@ -37213,6 +37182,68 @@ static bool menu_display_libretro(
 }
 #endif
 
+static void runloop_apply_fastmotion_override(
+      struct rarch_state *p_rarch, runloop_state_t *p_runloop,
+      settings_t *settings)
+{
+   bool frame_time_counter_reset_after_fastforwarding = settings ?
+         settings->bools.frame_time_counter_reset_after_fastforwarding : false;
+   float fastforward_ratio_default                    = settings ?
+         settings->floats.fastforward_ratio : 0.0f;
+   float fastforward_ratio_last                       =
+            (p_runloop->fastmotion_override.current.fastforward &&
+                  (p_runloop->fastmotion_override.current.ratio >= 0.0f)) ?
+                        p_runloop->fastmotion_override.current.ratio :
+                              fastforward_ratio_default;
+   float fastforward_ratio_current;
+
+   memcpy(&p_runloop->fastmotion_override.current,
+         &p_runloop->fastmotion_override.next,
+         sizeof(p_runloop->fastmotion_override.current));
+
+   /* Check if 'fastmotion' state has changed */
+   if (p_runloop->fastmotion !=
+         p_runloop->fastmotion_override.current.fastforward)
+   {
+      p_runloop->fastmotion =
+            p_runloop->fastmotion_override.current.fastforward;
+
+      if (p_runloop->fastmotion)
+         p_rarch->input_driver_nonblock_state = true;
+      else
+      {
+         p_rarch->input_driver_nonblock_state = false;
+         p_rarch->fastforward_after_frames    = 1;
+      }
+
+      driver_set_nonblock_state();
+
+      /* Reset frame time counter when toggling
+       * fast-forward off, if required */
+      if (!p_runloop->fastmotion &&
+          frame_time_counter_reset_after_fastforwarding)
+         p_rarch->video_driver_frame_time_count = 0;
+
+      /* Ensure fast forward widget is disabled when
+       * toggling fast-forward off
+       * (required if RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
+       * is called during core de-initialisation) */
+#if defined(HAVE_GFX_WIDGETS)
+      if (p_rarch->widgets_active && !p_runloop->fastmotion)
+         p_rarch->gfx_widgets_fast_forward = false;
+#endif
+   }
+
+   /* Update frame limit, if required */
+   fastforward_ratio_current = (p_runloop->fastmotion_override.current.fastforward &&
+         (p_runloop->fastmotion_override.current.ratio >= 0.0f)) ?
+               p_runloop->fastmotion_override.current.ratio :
+                     fastforward_ratio_default;
+
+   if (fastforward_ratio_current != fastforward_ratio_last)
+      retroarch_set_frame_limit(p_rarch, fastforward_ratio_current);
+}
+
 static enum runloop_state runloop_check_state(
       struct rarch_state *p_rarch,
       settings_t *settings,
@@ -38130,12 +38161,21 @@ static enum runloop_state runloop_check_state(
       return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
 
+   /* Apply any pending fastmotion override
+    * parameters */
+   if (runloop_state.fastmotion_override.pending)
+   {
+      runloop_apply_fastmotion_override(
+            p_rarch, &runloop_state, settings);
+      runloop_state.fastmotion_override.pending = false;
+   }
+
    /* Check if we have pressed the fast forward button */
    /* To avoid continuous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed
     * to be able to toggle between them.
     */
-   if (!runloop_state.fastmotion_override.inhibit_toggle)
+   if (!runloop_state.fastmotion_override.current.inhibit_toggle)
    {
       static bool old_button_state            = false;
       static bool old_hold_button_state       = false;
@@ -38155,6 +38195,7 @@ static enum runloop_state runloop_check_state(
          runloop_state.fastmotion             = !check1;
          if (check1)
             p_rarch->fastforward_after_frames = 1;
+
          driver_set_nonblock_state();
 
          /* Reset frame time counter when toggling
@@ -38170,8 +38211,8 @@ static enum runloop_state runloop_check_state(
 
    /* Display fast-forward notification, unless
     * disabled via override */
-   if (!runloop_state.fastmotion_override.fastforward ||
-       runloop_state.fastmotion_override.notification)
+   if (!runloop_state.fastmotion_override.current.fastforward ||
+       runloop_state.fastmotion_override.current.notification)
    {
       /* > Use widgets, if enabled */
 #if defined(HAVE_GFX_WIDGETS)
