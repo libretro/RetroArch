@@ -1552,7 +1552,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Définir la taille de la fenêtre par rapport à la taille d'affichage du cœur. Alternativement, une largeur et une hauteur de fenêtre peuvent être définies ci-dessous pour une taille de fenêtre fixe."
+   "Définit la taille de la fenêtre à un multiple spécifié de la taille de la fenêtre principale."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1568,7 +1568,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Restaurer la taille et la position de la fenêtre. Si activée, cette option a la priorité sur l'échelle en mode fenêtré."
+   "Affiche tout le contenu dans une fenêtre à taille fixe aux dimensions spécifiées par 'Largeur de fenêtre' et 'Hauteur de fenêtre', et enregistrer la taille et la position de la fenêtre courante lors de la fermeture de RetroArch. Lorsque cette option est désactivée, la taille de la fenêtre est définie dynamiquement en fonction de 'Échelle en mode fenêtré'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Utiliser une taille de fenêtre personnalisée"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Affiche tout le contenu dans une fenêtre à taille fixe aux dimensions spécifiées par 'Largeur de fenêtre' et 'Hauteur de fenêtre'. Lorsque cette option est désactivée, la taille de la fenêtre est définie dynamiquement en fonction de 'Échelle en mode fenêtré'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1585,6 +1593,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Définir une hauteur personnalisée pour la fenêtre d'affichage."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Largeur de fenêtre maximale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Définit la largeur maximale de la fenêtre d'affichage lors du redimensionnement automatique basée sur 'Échelle en mode fenêtré'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Hauteur de fenêtre maximale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Définit la hauteur maximale de la fenêtre d'affichage lors du redimensionnement automatique basée sur 'Échelle en mode fenêtré'."
    )
 
 /* Settings > Video > Scaling */

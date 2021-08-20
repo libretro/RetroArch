@@ -1423,10 +1423,6 @@ MSG_HASH(
    "Lembrar posição e tamanho da janela"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Lembrar tamanho e posição da janela, habilitando isto tem precedência sobre a Escala do Janela."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Largura da janela"
    )

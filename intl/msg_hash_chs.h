@@ -1559,10 +1559,6 @@ MSG_HASH(
    "窗口缩放"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "根据核心视角大小来设置窗口大小。或者，您可以在下方设置窗口的宽度和高度获取固定窗口大小。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "窗口不透明度"
    )
@@ -1573,10 +1569,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "记住窗口位置和大小"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "记住窗口尺寸和位置，此选项的优先级高于「窗口缩放」选项。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,

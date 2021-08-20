@@ -1548,7 +1548,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Ustaw rozmiar okna względem rozmiaru widoku rdzenia. Alternatywnie, szerokość i wysokość okna mogą być ustawione poniżej dla stałego rozmiaru okna."
+   "Ustaw rozmiar okna na określoną wielokrotność rozmiaru głównego widoku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1563,8 +1563,8 @@ MSG_HASH(
    "Zapamiętaj położenie i rozmiar okna"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Zapamiętaj rozmiar i pozycję okna, włączenie tej opcji ma pierwszeństwo przed skalą w trybie okienkowym."
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Użyj niestandardowego rozmiaru okna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1581,6 +1581,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Ustaw niestandardowy rozmiar wysokości okna wyświetlacza. Pozostawienie go na 0 spowoduje przeskalowanie okna tak dużego, jak to możliwe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Maksymalna szerokość okna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Maksymalna wysokość okna"
    )
 
 /* Settings > Video > Scaling */

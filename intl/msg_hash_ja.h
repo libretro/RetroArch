@@ -1539,10 +1539,6 @@ MSG_HASH(
    "ウィンドウの拡大率"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "コアの表示領域サイズを基準にウィンドウを拡大します. または, 一定の幅と高さが適用される固定ウィンドウサイズも設定できます."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "ウィンドウの不透明度"
    )
@@ -1553,10 +1549,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "ウィンドウの位置とサイズを記憶"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "ウィンドウの位置とサイズを記憶します. 'ウィンドウの拡大率'設定より優先されます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,

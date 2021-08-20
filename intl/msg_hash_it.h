@@ -1540,7 +1540,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Imposta la dimensione della finestra rispetto alla dimensione della vista principale. In alternativa, è possibile impostare di seguito una larghezza e un'altezza della finestra per una dimensione fissa della finestra."
+   "Imposta la dimensione della finestra al multiplo specificato della dimensione della vista principale."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1556,7 +1556,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Ricorda la dimensione e la posizione della finestra, abilitandola ha la precedenza su Scala Finestre."
+   "Mostra tutto il contenuto in una finestra di dimensione fissa delle dimensioni specificate da 'Larghezza della finestra' e 'Altezza della finestra', e salva la dimensione e la posizione della finestra correnti alla chiusura di RetroArch. Quando disabilitata, la dimensione della finestra sarà impostata dinamicamente in base a 'Scala Finestra'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Usa Dimensione Personalizzata della Finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Mostra tutto il contenuto in una finestra di dimensione fissa delle dimensioni specificate da 'Larghezza della finestra' e 'Altezza della finestra'. Quando disabilitata, la dimensione della finestra sarà impostata dinamicamente in base a 'Scala Finestra'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1573,6 +1581,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Imposta le dimensioni dell'altezza personalizzata per la finestra dello schermo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Larghezza Massima della Finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Imposta la larghezza massima della finestra di visualizzazione quando si ridimensiona automaticamente in base a 'Scala Finestra'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Altezza Massima della Finestra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Imposta l'altezza massima della finestra di visualizzazione quando si ridimensiona automaticamente in base a 'Scala Finestra'."
    )
 
 /* Settings > Video > Scaling */
