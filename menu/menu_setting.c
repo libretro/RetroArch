@@ -11003,7 +11003,6 @@ static bool setting_append_list(
                      general_read_handler);
                (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
                CONFIG_UINT(
                      list, list_info,
@@ -11018,7 +11017,6 @@ static bool setting_append_list(
                      general_read_handler);
                (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
                CONFIG_BOOL(
                      list, list_info,
