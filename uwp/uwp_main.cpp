@@ -558,6 +558,8 @@ void App::OnWindowClosed(CoreWindow^ sender, CoreWindowEventArgs^ args)
 
 /* DisplayInformation event handlers. */
 
+
+
 void App::OnDpiChanged(DisplayInformation^ sender, Object^ args)
 {
 	m_windowResized = true;
@@ -586,6 +588,12 @@ void App::OnPackageInstalling(PackageCatalog^ sender, PackageInstallingEventArgs
 
 /* Implement UWP equivalents of various win32_* functions */
 extern "C" {
+
+	bool is_running_on_xbox(void)
+	{
+		Platform::String^ device_family = Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily;
+		return (device_family == L"Windows.Xbox");
+	}
 
 	bool win32_has_focus(void *data)
 	{
@@ -668,12 +676,13 @@ extern "C" {
 	void win32_check_window(void *data,
          bool *quit, bool *resize, unsigned *width, unsigned *height)
 	{
-		*quit   = App::GetInstance()->IsWindowClosed();
-      settings_t* settings = config_get_ptr();
-		if (settings->bools.video_force_resolution)
+		static bool is_xbox   = is_running_on_xbox();
+		*quit                 = App::GetInstance()->IsWindowClosed();
+		if (is_xbox)
 		{
-			*width = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
-			*height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
+			settings_t* settings = config_get_ptr();
+			*width  = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : 3840;
+			*height = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : 2160;
 			return;
 		}
 

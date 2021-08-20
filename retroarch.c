@@ -30105,102 +30105,100 @@ static bool video_driver_init_internal(
    }
    else
    {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-      bool window_custom_size_enable = settings->bools.video_window_save_positions;
-#else
-      bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
-#endif
-
-      /* TODO: remove when the new window resizing core is hooked */
-      if (window_custom_size_enable &&
-          settings->uints.window_position_width &&
-          settings->uints.window_position_height)
+#ifdef __WINRT__
+      if (is_running_on_xbox())
       {
-         width  = settings->uints.window_position_width;
-         height = settings->uints.window_position_height;
+         width  = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
+         height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
       }
       else
+#endif
       {
-         float video_scale = settings->floats.video_scale;
-         unsigned max_win_width;
-         unsigned max_win_height;
-
-         /* Determine maximum allowed window dimensions
-          * NOTE: We cannot read the actual display
-          * metrics here, because the context driver
-          * has not yet been initialised... */
-
-         /* > Try explicitly configured values */
-         max_win_width  = settings->uints.window_auto_width_max;
-         max_win_height = settings->uints.window_auto_height_max;
-
-         /* > Handle invalid settings */
-         if ((max_win_width == 0) || (max_win_height == 0))
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+         bool window_custom_size_enable = settings->bools.video_window_save_positions;
+#else
+         bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
+#endif
+         /* TODO: remove when the new window resizing core is hooked */
+         if (window_custom_size_enable &&
+            settings->uints.window_position_width &&
+            settings->uints.window_position_height)
          {
-            /* > Try configured fullscreen width/height */
-            max_win_width  = settings->uints.video_fullscreen_x;
-            max_win_height = settings->uints.video_fullscreen_y;
-
-            if ((max_win_width == 0) || (max_win_height == 0))
-            {
-               /* Maximum window width/size *must* be non-zero;
-                * if all else fails, used defined default
-                * maximum window size */
-               max_win_width  = DEFAULT_WINDOW_AUTO_WIDTH_MAX;
-               max_win_height = DEFAULT_WINDOW_AUTO_HEIGHT_MAX;
-            }
-         }
-
-         /* Determine nominal window size based on
-          * core geometry */
-         if (settings->bools.video_force_aspect)
-         {
-            /* Do rounding here to simplify integer
-             * scale correctness. */
-            unsigned base_width = roundf(geom->base_height *
-                  p_rarch->video_driver_aspect_ratio);
-            width = roundf(base_width * video_scale);
+            width = settings->uints.window_position_width;
+            height = settings->uints.window_position_height;
          }
          else
-            width = roundf(geom->base_width * video_scale);
-
-         height = roundf(geom->base_height * video_scale);
-
-         /* Cap window size to maximum allowed values */
-         if ((width > max_win_width) || (height > max_win_height))
          {
-            unsigned geom_width  = (width > 0)  ? width  : 1;
-            unsigned geom_height = (height > 0) ? height : 1;
-            float geom_aspect    = (float)geom_width / (float)geom_height;
-            float max_win_aspect = (float)max_win_width / (float)max_win_height;
+            float video_scale = settings->floats.video_scale;
+            /* Determine maximum allowed window dimensions
+             * NOTE: We cannot read the actual display
+             * metrics here, because the context driver
+             * has not yet been initialised... */
 
-            if (geom_aspect > max_win_aspect)
+             /* > Try explicitly configured values */
+            unsigned max_win_width = settings->uints.window_auto_width_max;
+            unsigned max_win_height = settings->uints.window_auto_height_max;
+
+            /* > Handle invalid settings */
+            if ((max_win_width == 0) || (max_win_height == 0))
             {
-               width  = max_win_width;
-               height = geom_height * max_win_width / geom_width;
-               /* Account for any possible rounding errors... */
-               height = (height < 1)              ? 1              : height;
-               height = (height > max_win_height) ? max_win_height : height;
+               /* > Try configured fullscreen width/height */
+               max_win_width = settings->uints.video_fullscreen_x;
+               max_win_height = settings->uints.video_fullscreen_y;
+
+               if ((max_win_width == 0) || (max_win_height == 0))
+               {
+                  /* Maximum window width/size *must* be non-zero;
+                   * if all else fails, used defined default
+                   * maximum window size */
+                  max_win_width = DEFAULT_WINDOW_AUTO_WIDTH_MAX;
+                  max_win_height = DEFAULT_WINDOW_AUTO_HEIGHT_MAX;
+               }
+            }
+
+            /* Determine nominal window size based on
+             * core geometry */
+            if (settings->bools.video_force_aspect)
+            {
+               /* Do rounding here to simplify integer
+                * scale correctness. */
+               unsigned base_width = roundf(geom->base_height *
+                  p_rarch->video_driver_aspect_ratio);
+               width = roundf(base_width * video_scale);
             }
             else
+               width = roundf(geom->base_width * video_scale);
+
+            height = roundf(geom->base_height * video_scale);
+
+            /* Cap window size to maximum allowed values */
+            if ((width > max_win_width) || (height > max_win_height))
             {
-               height = max_win_height;
-               width  = geom_width * max_win_height / geom_height;
-               /* Account for any possible rounding errors... */
-               width  = (width < 1)             ? 1             : width;
-               width  = (width > max_win_width) ? max_win_width : width;
+               unsigned geom_width = (width > 0) ? width : 1;
+               unsigned geom_height = (height > 0) ? height : 1;
+               float geom_aspect = (float)geom_width / (float)geom_height;
+               float max_win_aspect = (float)max_win_width / (float)max_win_height;
+
+               if (geom_aspect > max_win_aspect)
+               {
+                  width = max_win_width;
+                  height = geom_height * max_win_width / geom_width;
+                  /* Account for any possible rounding errors... */
+                  height = (height < 1) ? 1 : height;
+                  height = (height > max_win_height) ? max_win_height : height;
+               }
+               else
+               {
+                  height = max_win_height;
+                  width = geom_width * max_win_height / geom_height;
+                  /* Account for any possible rounding errors... */
+                  width = (width < 1) ? 1 : width;
+                  width = (width > max_win_width) ? max_win_width : width;
+               }
             }
          }
       }
    }
-
-#ifdef __WINRT__
-   if (settings->bools.video_force_resolution)
-   {
-      width = settings->uints.video_fullscreen_x != 0 ? settings->uints.video_fullscreen_x : 3840;
-      height = settings->uints.video_fullscreen_y != 0 ? settings->uints.video_fullscreen_y : 2160;
-   }
-#endif
 
    if (width && height)
       RARCH_LOG("[Video]: Video @ %ux%u\n", width, height);

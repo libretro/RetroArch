@@ -97,6 +97,8 @@ void win32_show_cursor(void *data, bool state);
 
 HWND win32_get_window(void);
 
+bool is_running_on_xbox(void);
+
 bool win32_has_focus(void *data);
 
 void win32_clip_window(bool grab);
