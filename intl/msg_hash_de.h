@@ -1487,14 +1487,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Benutzerdefinierte Bildhöhe für den Vollbildmodus. Wird dieser Wert nicht gesetzt, wird die Desktop-Auflösung verwendet."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Auflösung auf UWP erzwingen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Auflösung auf Vollbildgröße erzwingen. Wenn auf 0 gesetzt, wird ein fester Wert von 3840 x 2160 verwendet."
-   )
 
 /* Settings > Video > Windowed Mode */
 

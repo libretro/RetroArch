@@ -1523,14 +1523,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Imposta la dimensione personalizzata dell'altezza per la modalità a schermo intero senza finestra. Lasciandolo a 0 utilizzerà la risoluzione del desktop"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Forza risoluzione su UWP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Forza la risoluzione alla dimensione dello schermo intero, se impostata a 0, verrà utilizzato un valore fisso di 3840 x 2160."
-   )
 
 /* Settings > Video > Windowed Mode */
 

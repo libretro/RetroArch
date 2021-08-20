@@ -3545,10 +3545,6 @@ MSG_HASH(
    "video_fullscreen_y"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION,
-   "video_force_resolution"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE,
    "video_layout_enable"
    )

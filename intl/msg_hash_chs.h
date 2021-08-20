@@ -1543,14 +1543,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "设置非窗口全屏模式的自定义高度。留空则表示使用桌面分辨率。"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "UWP平台的强制分辨率"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "强制分辨率为全屏。若设为0，则将使用默认值分辨率3840x2160。"
-   )
 
 /* Settings > Video > Windowed Mode */
 

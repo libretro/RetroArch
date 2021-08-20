@@ -1535,14 +1535,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Définir la hauteur personnalisée pour le plein écran non fenêtré. La laisser non définie utilisera la résolution du bureau."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Forcer la résolution sous UWP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Force la résolution aux dimensions en plein écran, si réglée à 0, une valeur fixe de 3840 x 2160 sera utilisée."
-   )
+
 
 /* Settings > Video > Windowed Mode */
 

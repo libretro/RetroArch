@@ -1543,14 +1543,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Establece la altura a pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Forzar resolución en UWP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Fuerza la resolución al tamaño de la pantalla. Si el valor es 0, se utilizará uno fijo de 3840x2160."
-   )
 
 /* Settings > Video > Windowed Mode */
 

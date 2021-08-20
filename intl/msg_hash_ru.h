@@ -1555,14 +1555,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Ручная установка высоты для неоконного полноэкранного режима. Если не задано, будет использоваться разрешение рабочего стола."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Принудительное разрешение на UWP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Принудительная установка разрешения на весь экран. При значении 0 будет использован режим 3840 x 2160."
-   )
 
 /* Settings > Video > Windowed Mode */
 

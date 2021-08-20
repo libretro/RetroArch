@@ -1535,14 +1535,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Penceresiz tam ekran kipi için özel yükseklik boyutunu ayarla. Bunu ayarsız bırakırsanız masaüstü çözünürlüğünü kullanır."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "UWP'de çözünürlüğü zorla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Çözünürlüğü tam ekran boyutuna zorlar, 0 olarak ayarlanırsa sabit 3840 x 2160 değer kullanılır."
-   )
 
 /* Settings > Video > Windowed Mode */
 

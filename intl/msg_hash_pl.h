@@ -1531,15 +1531,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Ustaw niestandardowy rozmiar wysokości dla trybu pełnoekranowego bez okien. Pozostawienie go na 0 spowoduje użycie rozdzielczości pulpitu."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Wymuś rozdzielczość do UWP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Wymuś rozdzielczość do rozmiaru pełnoekranowego, jeśli jest ustawione na 0, zostanie użyta stała rozdzielczość 3840 x 2160."
-   )
-
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(

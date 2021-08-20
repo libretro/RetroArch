@@ -225,3 +225,11 @@ param.sfo
 *.vpk
 /.vs
 /deps/SPIRV-Cross/out/build/x64-Debug
+/pkg/msvc-uwp/RetroArch-msvc2019-UWP/x64/ReleaseANGLE/embed
+/pkg/msvc-uwp/RetroArch-msvc2019-UWP/x64/ReleaseANGLE/ilc/in
+/pkg/msvc-uwp/RetroArch-msvc2019-UWP/x64/ReleaseANGLE/ilc
+/pkg/msvc-uwp/RetroArch-msvc2019-UWP/x64/ReleaseANGLE/RetroArc.f5e937b6.tlog
+/pkg/msvc-uwp/RetroArch-msvc2019-UWP/x64/ReleaseANGLE
+/pkg/msvc-uwp/x64/ReleaseANGLE/RetroArch-msvc2019-UWP/AppX
+/pkg/msvc-uwp/x64/ReleaseANGLE/RetroArch-msvc2019-UWP/ilc
+/pkg/msvc-uwp/x64/ReleaseANGLE/RetroArch-msvc2019-UWP

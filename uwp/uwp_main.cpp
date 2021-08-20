@@ -16,7 +16,6 @@
 #include <ppltasks.h>
 #include <collection.h>
 #include <windows.devices.enumeration.h>
-#include <gamingdeviceinformation.h>	
 
 #include <encodings/utf.h>
 #include <string/stdstring.h>
@@ -675,22 +674,15 @@ extern "C" {
          bool *quit, bool *resize, unsigned *width, unsigned *height)
 	{
 		*quit   = App::GetInstance()->IsWindowClosed();
-      settings_t* settings = config_get_ptr();
-	  *width = uwp_get_width();
-	  *height = uwp_get_height();
+		*width = uwp_get_width();
+		*height = uwp_get_height();
 
-		/**resize = App::GetInstance()->CheckWindowResized();
-		if (*resize)
-		{
-			float dpi = DisplayInformation::GetForCurrentView()->LogicalDpi;
-			*width    = ConvertDipsToPixels(CoreWindow::GetForCurrentThread()->Bounds.Width, dpi);
-			*height   = ConvertDipsToPixels(CoreWindow::GetForCurrentThread()->Bounds.Height, dpi);
-		}*/
+		if (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily != L"Windows.Xbox")
+			*resize = App::GetInstance()->CheckWindowResized();
 	}
 
 	void* uwp_get_corewindow(void)
 	{
-		ApplicationView::GetForCurrentView()->TryResizeView(Size(uwp_get_width(), uwp_get_height()));
 		return (void*)CoreWindow::GetForCurrentThread();
 	}
 
@@ -698,50 +690,30 @@ extern "C" {
 
 	int uwp_get_height(void)
 	{
-		const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+		static bool is_xbox = Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == L"Windows.Xbox";
+		if (is_xbox)
+		{
+			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+			if (hdi)
+				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionHeightInRawPixels;
+		}
 		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
 		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
-		auto surface_height = static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Height * surface_scale);
-		if (hdi)
-		{
-			try
-			{
-				if (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == L"Windows.Xbox")
-				{
-					GAMING_DEVICE_MODEL_INFORMATION gdinfo = {};
-					if (SUCCEEDED(GetGamingDeviceModelInformation(&gdinfo)) && gdinfo.vendorId == GAMING_DEVICE_VENDOR_ID_MICROSOFT)
-					{
-						surface_height = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionHeightInRawPixels;
-					}
-				}
-			}
-			catch (...) {}
-		}
-		return surface_height;
+		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Height * surface_scale);
 	}
 
 	int uwp_get_width(void)
 	{
-		const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+		static bool is_xbox = Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == L"Windows.Xbox";
+		if (is_xbox)
+		{
+			const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
+			if (hdi)
+				return Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionWidthInRawPixels;
+		}
 		const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
 		auto surface_scale = static_cast<float>(resolution_scale) / 100.0f;
-		auto surface_width = static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Width * surface_scale);
-		if (hdi)
-		{
-			try
-			{
-				if (Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == L"Windows.Xbox")
-				{
-					GAMING_DEVICE_MODEL_INFORMATION gdinfo = {};
-					if (SUCCEEDED(GetGamingDeviceModelInformation(&gdinfo)) && gdinfo.vendorId == GAMING_DEVICE_VENDOR_ID_MICROSOFT)
-					{
-						surface_width = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionWidthInRawPixels;
-					}
-				}
-			}
-			catch (...) {}
-		}
-		return surface_width;
+		return static_cast<LONG32>(CoreWindow::GetForCurrentThread()->Bounds.Width * surface_scale);
 	}
 
 

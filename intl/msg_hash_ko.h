@@ -1563,14 +1563,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "전체화면 모드의 사용자 세로 높이를 설정합니다. 설정하지 않으면 바탕화면 해상도를 사용합니다."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "해상도 강제 (UWP)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "해상도를 전체 화면 크기로 강제합니다. 0으로 설정할 경우 3840 x 2160의 고정된 값이 사용됩니다."
-   )
 
 /* Settings > Video > Windowed Mode */
 

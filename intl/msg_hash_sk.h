@@ -1459,11 +1459,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Nastaviť vlastnú výšku pre celoobrazovkový režim bez okna. Prázdne použije rozlíšenie pracovnej plochy."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Vynútiť rozlíšenie na celú obrazovku, ak nastavené na 0, použije sa pevná hodnota 3840 x 2160."
-   )
-
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(

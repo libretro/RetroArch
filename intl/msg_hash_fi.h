@@ -1535,14 +1535,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
    "Aseta mukautettu korkeuskoko ei-ikkunoidulle koko näytön tilalle. Tyhjäksi jättäminen käyttää työpöydän resoluutiota."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Pakota resoluutio käyttäessä UWP:ta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Pakota resoluutio koko näytön kokoon, jos arvo on 0, käytetään kiinteää arvoa 3840 x 2160."
-   )
 
 /* Settings > Video > Windowed Mode */
 

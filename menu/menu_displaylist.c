@@ -7755,12 +7755,6 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
-#ifdef __WINRT__
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-#endif
          break;
       case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
          {
