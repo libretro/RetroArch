@@ -5482,6 +5482,13 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST),
+                  MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
+
          {
             bool playlist_show_sublabels = settings->bools.playlist_show_sublabels;
             bool history_list_enable     = settings->bools.history_list_enable;
@@ -5538,12 +5545,6 @@ unsigned menu_displaylist_build_list(
             }
          }
 
-         if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST),
-                  MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST,
-                  MENU_SETTING_ACTION, 0, 0))
-            count++;
          break;
       case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
          {
