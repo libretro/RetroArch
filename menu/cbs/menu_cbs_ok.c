@@ -6206,8 +6206,12 @@ int action_cb_push_dropdown_item_resolution(const char *path,
          refreshrate, (float)refreshrate, 0, 0, 0, 0))
    {
       settings_t *settings = config_get_ptr();
-
+#ifdef _MSC_VER
+      float num            = refreshrate / 60.0f;
+      unsigned refresh_mod = num > 0 ? (unsigned)(floorf(num + 0.5f)) : (unsigned)(ceilf(num - 0.5f));
+#else
       unsigned refresh_mod = lroundf(refreshrate / 60.0f);
+#endif
       float refresh_exact  = refreshrate;
 
       /* 59 Hz is an inaccurate representation of the real value (59.94).
