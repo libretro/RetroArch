@@ -2713,7 +2713,8 @@ static int setting_action_ok_video_refresh_rate_auto(
       command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
    }
 
-   if (setting_generic_action_ok_default(setting, idx, wraparound) != 0)
+   /* Send NULL instead of setting to prevent duplicate notifications */
+   if (setting_generic_action_ok_default(NULL, idx, wraparound) != 0)
       return -1;
 
    return 0;
@@ -2734,7 +2735,8 @@ static int setting_action_ok_video_refresh_rate_polled(
    /* Incase refresh rate update forced non-block video. */
    command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
 
-   if (setting_generic_action_ok_default(setting, idx, wraparound) != 0)
+   /* Send NULL instead of setting to prevent duplicate notifications */
+   if (setting_generic_action_ok_default(NULL, idx, wraparound) != 0)
       return -1;
 
    return 0;
@@ -7065,6 +7067,13 @@ static int setting_action_start_video_refresh_rate_auto(
    return 0;
 }
 
+static int setting_action_start_video_refresh_rate_polled(
+      rarch_setting_t *setting)
+{
+   /* Relay action to ok to prevent duplicate notifications */
+   return setting_action_ok_video_refresh_rate_polled(setting, 0, false);
+}
+
 static int setting_action_start_mouse_index(rarch_setting_t *setting)
 {
    settings_t *settings     = config_get_ptr();
@@ -11093,6 +11102,7 @@ static bool setting_append_list(
                      parent_group,
                      general_write_handler,
                      general_read_handler);
+                  (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_polled;
                   (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_polled;
                   (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_polled;
                   (*list)[list_info->index - 1].get_string_representation =
