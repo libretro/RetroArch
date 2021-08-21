@@ -265,6 +265,9 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
 
    video_driver_get_size(NULL, &video_info_height);
 
+   if (!node)
+      return;
+
    current_selection_middle_onscreen    =
       ozone->dimensions.header_height +
       ozone->dimensions.entry_padding_vertical +
