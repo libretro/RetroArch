@@ -1331,10 +1331,6 @@ MSG_HASH(
    "Onthoudt Venster Positie en Grootte"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Onthoud de venstergrootte en -positie, dit inschakelen heeft voorrang op Venster Schaal."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Window Breedte"
    )

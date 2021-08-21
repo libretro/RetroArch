@@ -1503,10 +1503,6 @@ MSG_HASH(
    "Fenstermodus-Skalierung"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Die Fenstergröße relativ zur Größe der Core-Ausgabe festlegen. Alternativ können unten eine Fensterbreite und -höhe für eine feste Fenstergröße eingestellt werden."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "Fenster-Deckkraft"
    )
@@ -1517,10 +1513,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "Fensterposition und -größe merken"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Fenstergröße und -position merken. Diese Einstellung hat Vorrang vor der Fenstermodus-Skalierung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -2815,6 +2807,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Überprüfen, ob benötigte Firmware vorhanden ist, bevor versucht wird, Inhalte zu laden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Core-Optionskategorien"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Cores erlauben, Einstellungen in Kategorie-basierten Untermenüs darzustellen. Hinweis: Core muss neu gestartet werden, um Änderungen zu übernehmen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,

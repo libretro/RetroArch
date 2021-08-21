@@ -1487,10 +1487,6 @@ MSG_HASH(
    "Skala Berjendela"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Atur ukuran jendela relatif terhadap ukuran viewport core. Atau, lebar dan tinggi jendela dapat diatur di bawah ini untuk ukuran jendela tetap."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "Opasitas Jendela"
    )
@@ -1501,10 +1497,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "Ingat Posisi dan Ukuran Jendela"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Ingat ukuran dan posisi jendela, mengaktifkan ini lebih diutamakan daripada Skala Berjendela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
