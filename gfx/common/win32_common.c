@@ -1666,31 +1666,45 @@ bool win32_get_metrics(void *data,
    enum display_metric_types type, float *value)
 {
 #if !defined(_XBOX)
-   HDC monitor            = GetDC(NULL);
-   int pixels_x           = GetDeviceCaps(monitor, HORZRES);
-   int pixels_y           = GetDeviceCaps(monitor, VERTRES);
-   int physical_width     = GetDeviceCaps(monitor, HORZSIZE);
-   int physical_height    = GetDeviceCaps(monitor, VERTSIZE);
-
-   ReleaseDC(NULL, monitor);
-
    switch (type)
    {
       case DISPLAY_METRIC_PIXEL_WIDTH:
-         *value = pixels_x;
+         {
+            HDC monitor        = GetDC(NULL);
+            *value             = GetDeviceCaps(monitor, HORZRES);
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_PIXEL_HEIGHT:
-         *value = pixels_y;
+         {
+            HDC monitor        = GetDC(NULL);
+            *value             = GetDeviceCaps(monitor, VERTRES);
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_MM_WIDTH:
-         *value = physical_width;
+         {
+            HDC monitor        = GetDC(NULL);
+            *value             = GetDeviceCaps(monitor, HORZSIZE);
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_MM_HEIGHT:
-         *value = physical_height;
+         {
+            HDC monitor        = GetDC(NULL);
+            *value             = GetDeviceCaps(monitor, VERTSIZE);
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_DPI:
          /* 25.4 mm in an inch. */
-         *value = 254 * pixels_x / physical_width / 10;
+         {
+            HDC monitor        = GetDC(NULL);
+            int pixels_x       = GetDeviceCaps(monitor, HORZRES);
+            int physical_width = GetDeviceCaps(monitor, HORZSIZE);
+            *value = 254 * pixels_x / physical_width / 10;
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_NONE:
       default:
