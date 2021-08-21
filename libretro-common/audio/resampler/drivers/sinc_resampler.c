@@ -85,7 +85,7 @@ typedef struct rarch_sinc_resampler
    float kaiser_beta;
 } rarch_sinc_resampler_t;
 
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON)
+#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
 #ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
 #include <arm_neon.h>
 
@@ -910,7 +910,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    else
 #endif
    {
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON)
+#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
       re->taps     = (re->taps + 7) & ~7;
 #else
       re->taps     = (re->taps + 3) & ~3;
@@ -968,7 +968,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    }
    else if (mask & RESAMPLER_SIMD_NEON && window_type != SINC_WINDOW_KAISER)
    {
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON)
+#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
 #ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
       sinc_resampler.process = resampler_sinc_process_neon_intrin;
 #else
