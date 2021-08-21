@@ -85,7 +85,7 @@ typedef struct rarch_sinc_resampler
    float kaiser_beta;
 } rarch_sinc_resampler_t;
 
-#if (defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_OPTIMIZATIONS)) || defined(HAVE_NEON)
+#if (defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_ASM_OPTIMIZATIONS)) || defined(HAVE_NEON)
 #if TARGET_OS_IPHONE
 #else
 #ifndef WANT_NEON
