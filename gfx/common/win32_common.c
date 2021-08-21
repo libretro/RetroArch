@@ -979,8 +979,14 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          quit                     = true;
          {
             uint16_t mod          = 0;
-            unsigned keysym       = (unsigned)wparam;
-            unsigned keycode      = input_keymaps_translate_keysym_to_rk(keysym);
+            unsigned keycode      = 0;
+            unsigned keysym       = (lparam >> 16) & 0xff;
+
+            /* extended keys will map to dinput if the high bit is set */
+            if ((lparam >> 24 & 0x1))
+               keysym |= 0x80;
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
