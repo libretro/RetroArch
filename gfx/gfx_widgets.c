@@ -1001,7 +1001,7 @@ static void gfx_widgets_layout(
       p_dispwidget->msg_queue_task_text_start_x         -= 
          p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2.0f;
 
-   p_dispwidget->msg_queue_regular_text_start            = p_dispwidget->msg_queue_rect_start_x + p_dispwidget->msg_queue_regular_padding_x;
+   p_dispwidget->msg_queue_regular_text_start            = p_dispwidget->msg_queue_rect_start_x;
 
    p_dispwidget->msg_queue_task_hourglass_x              = p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x;
 
@@ -1448,10 +1448,14 @@ static void gfx_widgets_draw_regular_msg(
    static float msg_queue_info[16]                          =
       COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
    unsigned bar_width;
+   unsigned bar_margin;
    unsigned text_color;
    uintptr_t icon = p_dispwidget->gfx_widgets_icons_textures[
       MENU_WIDGETS_ICON_INFO]; /* TODO: Real icon logic here */
    static float last_alpha = 0.0f;
+
+   msg->unfolding = false;
+   msg->unfolded  = true;
 
    if (last_alpha != msg->alpha)
    {
@@ -1480,6 +1484,7 @@ static void gfx_widgets_draw_regular_msg(
             * msg->unfold, video_height);
    }
 
+#if 0
    if (p_dispwidget->msg_queue_has_icons)
    {
       if (dispctx && dispctx->blend_begin)
@@ -1501,18 +1506,20 @@ static void gfx_widgets_draw_regular_msg(
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
+#endif
 
    /* Background */
-   bar_width = p_dispwidget->simple_widget_padding + msg->width;
+   bar_width  = p_dispwidget->simple_widget_padding + msg->width + p_dispwidget->msg_queue_icon_size_x;
+   bar_margin = 4;
 
    gfx_display_draw_quad(
          p_disp,
          userdata,
          video_width,
          video_height,
-         p_dispwidget->msg_queue_rect_start_x,
+         p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x + bar_margin,
          video_height - msg->offset_y,
-         bar_width,
+         bar_width - bar_margin,
          p_dispwidget->msg_queue_height,
          video_width,
          video_height,
@@ -1520,12 +1527,31 @@ static void gfx_widgets_draw_regular_msg(
 	 NULL
          );
 
+   gfx_display_draw_quad(
+         p_disp,
+         userdata,
+         video_width,
+         video_height,
+         p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x,
+         video_height - msg->offset_y,
+         bar_margin,
+         p_dispwidget->msg_queue_height,
+         video_width,
+         video_height,
+         p_dispwidget->pure_white,
+         NULL
+         );
+
    /* Text */
    text_color = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha*255.0f));
 
    gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
       msg->msg,
-      p_dispwidget->msg_queue_regular_text_start - ((1.0f-msg->unfold) * msg->width/2),
+#if 1
+      p_dispwidget->msg_queue_regular_text_start,
+#else
+      p_dispwidget->msg_queue_regular_text_start- ((1.0f-msg->unfold) * msg->width/2),
+#endif
       video_height - msg->offset_y + (p_dispwidget->msg_queue_height - msg->text_height)/2.0f + p_dispwidget->gfx_widget_fonts.msg_queue.line_ascender,
       video_width, video_height,
       text_color,
@@ -1548,6 +1574,21 @@ static void gfx_widgets_draw_regular_msg(
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
 
+#if 1
+      gfx_widgets_draw_icon(
+            userdata,
+            p_disp,
+            video_width,
+            video_height,
+            p_dispwidget->msg_queue_icon_size_x,
+            p_dispwidget->msg_queue_icon_size_y,
+            p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO],
+            p_dispwidget->msg_queue_spacing,
+            video_height - msg->offset_y  - p_dispwidget->msg_queue_icon_offset_y,
+            0,
+            1,
+            msg_queue_info);
+#else
       gfx_widgets_draw_icon(
             userdata,
             p_disp,
@@ -1585,6 +1626,7 @@ static void gfx_widgets_draw_regular_msg(
             video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y + p_dispwidget->msg_queue_internal_icon_offset, 
             0, 1,
             p_dispwidget->pure_white);
+#endif
 
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
@@ -2113,6 +2155,7 @@ bool gfx_widgets_init(
       const char *dir_assets, char *font_path)
 {
    unsigned i;
+   unsigned color                              = 0x222222;
    dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)data;
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
    gfx_animation_t *p_anim                     = (gfx_animation_t*)data_anim;
@@ -2125,21 +2168,22 @@ bool gfx_widgets_init(
    gfx_display_set_alpha(p_dispwidget->backdrop_orig, 0.75f);
    for (i = 0; i < 16; i++)
       p_dispwidget->pure_white[i] = 1.00f;
-   p_dispwidget->msg_queue_bg[0]  = HEX_R(0x3A3A3A);
-   p_dispwidget->msg_queue_bg[1]  = HEX_G(0x3A3A3A);
-   p_dispwidget->msg_queue_bg[2]  = HEX_B(0x3A3A3A);
+
+   p_dispwidget->msg_queue_bg[0]  = HEX_R(color);
+   p_dispwidget->msg_queue_bg[1]  = HEX_G(color);
+   p_dispwidget->msg_queue_bg[2]  = HEX_B(color);
    p_dispwidget->msg_queue_bg[3]  = 1.0f;
-   p_dispwidget->msg_queue_bg[4]  = HEX_R(0x3A3A3A);
-   p_dispwidget->msg_queue_bg[5]  = HEX_G(0x3A3A3A);
-   p_dispwidget->msg_queue_bg[6]  = HEX_B(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[4]  = HEX_R(color);
+   p_dispwidget->msg_queue_bg[5]  = HEX_G(color);
+   p_dispwidget->msg_queue_bg[6]  = HEX_B(color);
    p_dispwidget->msg_queue_bg[7]  = 1.0f;
-   p_dispwidget->msg_queue_bg[8]  = HEX_R(0x3A3A3A);
-   p_dispwidget->msg_queue_bg[9]  = HEX_G(0x3A3A3A);
-   p_dispwidget->msg_queue_bg[10] = HEX_B(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[8]  = HEX_R(color);
+   p_dispwidget->msg_queue_bg[9]  = HEX_G(color);
+   p_dispwidget->msg_queue_bg[10] = HEX_B(color);
    p_dispwidget->msg_queue_bg[11] = 1.0f;
-   p_dispwidget->msg_queue_bg[12] = HEX_R(0x3A3A3A);
-   p_dispwidget->msg_queue_bg[13] = HEX_G(0x3A3A3A);
-   p_dispwidget->msg_queue_bg[14] = HEX_B(0x3A3A3A);
+   p_dispwidget->msg_queue_bg[12] = HEX_R(color);
+   p_dispwidget->msg_queue_bg[13] = HEX_G(color);
+   p_dispwidget->msg_queue_bg[14] = HEX_B(color);
    p_dispwidget->msg_queue_bg[15] = 1.0f;
 
    if (!p_dispwidget->widgets_inited)
