@@ -180,7 +180,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
             state->widget_height,
             video_width,
             video_height,
-            backdrop_orig
+            backdrop_orig,
+            NULL
             );
 
       /* Icon */
@@ -233,7 +234,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                bar_x + bar_percentage * bar_width, bar_y,
                bar_width - bar_percentage * bar_width, bar_height,
                video_width, video_height,
-               bar_background
+               bar_background,
+               NULL
                );
 
          gfx_display_draw_quad(
@@ -244,7 +246,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                bar_x, bar_y,
                bar_percentage * bar_width, bar_height,
                video_width, video_height,
-               bar_foreground
+               bar_foreground,
+               NULL
                );
 
          /* Text */

@@ -2211,7 +2211,8 @@ static void ozone_draw_header(
          ozone->dimensions.spacer_1px,
          video_width,
          video_height,
-         ozone->theme->header_footer_separator);
+         ozone->theme->header_footer_separator,
+         NULL);
 
    /* Title */
    if (use_smooth_ticker)
@@ -2474,7 +2475,8 @@ static void ozone_draw_footer(
          ozone->dimensions.spacer_1px,
          video_width,
          video_height,
-         ozone->theme->header_footer_separator);
+         ozone->theme->header_footer_separator,
+         NULL);
 
    /* Buttons */
 
@@ -3027,8 +3029,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          video_height,
          0, 0, video_width, video_height,
          video_width, video_height,
-         background_color
-         );
+         background_color,
+         NULL);
 
    /* Header, footer */
    ozone_draw_header(

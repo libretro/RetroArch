@@ -293,7 +293,8 @@ void gfx_display_draw_quad(
       unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
-      float *color);
+      float *color,
+      uintptr_t *texture);
 
 void gfx_display_draw_polygon(
       gfx_display_t *p_disp,

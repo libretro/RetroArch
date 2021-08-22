@@ -2475,7 +2475,8 @@ static void materialui_draw_thumbnail(
                   (unsigned)bg_height,
                   video_width,
                   video_height,
-                  mui->colors.thumbnail_background);
+                  mui->colors.thumbnail_background,
+                  NULL);
 
             /* Icon */
             gfx_display_set_alpha(
@@ -2532,7 +2533,8 @@ static void materialui_draw_thumbnail(
                      (unsigned)(bg_height + 1.5f),
                      video_width,
                      video_height,
-                     mui->colors.thumbnail_background);
+                     mui->colors.thumbnail_background,
+                     NULL);
             }
 
             /* Thumbnail */
@@ -2646,7 +2648,8 @@ static void materialui_render_messagebox(
          mui->font_data.list.line_height * list.size + mui->margin * 4.0,
          video_width,
          video_height,
-         mui->colors.surface_background);
+         mui->colors.surface_background,
+         NULL);
 
    /* Print each line of the message */
    for (i = 0; i < list.size; i++)
@@ -4481,7 +4484,8 @@ static void materialui_render_menu_entry_playlist_list(
             mui->entry_divider_width,
             video_width,
             video_height,
-            mui->colors.entry_divider);
+            mui->colors.entry_divider,
+            NULL);
 }
 
 /* Used for playlist 'dual icon' entries
@@ -4638,7 +4642,8 @@ static void materialui_render_menu_entry_playlist_dual_icon(
             mui->entry_divider_width,
             video_width,
             video_height,
-            mui->colors.entry_divider);
+            mui->colors.entry_divider,
+            NULL);
 }
 
 /* Used for playlist 'desktop'-layout entries
@@ -4737,7 +4742,8 @@ static void materialui_render_menu_entry_playlist_desktop(
             mui->entry_divider_width,
             video_width,
             video_height,
-            mui->colors.entry_divider);
+            mui->colors.entry_divider,
+            NULL);
 }
 
 static void (*materialui_render_menu_entry)(
@@ -4808,7 +4814,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
          (unsigned)background_height,
          video_width,
          video_height,
-         mui->colors.side_bar_background);
+         mui->colors.side_bar_background,
+         NULL);
 
    /* > Divider */
    gfx_display_draw_quad(
@@ -4822,7 +4829,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
          (unsigned)background_height,
          video_width,
          video_height,
-         mui->colors.entry_divider);
+         mui->colors.entry_divider,
+         NULL);
 
    /* > Additional divider */
    if (mui->landscape_optimization.enabled)
@@ -4837,7 +4845,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             (unsigned)background_height,
             video_width,
             video_height,
-            mui->colors.entry_divider);
+            mui->colors.entry_divider,
+            NULL);
 
    /* Draw thumbnails */
    if (node)
@@ -4921,7 +4930,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             mui->status_bar.height,
             video_width,
             video_height,
-            mui->colors.status_bar_background);
+            mui->colors.status_bar_background,
+            NULL);
 
       /* > Shadow
        *   (For symmetry, header and status bar
@@ -4937,7 +4947,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             mui->header_shadow_height,
             video_width,
             video_height,
-            mui->colors.status_bar_shadow);
+            mui->colors.status_bar_shadow,
+            NULL);
 
       /* Text */
       if ((text_width > 0) && !string_is_empty(mui->status_bar.str))
@@ -5033,7 +5044,8 @@ static void materialui_render_scrollbar(
          mui->scrollbar.height,
          video_width,
          video_height,
-         mui->colors.scrollbar);
+         mui->colors.scrollbar,
+         NULL);
 }
 
 /* Draws current menu list */
@@ -5242,7 +5254,8 @@ static void materialui_render_landscape_border(
             border_height,
             video_width,
             video_height,
-            mui->colors.landscape_border_shadow_left);
+            mui->colors.landscape_border_shadow_left,
+            NULL);
 
       /* Draw right border */
       gfx_display_draw_quad(
@@ -5256,7 +5269,8 @@ static void materialui_render_landscape_border(
             border_height,
             video_width,
             video_height,
-            mui->colors.landscape_border_shadow_right);
+            mui->colors.landscape_border_shadow_right,
+            NULL);
    }
 }
 
@@ -5308,7 +5322,8 @@ static void materialui_render_selection_highlight(
             (unsigned)highlight_height,
             video_width,
             video_height,
-            highlight_color);
+            highlight_color,
+            NULL);
 
       /* Draw shadow, if required */
       if (mui->show_selection_marker_shadow)
@@ -5324,7 +5339,8 @@ static void materialui_render_selection_highlight(
                mui->selection_marker_shadow_height,
                video_width,
                video_height,
-               shadow_top_colour);
+               shadow_top_colour,
+               NULL);
 
          gfx_display_draw_quad(
                p_disp,
@@ -5338,7 +5354,8 @@ static void materialui_render_selection_highlight(
                mui->selection_marker_shadow_height,
                video_width,
                video_height,
-               shadow_bottom_colour);
+               shadow_bottom_colour,
+               NULL);
       }
    }
 }
@@ -5485,7 +5502,8 @@ static void materialui_render_header(
          mui->header_shadow_height,
          video_width,
          video_height,
-         mui->colors.header_shadow);
+         mui->colors.header_shadow,
+         NULL);
 
    /* > Title bar background */
    gfx_display_draw_quad(
@@ -5499,7 +5517,8 @@ static void materialui_render_header(
          mui->sys_bar_height + mui->title_bar_height,
          video_width,
          video_height,
-         mui->colors.title_bar_background);
+         mui->colors.title_bar_background,
+         NULL);
 
    /* > System bar background */
    gfx_display_draw_quad(
@@ -5513,7 +5532,8 @@ static void materialui_render_header(
          mui->sys_bar_height,
          video_width,
          video_height,
-         mui->colors.sys_bar_background);
+         mui->colors.sys_bar_background,
+         NULL);
 
    /* System bar items */
 
@@ -5890,7 +5910,8 @@ static void materialui_render_nav_bar_bottom(
          nav_bar_height,
          video_width,
          video_height,
-         mui->colors.nav_bar_background);
+         mui->colors.nav_bar_background,
+         NULL);
 
    /* > Divider */
    gfx_display_draw_quad(
@@ -5904,7 +5925,8 @@ static void materialui_render_nav_bar_bottom(
          mui->nav_bar.divider_width,
          video_width,
          video_height,
-         mui->colors.divider);
+         mui->colors.divider,
+         NULL);
 
    /* Draw tabs */
 
@@ -5968,7 +5990,8 @@ static void materialui_render_nav_bar_bottom(
             selection_marker_height,
             video_width,
             video_height,
-            draw_color);
+            draw_color,
+            NULL);
    }
 }
 
@@ -6005,7 +6028,8 @@ static void materialui_render_nav_bar_right(
          nav_bar_height,
          video_width,
          video_height,
-         mui->colors.nav_bar_background);
+         mui->colors.nav_bar_background,
+         NULL);
 
    /* > Divider */
    gfx_display_draw_quad(
@@ -6019,7 +6043,8 @@ static void materialui_render_nav_bar_right(
          nav_bar_height,
          video_width,
          video_height,
-         mui->colors.divider);
+         mui->colors.divider,
+         NULL);
 
    /* Draw tabs */
 
@@ -6083,7 +6108,8 @@ static void materialui_render_nav_bar_right(
             selection_marker_height,
             video_width,
             video_height,
-            draw_color);
+            draw_color,
+            NULL);
    }
 }
 
@@ -6497,7 +6523,8 @@ static void materialui_render_fullscreen_thumbnails(
             (unsigned)view_height,
             video_width,
             video_height,
-            mui->colors.screen_fade);
+            mui->colors.screen_fade,
+            NULL);
 
       /* Draw thumbnails
        * > Primary */
@@ -6517,7 +6544,8 @@ static void materialui_render_fullscreen_thumbnails(
                (unsigned)primary_thumbnail_draw_height + mui->margin,
                video_width,
                video_height,
-               mui->colors.surface_background);
+               mui->colors.surface_background,
+               NULL);
 
          /* Thumbnail */
          gfx_thumbnail_draw(
@@ -6552,7 +6580,8 @@ static void materialui_render_fullscreen_thumbnails(
                (unsigned)secondary_thumbnail_draw_height + mui->margin,
                video_width,
                video_height,
-               mui->colors.surface_background);
+               mui->colors.surface_background,
+               NULL);
 
          /* Thumbnail */
          gfx_thumbnail_draw(
@@ -6920,7 +6949,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             0, 0,
             video_width, video_height,
             video_width, video_height,
-            mui->colors.screen_fade);
+            mui->colors.screen_fade,
+            NULL);
 
       /* Draw message box */
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
@@ -6960,7 +6990,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             0, 0,
             video_width, video_height,
             video_width, video_height,
-            mui->colors.screen_fade);
+            mui->colors.screen_fade,
+            NULL);
 
       /* Draw message box */
       materialui_render_messagebox(mui, 

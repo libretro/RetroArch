@@ -600,7 +600,8 @@ void ozone_draw_entries(
             ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme_dynamic.entries_border);
+            ozone->theme_dynamic.entries_border,
+            NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -612,7 +613,8 @@ void ozone_draw_entries(
             ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme_dynamic.entries_border);
+            ozone->theme_dynamic.entries_border,
+            NULL);
 
 border_iterate:
       if (node)
@@ -985,7 +987,8 @@ void ozone_draw_thumbnail_bar(
             ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_top_gradient);
+            ozone->theme->sidebar_top_gradient,
+            NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -997,7 +1000,8 @@ void ozone_draw_thumbnail_bar(
             sidebar_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_background);
+            ozone->theme->sidebar_background,
+            NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -1009,7 +1013,8 @@ void ozone_draw_thumbnail_bar(
             ozone->dimensions.sidebar_gradient_height + ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme->sidebar_bottom_gradient);
+            ozone->theme->sidebar_bottom_gradient,
+            NULL);
    }
 
    /* Thumbnails */
@@ -1238,7 +1243,8 @@ void ozone_draw_thumbnail_bar(
             ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme_dynamic.entries_border);
+            ozone->theme_dynamic.entries_border,
+            NULL);
 
       y += 18 * scale_factor;
 
