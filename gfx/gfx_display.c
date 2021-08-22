@@ -630,30 +630,48 @@ void gfx_display_draw_polygon(
 
 static void gfx_display_draw_texture(
       gfx_display_t *p_disp,
-      gfx_display_ctx_driver_t *dispctx,
-      void *userdata,
+      void *data,
       unsigned video_width,
       unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
-      float *color, uintptr_t texture,
-      gfx_display_ctx_draw_t *draw
-      )
+      float *color,uintptr_t *texture
+)
 {
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
+   gfx_display_ctx_driver_t 
+      *dispctx             = p_disp->dispctx;
+
    if (w == 0 || h == 0)
       return;
-   if (!dispctx || !dispctx->draw)
+   if (!dispctx)
       return;
 
-   draw->width              = w;
-   draw->height             = h;
-   draw->prim_type          = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw->pipeline_id        = 0;
-   draw->texture            = texture;
-   draw->x                  = x;
-   draw->y                  = height - y;
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = color;
 
-   dispctx->draw(draw, userdata, video_width, video_height);
+   draw.x               = x;
+   draw.y               = (int)height - y - (int)h;
+   draw.width           = w;
+   draw.height          = h;
+   draw.coords          = &coords;
+   draw.matrix_data     = NULL;
+   draw.texture         = (texture != NULL) ? *texture : gfx_display_white_texture;
+   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline_id     = 0;
+   draw.scale_factor    = 1.0f;
+   draw.rotation        = 0.0f;
+
+   if (dispctx->blend_begin)
+      dispctx->blend_begin(data);
+   if (dispctx->draw)
+      dispctx->draw(&draw, data, video_width, video_height);
+   if (dispctx->blend_end)
+      dispctx->blend_end(data);
 }
 
 /* Draw the texture split into 9 sections, without scaling the corners.
@@ -1223,21 +1241,17 @@ void gfx_display_draw_keyboard(
             dispctx->blend_begin(userdata);
 
          gfx_display_draw_texture(
-               p_disp,
-               dispctx,
-               userdata,
-               video_width,
-               video_height,
-               video_width / 2.0 - (11 * ptr_width) / 2.0 + (i % 11) 
-               * ptr_width,
-               video_height / 2.0 + ptr_height * 1.5 + line_y,
-               ptr_width, ptr_height,
-               video_width,
-               video_height,
-               &white[0],
-               hover_texture,
-               &draw
-               );
+           p_disp,
+           userdata,
+           video_width,
+           video_height,
+           video_width / 2.0 - (11 * ptr_width) / 2.0 + (i % 11) * ptr_width,
+           video_height / 2.0 + ptr_height * 1.5 + line_y - ptr_height,
+           ptr_width, ptr_height,
+           video_width,
+           video_height,
+           &white[0],
+           &hover_texture);
 
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);
