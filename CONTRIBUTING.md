@@ -7,6 +7,11 @@ Active discussions happen on our [Discord](https://discordapp.com/invite/27Xxm2h
 the _Programming_ channel category. We value discussions that happen in real time around
 these contributions.
 
+Please do note that contributors to _RetroArch_ do such contributions within their spare time.
+We do prefer to keep a professional and non-aggressive atmosphere around the project, along
+with any disagreements to be settled professionally without insults, name calling, or otherwise.
+If there are any issues, we are willing to have discussions about it.
+
 ## Submitting Bug Reports
 
 Bug reports in _RetroArch_ may fall into one of two categories:
