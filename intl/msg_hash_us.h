@@ -7351,7 +7351,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabic -  اَلْعَرَبِيَّةُ  (Restart Required)"
+   "Arabic -  اَلْعَرَبِيَّةُ "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
@@ -7367,7 +7367,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
-   "Bengali - বাংলা (Restart Required)"
+   "Bengali - বাংলা"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
@@ -7379,11 +7379,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-   "Chinese (Simplified) - 简体中文 (Restart Required)"
+   "Chinese (Simplified) - 简体中文"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-   "Chinese (Traditional) - 繁體中文 (Restart Required)"
+   "Chinese (Traditional) - 繁體中文"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
@@ -7431,7 +7431,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
-   "Georgian - ქართული ენა (Restart Required)"
+   "Georgian - ქართული ენა"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
@@ -7443,7 +7443,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
-   "Gujarati - ગુજરાતી (Restart Required)"
+   "Gujarati - ગુજરાતી"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
@@ -7455,7 +7455,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HINDI,
-   "Hindi - हिन्दी (Restart Required)"
+   "Hindi - हिन्दी"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
@@ -7483,11 +7483,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
-   "Kannada - ಕನ್ನಡ (Restart Required)"
+   "Kannada - ಕನ್ನಡ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Korean - 한국어 (Restart Required)"
+   "Korean - 한국어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LATIN,
@@ -7519,7 +7519,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
-   "Persian -  فارسی  (Restart Required)"
+   "Persian -  فارسی "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_POLISH,
@@ -7567,15 +7567,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
-   "Tamil - தமிழ் (Restart Required)"
+   "Tamil - தமிழ்"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
-   "Telugu - తెలుగు (Restart Required)"
+   "Telugu - తెలుగు"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_THAI,
-   "Thai - ภาษาไทย (Restart Required)"
+   "Thai - ภาษาไทย"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
@@ -7587,7 +7587,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_URDU,
-   "Urdu -  اُردُو  (Restart Required)"
+   "Urdu -  اُردُو "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,

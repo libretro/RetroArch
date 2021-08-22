@@ -19194,6 +19194,7 @@ static bool setting_append_list(
                1,
                true,
                true);
+	 MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
