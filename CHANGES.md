@@ -1,24 +1,41 @@
 # Future
 
 # 1.9.8
+- AUDIO/WINDOWS/WASAPI: Stop deactivating audio on fast forward
 - CHEEVOS: Hide challenge indicators when resetting
 - CHEEVOS: Support for more than 64 memory regions
+- CHEEVOS: Automatically retry 'http error code -1'
 - CONTENT INFORMATION: Show content info label+path rows always
 - CORE OPTIONS: Core option categories implemented
 - CORE OPTIONS: Add option to disable core option categories
+- D3D10/11/12: Fix gfx_display_draw_texture - fixes OSK (On-Screen Keyboard) issues
 - DATABASE: Fix heap-buffer-overflow when fetching CRC values
 - DATABASE/EXPLORE: Fix CRC32 reading in explore menu
 - DATABASE/LIBRETRODB: Fix writing of numerical values
 - DATABASE/LIBRETRODB: Fix libretro-db loading on big endian platforms
 - DUMMY CORE: Skip state_manager_event_{deinit/init} when core type is dummy, should skip warning spam 'Implementation uses threaded audio. Cannot use rewind..' when using rewind
 - INPUT/UDEV: Limit udev device scan to subsystem 'input'
+- INPUT/SDL2/WINDOWS: Fix keyboard event keycodes
 - INPUT/WAYLAND: Fixes a bug where the first player's mouse, pointer, and lightgun are echoed to the other ports. Now, those other ports correctly report zero. In the future support for multiple mouselike devices will need to be added, which is a bigger project
 - INPUT/WAYLAND: The driver now respects keyboard_mapping_blocked
 - INPUT/WAYLAND: When possible, deprecated lightgun defines are replaced with the new ones. The coordinates are still using the old relative callbacks
+- INPUT/WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
+- INPUT/WINRAW: Alt sticky fix
+- INPUT/WINRAW: Prevent Alt getting stuck when Alt-Tabbing
+- INPUT/WINRAW: Add pointer status
+- INPUT/WINRAW: Add missing analog keybinds
 - LIBNX/SWITCH: Fix poll missing for controller 2-8
 - LIBNX/SWITCH: Fix layout not applied correctly and hangs when splitting joycons
 - LIBRETRO: Core options category API implemented
+- LIBRETRO: Fix RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE callback when runahead is enabled
+- LIBRETRO: Add environment callback for enabling core option menu visibility updates without toggling Quick Menu
+- LOGGING: Starting logging and verbose mode before first config load
 - LINUX: In some Linux Desktop Environments, like Budgie, task bar feature is unable to pin applications. With StartupWMClass= present in .desktop file, it is possible to pin the application
+- LOCALIZATION: Fetch translations from Crowdin
+- MENU: Relocate 'Manage Playlists' to top
+- MENU: Fullscreen resolution width/height settings no longer require 'advanced settings'
+- MENU/REFRESH RATE: Fix double notifications with refresh rate settings
+- MENU/OZONE: Ensure the existence of values used in selection calculation
 - MENU/OZONE/VULKAN: Casting to unsigned caused an integer overflow and after float promotion would lead to 'x' being a garbage value, leading to problems when this value was passed to vkCmdSetViewport. This stops Vulkan validation layers from complaining about it
 - METAL: Fixed font driver memory leaks
 - MOUSE: Change default mouse index to port index
@@ -28,16 +45,14 @@
 - PS2: Implement alpha for the video driver
 - PS2: Aspect ratio handling
 - RETROFW: Initial port
+- UWP/XBOX: Enable Explore tab by default - seems to work fine
+- UWP/XBOX: Fix startup issues with latest Xbox Dashboard updates - ANGLE cores still show up wrong
 - UWP/XBOX: fix issue where files where opened as OPENALWAYS instead of OPENEXISTING this fixes beetle cores
 - UWP/XBOX: fix issue where filesizes where not returned properly, this fixes loading arcade dat files
 - UWP/TRANSLATION: Enabled translation services for both UWP MSVC2017 and 2019. No TTS speech yet.
-- WASAPI: Stop deactivating audio on fast forward
+- VIDEO: Fix refresh rate 59Hz rounding
 - WINDOWS: Remember original refresh rate
 - WINDOWS/VULKAN: Refresh rate fixes + cleanups
-- WINRAW: Trigger joypad driver reinit on DEVICECHANGE - avoids fullscreen toggle
-- WINRAW: Alt sticky fix
-- WINRAW: Prevent Alt getting stuck when Alt-Tabbing
-- WINRAW: Add pointer status
 - WIIU: Fix L3/R3 buttons
 - WIIU: Compress RPX libretro cores
 - WIIU: Add ICInvalidateRange (necessary for JITs)
