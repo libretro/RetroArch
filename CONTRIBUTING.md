@@ -1,19 +1,36 @@
 # Contributing to RetroArch
 
-If you are a developer and want to contribute to the development of RetroArch, please read this.
-If you have found a bug and want to submit a minor patch or a bug report, please read this as well.
+If you are a developer who wishes to contribute to the development of _RetroArch_; or if you have
+found a bug and wish to submit a minor patch and/or bug report, please read this document.
 
-# Submitting a bug report
-When submitting a bug report, make sure that the bug is local to RetroArch.
-A bug in a libretro core or something deemed to be external is likely to be closed very fast.
-If you still suspect a bug in RetroArch, make sure to test with several cores to make sure.
+Active discussions happen on our [Discord](https://discordapp.com/invite/27Xxm2h), mostly within
+the _Programming_ channel category. We value discussions that happen in real time around
+these contributions.
 
-If you have troubles building RetroArch on Linux/BSD/OSX, make sure to paste shell output of ./configure,
-as well as config.log and shell output of make. If building on Windows, just paste shell output of make.
+## Submitting Bug Reports
 
-If the issue occurs during runtime, make sure to paste RetroArch's verbose log.
-If using Phoenix frontend, you can find log in (File -> Show Log) after running.
-In console, make sure to run with verbose (-v) flag.
+Bug reports in _RetroArch_ may fall into one of two categories:
+
+ * _RetroArch_ itself, the user interface and API around all of the various cores.
+ * Individual _Core_, of which interact with _RetroArch_.
+
+When submitting a bug report, ensure that the report is submitted to the correct repository.
+For _RetroArch_ itself, it is done by reporting a bug within the
+[RetroArch](https://github.com/libretro/RetroArch) repository. For other cores, please use
+the search function within the [libretro Organization](https://github.com/libretro) on
+GitHub. Issues that are specific to a core and not _RetroArch_ are likely to be closed very
+quickly. If an issue is suspected with _RetroArch_, please make sure to test with multiple
+cores to be sure that is is not isolated.
+
+If the issue occurs during runtime, please paste the verbose log output:
+
+ * If using the _Pheonix_ interface, the log will be in _File_ -> _Show Log_.
+ * If using the main interface, enable verbose logging with _Settings_ -> _Logging_ ->
+   _Logging Verbosity_. Ensure both _Log to File_ and _Timestamp log Files_ is enabled.
+ * Otherwise, run _RetroArch_ with the verbose (`-v`) flag.
+
+If the error happens during compilation and/or building, paste the output of `./configure`
+and `make` accordingly. If using an IDE, please paste any of the errors and log output.
 
 # Pull Requests
 Outside contributions are generally only accepted in the form of a pull request. The process is very simple.
@@ -48,10 +65,6 @@ you should add yourself to the copyright header in that file.
 If you have contributed significantly
 (a feature, a contribution you can "name", e.g. "Added audio driver foo"), you should add yourself to AUTHORS file.
 We'd like your full name and email, and which features you have been part of.
-
-# IRC
-Active development happens on [Discord](https://discordapp.com/invite/27Xxm2h).
-We value discussing things in "real-time".
 
 # Commit Access
 Contributors who show a track record of making good pull requests over time will eventually get commit access to the repo.
