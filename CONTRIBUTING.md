@@ -32,40 +32,55 @@ If the issue occurs during runtime, please paste the verbose log output:
 If the error happens during compilation and/or building, paste the output of `./configure`
 and `make` accordingly. If using an IDE, please paste any of the errors and log output.
 
-# Pull Requests
-Outside contributions are generally only accepted in the form of a pull request. The process is very simple.
-Fork RetroArch, make your changes, and issue a pull request on GitHub. This can all be done within the browser.
-The changes are reviewed, and might be merged in. If the pull request isn't acceptable at the time,
-note that it's possible to continue pushing up commits to your branch.
+## Submitting Pull Requests
 
-If you want to develop a larger feature,
-we'd like to discuss this first (ideally on IRC) so that you don't risk developing something
-that won't be merged. A pull request with a proof-of-concept is fine, but please indicate so.
+Any and all contributions should be submitted through Pull Requests on
+[GitHub](https://github.com/libretro/RetroArch/pulls). The process requires that you fork the
+repository, make the appropriate changes, and then open a pull request on _GitHub_. If your
+pull request is for a proof-of-concept then please indicate as such.
+
+Your pull request will then be reviewed. There may be comments and requests for additional
+changes to be made. It may also be possible that the changes will not be accepted. Otherwise, it
+may be merged in when it is fully approved. The final approval of merge requests is at the
+discretion of the project.
+
+If you want to develop a larger feature or make broad changes, please do join our
+[Discord](https://discordapp.com/invite/27Xxm2h) server to discuss. The discussion is
+necessary to prevent the possibility of major work being done which will not be accepted at all.
 
 ## libretro API
-If you wish to add functionality to libretro's API, it can take some time to merge in, because changes
-to libretro API will affect other projects as well, and we highly value API/ABI stability.
-Features will only be added when deemed *necessary* for a concrete libretro core to function properly.
-Features will not be added on basis of hypothetical libretro implementations.
 
-# Coding style
-Having a consistent code style throughout the code base is highly valued.
-Please look through the code to get a feel for the coding style.
-A pull request may be asked to fix the coding style before submission.
-In other cases, a pull request may be followed up with a "style nit commit".
+If you wish to contribute additional functionality to _libretro_'s API, there are considerations
+that must be accepted. Please note that because this API affects multiple different projects, we
+highly value and require API and ABI stability and backwards-compatibility. Due to this
+requirement, there will be additional scrutiny in reviews for this added functionality.
 
-## Non-obvious things:
-  - Code should be both C89 and ISO C++ compatible. This dual requirement is for XBox360 and MSVC in general. Think of it as a C++ compatible subset of C99.
-  - Warnings are not allowed (-Wall). Make sure your code is warning-free. Note that warning sensitivity differs a bit across compiler versions.
-  - Using deprecated APIs is discouraged.
+Any and all features will be added only when **necessary** for an existing _libretro_ core to
+properly function. Hypothetical implementations of _libretro_ are not considered.
 
-# Copyright Headers and AUTHORS
-If you have contributed to a part of a source file (a chunk of code that's written by you),
-you should add yourself to the copyright header in that file.
-If you have contributed significantly
-(a feature, a contribution you can "name", e.g. "Added audio driver foo"), you should add yourself to AUTHORS file.
-We'd like your full name and email, and which features you have been part of.
+## Coding style
 
-# Commit Access
-Contributors who show a track record of making good pull requests over time will eventually get commit access to the repo.
-This typically happens when the "overhead" of looking through pull requests over time becomes a burden.
+We highly value a consistent code style throughout the entire code base, please make sure you look
+through the existing code to get a feel for the coding style. When submitting a pull request, it may
+be asked to fix any coding style issues before submission. In other cases, there may be a follow-up
+pull request making the code style consistent.
+
+Some non-obvious things to be aware of:
+
+  - Code should be both C89 and ISO C++ compatible. This is a requirement for XBox 360 and MSVC to
+    properly build. Think of it as a C++ compatible subset of C99.
+  - There must be no warnings in your code (enabled by `-Wall` for GCC compilers), do also note that
+    different compilers may produce different warnings.
+  - Avoid using deprecated APIs, these will be removed in the future at some point.
+
+## Copyright Headers and AUTHORS
+
+If you have contributed a chunk of source code that is written to you, you should add yourself to
+the copyright header in the file. If you have made a significant contribution you should add
+yourself to the `AUTHORS` file, adding your full name, e-mail, and the feature you worked on.
+
+## Commit Access
+
+Contributors who show a good track record of pull requests over time may eventually
+get commit access to the repository. This may happen when looking through pull requests
+over long amounts of time becomes a burden.
