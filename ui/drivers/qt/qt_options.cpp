@@ -1228,7 +1228,11 @@ QWidget *VideoPage::widget()
    QHBoxLayout *windowedCustomSizeLayout   = new QHBoxLayout;
    FormLayout *leftWindowedCustomSizeForm  = new FormLayout;
    FormLayout *rightWindowedCustomSizeForm = new FormLayout;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CheckableSettingsGroup *savePosGroup    = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION);
+#else
+   CheckableSettingsGroup *savePosGroup    = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE);
+#endif
 
    SettingsGroup *syncGroup            = new SettingsGroup("Synchronization");
    CheckableSettingsGroup *vSyncGroup  = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
