@@ -7770,6 +7770,17 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_DRIVER,
                      PARSE_ONLY_STRING_OPTIONS, false) == 0)
                count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+
 #if defined(GEKKO) || !defined(__PSL1GHT__) && defined(__PS3__)
             if (true)
 #else
@@ -7800,10 +7811,6 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) == 0)
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_ROTATION,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
@@ -7813,10 +7820,6 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_SCREEN_ORIENTATION,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
-                     PARSE_ONLY_INT, false) == 0)
-               count++;
 #if defined(DINGUX) && defined(DINGUX_BETA)
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
