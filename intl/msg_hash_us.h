@@ -1691,7 +1691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Custom Aspect Ratio'."
+   "Floating point value for video aspect ratio (width / height), used if 'Aspect Ratio' is set to 'Config'."
    )
 #if defined(DINGUX)
 MSG_HASH(
