@@ -5987,58 +5987,62 @@ unsigned menu_displaylist_build_list(
             count++;
          break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
-	 {
-		 bool audio_mute_enable      = *audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE);
-		 bool audio_mixer_mute_enable= *audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE);
-		 menu_displaylist_build_info_selective_t build_list[] = {
-			 {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true  },
-			 {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,        PARSE_ACTION,     true  },
-			 {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
-			 {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },
-			 {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,            PARSE_ACTION,     false },
-			 {MENU_ENUM_LABEL_MENU_SOUNDS,                     PARSE_ACTION,     true  },
-			 {MENU_ENUM_LABEL_AUDIO_MUTE,                      PARSE_ONLY_BOOL,  true  },
-			 {MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,                PARSE_ONLY_BOOL,  true  },
-			 {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,          PARSE_ONLY_BOOL,  true  },
-			 {MENU_ENUM_LABEL_AUDIO_VOLUME,                    PARSE_ONLY_FLOAT, false },
-			 {MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,              PARSE_ONLY_FLOAT, false },
-			 {MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,               PARSE_ONLY_BOOL,  true  },
-#ifdef HAVE_DSP_FILTER
-			 {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                PARSE_ONLY_PATH,  true  },
+      {
+         bool audio_mute_enable       = *audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE);
+#if defined(HAVE_AUDIOMIXER)
+         bool audio_mixer_mute_enable = *audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE);
+#else
+         bool audio_mixer_mute_enable = true;
 #endif
-		 };
+         menu_displaylist_build_info_selective_t build_list[] = {
+            {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true  },
+            {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,        PARSE_ACTION,     true  },
+            {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
+            {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },
+            {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,            PARSE_ACTION,     false },
+            {MENU_ENUM_LABEL_MENU_SOUNDS,                     PARSE_ACTION,     true  },
+            {MENU_ENUM_LABEL_AUDIO_MUTE,                      PARSE_ONLY_BOOL,  true  },
+            {MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,                PARSE_ONLY_BOOL,  true  },
+            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,          PARSE_ONLY_BOOL,  true  },
+            {MENU_ENUM_LABEL_AUDIO_VOLUME,                    PARSE_ONLY_FLOAT, false },
+            {MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,              PARSE_ONLY_FLOAT, false },
+            {MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,               PARSE_ONLY_BOOL,  true  },
+#if defined(HAVE_DSP_FILTER)
+            {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                PARSE_ONLY_PATH,  true  },
+#endif
+         };
 
-		 for (i = 0; i < ARRAY_SIZE(build_list); i++)
-		 {
-			 switch (build_list[i].enum_idx)
-			 {
-				 case MENU_ENUM_LABEL_AUDIO_VOLUME:
-				    if (!audio_mute_enable)
-				       build_list[i].checked = true;
-				    break;
-				 case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
-				 case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
-				    if (!audio_mixer_mute_enable)
-				       build_list[i].checked = true;
-				    break;
-				 default:
-				    break;
-			 }
-		 }
+         for (i = 0; i < ARRAY_SIZE(build_list); i++)
+         {
+            switch (build_list[i].enum_idx)
+            {
+               case MENU_ENUM_LABEL_AUDIO_VOLUME:
+                  if (!audio_mute_enable)
+                     build_list[i].checked = true;
+                  break;
+               case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
+               case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
+                  if (!audio_mixer_mute_enable)
+                     build_list[i].checked = true;
+                  break;
+               default:
+                  break;
+            }
+         }
 
-		 for (i = 0; i < ARRAY_SIZE(build_list); i++)
-		 {
-			 if (!build_list[i].checked && !include_everything)
-				 continue;
+         for (i = 0; i < ARRAY_SIZE(build_list); i++)
+         {
+            if (!build_list[i].checked && !include_everything)
+               continue;
 
-			 if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-						 build_list[i].enum_idx,  build_list[i].parse_type,
-						 false) == 0)
-				 count++;
-		 }
-	 }
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     build_list[i].enum_idx,  build_list[i].parse_type,
+                     false) == 0)
+               count++;
+         }
+      }
 
-#ifdef HAVE_DSP_FILTER
+#if defined(HAVE_DSP_FILTER)
          if (!string_is_empty(settings->paths.path_audio_dsp_plugin))
             if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE),
