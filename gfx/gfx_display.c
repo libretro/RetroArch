@@ -1144,8 +1144,6 @@ void gfx_display_draw_keyboard(
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
    };
-   struct video_coords coords;
-   gfx_display_ctx_draw_t draw;
    math_matrix_4x4 mymat;
    gfx_display_ctx_rotate_draw_t rotate_draw;
    rotate_draw.matrix       = &mymat;
@@ -1154,12 +1152,6 @@ void gfx_display_draw_keyboard(
    rotate_draw.scale_y      = 1.0;
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
-
-   coords.vertices          = 4;
-   coords.vertex            = NULL;
-   coords.tex_coord         = NULL;
-   coords.lut_tex_coord     = NULL;
-   coords.color             = (const float*)&white[0];
 
    gfx_display_draw_quad(
          p_disp,
@@ -1182,9 +1174,6 @@ void gfx_display_draw_keyboard(
       ptr_width = ptr_height;
 
    gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
-
-   draw.coords             = &coords;
-   draw.matrix_data        = &mymat;
 
    for (i = 0; i < 44; i++)
    {
