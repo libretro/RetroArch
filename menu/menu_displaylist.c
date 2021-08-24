@@ -6157,7 +6157,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
          {
             unsigned p;
-            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+            unsigned max_users          = settings->uints.input_max_users;
 
 #ifdef HAVE_CONFIGFILE
             if (menu_entries_append_enum(list,
@@ -6493,7 +6493,7 @@ unsigned menu_displaylist_build_list(
 
          {
             unsigned user;
-            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+            unsigned max_users          = settings->uints.input_max_users;
             for (user = 0; user < max_users; user++)
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -7250,7 +7250,7 @@ unsigned menu_displaylist_build_list(
 
             {
                unsigned user;
-               unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+               unsigned max_users          = settings->uints.input_max_users;
                for (user = 0; user < max_users; user++)
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -9771,7 +9771,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS_PORT:
          {
-            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+            unsigned max_users          = settings->uints.input_max_users;
             const char *menu_driver     = menu_driver_ident();
             bool is_rgui                = string_is_equal(menu_driver, "rgui");
             file_list_t *list           = info->list;
