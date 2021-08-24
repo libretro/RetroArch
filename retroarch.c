@@ -16485,7 +16485,6 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
    unsigned p;
    struct rarch_state *p_rarch            = &rarch_st;
    settings_t         *settings           = p_rarch->configuration_settings;
-   input_driver_state_t *input_driver_st  = &(p_rarch->input_driver_state);
    rarch_system_info_t *system            = &runloop_state.system;
    bool ignore_environment_cb             = p_rarch->ignore_environment_cb;
 
@@ -34581,7 +34580,7 @@ static bool retroarch_parse_input_and_config(
     * The parameters passed to rarch_log_file_init are hardcoded as the config
     * has not yet been initialized at this point. */
    if (verbosity_enabled && retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL))
-      rarch_log_file_init(true,false,'\0');
+      rarch_log_file_init(true, false, NULL);
 
    /* Flush out some states that could have been set
     * by core environment variables. */
