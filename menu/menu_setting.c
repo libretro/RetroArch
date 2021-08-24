@@ -399,6 +399,28 @@ static void menu_input_st_hex_cb(void *userdata, const char *str)
    menu_input_dialog_end();
 }
 
+static void menu_input_st_float_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      float value;
+      int chars_read;
+      int ret;
+
+      /* Ensure that input string contains a valid
+       * floating point value */
+      ret = sscanf(str, "%f %n", &value, &chars_read);
+
+      if ((ret == 1) && !str[chars_read])
+         setting_set_with_string_representation(setting, str);
+   }
+
+   menu_input_dialog_end();
+}
+
 static void menu_input_st_string_cb(void *userdata, const char *str)
 {
    if (str && *str)
@@ -440,6 +462,9 @@ static int setting_generic_action_ok_linefeed(
       case ST_HEX:
          cb = menu_input_st_hex_cb;
          break;
+      case ST_FLOAT:
+         cb = menu_input_st_float_cb;
+         break;
       case ST_STRING:
       case ST_STRING_OPTIONS:
          cb = menu_input_st_string_cb;
@@ -478,6 +503,9 @@ static void setting_add_special_callbacks(
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_HEX:
+            (*list)[idx].action_cancel = NULL;
+            break;
+         case ST_FLOAT:
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_STRING:
@@ -11067,6 +11095,7 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler);
                menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
                CONFIG_FLOAT(
