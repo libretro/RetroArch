@@ -1854,6 +1854,10 @@ MSG_HASH(
    "Menu Sounds"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Change menu sound settings."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    "Mute"
    )
