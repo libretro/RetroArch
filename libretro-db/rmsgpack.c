@@ -300,7 +300,7 @@ int rmsgpack_write_int(RFILE *fd, int64_t value)
    }
    else if (value >= -32 && value < 0)
    {
-      tmpval = (uint8_t)(value + 256); // -32..-1 => 0xE0 .. 0xFF
+      tmpval = (uint8_t)(value + 256); /* -32..-1 => 0xE0 .. 0xFF */
       if (filestream_write(fd, &tmpval, sizeof(uint8_t)) == -1)
          goto error;
    }
