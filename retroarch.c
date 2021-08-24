@@ -30586,11 +30586,11 @@ void video_monitor_set_refresh_rate(float hz)
    settings_t        *settings = p_rarch->configuration_settings;
 
    snprintf(msg, sizeof(msg),
-         "[Video]: Setting refresh rate to: %.3f Hz.", hz);
+         "Setting refresh rate to: %.3f Hz.", hz);
    if (settings->bools.notification_show_refresh_rate)
       runloop_msg_queue_push(msg, 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("[Video]: %s\n", msg);
 
    configuration_set_float(settings,
          settings->floats.video_refresh_rate,
