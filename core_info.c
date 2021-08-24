@@ -159,9 +159,7 @@ static bool CCJSONObjectMemberHandler(void *context, const char *pValue, size_t 
             }
             break;
          case 'p':
-            if (string_is_equal(pValue,      "path"))
-               pCtx->current_string_val      = &pCtx->core_info->path;
-            else if (string_is_equal(pValue, "permissions"))
+            if (string_is_equal(pValue,      "permissions"))
             {
                pCtx->current_string_val      = &pCtx->core_info->permissions;
                pCtx->current_string_list_val = &pCtx->core_info->permissions_list;
@@ -813,14 +811,6 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
 
       rjsonwriter_add_spaces(writer, 4);
       rjsonwriter_add_start_object(writer);
-      rjsonwriter_add_newline(writer);
-
-      rjsonwriter_add_spaces(writer, 6);
-      rjsonwriter_add_string(writer, "path");
-      rjsonwriter_add_colon(writer);
-      rjsonwriter_add_space(writer);
-      rjsonwriter_add_string(writer, info->path);
-      rjsonwriter_add_comma(writer);
       rjsonwriter_add_newline(writer);
 
       rjsonwriter_add_spaces(writer, 6);
@@ -1813,18 +1803,13 @@ static core_info_list_t *core_info_list_new(const char *path,
    core_info_list->list  = core_info;
    core_info_list->count = path_list->core_list->size;
 
-#if !defined(IOS)
-   /* Read core info cache, if enabled
-    * > This functionality is hard disabled on iOS/tvOS,
-    *   where core path changes on every install
-    *   (invalidating any cached parameters) */
+   /* Read core info cache, if enabled */
    if (enable_cache)
    {
       core_info_cache_list = core_info_cache_read(info_dir);
       if (!core_info_cache_list)
          goto error;
    }
-#endif
 
    for (i = 0; i < path_list->core_list->size; i++)
    {
@@ -1851,6 +1836,12 @@ static core_info_list_t *core_info_list_new(const char *path,
          if (info_cache)
          {
             core_info_copy(info_cache, info);
+            /* Core path is 'dynamic', and cannot
+             * be cached (i.e. core directory may
+             * change between runs) */
+            if (info->path)
+               free(info->path);
+            info->path = strdup(base_path);
             /* Core lock status is 'dynamic', and
              * cannot be cached */
             info->is_locked = core_info_path_is_locked(path_list->lock_list,
