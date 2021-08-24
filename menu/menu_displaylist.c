@@ -9405,11 +9405,15 @@ static unsigned menu_displaylist_build_shader_parameter(
       unsigned setting_type)
 {
    video_shader_ctx_t shader_info;
-   float current_value                  = 0.0f;
+   float    current_value               = 0.0f;
+   float    original_value              = 0.0f;
    unsigned count                       = 0;
-   float    min                         = 0;
-   float    max                         = 0;
+   float    min                         = 0.0f;
+   float    max                         = 0.0f;
+   float    half_step                   = 0.0f;
    unsigned i                           = 0;
+   unsigned checked                     = 0;
+   bool     checked_found               = false;
    struct video_shader_parameter *param = NULL;
    unsigned offset                      = entry_type - _offset;
 
@@ -9421,7 +9425,9 @@ static unsigned menu_displaylist_build_shader_parameter(
 
    min                         = param->minimum;
    max                         = param->maximum;
+   half_step                   = param->step * 0.5f;
    current_value               = min;
+   original_value              = param->current;
 
    for (i = 0; current_value < (max + 0.0001f); i++)
    {
@@ -9435,9 +9441,26 @@ static unsigned menu_displaylist_build_shader_parameter(
                MENU_ENUM_LABEL_NO_ITEMS,
                setting_type,
                i, entry_type))
+      {
+         if (!checked_found &&
+             (fabs(current_value - original_value) < half_step))
+         {
+            checked       = count;
+            checked_found = true;
+         }
+
          count++;
+      }
 
       current_value += param->step;
+   }
+
+   if (checked_found)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+      if (cbs)
+         cbs->checked = true;
+      menu_navigation_set_selection(checked);
    }
 
    return count;
