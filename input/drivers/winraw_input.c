@@ -876,9 +876,12 @@ static int16_t winraw_input_state(
             if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
                return 0;
 
-            x               = mouse->x;
-            y               = mouse->y;
-            pointer_down    = mouse->btn_l;
+            if (mouse)
+            {
+               x            = mouse->x;
+               y            = mouse->y;
+               pointer_down = mouse->btn_l;
+            }
 
             if (check_pos)
             {
