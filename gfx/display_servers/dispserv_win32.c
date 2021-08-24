@@ -306,6 +306,28 @@ static bool win32_display_server_set_resolution(void *data,
    return true;
 }
 
+/* Display resolution list qsort helper function */
+static int resolution_list_qsort_func(
+      const video_display_config_t *a, const video_display_config_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   char str_a[64];
+   char str_b[64];
+   snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
+         a->width,
+         a->height,
+         a->refreshrate);
+
+   snprintf(str_b, sizeof(str_b), "%04dx%04d (%d Hz)",
+         b->width,
+         b->height,
+         b->refreshrate);
+
+   return strcasecmp(str_a, str_b);
+}
+
 static void *win32_display_server_get_resolution_list(
       void *data, unsigned *len)
 {
@@ -379,6 +401,12 @@ static void *win32_display_server_get_resolution_list(
 
       j++;
    }
+
+   qsort(
+         conf, count,
+         sizeof(video_display_config_t),
+         (int (*)(const void *, const void *))
+               resolution_list_qsort_func);
 
    return conf;
 }
