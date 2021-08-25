@@ -6645,8 +6645,8 @@ static void handle_discord_join_request(const DiscordUser* request)
 #ifdef HAVE_MENU
 #if 0
    char buf[PATH_MAX_LENGTH];
-#endif
    menu_input_ctx_line_t line;
+#endif
    struct rarch_state *p_rarch = &rarch_st;
 
    RARCH_LOG("[DISCORD]: Join request from %s#%s - %s %s\n",
@@ -6879,7 +6879,9 @@ static void discord_init(
       const char *discord_app_id, char *args)
 {
    DiscordEventHandlers handlers;
+#ifdef _WIN32
    char full_path[PATH_MAX_LENGTH];
+#endif
    char command[PATH_MAX_LENGTH];
 
    discord_st->start_time      = time(0);

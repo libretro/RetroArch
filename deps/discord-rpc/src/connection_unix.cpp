@@ -13,7 +13,7 @@ struct BaseConnectionUnix : public BaseConnection {
     int sock{-1};
 };
 
-static BaseConnectionUnix Connection;
+static BaseConnectionUnix ConnectionUnix;
 static sockaddr_un PipeAddr{};
 #ifdef MSG_NOSIGNAL
 static int MsgFlags = MSG_NOSIGNAL;
@@ -34,7 +34,7 @@ static const char* GetTempPath(void)
 /*static*/ BaseConnection* BaseConnection::Create()
 {
    PipeAddr.sun_family = AF_UNIX;
-   return &Connection;
+   return &ConnectionUnix;
 }
 
 /*static*/ void BaseConnection::Destroy(BaseConnection*& c)
