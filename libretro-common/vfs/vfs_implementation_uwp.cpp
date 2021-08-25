@@ -382,14 +382,24 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    retro_assert(!dirpath_str->IsEmpty() && !filename_str->IsEmpty());
 
    /* Try Win32 first, this should work in AppData */
+   switch (mode)
+   {
+        case RETRO_VFS_FILE_ACCESS_READ:
+            desireAccess = GENERIC_READ;
+            break;
+        case RETRO_VFS_FILE_ACCESS_WRITE:
+            desireAccess = GENERIC_READ;
+            break;
+        case RETRO_VFS_FILE_ACCESS_READ_WRITE:
+            desireAccess = GENERIC_READ | GENERIC_WRITE;
+            break;
+   }
    if (mode == RETRO_VFS_FILE_ACCESS_READ)
    {
-      desireAccess        = GENERIC_READ;
       creationDisposition = OPEN_EXISTING;
    }
    else
    {
-      desireAccess        = GENERIC_WRITE;
       creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
          OPEN_ALWAYS : CREATE_ALWAYS;
    }
@@ -409,80 +419,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       stream->buffer_fill = 0;
       return stream;
    }
-
-   /* Fallback to WinRT */
-   return RunAsyncAndCatchErrors<libretro_vfs_implementation_file*>([&]() {
-      return concurrency::create_task(LocateStorageItem<StorageFolder>(dirpath_str)).then([&](StorageFolder^ dir) {
-         if (mode == RETRO_VFS_FILE_ACCESS_READ)
-            return dir->GetFileAsync(filename_str);
-         else
-            return dir->CreateFileAsync(filename_str, (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
-               CreationCollisionOption::OpenIfExists : CreationCollisionOption::ReplaceExisting);
-      }).then([&](StorageFile ^file) {
-
-         HANDLE_CREATION_OPTIONS creationOptions;
-         HANDLE_ACCESS_OPTIONS handleAccess;
-         HRESULT hr;
-
-         /* Try to use IStorageItemHandleAccess to get the file handle,
-          * with that we can use Win32 APIs for subsequent reads/writes
-          */
-         if (mode == RETRO_VFS_FILE_ACCESS_READ)
-         {
-            handleAccess    = HANDLE_ACCESS_OPTIONS::HAO_READ;
-            creationOptions = HANDLE_CREATION_OPTIONS::HCO_OPEN_ALWAYS;
-         }
-         else
-         {
-            handleAccess    = HANDLE_ACCESS_OPTIONS::HAO_WRITE;
-            creationOptions = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
-               HANDLE_CREATION_OPTIONS::HCO_OPEN_ALWAYS : HANDLE_CREATION_OPTIONS::HCO_CREATE_ALWAYS;
-            
-         }
-         hr = GetHandleFromStorageFile(file, &file_handle, handleAccess);
-
-         if (SUCCEEDED(hr))
-            /* Success, let's return a null pointer and continue */
-            return concurrency::create_task([&]() { return (IRandomAccessStream^) nullptr; });
-         else
-         {
-            /* Failed, open a WinRT buffer of the file */
-            FileAccessMode accessMode = (mode == RETRO_VFS_FILE_ACCESS_READ) ?
-               FileAccessMode::Read : FileAccessMode::ReadWrite;
-            return concurrency::create_task(file->OpenAsync(accessMode));
-         }
-      }).then([&](IRandomAccessStream^ fpstream) {
-         libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
-         if (!stream)
-            return (libretro_vfs_implementation_file*)NULL;
-
-         stream->orig_path   = strdup(path);
-         stream->fp          = fpstream;
-         stream->file_handle = file_handle;
-         stream->buffer_left = 0;
-         stream->buffer_fill = 0;
-
-         if (fpstream)
-         {
-            /* We are using WinRT.
-             * Preallocate a small buffer for manually buffered I/O,
-              * makes short read faster */
-            stream->fp->Seek(0);
-            int buf_size        = 8 * 1024;
-            stream->buffer      = (char*)malloc(buf_size);
-            stream->bufferp     = CreateNativeBuffer(stream->buffer, buf_size, 0);
-            stream->buffer_size = buf_size;
-         }
-         else
-         {
-            /* If we can use Win32 file API, buffering shouldn't be necessary */
-            stream->buffer      = NULL;
-            stream->bufferp     = nullptr;
-            stream->buffer_size = 0;
-         }
-         return stream;
-      });
-   }, NULL);
+   return NULL;
 }
 
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
