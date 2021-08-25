@@ -399,6 +399,28 @@ static void menu_input_st_hex_cb(void *userdata, const char *str)
    menu_input_dialog_end();
 }
 
+static void menu_input_st_float_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      float value;
+      int chars_read;
+      int ret;
+
+      /* Ensure that input string contains a valid
+       * floating point value */
+      ret = sscanf(str, "%f %n", &value, &chars_read);
+
+      if ((ret == 1) && !str[chars_read])
+         setting_set_with_string_representation(setting, str);
+   }
+
+   menu_input_dialog_end();
+}
+
 static void menu_input_st_string_cb(void *userdata, const char *str)
 {
    if (str && *str)
@@ -440,6 +462,9 @@ static int setting_generic_action_ok_linefeed(
       case ST_HEX:
          cb = menu_input_st_hex_cb;
          break;
+      case ST_FLOAT:
+         cb = menu_input_st_float_cb;
+         break;
       case ST_STRING:
       case ST_STRING_OPTIONS:
          cb = menu_input_st_string_cb;
@@ -478,6 +503,9 @@ static void setting_add_special_callbacks(
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_HEX:
+            (*list)[idx].action_cancel = NULL;
+            break;
+         case ST_FLOAT:
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_STRING:
@@ -2713,7 +2741,8 @@ static int setting_action_ok_video_refresh_rate_auto(
       command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
    }
 
-   if (setting_generic_action_ok_default(setting, idx, wraparound) != 0)
+   /* Send NULL instead of setting to prevent duplicate notifications */
+   if (setting_generic_action_ok_default(NULL, idx, wraparound) != 0)
       return -1;
 
    return 0;
@@ -2734,7 +2763,8 @@ static int setting_action_ok_video_refresh_rate_polled(
    /* Incase refresh rate update forced non-block video. */
    command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
 
-   if (setting_generic_action_ok_default(setting, idx, wraparound) != 0)
+   /* Send NULL instead of setting to prevent duplicate notifications */
+   if (setting_generic_action_ok_default(NULL, idx, wraparound) != 0)
       return -1;
 
    return 0;
@@ -7065,6 +7095,13 @@ static int setting_action_start_video_refresh_rate_auto(
    return 0;
 }
 
+static int setting_action_start_video_refresh_rate_polled(
+      rarch_setting_t *setting)
+{
+   /* Relay action to ok to prevent duplicate notifications */
+   return setting_action_ok_video_refresh_rate_polled(setting, 0, false);
+}
+
 static int setting_action_start_mouse_index(rarch_setting_t *setting)
 {
    settings_t *settings     = config_get_ptr();
@@ -7986,11 +8023,11 @@ static void general_write_handler(rarch_setting_t *setting)
             {
                /* Event rate does not matter when disabling
                 * sensors - set to zero */
-               input_sensor_set_state(i,
+               input_set_sensor_state(i,
                      RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
-               input_sensor_set_state(i,
+               input_set_sensor_state(i,
                      RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
-               input_sensor_set_state(i,
+               input_set_sensor_state(i,
                      RETRO_SENSOR_ILLUMINANCE_DISABLE, 0);
             }
          }
@@ -9636,9 +9673,9 @@ static bool setting_append_list(
          {
             unsigned i, listing = 0;
 #ifndef HAVE_DYNAMIC
-            struct bool_entry bool_entries[8];
+            struct bool_entry bool_entries[9];
 #else
-            struct bool_entry bool_entries[7];
+            struct bool_entry bool_entries[8];
 #endif
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -9693,6 +9730,13 @@ static bool setting_append_list(
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 
+            bool_entries[listing].target         = &settings->bools.core_option_category_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE;
+            bool_entries[listing].default_value  = DEFAULT_CORE_OPTION_CATEGORY_ENABLE;
+            bool_entries[listing].flags          = SD_FLAG_NONE;
+            listing++;
+
             bool_entries[listing].target         = &settings->bools.core_info_cache_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE;
@@ -9710,11 +9754,6 @@ static bool setting_append_list(
 #endif
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
-#if defined(IOS)
-               if (bool_entries[i].name_enum_idx ==
-                     MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE)
-                  continue;
-#endif
                CONFIG_BOOL(
                      list, list_info,
                      bool_entries[i].target,
@@ -10996,7 +11035,6 @@ static bool setting_append_list(
                      general_read_handler);
                (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
                CONFIG_UINT(
                      list, list_info,
@@ -11011,24 +11049,6 @@ static bool setting_append_list(
                      general_read_handler);
                (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-
-               CONFIG_BOOL(
-                     list, list_info,
-                     &settings->bools.video_force_resolution,
-                     MENU_ENUM_LABEL_VIDEO_FORCE_RESOLUTION,
-                     MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-                     DEFAULT_FORCE_RESOLUTION,
-                     MENU_ENUM_LABEL_VALUE_OFF,
-                     MENU_ENUM_LABEL_VALUE_ON,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group,
-                     general_write_handler,
-                     general_read_handler,
-                     SD_FLAG_CMD_APPLY_AUTO);
-               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
 
 #if defined(DINGUX) && defined(DINGUX_BETA)
@@ -11070,6 +11090,7 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler);
                menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
                CONFIG_FLOAT(
@@ -11105,6 +11126,7 @@ static bool setting_append_list(
                      parent_group,
                      general_write_handler,
                      general_read_handler);
+                  (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_polled;
                   (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_polled;
                   (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_polled;
                   (*list)[list_info->index - 1].get_string_representation =
@@ -11348,6 +11370,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.window_position_width,
@@ -11362,6 +11385,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.window_position_height,
@@ -11376,6 +11400,37 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.window_auto_width_max,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+                     DEFAULT_WINDOW_AUTO_WIDTH_MAX,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+               menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.window_auto_height_max,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+                     DEFAULT_WINDOW_AUTO_HEIGHT_MAX,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+               menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
                CONFIG_UINT(
                      list, list_info,
                      &settings->uints.video_window_opacity,
@@ -11409,12 +11464,13 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_window_save_positions,
                   MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
                   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-                  false,
+                  DEFAULT_WINDOW_SAVE_POSITIONS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -11423,7 +11479,30 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+#else
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_window_custom_size_enable,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+                  DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+#endif
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_scale_integer,
@@ -12515,7 +12594,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  input_driver_get_uint(INPUT_ACTION_MAX_USERS),
+                  &settings->uints.input_max_users,
                   MENU_ENUM_LABEL_INPUT_MAX_USERS,
                   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
                   input_max_users,
@@ -12941,7 +13020,7 @@ static bool setting_append_list(
 
             CONFIG_FLOAT(
                   list, list_info,
-                  input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD),
+                  &settings->floats.input_axis_threshold,
                   MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
                   DEFAULT_AXIS_THRESHOLD,
@@ -18909,7 +18988,7 @@ static bool setting_append_list(
             /* TODO/FIXME - add enum_idx */
 
             {
-               unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+               unsigned max_users        = settings->uints.input_max_users;
                for (user = 0; user < max_users; user++)
                {
                   char s1[64], s2[64];

@@ -281,8 +281,23 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       else if (string_is_equal(str, "size"))
          db_info->size                    = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "crc"))
-         db_info->crc32 = swap_if_little32(
-               *(uint32_t*)val->val.binary.buff);
+      {
+         switch (val->val.binary.len)
+         {
+            case 1:
+               db_info->crc32 = *(uint8_t*)val->val.binary.buff;
+               break;
+            case 2:
+               db_info->crc32 = swap_if_little16(*(uint16_t*)val->val.binary.buff);
+               break;
+            case 4:
+               db_info->crc32 = swap_if_little32(*(uint32_t*)val->val.binary.buff);
+               break;
+            default:
+               db_info->crc32 = 0;
+               break;
+         }
+      }
       else if (string_is_equal(str, "sha1"))
          db_info->sha1 = bin_to_hex_alloc(
                (uint8_t*)val->val.binary.buff, val->val.binary.len);

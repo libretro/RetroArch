@@ -570,7 +570,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Altura de imagen (mm)"
+   "Alto de imagen (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
@@ -1497,7 +1497,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   "Ajusta la frecuencia de actualización vertical de la imagen. La opción 50 Hz mostrará una imagen más fluida al ejecutar contenidos en formato PAL."
+   "Establece la frecuencia de actualización vertical de la imagen. La opción 50 Hz mostrará una imagen más fluida al ejecutar contenidos en formato PAL."
    )
 #endif
 MSG_HASH(
@@ -1533,15 +1533,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "Establece el ancho en pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
+   "Establece una anchura personalizada para la imagen a pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   "Altura en pantalla completa"
+   "Alto en pantalla completa"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "Establece la altura a pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
+   "Establece una altura personalizada para la imagen a pantalla completa. En caso de no asignar un valor, se usará la resolución del escritorio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -1560,7 +1560,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Cambia el tamaño de la ventana de forma relativa al tamaño de pantalla asignado por el núcleo. También se puede configurar un alto y ancho de pantalla personalizados más abajo."
+   "Establece el tamaño de la ventana al múltiplo especificado del tamaño del área de visualización del núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1576,7 +1576,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Recuerda el tamaño y la posición de la ventana, ignorando la configuración del ajuste Escala en ventana."
+   "Muestra todos los contenidos en una ventana de tamaño fijo, cuyas dimensiones estarán especificadas por los valores de «Ancho de ventana» y «Alto de ventana», y guardará el tamaño y posición de la ventana actual al cerrar RetroArch. Al desactivar esta opción, el tamaño de la ventana se cambiará de forma dinámica según el ajuste «Escala en ventana»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Usar un tamaño de ventana personalizado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Muestra todos los contenidos en una ventana de tamaño fijo, cuyas dimensiones estarán especificadas por los valores de «Ancho de ventana» y «Alto de ventana». Al desactivar esta opción, el tamaño de la ventana se cambiará de forma dinámica según el ajuste «Escala en ventana»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1584,15 +1592,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "Establece un ancho personalizado para la ventana."
+   "Establece una anchura personalizada para la ventana."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   "Altura de la ventana"
+   "Alto de la ventana"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Establece una altura personalizada para la ventana."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Ancho máximo de ventana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Establece la anchura máxima de la ventana al reescalarla automáticamente según el valor de «Escala en ventana»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Alto máximo de ventana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Establece la altura máxima de la ventana al reescalarla automáticamente según el valor de «Escala en ventana»."
    )
 
 /* Settings > Video > Scaling */
@@ -1611,7 +1635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Hace que el escalado por números enteros redondee siempre a un valor superior en vez de a uno inferior."
+   "Obliga al escalado por números enteros a redondear siempre a un valor superior en vez de a uno inferior."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -1641,7 +1665,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Indica el diferencial de posición respecto al eje X de la pantalla.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
+   "Indica el diferencial de posición respecto al eje X del área de visualización.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -1649,7 +1673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Indica el diferencial de posición respecto al eje Y de la pantalla.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
+   "Indica el diferencial de posición respecto al eje Y del área de visualización.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -1657,15 +1681,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Ancho personalizado de la imagen. Este valor se utilizará si se ha elegido la opción «Personalizado» para la relación de aspecto."
+   "Establece la anchura personalizada del área de visualización. Este valor se utilizará si se ha elegido «Personalizado» en el ajuste «Relación de aspecto»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Relación de aspecto personalizada (altura)"
+   "Relación de aspecto personalizada (alto)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Altura personalizada de la imagen. Este valor se utilizará si se ha elegido la opción «Personalizado» para la relación de aspecto."
+   "Establece la altura personalizada del área de visualización. Este valor se utilizará si se ha elegido «Personalizado» en el ajuste «Relación de aspecto»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
@@ -1724,7 +1748,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Ajusta la cantidad de fotogramas que puede utilizar la CPU para anticiparse a la GPU al utilizar la sincronía estricta de GPU."
+   "Establece la cantidad de fotogramas que puede utilizar la CPU para anticiparse a la GPU al utilizar la sincronía estricta de GPU."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -1951,7 +1975,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-   "Ajusta el volumen de salida (en porcentaje)."
+   "Establece el volumen de salida (en porcentaje)."
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
@@ -2893,6 +2917,14 @@ MSG_HASH(
    "Verifica que el firmware necesario esté disponible antes de cargar el contenido."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Categorías en las opciones de los núcleos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Permite a los núcleos presentar las opciones en submenús agrupados por categorías. Nota: es necesario volver a cargar el núcleo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
    "Caché de archivos de información de núcleos"
    )
@@ -3137,7 +3169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "Ajusta el nivel de registro del front-end. Si el valor de un registro es inferior a este, será ignorado."
+   "Establece el nivel de registro del front-end. Si el valor de un registro es inferior a este, será ignorado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
@@ -3145,7 +3177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-   "Asigna el nivel de registro de los núcleos. Si el valor de un registro del núcleo es inferior a este, será ignorado."
+   "Establece el nivel de registro de los núcleos. Si el valor de un registro del núcleo es inferior a este, será ignorado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
@@ -4073,7 +4105,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "Indica el retraso inicial (en milisegundos) entre que se pulsa un botón de dirección y el desplazamiento."
+   "Indica el retraso inicial (en milisegundos) entre la pulsación de un botón de dirección y el desplazamiento correspondiente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -4220,7 +4252,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Establecer contraseña para activar la sección de Ajustes"
+   "Contraseña para activar la sección de Ajustes"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -5325,7 +5357,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "Ajusta el formato de la fecha y hora mostradas en la información de la última partida. Las opciones AM/PM afectarán levemente al rendimiento en algunas plataformas."
+   "Establece el formato de la fecha y hora mostradas en la información de la última partida. Las opciones AM/PM afectarán levemente al rendimiento en algunas plataformas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -5443,7 +5475,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_LANGUAGE,
-   "Ajusta el idioma de la interfaz de usuario."
+   "Establece el idioma de la interfaz de usuario."
    )
 
 /* Settings > User > Privacy */
@@ -7035,6 +7067,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "No se ha iniciado sesión"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Error de red"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Juego desconocido"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
@@ -10234,7 +10274,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DETECTED_VIEWPORT_OF,
-   "Se ha detectado una ventana con resolución"
+   "Se ha detectado un área de visualización con resolución"
    )
 MSG_HASH(
    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
@@ -10914,7 +10954,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-   "¡Error al calcular el tamaño de la ventana! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
+   "¡Error al calcular el tamaño del área de visualización! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY,

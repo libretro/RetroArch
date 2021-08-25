@@ -55,6 +55,11 @@
 #define HAVE_INET6 1
 #endif
 
+/* TODO/FIXME - globals referenced outside */
+struct netplay_room *netplay_room_list = NULL;
+int netplay_room_count                 = 0;
+
+#ifdef HAVE_NETPLAYDISCOVERY
 struct ad_packet
 {
    uint32_t header;
@@ -71,18 +76,18 @@ struct ad_packet
    char subsystem_name[NETPLAY_HOST_STR_LEN];
 };
 
-/* TODO/FIXME - globals referenced outside */
-struct netplay_room *netplay_room_list = NULL;
-int netplay_room_count                 = 0;
-
 /* TODO/FIXME - static globals */
+
 /* LAN discovery sockets */
 static int lan_ad_server_fd            = -1;
 static int lan_ad_client_fd            = -1;
+
 /* Packet buffer for advertisement and responses */
 static struct ad_packet ad_packet_buffer;
+
 /* List of discovered hosts */
 static struct netplay_host_list discovered_hosts;
+
 static size_t discovered_hosts_allocated;
 
 #ifdef HAVE_SOCKET_LEGACY
@@ -103,7 +108,6 @@ static int16_t htons_for_morons(int16_t value)
 
 #endif
 
-#ifdef HAVE_NETPLAYDISCOVERY
 static bool netplay_lan_ad_client(void)
 {
    unsigned i;
@@ -169,7 +173,8 @@ static bool netplay_lan_ad_client(void)
 
          }
 #endif
-         else continue;
+         else
+            continue;
 
          /* Allocate space for it */
          if (discovered_hosts.size >= discovered_hosts_allocated)
@@ -234,7 +239,6 @@ static bool netplay_lan_ad_client(void)
 
    return true;
 }
-#endif
 
 /** Initialize Netplay discovery (client) */
 bool init_netplay_discovery(void)
@@ -278,7 +282,6 @@ void deinit_netplay_discovery(void)
 bool netplay_discovery_driver_ctl(
       enum rarch_netplay_discovery_ctl_state state, void *data)
 {
-#ifdef HAVE_NETPLAYDISCOVERY
    int ret;
    char port_str[6];
    unsigned k = 0;
@@ -292,7 +295,6 @@ bool netplay_discovery_driver_ctl(
       {
          net_ifinfo_t interfaces;
          struct addrinfo hints = {0}, *addr;
-         int can_broadcast     = 1;
 
          if (!net_ifinfo_new(&interfaces))
             return false;
@@ -304,9 +306,12 @@ bool netplay_discovery_driver_ctl(
 
          /* Make it broadcastable */
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
-         if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST,
+         {
+            int can_broadcast     = 1;
+            if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST,
                   (const char *)&can_broadcast, sizeof(can_broadcast)) < 0)
-            RARCH_WARN("[Discovery] Failed to set netplay discovery port to broadcast\n");
+               RARCH_WARN("[Discovery] Failed to set netplay discovery port to broadcast\n");
+         }
 #endif
 
          /* Put together the request */
@@ -344,11 +349,9 @@ bool netplay_discovery_driver_ctl(
       default:
          return false;
    }
-#endif
    return true;
 }
 
-#ifdef HAVE_NETPLAYDISCOVERY
 static bool init_lan_ad_server_socket(netplay_t *netplay, uint16_t port)
 {
    struct addrinfo *addr = NULL;
@@ -373,7 +376,6 @@ error:
       freeaddrinfo_retro(addr);
    return false;
 }
-#endif
 
 /**
  * netplay_lan_ad_server
@@ -382,8 +384,7 @@ error:
  */
 bool netplay_lan_ad_server(netplay_t *netplay)
 {
-/* Todo: implement net_ifinfo and ntohs for consoles */
-#ifdef HAVE_NETPLAYDISCOVERY
+   /* TODO/FIXME: implement net_ifinfo and ntohs for consoles */
    fd_set fds;
    int ret;
    unsigned i;
@@ -550,6 +551,6 @@ bool netplay_lan_ad_server(netplay_t *netplay)
       }
    }
    net_ifinfo_free(&interfaces);
-#endif
    return true;
 }
+#endif

@@ -307,6 +307,7 @@ bool g_win32_restore_desktop        = false;
 bool g_win32_inited                 = false;
 unsigned g_win32_resize_width       = 0;
 unsigned g_win32_resize_height      = 0;
+float g_win32_refresh_rate          = 0;
 ui_window_win32_t main_window;
 
 /* TODO/FIXME - static globals */
@@ -978,8 +979,14 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
          quit                     = true;
          {
             uint16_t mod          = 0;
-            unsigned keysym       = (unsigned)wparam;
-            unsigned keycode      = input_keymaps_translate_keysym_to_rk(keysym);
+            unsigned keycode      = 0;
+            unsigned keysym       = (lparam >> 16) & 0xff;
+
+            /* extended keys will map to dinput if the high bit is set */
+            if ((lparam >> 24 & 0x1))
+               keysym |= 0x80;
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
@@ -1665,31 +1672,45 @@ bool win32_get_metrics(void *data,
    enum display_metric_types type, float *value)
 {
 #if !defined(_XBOX)
-   HDC monitor            = GetDC(NULL);
-   int pixels_x           = GetDeviceCaps(monitor, HORZRES);
-   int pixels_y           = GetDeviceCaps(monitor, VERTRES);
-   int physical_width     = GetDeviceCaps(monitor, HORZSIZE);
-   int physical_height    = GetDeviceCaps(monitor, VERTSIZE);
-
-   ReleaseDC(NULL, monitor);
-
    switch (type)
    {
       case DISPLAY_METRIC_PIXEL_WIDTH:
-         *value = pixels_x;
+         {
+            HDC monitor        = GetDC(NULL);
+            *value             = GetDeviceCaps(monitor, HORZRES);
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_PIXEL_HEIGHT:
-         *value = pixels_y;
+         {
+            HDC monitor        = GetDC(NULL);
+            *value             = GetDeviceCaps(monitor, VERTRES);
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_MM_WIDTH:
-         *value = physical_width;
+         {
+            HDC monitor        = GetDC(NULL);
+            *value             = GetDeviceCaps(monitor, HORZSIZE);
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_MM_HEIGHT:
-         *value = physical_height;
+         {
+            HDC monitor        = GetDC(NULL);
+            *value             = GetDeviceCaps(monitor, VERTSIZE);
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_DPI:
          /* 25.4 mm in an inch. */
-         *value = 254 * pixels_x / physical_width / 10;
+         {
+            HDC monitor        = GetDC(NULL);
+            int pixels_x       = GetDeviceCaps(monitor, HORZRES);
+            int physical_width = GetDeviceCaps(monitor, HORZSIZE);
+            *value = 254 * pixels_x / physical_width / 10;
+            ReleaseDC(NULL, monitor);
+         }
          return true;
       case DISPLAY_METRIC_NONE:
       default:
@@ -2255,6 +2276,7 @@ bool win32_set_video_mode(void *data,
    mon_rect                    = current_mon.rcMonitor;
    g_win32_resize_width        = width;
    g_win32_resize_height       = height;
+   g_win32_refresh_rate        = settings->floats.video_refresh_rate;
 
    win32_set_style(&current_mon, &hm_to_use, &width, &height,
          fullscreen, windowed_full, &rect, &mon_rect, &style);

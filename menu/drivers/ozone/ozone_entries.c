@@ -265,6 +265,9 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
 
    video_driver_get_size(NULL, &video_info_height);
 
+   if (!node)
+      return;
+
    current_selection_middle_onscreen    =
       ozone->dimensions.header_height +
       ozone->dimensions.entry_padding_vertical +
@@ -597,7 +600,8 @@ void ozone_draw_entries(
             ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme_dynamic.entries_border);
+            ozone->theme_dynamic.entries_border,
+            NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -609,7 +613,8 @@ void ozone_draw_entries(
             ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme_dynamic.entries_border);
+            ozone->theme_dynamic.entries_border,
+            NULL);
 
 border_iterate:
       if (node)
@@ -624,7 +629,7 @@ border_iterate:
             userdata,
             video_width,
             video_height,
-            (unsigned) ozone->dimensions_sidebar_width 
+            ozone->dimensions_sidebar_width 
             + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
@@ -832,7 +837,7 @@ border_iterate:
                      ozone->dimensions.entry_icon_size,
                      ozone->dimensions.entry_icon_size,
                      texture,
-                     (unsigned)ozone->dimensions_sidebar_width 
+                     ozone->dimensions_sidebar_width 
                      + x_offset + entry_padding 
                      + ozone->dimensions.entry_icon_padding,
                      y + scroll_y + ozone->dimensions.entry_height 
@@ -982,7 +987,8 @@ void ozone_draw_thumbnail_bar(
             ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_top_gradient);
+            ozone->theme->sidebar_top_gradient,
+            NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -994,7 +1000,8 @@ void ozone_draw_thumbnail_bar(
             sidebar_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_background);
+            ozone->theme->sidebar_background,
+            NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -1006,7 +1013,8 @@ void ozone_draw_thumbnail_bar(
             ozone->dimensions.sidebar_gradient_height + ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme->sidebar_bottom_gradient);
+            ozone->theme->sidebar_bottom_gradient,
+            NULL);
    }
 
    /* Thumbnails */
@@ -1235,7 +1243,8 @@ void ozone_draw_thumbnail_bar(
             ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme_dynamic.entries_border);
+            ozone->theme_dynamic.entries_border,
+            NULL);
 
       y += 18 * scale_factor;
 

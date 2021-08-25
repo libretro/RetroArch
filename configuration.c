@@ -45,7 +45,6 @@
 #include "paths.h"
 #include "retroarch.h"
 #include "verbosity.h"
-#include "lakka.h"
 
 #include "gfx/gfx_animation.h"
 
@@ -56,6 +55,12 @@
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
+#endif
+
+#include "lakka.h"
+
+#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#include "switch_performance_profiles.h"
 #endif
 
 enum video_driver_enum
@@ -427,6 +432,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
 #elif defined(EMSCRIPTEN) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
+#elif defined(WEBOS) && defined(HAVE_SDL2)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(EMSCRIPTEN)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 #elif defined(_WIN32) && defined(HAVE_DINPUT)
@@ -479,6 +486,8 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XINPUT;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
 #elif defined(WIIU)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
+#elif defined(WEBOS)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(_XBOX)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 #elif defined(PS2)
@@ -1514,6 +1523,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->bools.load_dummy_on_core_shutdown, true, DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN, false);
    SETTING_BOOL("check_firmware_before_loading", &settings->bools.check_firmware_before_loading, true, DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING, false);
+   SETTING_BOOL("core_option_category_enable",   &settings->bools.core_option_category_enable, true, DEFAULT_CORE_OPTION_CATEGORY_ENABLE, false);
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    SETTING_BOOL("core_info_cache_enable",        &settings->bools.core_info_cache_enable, false, DEFAULT_CORE_INFO_CACHE_ENABLE, false);
 #else
@@ -1562,9 +1572,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("auto_screenshot_filename",      &settings->bools.auto_screenshot_filename, true, DEFAULT_AUTO_SCREENSHOT_FILENAME, false);
    SETTING_BOOL("video_force_srgb_disable",      &settings->bools.video_force_srgb_disable, true, false, false);
    SETTING_BOOL("video_fullscreen",              &settings->bools.video_fullscreen, true, DEFAULT_FULLSCREEN, false);
-#ifdef __WINRT__
-   SETTING_BOOL("video_force_resolution",         &settings->bools.video_force_resolution, true, DEFAULT_FORCE_RESOLUTION, false);
-#endif
    SETTING_BOOL("bundle_assets_extract_enable",  &settings->bools.bundle_assets_extract_enable, true, DEFAULT_BUNDLE_ASSETS_EXTRACT_ENABLE, false);
    SETTING_BOOL("video_vsync",                   &settings->bools.video_vsync, true, DEFAULT_VSYNC, false);
    SETTING_BOOL("video_adaptive_vsync",          &settings->bools.video_adaptive_vsync, true, DEFAULT_ADAPTIVE_VSYNC, false);
@@ -1704,11 +1711,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("content_show_add",              &settings->bools.menu_content_show_add, true, DEFAULT_MENU_CONTENT_SHOW_ADD, false);
    SETTING_BOOL("content_show_playlists",        &settings->bools.menu_content_show_playlists, true, content_show_playlists, false);
 #if defined(HAVE_LIBRETRODB)
-#if defined(__WINRT__) && defined(WINAPI_FAMILY)
-   SETTING_BOOL("content_show_explore",          &settings->bools.menu_content_show_explore, false, DEFAULT_MENU_CONTENT_SHOW_EXPLORE, false);
-#else
    SETTING_BOOL("content_show_explore",          &settings->bools.menu_content_show_explore, true, DEFAULT_MENU_CONTENT_SHOW_EXPLORE, false);
-#endif
 #endif
    SETTING_BOOL("menu_show_load_core",           &settings->bools.menu_show_load_core, true, menu_show_load_core, false);
    SETTING_BOOL("menu_show_load_content",        &settings->bools.menu_show_load_content, true, menu_show_load_content, false);
@@ -1840,7 +1843,8 @@ static struct config_bool_setting *populate_settings_bool(
 
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, message_bgcolor_enable, false);
    SETTING_BOOL("video_window_show_decorations", &settings->bools.video_window_show_decorations, true, DEFAULT_WINDOW_DECORATIONS, false);
-   SETTING_BOOL("video_window_save_positions", &settings->bools.video_window_save_positions, true, false, false);
+   SETTING_BOOL("video_window_save_positions", &settings->bools.video_window_save_positions, true, DEFAULT_WINDOW_SAVE_POSITIONS, false);
+   SETTING_BOOL("video_window_custom_size_enable", &settings->bools.video_window_custom_size_enable, true, DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE, false);
 
    SETTING_BOOL("sustained_performance_mode",    &settings->bools.sustained_performance_mode, true, sustained_performance_mode, false);
 
@@ -1935,7 +1939,7 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("video_font_size",          &settings->floats.video_font_size,      true, DEFAULT_FONT_SIZE, false);
    SETTING_FLOAT("fastforward_ratio",        &settings->floats.fastforward_ratio,    true, DEFAULT_FASTFORWARD_RATIO, false);
    SETTING_FLOAT("slowmotion_ratio",         &settings->floats.slowmotion_ratio,     true, DEFAULT_SLOWMOTION_RATIO, false);
-   SETTING_FLOAT("input_axis_threshold",     input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD), true, DEFAULT_AXIS_THRESHOLD, false);
+   SETTING_FLOAT("input_axis_threshold",     &settings->floats.input_axis_threshold, true, DEFAULT_AXIS_THRESHOLD, false);
    SETTING_FLOAT("input_analog_deadzone",    &settings->floats.input_analog_deadzone, true, DEFAULT_ANALOG_DEADZONE, false);
    SETTING_FLOAT("input_analog_sensitivity",    &settings->floats.input_analog_sensitivity, true, DEFAULT_ANALOG_SENSITIVITY, false);
    SETTING_FLOAT("video_msg_bgcolor_opacity", &settings->floats.video_msg_bgcolor_opacity, true, message_bgcolor_opacity, false);
@@ -1966,7 +1970,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_duty_cycle",             &settings->uints.input_turbo_duty_cycle, true, turbo_duty_cycle, false);
    SETTING_UINT("input_turbo_mode",             &settings->uints.input_turbo_mode, true, turbo_mode, false);
    SETTING_UINT("input_turbo_default_button",   &settings->uints.input_turbo_default_button, true, turbo_default_btn, false);
-   SETTING_UINT("input_max_users",              input_driver_get_uint(INPUT_ACTION_MAX_USERS),        true, input_max_users, false);
+   SETTING_UINT("input_max_users",              &settings->uints.input_max_users,          true, input_max_users, false);
    SETTING_UINT("fps_update_interval",          &settings->uints.fps_update_interval, true, DEFAULT_FPS_UPDATE_INTERVAL, false);
    SETTING_UINT("memory_update_interval",       &settings->uints.memory_update_interval, true, DEFAULT_MEMORY_UPDATE_INTERVAL, false);
    SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO, false);
@@ -2125,8 +2129,10 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_stream_scale_factor",            &settings->uints.video_stream_scale_factor,    true, 1, false);
    SETTING_UINT("video_windowed_position_x",            &settings->uints.window_position_x,    true, 0, false);
    SETTING_UINT("video_windowed_position_y",            &settings->uints.window_position_y,    true, 0, false);
-   SETTING_UINT("video_windowed_position_width",            &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
-   SETTING_UINT("video_windowed_position_height",            &settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
+   SETTING_UINT("video_windowed_position_width",        &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
+   SETTING_UINT("video_windowed_position_height",       &settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
+   SETTING_UINT("video_window_auto_width_max",          &settings->uints.window_auto_width_max,    true, DEFAULT_WINDOW_AUTO_WIDTH_MAX, false);
+   SETTING_UINT("video_window_auto_height_max",         &settings->uints.window_auto_height_max,    true, DEFAULT_WINDOW_AUTO_HEIGHT_MAX, false);
    SETTING_UINT("ai_service_mode",            &settings->uints.ai_service_mode,    true, DEFAULT_AI_SERVICE_MODE, false);
    SETTING_UINT("ai_service_target_lang",            &settings->uints.ai_service_target_lang,    true, 0, false);
    SETTING_UINT("ai_service_source_lang",            &settings->uints.ai_service_source_lang,    true, 0, false);
@@ -3079,6 +3085,7 @@ static bool config_load_file(global_t *global,
    bool ret                                        = false;
    unsigned tmp_uint                               = 0;
    bool tmp_bool                                   = false;
+   static bool first_load                          = true;
    unsigned msg_color                              = 0;
    char *save                                      = NULL;
    char *override_username                         = NULL;
@@ -3170,12 +3177,23 @@ static bool config_load_file(global_t *global,
                settings->bools.network_remote_enable_user[i], tmp_bool);
    }
 #endif
-   if (config_get_bool(conf, "log_verbosity", &tmp_bool))
+   /* Set verbosity according to config only if the 'v' command line argument was not used
+    * or if it is not the first config load. */
+   if (config_get_bool(conf, "log_verbosity", &tmp_bool) &&
+      (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL) ||
+      !first_load))
    {
       if (tmp_bool)
          verbosity_enable();
       else
          verbosity_disable();
+   }
+   /* On first config load, make sure log_to_file is true if 'log-file' command line 
+    * argument was used. */
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL) &&
+      first_load)
+   {
+      configuration_set_bool(settings,settings->bools.log_to_file,true);
    }
    if (config_get_uint(conf, "frontend_log_level", &tmp_uint))
    {
@@ -3607,6 +3625,7 @@ end:
       free(path_settings);
    if (size_settings)
       free(size_settings);
+   first_load = false;
    return ret;
 }
 
@@ -3953,15 +3972,15 @@ success:
  */
 static void config_parse_file(global_t *global)
 {
+   const char *config_path = path_get(RARCH_PATH_CONFIG);
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[Config]: Loading default config.\n");
    }
+   else
+       RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
 
    {
-      const char *config_path = path_get(RARCH_PATH_CONFIG);
-      RARCH_LOG("[Config]: Loading config from: \"%s\".\n", config_path);
-
       if (!config_load_file(global, config_path, config_get_ptr()))
       {
          RARCH_ERR("[Config]: Couldn't find config at path: \"%s\".\n",
@@ -4685,7 +4704,7 @@ bool input_remapping_load_file(void *data, const char *path)
          }
          else
          {
-            char stk_ident[128];
+            char stk_ident[256];
             char key_ident[128];
             int stk_remap = -1;
             int key_remap = -1;
@@ -4761,8 +4780,8 @@ bool input_remapping_save_file(const char *path)
       "a", "x", "l", "r", "l2", "r2",
       "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
    config_file_t               *conf = NULL;
-   unsigned max_users                = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    settings_t              *settings = config_get_ptr();
+   unsigned max_users                = settings->uints.input_max_users;
    const char *dir_input_remapping   = settings->paths.directory_input_remapping;
 
    remap_file[0]                     = '\0';

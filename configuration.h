@@ -165,6 +165,7 @@ typedef struct settings
       unsigned input_poll_type_behavior;
       unsigned input_dingux_rumble_gain;
       unsigned input_auto_game_focus;
+      unsigned input_max_users;
 
       unsigned netplay_port;
       unsigned netplay_input_latency_frames_min;
@@ -282,6 +283,8 @@ typedef struct settings
       unsigned window_position_y;
       unsigned window_position_width;
       unsigned window_position_height;
+      unsigned window_auto_width_max;
+      unsigned window_auto_height_max;
 
       unsigned video_record_threads;
 
@@ -350,6 +353,7 @@ typedef struct settings
       float slowmotion_ratio;
       float fastforward_ratio;
       float input_analog_deadzone;
+      float input_axis_threshold;
       float input_analog_sensitivity;
    } floats;
 
@@ -522,7 +526,6 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif
-      bool video_force_resolution;
 
       /* Accessibility */
       bool accessibility_enable;
@@ -794,6 +797,7 @@ typedef struct settings
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
       bool check_firmware_before_loading;
+      bool core_option_category_enable;
       bool core_info_cache_enable;
 #ifndef HAVE_DYNAMIC
       bool always_reload_core_on_run_content;
@@ -825,6 +829,7 @@ typedef struct settings
 
       bool video_window_show_decorations;
       bool video_window_save_positions;
+      bool video_window_custom_size_enable;
 
       bool sustained_performance_mode;
       bool playlist_use_old_format;

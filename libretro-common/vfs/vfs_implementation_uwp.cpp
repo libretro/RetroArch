@@ -380,7 +380,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    if (mode == RETRO_VFS_FILE_ACCESS_READ)
    {
       desireAccess        = GENERIC_READ;
-      creationDisposition = OPEN_ALWAYS;
+      creationDisposition = OPEN_EXISTING;
    }
    else
    {
@@ -851,6 +851,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
                {
                    sz.HighPart = attribdata.nFileSizeHigh;
                    sz.LowPart = attribdata.nFileSizeLow;
+                   *size = sz.QuadPart;
                }
            }
            return (file_info & FILE_ATTRIBUTE_DIRECTORY) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
@@ -863,7 +864,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    /* Fallback to WinRT */
    item = LocateStorageFileOrFolder(path_str);
    if (!item)
-      return 0;
+       return 0;
 
    return RunAsyncAndCatchErrors<int>([&]() {
          return concurrency::create_task(item->GetBasicPropertiesAsync()).then([&](BasicProperties^ properties) {

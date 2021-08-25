@@ -1387,10 +1387,6 @@ MSG_HASH(
    "記住視窗位置與大小"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "記憶視窗的大小及位置，本項設定優先於視窗縮放選項."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "視窗寬度"
    )

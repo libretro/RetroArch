@@ -5,6 +5,7 @@
  */
 var BrowserFS = BrowserFS;
 var afs;
+var initializationCount = 0;
 
 function cleanupStorage()
 {
@@ -42,7 +43,7 @@ function idbfsInit()
             afs = new BrowserFS.FileSystem.InMemory();
             console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
             setupFileSystem("browser");
-            preLoadingComplete();
+            appInitialized();
          }
          else
          {
@@ -54,7 +55,7 @@ function idbfsInit()
                   afs = new BrowserFS.FileSystem.InMemory();
                   console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
                   setupFileSystem("browser");
-                  preLoadingComplete();
+                  appInitialized();
                }
                else
                {
@@ -74,8 +75,19 @@ function idbfsSyncComplete()
    console.log("WEBPLAYER: idbfs setup successful");
 
    setupFileSystem("browser");
-   preLoadingComplete();
+   appInitialized();
 }
+
+function appInitialized()
+{
+     /* Need to wait for both the file system and the wasm runtime 
+        to complete before enabling the Run button. */
+     initializationCount++;
+     if (initializationCount == 2)
+     {
+         preLoadingComplete();
+     }
+ }
 
 function preLoadingComplete()
 {
@@ -184,6 +196,10 @@ var Module =
   arguments: ["-v", "--menu"],
   preRun: [],
   postRun: [],
+  onRuntimeInitialized: function()
+  {
+     appInitialized();
+  }, 
   print: function(text)
   {
      console.log(text);

@@ -328,7 +328,6 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
 #ifdef HAVE_RWAV
    /* WAV data */
    rwav_t wav;
-   enum rwav_state rwav_ret;
    /* WAV samples converted to float */
    float* pcm                 = NULL;
    size_t samples             = 0;
@@ -342,7 +341,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
    wav.subchunk2size          = 0;
    wav.samples                = NULL;
 
-   if ((rwav_ret = rwav_load(&wav, buffer, size)) != RWAV_ITERATE_DONE)
+   if ((rwav_load(&wav, buffer, size)) != RWAV_ITERATE_DONE)
       return NULL;
 
    samples       = wav.numsamples * 2;

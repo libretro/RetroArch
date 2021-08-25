@@ -108,7 +108,7 @@ static int append_no_spaces(char* buffer, char* stop, const char* text)
    }
 
    *ptr = '\0';
-   return (ptr - buffer);
+   return (int)(ptr - buffer);
 }
 
 void rcheevos_get_user_agent(rcheevos_locals_t *locals,
@@ -298,6 +298,22 @@ static void rcheevos_async_retry_request_after_delay(rcheevos_async_io_request* 
    task_queue_push(task);
 }
 
+static void rcheevos_async_request_failed(rcheevos_async_io_request* request, const char* error)
+{
+   if (request->type == CHEEVOS_ASYNC_RICHPRESENCE && request->attempt_count > 0)
+   {
+      /* only retry the ping once (in case of network hiccup), otherwise let
+       * the timer handle it after the normal ping period has elapsed */
+      CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s\n", request->failure_message,
+         request->id, error);
+   }
+   else
+   {
+      /* automatically retry the request */
+      rcheevos_async_retry_request_after_delay(request, error);
+   }
+}
+
 static void rcheevos_async_http_task_callback(
       retro_task_t* task, void* task_data, void* user_data, const char* error)
 {
@@ -308,18 +324,7 @@ static void rcheevos_async_http_task_callback(
    if (error)
    {
       /* there was a communication error */
-      if (request->type == CHEEVOS_ASYNC_RICHPRESENCE && request->attempt_count > 0)
-      {
-         /* only retry the ping once (in case of network hiccup), otherwise let
-          * the timer handle it after the normal ping period has elapsed */
-         CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s\n", request->failure_message,
-            request->id, error);
-      }
-      else
-      {
-         /* automatically retry the request */
-         rcheevos_async_retry_request_after_delay(request, error);
-      }
+      rcheevos_async_request_failed(request, error);
       return;
    }
 
@@ -330,6 +335,15 @@ static void rcheevos_async_http_task_callback(
    }
    else if (!data->data || !data->len)
    {
+      if (data->status <= 0)
+      {
+         /* something occurred which prevented the response from being processed.
+          * assume the server request hasn't happened and try again. */
+         snprintf(buffer, sizeof(buffer), "task status code %d", data->status);
+         rcheevos_async_request_failed(request, buffer);
+         return;
+      }
+
       if (data->status != 200)
       {
          /* Server returned an error via status code. */

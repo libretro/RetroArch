@@ -138,6 +138,17 @@ static void sdl_pad_connect(unsigned id)
    vendor     = guid_ptr[0];
    product    = guid_ptr[1];
 #endif
+#ifdef WEBOS
+   if (vendor == 0x9999 && product == 0x9999)
+   {
+      RARCH_WARN("[SDL_JOYPAD]: Ignoring pad #%d (vendor: %d; product: %d)\n", id, vendor, product);
+      if (pad->joypad)
+         SDL_JoystickClose(pad->joypad);
+
+      pad->joypad = NULL;
+      return;
+   }
+#endif
 #endif
 
    input_autoconfigure_connect(

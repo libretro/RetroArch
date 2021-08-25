@@ -70,6 +70,9 @@ static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch);
 static void retro_run_null(void);
 static void retro_input_poll_null(void);
+static void runloop_apply_fastmotion_override(
+      struct rarch_state *p_rarch, runloop_state_t *p_runloop,
+      settings_t *settings);
 
 static uint64_t input_driver_get_capabilities(void);
 

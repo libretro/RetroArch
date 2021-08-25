@@ -96,7 +96,7 @@ enum udev_input_dev_type
 /* NOTE: must be in sync with enum udev_input_dev_type */
 static const char *g_dev_type_str[] =
 {
-   "ID_INPUT_KEYBOARD",
+   "ID_INPUT_KEY",
    "ID_INPUT_MOUSE",
    "ID_INPUT_TOUCHPAD"
 };

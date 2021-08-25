@@ -197,22 +197,28 @@ static int rcheevos_init_memory(rcheevos_locals_t* locals)
 {
    rarch_system_info_t* system = runloop_get_system_info();
    rarch_memory_map_t* mmaps = &system->mmaps;
-   struct retro_memory_descriptor descriptors[64];
+   struct retro_memory_descriptor* descriptors;
    struct retro_memory_map mmap;
    unsigned i;
+   int result;
+
+   descriptors = (struct retro_memory_descriptor*)malloc(mmaps->num_descriptors * sizeof(*descriptors));
+   if (!descriptors)
+      return 0;
 
    mmap.descriptors = &descriptors[0];
-   mmap.num_descriptors = sizeof(descriptors) / sizeof(descriptors[0]);
-   if (mmaps->num_descriptors < mmap.num_descriptors)
-      mmap.num_descriptors = mmaps->num_descriptors;
+   mmap.num_descriptors = mmaps->num_descriptors;
 
    /* RetroArch wraps the retro_memory_descriptor's in rarch_memory_descriptor_t's, pull them back out */
    for (i = 0; i < mmap.num_descriptors; ++i)
       memcpy(&descriptors[i], &mmaps->descriptors[i].core, sizeof(descriptors[0]));
 
    rc_libretro_init_verbose_message_callback(rcheevos_handle_log_message);
-   return rc_libretro_memory_init(&locals->memory, &mmap,
+   result = rc_libretro_memory_init(&locals->memory, &mmap,
          rcheevos_get_core_memory_info, locals->patchdata.console_id);
+
+   free(descriptors);
+   return result;
 }
 
 uint8_t* rcheevos_patch_address(unsigned address)
@@ -1004,21 +1010,20 @@ void rcheevos_hardcore_enabled_changed(void)
 void rcheevos_validate_config_settings(void)
 {
    const rc_disallowed_setting_t* disallowed_settings;
-   core_option_manager_t* coreopts = NULL;
+   core_option_manager_t* coreopts  = NULL;
    struct retro_system_info* system = runloop_get_libretro_system_info();
    int i;
 
    if (!system->library_name || !rcheevos_locals.hardcore_active)
       return;
 
-   disallowed_settings = rc_libretro_get_disallowed_settings(system->library_name);
-   if (disallowed_settings == NULL)
+   if (!(disallowed_settings = rc_libretro_get_disallowed_settings(system->library_name)))
       return;
 
    if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       return;
 
-   for (i = 0; i < coreopts->size; i++)
+   for (i = 0; i < (int)coreopts->size; i++)
    {
       const char* key = coreopts->opts[i].key;
       const char* val = core_option_manager_get_val(coreopts, i);

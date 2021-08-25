@@ -1515,10 +1515,6 @@ MSG_HASH(
    "تذكر موقع النافذة وحجمها"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "تذكر حجم النافذة ومكانها، تمكين هذا له الأسبقية على مقياس النافذة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "عرض النافذة"
    )

@@ -1151,7 +1151,6 @@ static int rc_hash_psx(char hash[33], const char* path)
   void* track_handle;
   uint32_t sector;
   unsigned size;
-  size_t num_read;
   int result = 0;
   md5_state_t md5;
 
@@ -1171,7 +1170,7 @@ static int rc_hash_psx(char hash[33], const char* path)
   {
     rc_hash_error("Could not locate primary executable");
   }
-  else if ((num_read = rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer))) < sizeof(buffer))
+  else if ((rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer))) < sizeof(buffer))
   {
     rc_hash_error("Could not read primary executable");
   }
@@ -1216,7 +1215,6 @@ static int rc_hash_ps2(char hash[33], const char* path)
   void* track_handle;
   uint32_t sector;
   unsigned size;
-  size_t num_read;
   int result = 0;
   md5_state_t md5;
 
@@ -1229,7 +1227,7 @@ static int rc_hash_ps2(char hash[33], const char* path)
   {
     rc_hash_error("Could not locate primary executable");
   }
-  else if ((num_read = rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer))) < sizeof(buffer))
+  else if ((rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer))) < sizeof(buffer))
   {
     rc_hash_error("Could not read primary executable");
   }

@@ -220,7 +220,7 @@ enum winraw_scancodes {
    SC_LAUNCH_MEDIA = 0xE06D,
 
    SC_PAUSE = 0xFFFE/*0xE11D45*/,
-   SC_LAST = 0xFFFF,
+   SC_LAST = 0xFFFF
 };
 #endif
 

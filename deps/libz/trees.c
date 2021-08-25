@@ -262,7 +262,11 @@ static void gen_bitlen(deflate_state *s, tree_desc *desc)
    for (h = s->heap_max+1; h < HEAP_SIZE; h++) {
       n = s->heap[h];
       bits = tree[tree[n].Dad].Len + 1;
-      if (bits > max_length) bits = max_length, overflow++;
+      if (bits > max_length)
+      {
+         bits = max_length;
+         overflow++;
+      }
       tree[n].Len = (ush)bits;
       /* We overwrite tree[n].Dad which is no longer needed */
 
@@ -373,7 +377,8 @@ static void build_tree(deflate_state *s, tree_desc *desc)
     * heap[SMALLEST]. The sons of heap[n] are heap[2*n] and heap[2*n+1].
     * heap[0] is not used.
     */
-   s->heap_len = 0, s->heap_max = HEAP_SIZE;
+   s->heap_len = 0;
+   s->heap_max = HEAP_SIZE;
 
    for (n = 0; n < elems; n++) {
       if (tree[n].Freq != 0) {
@@ -456,7 +461,11 @@ static void scan_tree (deflate_state *s, ct_data *tree, int max_code)
    int max_count = 7;         /* max repeat count */
    int min_count = 4;         /* min repeat count */
 
-   if (nextlen == 0) max_count = 138, min_count = 3;
+   if (nextlen == 0)
+   {
+      max_count = 138;
+      min_count = 3;
+   }
    tree[max_code+1].Len = (ush)0xffff; /* guard */
 
    for (n = 0; n <= max_code; n++) {
@@ -475,11 +484,14 @@ static void scan_tree (deflate_state *s, ct_data *tree, int max_code)
       }
       count = 0; prevlen = curlen;
       if (nextlen == 0) {
-         max_count = 138, min_count = 3;
+         max_count = 138;
+         min_count = 3;
       } else if (curlen == nextlen) {
-         max_count = 6, min_count = 3;
+         max_count = 6;
+         min_count = 3;
       } else {
-         max_count = 7, min_count = 4;
+         max_count = 7;
+         min_count = 4;
       }
    }
 }
@@ -499,7 +511,11 @@ static void send_tree (deflate_state *s, ct_data *tree, int max_code)
    int min_count = 4;         /* min repeat count */
 
    /* tree[max_code+1].Len = -1; */  /* guard already set */
-   if (nextlen == 0) max_count = 138, min_count = 3;
+   if (nextlen == 0)
+   {
+      max_count = 138;
+      min_count = 3;
+   }
 
    for (n = 0; n <= max_code; n++) {
       curlen = nextlen; nextlen = tree[n+1].Len;
@@ -523,11 +539,14 @@ static void send_tree (deflate_state *s, ct_data *tree, int max_code)
       }
       count = 0; prevlen = curlen;
       if (nextlen == 0) {
-         max_count = 138, min_count = 3;
+         max_count = 138;
+         min_count = 3;
       } else if (curlen == nextlen) {
-         max_count = 6, min_count = 3;
+         max_count = 6;
+         min_count = 3;
       } else {
-         max_count = 7, min_count = 4;
+         max_count = 7;
+         min_count = 4;
       }
    }
 }
@@ -842,7 +861,8 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf, ulg stored_len,
       register unsigned res = 0;
       do {
          res |= codes & 1;
-         codes >>= 1, res <<= 1;
+         codes >>= 1;
+         res   <<= 1;
       } while (--len > 0);
       return res >> 1;
    }

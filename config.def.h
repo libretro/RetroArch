@@ -75,7 +75,7 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
-#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__)
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(EMSCRIPTEN)
 #define DEFAULT_POINTER_ENABLE true
 #else
 #define DEFAULT_POINTER_ENABLE false
@@ -222,10 +222,50 @@
 #define DEFAULT_MONITOR_INDEX 0
 
 /* Window */
-/* Window size. A value of 0 uses window scale
- * multiplied by the core framebuffer size. */
-#define DEFAULT_WINDOW_WIDTH 1280
+
+/* DEFAULT_WINDOW_DECORATIONS:
+   Whether to show the usual window decorations like border, titlebar etc. */
+#ifdef WEBOS
+#define DEFAULT_WINDOW_DECORATIONS false
+#else
+#define DEFAULT_WINDOW_DECORATIONS true
+#endif
+
+/* Amount of transparency to use for the main window.
+ * 1 is the most transparent while 100 is opaque. */
+#define DEFAULT_WINDOW_OPACITY 100
+
+/* DEFAULT_WINDOW_SAVE_POSITIONS:
+ * Whether to remember window positions
+ * NOTE: Only enabled for desktop Windows
+ * at present. */
+#define DEFAULT_WINDOW_SAVE_POSITIONS false
+
+/* Whether to use custom (fixed size)
+ * window dimensions in windowed mode. */
+#ifdef WEBOS
+#define DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE true
+#else
+#define DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE false
+#endif
+
+/* Window dimensions when using a fixed size
+ * window. A value of 0 disables fixed size
+ * windows, using nominal dimensions of
+ * window scale multiplied by the core
+ * framebuffer size. */
+#if defined(WEBOS)
+#define DEFAULT_WINDOW_WIDTH  1920
+#define DEFAULT_WINDOW_HEIGHT 1080
+#else
+#define DEFAULT_WINDOW_WIDTH  1280
 #define DEFAULT_WINDOW_HEIGHT 720
+#endif
+
+/* Maximum auto-set window dimensions
+ * when not using a fixed size window */
+#define DEFAULT_WINDOW_AUTO_WIDTH_MAX  1920
+#define DEFAULT_WINDOW_AUTO_HEIGHT_MAX 1080
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
@@ -240,19 +280,8 @@
 #define DEFAULT_FULLSCREEN_Y 0
 #endif
 
-/* Force 4k resolution */
-#define DEFAULT_FORCE_RESOLUTION false
-
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
-
-/* Amount of transparency to use for the main window.
- * 1 is the most transparent while 100 is opaque.
- */
-#define DEFAULT_WINDOW_OPACITY 100
-
-/* Whether to show the usual window decorations like border, titlebar etc. */
-#define DEFAULT_WINDOW_DECORATIONS true
 
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN false
@@ -260,6 +289,10 @@
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
 #define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
+
+/* Specifies whether cores are allowed to
+ * present core options in category submenus */
+#define DEFAULT_CORE_OPTION_CATEGORY_ENABLE true
 
 /* Specifies whether to cache core info
  * into a single (compressed) file for improved
@@ -1061,7 +1094,7 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_REWIND_GRANULARITY 1
 #endif
 /* Pause gameplay when gameplay loses focus. */
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(WEBOS)
 #define DEFAULT_PAUSE_NONACTIVE false
 #else
 #define DEFAULT_PAUSE_NONACTIVE true

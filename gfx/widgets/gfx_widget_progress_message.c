@@ -251,7 +251,8 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
             state->widget_height,
             video_width,
             video_height,
-            backdrop_color);
+            backdrop_color,
+            NULL);
 
       /* Draw progress bar background */
       gfx_display_set_alpha(state->bar_bg_color, state->alpha);
@@ -267,7 +268,8 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
             state->bar_bg_height,
             video_width,
             video_height,
-            state->bar_bg_color);
+            state->bar_bg_color,
+            NULL);
 
       /* Draw progress bar */
       if (state->progress >= 0)
@@ -292,7 +294,8 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
             state->bar_height,
             video_width,
             video_height,
-            bar_color);
+            bar_color,
+            NULL);
 
       /* Draw message text */
       gfx_widgets_draw_text(

@@ -1483,10 +1483,6 @@ MSG_HASH(
    "Fönsterskalning"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Ange fönsterstorlek i förhållande till kärnans visningsstorlek. Alternativt kan en fönsterbredd och höjd ställas in nedan för en fast fönsterstorlek."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "Fönster Opacitet"
    )
@@ -1497,10 +1493,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "Kom ihåg Fönsterposition och Storlek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Kom ihåg fönsterstorlek och position, vilket gör att detta har företräde framför Fönsterskala."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,

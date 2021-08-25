@@ -412,7 +412,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               bg_color);
+               bg_color, 
+               NULL);
 
          /* Frame */
          gfx_display_draw_quad(
@@ -426,7 +427,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                state->frame_width,
                video_width,
                video_height,
-               state->frame_color);
+               state->frame_color,
+               NULL);
 
          gfx_display_draw_quad(
                p_disp,
@@ -439,7 +441,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               state->frame_color);
+               state->frame_color,
+               NULL);
       }
 
       /* Draw text */

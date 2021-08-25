@@ -180,7 +180,8 @@ static void ozone_draw_cursor_fallback(
          height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
-         ozone->theme_dynamic.selection);
+         ozone->theme_dynamic.selection,
+         NULL);
 
    /* Borders (can't do one single quad because of alpha) */
 
@@ -196,7 +197,8 @@ static void ozone_draw_cursor_fallback(
          ozone->dimensions.spacer_3px,
          video_width,
          video_height,
-         ozone->theme_dynamic.selection_border);
+         ozone->theme_dynamic.selection_border,
+         NULL);
 
    /* Bottom */
    gfx_display_draw_quad(
@@ -210,7 +212,8 @@ static void ozone_draw_cursor_fallback(
          ozone->dimensions.spacer_3px,
          video_width,
          video_height,
-         ozone->theme_dynamic.selection_border);
+         ozone->theme_dynamic.selection_border,
+         NULL);
 
    /* Left */
    gfx_display_draw_quad(
@@ -224,7 +227,8 @@ static void ozone_draw_cursor_fallback(
          height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
-         ozone->theme_dynamic.selection_border);
+         ozone->theme_dynamic.selection_border,
+         NULL);
 
    /* Right */
    gfx_display_draw_quad(
@@ -238,7 +242,8 @@ static void ozone_draw_cursor_fallback(
          height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
-         ozone->theme_dynamic.selection_border);
+         ozone->theme_dynamic.selection_border,
+         NULL);
 }
 
 
@@ -379,7 +384,8 @@ void ozone_draw_backdrop(
          video_height,
          video_width,
          video_height,
-         ozone_backdrop);
+         ozone_backdrop,
+         NULL);
 }
 
 void ozone_draw_osk(ozone_handle_t *ozone,
@@ -429,7 +435,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          ozone->dimensions.spacer_1px,
          video_width,
          video_height,
-         ozone->theme->entries_border);
+         ozone->theme->entries_border,
+         NULL);
 
    /* Bottom */
    gfx_display_draw_quad(
@@ -443,7 +450,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          ozone->dimensions.spacer_1px,
          video_width,
          video_height,
-         ozone->theme->entries_border);
+         ozone->theme->entries_border,
+         NULL);
 
    /* Left */
    gfx_display_draw_quad(
@@ -457,7 +465,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          bottom_end - margin*2,
          video_width,
          video_height,
-         ozone->theme->entries_border);
+         ozone->theme->entries_border,
+         NULL);
 
    /* Right */
    gfx_display_draw_quad(
@@ -471,7 +480,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          bottom_end - margin*2,
          video_width,
          video_height,
-         ozone->theme->entries_border);
+         ozone->theme->entries_border,
+         NULL);
 
    /* Backdrop */
    /* TODO: Remove the backdrop if blur shader is available */
@@ -486,7 +496,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          bottom_end - margin*2 - ozone->dimensions.spacer_2px,
          video_width,
          video_height,
-         ozone_osk_backdrop);
+         ozone_osk_backdrop,
+         NULL);
 
    /* Placeholder & text*/
    if (draw_placeholder)
@@ -549,7 +560,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
                   ozone->fonts.entries_label.line_ascender,
                   video_width,
                   video_height,
-                  ozone->pure_white);
+                  ozone->pure_white,
+                  NULL);
          }
       }
       else
@@ -894,7 +906,8 @@ void ozone_draw_fullscreen_thumbnails(
             (unsigned)view_height,
             width,
             height,
-            background_color);
+            background_color,
+            NULL);
 
       /* Draw full-width separators */
       gfx_display_draw_quad(
@@ -908,7 +921,8 @@ void ozone_draw_fullscreen_thumbnails(
             ozone->dimensions.spacer_1px,
             width,
             height,
-            separator_color);
+            separator_color,
+            NULL);
 
       gfx_display_draw_quad(
             p_disp,
@@ -921,7 +935,8 @@ void ozone_draw_fullscreen_thumbnails(
             ozone->dimensions.spacer_1px,
             width,
             height,
-            separator_color);
+            separator_color,
+            NULL);
 
       /* Draw thumbnails */
 
@@ -942,7 +957,8 @@ void ozone_draw_fullscreen_thumbnails(
                (unsigned)right_thumbnail_draw_height + (frame_width << 1),
                width,
                height,
-               frame_color);
+               frame_color,
+               NULL);
 
          /* Thumbnail */
          gfx_thumbnail_draw(
@@ -977,7 +993,8 @@ void ozone_draw_fullscreen_thumbnails(
                (unsigned)left_thumbnail_draw_height + (frame_width << 1),
                width,
                height,
-               frame_color);
+               frame_color,
+               NULL);
 
          /* Thumbnail */
          gfx_thumbnail_draw(

@@ -1181,6 +1181,10 @@ MSG_HASH(
    "check_for_missing_firmware"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "core_option_category_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,
    "core_info_cache_enable"
    )
@@ -3525,6 +3529,14 @@ MSG_HASH(
    "video_window_height"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "video_window_auto_width_max"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "video_window_auto_height_max"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
    "video_fullscreen_x"
    )
@@ -4169,6 +4181,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
    "video_window_save_position"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "video_window_custom_size_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE,

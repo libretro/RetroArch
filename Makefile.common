@@ -134,7 +134,7 @@ ifneq ($(findstring Darwin,$(OS)),)
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)
       MINVERFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
-      MINVERFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
+      MINVERFLAGS += -DDONT_WANT_ARM_ASM_OPTIMIZATIONS
    else ifeq ($(HAVE_METAL),1)
       MINVERFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
@@ -148,7 +148,7 @@ ifneq ($(findstring Darwin,$(OS)),)
 	# Build for a specific architecture when ARCH is defined as a switch
    ifeq ($(ARCH),arm64)
       MINVERFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
-      MINVERFLAGS += -DDONT_WANT_ARM_OPTIMIZATIONS
+      MINVERFLAGS += -DDONT_WANT_ARM_ASM_OPTIMIZATIONS
       ARCHFLAGS    = -arch arm64
    else ifeq ($(ARCH),x86_64)
       ifeq ($(HAVE_METAL),1)
@@ -302,6 +302,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
        $(LIBRETRO_COMM_DIR)/hash/lrc_hash.o \
+       input/input_driver.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
        gfx/video_coord_array.o \
@@ -2423,18 +2424,15 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += led/drivers/led_win32_keyboard.o
 endif
 
-ifeq ($(HAVE_MATH_NEON), 1)
-   DEFINES += -DHAVE_MATH_NEON
-   INCLUDE_DIRS += -I$(DEPS_DIR)/math-neon/source
-   SOURCES := $(DEPS_DIR)/math-neon/source
-   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
-endif
-
 ifeq ($(HAVE_VITAGLES), 1)
    DEFINES += -DHAVE_VITAGLES
    INCLUDE_DIRS += -I$(DEPS_DIR)/Pigs-In-A-Blanket/include
    SOURCES := $(DEPS_DIR)/Pigs-In-A-Blanket/src
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
+endif
+
+ifeq ($(HAVE_WEBOS), 1)
+  DEFINES += -DWEBOS
 endif
 
 #####################################

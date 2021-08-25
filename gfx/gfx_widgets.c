@@ -1193,7 +1193,8 @@ static int gfx_widgets_draw_indicator(
             top_right_x_advance - width, y,
             width, height,
             video_width, video_height,
-            p_dispwidget->backdrop_orig
+            p_dispwidget->backdrop_orig,
+            NULL
       );
 
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
@@ -1229,7 +1230,8 @@ static int gfx_widgets_draw_indicator(
             top_right_x_advance - width, y,
             width, height,
             video_width, video_height,
-            p_dispwidget->backdrop_orig
+            p_dispwidget->backdrop_orig,
+            NULL
       );
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
@@ -1327,7 +1329,8 @@ static void gfx_widgets_draw_task_msg(
          rect_x, rect_y,
          rect_width, rect_height,
          video_width, video_height,
-         msg_queue_current_background
+         msg_queue_current_background,
+	 NULL
          );
 
    /* Progress bar */
@@ -1346,7 +1349,8 @@ static void gfx_widgets_draw_task_msg(
             p_dispwidget->msg_queue_task_rect_start_x, video_height - msg->offset_y,
             bar_width, rect_height,
             video_width, video_height,
-            msg_queue_current_bar
+            msg_queue_current_bar,
+	    NULL
             );
    }
 
@@ -1512,7 +1516,8 @@ static void gfx_widgets_draw_regular_msg(
          p_dispwidget->msg_queue_height,
          video_width,
          video_height,
-         p_dispwidget->msg_queue_bg
+         p_dispwidget->msg_queue_bg,
+	 NULL
          );
 
    /* Text */
@@ -1671,7 +1676,8 @@ void gfx_widgets_frame(void *data)
             p_dispwidget->divider_width_1px,
             video_width,
             video_height,
-            outline_color
+            outline_color,
+	    NULL
             );
       /* bottom line */
       gfx_display_draw_quad(
@@ -1684,7 +1690,8 @@ void gfx_widgets_frame(void *data)
             p_dispwidget->divider_width_1px,
             video_width,
             video_height,
-            outline_color
+            outline_color,
+	    NULL
             );
       /* left line */
       gfx_display_draw_quad(
@@ -1698,7 +1705,8 @@ void gfx_widgets_frame(void *data)
             video_height,
             video_width,
             video_height,
-            outline_color
+            outline_color,
+	    NULL
             );
       /* right line */
       gfx_display_draw_quad(
@@ -1711,7 +1719,8 @@ void gfx_widgets_frame(void *data)
             video_height,
             video_width,
             video_height,
-            outline_color
+            outline_color,
+	    NULL
             );
 
       if (p_dispwidget->ai_service_overlay_state == 2)
@@ -1755,7 +1764,8 @@ void gfx_widgets_frame(void *data)
             p_dispwidget->simple_widget_height,
             video_width,
             video_height,
-            p_dispwidget->backdrop_orig
+            p_dispwidget->backdrop_orig,
+	    NULL
             );
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,

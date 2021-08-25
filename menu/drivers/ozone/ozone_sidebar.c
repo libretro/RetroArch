@@ -234,7 +234,8 @@ void ozone_draw_sidebar(
             ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_top_gradient);
+            ozone->theme->sidebar_top_gradient,
+            NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -246,7 +247,8 @@ void ozone_draw_sidebar(
             sidebar_height,
             video_width,
             video_height,
-            ozone->theme->sidebar_background);
+            ozone->theme->sidebar_background,
+            NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -262,7 +264,8 @@ void ozone_draw_sidebar(
             + ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme->sidebar_bottom_gradient);
+            ozone->theme->sidebar_bottom_gradient,
+            NULL);
    }
 
    /* Tabs */
@@ -395,7 +398,8 @@ void ozone_draw_sidebar(
             ozone->dimensions.spacer_1px,
             video_width,
             video_height,
-            ozone->theme->entries_border);
+            ozone->theme->entries_border,
+            NULL);
 
       y += ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px;
 

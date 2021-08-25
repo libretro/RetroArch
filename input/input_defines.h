@@ -174,13 +174,6 @@ enum input_turbo_default_button
    INPUT_TURBO_DEFAULT_BUTTON_LAST
 };
 
-enum input_action
-{
-   INPUT_ACTION_NONE = 0,
-   INPUT_ACTION_AXIS_THRESHOLD,
-   INPUT_ACTION_MAX_USERS
-};
-
 /* Specialized _MOUSE that targets the full screen regardless of viewport.
  */
 #define RARCH_DEVICE_MOUSE_SCREEN      (RETRO_DEVICE_MOUSE | 0x10000)
