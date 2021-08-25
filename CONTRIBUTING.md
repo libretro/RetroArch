@@ -70,6 +70,8 @@ through the existing code to get a feel for the coding style. When submitting a 
 be asked to fix any coding style issues before submission. In other cases, there may be a follow-up
 pull request making the code style consistent.
 
+For full guidelines please see the [Coding Standards](https://docs.libretro.com/development/coding-standards/).
+
 Some non-obvious things to be aware of:
 
   - Code should be both C89 and ISO C++ compatible. This is a requirement for XBox 360 and MSVC to
