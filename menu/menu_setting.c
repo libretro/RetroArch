@@ -11193,7 +11193,7 @@ static bool setting_append_list(
                   &settings->floats.video_aspect_ratio,
                   MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
                   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-                  1.33,
+                  DEFAULT_ASPECT_RATIO,
                   "%.2f",
                   &group_info,
                   &subgroup_info,

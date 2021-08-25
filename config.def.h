@@ -66,7 +66,7 @@
 #elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #else
-#define DEFAULT_ASPECT_RATIO -1.0f
+#define DEFAULT_ASPECT_RATIO 1.3333f
 #endif
 
 #if defined(GEKKO)
