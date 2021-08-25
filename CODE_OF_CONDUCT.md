@@ -62,8 +62,6 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement at:
 
  * Via E-Mail to <libretro@gmail.com>.
- * Via Twitter to [libretro](https://twitter.com/libretro/).
- * Via [Discord](https://discord.gg/C4amCeV) to `@admin` or `@moderator`.
 
 All complaints will be reviewed and investigated promptly and fairly.
 
