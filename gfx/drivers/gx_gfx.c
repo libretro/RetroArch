@@ -534,7 +534,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    new_fb_pitch = new_fb_width * 2;
 
-   gfx_display_set_framebuf(new_fb_width, new_fb_height, new_fb_pitch);
+   gfx_display_set_fb_size(new_fb_width, new_fb_height, new_fb_pitch);
 
    GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
