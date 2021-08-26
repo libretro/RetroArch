@@ -693,6 +693,7 @@ typedef struct settings
       bool quick_menu_show_set_core_association;
       bool quick_menu_show_reset_core_association;
       bool quick_menu_show_options;
+      bool quick_menu_show_core_options_flush;
       bool quick_menu_show_controls;
       bool quick_menu_show_cheats;
       bool quick_menu_show_shaders;

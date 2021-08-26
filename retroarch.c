@@ -39611,7 +39611,6 @@ bool core_options_remove_override(bool game_specific)
       }
 
       coreopts->updated = true;
-      config_file_free(conf);
 
 #ifdef HAVE_CHEEVOS
       rcheevos_validate_config_settings();
@@ -39631,14 +39630,26 @@ bool core_options_remove_override(bool game_specific)
       runloop_state.game_options_active   = false;
       runloop_state.folder_options_active = false;
 
+      /* Update config file path/object stored in
+       * core option manager struct */
       strlcpy(coreopts->conf_path, new_options_path,
             sizeof(coreopts->conf_path));
+
+      if (conf)
+      {
+         config_file_free(coreopts->conf);
+         coreopts->conf = conf;
+         conf           = NULL;
+      }
    }
 
    runloop_msg_queue_push(
          msg_hash_to_str(MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY),
          1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   if (conf)
+      config_file_free(conf);
 
    return true;
 
@@ -39676,6 +39687,94 @@ void core_options_reset(void)
    runloop_msg_queue_push(
          msg_hash_to_str(MSG_CORE_OPTIONS_RESET),
          1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+void core_options_flush(void)
+{
+   core_option_manager_t *coreopts = runloop_state.core_options;
+   const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
+   const char *core_options_file   = NULL;
+   bool success                    = false;
+   char msg[256];
+
+   msg[0] = '\0';
+
+   /* If there are no core options, there
+    * is nothing to do */
+   if (!coreopts || (coreopts->size < 1))
+      return;
+
+   /* Check whether game/folder-specific options file
+    * is being used */
+   if (!string_is_empty(path_core_options))
+   {
+      config_file_t *conf_tmp = NULL;
+
+      /* Attempt to load existing file */
+      if (path_is_valid(path_core_options))
+         conf_tmp = config_file_new_from_path_to_string(path_core_options);
+
+      /* Create new file if required */
+      if (!conf_tmp)
+         conf_tmp = config_file_new_alloc();
+
+      if (conf_tmp)
+      {
+         core_option_manager_flush(
+               runloop_state.core_options,
+               conf_tmp);
+
+         success = config_file_write(conf_tmp, path_core_options, true);
+         config_file_free(conf_tmp);
+      }
+   }
+   else
+   {
+      /* We are using the 'default' core options file */
+      path_core_options = runloop_state.core_options->conf_path;
+
+      if (!string_is_empty(path_core_options))
+      {
+         core_option_manager_flush(
+               runloop_state.core_options,
+               runloop_state.core_options->conf);
+
+         /* We must *guarantee* that a file gets written
+          * to disk if any options differ from the current
+          * options file contents. Must therefore handle
+          * the case where the 'default' file does not
+          * exist (e.g. if it gets deleted manually while
+          * a core is running) */
+         if (!path_is_valid(path_core_options))
+            runloop_state.core_options->conf->modified = true;
+
+         success = config_file_write(runloop_state.core_options->conf,
+               path_core_options, true);
+      }
+   }
+
+   /* Get options file name for display purposes */
+   if (!string_is_empty(path_core_options))
+      core_options_file = path_basename(path_core_options);
+
+   if (string_is_empty(core_options_file))
+      core_options_file = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
+
+   /* Log result */
+   RARCH_LOG(success ?
+         "[Core Options]: Saved core options to \"%s\"\n" :
+               "[Core Options]: Failed to save core options to \"%s\"\n",
+            path_core_options ? path_core_options : "UNKNOWN");
+
+   snprintf(msg, sizeof(msg), "%s \"%s\"",
+         success ?
+               msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED) :
+                     msg_hash_to_str(MSG_CORE_OPTIONS_FLUSH_FAILED),
+         core_options_file);
+
+   runloop_msg_queue_push(
+         msg, 1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 

@@ -1323,6 +1323,10 @@ MSG_HASH(
    "core_options_reset"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH,
+   "core_options_flush"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
    "game_specific_options_create"
    )
@@ -4069,6 +4073,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
    "quick_menu_show_options"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "quick_menu_show_core_options_flush"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
