@@ -384,14 +384,14 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    /* Try Win32 first, this should work in AppData */
    switch (mode)
    {
-        case RETRO_VFS_FILE_ACCESS_READ:
-            desireAccess = GENERIC_READ;
-            break;
-        case RETRO_VFS_FILE_ACCESS_WRITE:
-            desireAccess = GENERIC_READ;
-            break;
         case RETRO_VFS_FILE_ACCESS_READ_WRITE:
             desireAccess = GENERIC_READ | GENERIC_WRITE;
+            break;
+        case RETRO_VFS_FILE_ACCESS_WRITE:
+            desireAccess = GENERIC_WRITE;
+            break;
+        case RETRO_VFS_FILE_ACCESS_READ:
+            desireAccess = GENERIC_READ;
             break;
    }
    if (mode == RETRO_VFS_FILE_ACCESS_READ)
@@ -401,7 +401,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    else
    {
       creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
-         OPEN_ALWAYS : CREATE_ALWAYS;
+          OPEN_ALWAYS : CREATE_ALWAYS;
    }
 
    file_handle = CreateFile2FromAppW(path_str->Data(), desireAccess, FILE_SHARE_READ, creationDisposition, NULL);
@@ -685,6 +685,7 @@ int retro_vfs_file_remove_impl(const char *path)
 
    /* Try Win32 first, this should work in AppData */
    result = DeleteFileFromAppW(path_wide);
+   free(path_wide);
    if (result)
       return 0;
 
@@ -850,6 +851,7 @@ int uwp_copy_acl(const wchar_t* source, const wchar_t* target)
 int uwp_mkdir_impl(std::experimental::filesystem::path dir)
 {
     //I feel like this should create the directory recursively but the existing implementation does not so this update won't
+    //I put in the work but I just commented out the stuff you would need
     WIN32_FILE_ATTRIBUTE_DATA lpFileInfo;
     bool parent_dir_exists = false;
 
@@ -872,7 +874,7 @@ int uwp_mkdir_impl(std::experimental::filesystem::path dir)
     {
         //try to create parent dir
         int success = uwp_mkdir_impl(dir.parent_path());
-        if (success != 0 || success != -2)
+        if (success != 0 && success != -2)
             return success;
     }
 
@@ -1089,9 +1091,11 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
                    *size = sz.QuadPart;
                }
            }
+           free(path_wide);
            return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
        }
    }
+   free(path_wide);
    return 0;
 }
 
