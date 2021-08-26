@@ -223,9 +223,9 @@ struct gfx_display
    bool framebuf_dirty;
 };
 
-void gfx_display_free(void);
+void gfx_display_free(gfx_display_t *p_disp);
 
-void gfx_display_init(void);
+void gfx_display_init(gfx_display_t *p_disp);
 
 void gfx_display_draw_cursor(
       gfx_display_t *p_disp,
@@ -258,11 +258,10 @@ void gfx_display_scissor_begin(
 
 void gfx_display_font_free(font_data_t *font);
 
-void gfx_display_set_width(unsigned width);
 void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
       size_t *fb_pitch);
-void gfx_display_set_height(unsigned height);
-void gfx_display_set_framebuffer_pitch(size_t pitch);
+
+void gfx_display_set_fb_size(unsigned width, unsigned height, size_t pitch);
 
 void gfx_display_set_msg_force(bool state);
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
