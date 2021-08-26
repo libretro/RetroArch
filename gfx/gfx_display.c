@@ -531,12 +531,8 @@ void gfx_display_draw_quad(
       void *data,
       unsigned video_width,
       unsigned video_height,
-      int x,
-      int y,
-      unsigned w,
-      unsigned h,
-      unsigned width,
-      unsigned height,
+      int x, int y, unsigned w, unsigned h,
+      unsigned width, unsigned height,
       float *color,
       uintptr_t *texture)
 {
@@ -1096,17 +1092,24 @@ void gfx_display_get_fb_size(unsigned *fb_width,
    *fb_pitch             = p_disp->framebuf_pitch;
 }
 
-/* Set the display framebuffer's dimensions. */
-void gfx_display_set_fb_size(
-      unsigned width,
-      unsigned height,
-      size_t pitch
-)
+/* Set the display framebuffer's width. */
+void gfx_display_set_width(unsigned width)
+{
+   gfx_display_t *p_disp  = disp_get_ptr();
+   p_disp->framebuf_width = width;
+}
+
+/* Set the display framebuffer's height. */
+void gfx_display_set_height(unsigned height)
 {
    gfx_display_t *p_disp   = disp_get_ptr();
-   p_disp->framebuf_width  = width;
    p_disp->framebuf_height = height;
-   p_disp->framebuf_pitch  = pitch;
+}
+
+void gfx_display_set_framebuffer_pitch(size_t pitch)
+{
+   gfx_display_t *p_disp   = disp_get_ptr();
+   p_disp->framebuf_pitch = pitch;
 }
 
 void gfx_display_set_msg_force(bool state)
@@ -1271,8 +1274,9 @@ void gfx_display_init_white_texture(uintptr_t white_texture)
          TEXTURE_FILTER_NEAREST, &gfx_display_white_texture);
 }
 
-void gfx_display_free(gfx_display_t *p_disp)
+void gfx_display_free(void)
 {
+   gfx_display_t           *p_disp   = disp_get_ptr();
    video_coord_array_free(&p_disp->dispca);
 
    p_disp->msg_force           = false;
@@ -1284,8 +1288,9 @@ void gfx_display_free(gfx_display_t *p_disp)
    p_disp->dispctx             = NULL;
 }
 
-void gfx_display_init(gfx_display_t *p_disp)
+void gfx_display_init(void)
 {
+   gfx_display_t       *p_disp   = disp_get_ptr();
    video_coord_array_t *p_dispca = &p_disp->dispca;
 
    p_disp->has_windowed          = video_driver_has_windowed();

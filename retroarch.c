@@ -4787,7 +4787,7 @@ static bool menu_driver_init_internal(
             settings))
       return false;
 
-   gfx_display_init(&p_rarch->dispgfx);
+   gfx_display_init();
 
    /* TODO/FIXME - can we get rid of this? Is this needed? */
    configuration_set_string(settings,
@@ -5395,7 +5395,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
 
             gfx_animation_deinit(&p_rarch->anim);
-            gfx_display_free(&p_rarch->dispgfx);
+            gfx_display_free();
 
             menu_entries_settings_deinit(menu_st);
             menu_entries_list_deinit(p_rarch->menu_driver_ctx, menu_st);

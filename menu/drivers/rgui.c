@@ -5695,10 +5695,9 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui,
       return false;
    
    /* Configure 'menu display' settings */
-   gfx_display_set_fb_size(
-         rgui->frame_buf.width,
-         rgui->frame_buf.height,
-         rgui->frame_buf.width * sizeof(uint16_t));
+   gfx_display_set_width(rgui->frame_buf.width);
+   gfx_display_set_height(rgui->frame_buf.height);
+   gfx_display_set_framebuffer_pitch(rgui->frame_buf.width * sizeof(uint16_t));
    
    /* Determine terminal layout */
    rgui->term_layout.start_x  = (3 * 5) + 1;

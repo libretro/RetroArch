@@ -3366,6 +3366,13 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
+   /* TODO/FIXME - we don't use framebuffer at all
+    * for XMB, we should refactor this dependency
+    * away. */
+
+   gfx_display_set_width(width);
+   gfx_display_set_height(height);
+
    gfx_display_init_white_texture(gfx_display_white_texture);
 
    file_list_initialize(&stripes->horizontal_list);
