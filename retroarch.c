@@ -31930,7 +31930,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_slowmotion         = runloop_state.slowmotion;
 
    video_info->input_driver_nonblock_state   = input_driver_st ?
-input_driver_st->nonblocking_flag : false;
+      input_driver_st->nonblocking_flag : false;
    video_info->input_driver_grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
    video_info->disp_userdata                 = &p_rarch->dispgfx;
 
@@ -32878,7 +32878,7 @@ void driver_set_nonblock_state(void)
    input_driver_state_t 
       *input_driver_st         = &p_rarch->input_driver_state;
    bool                 enable = input_driver_st ?
-input_driver_st->nonblocking_flag : false;
+      input_driver_st->nonblocking_flag : false;
    settings_t       *settings  = p_rarch->configuration_settings;
    bool audio_sync             = settings->bools.audio_sync;
    bool video_vsync            = settings->bools.video_vsync;
@@ -33107,7 +33107,7 @@ static void drivers_init(struct rarch_state *p_rarch,
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
    {
       /* Keep non-throttled state as good as possible. */
-      if (input_driver_st->nonblocking_flag)
+      if (input_driver_st && input_driver_st->nonblocking_flag)
          driver_set_nonblock_state();
    }
 
