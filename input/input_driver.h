@@ -345,12 +345,6 @@ float input_driver_get_sensor(
          input_driver_state_t *driver_state,
          unsigned port, bool sensors_enable, unsigned id);
 
-
-bool input_driver_get_nonblocking(input_driver_state_t *driver_state);
-
-void input_driver_set_nonblocking(input_driver_state_t *driver_state,
-                                 bool new_value);
-
 /**
  * Get an enumerated list of all joypad driver names
  *
