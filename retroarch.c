@@ -31926,14 +31926,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_wallpaper_opacity      = 0.0f;
 #endif
 
-   video_info->runloop_is_paused           = runloop_state.paused;
-   video_info->runloop_is_slowmotion       = runloop_state.slowmotion;
+   video_info->runloop_is_paused             = runloop_state.paused;
+   video_info->runloop_is_slowmotion         = runloop_state.slowmotion;
 
-   video_info->input_driver_nonblock_state   = input_driver_st->nonblocking_flag;
+   video_info->input_driver_nonblock_state   = input_driver_st ?
+input_driver_st->nonblocking_flag : false;
    video_info->input_driver_grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
    video_info->disp_userdata                 = &p_rarch->dispgfx;
 
-   video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
+   video_info->userdata                      = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
 
 #ifdef HAVE_THREADS
    VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
@@ -32872,9 +32873,12 @@ static void driver_adjust_system_rates(
  **/
 void driver_set_nonblock_state(void)
 {
-   struct rarch_state *p_rarch            = &rarch_st;
-   input_driver_state_t *input_driver_st  = &p_rarch->input_driver_state;
-   bool                 enable = input_driver_st->nonblocking_flag;
+   struct rarch_state 
+      *p_rarch                 = &rarch_st;
+   input_driver_state_t 
+      *input_driver_st         = &p_rarch->input_driver_state;
+   bool                 enable = input_driver_st ?
+input_driver_st->nonblocking_flag : false;
    settings_t       *settings  = p_rarch->configuration_settings;
    bool audio_sync             = settings->bools.audio_sync;
    bool video_vsync            = settings->bools.video_vsync;
@@ -33267,7 +33271,7 @@ static void retroarch_deinit_drivers(
    p_rarch->input_driver_block_libretro_input       = false;
 
    if (input_driver_st)
-      input_driver_st->nonblocking_flag = false;
+      input_driver_st->nonblocking_flag             = false;
 
    p_rarch->input_driver_flushing_input             = 0;
    memset(&p_rarch->input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
@@ -37150,13 +37154,13 @@ static void runloop_apply_fastmotion_override(
 
       if (p_runloop->fastmotion)
       {
-	 if (input_driver_st)
-	    input_driver_st->nonblocking_flag = true;
+         if (input_driver_st)
+            input_driver_st->nonblocking_flag = true;
       }
       else
       {
-	 if (input_driver_st)
-	    input_driver_st->nonblocking_flag = false;
+         if (input_driver_st)
+            input_driver_st->nonblocking_flag = false;
          p_rarch->fastforward_after_frames    = 1;
       }
 
@@ -38138,13 +38142,13 @@ static enum runloop_state runloop_check_state(
       {
          if (input_driver_st->nonblocking_flag)
          {
-	    input_driver_st->nonblocking_flag = false;
+            input_driver_st->nonblocking_flag = false;
             runloop_state.fastmotion          = false;
             p_rarch->fastforward_after_frames = 1;
          }
          else
          {
-	    input_driver_st->nonblocking_flag = true;
+            input_driver_st->nonblocking_flag = true;
             runloop_state.fastmotion          = true;
          }
 
@@ -38652,7 +38656,7 @@ int runloop_iterate(void)
       }
    }
 
-   if ((video_frame_delay > 0) && !input_driver_st->nonblocking_flag)
+   if ((video_frame_delay > 0) && input_driver_st && !input_driver_st->nonblocking_flag)
       retro_sleep(video_frame_delay);
 
    {
