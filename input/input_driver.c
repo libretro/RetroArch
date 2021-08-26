@@ -357,34 +357,13 @@ float input_driver_get_sensor(
       return 0.0f;
 
    current_driver = driver_state->current_driver;
-   current_data = driver_state->current_data;
+   current_data   = driver_state->current_data;
 
    if (sensors_enable && current_driver->get_sensor_input)
       return current_driver->get_sensor_input(current_data, port, id);
 
    return 0.0f;
 }
-
-/**************************************/
-
-bool input_driver_get_nonblocking(input_driver_state_t *driver_state)
-{
-   if (!driver_state)
-      return false;
-
-   return driver_state->nonblocking_flag;
-}
-
-void input_driver_set_nonblocking(input_driver_state_t *driver_state,
-                                 bool new_value)
-{
-   if (!driver_state)
-      return;
-
-   driver_state->nonblocking_flag = new_value;
-}
-
-/**************************************/
 
 const input_device_driver_t *input_joypad_init_driver(
       const char *ident, void *data)
