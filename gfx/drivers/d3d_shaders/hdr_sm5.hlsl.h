@@ -72,7 +72,6 @@ SRC(
    }
 
 #define USE_INVERSE_REINHARD  1
-#define LERP_EXPANDED_2020    0
 
    float4 Hdr(float4 sdr)
    {
@@ -109,15 +108,7 @@ SRC(
 
       if(global.expandGamut > 0.0f)
       {
-#if LERP_EXPANDED_2020
-         float3 sdrExpanded = mul( kExpanded709to2020, hdr);
-         float3 hdrExpanded = mul( kP3to2020, hdr);
-
-         float luminance = max(max(hdr.x, hdr.y), hdr.z);
-         rec2020 = lerp(sdrExpanded, hdrExpanded, saturate(luminance - 1.0f));
-#else
          rec2020 = mul( kExpanded709to2020, hdr);
-#endif // LERP_EXPANDED_2020
       }
 
       float3 linearColour  = rec2020 * (global.paperWhiteNits / kMaxNitsFor2084);
