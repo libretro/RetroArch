@@ -66,7 +66,7 @@
 #elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #else
-#define DEFAULT_ASPECT_RATIO -1.0f
+#define DEFAULT_ASPECT_RATIO 1.3333f
 #endif
 
 #if defined(GEKKO)
@@ -611,6 +611,9 @@ static const bool quick_menu_show_start_streaming             = true;
 static const bool quick_menu_show_set_core_association        = true;
 static const bool quick_menu_show_reset_core_association      = true;
 static const bool quick_menu_show_options                     = true;
+
+#define DEFAULT_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH false
+
 static const bool quick_menu_show_controls                    = true;
 static const bool quick_menu_show_cheats                      = true;
 static const bool quick_menu_show_shaders                     = true;

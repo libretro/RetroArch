@@ -310,11 +310,12 @@ static bool win32_display_server_set_resolution(void *data,
 static int resolution_list_qsort_func(
       const video_display_config_t *a, const video_display_config_t *b)
 {
+   char str_a[64];
+   char str_b[64];
+
    if (!a || !b)
       return 0;
 
-   char str_a[64];
-   char str_b[64];
    snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
          a->width,
          a->height,
