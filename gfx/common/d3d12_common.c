@@ -590,6 +590,12 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
    }
    else
    {
+      settings_t*    settings       = config_get_ptr();
+      settings->modified               = true;
+      settings->bools.video_hdr_enable = false;
+
+      d3d12->hdr.enable = false;
+      
       video_driver_unset_hdr_support();
    }
 
