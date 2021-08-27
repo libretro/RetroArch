@@ -534,6 +534,9 @@ typedef struct settings
       bool video_force_resolution;
       bool video_hdr_enable;
       bool video_hdr_expand_gamut;
+<<<<<<< HEAD
+>>>>>>> Added HDR support
+=======
 >>>>>>> Added HDR support
 
       /* Accessibility */
