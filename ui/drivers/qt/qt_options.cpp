@@ -1238,9 +1238,6 @@ QWidget *VideoPage::widget()
    SettingsGroup *hdrGroup             = new SettingsGroup("HDR");
    QHBoxLayout *hdrLayout              = new QHBoxLayout;
 
-   SettingsGroup *hdrGroup             = new SettingsGroup("HDR");
-   QHBoxLayout *hdrLayout              = new QHBoxLayout;
-
    SettingsGroup *syncGroup            = new SettingsGroup("Synchronization");
    CheckableSettingsGroup *vSyncGroup  = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
 
@@ -1312,12 +1309,6 @@ QWidget *VideoPage::widget()
    windowedGroup->addRow(savePosGroup);
 
    windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
-
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
 
    hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
    hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
