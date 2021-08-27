@@ -22037,7 +22037,7 @@ static void input_driver_poll(void)
             p_rarch->overlay_ptr,
             input_overlay_opacity,
             input_analog_dpad_mode,
-            settings->floats.input_analog_deadzone);
+            settings->floats.input_axis_threshold);
    }
 #endif
 
