@@ -1156,11 +1156,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->hw.iface.D3DCompile        = D3DCompile;
    }
 
-#ifdef __WINRT__
-   DXGICreateFactory2(&d3d11->factory);
-#else
    DXGICreateFactory(&d3d11->factory);
-#endif
 
    {
       int         i = 0;
@@ -1957,6 +1953,10 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    d3d11_get_hw_render_interface,
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,

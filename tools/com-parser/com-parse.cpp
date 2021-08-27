@@ -173,7 +173,7 @@ vector<string> derived_types_list =
    "IDXGIFactory1",
    "IDXGIAdapter1",
    "IDXGISurface1",
-   "IDXGISwapChain3",
+   "IDXGISwapChain4",
    "IDXGIOutput",
    "IDXGIDevice",
 };

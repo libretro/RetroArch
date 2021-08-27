@@ -366,6 +366,34 @@ static bool video_thread_handle_packet(
          /* Never reply on no command. Possible deadlock if
           * thread sends command right after frame update. */
          break;
+         
+      case CMD_POKE_SET_HDR_MAX_NITS:
+         if (thr->poke && thr->poke->set_hdr_max_nits)
+            thr->poke->set_hdr_max_nits(thr->driver_data,
+                  pkt.data.hdr.max_nits);
+         video_thread_reply(thr, &pkt);
+         break;
+         
+      case CMD_POKE_SET_HDR_PAPER_WHITE_NITS:
+         if (thr->poke && thr->poke->set_hdr_paper_white_nits)
+            thr->poke->set_hdr_paper_white_nits(thr->driver_data,
+                  pkt.data.hdr.paper_white_nits);
+         video_thread_reply(thr, &pkt);
+         break;
+         
+      case CMD_POKE_SET_HDR_CONTRAST:
+         if (thr->poke && thr->poke->set_hdr_contrast)
+            thr->poke->set_hdr_contrast(thr->driver_data,
+                  pkt.data.hdr.contrast);
+         video_thread_reply(thr, &pkt);
+         break;
+         
+      case CMD_POKE_SET_HDR_EXPAND_GAMUT:
+         if (thr->poke && thr->poke->set_hdr_expand_gamut)
+            thr->poke->set_hdr_expand_gamut(thr->driver_data,
+                  pkt.data.hdr.expand_gamut);
+         video_thread_reply(thr, &pkt);
+         break;
       default:
          video_thread_reply(thr, &pkt);
          break;
@@ -931,6 +959,58 @@ static void thread_set_filtering(void *data, unsigned idx, bool smooth, bool ctx
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 }
 
+static void thread_set_hdr_max_nits(void *data, float max_nits)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+   pkt.type                = CMD_POKE_SET_HDR_MAX_NITS;
+   pkt.data.hdr.max_nits   = max_nits;
+
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+}
+
+static void thread_set_hdr_paper_white_nits(void *data, float paper_white_nits)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+   pkt.type                         = CMD_POKE_SET_HDR_PAPER_WHITE_NITS;
+   pkt.data.hdr.paper_white_nits    = paper_white_nits;
+
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+}
+
+static void thread_set_hdr_contrast(void *data, float contrast)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+   pkt.type                = CMD_POKE_SET_HDR_CONTRAST;
+   pkt.data.hdr.contrast   = contrast;
+
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+}
+
+static void thread_set_hdr_expand_gamut(void *data, bool expand_gamut)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+   pkt.type                   = CMD_POKE_SET_HDR_EXPAND_GAMUT;
+   pkt.data.hdr.expand_gamut  = expand_gamut;
+
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+}
+
 static void thread_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -1132,7 +1212,11 @@ static const video_poke_interface_t thread_poke = {
 
    thread_get_current_shader,
    NULL,                      /* get_current_software_framebuffer */
-   NULL                       /* get_hw_render_interface */
+   NULL,                      /* get_hw_render_interface */
+   thread_set_hdr_max_nits,
+   thread_set_hdr_paper_white_nits,
+   thread_set_hdr_contrast,
+   thread_set_hdr_expand_gamut
 };
 
 static void video_thread_get_poke_interface(

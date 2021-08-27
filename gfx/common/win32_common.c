@@ -932,6 +932,10 @@ static LRESULT CALLBACK wnd_proc_common(
          /* fall-through */
       case WM_MOVE:
          win32_save_position();
+/*#if !defined(_XBOX)
+         if(d3d12)
+            d3d12_check_display_hdr_support(d3d12, hwnd);
+#endif*/
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */

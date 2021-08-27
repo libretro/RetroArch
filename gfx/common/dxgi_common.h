@@ -233,7 +233,7 @@
 #endif
 
 #include <assert.h>
-#include <dxgi1_5.h>
+#include <dxgi1_6.h>
 
 #ifndef countof
 #define countof(a) (sizeof(a) / sizeof(*a))
@@ -281,6 +281,7 @@ typedef IDXGIResource*          DXGIResource;
 typedef IDXGIKeyedMutex*        DXGIKeyedMutex;
 typedef IDXGISurface1*          DXGISurface;
 typedef IDXGIOutput*            DXGIOutput;
+typedef IDXGIOutput6*           DXGIOutput6;
 typedef IDXGIDevice*            DXGIDevice;
 typedef IDXGIFactory1*          DXGIFactory;
 #ifdef __WINRT__
@@ -292,7 +293,7 @@ typedef IDXGIOutputDuplication* DXGIOutputDuplication;
 typedef IDXGIDecodeSwapChain*   DXGIDecodeSwapChain;
 typedef IDXGIFactoryMedia*      DXGIFactoryMedia;
 typedef IDXGISwapChainMedia*    DXGISwapChainMedia;
-typedef IDXGISwapChain3*        DXGISwapChain;
+typedef IDXGISwapChain4*        DXGISwapChain;
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE ULONG DXGIReleaseDeviceSubObject(DXGIDeviceSubObject device_sub_object)
@@ -391,6 +392,14 @@ static INLINE HRESULT DXGISetDisplaySurface(DXGIOutput output, DXGISurface scano
 static INLINE HRESULT DXGIGetDisplaySurfaceData(DXGIOutput output, DXGISurface destination)
 {
    return output->lpVtbl->GetDisplaySurfaceData(output, (IDXGISurface*)destination);
+}
+static INLINE HRESULT DXGIGetOutputDesc(DXGIOutput output, DXGI_OUTPUT_DESC* desc)
+{
+   return output->lpVtbl->GetDesc(output, desc);
+}
+static INLINE HRESULT DXGIGetOutputDesc1(DXGIOutput6 output, DXGI_OUTPUT_DESC1* desc)
+{
+   return output->lpVtbl->GetDesc1(output, desc);
 }
 static INLINE ULONG DXGIReleaseDevice(DXGIDevice device) { return device->lpVtbl->Release(device); }
 static INLINE HRESULT DXGICreateSurface(
@@ -769,10 +778,13 @@ static INLINE HRESULT DXGICheckColorSpaceSupport(
 {
    return swap_chain->lpVtbl->CheckColorSpaceSupport(swap_chain, color_space, color_space_support);
 }
-static INLINE HRESULT
-DXGISetColorSpace1(DXGISwapChain swap_chain, DXGI_COLOR_SPACE_TYPE color_space)
+static INLINE HRESULT DXGISetColorSpace1(DXGISwapChain swap_chain, DXGI_COLOR_SPACE_TYPE color_space)
 {
    return swap_chain->lpVtbl->SetColorSpace1(swap_chain, color_space);
+}
+static INLINE HRESULT DXGISetHDRMetaData(DXGISwapChain swap_chain, DXGI_HDR_METADATA_TYPE type, UINT size, void *metaData)
+{
+   return swap_chain->lpVtbl->SetHDRMetaData(swap_chain, type, size, metaData);
 }
 #endif
 /* end of auto-generated */

@@ -318,6 +318,9 @@ typedef struct settings
       float video_msg_color_g;
       float video_msg_color_b;
       float video_msg_bgcolor_opacity;
+      float video_hdr_max_nits;
+      float video_hdr_paper_white_nits;
+      float video_hdr_contrast;
 
       float menu_scale_factor;
       float menu_widget_scale_factor;
@@ -526,6 +529,12 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif
+<<<<<<< HEAD
+=======
+      bool video_force_resolution;
+      bool video_hdr_enable;
+      bool video_hdr_expand_gamut;
+>>>>>>> Added HDR support
 
       /* Accessibility */
       bool accessibility_enable;
