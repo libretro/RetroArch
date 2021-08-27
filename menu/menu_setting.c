@@ -340,7 +340,53 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
       const char        *label = menu_input_dialog_get_label_setting_buffer();
       rarch_setting_t *setting = menu_setting_find(label);
 
-      setting_set_with_string_representation(setting, str);
+      const char *ptr          = NULL;
+      unsigned value           = 0;
+      int chars_read           = 0;
+      int ret                  = 0;
+      bool minus_found         = false;
+
+      /* Ensure that input string contains a valid
+       * unsigned value
+       * Note: sscanf() will accept negative number
+       * strings here and overflow, so have to check
+       * for minus characters first... */
+      for (ptr = str; *ptr != '\0'; ptr++)
+      {
+         if (*ptr == '-')
+         {
+            minus_found = true;
+            break;
+         }
+      }
+
+      if (!minus_found)
+         ret = sscanf(str, "%u %n", &value, &chars_read);
+
+      if ((ret == 1) && !str[chars_read])
+         setting_set_with_string_representation(setting, str);
+   }
+
+   menu_input_dialog_end();
+}
+
+static void menu_input_st_int_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      int value                = 0;
+      int chars_read           = 0;
+      int ret                  = 0;
+
+      /* Ensure that input string contains a valid
+       * unsigned value */
+      ret = sscanf(str, "%d %n", &value, &chars_read);
+
+      if ((ret == 1) && !str[chars_read])
+         setting_set_with_string_representation(setting, str);
    }
 
    menu_input_dialog_end();
@@ -406,9 +452,9 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
       const char        *label = menu_input_dialog_get_label_setting_buffer();
       rarch_setting_t *setting = menu_setting_find(label);
 
-      float value;
-      int chars_read;
-      int ret;
+      float value              = 0.0f;
+      int chars_read           = 0;
+      int ret                  = 0;
 
       /* Ensure that input string contains a valid
        * floating point value */
@@ -459,6 +505,9 @@ static int setting_generic_action_ok_linefeed(
       case ST_UINT:
          cb = menu_input_st_uint_cb;
          break;
+      case ST_INT:
+         cb = menu_input_st_int_cb;
+         break;
       case ST_HEX:
          cb = menu_input_st_hex_cb;
          break;
@@ -500,6 +549,9 @@ static void setting_add_special_callbacks(
       {
          case ST_SIZE:
          case ST_UINT:
+            (*list)[idx].action_cancel = NULL;
+            break;
+         case ST_INT:
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_HEX:
@@ -5560,8 +5612,8 @@ static int setting_uint_action_left_custom_viewport_width(
 
    video_driver_get_viewport_info(&vp);
 
-   if (custom->width <= 1)
-      custom->width = 1;
+   if (custom->width <= setting->min)
+      custom->width = setting->min;
    else if (settings->bools.video_scale_integer)
    {
       unsigned int rotation = retroarch_get_rotation();
@@ -5579,8 +5631,8 @@ static int setting_uint_action_left_custom_viewport_width(
    else
       custom->width -= 1;
 
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
+   /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
+    * is updated in general_write_handler() */
 
    return 0;
 }
@@ -5600,8 +5652,8 @@ static int setting_uint_action_left_custom_viewport_height(
 
    video_driver_get_viewport_info(&vp);
 
-   if (custom->height <= 1)
-      custom->height = 1;
+   if (custom->height <= setting->min)
+      custom->height = setting->min;
    else if (settings->bools.video_scale_integer)
    {
       unsigned int rotation = retroarch_get_rotation();
@@ -5619,8 +5671,8 @@ static int setting_uint_action_left_custom_viewport_height(
    else
       custom->height -= 1;
 
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
+   /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
+    * is updated in general_write_handler() */
 
    return 0;
 }
@@ -5843,7 +5895,9 @@ static int setting_uint_action_right_custom_viewport_width(
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->bools.video_scale_integer)
+   if (custom->width >= setting->max)
+      custom->width = setting->max;
+   else if (settings->bools.video_scale_integer)
    {
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
@@ -5854,8 +5908,8 @@ static int setting_uint_action_right_custom_viewport_width(
    else
       custom->width += 1;
 
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
+   /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
+    * is updated in general_write_handler() */
 
    return 0;
 }
@@ -5875,7 +5929,9 @@ static int setting_uint_action_right_custom_viewport_height(
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->bools.video_scale_integer)
+   if (custom->height >= setting->max)
+      custom->height = setting->max;
+   else if (settings->bools.video_scale_integer)
    {
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
@@ -5886,8 +5942,8 @@ static int setting_uint_action_right_custom_viewport_height(
    else
       custom->height += 1;
 
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
+   /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
+    * is updated in general_write_handler() */
 
    return 0;
 }
@@ -6989,8 +7045,8 @@ static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
    else
       custom->width = vp.full_width - custom->x;
 
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
+   /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
+    * is updated in general_write_handler() */
 
    return 0;
 }
@@ -7024,8 +7080,8 @@ static int setting_action_start_custom_viewport_height(rarch_setting_t *setting)
    else
       custom->height = vp.full_height - custom->y;
 
-   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-      (float)custom->width / custom->height;
+   /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
+    * is updated in general_write_handler() */
 
    return 0;
 }
@@ -8074,6 +8130,21 @@ static void general_write_handler(rarch_setting_t *setting)
                         1, 100, true,
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
+         }
+         break;
+      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH:
+      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
+         {
+            /* Whenever custom viewport dimensions are
+             * changed, ASPECT_RATIO_CUSTOM must be
+             * recalculated */
+            video_viewport_t *custom_vp = video_viewport_get_custom();
+            float default_aspect        = aspectratio_lut[ASPECT_RATIO_CORE].value;
+
+            aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+                  (custom_vp && custom_vp->width && custom_vp->height) ?
+                     ((float)custom_vp->width / (float)custom_vp->height) :
+                           default_aspect;
          }
          break;
       default:
@@ -11219,10 +11290,8 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, -9999, 9999, 1, true, true);
             (*list)[list_info->index - 1].offset_by = -9999;
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
@@ -11239,10 +11308,8 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, -9999, 9999, 1, true, true);
             (*list)[list_info->index - 1].offset_by = -9999;
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
@@ -11272,16 +11339,14 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+            menu_settings_list_current_add_range(list, list_info, 1, 9999, 1, true, true);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_custom_viewport_width;
-            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+                  &setting_get_string_representation_uint_custom_viewport_width;
             (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_width;
-            (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_width;
-            (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_width;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_custom_viewport_width;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_custom_viewport_width;
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
@@ -11296,16 +11361,14 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+            menu_settings_list_current_add_range(list, list_info, 1, 9999, 1, true, true);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_custom_viewport_height;
-            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+                  &setting_get_string_representation_uint_custom_viewport_height;
             (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_height;
-            (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_height;
-            (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_height;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-                  list,
-                  list_info,
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_custom_viewport_height;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_custom_viewport_height;
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
