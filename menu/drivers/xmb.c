@@ -576,20 +576,15 @@ float gradient_midgar[16] = {
 
 static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
 {
-   float iy = xmb->icon_spacing_vertical;
-
    if (i < (int)current)
+   {
       if (xmb->depth > 1)
-         iy *= (i - (int)current + xmb->above_subitem_offset);
-      else
-         iy *= (i - (int)current + xmb->above_item_offset);
-   else
-      iy    *= (i - (int)current + xmb->under_item_offset);
-
-   if (i == (int)current)
-      iy = xmb->icon_spacing_vertical * xmb->active_item_factor;
-
-   return iy;
+         return xmb->icon_spacing_vertical * (i - (int)current + xmb->above_subitem_offset);
+      return xmb->icon_spacing_vertical * (i - (int)current + xmb->above_item_offset);
+   }
+   else if (i == (int)current)
+      return xmb->icon_spacing_vertical * xmb->active_item_factor;
+   return xmb->icon_spacing_vertical * (i - (int)current + xmb->under_item_offset);
 }
 
 
@@ -811,23 +806,21 @@ static size_t xmb_list_get_size(void *data, enum menu_list_type type)
 static void *xmb_list_get_entry(void *data,
       enum menu_list_type type, unsigned i)
 {
-   size_t list_size        = 0;
-   xmb_handle_t *xmb       = (xmb_handle_t*)data;
-
    switch (type)
    {
       case MENU_LIST_PLAIN:
+         if (i < menu_entries_get_stack_size(0))
          {
             file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
-            list_size  = menu_entries_get_stack_size(0);
-            if (i < list_size)
-               return (void*)&menu_stack->list[i];
+            return (void*)&menu_stack->list[i];
          }
          break;
       case MENU_LIST_HORIZONTAL:
-         list_size = xmb->horizontal_list.size;
-         if (i < list_size)
-            return (void*)&xmb->horizontal_list.list[i];
+         {
+            xmb_handle_t *xmb       = (xmb_handle_t*)data;
+            if (i < xmb->horizontal_list.size)
+               return (void*)&xmb->horizontal_list.list[i];
+         }
          break;
       default:
          break;
@@ -872,14 +865,15 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
+#if defined(VITA) || defined(WIIU)
+   draw.width           = icon_size * scale_factor;
+   draw.height          = icon_size * scale_factor;
+#else
    draw.width           = icon_size;
    draw.height          = icon_size;
+#endif
    draw.rotation        = rotation;
    draw.scale_factor    = scale_factor;
-#if defined(VITA) || defined(WIIU)
-   draw.width          *= scale_factor;
-   draw.height         *= scale_factor;
-#endif
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
    draw.texture         = texture;
@@ -891,32 +885,40 @@ static void xmb_draw_icon(
       gfx_display_set_alpha(xmb_coord_shadow, color[3] * 0.35f);
 
       coords.color      = xmb_coord_shadow;
-      draw.x            = x + shadow_offset;
-      draw.y            = height - y - shadow_offset;
 
 #if defined(VITA) || defined(WIIU)
       if (scale_factor < 1)
       {
-         draw.x         = draw.x + (icon_size-draw.width)/2;
-         draw.y         = draw.y + (icon_size-draw.width)/2;
+         int offset     = icon_size - draw.width;
+         draw.x         = (x + shadow_offset)          + (offset / 2);
+         draw.y         = (height - y - shadow_offset) + (offset / 2);
       }
+      else
 #endif
+      {
+         draw.x         = x + shadow_offset;
+         draw.y         = height - y - shadow_offset;
+      }
       if (draw.height > 0 && draw.width > 0)
          if (dispctx && dispctx->draw)
             dispctx->draw(&draw, userdata, video_width, video_height);
    }
 
    coords.color         = (const float*)color;
-   draw.x               = x;
-   draw.y               = height - y;
 
 #if defined(VITA) || defined(WIIU)
    if (scale_factor < 1)
    {
-      draw.x            = draw.x + (icon_size-draw.width)/2;
-      draw.y            = draw.y + (icon_size-draw.width)/2;
+      int offset        = icon_size - draw.width;
+      draw.x            = (x)          + (offset / 2);
+      draw.y            = (height - y) + (offset / 2);
    }
+   else
 #endif
+   {
+      draw.x            = x;
+      draw.y            = height - y;
+   }
    if (draw.height > 0 && draw.width > 0)
       if (dispctx && dispctx->draw)
          dispctx->draw(&draw, userdata, video_width, video_height);
