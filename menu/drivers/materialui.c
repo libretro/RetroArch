@@ -3866,56 +3866,6 @@ enum materialui_entry_value_type materialui_get_entry_value_type(
    return value_type;
 }
 
-static void materialui_render_switch_icon(
-      materialui_handle_t *mui,
-      materialui_node_t *node,
-      gfx_display_t *p_disp,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      float y,
-      int x_offset,
-      bool on)
-{
-   unsigned switch_texture_index = on ?
-         MUI_TEXTURE_SWITCH_ON : MUI_TEXTURE_SWITCH_OFF;
-   float *bg_color               = on ?
-         mui->colors.list_switch_on_background : mui->colors.list_switch_off_background;
-   float *switch_color           = on ?
-         mui->colors.list_switch_on : mui->colors.list_switch_off;
-   int x                         = x_offset + node->x + node->entry_width -
-         (int)mui->landscape_optimization.entry_margin -
-         (int)mui->margin - (int)mui->icon_size;
-
-   /* Draw background */
-   if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
-      materialui_draw_icon(
-            userdata, p_disp,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->textures.list[MUI_TEXTURE_SWITCH_BG],
-            x,
-            y,
-            0,
-            1,
-            bg_color);
-
-   /* Draw switch */
-   if (mui->textures.list[switch_texture_index])
-      materialui_draw_icon(
-            userdata, p_disp,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->textures.list[switch_texture_index],
-            x,
-            y,
-            0,
-            1,
-            switch_color);
-}
-
 /* Used for standard, non-playlist entries
  * > MUI_LIST_VIEW_DEFAULT */
 static void materialui_render_menu_entry_default(
@@ -4163,16 +4113,53 @@ static void materialui_render_menu_entry_default(
          }
          break;
       case MUI_ENTRY_VALUE_SWITCH_ON:
-         {
-            materialui_render_switch_icon(mui, node, p_disp, userdata,
-                  video_width, video_height, value_icon_y, x_offset, true);
-            entry_value_width = mui->icon_size;
-         }
-         break;
       case MUI_ENTRY_VALUE_SWITCH_OFF:
          {
-            materialui_render_switch_icon(mui, node, p_disp, userdata,
-                  video_width, video_height, value_icon_y, x_offset, false);
+            bool on                       = (entry_value_type == MUI_ENTRY_VALUE_SWITCH_ON);
+            float y                       = value_icon_y;
+            unsigned switch_texture_index = MUI_TEXTURE_SWITCH_OFF;
+            float *bg_color               =
+mui->colors.list_switch_off_background;
+            float *switch_color           = mui->colors.list_switch_off;
+            int x                         = x_offset + node->x + node->entry_width -
+               (int)mui->landscape_optimization.entry_margin -
+               (int)mui->margin - (int)mui->icon_size;
+
+            if (on)
+            {
+               switch_texture_index          = MUI_TEXTURE_SWITCH_ON;
+               bg_color                      =
+                  mui->colors.list_switch_on_background;
+               switch_color                  = mui->colors.list_switch_on;
+            }
+
+            /* Draw background */
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
+               materialui_draw_icon(
+                     userdata, p_disp,
+                     video_width,
+                     video_height,
+                     mui->icon_size,
+                     mui->textures.list[MUI_TEXTURE_SWITCH_BG],
+                     x,
+                     y,
+                     0,
+                     1,
+                     bg_color);
+
+            /* Draw switch */
+            if (mui->textures.list[switch_texture_index])
+               materialui_draw_icon(
+                     userdata, p_disp,
+                     video_width,
+                     video_height,
+                     mui->icon_size,
+                     mui->textures.list[switch_texture_index],
+                     x,
+                     y,
+                     0,
+                     1,
+                     switch_color);
             entry_value_width = mui->icon_size;
          }
          break;
