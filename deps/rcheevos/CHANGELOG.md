@@ -1,3 +1,24 @@
+# v10.2.0
+
+* add RC_MEMSIZE_16_BITS_BE, RC_MEMSIZE_24_BITS_BE, and RC_MEMSIZE_32_BITS_BE
+* add secondary flag for RC_CONDITION_MEASURED that tells the UI when to show progress as raw vs. as a percentage
+* add rapi calls for fetch_leaderboard_info, fetch_achievement_info and fetch_game_list
+* add hash support for RC_CONSOLE_PSP
+* add RCHEEVOS_URL_SSL compile flag to use https in rurl functions
+* add space to "PC Engine" label
+* update RC_CONSOLE_INTELLIVISION memory map to acknowledge non-8-bit addresses
+* standardize to z64 format when hashing RC_CONSOLE_N64
+* prevent generating hash for PSX disc when requesting RC_CONSOLE_PLAYSTATION2
+* fix wrong error message being returned when a leaderboard was only slightly malformed
+
+# v10.1.0
+
+* add RC_RUNTIME_EVENT_ACHIEVEMENT_UNPRIMED
+* add rc_runtime_validate_addresses
+* add external memory to memory map for Magnavox Odyssey 2
+* fix memory map base address for NeoGeo Pocket
+* fix bitcount always returning 0 when used in rich presence
+
 # v10.0.0
 
 * add rapi sublibrary for communicating with server (eliminates need for client-side JSON parsing; client must still

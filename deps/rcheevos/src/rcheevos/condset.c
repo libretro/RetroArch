@@ -18,7 +18,7 @@ static void rc_update_condition_pause(rc_condition_t* condition, int* in_pause) 
     case RC_CONDITION_OR_NEXT:
     case RC_CONDITION_ADD_ADDRESS:
     case RC_CONDITION_RESET_NEXT_IF:
-      condition->pause = *in_pause;
+      condition->pause = (char)*in_pause;
       break;
 
     default:
@@ -140,7 +140,7 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse, in
   return self;
 }
 
-static void rc_condset_update_indirect_memrefs(rc_condset_t* self, rc_condition_t* condition, int processing_pause, rc_eval_state_t* eval_state) {
+static void rc_condset_update_indirect_memrefs(rc_condition_t* condition, int processing_pause, rc_eval_state_t* eval_state) {
   for (; condition != 0; condition = condition->next) {
     if (condition->pause != processing_pause)
       continue;
@@ -210,7 +210,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
     }
 
     /* STEP 2: evaluate the current condition */
-    condition->is_true = rc_test_condition(condition, eval_state);
+    condition->is_true = (char)rc_test_condition(condition, eval_state);
     eval_state->add_value = 0;
     eval_state->add_address = 0;
 
@@ -311,10 +311,10 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
            * if the set has any indirect memrefs, manually update them now so the deltas are correct */
           if (self->has_indirect_memrefs) {
             /* first, update any indirect memrefs in the remaining part of the pause subset  */
-            rc_condset_update_indirect_memrefs(self, condition->next, 1, eval_state);
+            rc_condset_update_indirect_memrefs(condition->next, 1, eval_state);
 
             /* then, update all indirect memrefs in the non-pause subset */
-            rc_condset_update_indirect_memrefs(self, self->conditions, 0, eval_state);
+            rc_condset_update_indirect_memrefs(self->conditions, 0, eval_state);
           }
 
           return 1;
@@ -371,7 +371,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
   /* if not suppressed, update the measured value */
   if (measured_value > eval_state->measured_value && can_measure) {
     eval_state->measured_value = measured_value;
-    eval_state->measured_from_hits = measured_from_hits;
+    eval_state->measured_from_hits = (char)measured_from_hits;
   }
 
   return set_valid;
@@ -384,8 +384,9 @@ int rc_test_condset(rc_condset_t* self, rc_eval_state_t* eval_state) {
   }
 
   if (self->has_pause) {
-    if ((self->is_paused = rc_test_condset_internal(self, 1, eval_state))) {
-      /* one or more Pause conditions exists, if any of them are true, stop processing this group */
+    /* one or more Pause conditions exists, if any of them are true, stop processing this group */
+    self->is_paused = (char)rc_test_condset_internal(self, 1, eval_state);
+    if (self->is_paused) {
       eval_state->primed = 0;
       return 0;
     }
