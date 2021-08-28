@@ -886,7 +886,7 @@ bool ozone_reset_theme_textures(ozone_handle_t *ozone)
 
       for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
       {
-         char filename[PATH_MAX_LENGTH];
+         char filename[64];
          strlcpy(filename, OZONE_THEME_TEXTURES_FILES[i],
                sizeof(filename));
          strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));

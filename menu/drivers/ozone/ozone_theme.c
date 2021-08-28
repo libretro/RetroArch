@@ -570,7 +570,7 @@ ozone_theme_t *ozone_themes[] = {
 
 };
 
-const unsigned ozone_themes_count           = sizeof(ozone_themes) / sizeof(ozone_themes[0]);
+const unsigned ozone_themes_count           = ARRAY_SIZE(ozone_themes);
 /* TODO/FIXME - global variables referenced outside */
 unsigned last_color_theme                   = 0;
 bool last_use_preferred_system_color_theme  = false;
