@@ -2429,21 +2429,12 @@ static void materialui_draw_thumbnail(
       float x, float y,
       float scale_factor)
 {
-   float bg_x;
-   float bg_y;
-   float bg_width;
-   float bg_height;
-
-   /* Sanity check */
-   if (scale_factor <= 0)
-      return;
-
    /* Get background draw position + dimensions,
     * accounting for scale factor */
-   bg_width  = (float)mui->thumbnail_width_max * scale_factor;
-   bg_height = (float)mui->thumbnail_height_max * scale_factor;
-   bg_x      = x - (bg_width - (float)mui->thumbnail_width_max) / 2.0f;
-   bg_y      = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
+   float bg_width  = (float)mui->thumbnail_width_max * scale_factor;
+   float bg_height = (float)mui->thumbnail_height_max * scale_factor;
+   float bg_x      = x - (bg_width - (float)mui->thumbnail_width_max) / 2.0f;
+   float bg_y      = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
 
    /* If thumbnail is missing, draw fallback image... */
    switch (thumbnail->status)
