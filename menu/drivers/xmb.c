@@ -3132,6 +3132,7 @@ static int xmb_draw_item(
       math_matrix_4x4 *mymat,
       xmb_handle_t *xmb,
       xmb_node_t *core_node,
+      xmb_node_t *node,
       file_list_t *list,
       float *color,
       size_t i,
@@ -3153,7 +3154,6 @@ static int xmb_draw_item(
    bool do_draw_text                   = false;
    unsigned ticker_limit               = 35 * xmb_scale_mod[0];
    unsigned line_ticker_width          = 45 * xmb_scale_mod[3];
-   xmb_node_t *   node                 = (xmb_node_t*)list->list[i].userdata;
    bool use_smooth_ticker              = settings->bools.menu_ticker_smooth;
    enum gfx_animation_ticker_type
       menu_ticker_type                 = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
@@ -3163,29 +3163,17 @@ static int xmb_draw_item(
    bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
 
    /* Initial ticker configuration */
-   if (use_smooth_ticker)
+   if (!use_smooth_ticker)
    {
-      ticker_smooth.idx           = p_anim->ticker_pixel_idx;
-      ticker_smooth.font          = xmb->font;
-      ticker_smooth.font_scale    = 1.0f;
-      ticker_smooth.type_enum     = menu_ticker_type;
-      ticker_smooth.spacer        = NULL;
-      ticker_smooth.x_offset      = &ticker_x_offset;
-      ticker_smooth.dst_str_width = NULL;
-   }
-   else
-   {
-      ticker.idx       = p_anim->ticker_idx;
-      ticker.type_enum = menu_ticker_type;
-      ticker.spacer    = NULL;
+      ticker.idx                  = p_anim->ticker_idx;
+      ticker.type_enum            = menu_ticker_type;
+      ticker.spacer               = NULL;
    }
 
-   if (!node)
-      return 0;
+   tmp[0]                         = '\0';
 
-   tmp[0] = '\0';
-
-   icon_y = xmb->margins_screen_top + node->y + half_size;
+   icon_y                         = xmb->margins_screen_top 
+      + node->y + half_size;
 
    if (icon_y < half_size)
       return 0;
@@ -3318,11 +3306,19 @@ static int xmb_draw_item(
 
    if (use_smooth_ticker)
    {
-      ticker_smooth.selected    = (i == current);
-      ticker_smooth.field_width = xmb->font_size * 0.5f * ticker_limit;
-      ticker_smooth.src_str     = ticker_str;
-      ticker_smooth.dst_str     = tmp;
-      ticker_smooth.dst_str_len = sizeof(tmp);
+      ticker_smooth.idx           = p_anim->ticker_pixel_idx;
+      ticker_smooth.font          = xmb->font;
+      ticker_smooth.font_scale    = 1.0f;
+      ticker_smooth.type_enum     = menu_ticker_type;
+      ticker_smooth.spacer        = NULL;
+      ticker_smooth.x_offset      = &ticker_x_offset;
+      ticker_smooth.dst_str_width = NULL;
+
+      ticker_smooth.selected      = (i == current);
+      ticker_smooth.field_width   = xmb->font_size * 0.5f * ticker_limit;
+      ticker_smooth.src_str       = ticker_str;
+      ticker_smooth.dst_str       = tmp;
+      ticker_smooth.dst_str_len   = sizeof(tmp);
 
       if (ticker_smooth.src_str)
          gfx_animation_ticker_smooth(&ticker_smooth);
@@ -3655,21 +3651,26 @@ static void xmb_draw_items(
 
    for (i = first; i <= last; i++)
    {
-      if (xmb_draw_item(
-            userdata,
-            p_disp,
-            p_anim,
-            dispctx,
-            settings,
-            video_width,
-            video_height,
-            xmb_shadows_enable,
-            &mymat,
-            xmb, core_node,
-            list, color,
-            i, current,
-            width, height) == -1)
-         break;
+      xmb_node_t *node = (xmb_node_t*)list->list[i].userdata;
+      if (node)
+         if (xmb_draw_item(
+                  userdata,
+                  p_disp,
+                  p_anim,
+                  dispctx,
+                  settings,
+                  video_width,
+                  video_height,
+                  xmb_shadows_enable,
+                  &mymat,
+                  xmb,
+                  core_node,
+                  node,
+                  list,
+                  color,
+                  i, current,
+                  width, height) == -1)
+            break;
    }
 
    if (dispctx && dispctx->blend_end)
