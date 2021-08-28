@@ -91,7 +91,7 @@ guideline, do not hesitate to point them out to us.
 
 Variable declaration
 --------------------
-For C source files, we have to insists you stick to the following:
+For C source files, we have to insist you stick to the following:
 
 - Declare variables either at the start of a function or the start 
    of a code block, depending on the scope they need.
