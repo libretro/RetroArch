@@ -4100,7 +4100,7 @@ static void xmb_render(void *data,
                break;
             case MENU_INPUT_PRESS_DIRECTION_DOWN:
                /* Navigate down
-                * Note: Directio is inverted, since 'down' should
+                * Note: Direction is inverted, since 'down' should
                 * move list downwards */
                if (pointer_x > margin_right)
                {
