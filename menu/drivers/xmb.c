@@ -4081,11 +4081,10 @@ static void xmb_render(void *data,
          switch (xmb->pointer.press_direction)
          {
             case MENU_INPUT_PRESS_DIRECTION_UP:
-               if (pointer_x > margin_right)
-                  get_entry = true;
-               break;
+               /* Navigate up */
             case MENU_INPUT_PRESS_DIRECTION_DOWN:
-               /* Note: Direction is inverted, since 'down' should
+               /* Navigate down
+                * Note: Directio is inverted, since 'down' should
                 * move list downwards */
                if (pointer_x > margin_right)
                   get_entry = true;
@@ -4095,9 +4094,6 @@ static void xmb_render(void *data,
                 * Note: At the top level, navigating left
                 * means switching to the 'next' horizontal list,
                 * which is actually a movement to the *right* */
-               if (pointer_y < margin_top)
-                  get_entry = true;
-               break;
             case MENU_INPUT_PRESS_DIRECTION_RIGHT:
                /* Navigate right
                 * Note: At the top level, navigating right
@@ -4323,19 +4319,19 @@ static void xmb_draw_bg(
 static void xmb_draw_dark_layer(
       xmb_handle_t *xmb,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned width,
       unsigned height)
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   float black[16]               = {
+   float black[16]      = {
       0, 0, 0, 1,
       0, 0, 0, 1,
       0, 0, 0, 1,
       0, 0, 0, 1,
    };
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    gfx_display_set_alpha(black, MIN(xmb->alpha, 0.75));
 
@@ -4345,29 +4341,26 @@ static void xmb_draw_dark_layer(
    coords.lut_tex_coord = NULL;
    coords.color         = &black[0];
 
-   draw.x           = 0;
-   draw.y           = 0;
-   draw.width       = width;
-   draw.height      = height;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = gfx_display_white_texture;
-   draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline_id = 0;
+   draw.x               = 0;
+   draw.y               = 0;
+   draw.width           = width;
+   draw.height          = height;
+   draw.coords          = &coords;
+   draw.matrix_data     = NULL;
+   draw.texture         = gfx_display_white_texture;
+   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline_id     = 0;
 
-   if (dispctx)
-   {
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      if (draw.height > 0 && draw.width > 0)
-         if (dispctx && dispctx->draw)
-            dispctx->draw(&draw, userdata, width, height);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
-   }
+   if (dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
+   if (draw.height > 0 && draw.width > 0)
+      if (dispctx->draw)
+         dispctx->draw(&draw, userdata, width, height);
+   if (dispctx->blend_end)
+      dispctx->blend_end(userdata);
 }
 
-static void xmb_draw_fullscreen_thumbnails(
+static bool xmb_draw_fullscreen_thumbnails(
       xmb_handle_t *xmb,
       gfx_animation_t *p_anim,
       gfx_display_t *p_disp,
@@ -4378,221 +4371,234 @@ static void xmb_draw_fullscreen_thumbnails(
       unsigned xmb_color_theme,
       settings_t *settings, size_t selection)
 {
-   /* Check whether fullscreen thumbnails are visible */
-   if (xmb->fullscreen_thumbnail_alpha > 0.0f)
+   int header_margin;
+   int thumbnail_box_width;
+   int thumbnail_box_height;
+   int right_thumbnail_x;
+   int left_thumbnail_x;
+   int thumbnail_y;
+   gfx_thumbnail_shadow_t thumbnail_shadow;
+   gfx_thumbnail_t *right_thumbnail  = &xmb->thumbnails.right;
+   gfx_thumbnail_t *left_thumbnail   = &xmb->thumbnails.left;
+   int view_width                    = (int)video_width;
+   int view_height                   = (int)video_height;
+   int thumbnail_margin              = (int)(xmb->icon_size / 2.0f);
+   bool show_right_thumbnail         = false;
+   bool show_left_thumbnail          = false;
+   unsigned num_thumbnails           = 0;
+   float right_thumbnail_draw_width  = 0.0f;
+   float right_thumbnail_draw_height = 0.0f;
+   float left_thumbnail_draw_width   = 0.0f;
+   float left_thumbnail_draw_height  = 0.0f;
+   float *menu_color                 = xmb_gradient_ident(xmb_color_theme);
+   /* XMB doesn't have a proper theme interface, so
+    * hard-code this alpha value for now... */
+   float background_alpha            = 0.75f;
+   float background_color[16]        = {
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+   };
+   uint32_t title_color              = 0xFFFFFF00;
+   float header_alpha                = 0.6f;
+   float header_color[16]            = {
+      0.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 0.0f,
+   };
+   int frame_width                   = (int)(xmb->icon_size / 6.0f);
+   float frame_color[16]             = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+   };
+   bool show_header                  = !string_is_empty(xmb->fullscreen_thumbnail_label);
+   int header_height                 = show_header ? (int)((float)xmb->font_size * 1.2f) + (frame_width * 2) : 0;
+   bool xmb_vertical_thumbnails      = settings->bools.menu_xmb_vertical_thumbnails;
+   bool menu_ticker_smooth           = settings->bools.menu_ticker_smooth;
+   enum gfx_animation_ticker_type 
+      menu_ticker_type               = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+
+   /* Sanity check: Return immediately if this is
+    * a menu without thumbnails and we are not currently
+    * 'fading out' the fullscreen thumbnail view */
+   if (!xmb->fullscreen_thumbnails_available &&
+         xmb->show_fullscreen_thumbnails)
+      return false;
+
+   /* Safety check: ensure that current
+    * selection matches the entry selected when
+    * fullscreen thumbnails were enabled
+    * > Note that we exclude this check if we are
+    *   currently viewing the quick menu and the
+    *   thumbnail view is fading out. This enables
+    *   a smooth transition if the user presses
+    *   RetroPad A or keyboard 'return' to enter the
+    *   quick menu while fullscreen thumbnails are
+    *   being displayed */
+   if ((selection != xmb->fullscreen_thumbnail_selection) &&
+         (!xmb->is_quick_menu || xmb->show_fullscreen_thumbnails))
+      return false;
+
+   /* Get thumbnail pointers
+    * > Order is swapped when using 'vertical disposition' */
+   if (xmb_vertical_thumbnails)
    {
-      int header_margin;
-      int thumbnail_box_width;
-      int thumbnail_box_height;
-      int right_thumbnail_x;
-      int left_thumbnail_x;
-      int thumbnail_y;
-      gfx_thumbnail_shadow_t thumbnail_shadow;
-      gfx_thumbnail_t *right_thumbnail = NULL;
-      gfx_thumbnail_t *left_thumbnail  = NULL;
-      int view_width                    = (int)video_width;
-      int view_height                   = (int)video_height;
-      int thumbnail_margin              = (int)(xmb->icon_size / 2.0f);
-      bool show_right_thumbnail         = false;
-      bool show_left_thumbnail          = false;
-      unsigned num_thumbnails           = 0;
-      float right_thumbnail_draw_width  = 0.0f;
-      float right_thumbnail_draw_height = 0.0f;
-      float left_thumbnail_draw_width   = 0.0f;
-      float left_thumbnail_draw_height  = 0.0f;
-      float *menu_color                 = xmb_gradient_ident(xmb_color_theme);
-      /* XMB doesn't have a proper theme interface, so
-       * hard-code this alpha value for now... */
-      float background_alpha            = 0.75f;
-      float background_color[16]        = {
-         0.0f, 0.0f, 0.0f, 1.0f,
-         0.0f, 0.0f, 0.0f, 1.0f,
-         0.0f, 0.0f, 0.0f, 1.0f,
-         0.0f, 0.0f, 0.0f, 1.0f,
-      };
-      uint32_t title_color              = 0xFFFFFF00;
-      float header_alpha                = 0.6f;
-      float header_color[16]            = {
-         0.0f, 0.0f, 0.0f, 0.0f,
-         0.0f, 0.0f, 0.0f, 0.0f,
-         0.0f, 0.0f, 0.0f, 0.0f,
-         0.0f, 0.0f, 0.0f, 0.0f,
-      };
-      int frame_width                   = (int)(xmb->icon_size / 6.0f);
-      float frame_color[16]             = {
-         1.0f, 1.0f, 1.0f, 1.0f,
-         1.0f, 1.0f, 1.0f, 1.0f,
-         1.0f, 1.0f, 1.0f, 1.0f,
-         1.0f, 1.0f, 1.0f, 1.0f,
-      };
-      bool show_header                  = !string_is_empty(xmb->fullscreen_thumbnail_label);
-      int header_height                 = show_header ? (int)((float)xmb->font_size * 1.2f) + (frame_width * 2) : 0;
-      bool xmb_vertical_thumbnails      = settings->bools.menu_xmb_vertical_thumbnails;
-      bool menu_ticker_smooth           = settings->bools.menu_ticker_smooth;
-      enum gfx_animation_ticker_type 
-         menu_ticker_type               = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      right_thumbnail   = &xmb->thumbnails.left;
+      left_thumbnail    = &xmb->thumbnails.right;
+   }
 
-      /* Sanity check: Return immediately if this is
-       * a menu without thumbnails and we are not currently
-       * 'fading out' the fullscreen thumbnail view */
-      if (!xmb->fullscreen_thumbnails_available &&
-          xmb->show_fullscreen_thumbnails)
-         goto error;
+   /* Get number of 'active' thumbnails */
+   if (right_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+   {
+      show_right_thumbnail = true;
+      num_thumbnails++;
+   }
+   if (left_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+   {
+      show_left_thumbnail  = true;
+      num_thumbnails++;
+   }
 
-      /* Safety check: ensure that current
-       * selection matches the entry selected when
-       * fullscreen thumbnails were enabled
-       * > Note that we exclude this check if we are
-       *   currently viewing the quick menu and the
-       *   thumbnail view is fading out. This enables
-       *   a smooth transition if the user presses
-       *   RetroPad A or keyboard 'return' to enter the
-       *   quick menu while fullscreen thumbnails are
-       *   being displayed */
-      if ((selection != xmb->fullscreen_thumbnail_selection) &&
-          (!xmb->is_quick_menu || xmb->show_fullscreen_thumbnails))
-         goto error;
+   /* Do nothing if both thumbnails are missing
+    * > Note: Baring inexplicable internal errors, this
+    *   can never happen... */
+   if (num_thumbnails < 1)
+      return false;
 
-      /* Get thumbnail pointers
-       * > Order is swapped when using 'vertical disposition' */
-      if (xmb_vertical_thumbnails)
-      {
-         right_thumbnail = &xmb->thumbnails.left;
-         left_thumbnail  = &xmb->thumbnails.right;
-      }
-      else
-      {
-         right_thumbnail = &xmb->thumbnails.right;
-         left_thumbnail  = &xmb->thumbnails.left;
-      }
+   /* Get base thumbnail dimensions + draw positions */
 
-      /* Get number of 'active' thumbnails */
-      show_right_thumbnail = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE);
-      show_left_thumbnail  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_AVAILABLE);
+   /* > Thumbnail bounding box height + y position
+    *   are fixed */
+   header_margin        = (header_height > thumbnail_margin) ?
+      header_height : thumbnail_margin;
+   thumbnail_box_height = view_height - header_margin - thumbnail_margin;
+   thumbnail_y          = header_margin;
 
-      if (show_right_thumbnail)
-         num_thumbnails++;
+   /* Thumbnail bounding box width and x position
+    * depend upon number of active thumbnails */
+   if (num_thumbnails == 2)
+   {
+      thumbnail_box_width = (view_width - (thumbnail_margin * 3) - frame_width) >> 1;
+      left_thumbnail_x    = thumbnail_margin;
+      right_thumbnail_x   = left_thumbnail_x + thumbnail_box_width + frame_width + thumbnail_margin;
+   }
+   else
+   {
+      thumbnail_box_width = view_width - (thumbnail_margin * 2);
+      left_thumbnail_x    = thumbnail_margin;
+      right_thumbnail_x   = left_thumbnail_x;
+   }
 
-      if (show_left_thumbnail)
-         num_thumbnails++;
+   /* Sanity check */
+   if ((thumbnail_box_width  < 1) ||
+         (thumbnail_box_height < 1))
+      return false;
 
-      /* Do nothing if both thumbnails are missing
-       * > Note: Baring inexplicable internal errors, this
-       *   can never happen... */
-      if (num_thumbnails < 1)
-         goto error;
-
-      /* Get base thumbnail dimensions + draw positions */
-
-      /* > Thumbnail bounding box height + y position
-       *   are fixed */
-      header_margin = (header_height > thumbnail_margin) ?
-            header_height : thumbnail_margin;
-      thumbnail_box_height = view_height - header_margin - thumbnail_margin;
-      thumbnail_y          = header_margin;
-
-      /* Thumbnail bounding box width and x position
-       * depend upon number of active thumbnails */
-      if (num_thumbnails == 2)
-      {
-         thumbnail_box_width = (view_width - (thumbnail_margin * 3) - frame_width) >> 1;
-         left_thumbnail_x    = thumbnail_margin;
-         right_thumbnail_x   = left_thumbnail_x + thumbnail_box_width + frame_width + thumbnail_margin;
-      }
-      else
-      {
-         thumbnail_box_width = view_width - (thumbnail_margin * 2);
-         left_thumbnail_x    = thumbnail_margin;
-         right_thumbnail_x   = left_thumbnail_x;
-      }
+   /* Get thumbnail draw dimensions
+    * > Note: The following code is a bit awkward, since
+    *   we have to do things in a very specific order
+    *   - i.e. we cannot determine proper thumbnail
+    *     layout until we have thumbnail draw dimensions.
+    *     and we cannot get draw dimensions until we have
+    *     the bounding box dimensions...  */
+   if (show_right_thumbnail)
+   {
+      gfx_thumbnail_get_draw_dimensions(
+            right_thumbnail,
+            thumbnail_box_width, thumbnail_box_height, 1.0f,
+            &right_thumbnail_draw_width, &right_thumbnail_draw_height);
 
       /* Sanity check */
-      if ((thumbnail_box_width < 1) ||
-          (thumbnail_box_height < 1))
-         goto error;
+      if (  (right_thumbnail_draw_width  <= 0.0f) ||
+            (right_thumbnail_draw_height <= 0.0f))
+         return false;
+   }
 
-      /* Get thumbnail draw dimensions
-       * > Note: The following code is a bit awkward, since
-       *   we have to do things in a very specific order
-       *   - i.e. we cannot determine proper thumbnail
-       *     layout until we have thumbnail draw dimensions.
-       *     and we cannot get draw dimensions until we have
-       *     the bounding box dimensions...  */
-      if (show_right_thumbnail)
-      {
-         gfx_thumbnail_get_draw_dimensions(
-               right_thumbnail,
-               thumbnail_box_width, thumbnail_box_height, 1.0f,
-               &right_thumbnail_draw_width, &right_thumbnail_draw_height);
+   if (show_left_thumbnail)
+   {
+      gfx_thumbnail_get_draw_dimensions(
+            left_thumbnail,
+            thumbnail_box_width, thumbnail_box_height, 1.0f,
+            &left_thumbnail_draw_width, &left_thumbnail_draw_height);
 
-         /* Sanity check */
-         if ((right_thumbnail_draw_width <= 0.0f) ||
-             (right_thumbnail_draw_height <= 0.0f))
-            goto error;
-      }
+      /* Sanity check */
+      if (  (left_thumbnail_draw_width  <= 0.0f) ||
+            (left_thumbnail_draw_height <= 0.0f))
+         return false;
+   }
 
-      if (show_left_thumbnail)
-      {
-         gfx_thumbnail_get_draw_dimensions(
-               left_thumbnail,
-               thumbnail_box_width, thumbnail_box_height, 1.0f,
-               &left_thumbnail_draw_width, &left_thumbnail_draw_height);
+   /* Adjust thumbnail draw positions to achieve
+    * uniform appearance (accounting for actual
+    * draw dimensions...) */
+   if (num_thumbnails == 2)
+   {
+      int left_padding   = (thumbnail_box_width - (int)left_thumbnail_draw_width)  >> 1;
+      int right_padding  = (thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1;
 
-         /* Sanity check */
-         if ((left_thumbnail_draw_width <= 0.0f) ||
-             (left_thumbnail_draw_height <= 0.0f))
-            goto error;
-      }
+      /* Move thumbnails as close together as possible,
+       * and horizontally centre the resultant 'block'
+       * of images */
+      left_thumbnail_x  += right_padding;
+      right_thumbnail_x -= left_padding;
+   }
 
-      /* Adjust thumbnail draw positions to achieve
-       * uniform appearance (accounting for actual
-       * draw dimensions...) */
-      if (num_thumbnails == 2)
-      {
-         int left_padding  = (thumbnail_box_width - (int)left_thumbnail_draw_width)  >> 1;
-         int right_padding = (thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1;
+   /* Set colour values */
 
-         /* Move thumbnails as close together as possible,
-          * and horizontally centre the resultant 'block'
-          * of images */
-         left_thumbnail_x  += right_padding;
-         right_thumbnail_x -= left_padding;
-      }
+   /* > Background */
+   gfx_display_set_alpha(
+         background_color, background_alpha * xmb->fullscreen_thumbnail_alpha);
 
-      /* Set colour values */
+   /* > Header background */
+   header_color[11] = header_alpha * xmb->fullscreen_thumbnail_alpha;
+   header_color[15] = header_color[11];
 
-      /* > Background */
-      gfx_display_set_alpha(
-            background_color, background_alpha * xmb->fullscreen_thumbnail_alpha);
+   /* > Title text */
+   title_color     |= (unsigned)((255.0f 
+            * xmb->fullscreen_thumbnail_alpha) + 0.5f);
 
-      /* > Header background */
-      header_color[11] = header_alpha * xmb->fullscreen_thumbnail_alpha;
-      header_color[15] = header_color[11];
+   /* > Thumbnail frame */
+   if (menu_color)
+   {
+      float mean_menu_color[3];
 
-      /* > Title text */
-      title_color |= (unsigned)((255.0f * xmb->fullscreen_thumbnail_alpha) + 0.5f);
+      /* The menu gradients are not entirely consistent...
+       * The best we can do here is take the mean of the
+       * first and last vertex colours... */
+      mean_menu_color[0] = (menu_color[0] + menu_color[12]) / 2.0f;
+      mean_menu_color[1] = (menu_color[1] + menu_color[13]) / 2.0f;
+      mean_menu_color[2] = (menu_color[2] + menu_color[14]) / 2.0f;
 
-      /* > Thumbnail frame */
-      if (menu_color)
-      {
-         float mean_menu_color[3];
+      memcpy(frame_color,      mean_menu_color, sizeof(mean_menu_color));
+      memcpy(frame_color + 4,  mean_menu_color, sizeof(mean_menu_color));
+      memcpy(frame_color + 8,  mean_menu_color, sizeof(mean_menu_color));
+      memcpy(frame_color + 12, mean_menu_color, sizeof(mean_menu_color));
+   }
+   gfx_display_set_alpha(
+         frame_color, xmb->fullscreen_thumbnail_alpha);
 
-         /* The menu gradients are not entirely consistent...
-          * The best we can do here is take the mean of the
-          * first and last vertex colours... */
-         mean_menu_color[0] = (menu_color[0] + menu_color[12]) / 2.0f;
-         mean_menu_color[1] = (menu_color[1] + menu_color[13]) / 2.0f;
-         mean_menu_color[2] = (menu_color[2] + menu_color[14]) / 2.0f;
+   /* Darken background */
+   gfx_display_draw_quad(
+         p_disp,
+         userdata,
+         video_width,
+         video_height,
+         0,
+         0,
+         (unsigned)view_width,
+         (unsigned)view_height,
+         (unsigned)view_width,
+         (unsigned)view_height,
+         background_color,
+         NULL);
 
-         memcpy(frame_color,      mean_menu_color, sizeof(mean_menu_color));
-         memcpy(frame_color + 4,  mean_menu_color, sizeof(mean_menu_color));
-         memcpy(frame_color + 8,  mean_menu_color, sizeof(mean_menu_color));
-         memcpy(frame_color + 12, mean_menu_color, sizeof(mean_menu_color));
-      }
-      gfx_display_set_alpha(
-            frame_color, xmb->fullscreen_thumbnail_alpha);
-
-      /* Darken background */
+   /* Draw header */
+   if (show_header)
+   {
+      /* Background */
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -4601,186 +4607,161 @@ static void xmb_draw_fullscreen_thumbnails(
             0,
             0,
             (unsigned)view_width,
-            (unsigned)view_height,
+            (unsigned)(header_height - frame_width),
             (unsigned)view_width,
             (unsigned)view_height,
-            background_color,
+            header_color,
             NULL);
 
-      /* Draw header */
-      if (show_header)
+      /* Title text */
+      if (menu_ticker_smooth)
       {
-         /* Background */
-         gfx_display_draw_quad(
-               p_disp,
-               userdata,
-               video_width,
-               video_height,
-               0,
-               0,
-               (unsigned)view_width,
-               (unsigned)(header_height - frame_width),
+         char title_buf[255];
+         gfx_animation_ctx_ticker_smooth_t ticker_smooth;
+         int title_x               = 0;
+         unsigned ticker_x_offset  = 0;
+         unsigned ticker_str_width = 0;
+
+         title_buf[0] = '\0';
+
+         ticker_smooth.idx           = p_anim->ticker_pixel_idx;
+         ticker_smooth.font          = xmb->font;
+         ticker_smooth.font_scale    = 1.0f;
+         ticker_smooth.type_enum     = menu_ticker_type;
+         ticker_smooth.spacer        = NULL;
+         ticker_smooth.x_offset      = &ticker_x_offset;
+         ticker_smooth.dst_str_width = &ticker_str_width;
+         ticker_smooth.selected      = true;
+         ticker_smooth.field_width   = (unsigned)view_width;
+         ticker_smooth.src_str       = xmb->fullscreen_thumbnail_label;
+         ticker_smooth.dst_str       = title_buf;
+         ticker_smooth.dst_str_len   = sizeof(title_buf);
+
+         /* If ticker is not active, centre the title text */
+         if (!gfx_animation_ticker_smooth(&ticker_smooth))
+            title_x  = (view_width - (int)ticker_str_width) >> 1;
+
+         title_x    += (int)ticker_x_offset;
+
+         gfx_display_draw_text(
+               xmb->font,
+               title_buf,
+               title_x,
+               xmb->font_size,
                (unsigned)view_width,
                (unsigned)view_height,
-               header_color,
-               NULL);
-
-         /* Title text */
-         if (menu_ticker_smooth)
-         {
-            char title_buf[255];
-            gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-            int title_x               = 0;
-            unsigned ticker_x_offset  = 0;
-            unsigned ticker_str_width = 0;
-
-            title_buf[0] = '\0';
-
-            ticker_smooth.idx           = p_anim->ticker_pixel_idx;
-            ticker_smooth.font          = xmb->font;
-            ticker_smooth.font_scale    = 1.0f;
-            ticker_smooth.type_enum     = menu_ticker_type;
-            ticker_smooth.spacer        = NULL;
-            ticker_smooth.x_offset      = &ticker_x_offset;
-            ticker_smooth.dst_str_width = &ticker_str_width;
-            ticker_smooth.selected      = true;
-            ticker_smooth.field_width   = (unsigned)view_width;
-            ticker_smooth.src_str       = xmb->fullscreen_thumbnail_label;
-            ticker_smooth.dst_str       = title_buf;
-            ticker_smooth.dst_str_len   = sizeof(title_buf);
-
-            /* If ticker is not active, centre the title text */
-            if (!gfx_animation_ticker_smooth(&ticker_smooth))
-               title_x = (view_width - (int)ticker_str_width) >> 1;
-
-            title_x += (int)ticker_x_offset;
-
-            gfx_display_draw_text(
-                  xmb->font,
-                  title_buf,
-                  title_x,
-                  xmb->font_size,
-                  (unsigned)view_width,
-                  (unsigned)view_height,
-                  title_color,
-                  TEXT_ALIGN_LEFT,
-                  1.0f, false, 0.0f, false);
-         }
-         /* Note: The non-smooth ticker is a complete failure
-          * here, since actual text width is unknown. This
-          * causes the text to be horizontally offset - we
-          * cannot fix this.
-          * All we can do in this case is just draw the text
-          * as-is, horizontally centred, and if the ends get
-          * clipped than so be it... */
-         else
-            gfx_display_draw_text(
-                  xmb->font,
-                  xmb->fullscreen_thumbnail_label,
-                  view_width >> 1,
-                  xmb->font_size,
-                  (unsigned)view_width,
-                  (unsigned)view_height,
-                  title_color,
-                  TEXT_ALIGN_CENTER,
-                  1.0f, false, 0.0f, false);
+               title_color,
+               TEXT_ALIGN_LEFT,
+               1.0f, false, 0.0f, false);
       }
-
-      /* Draw thumbnails */
-
-      /* > Configure shadow effect */
-      if (xmb_shadows_enable)
-      {
-         float shadow_offset            = xmb->icon_size / 24.0f;
-
-         thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
-         thumbnail_shadow.alpha         = 0.35f;
-         thumbnail_shadow.drop.x_offset = shadow_offset;
-         thumbnail_shadow.drop.y_offset = shadow_offset;
-      }
+      /* Note: The non-smooth ticker is a complete failure
+       * here, since actual text width is unknown. This
+       * causes the text to be horizontally offset - we
+       * cannot fix this.
+       * All we can do in this case is just draw the text
+       * as-is, horizontally centred, and if the ends get
+       * clipped than so be it... */
       else
-         thumbnail_shadow.type = GFX_THUMBNAIL_SHADOW_NONE;
-
-      /* > Right */
-      if (show_right_thumbnail)
-      {
-         /* Background */
-         gfx_display_draw_quad(
-               p_disp,
-               userdata,
-               video_width,
-               video_height,
-               right_thumbnail_x - frame_width +
-                     ((thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1),
-               thumbnail_y - frame_width +
-                     ((thumbnail_box_height - (int)right_thumbnail_draw_height) >> 1),
-               (unsigned)right_thumbnail_draw_width + (frame_width << 1),
-               (unsigned)right_thumbnail_draw_height + (frame_width << 1),
+         gfx_display_draw_text(
+               xmb->font,
+               xmb->fullscreen_thumbnail_label,
+               view_width >> 1,
+               xmb->font_size,
                (unsigned)view_width,
                (unsigned)view_height,
-               frame_color,
-               NULL);
-
-         /* Thumbnail */
-         gfx_thumbnail_draw(
-               userdata,
-               video_width,
-               video_height,
-               right_thumbnail,
-               right_thumbnail_x,
-               thumbnail_y,
-               (unsigned)thumbnail_box_width,
-               (unsigned)thumbnail_box_height,
-               GFX_THUMBNAIL_ALIGN_CENTRE,
-               xmb->fullscreen_thumbnail_alpha,
-               1.0f,
-               &thumbnail_shadow);
-      }
-
-      /* > Left */
-      if (show_left_thumbnail)
-      {
-         /* Background */
-         gfx_display_draw_quad(
-               p_disp,
-               userdata,
-               video_width,
-               video_height,
-               left_thumbnail_x - frame_width +
-                     ((thumbnail_box_width - (int)left_thumbnail_draw_width) >> 1),
-               thumbnail_y - frame_width +
-                     ((thumbnail_box_height - (int)left_thumbnail_draw_height) >> 1),
-               (unsigned)left_thumbnail_draw_width + (frame_width << 1),
-               (unsigned)left_thumbnail_draw_height + (frame_width << 1),
-               (unsigned)view_width,
-               (unsigned)view_height,
-               frame_color,
-               NULL);
-
-         /* Thumbnail */
-         gfx_thumbnail_draw(
-               userdata,
-               video_width,
-               video_height,
-               left_thumbnail,
-               left_thumbnail_x,
-               thumbnail_y,
-               (unsigned)thumbnail_box_width,
-               (unsigned)thumbnail_box_height,
-               GFX_THUMBNAIL_ALIGN_CENTRE,
-               xmb->fullscreen_thumbnail_alpha,
-               1.0f,
-               &thumbnail_shadow);
-      }
+               title_color,
+               TEXT_ALIGN_CENTER,
+               1.0f, false, 0.0f, false);
    }
 
-   return;
+   /* Draw thumbnails */
 
-error:
-   /* If fullscreen thumbnails are enabled at
-    * this point, must disable them immediately... */
-   if (xmb->show_fullscreen_thumbnails)
-      xmb_hide_fullscreen_thumbnails(xmb, false);
+   /* > Configure shadow effect */
+   if (xmb_shadows_enable)
+   {
+      float shadow_offset            = xmb->icon_size / 24.0f;
+
+      thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
+      thumbnail_shadow.alpha         = 0.35f;
+      thumbnail_shadow.drop.x_offset = shadow_offset;
+      thumbnail_shadow.drop.y_offset = shadow_offset;
+   }
+   else
+      thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_NONE;
+
+   /* > Right */
+   if (show_right_thumbnail)
+   {
+      /* Background */
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            right_thumbnail_x - frame_width +
+            ((thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1),
+            thumbnail_y - frame_width +
+            ((thumbnail_box_height - (int)right_thumbnail_draw_height) >> 1),
+            (unsigned)right_thumbnail_draw_width + (frame_width << 1),
+            (unsigned)right_thumbnail_draw_height + (frame_width << 1),
+            (unsigned)view_width,
+            (unsigned)view_height,
+            frame_color,
+            NULL);
+
+      /* Thumbnail */
+      gfx_thumbnail_draw(
+            userdata,
+            video_width,
+            video_height,
+            right_thumbnail,
+            right_thumbnail_x,
+            thumbnail_y,
+            (unsigned)thumbnail_box_width,
+            (unsigned)thumbnail_box_height,
+            GFX_THUMBNAIL_ALIGN_CENTRE,
+            xmb->fullscreen_thumbnail_alpha,
+            1.0f,
+            &thumbnail_shadow);
+   }
+
+   /* > Left */
+   if (show_left_thumbnail)
+   {
+      /* Background */
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            left_thumbnail_x - frame_width +
+            ((thumbnail_box_width - (int)left_thumbnail_draw_width) >> 1),
+            thumbnail_y - frame_width +
+            ((thumbnail_box_height - (int)left_thumbnail_draw_height) >> 1),
+            (unsigned)left_thumbnail_draw_width + (frame_width << 1),
+            (unsigned)left_thumbnail_draw_height + (frame_width << 1),
+            (unsigned)view_width,
+            (unsigned)view_height,
+            frame_color,
+            NULL);
+
+      /* Thumbnail */
+      gfx_thumbnail_draw(
+            userdata,
+            video_width,
+            video_height,
+            left_thumbnail,
+            left_thumbnail_x,
+            thumbnail_y,
+            (unsigned)thumbnail_box_width,
+            (unsigned)thumbnail_box_height,
+            GFX_THUMBNAIL_ALIGN_CENTRE,
+            xmb->fullscreen_thumbnail_alpha,
+            1.0f,
+            &thumbnail_shadow);
+   }
+
+   return true;
 }
 
 static void xmb_frame(void *data, video_frame_info_t *video_info)
@@ -5438,16 +5419,24 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    font_driver_bind_block(xmb->font2, NULL);
 
    /* Draw fullscreen thumbnails, if required */
-   xmb_draw_fullscreen_thumbnails(
-         xmb,
-         p_anim,
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         xmb_shadows_enable,
-         xmb_color_theme,
-         settings, selection);
+   /* Check whether fullscreen thumbnails are visible */
+   if (xmb->fullscreen_thumbnail_alpha > 0.0f)
+      if (!xmb_draw_fullscreen_thumbnails(
+               xmb,
+               p_anim,
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               xmb_shadows_enable,
+               xmb_color_theme,
+               settings, selection))
+      {
+         /* If fullscreen thumbnails are enabled at
+          * this point, must disable them immediately... */
+         if (xmb->show_fullscreen_thumbnails)
+            xmb_hide_fullscreen_thumbnails(xmb, false);
+      }
 
    if (input_dialog_display_kb)
    {
@@ -5469,8 +5458,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      xmb_draw_dark_layer(xmb, p_disp,
-            userdata, video_width, video_height);
+      if (p_disp->dispctx)
+         xmb_draw_dark_layer(xmb, p_disp, p_disp->dispctx,
+               userdata, video_width, video_height);
       xmb_render_messagebox_internal(userdata, p_disp,
             video_width, video_height,
             xmb, msg);
