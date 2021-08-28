@@ -4077,82 +4077,99 @@ static void xmb_render(void *data,
       if ((pointer_y < margin_top) || (pointer_x > margin_right))
       {
          menu_entry_t entry;
-         bool get_entry = false;
 
          switch (xmb->pointer.press_direction)
          {
             case MENU_INPUT_PRESS_DIRECTION_UP:
                /* Navigate up */
+               if (pointer_x > margin_right)
+               {
+                  MENU_ENTRY_INIT(entry);
+                  entry.path_enabled       = false;
+                  entry.label_enabled      = false;
+                  entry.rich_label_enabled = false;
+                  entry.value_enabled      = false;
+                  entry.sublabel_enabled   = false;
+                  menu_entry_get(&entry, 0, selection, NULL, true);
+
+                  /* Note: Direction is inverted, since 'up' should
+                   * move list upwards */
+                  xmb_menu_entry_action(xmb, &entry, selection,
+                        MENU_ACTION_DOWN);
+               }
+               break;
             case MENU_INPUT_PRESS_DIRECTION_DOWN:
                /* Navigate down
                 * Note: Directio is inverted, since 'down' should
                 * move list downwards */
                if (pointer_x > margin_right)
-                  get_entry = true;
+               {
+                  MENU_ENTRY_INIT(entry);
+                  entry.path_enabled       = false;
+                  entry.label_enabled      = false;
+                  entry.rich_label_enabled = false;
+                  entry.value_enabled      = false;
+                  entry.sublabel_enabled   = false;
+                  menu_entry_get(&entry, 0, selection, NULL, true);
+
+                  /* Note: Direction is inverted, since 'down' should
+                   * move list downwards */
+                  xmb_menu_entry_action(xmb, &entry, selection,
+                        MENU_ACTION_UP);
+               }
                break;
             case MENU_INPUT_PRESS_DIRECTION_LEFT:
                /* Navigate left
                 * Note: At the top level, navigating left
                 * means switching to the 'next' horizontal list,
                 * which is actually a movement to the *right* */
+               if (pointer_y < margin_top)
+               {
+                  MENU_ENTRY_INIT(entry);
+                  entry.path_enabled       = false;
+                  entry.label_enabled      = false;
+                  entry.rich_label_enabled = false;
+                  entry.value_enabled      = false;
+                  entry.sublabel_enabled   = false;
+                  menu_entry_get(&entry, 0, selection, NULL, true);
+
+                  /* Note: At the top level, navigating left
+                   * means switching to the 'next' horizontal list,
+                   * which is actually a movement to the *right* */
+                  xmb_menu_entry_action(xmb,
+                        &entry, selection, 
+                        (xmb->depth == 1) 
+                        ? MENU_ACTION_RIGHT 
+                        : MENU_ACTION_LEFT);
+               }
+               break;
             case MENU_INPUT_PRESS_DIRECTION_RIGHT:
                /* Navigate right
                 * Note: At the top level, navigating right
                 * means switching to the 'previous' horizontal list,
                 * which is actually a movement to the *left* */
                if (pointer_y < margin_top)
-                  get_entry = true;
+               {
+                  MENU_ENTRY_INIT(entry);
+                  entry.path_enabled       = false;
+                  entry.label_enabled      = false;
+                  entry.rich_label_enabled = false;
+                  entry.value_enabled      = false;
+                  entry.sublabel_enabled   = false;
+                  menu_entry_get(&entry, 0, selection, NULL, true);
+
+                  /* Note: At the top level, navigating right
+                   * means switching to the 'previous' horizontal list,
+                   * which is actually a movement to the *left* */
+                  xmb_menu_entry_action(xmb,
+                        &entry, selection,
+                        (xmb->depth == 1) 
+                        ? MENU_ACTION_LEFT 
+                        : MENU_ACTION_RIGHT);
+               }
                break;
             case MENU_INPUT_PRESS_DIRECTION_NONE:
             default:
-               break;
-         }
-
-         if (get_entry)
-         {
-            MENU_ENTRY_INIT(entry);
-            entry.path_enabled       = false;
-            entry.label_enabled      = false;
-            entry.rich_label_enabled = false;
-            entry.value_enabled      = false;
-            entry.sublabel_enabled   = false;
-            menu_entry_get(&entry, 0, selection, NULL, true);
-         }
-
-         switch (xmb->pointer.press_direction)
-         {
-            case MENU_INPUT_PRESS_DIRECTION_UP:
-               /* Note: Direction is inverted, since 'up' should
-                * move list upwards */
-               if (pointer_x > margin_right)
-                  xmb_menu_entry_action(xmb, &entry, selection, MENU_ACTION_DOWN);
-               break;
-            case MENU_INPUT_PRESS_DIRECTION_DOWN:
-               /* Note: Direction is inverted, since 'down' should
-                * move list downwards */
-               if (pointer_x > margin_right)
-                  xmb_menu_entry_action(xmb, &entry, selection, MENU_ACTION_UP);
-               break;
-            case MENU_INPUT_PRESS_DIRECTION_LEFT:
-               /* Navigate left
-                * Note: At the top level, navigating left
-                * means switching to the 'next' horizontal list,
-                * which is actually a movement to the *right* */
-               if (pointer_y < margin_top)
-                  xmb_menu_entry_action(xmb,
-                        &entry, selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
-               break;
-            case MENU_INPUT_PRESS_DIRECTION_RIGHT:
-               /* Navigate right
-                * Note: At the top level, navigating right
-                * means switching to the 'previous' horizontal list,
-                * which is actually a movement to the *left* */
-               if (pointer_y < margin_top)
-                  xmb_menu_entry_action(xmb,
-                        &entry, selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
-               break;
-            default:
-               /* Do nothing */
                break;
          }
       }
