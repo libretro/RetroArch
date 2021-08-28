@@ -190,24 +190,14 @@ void ozone_draw_sidebar(
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* Initial ticker configuration */
-   if (use_smooth_ticker)
+   if (!use_smooth_ticker)
    {
-      ticker_smooth.idx           = p_anim->ticker_pixel_idx;
-      ticker_smooth.font          = ozone->fonts.sidebar.font;
-      ticker_smooth.font_scale    = 1.0f;
-      ticker_smooth.type_enum     = menu_ticker_type;
-      ticker_smooth.spacer        = ticker_spacer;
-      ticker_smooth.x_offset      = &ticker_x_offset;
-      ticker_smooth.dst_str_width = NULL;
-   }
-   else
-   {
-      ticker.idx                  = p_anim->ticker_idx;
-      ticker.type_enum            = menu_ticker_type;
-      ticker.spacer               = ticker_spacer;
+      ticker.idx                     = p_anim->ticker_idx;
+      ticker.type_enum               = menu_ticker_type;
+      ticker.spacer                  = ticker_spacer;
    }
 
-   horizontal_list_size           = (unsigned)ozone->horizontal_list.size;
+   horizontal_list_size              = (unsigned)ozone->horizontal_list.size;
 
    gfx_display_scissor_begin(
          p_disp,
@@ -444,15 +434,22 @@ void ozone_draw_sidebar(
 
          if (use_smooth_ticker)
          {
-            ticker_smooth.selected    = selected;
+            ticker_smooth.idx           = p_anim->ticker_pixel_idx;
+            ticker_smooth.font          = ozone->fonts.sidebar.font;
+            ticker_smooth.font_scale    = 1.0f;
+            ticker_smooth.type_enum     = menu_ticker_type;
+            ticker_smooth.spacer        = ticker_spacer;
+            ticker_smooth.x_offset      = &ticker_x_offset;
+            ticker_smooth.dst_str_width = NULL;
+            ticker_smooth.selected      = selected;
             /* TODO/FIXME - undefined behavior reported by ASAN -
              *-12.549 is outside the range of representable values
              of type 'unsigned int'
              * */
-            ticker_smooth.field_width = (entry_width - ozone->dimensions.sidebar_entry_icon_size - 40 * scale_factor);
-            ticker_smooth.src_str     = node->console_name;
-            ticker_smooth.dst_str     = console_title;
-            ticker_smooth.dst_str_len = sizeof(console_title);
+            ticker_smooth.field_width   = (entry_width - ozone->dimensions.sidebar_entry_icon_size - 40 * scale_factor);
+            ticker_smooth.src_str       = node->console_name;
+            ticker_smooth.dst_str       = console_title;
+            ticker_smooth.dst_str_len   = sizeof(console_title);
 
             gfx_animation_ticker_smooth(&ticker_smooth);
          }
