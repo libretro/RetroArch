@@ -384,8 +384,18 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
          sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
 #endif
 #ifdef HAVE_UPDATE_CORES
+#if defined(__aarch64__)
+    #define LRCORES_ARCH "_aarch64"
+#elif defined(__x86_64__)
+    #define LRCORES_ARCH "_x64"
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__)
+    #define LRCORES_ARCH "_x86"
+#else
+    #define LRCORES_ARCH "_ppc"
+#endif
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
-		    home_dir_buf, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+		    home_dir_buf, "cores" LRCORES_ARCH, sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+#undef LRCORES_ARCH
 #else
     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
 		    bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
