@@ -1414,10 +1414,6 @@ MENU
 #include "../menu/drivers/ozone/ozone_theme.c"
 #endif
 
-#ifdef HAVE_STRIPES
-#include "../menu/drivers/stripes.c"
-#endif
-
 #ifdef HAVE_MATERIALUI
 #include "../menu/drivers/materialui.c"
 #endif
