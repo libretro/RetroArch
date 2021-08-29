@@ -28236,7 +28236,9 @@ static void audio_driver_sample(int16_t left, int16_t right)
    struct rarch_state *p_rarch = &rarch_st;
    if (p_rarch->audio_suspended)
       return;
-
+   /* If this returns false, it's probably a good time to bail */
+   if (!p_rarch->audio_driver_output_samples_conv_buf)
+      return;
    p_rarch->audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = left;
    p_rarch->audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = right;
 
