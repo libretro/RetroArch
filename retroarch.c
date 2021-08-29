@@ -478,8 +478,9 @@ static int16_t input_state_wrap(
    {
       if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
       {
-         ret                       |= joypad->state(
-               joypad_info, binds[port], port);
+         if (joypad)
+            ret                    |= joypad->state(
+                  joypad_info, binds[port], port);
 #ifdef HAVE_MFI
          if (sec_joypad)
             ret                    |= sec_joypad->state(
@@ -504,27 +505,33 @@ static int16_t input_state_wrap(
             const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                ? bind_joyaxis : autobind_joyaxis;
 
-            if ((uint16_t)joykey != NO_BTN && joypad->button(
-                     port, (uint16_t)joykey))
-               return 1;
-            if (joyaxis != AXIS_NONE &&
-                  ((float)abs(joypad->axis(port, joyaxis))
-                   / 0x8000) > axis_threshold)
-               return 1;
+            if (joypad)
+            {
+               if ((uint16_t)joykey != NO_BTN && joypad->button(
+                        port, (uint16_t)joykey))
+                  return 1;
+               if (joyaxis != AXIS_NONE &&
+                     ((float)abs(joypad->axis(port, joyaxis))
+                      / 0x8000) > axis_threshold)
+                  return 1;
+            }
 #ifdef HAVE_MFI
-            if ((uint16_t)joykey != NO_BTN && sec_joypad->button(
-                     port, (uint16_t)joykey))
-               return 1;
-            if (joyaxis != AXIS_NONE &&
-                  ((float)abs(sec_joypad->axis(port, joyaxis))
-                   / 0x8000) > axis_threshold)
-               return 1;
+            if (sec_joypad)
+            {
+               if ((uint16_t)joykey != NO_BTN && sec_joypad->button(
+                        port, (uint16_t)joykey))
+                  return 1;
+               if (joyaxis != AXIS_NONE &&
+                     ((float)abs(sec_joypad->axis(port, joyaxis))
+                      / 0x8000) > axis_threshold)
+                  return 1;
+            }
 #endif
          }
       }
    }
 
-   if (current_input->input_state)
+   if (current_input && current_input->input_state)
       ret |= current_input->input_state(
             data,
             joypad,
