@@ -481,11 +481,9 @@ static int16_t input_state_wrap(
          if (joypad)
             ret                    |= joypad->state(
                   joypad_info, binds[port], port);
-#ifdef HAVE_MFI
          if (sec_joypad)
             ret                    |= sec_joypad->state(
                   joypad_info, binds[port], port);
-#endif
       }
       else
       {
@@ -515,7 +513,6 @@ static int16_t input_state_wrap(
                       / 0x8000) > axis_threshold)
                   return 1;
             }
-#ifdef HAVE_MFI
             if (sec_joypad)
             {
                if ((uint16_t)joykey != NO_BTN && sec_joypad->button(
@@ -526,7 +523,6 @@ static int16_t input_state_wrap(
                       / 0x8000) > axis_threshold)
                   return 1;
             }
-#endif
          }
       }
    }
@@ -1365,16 +1361,26 @@ bool menu_input_key_bind_set_mode(
 {
    uint64_t current_usec;
    unsigned index_offset;
-   rarch_setting_t  *setting             = (rarch_setting_t*)data;
-   struct rarch_state *p_rarch           = &rarch_st;
-   input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
-   menu_handle_t       *menu      = p_rarch->menu_driver_data;
-   menu_input_t *menu_input       = &p_rarch->menu_input_state;
-   settings_t     *settings       = p_rarch->configuration_settings;
-   struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
-   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold
+   rarch_setting_t  *setting           = (rarch_setting_t*)data;
+   struct rarch_state *p_rarch         = &rarch_st;
+   input_driver_state_t 
+      *input_driver_st                 = &p_rarch->input_driver_state;
+   menu_handle_t       *menu           = p_rarch->menu_driver_data;
+   const input_device_driver_t 
+      *joypad                          = input_driver_st->primary_joypad;
+#ifdef HAVE_MFI
+      const input_device_driver_t
+         *sec_joypad                   = input_driver_st->secondary_joypad;
+#else
+      const input_device_driver_t
+         *sec_joypad                   = NULL;
+#endif
+   menu_input_t *menu_input            = &p_rarch->menu_input_state;
+   settings_t     *settings            = p_rarch->configuration_settings;
+   struct menu_bind_state *binds       = &p_rarch->menu_input_binds;
+   uint64_t input_bind_hold_us         = settings->uints.input_bind_hold
       * 1000000;
-   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout
+   uint64_t input_bind_timeout_us      = settings->uints.input_bind_timeout
       * 1000000;
 
    if (!setting || !menu)
@@ -1383,21 +1389,19 @@ bool menu_input_key_bind_set_mode(
             binds, state, setting, settings) == -1)
       return false;
 
-   index_offset             = setting->index_offset;
-   binds->port              = settings->uints.input_joypad_index[index_offset];
+   index_offset                        = setting->index_offset;
+   binds->port                         = settings->uints.input_joypad_index[
+      index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(
-         input_driver_st->primary_joypad,
-#ifdef HAVE_MFI
-         input_driver_st->secondary_joypad,
-#else
-         NULL,
-#endif
+         joypad,
+         sec_joypad,
          binds);
-   menu_input_key_bind_poll_bind_state(p_rarch, settings->uints.input_joypad_index[binds->port],
+   menu_input_key_bind_poll_bind_state(p_rarch,
+         settings->uints.input_joypad_index[binds->port],
          binds, false);
 
-   current_usec             = cpu_features_get_time_usec();
+   current_usec                        = cpu_features_get_time_usec();
 
    RARCH_TIMER_BEGIN_NEW_TIME_USEC(
          binds->timer_hold,
@@ -13409,26 +13413,32 @@ static bool input_driver_ungrab_mouse(struct rarch_state *p_rarch)
 static void command_event_reinit(struct rarch_state *p_rarch,
       const int flags)
 {
-   settings_t *settings                  = p_rarch->configuration_settings;
-   input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
-
+   settings_t *settings           = p_rarch->configuration_settings;
+   input_driver_state_t 
+      *input_driver_st            = &p_rarch->input_driver_state;
 #ifdef HAVE_MENU
-   bool video_fullscreen       = settings->bools.video_fullscreen;
-   bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
-   unsigned swap_interval      = settings->uints.video_swap_interval;
+   bool video_fullscreen          = settings->bools.video_fullscreen;
+   bool adaptive_vsync            = settings->bools.video_adaptive_vsync;
+   unsigned swap_interval         = settings->uints.video_swap_interval;
 #endif
-   enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_REAPPLY;
+   enum input_game_focus_cmd_type 
+      game_focus_cmd              = GAME_FOCUS_CMD_REAPPLY;
+   const input_device_driver_t 
+      *joypad                     = input_driver_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t 
+      *sec_joypad                 = input_driver_st->secondary_joypad;
+#else
+   const input_device_driver_t 
+      *sec_joypad                 = NULL;
+#endif
 
    video_driver_reinit(flags);
    /* Poll input to avoid possibly stale data to corrupt things. */
-   if (  input_driver_st->primary_joypad &&
-         input_driver_st->primary_joypad->poll)
-      input_driver_st->primary_joypad->poll();
-#ifdef HAVE_MFI
-   if (  input_driver_st->secondary_joypad &&
-         input_driver_st->secondary_joypad->poll)
-      input_driver_st->secondary_joypad->poll();
-#endif
+   if (  joypad && joypad->poll)
+      joypad->poll();
+   if (  sec_joypad && sec_joypad->poll)
+      sec_joypad->poll();
    if (  p_rarch->input_driver_state.current_driver &&
          p_rarch->input_driver_state.current_driver->poll)
       p_rarch->input_driver_state.current_driver->poll(p_rarch->input_driver_state.current_data);
@@ -21442,6 +21452,8 @@ static void input_poll_overlay(
       unsigned device                 = ol->active->full_screen
          ? RARCH_DEVICE_POINTER_SCREEN
          : RETRO_DEVICE_POINTER;
+      const input_device_driver_t
+         *joypad                      = input_driver_st->primary_joypad;
 #ifdef HAVE_MFI
       const input_device_driver_t
          *sec_joypad                  = input_driver_st->secondary_joypad;
@@ -21457,7 +21469,7 @@ static void input_poll_overlay(
       for (i = 0;
             current_input->input_state(
                input_data,
-               input_driver_st->primary_joypad,
+               joypad,
                sec_joypad,
                &joypad_info,
                NULL,
@@ -21471,7 +21483,7 @@ static void input_poll_overlay(
          input_overlay_state_t polled_data;
          int16_t x = current_input->input_state(
                input_data,
-               input_driver_st->primary_joypad,
+               joypad,
                sec_joypad,
                &joypad_info,
                NULL,
@@ -21482,7 +21494,7 @@ static void input_poll_overlay(
                RETRO_DEVICE_ID_POINTER_X);
          int16_t y = current_input->input_state(
                input_data,
-               input_driver_st->primary_joypad,
+               joypad,
                sec_joypad,
                &joypad_info,
                NULL,
@@ -21961,8 +21973,11 @@ static void input_driver_poll(void)
    size_t i, j;
    rarch_joypad_info_t joypad_info[MAX_USERS];
    struct rarch_state    *p_rarch = &rarch_st;
-   input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
+   input_driver_state_t 
+      *input_driver_st            = &p_rarch->input_driver_state;
    settings_t *settings           = p_rarch->configuration_settings;
+   const input_device_driver_t
+      *joypad                     = input_driver_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
       *sec_joypad                 = input_driver_st->secondary_joypad;
@@ -21976,14 +21991,10 @@ static void input_driver_poll(void)
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
    uint8_t max_users              = (uint8_t)settings->uints.input_max_users;
 
-   if (     input_driver_st->primary_joypad
-         && input_driver_st->primary_joypad->poll)
-      input_driver_st->primary_joypad->poll();
-#ifdef HAVE_MFI
-   if (     input_driver_st->secondary_joypad
-         && input_driver_st->secondary_joypad->poll)
-      input_driver_st->secondary_joypad->poll();
-#endif
+   if (     joypad && joypad->poll)
+      joypad->poll();
+   if (     sec_joypad && sec_joypad->poll)
+      sec_joypad->poll();
    if (     p_rarch->input_driver_state.current_driver
          && p_rarch->input_driver_state.current_driver->poll)
       p_rarch->input_driver_state.current_driver->poll(p_rarch->input_driver_state.current_data);
@@ -22010,7 +22021,7 @@ static void input_driver_poll(void)
          input_state_wrap(
                p_rarch->input_driver_state.current_driver,
                p_rarch->input_driver_state.current_data,
-               input_driver_st->primary_joypad,
+               joypad,
                sec_joypad,
                &joypad_info[i],
                p_rarch->libretro_input_binds,
@@ -22066,8 +22077,8 @@ static void input_driver_poll(void)
       bool poll_overlay                = (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive);
 #endif
       input_mapper_t *handle           = &p_rarch->input_driver_mapper;
-      const input_device_driver_t *joypad_driver
-                                       = input_driver_st->primary_joypad;
+      const input_device_driver_t 
+         *joypad                       = input_driver_st->primary_joypad;
       float input_analog_deadzone      = settings->floats.input_analog_deadzone;
       float input_analog_sensitivity   = settings->floats.input_analog_sensitivity;
 
@@ -22103,7 +22114,7 @@ static void input_driver_poll(void)
             case RETRO_DEVICE_JOYPAD:
             case RETRO_DEVICE_ANALOG:
                BIT256_CLEAR_ALL_PTR(&current_inputs);
-               if (joypad_driver)
+               if (joypad)
                {
                   unsigned k, j;
                   int16_t ret = input_state_wrap(
@@ -22130,7 +22141,8 @@ static void input_driver_poll(void)
                               input_joypad_analog_button(
                                     input_analog_deadzone,
                                     input_analog_sensitivity,
-                                    joypad_driver, &joypad_info[i],
+                                    joypad,
+                                    &joypad_info[i],
                                     k,
                                     &p_rarch->libretro_input_binds[i][k]
                                     );
@@ -22154,7 +22166,7 @@ static void input_driver_poll(void)
                               input_analog_dpad_mode,
                               input_analog_deadzone,
                               input_analog_sensitivity,
-                              joypad_driver,
+                              joypad,
                               &joypad_info[i],
                               k,
                               j,
@@ -25280,28 +25292,29 @@ static bool input_mouse_button_raw(
       unsigned port, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
-   settings_t                  *settings = p_rarch->configuration_settings;
+   input_driver_state_t *input_driver_st= &p_rarch->input_driver_state;
+   settings_t                  *settings= p_rarch->configuration_settings;
+   const input_device_driver_t *joypad  = input_driver_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
-      *sec_joypad                    = input_driver_st->secondary_joypad;
+      *sec_joypad                       = input_driver_st->secondary_joypad;
 #else
    const input_device_driver_t
-      *sec_joypad                    = NULL;
+      *sec_joypad                       = NULL;
 #endif
 
    /*ignore axes*/
    if (id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y)
       return false;
 
-   joypad_info.axis_threshold        = settings->floats.input_axis_threshold;
-   joypad_info.joy_idx               = joy_idx;
-   joypad_info.auto_binds            = input_autoconf_binds[joy_idx];
+   joypad_info.axis_threshold           = settings->floats.input_axis_threshold;
+   joypad_info.joy_idx                  = joy_idx;
+   joypad_info.auto_binds               = input_autoconf_binds[joy_idx];
 
    if (current_input->input_state)
       return current_input->input_state(
             p_rarch->input_driver_state.current_data,
-            input_driver_st->primary_joypad,
+            joypad,
             sec_joypad,
             &joypad_info,
             p_rarch->libretro_input_binds,
@@ -29847,13 +29860,13 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
 #ifdef HAVE_MFI
       if (input_driver_st->secondary_joypad)
       {
-         const input_device_driver_t *tmp   = input_driver_st->sec_joypad;
+         const input_device_driver_t *tmp   = input_driver_st->secondary_joypad;
          input_driver_st->secondary_joypad  = NULL;
          tmp->destroy();
       }
 #endif
       p_rarch->keyboard_mapping_blocked                   = false;
-      p_rarch->input_driver_state.current_data                         = NULL;
+      p_rarch->input_driver_state.current_data            = NULL;
    }
 
    if (p_rarch->video_driver_data
@@ -37297,6 +37310,8 @@ static enum runloop_state runloop_check_state(
 #else
       bool menu_input_active                       = false;
 #endif
+   const input_device_driver_t *joypad             =
+      input_driver_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
       *sec_joypad                                  = input_driver_st->secondary_joypad;
@@ -37405,7 +37420,7 @@ static enum runloop_state runloop_check_state(
             {
                if (current_input->input_state(
                         p_rarch->input_driver_state.current_data,
-                        input_driver_st->primary_joypad,
+                        joypad,
                         sec_joypad,
                         &joypad_info, &binds,
                         p_rarch->keyboard_mapping_blocked,
