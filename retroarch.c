@@ -21921,16 +21921,24 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
       return;
 
    if (input_driver_st->primary_joypad)
-      input_driver_st->primary_joypad->destroy();
-   input_driver_st->primary_joypad = NULL;
+   {
+      const input_device_driver_t *tmp   = input_driver_st->primary_joypad;
+      input_driver_st->primary_joypad    = NULL;
+      tmp->destroy();
+   }
 #ifdef HAVE_MFI
    if (input_driver_st->secondary_joypad)
-      input_driver_st->secondary_joypad->destroy();
-   input_driver_st->secondary_joypad = NULL;
+   {
+      const input_device_driver_t *tmp   = input_driver_st->secondary_joypad;
+      input_driver_st->secondary_joypad  = NULL;
+      tmp->destroy();
+   }
 #endif
-   input_driver_st->primary_joypad     = input_joypad_init_driver(joypad_driver_name, data);
+   if (!input_driver_st->primary_joypad)
+      input_driver_st->primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
 #ifdef HAVE_MFI
-   input_driver_st->secondary_joypad = input_joypad_init_driver("mfi", data);
+   if (!input_driver_st->secondary_joypad)
+      input_driver_st->secondary_joypad  = input_joypad_init_driver("mfi", data);
 #endif
 }
 
@@ -24840,16 +24848,18 @@ static void input_keys_pressed(
 
 void input_driver_init_joypads(void)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
-   input_driver_state_t  *input_driver_st = &p_rarch->input_driver_state;
-   settings_t                   *settings = p_rarch->configuration_settings;
-   input_driver_st->primary_joypad        = input_joypad_init_driver(
+   struct rarch_state            *p_rarch    = &rarch_st;
+   input_driver_state_t  *input_driver_st    = &p_rarch->input_driver_state;
+   settings_t                   *settings    = p_rarch->configuration_settings;
+   if (!input_driver_st->primary_joypad)
+      input_driver_st->primary_joypad        = input_joypad_init_driver(
          settings->arrays.input_joypad_driver,
          input_driver_st->current_data);
 #ifdef HAVE_MFI
-   input_driver_st->secondary_joypad         = input_joypad_init_driver(
-         "mfi",
-         input_driver_st->current_data);
+   if (!input_driver_st->secondary_joypad)
+      input_driver_st->secondary_joypad      = input_joypad_init_driver(
+            "mfi",
+            input_driver_st->current_data);
 #endif
 }
 
@@ -29808,10 +29818,10 @@ static void video_driver_free_hw_context(struct rarch_state *p_rarch)
 
 static void video_driver_free_internal(struct rarch_state *p_rarch)
 {
-   input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
+   input_driver_state_t *input_driver_st    = &p_rarch->input_driver_state;
 
 #ifdef HAVE_THREADS
-   bool        is_threaded     = VIDEO_DRIVER_IS_THREADED_INTERNAL();
+   bool        is_threaded                  = VIDEO_DRIVER_IS_THREADED_INTERNAL();
 #endif
 
 #ifdef HAVE_VIDEO_LAYOUT
@@ -29829,12 +29839,18 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
          if (input_driver_st->current_driver->free)
             input_driver_st->current_driver->free(input_driver_st->current_data);
       if (input_driver_st->primary_joypad)
-         input_driver_st->primary_joypad->destroy();
-      input_driver_st->primary_joypad                                     = NULL;
+      {
+         const input_device_driver_t *tmp   = input_driver_st->primary_joypad;
+         input_driver_st->primary_joypad    = NULL;
+         tmp->destroy();
+      }
 #ifdef HAVE_MFI
       if (input_driver_st->secondary_joypad)
-         input_driver_st->secondary_joypad->destroy();
-      input_driver_st->secondary_joypad                                 = NULL;
+      {
+         const input_device_driver_t *tmp   = input_driver_st->sec_joypad;
+         input_driver_st->secondary_joypad  = NULL;
+         tmp->destroy();
+      }
 #endif
       p_rarch->keyboard_mapping_blocked                   = false;
       p_rarch->input_driver_state.current_data                         = NULL;
