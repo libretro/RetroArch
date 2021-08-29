@@ -35646,7 +35646,11 @@ static void menu_driver_toggle(
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
       if (pause_libretro && !audio_enable_menu)
-         command_event(CMD_EVENT_AUDIO_STOP, NULL);
+      {
+         /* TODO/FIXME - do we need to 'mute' the MIDI driver too? Stopping all
+          * MIDI sounds was done in CMD_EVENT_AUDIO_STOP */
+         p_rarch->audio_driver_mute_enable  = true;
+      }
 
 #if 0
      if (audio_enable_menu && audio_enable_menu_bgm)
@@ -35677,7 +35681,11 @@ static void menu_driver_toggle(
          driver_set_nonblock_state();
 
       if (pause_libretro && !audio_enable_menu)
-         command_event(CMD_EVENT_AUDIO_START, NULL);
+      {
+         /* TODO/FIXME - do we need to 'unmute' the MIDI driver too? 
+            Stopping all MIDI sounds was done in CMD_EVENT_AUDIO_STOP */
+         p_rarch->audio_driver_mute_enable  = false;
+      }
 
 #if 0
       if (audio_enable_menu && audio_enable_menu_bgm)
