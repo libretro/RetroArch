@@ -22077,8 +22077,6 @@ static void input_driver_poll(void)
       bool poll_overlay                = (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive);
 #endif
       input_mapper_t *handle           = &p_rarch->input_driver_mapper;
-      const input_device_driver_t 
-         *joypad                       = input_driver_st->primary_joypad;
       float input_analog_deadzone      = settings->floats.input_analog_deadzone;
       float input_analog_sensitivity   = settings->floats.input_analog_sensitivity;
 
@@ -23099,63 +23097,67 @@ static int16_t menu_input_read_mouse_hw(
       struct rarch_state *p_rarch,
       enum menu_input_mouse_hw_id id)
 {
-   rarch_joypad_info_t joypad_info;
-   unsigned type                          = 0;
-   unsigned device                        = RETRO_DEVICE_MOUSE;
    input_driver_state_t *input_driver_st  = &p_rarch->input_driver_state;
    input_driver_t         *current_input  = input_driver_st->current_driver;
+
+   if (current_input->input_state)
+   {
+      rarch_joypad_info_t joypad_info;
+      unsigned type                       = 0;
+      unsigned device                     = RETRO_DEVICE_MOUSE;
+      const input_device_driver_t
+         *joypad                          = input_driver_st->primary_joypad;
 #ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                  = input_driver_st->secondary_joypad;
+      const input_device_driver_t
+         *sec_joypad                      = input_driver_st->secondary_joypad;
 #else
-   const input_device_driver_t
-      *sec_joypad                  = NULL;
+      const input_device_driver_t
+         *sec_joypad                      = NULL;
 #endif
 
-   joypad_info.joy_idx             = 0;
-   joypad_info.auto_binds          = NULL;
-   joypad_info.axis_threshold      = 0.0f;
+      joypad_info.joy_idx                 = 0;
+      joypad_info.auto_binds              = NULL;
+      joypad_info.axis_threshold          = 0.0f;
 
-   switch (id)
-   {
-      case MENU_MOUSE_X_AXIS:
-         device = RARCH_DEVICE_MOUSE_SCREEN;
-         type   = RETRO_DEVICE_ID_MOUSE_X;
-         break;
-      case MENU_MOUSE_Y_AXIS:
-         device = RARCH_DEVICE_MOUSE_SCREEN;
-         type   = RETRO_DEVICE_ID_MOUSE_Y;
-         break;
-      case MENU_MOUSE_LEFT_BUTTON:
-         type   = RETRO_DEVICE_ID_MOUSE_LEFT;
-         break;
-      case MENU_MOUSE_RIGHT_BUTTON:
-         type   = RETRO_DEVICE_ID_MOUSE_RIGHT;
-         break;
-      case MENU_MOUSE_WHEEL_UP:
-         type   = RETRO_DEVICE_ID_MOUSE_WHEELUP;
-         break;
-      case MENU_MOUSE_WHEEL_DOWN:
-         type   = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
-         break;
-      case MENU_MOUSE_HORIZ_WHEEL_UP:
-         type   = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
-         break;
-      case MENU_MOUSE_HORIZ_WHEEL_DOWN:
-         type   = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
-         break;
+      switch (id)
+      {
+         case MENU_MOUSE_X_AXIS:
+            device = RARCH_DEVICE_MOUSE_SCREEN;
+            type   = RETRO_DEVICE_ID_MOUSE_X;
+            break;
+         case MENU_MOUSE_Y_AXIS:
+            device = RARCH_DEVICE_MOUSE_SCREEN;
+            type   = RETRO_DEVICE_ID_MOUSE_Y;
+            break;
+         case MENU_MOUSE_LEFT_BUTTON:
+            type   = RETRO_DEVICE_ID_MOUSE_LEFT;
+            break;
+         case MENU_MOUSE_RIGHT_BUTTON:
+            type   = RETRO_DEVICE_ID_MOUSE_RIGHT;
+            break;
+         case MENU_MOUSE_WHEEL_UP:
+            type   = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+            break;
+         case MENU_MOUSE_WHEEL_DOWN:
+            type   = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+            break;
+         case MENU_MOUSE_HORIZ_WHEEL_UP:
+            type   = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+            break;
+         case MENU_MOUSE_HORIZ_WHEEL_DOWN:
+            type   = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
+            break;
+      }
+      return current_input->input_state(
+            input_driver_st->current_data,
+            joypad,
+            sec_joypad,
+            &joypad_info,
+            NULL,
+            p_rarch->keyboard_mapping_blocked,
+            0, device, 0, type);
    }
-
-   if (!current_input->input_state)
-      return 0;
-   return current_input->input_state(
-         input_driver_st->current_data,
-         input_driver_st->primary_joypad,
-         sec_joypad,
-         &joypad_info,
-         NULL,
-         p_rarch->keyboard_mapping_blocked,
-         0, device, 0, type);
+   return 0;
 }
 
 static void menu_input_get_mouse_hw_state(
