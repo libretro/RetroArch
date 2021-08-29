@@ -23175,6 +23175,8 @@ static void menu_input_get_mouse_hw_state(
       (menu &&
        menu->driver_ctx &&
        menu->driver_ctx->set_texture);
+   bool state_inited               = current_input &&
+      current_input->input_state;
 #ifdef HAVE_OVERLAY
    bool overlay_enable             = settings->bools.input_overlay_enable;
    /* Menu pointer controls are ignored when overlays are enabled. */
@@ -23183,8 +23185,6 @@ static void menu_input_get_mouse_hw_state(
    if (overlay_active)
       mouse_enabled                = false;
 #endif
-   bool state_inited               = current_input &&
-      current_input->input_state;
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
