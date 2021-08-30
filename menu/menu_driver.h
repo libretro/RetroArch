@@ -794,7 +794,30 @@ bool menu_driver_displaylist_push(
       file_list_t *entry_list,
       file_list_t *entry_stack);
 
+void bundle_decompressed(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err);
+
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+void menu_driver_get_last_shader_path_int(
+      settings_t *settings, enum rarch_shader_type type,
+      const char *shader_dir, const char *shader_file_name,
+      const char **dir_out, const char **file_name_out);
+#endif
+
+bool generic_menu_init_list(struct menu_state *menu_st,
+      settings_t *settings);
+
+bool menu_init(
+      struct menu_state *menu_st,
+      menu_dialog_t        *p_dialog,
+      const menu_ctx_driver_t *menu_driver_ctx,
+      menu_input_t *menu_input,
+      menu_input_pointer_hw_state_t *pointer_hw_state,
+      settings_t *settings
+      );
 
 extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;

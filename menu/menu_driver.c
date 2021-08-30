@@ -23,6 +23,7 @@
 #include <retro_timers.h>
 #include "menu_driver.h"
 #include "menu_cbs.h"
+#include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_LANGEXTRA
 /* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA
@@ -1514,6 +1515,210 @@ int menu_cbs_exit(void)
    return -1;
 }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+void menu_driver_get_last_shader_path_int(
+      settings_t *settings, enum rarch_shader_type type,
+      const char *shader_dir, const char *shader_file_name,
+      const char **dir_out, const char **file_name_out)
+{
+   bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
+   const char *video_shader_dir = settings->paths.directory_video_shader;
+
+   /* File name is NULL by default */
+   if (file_name_out)
+      *file_name_out = NULL;
+
+   /* If any of the following are true:
+    * - Directory caching is disabled
+    * - No directory has been cached
+    * - Cached directory is invalid
+    * - Last selected shader is incompatible with
+    *   the current video driver
+    * ...use default settings */
+   if (!remember_last_dir ||
+       (type == RARCH_SHADER_NONE) ||
+       string_is_empty(shader_dir) ||
+       !path_is_directory(shader_dir) ||
+       !video_shader_is_supported(type))
+   {
+      if (dir_out)
+         *dir_out = video_shader_dir;
+      return;
+   }
+
+   /* Assign last set directory */
+   if (dir_out)
+      *dir_out = shader_dir;
+
+   /* Assign file name */
+   if (file_name_out &&
+       !string_is_empty(shader_file_name))
+      *file_name_out = shader_file_name;
+}
+
+int menu_shader_manager_clear_num_passes(struct video_shader *shader)
+{
+   bool refresh                = false;
+
+   if (!shader)
+      return 0;
+
+   shader->passes = 0;
+
+#ifdef HAVE_MENU
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+#endif
+
+   video_shader_resolve_parameters(shader);
+
+   shader->modified = true;
+
+   return 0;
+}
+
+int menu_shader_manager_clear_parameter(struct video_shader *shader,
+      unsigned i)
+{
+   struct video_shader_parameter *param = shader ?
+      &shader->parameters[i] : NULL;
+
+   if (!param)
+      return 0;
+
+   param->current = param->initial;
+   param->current = MIN(MAX(param->minimum,
+            param->current), param->maximum);
+
+   shader->modified = true;
+
+   return 0;
+}
+
+int menu_shader_manager_clear_pass_filter(struct video_shader *shader,
+      unsigned i)
+{
+   struct video_shader_pass *shader_pass = shader ?
+      &shader->pass[i] : NULL;
+
+   if (!shader_pass)
+      return -1;
+
+   shader_pass->filter = RARCH_FILTER_UNSPEC;
+
+   shader->modified = true;
+
+   return 0;
+}
+
+void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
+      unsigned i)
+{
+   struct video_shader_pass *shader_pass = shader ?
+      &shader->pass[i] : NULL;
+
+   if (!shader_pass)
+      return;
+
+   shader_pass->fbo.scale_x = 0;
+   shader_pass->fbo.scale_y = 0;
+   shader_pass->fbo.valid   = false;
+
+   shader->modified         = true;
+}
+
+void menu_shader_manager_clear_pass_path(struct video_shader *shader,
+      unsigned i)
+{
+   struct video_shader_pass
+      *shader_pass              = shader
+      ? &shader->pass[i]
+      : NULL;
+
+   if (shader_pass)
+      *shader_pass->source.path = '\0';
+
+   if (shader)
+      shader->modified          = true;
+}
+
+/**
+ * menu_shader_manager_get_type:
+ * @shader                   : shader handle
+ *
+ * Gets type of shader.
+ *
+ * Returns: type of shader.
+ **/
+enum rarch_shader_type menu_shader_manager_get_type(
+      const struct video_shader *shader)
+{
+   enum rarch_shader_type type       = RARCH_SHADER_NONE;
+   /* All shader types must be the same, or we cannot use it. */
+   size_t i                         = 0;
+
+   if (!shader)
+      return RARCH_SHADER_NONE;
+
+   type = video_shader_parse_type(shader->path);
+
+   if (!shader->passes)
+      return type;
+
+   if (type == RARCH_SHADER_NONE)
+   {
+      type = video_shader_parse_type(shader->pass[0].source.path);
+      i    = 1;
+   }
+
+   for (; i < shader->passes; i++)
+   {
+      enum rarch_shader_type pass_type =
+         video_shader_parse_type(shader->pass[i].source.path);
+
+      switch (pass_type)
+      {
+         case RARCH_SHADER_CG:
+         case RARCH_SHADER_GLSL:
+         case RARCH_SHADER_SLANG:
+            if (type != pass_type)
+               return RARCH_SHADER_NONE;
+            break;
+         default:
+            break;
+      }
+   }
+
+   return type;
+}
+
+/**
+ * menu_shader_manager_apply_changes:
+ *
+ * Apply shader state changes.
+ **/
+void menu_shader_manager_apply_changes(
+      struct video_shader *shader,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
+{
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+
+   if (!shader)
+      return;
+
+   type = menu_shader_manager_get_type(shader);
+
+   if (shader->passes && type != RARCH_SHADER_NONE)
+   {
+      menu_shader_manager_save_preset(shader, NULL,
+            dir_video_shader, dir_menu_config, true);
+      return;
+   }
+
+   menu_shader_manager_set_preset(NULL, type, NULL, true);
+}
+#endif
+
 enum action_iterate_type action_iterate_type(const char *label)
 {
    if (string_is_equal(label, "info_screen"))
@@ -1541,6 +1746,45 @@ enum action_iterate_type action_iterate_type(const char *label)
          return ITERATE_TYPE_BIND;
 
    return ITERATE_TYPE_DEFAULT;
+}
+
+/* Returns true if search filter is enabled
+ * for the specified menu list */
+bool menu_driver_search_filter_enabled(const char *label, unsigned type)
+{
+   bool filter_enabled = false;
+
+   /* > Check for playlists */
+   filter_enabled = (type == MENU_SETTING_HORIZONTAL_MENU) ||
+                    (type == MENU_HISTORY_TAB) ||
+                    (type == MENU_FAVORITES_TAB) ||
+                    (type == MENU_IMAGES_TAB) ||
+                    (type == MENU_MUSIC_TAB) ||
+                    (type == MENU_VIDEO_TAB) ||
+                    (type == FILE_TYPE_PLAYLIST_COLLECTION);
+
+   if (!filter_enabled && !string_is_empty(label))
+      filter_enabled = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST)) ||
+                       /* > Core updater */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)) ||
+                       /* > File browser (Load Content) */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+                       /* > Shader presets/passes */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)) ||
+                       /* > Cheat files */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
+                       /* > Overlays */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY)) ||
+                       /* > Manage Cores */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST));
+
+   return filter_enabled;
 }
 
 void menu_input_key_bind_poll_bind_state(
@@ -1855,5 +2099,122 @@ bool menu_entries_init(
       return false;
    if (!(menu_st->entries.list_settings = menu_setting_new()))
       return false;
+   return true;
+}
+
+bool generic_menu_init_list(struct menu_state *menu_st,
+      settings_t *settings)
+{
+   menu_displaylist_info_t info;
+   menu_list_t *menu_list       = menu_st->entries.list;
+   file_list_t *menu_stack      = NULL;
+   file_list_t *selection_buf   = NULL;
+
+   if (menu_list)
+   {
+      menu_stack                = MENU_LIST_GET(menu_list, (unsigned)0);
+      selection_buf             = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
+   }
+
+   menu_displaylist_info_init(&info);
+
+   info.label                   = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+   info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
+
+   menu_entries_append_enum(menu_stack,
+         info.path,
+         info.label,
+         MENU_ENUM_LABEL_MAIN_MENU,
+         info.type, info.flags, 0);
+
+   info.list                    = selection_buf;
+
+   if (menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info, settings))
+      menu_displaylist_process(&info);
+
+   menu_displaylist_info_free(&info);
+
+   return true;
+}
+
+/**
+ * menu_init:
+ * @data                     : Menu context handle.
+ *
+ * Create and initialize menu handle.
+ *
+ * Returns: menu handle on success, otherwise NULL.
+ **/
+bool menu_init(
+      struct menu_state *menu_st,
+      menu_dialog_t        *p_dialog,
+      const menu_ctx_driver_t *menu_driver_ctx,
+      menu_input_t *menu_input,
+      menu_input_pointer_hw_state_t *pointer_hw_state,
+      settings_t *settings
+      )
+{
+#ifdef HAVE_CONFIGFILE
+   bool menu_show_start_screen = settings->bools.menu_show_start_screen;
+   bool config_save_on_exit    = settings->bools.config_save_on_exit;
+#endif
+
+   /* Ensure that menu pointer input is correctly
+    * initialised */
+   memset(menu_input, 0, sizeof(menu_input_t));
+   memset(pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
+
+   if (!menu_entries_init(menu_st, menu_driver_ctx))
+   {
+      menu_entries_settings_deinit(menu_st);
+      menu_entries_list_deinit(menu_driver_ctx, menu_st);
+      return false;
+   }
+
+#ifdef HAVE_CONFIGFILE
+   if (menu_show_start_screen)
+   {
+      /* We don't want the welcome dialog screen to show up
+       * again after the first startup, so we save to config
+       * file immediately. */
+      p_dialog->current_type         = MENU_DIALOG_WELCOME;
+
+      configuration_set_bool(settings,
+            settings->bools.menu_show_start_screen, false);
+      if (config_save_on_exit)
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+   }
+#endif
+
+#ifdef HAVE_COMPRESSION
+   if (      settings->bools.bundle_assets_extract_enable
+         && !string_is_empty(settings->arrays.bundle_assets_src)
+         && !string_is_empty(settings->arrays.bundle_assets_dst)
+         && (settings->uints.bundle_assets_extract_version_current
+            != settings->uints.bundle_assets_extract_last_version)
+      )
+   {
+      p_dialog->current_type         = MENU_DIALOG_HELP_EXTRACT;
+      task_push_decompress(
+            settings->arrays.bundle_assets_src,
+            settings->arrays.bundle_assets_dst,
+            NULL,
+            settings->arrays.bundle_assets_dst_subdir,
+            NULL,
+            bundle_decompressed,
+            NULL,
+            NULL,
+            false);
+      /* Support only 1 version - setting this would prevent the assets from being extracted every time */
+      configuration_set_int(settings,
+            settings->uints.bundle_assets_extract_last_version, 1);
+   }
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   menu_shader_manager_init();
+#endif
+
    return true;
 }
