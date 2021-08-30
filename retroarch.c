@@ -23200,7 +23200,7 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP)))
+                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN)))
          hw_state->active          = true;
       /* Right (mouse wheel horizontal right) */
       if ((hw_state->right_pressed = (bool)
@@ -23214,7 +23214,7 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN)))
+                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP)))
          hw_state->active          = true;
    }
 
