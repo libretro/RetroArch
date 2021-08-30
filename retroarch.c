@@ -23048,65 +23048,11 @@ static void menu_input_driver_toggle(
    }
 }
 
-static int16_t menu_input_read_mouse_hw(
-      input_driver_t *current_input,
-      input_driver_state_t *input_driver_st,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      bool keyboard_mapping_blocked,
-      enum menu_input_mouse_hw_id id)
-{
-   rarch_joypad_info_t joypad_info;
-   unsigned type                       = 0;
-   unsigned device                     = RETRO_DEVICE_MOUSE;
-
-   joypad_info.joy_idx                 = 0;
-   joypad_info.auto_binds              = NULL;
-   joypad_info.axis_threshold          = 0.0f;
-
-   switch (id)
-   {
-      case MENU_MOUSE_X_AXIS:
-         device = RARCH_DEVICE_MOUSE_SCREEN;
-         type   = RETRO_DEVICE_ID_MOUSE_X;
-         break;
-      case MENU_MOUSE_Y_AXIS:
-         device = RARCH_DEVICE_MOUSE_SCREEN;
-         type   = RETRO_DEVICE_ID_MOUSE_Y;
-         break;
-      case MENU_MOUSE_LEFT_BUTTON:
-         type   = RETRO_DEVICE_ID_MOUSE_LEFT;
-         break;
-      case MENU_MOUSE_RIGHT_BUTTON:
-         type   = RETRO_DEVICE_ID_MOUSE_RIGHT;
-         break;
-      case MENU_MOUSE_WHEEL_UP:
-         type   = RETRO_DEVICE_ID_MOUSE_WHEELUP;
-         break;
-      case MENU_MOUSE_WHEEL_DOWN:
-         type   = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
-         break;
-      case MENU_MOUSE_HORIZ_WHEEL_UP:
-         type   = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
-         break;
-      case MENU_MOUSE_HORIZ_WHEEL_DOWN:
-         type   = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
-         break;
-   }
-   return current_input->input_state(
-         input_driver_st->current_data,
-         joypad,
-         sec_joypad,
-         &joypad_info,
-         NULL,
-         keyboard_mapping_blocked,
-         0, device, 0, type);
-}
-
 static void menu_input_get_mouse_hw_state(
       struct rarch_state *p_rarch,
       menu_input_pointer_hw_state_t *hw_state)
 {
+   rarch_joypad_info_t joypad_info;
    settings_t *settings            = p_rarch->configuration_settings;
    static int16_t last_x           = 0;
    static int16_t last_y           = 0;
@@ -23158,16 +23104,36 @@ static void menu_input_get_mouse_hw_state(
    if (!mouse_enabled)
       return;
 
+   joypad_info.joy_idx             = 0;
+   joypad_info.auto_binds          = NULL;
+   joypad_info.axis_threshold      = 0.0f;
+
    /* X/Y position */
    if (state_inited)
    {
-      if ((hw_state->x = menu_input_read_mouse_hw(current_input,
-                  input_driver_st, joypad, sec_joypad,
-                  keyboard_mapping_blocked, MENU_MOUSE_X_AXIS)) != last_x)
+      if ((hw_state->x = current_input->input_state(
+                  input_driver_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  NULL,
+                  keyboard_mapping_blocked,
+                  0,
+                  RARCH_DEVICE_MOUSE_SCREEN,
+                  0,
+                  RETRO_DEVICE_ID_MOUSE_X)) != last_x)
          hw_state->active          = true;
-      if ((hw_state->y = menu_input_read_mouse_hw(current_input,
-                  input_driver_st, joypad, sec_joypad,
-                  keyboard_mapping_blocked, MENU_MOUSE_Y_AXIS)) != last_y)
+      if ((hw_state->y = current_input->input_state(
+                  input_driver_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  NULL,
+                  keyboard_mapping_blocked,
+                  0,
+                  RARCH_DEVICE_MOUSE_SCREEN,
+                  0,
+                  RETRO_DEVICE_ID_MOUSE_Y)) != last_y)
          hw_state->active          = true;
    }
 
@@ -23203,39 +23169,87 @@ static void menu_input_get_mouse_hw_state(
    {
       /* Select (LMB)
        * Note that releasing select also counts as activity */
-      hw_state->select_pressed     = (bool)
-         menu_input_read_mouse_hw(current_input,
-               input_driver_st, joypad, sec_joypad,
-               keyboard_mapping_blocked, MENU_MOUSE_LEFT_BUTTON);
+      hw_state->select_pressed = (bool)
+         current_input->input_state(
+               input_driver_st->current_data,
+               joypad,
+               sec_joypad,
+               &joypad_info,
+               NULL,
+               keyboard_mapping_blocked,
+               0,
+               RETRO_DEVICE_MOUSE,
+               0,
+               RETRO_DEVICE_ID_MOUSE_LEFT);
       /* Cancel (RMB)
        * Note that releasing cancel also counts as activity */
-      hw_state->cancel_pressed     = (bool)
-         menu_input_read_mouse_hw(current_input,
-               input_driver_st, joypad, sec_joypad,
-               keyboard_mapping_blocked, MENU_MOUSE_RIGHT_BUTTON);
+      hw_state->cancel_pressed = (bool)
+         current_input->input_state(
+               input_driver_st->current_data,
+               joypad,
+               sec_joypad,
+               &joypad_info,
+               NULL,
+               keyboard_mapping_blocked,
+               0,
+               RETRO_DEVICE_MOUSE,
+               0,
+               RETRO_DEVICE_ID_MOUSE_RIGHT);
       /* Up (mouse wheel up) */
-      if ((hw_state->up_pressed         = (bool)
-               menu_input_read_mouse_hw(current_input,
-                  input_driver_st, joypad, sec_joypad,
-                  keyboard_mapping_blocked, MENU_MOUSE_WHEEL_UP)))
+      if ((hw_state->up_pressed = (bool)
+               current_input->input_state(
+                  input_driver_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  NULL,
+                  keyboard_mapping_blocked,
+                  0,
+                  RETRO_DEVICE_MOUSE,
+                  0,
+                  RETRO_DEVICE_ID_MOUSE_WHEELUP)))
          hw_state->active          = true;
       /* Down (mouse wheel down) */
-      if ((hw_state->down_pressed  = (bool)
-         menu_input_read_mouse_hw(current_input,
-            input_driver_st, joypad, sec_joypad,
-            keyboard_mapping_blocked, MENU_MOUSE_WHEEL_DOWN)))
+      if ((hw_state->down_pressed = (bool)
+               current_input->input_state(
+                  input_driver_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  NULL,
+                  keyboard_mapping_blocked,
+                  0,
+                  RETRO_DEVICE_MOUSE,
+                  0,
+                  RETRO_DEVICE_ID_MOUSE_WHEELDOWN)))
          hw_state->active          = true;
       /* Left (mouse wheel horizontal left) */
-      if ((hw_state->left_pressed  = (bool)
-               menu_input_read_mouse_hw(current_input,
-                  input_driver_st, joypad, sec_joypad,
-                  keyboard_mapping_blocked, MENU_MOUSE_HORIZ_WHEEL_DOWN)))
+      if ((hw_state->left_pressed = (bool)
+               current_input->input_state(
+                  input_driver_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  NULL,
+                  keyboard_mapping_blocked,
+                  0,
+                  RETRO_DEVICE_MOUSE,
+                  0,
+                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP)))
          hw_state->active          = true;
       /* Right (mouse wheel horizontal right) */
       if ((hw_state->right_pressed = (bool)
-               menu_input_read_mouse_hw(current_input,
-                  input_driver_st, joypad, sec_joypad,
-                  keyboard_mapping_blocked, MENU_MOUSE_HORIZ_WHEEL_UP)))
+               current_input->input_state(
+                  input_driver_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  NULL,
+                  keyboard_mapping_blocked,
+                  0,
+                  RETRO_DEVICE_MOUSE,
+                  0,
+                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN)))
          hw_state->active          = true;
    }
 
