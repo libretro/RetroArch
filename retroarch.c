@@ -10485,7 +10485,6 @@ static void retroarch_autosave_deinit(struct rarch_state *p_rarch)
 /* COMMAND */
 
 #ifdef HAVE_COMMAND
-
 bool command_version(command_t *cmd, const char* arg)
 {
    char reply[256]             = {0};
@@ -10532,13 +10531,6 @@ bool command_get_status(command_t *cmd, const char* arg)
    return true;
 }
 
-bool command_show_osd_msg(command_t *cmd, const char* arg)
-{
-    runloop_msg_queue_push(arg, 1, 180, false, NULL,
-          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-    return true;
-}
-
 bool command_get_config_param(command_t *cmd, const char* arg)
 {
    char reply[8192]             = {0};
@@ -10579,67 +10571,6 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    cmd->replier(cmd, reply, strlen(reply));
    return true;
 }
-
-#if defined(HAVE_CHEEVOS)
-bool command_read_ram(command_t *cmd, const char *arg)
-{
-   unsigned i;
-   char *reply                  = NULL;
-   const uint8_t  *data         = NULL;
-   char *reply_at               = NULL;
-   unsigned int nbytes          = 0;
-   unsigned int alloc_size      = 0;
-   unsigned int addr            = -1;
-   unsigned int len             = 0;
-
-   if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
-      return true;
-   /* We allocate more than needed, saving 20 bytes is not really relevant */
-   alloc_size              = 40 + nbytes * 3;
-   reply                   = (char*)malloc(alloc_size);
-   reply[0]                = '\0';
-   reply_at                = reply + snprintf(
-         reply, alloc_size - 1, "READ_CORE_RAM" " %x", addr);
-
-   if ((data = rcheevos_patch_address(addr)))
-   {
-      for (i = 0; i < nbytes; i++)
-         snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
-      reply_at[3 * nbytes] = '\n';
-      len                  = reply_at + 3 * nbytes + 1 - reply;
-   }
-   else
-   {
-      strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
-      len                  = reply_at + STRLEN_CONST(" -1\n") - reply;
-   }
-   cmd->replier(cmd, reply, len);
-   free(reply);
-   return true;
-}
-
-bool command_write_ram(command_t *cmd, const char *arg)
-{
-   unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
-   uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr);
-
-   if (!data)
-      return false;
-
-   if (rcheevos_hardcore_active())
-   {
-      RARCH_LOG("Achievements hardcore mode disabled by WRITE_CORE_RAM\n");
-      rcheevos_pause_hardcore();
-   }
-
-   while (*arg)
-   {
-      *data = strtoul(arg, (char**)&arg, 16);
-      data++;
-   }
-   return true;
-}
-#endif
 
 static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address)
 {
