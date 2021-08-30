@@ -23014,31 +23014,23 @@ static int16_t input_joypad_axis(
 /* MENU INPUT */
 #ifdef HAVE_MENU
 static void menu_input_get_mouse_hw_state(
-      struct rarch_state *p_rarch,
+      gfx_display_t *p_disp,
+      menu_handle_t *menu,
+      input_driver_state_t *input_driver_st,
+      input_driver_t *current_input,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      bool keyboard_mapping_blocked,
+      bool menu_mouse_enable,
+      bool input_overlay_enable,
+      bool overlay_active,
       menu_input_pointer_hw_state_t *hw_state)
 {
    rarch_joypad_info_t joypad_info;
-   settings_t *settings            = p_rarch->configuration_settings;
    static int16_t last_x           = 0;
    static int16_t last_y           = 0;
    static bool last_select_pressed = false;
    static bool last_cancel_pressed = false;
-   input_driver_state_t 
-      *input_driver_st             = &p_rarch->input_driver_state;
-   input_driver_t         
-      *current_input               = input_driver_st->current_driver;
-   const input_device_driver_t
-      *joypad                      = input_driver_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                  = input_driver_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                  = NULL;
-#endif
-   bool mouse_enabled              = settings->bools.menu_mouse_enable;
-   menu_handle_t             *menu = p_rarch->menu_driver_data;
-   bool keyboard_mapping_blocked   = p_rarch->keyboard_mapping_blocked;
    bool menu_has_fb                =
       (menu &&
        menu->driver_ctx &&
@@ -23046,12 +23038,9 @@ static void menu_input_get_mouse_hw_state(
    bool state_inited               = current_input &&
       current_input->input_state;
 #ifdef HAVE_OVERLAY
-   bool overlay_enable             = settings->bools.input_overlay_enable;
    /* Menu pointer controls are ignored when overlays are enabled. */
-   bool overlay_active             = overlay_enable && p_rarch->overlay_ptr
-      && p_rarch->overlay_ptr->alive;
    if (overlay_active)
-      mouse_enabled                = false;
+      menu_mouse_enable            = false;
 #endif
 
    /* Easiest to set inactive by default, and toggle
@@ -23066,7 +23055,7 @@ static void menu_input_get_mouse_hw_state(
    hw_state->left_pressed          = false;
    hw_state->right_pressed         = false;
 
-   if (!mouse_enabled)
+   if (!menu_mouse_enable)
       return;
 
    joypad_info.joy_idx             = 0;
@@ -23112,7 +23101,6 @@ static void menu_input_get_mouse_hw_state(
        * which means we have to convert from screen space to
        * menu space... */
       struct video_viewport vp     = {0};
-      gfx_display_t *p_disp        = &p_rarch->dispgfx;
       /* Read display/framebuffer info */
       unsigned fb_width            = p_disp->framebuf_width;
       unsigned fb_height           = p_disp->framebuf_height;
@@ -23227,19 +23215,23 @@ static void menu_input_get_mouse_hw_state(
 }
 
 static void menu_input_get_touchscreen_hw_state(
-      struct rarch_state *p_rarch,
+      gfx_display_t *p_disp,
+      menu_handle_t *menu,
+      input_driver_state_t *input_driver_st,
+      input_driver_t *current_input,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      bool keyboard_mapping_blocked,
+      bool overlay_active,
+      bool pointer_enabled,
+      unsigned input_touch_scale,
       menu_input_pointer_hw_state_t *hw_state)
 {
    rarch_joypad_info_t joypad_info;
    unsigned fb_width, fb_height;
    int pointer_x                                = 0;
    int pointer_y                                = 0;
-   settings_t *settings                         =
-      p_rarch->configuration_settings;
-   input_driver_state_t *input_driver_st        = &p_rarch->input_driver_state;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
-   input_driver_t *current_input                = p_rarch->input_driver_state.current_driver;
-   menu_handle_t             *menu              = p_rarch->menu_driver_data;
    /* Is a background texture set for the current menu driver?
     * Checks if the menu framebuffer is set.
     * This would usually only return true
@@ -23251,44 +23243,31 @@ static void menu_input_get_touchscreen_hw_state(
    static int16_t last_y                        = 0;
    static bool last_select_pressed              = false;
    static bool last_cancel_pressed              = false;
-   bool overlay_active                          = false;
-   bool pointer_enabled                         = settings->bools.menu_pointer_enable;
-   unsigned input_touch_scale                   = settings->uints.input_touch_scale;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                               = input_driver_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                               = NULL;
-#endif
-   gfx_display_t *p_disp    = &p_rarch->dispgfx;
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
-   hw_state->active        = false;
+   hw_state->active                             = false;
 
    /* Touch screens don't have mouse wheels, so these
     * are always disabled */
-   hw_state->up_pressed    = false;
-   hw_state->down_pressed  = false;
-   hw_state->left_pressed  = false;
-   hw_state->right_pressed = false;
+   hw_state->up_pressed                         = false;
+   hw_state->down_pressed                       = false;
+   hw_state->left_pressed                       = false;
+   hw_state->right_pressed                      = false;
 
 #ifdef HAVE_OVERLAY
    /* Menu pointer controls are ignored when overlays are enabled. */
-   overlay_active          = settings->bools.input_overlay_enable
-      && p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive;
    if (overlay_active)
-      pointer_enabled = false;
+      pointer_enabled                           = false;
 #endif
 
    /* If touchscreen is disabled, ignore all input */
    if (!pointer_enabled)
    {
-      hw_state->x              = 0;
-      hw_state->y              = 0;
-      hw_state->select_pressed = false;
-      hw_state->cancel_pressed = false;
+      hw_state->x                               = 0;
+      hw_state->y                               = 0;
+      hw_state->select_pressed                  = false;
+      hw_state->cancel_pressed                  = false;
       return;
    }
 
@@ -23296,21 +23275,21 @@ static void menu_input_get_touchscreen_hw_state(
     * menu drivers like RGUI. Touchscreen input as a whole should
     * NOT be dependent on this
     */
-   fb_width                   = p_disp->framebuf_width;
-   fb_height                  = p_disp->framebuf_height;
+   fb_width                                     = p_disp->framebuf_width;
+   fb_height                                    = p_disp->framebuf_height;
 
-   joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = NULL;
-   joypad_info.axis_threshold = 0.0f;
+   joypad_info.joy_idx                          = 0;
+   joypad_info.auto_binds                       = NULL;
+   joypad_info.axis_threshold                   = 0.0f;
 
    /* X pos */
    if (current_input->input_state)
       pointer_x                  = current_input->input_state(
-            p_rarch->input_driver_state.current_data,
-            input_driver_st->primary_joypad,
+            input_driver_st->current_data,
+            joypad,
             sec_joypad,
             &joypad_info, binds,
-            p_rarch->keyboard_mapping_blocked,
+            keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_X);
    hw_state->x  = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
@@ -23337,11 +23316,11 @@ static void menu_input_get_touchscreen_hw_state(
    /* Y pos */
    if (current_input->input_state)
       pointer_y = current_input->input_state(
-            p_rarch->input_driver_state.current_data,
-            input_driver_st->primary_joypad,
+            input_driver_st->current_data,
+            joypad,
             sec_joypad,
             &joypad_info, binds,
-            p_rarch->keyboard_mapping_blocked,
+            keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_Y);
    hw_state->y  = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
@@ -23364,11 +23343,11 @@ static void menu_input_get_touchscreen_hw_state(
     * Note that releasing select also counts as activity */
    if (current_input->input_state)
       hw_state->select_pressed = (bool)current_input->input_state(
-            p_rarch->input_driver_state.current_data,
-            input_driver_st->primary_joypad,
+            input_driver_st->current_data,
+            joypad,
             sec_joypad,
             &joypad_info, binds,
-            p_rarch->keyboard_mapping_blocked,
+            keyboard_mapping_blocked,
             0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_PRESSED);
    if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
@@ -23379,11 +23358,11 @@ static void menu_input_get_touchscreen_hw_state(
     * Note that releasing cancel also counts as activity */
    if (current_input->input_state)
       hw_state->cancel_pressed = (bool)current_input->input_state(
-            p_rarch->input_driver_state.current_data,
-            input_driver_st->primary_joypad,
+            input_driver_st->current_data,
+            joypad,
             sec_joypad,
             &joypad_info, binds,
-            p_rarch->keyboard_mapping_blocked,
+            keyboard_mapping_blocked,
             0, pointer_device,
             0, RARCH_DEVICE_ID_POINTER_BACK);
    if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
@@ -23564,11 +23543,35 @@ static unsigned menu_event(
    size_t new_scroll_accel                         = 0;
    struct menu_state                     *menu_st  = &p_rarch->menu_driver_state;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
+   input_driver_state_t *input_driver_st           =
+      &p_rarch->input_driver_state;
+   input_driver_t *current_input                   =
+      input_driver_st->current_driver;
+   const input_device_driver_t
+      *joypad                                      = input_driver_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad         =
+      input_driver_st->secondary_joypad;
+#else
+   const input_device_driver_t *sec_joypad         = NULL;
+#endif
+   gfx_display_t *p_disp                           = &p_rarch->dispgfx;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
+   menu_handle_t             *menu                 = p_rarch->menu_driver_data;
+   bool keyboard_mapping_blocked                   = p_rarch->keyboard_mapping_blocked;
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
    bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
+   bool pointer_enabled                            = settings->bools.menu_pointer_enable;
+   unsigned input_touch_scale                      = settings->uints.input_touch_scale;
+   unsigned menu_scroll_delay                      =
+      settings->uints.menu_scroll_delay;
+#ifdef HAVE_OVERLAY
+   bool input_overlay_enable                       = settings->bools.input_overlay_enable;
+   bool overlay_active                             = input_overlay_enable && p_rarch->overlay_ptr
+      && p_rarch->overlay_ptr->alive;
+#endif
    unsigned menu_ok_btn                            = swap_ok_cancel_btns ?
          RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
    unsigned menu_cancel_btn                        = swap_ok_cancel_btns ?
@@ -23604,7 +23607,18 @@ static unsigned menu_event(
 
       /* Read mouse */
       if (menu_mouse_enable)
-         menu_input_get_mouse_hw_state(p_rarch, &mouse_hw_state);
+         menu_input_get_mouse_hw_state(
+               p_disp,
+               menu,
+               input_driver_st,
+               current_input,
+               joypad,
+               sec_joypad,
+               keyboard_mapping_blocked,
+               menu_mouse_enable,
+               input_overlay_enable,
+               overlay_active,
+               &mouse_hw_state);
 
       /* Read touchscreen
        * Note: Could forgo this if mouse is currently active,
@@ -23613,7 +23627,17 @@ static unsigned menu_event(
        * screen support) */
       if (menu_pointer_enable)
          menu_input_get_touchscreen_hw_state(
-               p_rarch, &touchscreen_hw_state);
+               p_disp,
+               menu,
+               input_driver_st,
+               current_input,
+               joypad,
+               sec_joypad,
+               keyboard_mapping_blocked,
+               overlay_active,
+               pointer_enabled,
+               input_touch_scale,
+               &touchscreen_hw_state);
 
       /* Mouse takes precedence */
       if (mouse_hw_state.active)
@@ -23688,7 +23712,7 @@ static unsigned menu_event(
    for (i = 0; i < 6; i++)
    {
       if (BIT256_GET_PTR(p_input, navigation_buttons[i]))
-         navigation_current |= (1 << navigation_buttons[i]);
+         navigation_current        |= (1 << navigation_buttons[i]);
    }
 
    if (navigation_current)
@@ -23697,50 +23721,50 @@ static unsigned menu_event(
       {
          /* Store first direction in order to block "diagonals" */
          if (!navigation_initial)
-            navigation_initial = navigation_current;
+            navigation_initial      = navigation_current;
 
          /* don't run anything first frame, only capture held inputs
           * for old_input_state. */
 
-         first_held  = true;
-         if (menu_scroll_fast)
-            delay_timer = initial_held ? settings->uints.menu_scroll_delay : 100;
+         first_held                 = true;
+         if (initial_held)
+            delay_timer             = menu_scroll_delay;
          else
-            delay_timer = initial_held ? settings->uints.menu_scroll_delay : 20;
-         delay_count = 0;
+            delay_timer             = menu_scroll_fast ? 100 : 20;
+         delay_count                = 0;
       }
 
       if (delay_count >= delay_timer)
       {
-         uint32_t input_repeat = 0;
+         uint32_t input_repeat      = 0;
          for (i = 0; i < 6; i++)
             BIT32_SET(input_repeat, navigation_buttons[i]);
 
-         set_scroll           = true;
-         first_held           = false;
-         p_trigger_input->data[0] |= p_input->data[0] & input_repeat;
-         new_scroll_accel     = menu_st->scroll.acceleration;
+         set_scroll                 = true;
+         first_held                 = false;
+         p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;
+         new_scroll_accel           = menu_st->scroll.acceleration;
 
          if (menu_scroll_fast)
-            new_scroll_accel = MIN(new_scroll_accel + 1, 64);
+            new_scroll_accel        = MIN(new_scroll_accel + 1, 64);
          else
-            new_scroll_accel = MIN(new_scroll_accel + 1, 5);
+            new_scroll_accel        = MIN(new_scroll_accel + 1, 5);
       }
 
-      initial_held  = false;
+      initial_held                  = false;
    }
    else
    {
-      set_scroll         = true;
-      first_held         = false;
-      initial_held       = true;
-      navigation_initial = 0;
+      set_scroll                    = true;
+      first_held                    = false;
+      initial_held                  = true;
+      navigation_initial            = 0;
    }
 
    if (set_scroll)
-      menu_st->scroll.acceleration = (unsigned)(new_scroll_accel);
+      menu_st->scroll.acceleration  = (unsigned)(new_scroll_accel);
 
-   delay_count += p_rarch->anim.delta_time;
+   delay_count                     += p_rarch->anim.delta_time;
 
    if (display_kb)
    {
