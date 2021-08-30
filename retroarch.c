@@ -28244,6 +28244,8 @@ static void audio_driver_sample(int16_t left, int16_t right)
    /* If this returns false, it's probably a good time to bail */
    if (!p_rarch->audio_driver_output_samples_conv_buf)
       return;
+   if (p_rarch->rarch_is_switching_display_mode)
+      return;
    p_rarch->audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = left;
    p_rarch->audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = right;
 
@@ -28356,7 +28358,7 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
-   if (p_rarch->audio_suspended)
+   if (p_rarch->audio_suspended || p_rarch->rarch_is_switching_display_mode)
       return frames;
 
    if (  p_rarch->recording_data   &&
