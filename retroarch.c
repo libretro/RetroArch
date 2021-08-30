@@ -23571,6 +23571,9 @@ static unsigned menu_event(
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
    bool overlay_active                             = input_overlay_enable && p_rarch->overlay_ptr
       && p_rarch->overlay_ptr->alive;
+#else
+   bool input_overlay_enable                       = false;
+   bool overlay_active                             = false;
 #endif
    unsigned menu_ok_btn                            = swap_ok_cancel_btns ?
          RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
