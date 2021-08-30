@@ -136,7 +136,7 @@ const char* rc_console_name(int console_id)
       return "PC-FX";
 
     case RC_CONSOLE_PC_ENGINE:
-      return "PCEngine";
+      return "PC Engine";
 
     case RC_CONSOLE_PLAYSTATION:
       return "PlayStation";
@@ -323,19 +323,45 @@ static const rc_memory_region_t _rc_memory_regions_game_gear[] = {
 static const rc_memory_regions_t rc_memory_regions_game_gear = { _rc_memory_regions_game_gear, 1 };
 
 /* ===== Intellivision ===== */
-/* http://wiki.intellivision.us/index.php%3Ftitle%3DMemory_Map */
+/* http://wiki.intellivision.us/index.php/Memory_Map */
+/* NOTE: Intellivision memory addresses point at 16-bit values. FreeIntv exposes them as little-endian
+ *       32-bit values. As such, the addresses are off by a factor of 4 _and_ the data is only where we
+ *       expect it on little-endian systems.
+ */
 static const rc_memory_region_t _rc_memory_regions_intellivision[] = {
-    { 0x000000U, 0x00007FU, 0x000000U, RC_MEMORY_TYPE_VIDEO_RAM, "STIC Registers" },
-    { 0x000080U, 0x0000FFU, 0x000080U, RC_MEMORY_TYPE_UNUSED, "" },
-    { 0x000100U, 0x00035FU, 0x000100U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
-    { 0x000360U, 0x0003FFU, 0x000360U, RC_MEMORY_TYPE_UNUSED, "" },
-    { 0x000400U, 0x000FFFU, 0x000400U, RC_MEMORY_TYPE_SYSTEM_RAM, "Cartridge RAM" },
-    { 0x001000U, 0x001FFFU, 0x001000U, RC_MEMORY_TYPE_UNUSED, "" },
-    { 0x002000U, 0x002FFFU, 0x002000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Cartridge RAM" },
-    { 0x003000U, 0x003FFFU, 0x003000U, RC_MEMORY_TYPE_VIDEO_RAM, "Video RAM" },
-    { 0x004000U, 0x00FFFFU, 0x004000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Cartridge RAM" },
+    /* For backwards compatibility, register a 128-byte chunk of video RAM so the system memory
+     * will start at $0080. $0000-$007F previously tried to map to the STIC video registers as
+     * RETRO_MEMORY_VIDEO_RAM, and FreeIntv didn't expose any RETRO_MEMORY_VIDEO_RAM, so the first
+     * byte of RETRO_MEMORY_SYSTEM_RAM was registered at $0080. The data at $0080 is actually the
+     * STIC registers (4 bytes each), so we need to provide an arbitrary 128-byte padding that
+     * claims to be video RAM to ensure the system RAM ends up at the right address.
+     */
+    { 0x000000U, 0x00007FU, 0xFFFFFFU, RC_MEMORY_TYPE_VIDEO_RAM, "" },
+
+    /* RetroAchievements address = real address x4 + 0x80.
+     * These all have to map to RETRO_MEMORY_SYSTEM_RAM (even the video-related fields) as the
+     * entire block is exposed as a single entity by FreeIntv */
+
+    /* $0000-$007F: STIC registers, $0040-$007F are readonly */
+    { 0x000080U, 0x00027FU, 0x000000U, RC_MEMORY_TYPE_HARDWARE_CONTROLLER, "STIC Registers" },
+    /* $0080-$00FF: unused */
+    { 0x000280U, 0x00047FU, 0x000080U, RC_MEMORY_TYPE_UNUSED, "" },
+    /* $0100-$035F: system RAM, $0100-$01EF is scratch memory and only 8-bits per address */
+    { 0x000480U, 0x000DFFU, 0x000100U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    /* $0360-$03FF: unused */
+    { 0x000E00U, 0x00107FU, 0x000360U, RC_MEMORY_TYPE_UNUSED, "" },
+    /* $0400-$0FFF: cartridge RAM */
+    { 0x001080U, 0x00407FU, 0x000400U, RC_MEMORY_TYPE_SYSTEM_RAM, "Cartridge RAM" },
+    /* $1000-$1FFF: unused */
+    { 0x004080U, 0x00807FU, 0x001000U, RC_MEMORY_TYPE_UNUSED, "" },
+    /* $2000-$2FFF: cartridge RAM */
+    { 0x008080U, 0x00C07FU, 0x002000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Cartridge RAM" },
+    /* $3000-$3FFF: video RAM */
+    { 0x00C080U, 0x01007FU, 0x003000U, RC_MEMORY_TYPE_HARDWARE_CONTROLLER, "Video RAM" },
+    /* $4000-$FFFF: cartridge RAM */
+    { 0x010080U, 0x04007FU, 0x004000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Cartridge RAM" },
 };
-static const rc_memory_regions_t rc_memory_regions_intellivision = { _rc_memory_regions_intellivision, 9 };
+static const rc_memory_regions_t rc_memory_regions_intellivision = { _rc_memory_regions_intellivision, 10 };
 
 /* ===== Magnavox Odyssey 2 ===== */
 /* https://sudonull.com/post/76885-Architecture-and-programming-Philips-Videopac-Magnavox-Odyssey-2 */
@@ -447,13 +473,13 @@ static const rc_memory_regions_t rc_memory_regions_pc8800 = { _rc_memory_regions
 
 /* ===== PC Engine ===== */
 /* http://www.archaicpixels.com/Memory_Map */
-static const rc_memory_region_t _rc_memory_regions_pcengine[] = {
+static const rc_memory_region_t _rc_memory_regions_pc_engine[] = {
     { 0x000000U, 0x001FFFU, 0x1F0000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
     { 0x002000U, 0x011FFFU, 0x100000U, RC_MEMORY_TYPE_SYSTEM_RAM, "CD RAM" },
     { 0x012000U, 0x041FFFU, 0x0D0000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Super System Card RAM" },
     { 0x042000U, 0x0427FFU, 0x1EE000U, RC_MEMORY_TYPE_SAVE_RAM,   "CD Battery-backed RAM" }
 };
-static const rc_memory_regions_t rc_memory_regions_pcengine = { _rc_memory_regions_pcengine, 4 };
+static const rc_memory_regions_t rc_memory_regions_pc_engine = { _rc_memory_regions_pc_engine, 4 };
 
 /* ===== PC-FX ===== */
 /* http://daifukkat.su/pcfx/data/memmap.html */
@@ -679,7 +705,7 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
       return &rc_memory_regions_pc8800;
 
     case RC_CONSOLE_PC_ENGINE:
-      return &rc_memory_regions_pcengine;
+      return &rc_memory_regions_pc_engine;
 
     case RC_CONSOLE_PCFX:
       return &rc_memory_regions_pcfx;
