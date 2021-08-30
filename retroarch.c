@@ -28208,7 +28208,7 @@ static void audio_driver_flush(
 
       if (p_rarch->audio_driver_use_float)
          output_frames       *= sizeof(float);
-      else
+      else if (p_rarch->audio_driver_output_samples_conv_buf)
       {
          convert_float_to_s16(p_rarch->audio_driver_output_samples_conv_buf,
                (const float*)output_data, output_frames * 2);
@@ -28216,11 +28216,16 @@ static void audio_driver_flush(
          output_data          = p_rarch->audio_driver_output_samples_conv_buf;
          output_frames       *= sizeof(int16_t);
       }
+      else
+      {
+         output_data          = NULL;
+         output_frames        = 0;
+      }
 
-      if (p_rarch->current_audio->write(
+      if (output_data && output_frames > 0)
+         p_rarch->current_audio->write(
                p_rarch->audio_driver_context_audio_data,
-               output_data, output_frames * 2) < 0)
-         p_rarch->audio_driver_active = false;
+               output_data, output_frames * 2);
    }
 }
 
