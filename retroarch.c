@@ -14913,6 +14913,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!video_driver_has_windowed())
                return false;
 
+            p_rarch->audio_suspended                 = true;
             p_rarch->rarch_is_switching_display_mode = true;
 
             /* we toggled manually, write the new value to settings */
@@ -14942,6 +14943,7 @@ bool command_event(enum event_command cmd, void *data)
             }
 
             p_rarch->rarch_is_switching_display_mode = false;
+            p_rarch->audio_suspended                 = false;
 
             if (userdata && *userdata == true)
                video_driver_cached_frame();
@@ -28208,7 +28210,7 @@ static void audio_driver_flush(
 
       if (p_rarch->audio_driver_use_float)
          output_frames       *= sizeof(float);
-      else if (p_rarch->audio_driver_output_samples_conv_buf)
+      else
       {
          convert_float_to_s16(p_rarch->audio_driver_output_samples_conv_buf,
                (const float*)output_data, output_frames * 2);
@@ -28216,16 +28218,10 @@ static void audio_driver_flush(
          output_data          = p_rarch->audio_driver_output_samples_conv_buf;
          output_frames       *= sizeof(int16_t);
       }
-      else
-      {
-         output_data          = NULL;
-         output_frames        = 0;
-      }
 
-      if (output_data && output_frames > 0)
-         p_rarch->current_audio->write(
-               p_rarch->audio_driver_context_audio_data,
-               output_data, output_frames * 2);
+      p_rarch->current_audio->write(
+            p_rarch->audio_driver_context_audio_data,
+            output_data, output_frames * 2);
    }
 }
 
@@ -28240,11 +28236,6 @@ static void audio_driver_sample(int16_t left, int16_t right)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (p_rarch->audio_suspended)
-      return;
-   /* If this returns false, it's probably a good time to bail */
-   if (!p_rarch->audio_driver_output_samples_conv_buf)
-      return;
-   if (p_rarch->rarch_is_switching_display_mode)
       return;
    p_rarch->audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = left;
    p_rarch->audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = right;
@@ -28264,7 +28255,7 @@ static void audio_driver_sample(int16_t left, int16_t right)
       p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
    }
 
-   if (!(runloop_state.paused           ||
+   if (!(runloop_state.paused              ||
 		   !p_rarch->audio_driver_active     ||
 		   !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
@@ -28289,9 +28280,11 @@ static void audio_driver_menu_sample(void)
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
    bool check_flush                       = !(
-         runloop_state.paused           ||
+         runloop_state.paused              ||
          !p_rarch->audio_driver_active     ||
          !p_rarch->audio_driver_output_samples_buf);
+   if (p_rarch->audio_suspended)
+      check_flush                         = false;
 
    while (sample_count > 1024)
    {
@@ -28357,8 +28350,7 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    struct rarch_state            *p_rarch = &rarch_st;
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
-
-   if (p_rarch->audio_suspended || p_rarch->rarch_is_switching_display_mode)
+   if (p_rarch->audio_suspended)
       return frames;
 
    if (  p_rarch->recording_data   &&
@@ -29246,16 +29238,17 @@ void audio_driver_frame_is_reverse(void)
           runloop_state.paused          ||
          !p_rarch->audio_driver_active     ||
          !p_rarch->audio_driver_output_samples_buf))
-      audio_driver_flush(
-            p_rarch,
-            p_rarch->configuration_settings->floats.slowmotion_ratio,
-            p_rarch->configuration_settings->bools.audio_fastforward_mute,
-            p_rarch->audio_driver_rewind_buf  +
-            p_rarch->audio_driver_rewind_ptr,
-            p_rarch->audio_driver_rewind_size -
-            p_rarch->audio_driver_rewind_ptr,
-            runloop_state.slowmotion,
-            runloop_state.fastmotion);
+      if (!p_rarch->audio_suspended)
+         audio_driver_flush(
+               p_rarch,
+               p_rarch->configuration_settings->floats.slowmotion_ratio,
+               p_rarch->configuration_settings->bools.audio_fastforward_mute,
+               p_rarch->audio_driver_rewind_buf  +
+               p_rarch->audio_driver_rewind_ptr,
+               p_rarch->audio_driver_rewind_size -
+               p_rarch->audio_driver_rewind_ptr,
+               runloop_state.slowmotion,
+               runloop_state.fastmotion);
 }
 #endif
 
