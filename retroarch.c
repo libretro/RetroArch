@@ -23367,17 +23367,12 @@ static void input_keys_pressed(
       const struct retro_keybind **binds,
       const struct retro_keybind *binds_norm,
       const struct retro_keybind *binds_auto,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info)
 {
    unsigned i;
    input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                               = input_driver_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                               = NULL;
-#endif
 
    if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
@@ -33883,7 +33878,7 @@ void retroarch_menu_running(void)
 void retroarch_menu_running_finished(bool quit)
 {
    struct rarch_state *p_rarch     = &rarch_st;
-#ifdef HAVE_OVERLAY
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings            = p_rarch->configuration_settings;
 #endif
 #ifdef HAVE_MENU
@@ -35467,8 +35462,10 @@ static enum runloop_state runloop_check_state(
       }
 #endif
 
-      input_keys_pressed(port, menu_input_active, input_hotkey_block_delay, p_rarch,
+      input_keys_pressed(port,
+            menu_input_active, input_hotkey_block_delay, p_rarch,
             &current_bits, &binds, binds_norm, binds_auto,
+            joypad, sec_joypad,
             &joypad_info);
 
 #ifdef HAVE_MENU

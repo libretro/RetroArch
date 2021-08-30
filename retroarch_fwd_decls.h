@@ -190,10 +190,6 @@ static const char **input_keyboard_start_line(
       void *userdata,
       struct input_keyboard_line *keyboard_line,
       input_keyboard_line_complete_t cb);
-
-static void menu_driver_list_free(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      menu_ctx_list_t *list);
 static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
       gfx_display_t *p_disp,
