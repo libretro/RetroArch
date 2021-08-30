@@ -465,7 +465,7 @@ static int16_t input_state_wrap(
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       bool keyboard_mapping_blocked,
-      unsigned port,
+      unsigned _port,
       unsigned device,
       unsigned idx,
       unsigned id)
@@ -480,20 +480,20 @@ static int16_t input_state_wrap(
       {
          if (joypad)
             ret                    |= joypad->state(
-                  joypad_info, binds[port], port);
+                  joypad_info, binds[_port], _port);
          if (sec_joypad)
             ret                    |= sec_joypad->state(
-                  joypad_info, binds[port], port);
+                  joypad_info, binds[_port], _port);
       }
       else
       {
          /* Do a bitwise OR to combine both input
           * states together */
-         if (binds[port][id].valid)
+         if (binds[_port][id].valid)
          {
             /* Auto-binds are per joypad, not per user. */
-            const uint64_t bind_joykey     = binds[port][id].joykey;
-            const uint64_t bind_joyaxis    = binds[port][id].joyaxis;
+            const uint64_t bind_joykey     = binds[_port][id].joykey;
+            const uint64_t bind_joyaxis    = binds[_port][id].joyaxis;
             const uint64_t autobind_joykey = joypad_info->auto_binds[id].joykey;
             const uint64_t autobind_joyaxis= joypad_info->auto_binds[id].joyaxis;
             uint16_t port                  = joypad_info->joy_idx;
@@ -535,7 +535,7 @@ static int16_t input_state_wrap(
             joypad_info,
             binds,
             keyboard_mapping_blocked,
-            port,
+            _port,
             device,
             idx,
             id);
@@ -18511,9 +18511,9 @@ static void strcat_alloc(char **dst, const char *s)
          size_t   len = strlen(s);
          if (len != 0)
          {
-            char *dst = (char*)malloc(len + 1);
-            strcpy_literal(dst, s);
-            src       = dst;
+            char *_dst= (char*)malloc(len + 1);
+            strcpy_literal(_dst, s);
+            src       = _dst;
          }
          else
             src       = NULL;
@@ -35501,7 +35501,6 @@ void retroarch_init_task_queue(void)
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
 
    switch(state)
    {
@@ -35565,7 +35564,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_NETWORKGAMEPAD
          if (p_rarch->input_driver_remote)
             input_remote_free(p_rarch->input_driver_remote,
-                  settings->uints.input_max_users);
+                  p_rarch->configuration_settings->uints.input_max_users);
          p_rarch->input_driver_remote = NULL;
 #endif
          input_mapper_reset(&p_rarch->input_driver_mapper);
