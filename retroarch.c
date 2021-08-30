@@ -1066,6 +1066,7 @@ static void menu_input_key_bind_poll_bind_state_internal(
 
 static void menu_input_key_bind_poll_bind_state(
       struct rarch_state *p_rarch,
+      float input_axis_threshold,
       unsigned joy_idx,
       struct menu_bind_state *state,
       bool timed_out)
@@ -1085,10 +1086,34 @@ static void menu_input_key_bind_poll_bind_state(
 
    memset(state->state, 0, sizeof(state->state));
 
-   /* Poll mouse (on the relevant port) */
-   for (b = 0; b < MENU_MAX_MBUTTONS; b++)
-      state->state[port].mouse_buttons[b] =
-         input_mouse_button_raw(p_rarch, current_input, joy_idx, port, b);
+   joypad_info.axis_threshold           = input_axis_threshold;
+   joypad_info.joy_idx                  = joy_idx;
+   joypad_info.auto_binds               = input_autoconf_binds[joy_idx];
+
+   if (current_input->input_state)
+   {
+      /* Poll mouse (on the relevant port)
+       *
+       * Check if key was being pressed by 
+       * user with mouse number 'port'
+       *
+       * NOTE: We start iterating on 2 (RETRO_DEVICE_ID_MOUSE_LEFT),
+       * because we want to skip the axes
+       */
+      for (b = 2; b < MENU_MAX_MBUTTONS; b++)
+      {
+         state->state[port].mouse_buttons[b] =
+            current_input->input_state(
+                  input_driver_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  p_rarch->libretro_input_binds,
+                  p_rarch->keyboard_mapping_blocked,
+                  port,
+                  RETRO_DEVICE_MOUSE, 0, b);
+      }
+   }
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -1398,6 +1423,7 @@ bool menu_input_key_bind_set_mode(
          sec_joypad,
          binds);
    menu_input_key_bind_poll_bind_state(p_rarch,
+         settings->floats.input_axis_threshold,
          settings->uints.input_joypad_index[binds->port],
          binds, false);
 
@@ -1511,6 +1537,7 @@ static bool menu_input_key_bind_iterate(
       p_rarch->keyboard_mapping_blocked    = false;
 
       menu_input_key_bind_poll_bind_state(p_rarch,
+            settings->floats.input_axis_threshold,
             settings->uints.input_joypad_index[new_binds.port],
             &new_binds, timed_out);
 
@@ -10284,7 +10311,7 @@ bool menu_input_dialog_start_search(void)
             &p_rarch->keyboard_line,
             menu_input_search_cb);
    /* While reading keyboard line input, we have to block all hotkeys. */
-   p_rarch->keyboard_mapping_blocked= true;
+   p_rarch->keyboard_mapping_blocked = true;
 
    return true;
 }
@@ -23024,21 +23051,14 @@ static void menu_input_driver_toggle(
 static int16_t menu_input_read_mouse_hw(
       input_driver_t *current_input,
       input_driver_state_t *input_driver_st,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
       bool keyboard_mapping_blocked,
       enum menu_input_mouse_hw_id id)
 {
    rarch_joypad_info_t joypad_info;
    unsigned type                       = 0;
    unsigned device                     = RETRO_DEVICE_MOUSE;
-   const input_device_driver_t
-      *joypad                          = input_driver_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                      = input_driver_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                      = NULL;
-#endif
 
    joypad_info.joy_idx                 = 0;
    joypad_info.auto_binds              = NULL;
@@ -23096,6 +23116,15 @@ static void menu_input_get_mouse_hw_state(
       *input_driver_st             = &p_rarch->input_driver_state;
    input_driver_t         
       *current_input               = input_driver_st->current_driver;
+   const input_device_driver_t
+      *joypad                      = input_driver_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t
+      *sec_joypad                  = input_driver_st->secondary_joypad;
+#else
+   const input_device_driver_t
+      *sec_joypad                  = NULL;
+#endif
    bool mouse_enabled              = settings->bools.menu_mouse_enable;
    menu_handle_t             *menu = p_rarch->menu_driver_data;
    bool keyboard_mapping_blocked   = p_rarch->keyboard_mapping_blocked;
@@ -23133,11 +23162,11 @@ static void menu_input_get_mouse_hw_state(
    if (state_inited)
    {
       if ((hw_state->x = menu_input_read_mouse_hw(current_input,
-                  input_driver_st,
+                  input_driver_st, joypad, sec_joypad,
                   keyboard_mapping_blocked, MENU_MOUSE_X_AXIS)) != last_x)
          hw_state->active          = true;
       if ((hw_state->y = menu_input_read_mouse_hw(current_input,
-                  input_driver_st,
+                  input_driver_st, joypad, sec_joypad,
                   keyboard_mapping_blocked, MENU_MOUSE_Y_AXIS)) != last_y)
          hw_state->active          = true;
    }
@@ -23175,31 +23204,37 @@ static void menu_input_get_mouse_hw_state(
       /* Select (LMB)
        * Note that releasing select also counts as activity */
       hw_state->select_pressed     = (bool)
-         menu_input_read_mouse_hw(current_input, input_driver_st,
+         menu_input_read_mouse_hw(current_input,
+               input_driver_st, joypad, sec_joypad,
                keyboard_mapping_blocked, MENU_MOUSE_LEFT_BUTTON);
       /* Cancel (RMB)
        * Note that releasing cancel also counts as activity */
       hw_state->cancel_pressed     = (bool)
-         menu_input_read_mouse_hw(current_input, input_driver_st,
+         menu_input_read_mouse_hw(current_input,
+               input_driver_st, joypad, sec_joypad,
                keyboard_mapping_blocked, MENU_MOUSE_RIGHT_BUTTON);
       /* Up (mouse wheel up) */
       if ((hw_state->up_pressed         = (bool)
-               menu_input_read_mouse_hw(current_input, input_driver_st,
+               menu_input_read_mouse_hw(current_input,
+                  input_driver_st, joypad, sec_joypad,
                   keyboard_mapping_blocked, MENU_MOUSE_WHEEL_UP)))
          hw_state->active          = true;
       /* Down (mouse wheel down) */
       if ((hw_state->down_pressed  = (bool)
-         menu_input_read_mouse_hw(current_input, input_driver_st,
-               keyboard_mapping_blocked, MENU_MOUSE_WHEEL_DOWN)))
+         menu_input_read_mouse_hw(current_input,
+            input_driver_st, joypad, sec_joypad,
+            keyboard_mapping_blocked, MENU_MOUSE_WHEEL_DOWN)))
          hw_state->active          = true;
       /* Left (mouse wheel horizontal left) */
       if ((hw_state->left_pressed  = (bool)
-               menu_input_read_mouse_hw(current_input, input_driver_st,
+               menu_input_read_mouse_hw(current_input,
+                  input_driver_st, joypad, sec_joypad,
                   keyboard_mapping_blocked, MENU_MOUSE_HORIZ_WHEEL_DOWN)))
          hw_state->active          = true;
       /* Right (mouse wheel horizontal right) */
       if ((hw_state->right_pressed = (bool)
-               menu_input_read_mouse_hw(current_input, input_driver_st,
+               menu_input_read_mouse_hw(current_input,
+                  input_driver_st, joypad, sec_joypad,
                   keyboard_mapping_blocked, MENU_MOUSE_HORIZ_WHEEL_UP)))
          hw_state->active          = true;
    }
@@ -25206,58 +25241,6 @@ static int16_t input_joypad_analog_axis(
 
    return res;
 }
-
-#ifdef HAVE_MENU
-/**
- * input_mouse_button_raw:
- * @port                    : Mouse number.
- * @button                  : Identifier of key (libretro mouse constant).
- *
- * Checks if key (@button) was being pressed by user
- * with mouse number @port.
- *
- * Returns: true (1) if key was pressed, otherwise
- * false (0).
- **/
-static bool input_mouse_button_raw(
-      struct rarch_state *p_rarch,
-      input_driver_t *current_input,
-      unsigned joy_idx,
-      unsigned port, unsigned id)
-{
-   rarch_joypad_info_t joypad_info;
-   input_driver_state_t *input_driver_st= &p_rarch->input_driver_state;
-   settings_t                  *settings= p_rarch->configuration_settings;
-   const input_device_driver_t *joypad  = input_driver_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                       = input_driver_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                       = NULL;
-#endif
-
-   /*ignore axes*/
-   if (id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y)
-      return false;
-
-   joypad_info.axis_threshold           = settings->floats.input_axis_threshold;
-   joypad_info.joy_idx                  = joy_idx;
-   joypad_info.auto_binds               = input_autoconf_binds[joy_idx];
-
-   if (current_input->input_state)
-      return current_input->input_state(
-            p_rarch->input_driver_state.current_data,
-            joypad,
-            sec_joypad,
-            &joypad_info,
-            p_rarch->libretro_input_binds,
-            p_rarch->keyboard_mapping_blocked,
-            port,
-            RETRO_DEVICE_MOUSE, 0, id);
-   return false;
-}
-#endif
 
 void input_pad_connect(unsigned port, input_device_driver_t *driver)
 {

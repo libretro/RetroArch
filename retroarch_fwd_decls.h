@@ -183,11 +183,6 @@ static bool accessibility_speak_priority(
 #endif
 
 #ifdef HAVE_MENU
-static bool input_mouse_button_raw(
-      struct rarch_state *p_rarch,
-      input_driver_t *current_input,
-      unsigned joy_idx,
-      unsigned port, unsigned id);
 static bool input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word);
