@@ -23013,41 +23013,6 @@ static int16_t input_joypad_axis(
 
 /* MENU INPUT */
 #ifdef HAVE_MENU
-/* Must be called inside menu_driver_toggle()
- * Prevents phantom input when using an overlay to
- * toggle menu ON if overlays are disabled in-menu */
-static void menu_input_driver_toggle(
-      menu_input_t *menu_input,
-      bool overlay_hide_in_menu,
-      bool input_overlay_enable,
-      bool overlay_alive,
-      bool on)
-{
-#ifdef HAVE_OVERLAY
-   if (on)
-   {
-      /* If an overlay was displayed before the toggle
-       * and overlays are disabled in menu, need to
-       * inhibit 'select' input */
-      if (overlay_hide_in_menu)
-         if (input_overlay_enable && overlay_alive)
-         {
-            /* Inhibits pointer 'select' and 'cancel' actions
-             * (until the next time 'select'/'cancel' are released) */
-            menu_input->select_inhibit     = true;
-            menu_input->cancel_inhibit     = true;
-         }
-   }
-   else
-#endif
-   {
-      /* Inhibits pointer 'select' and 'cancel' actions
-       * (until the next time 'select'/'cancel' are released) */
-      menu_input->select_inhibit           = false;
-      menu_input->cancel_inhibit           = false;
-   }
-}
-
 static void menu_input_get_mouse_hw_state(
       struct rarch_state *p_rarch,
       menu_input_pointer_hw_state_t *hw_state)
@@ -35009,46 +34974,84 @@ static void menu_driver_toggle(
     * on OSX - for now we work around this by checking if the settings
     * struct is NULL
     */
-   bool pause_libretro                        = settings ?
-      settings->bools.menu_pause_libretro : false;
+   bool pause_libretro                = false;
 #ifdef HAVE_AUDIOMIXER
-   bool audio_enable_menu                     = settings ? settings->bools.audio_enable_menu : false;
+   bool audio_enable_menu             = false;
 #if 0
-   bool audio_enable_menu_bgm                 = settings ? settings->bools.audio_enable_menu_bgm : false;
+   bool audio_enable_menu_bgm         = false;
 #endif
 #endif
-   bool runloop_shutdown_initiated            = runloop_state.shutdown_initiated;
+   bool runloop_shutdown_initiated    = runloop_state.shutdown_initiated;
+#ifdef HAVE_OVERLAY
+   bool input_overlay_hide_in_menu    = false;
+   bool input_overlay_enable          = false;
+#endif
+   bool overlay_alive                 = false;
+   bool video_adaptive_vsync          = false;
+   bool video_swap_interval           = false;
+   menu_input_t *menu_input           = &p_rarch->menu_input_state;
+
+   if (settings)
+   {
+      pause_libretro                  = settings->bools.menu_pause_libretro;
+#ifdef HAVE_AUDIOMIXER
+      audio_enable_menu               = settings->bools.audio_enable_menu;
+#if 0
+      audio_enable_menu_bgm           = settings->bools.audio_enable_menu_bgm ;
+#endif
+#endif
+#ifdef HAVE_OVERLAY
+      input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
+      input_overlay_enable            = settings->bools.input_overlay_enable;
+      overlay_alive                   = p_rarch->overlay_ptr &&
+         p_rarch->overlay_ptr->alive;
+#endif
+      video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
+      video_swap_interval             = settings->uints.video_swap_interval;
+   }
 
    if (menu->driver_ctx && menu->driver_ctx->toggle)
       menu->driver_ctx->toggle(menu->userdata, on);
 
-   p_rarch->menu_driver_alive                 = on;
+   p_rarch->menu_driver_alive         = on;
 
+   if (on) 
+   {
 #ifdef HAVE_LAKKA
-   if (on)
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
+#endif
+#ifdef HAVE_OVERLAY
+      /* If an overlay was displayed before the toggle
+       * and overlays are disabled in menu, need to
+       * inhibit 'select' input */
+      if (input_overlay_hide_in_menu)
+      {
+         if (input_overlay_enable && overlay_alive)
+         {
+            /* Inhibits pointer 'select' and 'cancel' actions
+             * (until the next time 'select'/'cancel' are released) */
+            menu_input->select_inhibit= true;
+            menu_input->cancel_inhibit= true;
+         }
+      }
+#endif
+   }
    else
+   {
+#ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
 #endif
-
-   /* Apply any required menu pointer input inhibits
-    * (i.e. prevent phantom input when using an overlay
-    * to toggle the menu on) */
-   menu_input_driver_toggle(
-         &p_rarch->menu_input_state,
-         settings->bools.input_overlay_hide_in_menu,
-         settings->bools.input_overlay_enable,
 #ifdef HAVE_OVERLAY
-         p_rarch->overlay_ptr &&
-         p_rarch->overlay_ptr->alive,
-#else
-         false,
+      /* Inhibits pointer 'select' and 'cancel' actions
+       * (until the next time 'select'/'cancel' are released) */
+      menu_input->select_inhibit      = false;
+      menu_input->cancel_inhibit      = false;
 #endif
-         on);
+   }
 
    if (p_rarch->menu_driver_alive)
    {
-      bool refresh = false;
+      bool refresh                    = false;
 
 #ifdef WIIU
       /* Enable burn-in protection menu is running */
@@ -35059,10 +35062,12 @@ static void menu_driver_toggle(
 
       /* Menu should always run with vsync on. */
       if (p_rarch->current_video->set_nonblock_state)
-         p_rarch->current_video->set_nonblock_state(p_rarch->video_driver_data, false,
+         p_rarch->current_video->set_nonblock_state(
+               p_rarch->video_driver_data,
+               false,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-               settings->bools.video_adaptive_vsync,
-               settings->uints.video_swap_interval
+               video_adaptive_vsync,
+               video_swap_interval
                );
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
@@ -35080,10 +35085,10 @@ static void menu_driver_toggle(
 
       if (key_event && frontend_key_event)
       {
-         *frontend_key_event              = *key_event;
-         *key_event                       = menu_input_key_event;
+         *frontend_key_event          = *key_event;
+         *key_event                   = menu_input_key_event;
 
-         runloop_state.frame_time_last = 0;
+         runloop_state.frame_time_last= 0;
       }
    }
    else
@@ -35108,7 +35113,7 @@ static void menu_driver_toggle(
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
-         *key_event = *frontend_key_event;
+         *key_event                   = *frontend_key_event;
    }
 }
 #endif
