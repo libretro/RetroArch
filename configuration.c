@@ -3177,7 +3177,6 @@ static bool config_load_file(global_t *global,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
-   bool ret                                        = false;
    unsigned tmp_uint                               = 0;
    bool tmp_bool                                   = false;
    static bool first_load                          = true;
@@ -3192,23 +3191,32 @@ static bool config_load_file(global_t *global,
    int size_settings_size                          = sizeof(settings->sizes)  / sizeof(settings->sizes.placeholder);
    int array_settings_size                         = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
    int path_settings_size                          = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
-   struct config_bool_setting *bool_settings       = populate_settings_bool  (settings, &bool_settings_size);
-   struct config_float_setting *float_settings     = populate_settings_float (settings, &float_settings_size);
-   struct config_int_setting *int_settings         = populate_settings_int   (settings, &int_settings_size);
-   struct config_uint_setting *uint_settings       = populate_settings_uint  (settings, &uint_settings_size);
-   struct config_size_setting *size_settings       = populate_settings_size  (settings, &size_settings_size);
-   struct config_array_setting *array_settings     = populate_settings_array (settings, &array_settings_size);
-   struct config_path_setting *path_settings       = populate_settings_path  (settings, &path_settings_size);
+   struct config_bool_setting *bool_settings       = NULL;
+   struct config_float_setting *float_settings     = NULL;
+   struct config_int_setting *int_settings         = NULL;
+   struct config_uint_setting *uint_settings       = NULL;
+   struct config_size_setting *size_settings       = NULL;
+   struct config_array_setting *array_settings     = NULL;
+   struct config_path_setting *path_settings       = NULL;
    config_file_t *conf                             = path ? config_file_new_from_path_to_string(path) : open_default_config_file();
 
-   tmp_str[0] = '\0';
+   tmp_str[0]                                      = '\0';
 
    if (!conf)
    {
+      first_load = false;
       if (!path)
-         ret = true;
-      goto end;
+         return true;
+      return false;
    }
+
+   bool_settings                                   = populate_settings_bool  (settings, &bool_settings_size);
+   float_settings                                  = populate_settings_float (settings, &float_settings_size);
+   int_settings                                    = populate_settings_int   (settings, &int_settings_size);
+   uint_settings                                   = populate_settings_uint  (settings, &uint_settings_size);
+   size_settings                                   = populate_settings_size  (settings, &size_settings_size);
+   array_settings                                  = populate_settings_array (settings, &array_settings_size);
+   path_settings                                   = populate_settings_path  (settings, &path_settings_size);
 
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
    {
@@ -3702,8 +3710,6 @@ static bool config_load_file(global_t *global,
          settings->ints.content_favorites_size = (int)settings->uints.content_history_size;
    }
 
-   ret = true;
-end:
    if (conf)
       config_file_free(conf);
    if (bool_settings)
@@ -3721,7 +3727,7 @@ end:
    if (size_settings)
       free(size_settings);
    first_load = false;
-   return ret;
+   return true;
 }
 
 /**
