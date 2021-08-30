@@ -34986,9 +34986,13 @@ static void menu_input_key_event(bool down, unsigned keycode,
  * If the menu is off, then the menu will be started.
  */
 static void menu_driver_toggle(
-      struct rarch_state *p_rarch,
+      video_driver_t *current_video,
+      void *video_driver_data,
       menu_handle_t *menu,
+      menu_input_t *menu_input,
       settings_t *settings,
+      bool menu_driver_alive,
+      bool overlay_alive,
       retro_keyboard_event_t *key_event,
       retro_keyboard_event_t *frontend_key_event,
       bool on)
@@ -35010,10 +35014,8 @@ static void menu_driver_toggle(
    bool input_overlay_hide_in_menu    = false;
    bool input_overlay_enable          = false;
 #endif
-   bool overlay_alive                 = false;
    bool video_adaptive_vsync          = false;
    bool video_swap_interval           = false;
-   menu_input_t *menu_input           = &p_rarch->menu_input_state;
 
    if (settings)
    {
@@ -35027,17 +35029,10 @@ static void menu_driver_toggle(
 #ifdef HAVE_OVERLAY
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
       input_overlay_enable            = settings->bools.input_overlay_enable;
-      overlay_alive                   = p_rarch->overlay_ptr &&
-         p_rarch->overlay_ptr->alive;
 #endif
       video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
       video_swap_interval             = settings->uints.video_swap_interval;
    }
-
-   if (menu->driver_ctx && menu->driver_ctx->toggle)
-      menu->driver_ctx->toggle(menu->userdata, on);
-
-   p_rarch->menu_driver_alive         = on;
 
    if (on) 
    {
@@ -35073,7 +35068,7 @@ static void menu_driver_toggle(
 #endif
    }
 
-   if (p_rarch->menu_driver_alive)
+   if (menu_driver_alive)
    {
       bool refresh                    = false;
 
@@ -35085,9 +35080,9 @@ static void menu_driver_toggle(
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
-      if (p_rarch->current_video->set_nonblock_state)
-         p_rarch->current_video->set_nonblock_state(
-               p_rarch->video_driver_data,
+      if (current_video->set_nonblock_state)
+         current_video->set_nonblock_state(
+               video_driver_data,
                false,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
                video_adaptive_vsync,
@@ -35159,11 +35154,30 @@ void retroarch_menu_running(void)
 #ifdef HAVE_MENU
    menu_handle_t *menu             = p_rarch->menu_driver_data;
    struct menu_state *menu_st      = &p_rarch->menu_driver_state;
+   menu_input_t *menu_input        = &p_rarch->menu_input_state;
    if (menu)
-      menu_driver_toggle(p_rarch, menu, settings,
+   {
+      if (menu->driver_ctx && menu->driver_ctx->toggle)
+         menu->driver_ctx->toggle(menu->userdata, true);
+
+      p_rarch->menu_driver_alive   = true;
+      menu_driver_toggle(
+            p_rarch->current_video,
+            p_rarch->video_driver_data,
+            menu,
+            menu_input,
+            settings,
+            p_rarch->menu_driver_alive,
+#ifdef HAVE_OVERLAY
+            p_rarch->overlay_ptr &&
+            p_rarch->overlay_ptr->alive,
+#else
+            false,
+#endif
             &runloop_state.key_event,
             &runloop_state.frontend_key_event,
             true);
+   }
 
    /* Prevent stray input (for a single frame) */
    p_rarch->input_driver_flushing_input = 1;
@@ -35204,18 +35218,37 @@ void retroarch_menu_running(void)
 
 void retroarch_menu_running_finished(bool quit)
 {
-   struct rarch_state *p_rarch          = &rarch_st;
+   struct rarch_state *p_rarch     = &rarch_st;
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-   settings_t *settings                 = p_rarch->configuration_settings;
+   settings_t *settings            = p_rarch->configuration_settings;
 #endif
 #ifdef HAVE_MENU
-   menu_handle_t *menu                  = p_rarch->menu_driver_data;
-   struct menu_state *menu_st           = &p_rarch->menu_driver_state;
+   menu_handle_t *menu             = p_rarch->menu_driver_data;
+   struct menu_state *menu_st      = &p_rarch->menu_driver_state;
+   menu_input_t *menu_input        = &p_rarch->menu_input_state;
    if (menu)
-      menu_driver_toggle(p_rarch, menu, settings,
+   {
+      if (menu->driver_ctx && menu->driver_ctx->toggle)
+         menu->driver_ctx->toggle(menu->userdata, false);
+
+      p_rarch->menu_driver_alive   = false;
+      menu_driver_toggle(
+            p_rarch->current_video,
+            p_rarch->video_driver_data,
+            menu,
+            menu_input,
+            settings,
+            p_rarch->menu_driver_alive,
+#ifdef HAVE_OVERLAY
+            p_rarch->overlay_ptr &&
+            p_rarch->overlay_ptr->alive,
+#else
+            false,
+#endif
             &runloop_state.key_event,
             &runloop_state.frontend_key_event,
             false);
+   }
 
    /* Prevent stray input
     * (for a single frame) */
