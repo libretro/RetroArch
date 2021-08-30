@@ -769,6 +769,31 @@ float menu_input_get_dpi(
 
 void menu_input_pointer_close_messagebox(struct menu_state *menu_st);
 
+void menu_input_key_bind_poll_bind_state(
+      input_driver_state_t *input_driver_st,
+      const struct retro_keybind **binds,
+      float input_axis_threshold,
+      unsigned joy_idx,
+      struct menu_bind_state *state,
+      bool timed_out,
+      bool keyboard_mapping_blocked);
+
+enum action_iterate_type action_iterate_type(const char *label);
+
+void menu_cbs_init(
+      struct menu_state *menu_st,
+      const menu_ctx_driver_t *menu_driver_ctx,
+      file_list_t *list,
+      menu_file_list_cbs_t *cbs,
+      const char *path, const char *label,
+      unsigned type, size_t idx);
+
+bool menu_driver_displaylist_push(
+      struct menu_state *menu_st,
+      settings_t *settings,
+      file_list_t *entry_list,
+      file_list_t *entry_stack);
+
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
 extern menu_ctx_driver_t menu_ctx_ozone;
