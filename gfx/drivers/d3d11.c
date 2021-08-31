@@ -1156,7 +1156,11 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->hw.iface.D3DCompile        = D3DCompile;
    }
 
+#ifdef __WINRT__
+   DXGICreateFactory2(&d3d11->factory);
+#else
    DXGICreateFactory(&d3d11->factory);
+#endif
 
    {
       int         i = 0;

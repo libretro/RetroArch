@@ -238,11 +238,13 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-//   d3d12->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
-//   d3d12->hdr.ubo_values.maxNits          = settings->floats.video_hdr_max_nits;
-//   d3d12->hdr.ubo_values.paperWhiteNits   = settings->floats.video_hdr_paper_white_nits;
-//   d3d12->hdr.ubo_values.contrast         = settings->floats.video_hdr_contrast;
-//   d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
+   /*
+   d3d12->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
+   d3d12->hdr.ubo_values.maxNits          = settings->floats.video_hdr_max_nits;
+   d3d12->hdr.ubo_values.paperWhiteNits   = settings->floats.video_hdr_paper_white_nits;
+   d3d12->hdr.ubo_values.contrast         = settings->floats.video_hdr_contrast;
+   d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
+   */
 
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
@@ -1337,7 +1339,7 @@ static bool d3d12_gfx_frame(
    {
       d3d12->hdr.enable                      = settings->bools.video_hdr_enable;
 
-      for (unsigned i = 0; i < countof(d3d12->chain.renderTargets); i++)
+      for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
          Release(d3d12->chain.renderTargets[i]);
 
       if(d3d12->hdr.enable)
@@ -1347,7 +1349,7 @@ static bool d3d12_gfx_frame(
 
       DXGIResizeBuffers(d3d12->chain.handle, countof(d3d12->chain.renderTargets), video_width, video_height, d3d12->chain.formats[d3d12->chain.bitDepth], DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
-      for (unsigned i = 0; i < countof(d3d12->chain.renderTargets); i++)
+      for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
       {
          DXGIGetSwapChainBuffer(d3d12->chain.handle, i, &d3d12->chain.renderTargets[i]);
          D3D12CreateRenderTargetView(
@@ -1786,7 +1788,7 @@ static bool d3d12_gfx_frame(
    }
    d3d12->sprites.enabled = false;
 
-   // Copy over back buffer to swap chain render targets
+   /* Copy over back buffer to swap chain render targets */
    if(d3d12->hdr.enable)
    {
       d3d12_resource_transition(

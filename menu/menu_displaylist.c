@@ -6082,7 +6082,7 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
                      PARSE_ACTION, false) == 0)
                count++;
-            //if (video_driver_supports_hdr())
+            /* if (video_driver_supports_hdr()) */
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
                      PARSE_ACTION, false) == 0)

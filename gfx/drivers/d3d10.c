@@ -1003,7 +1003,11 @@ static void *d3d10_gfx_init(const video_info_t* video,
    }
 #endif
 
+#ifdef __WINRT__
+   DXGICreateFactory2(&d3d10->factory);
+#else
    DXGICreateFactory(&d3d10->factory);
+#endif
    
    {
       int         i = 0;

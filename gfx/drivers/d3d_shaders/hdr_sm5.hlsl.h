@@ -4,10 +4,10 @@ SRC(
    struct UBO
    {
       float4x4 modelViewProj;
-      float contrast;       // 2.0f; 
-      float paperWhiteNits; // 200.0f;
-      float maxNits;        // 1000.0f;
-      float expandGamut;    // 1.0f;   
+      float contrast;       /* 2.0f;      */ 
+      float paperWhiteNits; /* 200.0f;    */
+      float maxNits;        /* 1000.0f;   */
+      float expandGamut;    /* 1.0f;      */ 
    };
    uniform UBO global;
 
@@ -46,7 +46,7 @@ SRC(
       { -0.00121055f, 0.0176041f, 0.983607f }
    };
 
-   // START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR
+   /* START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
    static const float3x3 kExpanded709to2020 =
    {
       { 0.6274040f, 0.3292820f, 0.0433136f },
@@ -57,9 +57,9 @@ SRC(
    float3 LinearToST2084(float3 normalizedLinearValue)
    {
       float3 ST2084 = pow((0.8359375f + 18.8515625f * pow(abs(normalizedLinearValue), 0.1593017578f)) / (1.0f + 18.6875f * pow(abs(normalizedLinearValue), 0.1593017578f)), 78.84375f);
-      return ST2084;  // Don't clamp between [0..1], so we can still perform operations on scene values higher than 10,000 nits
+      return ST2084;  /* Don't clamp between [0..1], so we can still perform operations on scene values higher than 10,000 nits */
    }
-   // END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR   
+   /* END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 
    float3 SRGBToLinear(float3 color)
    {
@@ -76,23 +76,23 @@ SRC(
    float4 Hdr(float4 sdr)
    {
 #if USE_INVERSE_REINHARD
-      sdr.xyz = pow(abs(sdr.xyz), 2.2f / global.contrast);               // Display Gamma - needs to be determined by calibration screen but should be in the 0.8 - 1.4 range
+      sdr.xyz = pow(abs(sdr.xyz), 2.2f / global.contrast);               /* Display Gamma - needs to be determined by calibration screen but should be in the 0.8 - 1.4 range */
 
-      float luma = dot(sdr.xyz, float3(0.2126, 0.7152, 0.0722));  // Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video)
+      float luma = dot(sdr.xyz, float3(0.2126, 0.7152, 0.0722));  /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
 
-      // Inverse reinhard tonemap
+      /* Inverse reinhard tonemap */
       float maxValue             = (global.maxNits / global.paperWhiteNits) + kEpsilon;
-      float elbow                = maxValue / (maxValue - 1.0f);                          // Convert (1.0 + epsilon) to infinite to range 1001 -> 1.0 
-      float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));              // Convert 1001 to 1.0 to range 0.5 -> 1.0 
+      float elbow                = maxValue / (maxValue - 1.0f);                          /* Convert (1.0 + epsilon) to infinite to range 1001 -> 1.0 */ 
+      float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));              /* Convert 1001 to 1.0 to range 0.5 -> 1.0 */
       
       float hdrLumaInvTonemap    = offset + ((luma * elbow) / (elbow - luma));
-      float sdrLumaInvTonemap    = luma / ((1.0f + kEpsilon) - luma);                     // Convert the srd < 0.5 to 0.0 -> 1.0 range
+      float sdrLumaInvTonemap    = luma / ((1.0f + kEpsilon) - luma);                     /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
 
       float lumaInvTonemap       = (luma > 0.5f) ? hdrLumaInvTonemap : sdrLumaInvTonemap;
       float3 perLuma             = sdr.xyz / (luma + kEpsilon) * lumaInvTonemap;
 
       float3 hdrInvTonemap       = offset + ((sdr.xyz * elbow) / (elbow - sdr.xyz));         
-      float3 sdrInvTonemap       = sdr.xyz / ((1.0f + kEpsilon) - sdr.xyz);               // Convert the srd < 0.5 to 0.0 -> 1.0 range
+      float3 sdrInvTonemap       = sdr.xyz / ((1.0f + kEpsilon) - sdr.xyz);               /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
 
       float3 perChannel          = float3(sdr.x > 0.5f ? hdrInvTonemap.x : sdrInvTonemap.x,
                                           sdr.y > 0.5f ? hdrInvTonemap.y : sdrInvTonemap.y,
@@ -101,9 +101,9 @@ SRC(
       float3 hdr = lerp(perLuma, perChannel, kLumaChannelRatio);
 #else
       float3 hdr = SRGBToLinear(sdr.xyz);
-#endif // USE_INVERSE_REINHARD
+#endif /* USE_INVERSE_REINHARD */
 
-      // Now convert into HDR10
+      /* Now convert into HDR10 */
       float3 rec2020 = mul(k709to2020, hdr);
 
       if(global.expandGamut > 0.0f)
