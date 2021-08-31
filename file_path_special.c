@@ -143,10 +143,6 @@ bool fill_pathname_application_data(char *s, size_t len)
 const char* xmb_theme_ident(void);
 #endif
 
-#ifdef HAVE_STRIPES
-const char* stripes_theme_ident(void);
-#endif
-
 void fill_pathname_application_special(char *s,
       size_t len, enum application_special_type type)
 {

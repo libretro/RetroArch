@@ -970,10 +970,6 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_XMB = 1
    endif
 
-   ifeq ($(HAVE_STRIPES),)
-      HAVE_STRIPES = 0
-   endif
-
    ifeq ($(HAVE_OZONE),)
       HAVE_OZONE = 1
    endif
@@ -981,7 +977,6 @@ else
    HAVE_RGUI        ?= 0
    HAVE_MATERIALUI  ?= 0
    HAVE_XMB         ?= 0
-   HAVE_STRIPES     ?= 0
    HAVE_OZONE       ?= 0
 endif
 
@@ -1022,11 +1017,6 @@ ifeq ($(HAVE_MENU), 1)
       DEFINES += -DHAVE_OZONE
       HAVE_ASSETS = 1
       HAVE_MENU_SCREENSAVER = 1
-   endif
-
-   ifeq ($(HAVE_STRIPES), 1)
-      OBJ += menu/drivers/stripes.o
-      DEFINES += -DHAVE_STRIPES
    endif
 
    ifeq ($(HAVE_MENU_SCREENSAVER), 1)
