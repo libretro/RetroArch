@@ -1407,12 +1407,7 @@ MENU
 #endif
 
 #ifdef HAVE_OZONE
-#include "../menu/drivers/ozone/ozone.c"
-#include "../menu/drivers/ozone/ozone_display.c"
-#include "../menu/drivers/ozone/ozone_entries.c"
-#include "../menu/drivers/ozone/ozone_sidebar.c"
-#include "../menu/drivers/ozone/ozone_texture.c"
-#include "../menu/drivers/ozone/ozone_theme.c"
+#include "../menu/drivers/ozone.c"
 #endif
 
 #ifdef HAVE_MATERIALUI
