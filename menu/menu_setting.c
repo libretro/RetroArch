@@ -11863,7 +11863,7 @@ static bool setting_append_list(
                      list_info,
                      CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
-               if (settings->bools.video_hdr_enable)
+               /* if (settings->bools.video_hdr_enable) */
                {
                   CONFIG_FLOAT(
                         list, list_info,

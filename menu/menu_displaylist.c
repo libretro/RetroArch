@@ -7931,7 +7931,7 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
 
-               if (settings->bools.video_hdr_enable)
+               /* if (settings->bools.video_hdr_enable) */
                {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS,
