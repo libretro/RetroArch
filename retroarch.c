@@ -6645,8 +6645,8 @@ static void handle_discord_join_request(const DiscordUser* request)
 #ifdef HAVE_MENU
 #if 0
    char buf[PATH_MAX_LENGTH];
-#endif
    menu_input_ctx_line_t line;
+#endif
    struct rarch_state *p_rarch = &rarch_st;
 
    RARCH_LOG("[DISCORD]: Join request from %s#%s - %s %s\n",
@@ -6879,7 +6879,9 @@ static void discord_init(
       const char *discord_app_id, char *args)
 {
    DiscordEventHandlers handlers;
+#ifdef _WIN32
    char full_path[PATH_MAX_LENGTH];
+#endif
    char command[PATH_MAX_LENGTH];
 
    discord_st->start_time      = time(0);
@@ -15785,7 +15787,7 @@ void emscripten_mainloop(void)
    settings_t        *settings            = p_rarch->configuration_settings;
    input_driver_state_t *input_driver_st  = &(p_rarch->input_driver_state);
    bool black_frame_insertion             = settings->uints.video_black_frame_insertion;
-   bool input_driver_nonblock_state       = input_driver_get_nonblocking(input_driver_st);
+   bool input_driver_nonblock_state       = input_driver_st ? input_driver_st->nonblocking_flag : false;
    bool runloop_is_slowmotion             = runloop_state.slowmotion;
    bool runloop_is_paused                 = runloop_state.paused;
 
@@ -21870,15 +21872,17 @@ void input_set_nonblock_state(void)
    struct rarch_state           *p_rarch = &rarch_st;
    input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
 
-   input_driver_set_nonblocking(input_driver_st, true);
+   if (input_driver_st)
+      input_driver_st->nonblocking_flag  = true;
 }
 
 void input_unset_nonblock_state(void)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
+   struct rarch_state     *p_rarch       = &rarch_st;
    input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
 
-   input_driver_set_nonblocking(input_driver_st, false);
+   if (input_driver_st)
+      input_driver_st->nonblocking_flag  = false;
 }
 
 void *input_driver_get_data(void)
@@ -24533,6 +24537,10 @@ static int menu_input_pointer_post_iterate(
       /* If currently showing a message box, close it */
       if (messagebox_active)
          menu_input_pointer_close_messagebox(&p_rarch->menu_driver_state);
+      /* If onscreen keyboard is shown, send a 'backspace' */
+      else if (osk_active)
+         input_keyboard_event(true, '\x7f', '\x7f',
+               0, RETRO_DEVICE_KEYBOARD);
       /* ...otherwise, invoke standard MENU_ACTION_CANCEL
        * action */
       else
@@ -31980,14 +31988,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_wallpaper_opacity      = 0.0f;
 #endif
 
-   video_info->runloop_is_paused           = runloop_state.paused;
-   video_info->runloop_is_slowmotion       = runloop_state.slowmotion;
+   video_info->runloop_is_paused             = runloop_state.paused;
+   video_info->runloop_is_slowmotion         = runloop_state.slowmotion;
 
-   video_info->input_driver_nonblock_state   = input_driver_get_nonblocking(input_driver_st);
+   video_info->input_driver_nonblock_state   = input_driver_st ?
+      input_driver_st->nonblocking_flag : false;
    video_info->input_driver_grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
    video_info->disp_userdata                 = &p_rarch->dispgfx;
 
-   video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
+   video_info->userdata                      = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
 
 #ifdef HAVE_THREADS
    VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
@@ -32926,9 +32935,12 @@ static void driver_adjust_system_rates(
  **/
 void driver_set_nonblock_state(void)
 {
-   struct rarch_state *p_rarch            = &rarch_st;
-   input_driver_state_t *input_driver_st  = &p_rarch->input_driver_state;
-   bool                 enable = input_driver_get_nonblocking(input_driver_st);
+   struct rarch_state 
+      *p_rarch                 = &rarch_st;
+   input_driver_state_t 
+      *input_driver_st         = &p_rarch->input_driver_state;
+   bool                 enable = input_driver_st ?
+      input_driver_st->nonblocking_flag : false;
    settings_t       *settings  = p_rarch->configuration_settings;
    bool audio_sync             = settings->bools.audio_sync;
    bool video_vsync            = settings->bools.video_vsync;
@@ -33157,7 +33169,7 @@ static void drivers_init(struct rarch_state *p_rarch,
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
    {
       /* Keep non-throttled state as good as possible. */
-      if (input_driver_get_nonblocking(input_driver_st))
+      if (input_driver_st && input_driver_st->nonblocking_flag)
          driver_set_nonblock_state();
    }
 
@@ -33320,7 +33332,9 @@ static void retroarch_deinit_drivers(
    p_rarch->input_driver_keyboard_linefeed_enable   = false;
    p_rarch->input_driver_block_hotkey               = false;
    p_rarch->input_driver_block_libretro_input       = false;
-   input_driver_set_nonblocking(input_driver_st, false);
+
+   if (input_driver_st)
+      input_driver_st->nonblocking_flag             = false;
 
    p_rarch->input_driver_flushing_input             = 0;
    memset(&p_rarch->input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
@@ -37197,14 +37211,19 @@ static void runloop_apply_fastmotion_override(
    if (p_runloop->fastmotion !=
          p_runloop->fastmotion_override.current.fastforward)
    {
+      input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
       p_runloop->fastmotion =
             p_runloop->fastmotion_override.current.fastforward;
 
       if (p_runloop->fastmotion)
-         input_driver_set_nonblocking(&p_rarch->input_driver_state, true);
+      {
+         if (input_driver_st)
+            input_driver_st->nonblocking_flag = true;
+      }
       else
       {
-         input_driver_set_nonblocking(&p_rarch->input_driver_state, false);
+         if (input_driver_st)
+            input_driver_st->nonblocking_flag = false;
          p_rarch->fastforward_after_frames    = 1;
       }
 
@@ -38184,11 +38203,17 @@ static enum runloop_state runloop_check_state(
 
       if (check2)
       {
-         bool check1 = input_driver_get_nonblocking(input_driver_st);
-         input_driver_set_nonblocking(input_driver_st, !check1);
-         runloop_state.fastmotion = !check1;
-         if (check1)
+         if (input_driver_st->nonblocking_flag)
+         {
+            input_driver_st->nonblocking_flag = false;
+            runloop_state.fastmotion          = false;
             p_rarch->fastforward_after_frames = 1;
+         }
+         else
+         {
+            input_driver_st->nonblocking_flag = true;
+            runloop_state.fastmotion          = true;
+         }
 
          driver_set_nonblock_state();
 
@@ -38694,7 +38719,7 @@ int runloop_iterate(void)
       }
    }
 
-   if ((video_frame_delay > 0) && !input_driver_get_nonblocking(input_driver_st))
+   if ((video_frame_delay > 0) && input_driver_st && !input_driver_st->nonblocking_flag)
       retro_sleep(video_frame_delay);
 
    {
@@ -39668,7 +39693,6 @@ bool core_options_remove_override(bool game_specific)
       }
 
       coreopts->updated = true;
-      config_file_free(conf);
 
 #ifdef HAVE_CHEEVOS
       rcheevos_validate_config_settings();
@@ -39688,14 +39712,26 @@ bool core_options_remove_override(bool game_specific)
       runloop_state.game_options_active   = false;
       runloop_state.folder_options_active = false;
 
+      /* Update config file path/object stored in
+       * core option manager struct */
       strlcpy(coreopts->conf_path, new_options_path,
             sizeof(coreopts->conf_path));
+
+      if (conf)
+      {
+         config_file_free(coreopts->conf);
+         coreopts->conf = conf;
+         conf           = NULL;
+      }
    }
 
    runloop_msg_queue_push(
          msg_hash_to_str(MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY),
          1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   if (conf)
+      config_file_free(conf);
 
    return true;
 
@@ -39733,6 +39769,94 @@ void core_options_reset(void)
    runloop_msg_queue_push(
          msg_hash_to_str(MSG_CORE_OPTIONS_RESET),
          1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+void core_options_flush(void)
+{
+   core_option_manager_t *coreopts = runloop_state.core_options;
+   const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
+   const char *core_options_file   = NULL;
+   bool success                    = false;
+   char msg[256];
+
+   msg[0] = '\0';
+
+   /* If there are no core options, there
+    * is nothing to do */
+   if (!coreopts || (coreopts->size < 1))
+      return;
+
+   /* Check whether game/folder-specific options file
+    * is being used */
+   if (!string_is_empty(path_core_options))
+   {
+      config_file_t *conf_tmp = NULL;
+
+      /* Attempt to load existing file */
+      if (path_is_valid(path_core_options))
+         conf_tmp = config_file_new_from_path_to_string(path_core_options);
+
+      /* Create new file if required */
+      if (!conf_tmp)
+         conf_tmp = config_file_new_alloc();
+
+      if (conf_tmp)
+      {
+         core_option_manager_flush(
+               runloop_state.core_options,
+               conf_tmp);
+
+         success = config_file_write(conf_tmp, path_core_options, true);
+         config_file_free(conf_tmp);
+      }
+   }
+   else
+   {
+      /* We are using the 'default' core options file */
+      path_core_options = runloop_state.core_options->conf_path;
+
+      if (!string_is_empty(path_core_options))
+      {
+         core_option_manager_flush(
+               runloop_state.core_options,
+               runloop_state.core_options->conf);
+
+         /* We must *guarantee* that a file gets written
+          * to disk if any options differ from the current
+          * options file contents. Must therefore handle
+          * the case where the 'default' file does not
+          * exist (e.g. if it gets deleted manually while
+          * a core is running) */
+         if (!path_is_valid(path_core_options))
+            runloop_state.core_options->conf->modified = true;
+
+         success = config_file_write(runloop_state.core_options->conf,
+               path_core_options, true);
+      }
+   }
+
+   /* Get options file name for display purposes */
+   if (!string_is_empty(path_core_options))
+      core_options_file = path_basename(path_core_options);
+
+   if (string_is_empty(core_options_file))
+      core_options_file = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
+
+   /* Log result */
+   RARCH_LOG(success ?
+         "[Core Options]: Saved core options to \"%s\"\n" :
+               "[Core Options]: Failed to save core options to \"%s\"\n",
+            path_core_options ? path_core_options : "UNKNOWN");
+
+   snprintf(msg, sizeof(msg), "%s \"%s\"",
+         success ?
+               msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED) :
+                     msg_hash_to_str(MSG_CORE_OPTIONS_FLUSH_FAILED),
+         core_options_file);
+
+   runloop_msg_queue_push(
+         msg, 1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
