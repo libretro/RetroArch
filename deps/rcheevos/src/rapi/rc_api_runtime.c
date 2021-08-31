@@ -20,10 +20,9 @@ int rc_api_init_resolve_hash_request(rc_api_request_t* request, const rc_api_res
     return RC_INVALID_STATE;
 
   rc_url_builder_init(&builder, &request->buffer, 48);
-  if (rc_api_url_build_dorequest(&builder, "gameid", api_params->username, api_params->api_token)) {
-    rc_url_builder_append_str_param(&builder, "m", api_params->game_hash);
-    request->post_data = rc_url_builder_finalize(&builder);
-  }
+  rc_url_builder_append_str_param(&builder, "r", "gameid");
+  rc_url_builder_append_str_param(&builder, "m", api_params->game_hash);
+  request->post_data = rc_url_builder_finalize(&builder);
 
   return builder.result;
 }
@@ -130,7 +129,7 @@ int rc_api_process_fetch_game_data_response(rc_api_fetch_game_data_response_t* r
   if (result != RC_OK)
     return result;
 
-  if (!rc_json_get_required_object(patchdata_fields, sizeof(patchdata_fields) / sizeof(patchdata_fields[0]), &response->response, &fields[2], "Response"))
+  if (!rc_json_get_required_object(patchdata_fields, sizeof(patchdata_fields) / sizeof(patchdata_fields[0]), &response->response, &fields[2], "PatchData"))
     return RC_MISSING_VALUE;
 
   if (!rc_json_get_required_unum(&response->id, &response->response, &patchdata_fields[0], "ID"))
@@ -440,8 +439,8 @@ int rc_api_process_submit_lboard_entry_response(rc_api_submit_lboard_entry_respo
     {"Rank"},
     {"Score"}
     /* unused fields
-    { "DateSumitted" },
-      * unused fields */
+    {"DateSubmitted"},
+     * unused fields */
   };
 
   rc_json_field_t rank_info_fields[] = {

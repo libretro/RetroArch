@@ -1,5 +1,6 @@
 #include "rc_runtime.h"
 #include "rc_internal.h"
+#include "rc_compat.h"
 
 #include "../rhash/md5.h"
 
@@ -239,6 +240,33 @@ int rc_runtime_get_achievement_measured(const rc_runtime_t* runtime, unsigned id
   }
 
   return 1;
+}
+
+int rc_runtime_format_achievement_measured(const rc_runtime_t* runtime, unsigned id, char* buffer, size_t buffer_size)
+{
+  const rc_trigger_t* trigger = rc_runtime_get_achievement(runtime, id);
+  unsigned value;
+  if (!buffer || !buffer_size)
+    return 0;
+
+  if (!trigger || /* no trigger */
+      trigger->measured_target == 0 || /* not measured */
+      !rc_trigger_state_active(trigger->state)) { /* don't report measured value for inactive triggers */
+    *buffer = '\0';
+    return 0;
+  }
+
+  /* cap the value at the target so we can count past the target: "107 >= 100" */
+  value = trigger->measured_value;
+  if (value > trigger->measured_target)
+    value = trigger->measured_target;
+
+  if (trigger->measured_as_percent) {
+    unsigned percent = (unsigned)(((unsigned long long)value * 100) / trigger->measured_target);
+    return snprintf(buffer, buffer_size, "%u%%", percent);
+  }
+
+  return snprintf(buffer, buffer_size, "%u/%u", value, trigger->measured_target);
 }
 
 static void rc_runtime_deactivate_lboard_by_index(rc_runtime_t* self, unsigned index) {
@@ -507,7 +535,7 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
     if (new_state == old_state)
       continue;
 
-    /* raise an UNPRIMED event when changing from UNPRIMED to anything else */
+    /* raise an UNPRIMED event when changing from PRIMED to anything else */
     if (old_state == RC_TRIGGER_STATE_PRIMED) {
       runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_UNPRIMED;
       runtime_event.id = self->triggers[i].id;
