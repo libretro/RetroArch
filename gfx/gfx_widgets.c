@@ -159,6 +159,7 @@ static float gfx_display_get_widget_dpi_scale(
    return adjusted_scale;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_XMB)
 static float gfx_display_get_widget_pixel_scale(
       gfx_display_t *p_disp,
       settings_t *settings,
@@ -237,7 +238,7 @@ static float gfx_display_get_widget_pixel_scale(
 
    return adjusted_scale;
 }
-
+#endif
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {

@@ -268,18 +268,6 @@
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 #define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
-
-#ifdef HAVE_MENU
-#define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
-
-#define MENU_LIST_GET_SELECTION(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
-
-#define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
-
-#define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
-#define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!(menu_st->entries_nonblocking_refresh || !menu_st->entries_need_refresh))
-#endif
-
 #define CDN_URL "https://cdn.discordapp.com/avatars"
 
 #ifdef HAVE_DYNAMIC
@@ -386,18 +374,6 @@
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
 #else
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
-
-#ifdef HAVE_MENU
-#define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
-
-#define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
-#define DATETIME_CHECK_INTERVAL    1000000
-
-#define MENU_MAX_BUTTONS           219
-#define MENU_MAX_AXES              32
-#define MENU_MAX_HATS              4
-#define MENU_MAX_MBUTTONS          32 /* Enough to cover largest libretro constant*/
 #endif
 
 /* DRIVERS */
@@ -1242,112 +1218,6 @@ typedef struct input_game_focus_state
 
 #ifdef HAVE_RUNAHEAD
 typedef bool(*runahead_load_state_function)(const void*, size_t);
-#endif
-
-#ifdef HAVE_MENU
-typedef struct menu_ctx_load_image
-{
-   void *data;
-   enum menu_image_type type;
-} menu_ctx_load_image_t;
-
-struct menu_list
-{
-   file_list_t **menu_stack;
-   size_t menu_stack_size;
-   file_list_t **selection_buf;
-   size_t selection_buf_size;
-};
-
-typedef struct menu_list menu_list_t;
-
-struct menu_state
-{
-   /* Timers */
-   retro_time_t current_time_us;
-   retro_time_t powerstate_last_time_us;
-   retro_time_t datetime_last_time_us;
-   retro_time_t input_last_time_us;
-
-   struct
-   {
-      rarch_setting_t *list_settings;
-      menu_list_t *list;
-      size_t begin;
-   } entries;
-   size_t   selection_ptr;
-
-   /* Quick jumping indices with L/R.
-    * Rebuilt when parsing directory. */
-   struct
-   {
-      size_t   index_list[SCROLL_INDEX_SIZE];
-      unsigned index_size;
-      unsigned acceleration;
-   } scroll;
-
-   /* Storage container for current menu datetime
-    * representation string */
-   char datetime_cache[255];
-
-   /* When generating a menu list in menu_displaylist_build_list(),
-    * the entry with a label matching 'pending_selection' will
-    * be selected automatically */
-   char pending_selection[PATH_MAX_LENGTH];
-
-   /* when enabled, on next iteration the 'Quick Menu' list will
-    * be pushed onto the stack */
-   bool pending_quick_menu;
-   bool prevent_populate;
-   /* The menu driver owns the userdata */
-   bool data_own;
-   /* Flagged when menu entries need to be refreshed */
-   bool entries_need_refresh;
-   bool entries_nonblocking_refresh;
-   /* 'Close Content'-hotkey menu resetting */
-   bool pending_close_content;
-   /* Screensaver status
-    * - Does menu driver support screensaver functionality?
-    * - Is screensaver currently active? */
-   bool screensaver_supported;
-   bool screensaver_active;
-};
-
-struct menu_bind_state_port
-{
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-   bool mouse_buttons[MENU_MAX_MBUTTONS];
-   bool buttons[MENU_MAX_BUTTONS];
-};
-
-struct menu_bind_axis_state
-{
-   /* Default axis state. */
-   int16_t rested_axes[MENU_MAX_AXES];
-   /* Locked axis state. If we configured an axis,
-    * avoid having the same axis state trigger something again right away. */
-   int16_t locked_axes[MENU_MAX_AXES];
-};
-
-struct menu_bind_state
-{
-   rarch_timer_t timer_timeout;
-   rarch_timer_t timer_hold;
-
-   struct retro_keybind *output;
-   struct retro_keybind buffer;
-
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
-
-   unsigned begin;
-   unsigned last;
-   unsigned user;
-   unsigned port;
-
-   bool skip;
-};
 #endif
 
 typedef struct input_mapper
