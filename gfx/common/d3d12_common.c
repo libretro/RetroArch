@@ -280,25 +280,29 @@ bool d3d12_init_queue(d3d12_video_t* d3d12)
 bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       int width, int height, void* corewindow)
 {
-   DXGI_COLOR_SPACE_TYPE colorSpace;
-   HWND hwnd;
    unsigned i;
    HRESULT hr;
+   HWND hwnd;
 #ifdef __WINRT__
    DXGI_SWAP_CHAIN_DESC1 desc;
 #else
    DXGI_SWAP_CHAIN_DESC desc;
 #endif
+#ifdef HAVE_D3D12_HDR
+   DXGI_COLOR_SPACE_TYPE colorSpace;
 
    d3d12->chain.formats[SWAP_CHAIN_BIT_DEPTH_8]    = DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d12->chain.formats[SWAP_CHAIN_BIT_DEPTH_10]   = DXGI_FORMAT_R10G10B10A2_UNORM;
    d3d12->chain.formats[SWAP_CHAIN_BIT_DEPTH_16]   = DXGI_FORMAT_R16G16B16A16_UNORM;
+#endif
 
    hwnd = (HWND)corewindow;
 
+#ifdef HAVE_D3D12_HDR
    d3d12_check_display_hdr_support(d3d12, hwnd);
 
    d3d12->chain.bitDepth                           = d3d12->hdr.enable ? SWAP_CHAIN_BIT_DEPTH_10 :  SWAP_CHAIN_BIT_DEPTH_8;
+#endif
 
 #ifdef __WINRT__
    memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC1));
@@ -311,24 +315,37 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #ifdef __WINRT__
    desc.Width                = width;
    desc.Height               = height;
-   desc.Format               = d3d12->chain.formats[d3d12->chain.bitDepth];
 #else
    desc.BufferDesc.Width     = width;
    desc.BufferDesc.Height    = height;
-   desc.BufferDesc.Format    = d3d12->chain.formats[d3d12->chain.bitDepth];
    desc.BufferDesc.RefreshRate.Numerator   = 0;
    desc.BufferDesc.RefreshRate.Denominator = 1;
 #endif
+
+#ifdef HAVE_D3D12_HDR
+#ifdef __WINRT__
+   desc.Format               = d3d12->chain.formats[d3d12->chain.bitDepth];
+#else
+   desc.BufferDesc.Format    = d3d12->chain.formats[d3d12->chain.bitDepth];
+#endif
+#else
+#ifdef __WINRT__
+   desc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+#else
+   desc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+#endif
+#endif
+
    desc.SampleDesc.Count     = 1;
    desc.SampleDesc.Quality   = 0;
 #ifdef HAVE_WINDOW
-   desc.OutputWindow = hwnd;
-   desc.Windowed     = TRUE;
+   desc.OutputWindow         = hwnd;
+   desc.Windowed             = TRUE;
 #endif
 #if 0
-   desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+   desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 #else
-   desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+   desc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
    desc.Flags      = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
@@ -347,17 +364,24 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    DXGIMakeWindowAssociation(d3d12->factory, hwnd, DXGI_MWA_NO_ALT_ENTER);
 #endif
 
-   /* Check display HDR support and initialize ST.2084 support to match the display's support. */
+   /* Check display HDR support and 
+      initialize ST.2084 support to match 
+      the display's support. */
 #if 0
    d3d12->hdr.max_output_nits  = 300.0f;
    d3d12->hdr.min_output_nits  = 0.001f;
    d3d12->hdr.max_cll          = 0.0f;
    d3d12->hdr.max_fall         = 0.0f;
 #endif
-   colorSpace = d3d12->hdr.enable ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+#ifdef HAVE_D3D12_HDR
+   colorSpace                  = 
+        d3d12->hdr.enable 
+      ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 
+      : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 
    d3d12_swapchain_color_space(d3d12, colorSpace);
    d3d12_set_hdr_metadata(d3d12);
+#endif
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
 
@@ -368,6 +392,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
             d3d12->device, d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
    }
 
+#ifdef HAVE_D3D12_HDR
    memset(&d3d12->chain.backBuffer, 0, sizeof(d3d12->chain.backBuffer));
    d3d12->chain.backBuffer.desc.Width              = width;
    d3d12->chain.backBuffer.desc.Height             = height;
@@ -375,7 +400,8 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->chain.backBuffer.desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
    d3d12->chain.backBuffer.srv_heap                = &d3d12->desc.srv_heap;
    d3d12->chain.backBuffer.rt_view.ptr             = d3d12->desc.rtv_heap.cpu.ptr + (countof(d3d12->chain.renderTargets)) * d3d12->desc.rtv_heap.stride;
-   d3d12_init_texture(d3d12->device, &d3d12->chain.backBuffer);            
+   d3d12_init_texture(d3d12->device, &d3d12->chain.backBuffer);
+#endif
 
    d3d12->chain.viewport.Width     = width;
    d3d12->chain.viewport.Height    = height;
@@ -385,6 +411,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    return true;
 }
 
+#ifdef HAVE_D3D12_HDR
 typedef struct display_chromaticities
 {
    float redX;
@@ -540,7 +567,7 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
       int ay2 = 0;
 #endif
 
-      if (GetWindowRect(hwnd, &rect))
+      if (GetWindowRect(hwnd, &rect)) /* TODO/FIXME - won't work for WinRT */
       {
          ax1 = rect.left;
          ay1 = rect.top;
@@ -608,6 +635,7 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
    Release(currentOutput);
    Release(dxgiAdapter);
 }
+#endif
 
 #if 0
 static void d3d12_change_swapchain_bit_depth(d3d12_video_t* d3d12, int increment)

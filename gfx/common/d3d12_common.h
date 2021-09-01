@@ -21,6 +21,10 @@
 #include "dxgi_common.h"
 #include <d3d12.h>
 
+#ifndef __WINRT__
+#define HAVE_D3D12_HDR
+#endif
+
 typedef const ID3D12PipelineState* D3D12PipelineStateRef;
 
 /* auto-generated */
@@ -1328,6 +1332,7 @@ typedef struct
    float4_t                           size_data;
 } d3d12_texture_t;
 
+#ifdef HAVE_D3D12_HDR
 typedef enum swap_chain_bit_depth
 {
    SWAP_CHAIN_BIT_DEPTH_8 = 0,
@@ -1335,6 +1340,7 @@ typedef enum swap_chain_bit_depth
    SWAP_CHAIN_BIT_DEPTH_16,
    SWAP_CHAIN_BIT_DEPTH_COUNT
 } swap_chain_bit_depth_t;
+#endif
 
 #ifndef ALIGN
 #ifdef _MSC_VER
@@ -1355,14 +1361,16 @@ typedef struct ALIGN(16)
    float time;
 } d3d12_uniform_t;
 
+#ifdef HAVE_D3D12_HDR
 typedef struct ALIGN(16)
 {
    math_matrix_4x4   mvp;
-   float             contrast;       // 2.0f; 
-   float             paperWhiteNits; // 200.0f;
-   float             maxNits;        // 1000.0f;
-   float             expandGamut;    // 1.0f;  
+   float             contrast;       /* 2.0f    */
+   float             paperWhiteNits; /* 200.0f  */
+   float             maxNits;        /* 1000.0f */
+   float             expandGamut;    /* 1.0f    */
 } d3d12_hdr_uniform_t;
+#endif
 
 typedef struct
 {
@@ -1402,7 +1410,9 @@ typedef struct
    {
       DXGISwapChain               handle;
       D3D12Resource               renderTargets[2];
+#ifdef HAVE_D3D12_HDR
       d3d12_texture_t             backBuffer;
+#endif
       D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
       D3D12_VIEWPORT              viewport;
       D3D12_RECT                  scissorRect;
@@ -1410,9 +1420,11 @@ typedef struct
       int                         frame_index;
       bool                        vsync;
       unsigned                    swap_interval;
+#ifdef HAVE_D3D12_HDR
       swap_chain_bit_depth_t      bitDepth;
       DXGI_COLOR_SPACE_TYPE       colorSpace;
       DXGI_FORMAT                 formats[SWAP_CHAIN_BIT_DEPTH_COUNT];
+#endif
    } chain;
 
    struct
@@ -1428,6 +1440,7 @@ typedef struct
       int                             rotation;
    } frame;
 
+#ifdef HAVE_D3D12_HDR
    struct
    {
       d3d12_hdr_uniform_t              ubo_values;
@@ -1440,6 +1453,7 @@ typedef struct
       bool                             support;
       bool                             enable;
    } hdr;
+#endif
 
    struct
    {
@@ -1511,7 +1525,6 @@ typedef struct
    bool                            resize_viewport;
    bool                            resize_render_targets;
    bool                            init_history;
-   bool                            backbuffer_inited;
    D3D12Resource                   menu_pipeline_vbo;
    D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
 
@@ -1554,9 +1567,11 @@ bool d3d12_init_pipeline(
 
 bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, void *corewindow);
 
+#ifdef HAVE_D3D12_HDR
 void d3d12_set_hdr_metadata(d3d12_video_t* d3d12);
 void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd);
 void d3d12_swapchain_color_space(d3d12_video_t* d3d12, DXGI_COLOR_SPACE_TYPE colorSpace);
+#endif
 
 bool d3d12_init_queue(d3d12_video_t* d3d12);
 
