@@ -485,4 +485,32 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
 
    return supported;
 }
+
+void dxgi_swapchain_color_space(
+      DXGISwapChain chain_handle,
+      DXGI_COLOR_SPACE_TYPE *chain_color_space,
+      DXGI_COLOR_SPACE_TYPE color_space)
+{
+   if (*chain_color_space != color_space)
+   {
+      UINT color_space_support = 0;
+      if (SUCCEEDED(DXGICheckColorSpaceSupport(
+                  chain_handle, color_space,
+                  &color_space_support))
+            && ((color_space_support & 
+                  DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) 
+               == DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
+      {
+         if (FAILED(DXGISetColorSpace1(chain_handle, color_space)))
+         {
+            RARCH_ERR("[DXGI]: Failed to set DXGI swapchain colour space\n");
+            /* TODO/FIXME/CLARIFICATION: Is this fall-through intentional?
+             * Should chain color space still be set even when this fails?
+             */
+         }
+
+         *chain_color_space = color_space;
+      }
+   }
+}
 #endif

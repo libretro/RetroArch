@@ -839,10 +839,14 @@ void dxgi_copy(
       int         dst_pitch,
       void*       dst_data);
 
+#ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd);
 #else
 bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd);
+#endif
+void dxgi_swapchain_color_space(DXGISwapChain handle, DXGI_COLOR_SPACE_TYPE
+*chain_color_space, DXGI_COLOR_SPACE_TYPE color_space);
 #endif
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);

@@ -383,7 +383,8 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 
       : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 
-   d3d12_swapchain_color_space(d3d12, color_space);
+   dxgi_swapchain_color_space(d3d12->chain.handle,
+         &d3d12->chain.color_space, color_space);
    d3d12_set_hdr_metadata(d3d12);
 #endif
 
@@ -434,29 +435,6 @@ typedef struct display_chromaticities
    float white_x;
    float white_y;
 } display_chromaticities_t;
-
-void d3d12_swapchain_color_space(d3d12_video_t* d3d12,
-      DXGI_COLOR_SPACE_TYPE color_space)
-{
-   if (d3d12->chain.color_space != color_space)
-   {
-      UINT color_space_support = 0;
-      if (SUCCEEDED(DXGICheckColorSpaceSupport(
-                  d3d12->chain.handle, color_space,
-                  &color_space_support))
-            && ((color_space_support & 
-                  DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) 
-               == DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
-      {
-         if (FAILED(DXGISetColorSpace1(d3d12->chain.handle, color_space)))
-         {
-            RARCH_ERR("[DXGI]: Failed to set DXGI swapchain colour space\n");
-         }
-
-         d3d12->chain.color_space = color_space;
-      }
-   }
-}
 
 void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
 {

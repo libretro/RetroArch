@@ -1565,8 +1565,6 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, void *cor
 
 #ifdef HAVE_DXGI_HDR
 void d3d12_set_hdr_metadata(d3d12_video_t* d3d12);
-bool d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd);
-void d3d12_swapchain_color_space(d3d12_video_t* d3d12, DXGI_COLOR_SPACE_TYPE colorSpace);
 #endif
 
 bool d3d12_init_queue(d3d12_video_t* d3d12);

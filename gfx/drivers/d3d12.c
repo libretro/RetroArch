@@ -1432,11 +1432,13 @@ static bool d3d12_gfx_frame(
             * d3d12->desc.rtv_heap.stride;
          d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
 
-         d3d12_swapchain_color_space(d3d12,
+         dxgi_swapchain_color_space(d3d12->chain.handle,
+               &d3d12->chain.color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
       }
       else
-         d3d12_swapchain_color_space(d3d12,
+         dxgi_swapchain_color_space(d3d12->chain.handle,
+               &d3d12->chain.color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
 
       d3d12_set_hdr_metadata(d3d12);
