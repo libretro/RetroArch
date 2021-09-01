@@ -51,6 +51,9 @@ enum {
   RC_MEMSIZE_BIT_6,
   RC_MEMSIZE_BIT_7,
   RC_MEMSIZE_BITCOUNT,
+  RC_MEMSIZE_16_BITS_BE,
+  RC_MEMSIZE_24_BITS_BE,
+  RC_MEMSIZE_32_BITS_BE,
   RC_MEMSIZE_VARIABLE
 };
 
@@ -255,6 +258,9 @@ struct rc_trigger_t {
 
   /* True if at least one condition has a non-zero required hit count */
   char has_required_hits;
+
+  /* True if the measured value should be displayed as a percentage */
+  char measured_as_percent;
 };
 
 int rc_trigger_size(const char* memaddr);

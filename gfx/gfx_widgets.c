@@ -159,6 +159,7 @@ static float gfx_display_get_widget_dpi_scale(
    return adjusted_scale;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_XMB)
 static float gfx_display_get_widget_pixel_scale(
       gfx_display_t *p_disp,
       settings_t *settings,
@@ -237,7 +238,7 @@ static float gfx_display_get_widget_pixel_scale(
 
    return adjusted_scale;
 }
-
+#endif
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
@@ -715,66 +716,6 @@ void gfx_widgets_draw_icon(
          dispctx->draw(&draw, userdata, video_width, video_height);
 }
 
-#ifdef HAVE_TRANSLATE
-static void gfx_widgets_draw_icon_blend(
-      void *userdata,
-      gfx_display_t            *p_disp,
-      gfx_display_ctx_driver_t *dispctx,
-      unsigned video_width,
-      unsigned video_height,
-      unsigned icon_width,
-      unsigned icon_height,
-      uintptr_t texture,
-      float x, float y,
-      float rotation,
-      float scale_factor,
-      float *color)
-{
-   math_matrix_4x4 mymat;
-   gfx_display_ctx_draw_t draw;
-   struct video_coords coords;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = rotation;
-   rotate_draw.scale_x      = scale_factor;
-   rotate_draw.scale_y      = scale_factor;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = color;
-
-   draw.x               = x;
-   draw.y               = video_height - y - icon_height;
-   draw.width           = icon_width;
-   draw.height          = icon_height;
-   draw.scale_factor    = scale_factor;
-   draw.rotation        = rotation;
-   draw.coords          = &coords;
-   draw.matrix_data     = &mymat;
-   draw.texture         = texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline_id     = 0;
-
-   if (dispctx)
-   {
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      if (draw.height > 0 && draw.width > 0)
-         if (dispctx->draw)
-            dispctx->draw(&draw, userdata, video_width, video_height);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
-   }
-}
-#endif
-
 void gfx_widgets_draw_text(
       gfx_widget_font_data_t* font_data,
       const char *text,
@@ -908,7 +849,7 @@ static void gfx_widgets_font_init(
    font_data->line_descender     = (float)font_driver_get_line_descender(font_data->font, 1.0f);
    font_data->line_centre_offset = (float)font_driver_get_line_centre_offset(font_data->font, 1.0f);
 
-   font_data->usage_count = 0;
+   font_data->usage_count        = 0;
 }
 
 
@@ -1650,10 +1591,12 @@ void gfx_widgets_frame(void *data)
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
       if (p_dispwidget->ai_service_overlay_texture)
-         gfx_widgets_draw_icon_blend(
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         gfx_widgets_draw_icon(
                userdata,
                p_disp,
-               dispctx,
                video_width,
                video_height,
                video_width,
@@ -1665,6 +1608,9 @@ void gfx_widgets_frame(void *data)
                1,
                p_dispwidget->pure_white
                );
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
 
       /* top line */
       gfx_display_draw_quad(

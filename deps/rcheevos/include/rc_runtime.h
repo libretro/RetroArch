@@ -7,6 +7,8 @@ extern "C" {
 
 #include "rc_error.h"
 
+#include <stddef.h>
+
 /*****************************************************************************\
 | Forward Declarations (defined in rc_runtime_types.h)                        |
 \*****************************************************************************/
@@ -94,6 +96,7 @@ int rc_runtime_activate_achievement(rc_runtime_t* runtime, unsigned id, const ch
 void rc_runtime_deactivate_achievement(rc_runtime_t* runtime, unsigned id);
 rc_trigger_t* rc_runtime_get_achievement(const rc_runtime_t* runtime, unsigned id);
 int rc_runtime_get_achievement_measured(const rc_runtime_t* runtime, unsigned id, unsigned* measured_value, unsigned* measured_target);
+int rc_runtime_format_achievement_measured(const rc_runtime_t* runtime, unsigned id, char *buffer, size_t buffer_size);
 
 int rc_runtime_activate_lboard(rc_runtime_t* runtime, unsigned id, const char* memaddr, lua_State* L, int funcs_idx);
 void rc_runtime_deactivate_lboard(rc_runtime_t* runtime, unsigned id);

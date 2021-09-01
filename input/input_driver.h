@@ -650,28 +650,7 @@ size_t input_config_get_device_name_size(unsigned port);
 
 /*****************************************************************************/
 
-/**
- * Save the current keybinds on a port to the config file.
- * 
- * @param conf  pointer to config file object
- * @param user  user number (ie port - TODO: change to port nomenclature)
- */
-void input_config_save_keybinds_user(void *data, unsigned user);
-
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
-
-/**
- * Save a key binding to the config file.
- * 
- * @param conf    pointer to config file object
- * @param prefix  prefix name of keybind
- * @param base    base name of keybind
- * @param bind    pointer to key binding object
- * @param kb      save keyboard binds
- */
-void input_config_save_keybind(void *data, const char *prefix,
-      const char *base, const struct retro_keybind *bind,
-      bool save_empty);
 
 void input_config_reset_autoconfig_binds(unsigned port);
 void input_config_reset(void);

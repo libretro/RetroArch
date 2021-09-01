@@ -13,6 +13,7 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
   /* reset in case multiple triggers are parsed by the same parse_state */
   parse->measured_target = 0;
   parse->has_required_hits = 0;
+  parse->measured_as_percent = 0;
 
   if (*aux == 's' || *aux == 'S') {
     self->requirement = 0;
@@ -43,6 +44,7 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
 
   self->measured_value = 0;
   self->measured_target = parse->measured_target;
+  self->measured_as_percent = parse->measured_as_percent;
   self->state = RC_TRIGGER_STATE_WAITING;
   self->has_hits = 0;
   self->has_required_hits = parse->has_required_hits;

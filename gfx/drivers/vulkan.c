@@ -1894,7 +1894,7 @@ static bool vulkan_frame(void *data, const void *frame,
       if (vk->hw.enable)
       {
          /* Does this make that this can happen at all? */
-         if (vk->hw.image)
+         if (vk->hw.image && vk->hw.image->create_info.image)
          {
             input.image        = vk->hw.image->create_info.image;
             input.view         = vk->hw.image->image_view;

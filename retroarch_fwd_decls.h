@@ -44,13 +44,13 @@ static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
-static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
+static void retroarch_deinit_core_options(
       const char *p);
 static void retroarch_init_core_variables(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       const struct retro_variable *vars);
 static void rarch_init_core_options(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       const struct retro_core_options_v2 *options_v2);
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
@@ -183,11 +183,6 @@ static bool accessibility_speak_priority(
 #endif
 
 #ifdef HAVE_MENU
-static bool input_mouse_button_raw(
-      struct rarch_state *p_rarch,
-      input_driver_t *current_input,
-      unsigned joy_idx,
-      unsigned port, unsigned id);
 static bool input_keyboard_line_append(
       struct input_keyboard_line *keyboard_line,
       const char *word);
@@ -195,10 +190,6 @@ static const char **input_keyboard_start_line(
       void *userdata,
       struct input_keyboard_line *keyboard_line,
       input_keyboard_line_complete_t cb);
-
-static void menu_driver_list_free(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      menu_ctx_list_t *list);
 static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
       gfx_display_t *p_disp,

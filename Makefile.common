@@ -970,10 +970,6 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_XMB = 1
    endif
 
-   ifeq ($(HAVE_STRIPES),)
-      HAVE_STRIPES = 0
-   endif
-
    ifeq ($(HAVE_OZONE),)
       HAVE_OZONE = 1
    endif
@@ -981,7 +977,6 @@ else
    HAVE_RGUI        ?= 0
    HAVE_MATERIALUI  ?= 0
    HAVE_XMB         ?= 0
-   HAVE_STRIPES     ?= 0
    HAVE_OZONE       ?= 0
 endif
 
@@ -1013,20 +1008,10 @@ ifeq ($(HAVE_MENU), 1)
    endif
 
    ifeq ($(HAVE_OZONE), 1)
-      OBJ += menu/drivers/ozone/ozone.o \
-             menu/drivers/ozone/ozone_entries.o \
-             menu/drivers/ozone/ozone_display.o \
-             menu/drivers/ozone/ozone_texture.o \
-             menu/drivers/ozone/ozone_theme.o \
-             menu/drivers/ozone/ozone_sidebar.o
+      OBJ += menu/drivers/ozone.o
       DEFINES += -DHAVE_OZONE
       HAVE_ASSETS = 1
       HAVE_MENU_SCREENSAVER = 1
-   endif
-
-   ifeq ($(HAVE_STRIPES), 1)
-      OBJ += menu/drivers/stripes.o
-      DEFINES += -DHAVE_STRIPES
    endif
 
    ifeq ($(HAVE_MENU_SCREENSAVER), 1)
@@ -1048,6 +1033,7 @@ endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
+          menu/menu_driver.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
