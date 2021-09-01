@@ -1413,7 +1413,7 @@ typedef struct
       DXGISwapChain               handle;
       D3D12Resource               renderTargets[2];
 #ifdef HAVE_DXGI_HDR
-      d3d12_texture_t             backBuffer;
+      d3d12_texture_t             back_buffer;
 #endif
       D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
       D3D12_VIEWPORT              viewport;
@@ -1423,8 +1423,8 @@ typedef struct
       bool                        vsync;
       unsigned                    swap_interval;
 #ifdef HAVE_DXGI_HDR
-      swap_chain_bit_depth_t      bitDepth;
-      DXGI_COLOR_SPACE_TYPE       colorSpace;
+      swap_chain_bit_depth_t      bit_depth;
+      DXGI_COLOR_SPACE_TYPE       color_space;
       DXGI_FORMAT                 formats[SWAP_CHAIN_BIT_DEPTH_COUNT];
 #endif
    } chain;

@@ -291,7 +291,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    DXGI_SWAP_CHAIN_DESC desc;
 #endif
 #ifdef HAVE_DXGI_HDR
-   DXGI_COLOR_SPACE_TYPE colorSpace;
+   DXGI_COLOR_SPACE_TYPE color_space;
 
    d3d12->chain.formats[SWAP_CHAIN_BIT_DEPTH_8]    = DXGI_FORMAT_R8G8B8A8_UNORM;
    d3d12->chain.formats[SWAP_CHAIN_BIT_DEPTH_10]   = DXGI_FORMAT_R10G10B10A2_UNORM;
@@ -303,7 +303,9 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #ifdef HAVE_DXGI_HDR
    d3d12_check_display_hdr_support(d3d12, hwnd);
 
-   d3d12->chain.bitDepth                           = d3d12->hdr.enable ? SWAP_CHAIN_BIT_DEPTH_10 :  SWAP_CHAIN_BIT_DEPTH_8;
+   d3d12->chain.bit_depth                          = d3d12->hdr.enable 
+      ? SWAP_CHAIN_BIT_DEPTH_10 
+      :  SWAP_CHAIN_BIT_DEPTH_8;
 #endif
 
 #ifdef __WINRT__
@@ -326,9 +328,9 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
-   desc.Format               = d3d12->chain.formats[d3d12->chain.bitDepth];
+   desc.Format               = d3d12->chain.formats[d3d12->chain.bit_depth];
 #else
-   desc.BufferDesc.Format    = d3d12->chain.formats[d3d12->chain.bitDepth];
+   desc.BufferDesc.Format    = d3d12->chain.formats[d3d12->chain.bit_depth];
 #endif
 #else
 #ifdef __WINRT__
@@ -376,12 +378,12 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->hdr.max_fall         = 0.0f;
 #endif
 #ifdef HAVE_DXGI_HDR
-   colorSpace                  = 
+   color_space                 = 
         d3d12->hdr.enable 
       ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 
       : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 
-   d3d12_swapchain_color_space(d3d12, colorSpace);
+   d3d12_swapchain_color_space(d3d12, color_space);
    d3d12_set_hdr_metadata(d3d12);
 #endif
 
@@ -395,20 +397,27 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    }
 
 #ifdef HAVE_DXGI_HDR
-   memset(&d3d12->chain.backBuffer, 0, sizeof(d3d12->chain.backBuffer));
-   d3d12->chain.backBuffer.desc.Width              = width;
-   d3d12->chain.backBuffer.desc.Height             = height;
-   d3d12->chain.backBuffer.desc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
-   d3d12->chain.backBuffer.desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-   d3d12->chain.backBuffer.srv_heap                = &d3d12->desc.srv_heap;
-   d3d12->chain.backBuffer.rt_view.ptr             = d3d12->desc.rtv_heap.cpu.ptr + (countof(d3d12->chain.renderTargets)) * d3d12->desc.rtv_heap.stride;
-   d3d12_init_texture(d3d12->device, &d3d12->chain.backBuffer);
+   memset(&d3d12->chain.back_buffer,
+         0, sizeof(d3d12->chain.back_buffer));
+   d3d12->chain.back_buffer.desc.Width             = width;
+   d3d12->chain.back_buffer.desc.Height            = height;
+   d3d12->chain.back_buffer.desc.Format            = 
+      DXGI_FORMAT_R8G8B8A8_UNORM;
+   d3d12->chain.back_buffer.desc.Flags             = 
+      D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+   d3d12->chain.back_buffer.srv_heap               = 
+      &d3d12->desc.srv_heap;
+   d3d12->chain.back_buffer.rt_view.ptr            = 
+        d3d12->desc.rtv_heap.cpu.ptr 
+      + (countof(d3d12->chain.renderTargets)) 
+      * d3d12->desc.rtv_heap.stride;
+   d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
 #endif
 
-   d3d12->chain.viewport.Width     = width;
-   d3d12->chain.viewport.Height    = height;
-   d3d12->chain.scissorRect.right  = width;
-   d3d12->chain.scissorRect.bottom = height;
+   d3d12->chain.viewport.Width                     = width;
+   d3d12->chain.viewport.Height                    = height;
+   d3d12->chain.scissorRect.right                  = width;
+   d3d12->chain.scissorRect.bottom                 = height;
 
    return true;
 }
@@ -416,14 +425,14 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #ifdef HAVE_DXGI_HDR
 typedef struct display_chromaticities
 {
-   float redX;
-   float redY;
-   float greenX;
-   float greenY;
-   float blueX;
-   float blueY;
-   float whiteX;
-   float whiteY;
+   float red_x;
+   float red_y;
+   float green_x;
+   float green_y;
+   float blue_x;
+   float blue_y;
+   float white_x;
+   float white_y;
 } display_chromaticities_t;
 
 typedef enum hdr_root_constants
@@ -433,36 +442,40 @@ typedef enum hdr_root_constants
    HDR_ROOT_CONSTANTS_COUNT
 } hdr_root_constants_t;
 
-void d3d12_swapchain_color_space(d3d12_video_t* d3d12, DXGI_COLOR_SPACE_TYPE colorSpace)
+void d3d12_swapchain_color_space(d3d12_video_t* d3d12,
+      DXGI_COLOR_SPACE_TYPE color_space)
 {
-   if (d3d12->chain.colorSpace != colorSpace)
+   if (d3d12->chain.color_space != color_space)
    {
-      UINT colorSpaceSupport = 0;
-      if (SUCCEEDED(DXGICheckColorSpaceSupport(d3d12->chain.handle, colorSpace, &colorSpaceSupport)) &&
-          ((colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) == DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
+      UINT color_space_support = 0;
+      if (SUCCEEDED(DXGICheckColorSpaceSupport(
+                  d3d12->chain.handle, color_space,
+                  &color_space_support))
+            && ((color_space_support & 
+                  DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) 
+               == DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
       {
-         HRESULT hr = DXGISetColorSpace1(d3d12->chain.handle, colorSpace);
-
-         if (FAILED(hr))
+         if (FAILED(DXGISetColorSpace1(d3d12->chain.handle, color_space)))
          {
             RARCH_ERR("[D3D12]: Failed to set swap chain colour space");
          }
 
-         d3d12->chain.colorSpace = colorSpace;
+         d3d12->chain.color_space = color_space;
       }
    }
 }
 
 void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
 {
-   static const display_chromaticities_t display_chromaticity_list[] =
+   static const display_chromaticities_t 
+      display_chromaticity_list[]               =
    {
       { 0.64000f, 0.33000f, 0.30000f, 0.60000f, 0.15000f, 0.06000f, 0.31270f, 0.32900f }, /* Rec709  */   
       { 0.70800f, 0.29200f, 0.17000f, 0.79700f, 0.13100f, 0.04600f, 0.31270f, 0.32900f }, /* Rec2020 */  
    };
-   DXGI_HDR_METADATA_HDR10 hdr10MetaData = {0};
-   int selectedChroma                    = 0;
-   HRESULT hr                            = S_OK;
+   const display_chromaticities_t* chroma       = NULL;
+   DXGI_HDR_METADATA_HDR10 hdr10_meta_data      = {0};
+   int selected_chroma                          = 0;
    
    if (!d3d12->chain.handle)
       return;
@@ -470,24 +483,24 @@ void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
    /* Clear the hdr meta data if the monitor does not support HDR */
    if (!d3d12->hdr.support)
    {
-      hr = DXGISetHDRMetaData(d3d12->chain.handle, DXGI_HDR_METADATA_TYPE_NONE, 0, NULL);
-
-      if (FAILED(hr))
+      if (FAILED(DXGISetHDRMetaData(d3d12->chain.handle,
+                  DXGI_HDR_METADATA_TYPE_NONE, 0, NULL)))
       {
-         RARCH_ERR("[D3D12]: Failed to set HDR meta data to none");
+         RARCH_ERR("[DXGI]: Failed to set HDR meta data to none");
       }
       return;
    }
 
 
    /* Now select the chromacity based on colour space */
-   if (d3d12->chain.bitDepth == SWAP_CHAIN_BIT_DEPTH_10 && d3d12->chain.colorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)
-      selectedChroma = 1;
+   if (     d3d12->chain.bit_depth   == SWAP_CHAIN_BIT_DEPTH_10 
+         && d3d12->chain.color_space == 
+         DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)
+      selected_chroma                           = 1;
    else
    {
-      hr = DXGISetHDRMetaData(d3d12->chain.handle, DXGI_HDR_METADATA_TYPE_NONE, 0, NULL);
-
-      if (FAILED(hr))
+      if (FAILED(DXGISetHDRMetaData(d3d12->chain.handle,
+                  DXGI_HDR_METADATA_TYPE_NONE, 0, NULL)))
       {
          RARCH_ERR("[D3D12]: Failed to set HDR meta data to none");
       }
@@ -496,128 +509,142 @@ void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
    }
 
    /* Set the HDR meta data */
-   const display_chromaticities_t* chroma = &display_chromaticity_list[selectedChroma];
-   hdr10MetaData.RedPrimary[0]               = (UINT16)(chroma->redX * 50000.0f);
-   hdr10MetaData.RedPrimary[1]               = (UINT16)(chroma->redY * 50000.0f);
-   hdr10MetaData.GreenPrimary[0]             = (UINT16)(chroma->greenX * 50000.0f);
-   hdr10MetaData.GreenPrimary[1]             = (UINT16)(chroma->greenY * 50000.0f);
-   hdr10MetaData.BluePrimary[0]              = (UINT16)(chroma->blueX * 50000.0f);
-   hdr10MetaData.BluePrimary[1]              = (UINT16)(chroma->blueY * 50000.0f);
-   hdr10MetaData.WhitePoint[0]               = (UINT16)(chroma->whiteX * 50000.0f);
-   hdr10MetaData.WhitePoint[1]               = (UINT16)(chroma->whiteY * 50000.0f);
-   hdr10MetaData.MaxMasteringLuminance       = (UINT)(d3d12->hdr.max_output_nits * 10000.0f);
-   hdr10MetaData.MinMasteringLuminance       = (UINT)(d3d12->hdr.min_output_nits * 10000.0f);
-   hdr10MetaData.MaxContentLightLevel        = (UINT16)(d3d12->hdr.max_cll);
-   hdr10MetaData.MaxFrameAverageLightLevel   = (UINT16)(d3d12->hdr.max_fall);
+   chroma                                       =
+      &display_chromaticity_list[selected_chroma];
+   hdr10_meta_data.RedPrimary[0]                = 
+      (UINT16)(chroma->red_x * 50000.0f);
+   hdr10_meta_data.RedPrimary[1]                = 
+      (UINT16)(chroma->red_y * 50000.0f);
+   hdr10_meta_data.GreenPrimary[0]              = 
+      (UINT16)(chroma->green_x * 50000.0f);
+   hdr10_meta_data.GreenPrimary[1]              = 
+      (UINT16)(chroma->green_y * 50000.0f);
+   hdr10_meta_data.BluePrimary[0]               = 
+      (UINT16)(chroma->blue_x * 50000.0f);
+   hdr10_meta_data.BluePrimary[1]               = 
+      (UINT16)(chroma->blue_y * 50000.0f);
+   hdr10_meta_data.WhitePoint[0]                = 
+      (UINT16)(chroma->white_x * 50000.0f);
+   hdr10_meta_data.WhitePoint[1]                = 
+      (UINT16)(chroma->white_y * 50000.0f);
+   hdr10_meta_data.MaxMasteringLuminance        = 
+      (UINT)(d3d12->hdr.max_output_nits * 10000.0f);
+   hdr10_meta_data.MinMasteringLuminance        = 
+      (UINT)(d3d12->hdr.min_output_nits * 10000.0f);
+   hdr10_meta_data.MaxContentLightLevel         = 
+      (UINT16)(d3d12->hdr.max_cll);
+   hdr10_meta_data.MaxFrameAverageLightLevel    = 
+      (UINT16)(d3d12->hdr.max_fall);
    
-   hr = DXGISetHDRMetaData(d3d12->chain.handle, DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &hdr10MetaData);
-
-   if (FAILED(hr))
+   if (FAILED(DXGISetHDRMetaData(d3d12->chain.handle,
+               DXGI_HDR_METADATA_TYPE_HDR10,
+               sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
    {
       RARCH_ERR("[D3D12]: Failed to set HDR meta data for HDR10");
    }
 }
 
-inline static int d3d12_compute_intersection_area(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2)
+inline static int dxgi_compute_intersection_area(
+      int ax1, int ay1, int ax2, int ay2,
+      int bx1, int by1, int bx2, int by2)
 {
-    return max(0, min(ax2, bx2) - max(ax1, bx1)) * max(0, min(ay2, by2) - max(ay1, by1));
+    return   max(0, min(ax2, bx2) - 
+             max(ax1, bx1)) 
+           * max(0, min(ay2, by2) - max(ay1, by1));
 }
 
 void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd) 
 {
    UINT i = 0;
    DXGI_OUTPUT_DESC1 desc1;
-   DXGIOutput currentOutput;
-   DXGIOutput bestOutput;
+   DXGIOutput current_output;
+   DXGIOutput best_output;
    DXGIOutput6 output6;
-   DXGIAdapter dxgiAdapter;
-   float bestIntersectArea = -1;
-   HRESULT hr = S_OK;
+   DXGIAdapter dxgi_adapter;
+   float best_intersect_area = -1;
 
    if (DXGIIsCurrent(d3d12->factory) == false)
    {
-      hr = DXGICreateFactory(&d3d12->factory);
-      if (FAILED(hr))
+      if (FAILED(DXGICreateFactory(&d3d12->factory)))
       {
          RARCH_ERR("[D3D12]: Failed to create dxgi factory");
       }
    }
 
-   hr = DXGIEnumAdapters(d3d12->factory, 0, &dxgiAdapter);
-
-   if (FAILED(hr))
+   if (FAILED(DXGIEnumAdapters(d3d12->factory, 0, &dxgi_adapter)))
    {
       RARCH_ERR("[D3D12]: Failed to enum adapters");
    }
 
-   while (DXGIEnumOutputs(dxgiAdapter, i, &currentOutput) != DXGI_ERROR_NOT_FOUND)
+   while (  DXGIEnumOutputs(dxgi_adapter, i, &current_output) 
+         != DXGI_ERROR_NOT_FOUND)
    {
       RECT r, rect;
       DXGI_OUTPUT_DESC desc;
-      int intersectArea;
+      int intersect_area;
       int bx1, by1, bx2, by2;
-      /* Get the retangle bounds of the app window */
 #if 0
-      int ax1 = win32->pos_x;
-      int ay1 = win32->pos_y;
-      int ax2 = win32->pos_x + win32->pos_width; 
-      int ay2 = win32->pos_y + win32->pos_height;
+      /* Get the rectangle bounds of the app window */
+      int ax1               = win32->pos_x;
+      int ay1               = win32->pos_y;
+      int ax2               = win32->pos_x + win32->pos_width; 
+      int ay2               = win32->pos_y + win32->pos_height;
 #else
-      int ax1 = 0;
-      int ay1 = 0;
-      int ax2 = 0;
-      int ay2 = 0;
+      int ax1               = 0;
+      int ay1               = 0;
+      int ax2               = 0;
+      int ay2               = 0;
 #endif
 
       if (GetWindowRect(hwnd, &rect)) /* TODO/FIXME - won't work for WinRT */
       {
-         ax1 = rect.left;
-         ay1 = rect.top;
-         ax2 = rect.right;
-         ay2 = rect.bottom;         
+         ax1                = rect.left;
+         ay1                = rect.top;
+         ax2                = rect.right;
+         ay2                = rect.bottom;         
       }
 
       /* Get the rectangle bounds of current output */ 
-      hr = DXGIGetOutputDesc(currentOutput, &desc);
-
-      if (FAILED(hr))
+      if (FAILED(DXGIGetOutputDesc(current_output, &desc)))
       {
          RARCH_ERR("[D3D12]: Failed to get dxgi output description");
       }
 
-      r   = desc.DesktopCoordinates;
-      bx1 = r.left;
-      by1 = r.top;
-      bx2 = r.right;
-      by2 = r.bottom;
+      /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
+      r                      = desc.DesktopCoordinates; 
+      bx1                    = r.left;
+      by1                    = r.top;
+      bx2                    = r.right;
+      by2                    = r.bottom;
 
       /* Compute the intersection */
-      intersectArea = d3d12_compute_intersection_area(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
-      if (intersectArea > bestIntersectArea)
+      intersect_area         = dxgi_compute_intersection_area(
+            ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
+
+      if (intersect_area > best_intersect_area)
       {
-         bestOutput = currentOutput;
-         AddRef(bestOutput);
-         bestIntersectArea = (float)intersectArea;
+         best_output         = current_output;
+         AddRef(best_output);
+         best_intersect_area = (float)intersect_area;
       }
 
       i++;
    }
 
-   hr = bestOutput->lpVtbl->QueryInterface(bestOutput, &libretro_IID_IDXGIOutput6, (void**)&output6);
-
-   if (FAILED(hr))
+   if (FAILED(best_output->lpVtbl->QueryInterface(
+               best_output,
+               &libretro_IID_IDXGIOutput6, (void**)&output6)))
    {
-      RARCH_ERR("[D3D12]: Failed to get dxgi output 6 from best output");
+      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 from best output");
    }
 
-   hr = DXGIGetOutputDesc1(output6, &desc1);
-
-   if (FAILED(hr))
+   if (FAILED(DXGIGetOutputDesc1(output6, &desc1)))
    {
-      RARCH_ERR("[D3D12]: Failed to get dxgi output 6 description");
+      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 description");
    }
 
-   d3d12->hdr.support = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+   d3d12->hdr.support = (desc1.ColorSpace == 
+         DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
 
    if(d3d12->hdr.support)
       video_driver_set_hdr_support();
@@ -633,18 +660,19 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
    }
 
    Release(output6);
-   Release(bestOutput);
-   Release(currentOutput);
-   Release(dxgiAdapter);
+   Release(best_output);
+   Release(current_output);
+   Release(dxgi_adapter);
 }
 #endif
 
 #if 0
 static void d3d12_change_swapchain_bit_depth(d3d12_video_t* d3d12, int increment)
 {
-   d3d12->chain.bitDepth = (swap_chain_bit_depth_t)((d3d12->chain.bitDepth + increment + SWAP_CHAIN_BIT_DEPTH_COUNT) % SWAP_CHAIN_BIT_DEPTH_COUNT);
-   
-   d3d12->resize_chain = true;
+   d3d12->chain.bit_depth = (swap_chain_bit_depth_t)((d3d12->chain.bit_depth 
+            + increment 
+            + SWAP_CHAIN_BIT_DEPTH_COUNT) % SWAP_CHAIN_BIT_DEPTH_COUNT);
+   d3d12->resize_chain    = true;
 } 
 #endif
 
