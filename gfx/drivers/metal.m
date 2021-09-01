@@ -399,19 +399,23 @@ static uint32_t metal_get_flags(void *data)
 }
 
 static const video_poke_interface_t metal_poke_interface = {
-   .get_flags           = metal_get_flags,
-   .load_texture        = metal_load_texture,
-   .unload_texture      = metal_unload_texture,
-   .set_video_mode      = metal_set_video_mode,
-   .get_refresh_rate    = metal_get_refresh_rate,
-   .set_filtering       = metal_set_filtering,
-   .set_aspect_ratio    = metal_set_aspect_ratio,
-   .apply_state_changes = metal_apply_state_changes,
-   .set_texture_frame   = metal_set_texture_frame,
-   .set_texture_enable  = metal_set_texture_enable,
-   .set_osd_msg         = font_driver_render_msg,
-   .show_mouse          = metal_show_mouse,
-   .get_current_shader  = metal_get_current_shader,
+   .get_flags                 = metal_get_flags,
+   .load_texture              = metal_load_texture,
+   .unload_texture            = metal_unload_texture,
+   .set_video_mode            = metal_set_video_mode,
+   .get_refresh_rate          = metal_get_refresh_rate,
+   .set_filtering             = metal_set_filtering,
+   .set_aspect_ratio          = metal_set_aspect_ratio,
+   .apply_state_changes       = metal_apply_state_changes,
+   .set_texture_frame         = metal_set_texture_frame,
+   .set_texture_enable        = metal_set_texture_enable,
+   .set_osd_msg               = font_driver_render_msg,
+   .show_mouse                = metal_show_mouse,
+   .get_current_shader        = metal_get_current_shader,
+   .set_hdr_max_nits          = NULL;
+   .set_hdr_paper_white_nits  = NULL;
+   .set_hdr_contrast          = NULL;
+   .set_hdr_expand_gamut      = NULL;
 };
 
 static void metal_get_poke_interface(void *data,

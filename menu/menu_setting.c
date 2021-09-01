@@ -7711,6 +7711,51 @@ static void general_write_handler(rarch_setting_t *setting)
                rarch_cmd = CMD_EVENT_REINIT;
          }
          break;
+      case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
+         {
+            settings_t *settings             = config_get_ptr();
+            settings->modified               = true;
+            settings->bools.video_hdr_enable = *setting->value.target.boolean;
+
+            rarch_cmd = CMD_EVENT_REINIT;            
+         }
+         break;
+      case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
+         {
+            settings_t *settings                = config_get_ptr();
+            settings->modified                  = true;
+            settings->floats.video_hdr_max_nits = roundf(*setting->value.target.fraction);
+
+            video_driver_set_hdr_max_nits(settings->floats.video_hdr_max_nits);
+         }
+         break;
+      case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
+         {
+            settings_t *settings                         = config_get_ptr();
+            settings->modified                           = true;
+            settings->floats.video_hdr_paper_white_nits  = roundf(*setting->value.target.fraction);
+
+            video_driver_set_hdr_paper_white_nits(settings->floats.video_hdr_paper_white_nits);
+         }
+         break;
+      case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
+         {
+            settings_t *settings                = config_get_ptr();
+            settings->modified                  = true;
+            settings->floats.video_hdr_contrast = *setting->value.target.fraction;
+
+            video_driver_set_hdr_contrast(settings->floats.video_hdr_contrast);
+         }
+         break;
+      case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
+         {
+            settings_t *settings                   = config_get_ptr();
+            settings->modified                     = true;
+            settings->bools.video_hdr_expand_gamut = *setting->value.target.boolean;;
+
+            video_driver_set_hdr_expand_gamut(settings->bools.video_hdr_expand_gamut);
+         }
+         break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
          break;
@@ -11783,6 +11828,114 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
             END_SUB_GROUP(list, list_info, parent_group);
+
+            if(video_driver_supports_hdr())
+            {
+               START_SUB_GROUP(list, list_info, "HDR", &group_info, &subgroup_info, parent_group);
+
+               CONFIG_ACTION(
+                     list, list_info,
+                     MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group);
+
+               CONFIG_BOOL(
+                     list, list_info,
+                     &settings->bools.video_hdr_enable,
+                     MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+                     DEFAULT_VIDEO_HDR_ENABLE,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_NONE);
+               (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+               (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+               (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
+                     list,
+                     list_info,
+                     CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+
+               /* if (settings->bools.video_hdr_enable) */
+               {
+                  CONFIG_FLOAT(
+                        list, list_info,
+                        &settings->floats.video_hdr_max_nits,
+                        MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+                        DEFAULT_VIDEO_HDR_MAX_NITS,
+                        "%.1fx",
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  menu_settings_list_current_add_range(list, list_info, 0.0, 10000.0, 10.0, true, true);
+
+                  CONFIG_FLOAT(
+                        list, list_info,
+                        &settings->floats.video_hdr_paper_white_nits,
+                        MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+                        DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS,
+                        "%.1fx",
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  menu_settings_list_current_add_range(list, list_info, 0.0, 10000.0, 10.0, true, true);
+
+                  CONFIG_FLOAT(
+                        list, list_info,
+                        &settings->floats.video_hdr_contrast,
+                        MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+                        DEFAULT_VIDEO_HDR_CONTRAST,
+                        "%.2fx",
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  menu_settings_list_current_add_range(list, list_info, 0.1, 3.0, 0.01, true, true);
+
+                  CONFIG_BOOL(
+                        list, list_info,
+                        &settings->bools.video_hdr_expand_gamut,
+                        MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+                        DEFAULT_VIDEO_HDR_EXPAND_GAMUT,
+                        MENU_ENUM_LABEL_VALUE_OFF,
+                        MENU_ENUM_LABEL_VALUE_ON,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler,
+                        SD_FLAG_NONE);
+                  (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+                  (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+                  (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+                  MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
+                        list,
+                        list_info,
+                        CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+               }
+
+               END_SUB_GROUP(list, list_info, parent_group);
+            }
+
             START_SUB_GROUP(
                   list,
                   list_info,

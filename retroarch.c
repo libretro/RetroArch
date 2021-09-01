@@ -27686,6 +27686,38 @@ void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling)
             index, smooth, ctx_scaling);
 }
 
+void video_driver_set_hdr_max_nits(float max_nits)
+{
+   struct rarch_state            *p_rarch = &rarch_st;
+   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_max_nits)
+      p_rarch->video_driver_poke->set_hdr_max_nits(p_rarch->video_driver_data,
+            max_nits);
+}
+
+void video_driver_set_hdr_paper_white_nits(float paper_white_nits)
+{
+   struct rarch_state            *p_rarch = &rarch_st;
+   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_paper_white_nits)
+      p_rarch->video_driver_poke->set_hdr_paper_white_nits(p_rarch->video_driver_data,
+            paper_white_nits);
+}
+
+void video_driver_set_hdr_contrast(float contrast)
+{
+   struct rarch_state            *p_rarch = &rarch_st;
+   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_contrast)
+      p_rarch->video_driver_poke->set_hdr_contrast(p_rarch->video_driver_data,
+            contrast);
+}
+
+void video_driver_set_hdr_expand_gamut(bool expand_gamut)
+{
+   struct rarch_state            *p_rarch = &rarch_st;
+   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_expand_gamut)
+      p_rarch->video_driver_poke->set_hdr_expand_gamut(p_rarch->video_driver_data,
+            expand_gamut);
+}
+
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -28032,6 +28064,32 @@ bool video_driver_supports_rgba(void)
    struct rarch_state *p_rarch = &rarch_st;
    VIDEO_DRIVER_LOCK();
    tmp = p_rarch->video_driver_use_rgba;
+   VIDEO_DRIVER_UNLOCK();
+   return tmp;
+}
+
+void video_driver_set_hdr_support(void)
+{
+   struct rarch_state *p_rarch    = &rarch_st;
+   VIDEO_DRIVER_LOCK();
+   p_rarch->video_driver_hdr_support = true;
+   VIDEO_DRIVER_UNLOCK();
+}
+
+void video_driver_unset_hdr_support(void)
+{
+   struct rarch_state *p_rarch    = &rarch_st;
+   VIDEO_DRIVER_LOCK();
+   p_rarch->video_driver_hdr_support = false;
+   VIDEO_DRIVER_UNLOCK();
+}
+
+bool video_driver_supports_hdr(void)
+{
+   bool tmp;
+   struct rarch_state *p_rarch = &rarch_st;
+   VIDEO_DRIVER_LOCK();
+   tmp = p_rarch->video_driver_hdr_support;
    VIDEO_DRIVER_UNLOCK();
    return tmp;
 }
@@ -30495,6 +30553,7 @@ static void retroarch_deinit_drivers(
    video_display_server_destroy();
 
    p_rarch->video_driver_use_rgba                   = false;
+   p_rarch->video_driver_hdr_support                = false;
    p_rarch->video_driver_active                     = false;
    p_rarch->video_driver_cache_context              = false;
    p_rarch->video_driver_cache_context_ack          = false;

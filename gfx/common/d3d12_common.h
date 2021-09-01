@@ -1328,6 +1328,14 @@ typedef struct
    float4_t                           size_data;
 } d3d12_texture_t;
 
+typedef enum swap_chain_bit_depth
+{
+   SWAP_CHAIN_BIT_DEPTH_8 = 0,
+   SWAP_CHAIN_BIT_DEPTH_10,
+   SWAP_CHAIN_BIT_DEPTH_16,
+   SWAP_CHAIN_BIT_DEPTH_COUNT
+} swap_chain_bit_depth_t;
+
 #ifndef ALIGN
 #ifdef _MSC_VER
 #define ALIGN(x) __declspec(align(x))
@@ -1346,6 +1354,15 @@ typedef struct ALIGN(16)
    } OutputSize;
    float time;
 } d3d12_uniform_t;
+
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4   mvp;
+   float             contrast;       // 2.0f; 
+   float             paperWhiteNits; // 200.0f;
+   float             maxNits;        // 1000.0f;
+   float             expandGamut;    // 1.0f;  
+} d3d12_hdr_uniform_t;
 
 typedef struct
 {
@@ -1385,6 +1402,7 @@ typedef struct
    {
       DXGISwapChain               handle;
       D3D12Resource               renderTargets[2];
+      d3d12_texture_t             backBuffer;
       D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
       D3D12_VIEWPORT              viewport;
       D3D12_RECT                  scissorRect;
@@ -1392,6 +1410,9 @@ typedef struct
       int                         frame_index;
       bool                        vsync;
       unsigned                    swap_interval;
+      swap_chain_bit_depth_t      bitDepth;
+      DXGI_COLOR_SPACE_TYPE       colorSpace;
+      DXGI_FORMAT                 formats[SWAP_CHAIN_BIT_DEPTH_COUNT];
    } chain;
 
    struct
@@ -1406,6 +1427,19 @@ typedef struct
       float4_t                        output_size;
       int                             rotation;
    } frame;
+
+   struct
+   {
+      d3d12_hdr_uniform_t              ubo_values;
+      D3D12Resource                    ubo;
+      D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
+      float                            max_output_nits;
+      float                            min_output_nits;
+      float                            max_cll;
+      float                            max_fall;
+      bool                             support;
+      bool                             enable;
+   } hdr;
 
    struct
    {
@@ -1518,6 +1552,10 @@ bool d3d12_init_pipeline(
       D3D12PipelineState*                 out);
 
 bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, void *corewindow);
+
+void d3d12_set_hdr_metadata(d3d12_video_t* d3d12);
+void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd);
+void d3d12_swapchain_color_space(d3d12_video_t* d3d12, DXGI_COLOR_SPACE_TYPE colorSpace);
 
 bool d3d12_init_queue(d3d12_video_t* d3d12);
 

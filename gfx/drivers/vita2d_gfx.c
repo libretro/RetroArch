@@ -824,7 +824,11 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL,
    NULL,
    vita_get_current_sw_framebuffer,
-   NULL
+   NULL,
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
  };
 
 static void vita2d_gfx_get_poke_interface(void *data,

@@ -1008,7 +1008,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 #else
    DXGICreateFactory(&d3d10->factory);
 #endif
-
+   
    {
       int         i = 0;
       int gpu_index = settings->ints.d3d10_gpu_index;
@@ -1800,6 +1800,10 @@ static const video_poke_interface_t d3d10_poke_interface = {
 #else
    NULL, /* get_hw_render_interface */
 #endif
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
