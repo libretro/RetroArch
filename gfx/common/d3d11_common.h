@@ -2510,6 +2510,35 @@ typedef struct ALIGN(16)
    float time;
 } d3d11_uniform_t;
 
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4   mvp;
+   float             contrast;       // 2.0f; 
+   float             paperWhiteNits; // 200.0f;
+   float             maxNits;        // 1000.0f;
+   float             expandGamut;    // 1.0f;  
+} d3d11_hdr_uniform_t;
+
+typedef enum swap_chain_bit_depth
+{
+   SWAP_CHAIN_BIT_DEPTH_8 = 0,
+   SWAP_CHAIN_BIT_DEPTH_10,
+   SWAP_CHAIN_BIT_DEPTH_16,
+   SWAP_CHAIN_BIT_DEPTH_COUNT
+} swap_chain_bit_depth_t;
+
+typedef struct display_chromaticities
+{
+   float redX;
+   float redY;
+   float greenX;
+   float greenY;
+   float blueX;
+   float blueY;
+   float whiteX;
+   float whiteY;
+} display_chromaticities_t;
+
 typedef struct d3d11_shader_t
 {
    D3D11VertexShader   vs;
@@ -2529,6 +2558,7 @@ typedef struct
    D3D11RasterizerState  scissor_disabled;
    D3D11Buffer           ubo;
    d3d11_uniform_t       ubo_values;
+   d3d11_texture_t       backBuffer;
    D3D11SamplerState     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
@@ -2549,6 +2579,9 @@ typedef struct
    bool                  has_flip_model;
    bool                  has_allow_tearing;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
+   swap_chain_bit_depth_t chain_bit_depth;
+   DXGI_COLOR_SPACE_TYPE  chain_color_space;
+   DXGI_FORMAT            chain_formats[SWAP_CHAIN_BIT_DEPTH_COUNT];
 #ifdef __WINRT__
    DXGIFactory2 factory;
 #else
@@ -2600,6 +2633,18 @@ typedef struct
       float4_t        output_size;
       int             rotation;
    } frame;
+
+   struct
+   {
+      d3d11_hdr_uniform_t              ubo_values;
+      D3D11Buffer                      ubo;
+      float                            max_output_nits;
+      float                            min_output_nits;
+      float                            max_cll;
+      float                            max_fall;
+      bool                             support;
+      bool                             enable;
+   } hdr;
 
    struct
    {

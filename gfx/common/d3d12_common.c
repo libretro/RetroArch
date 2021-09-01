@@ -390,13 +390,6 @@ typedef struct display_chromaticities
    float whiteY;
 } display_chromaticities_t;
 
-typedef enum hdr_root_constants
-{
-   HDR_ROOT_CONSTANTS_REFERENCE_WHITE_NITS = 0,
-   HDR_ROOT_CONSTANTS_DISPLAY_CURVE,
-   HDR_ROOT_CONSTANTS_COUNT
-} hdr_root_constants_t;
-
 void d3d12_swapchain_color_space(d3d12_video_t* d3d12, DXGI_COLOR_SPACE_TYPE colorSpace)
 {
    if (d3d12->chain.colorSpace != colorSpace)
@@ -510,8 +503,8 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
    }
 
    UINT i = 0;
-   DXGIOutput currentOutput;
-   DXGIOutput bestOutput;
+   DXGIOutput currentOutput = NULL;
+   DXGIOutput bestOutput = NULL;
    float bestIntersectArea = -1;
 
    while (DXGIEnumOutputs(dxgiAdapter, i, &currentOutput) != DXGI_ERROR_NOT_FOUND)
@@ -566,23 +559,32 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
       i++;
    }
 
-   DXGIOutput6 output6;
-   hr = bestOutput->lpVtbl->QueryInterface(bestOutput, uuidof(IDXGIOutput6), (void**)&output6);
-
-   if (FAILED(hr))
+   if(bestOutput)
    {
-      RARCH_ERR("[D3D12]: Failed to get dxgi output 6 from best output");
+      DXGIOutput6 output6;
+      hr = bestOutput->lpVtbl->QueryInterface(bestOutput, uuidof(IDXGIOutput6), (void**)&output6);
+
+      if (FAILED(hr))
+      {
+         RARCH_ERR("[D3D12]: Failed to get dxgi output 6 from best output");
+      }
+
+      DXGI_OUTPUT_DESC1 desc1;
+      hr = DXGIGetOutputDesc1(output6, &desc1);
+
+      if (FAILED(hr))
+      {
+         RARCH_ERR("[D3D12]: Failed to get dxgi output 6 description");
+      }
+
+      d3d12->hdr.support = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+   
+      Release(output6);
    }
-
-   DXGI_OUTPUT_DESC1 desc1;
-   hr = DXGIGetOutputDesc1(output6, &desc1);
-
-   if (FAILED(hr))
+   else
    {
-      RARCH_ERR("[D3D12]: Failed to get dxgi output 6 description");
+       d3d12->hdr.support = false;
    }
-
-   d3d12->hdr.support = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
 
    if(d3d12->hdr.support)
    {
@@ -599,7 +601,6 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
       video_driver_unset_hdr_support();
    }
 
-   Release(output6);
    Release(bestOutput);
    Release(currentOutput);
    Release(dxgiAdapter);
