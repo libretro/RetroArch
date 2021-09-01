@@ -1626,7 +1626,7 @@ static bool d3d12_gfx_frame(
                {
                   D3D12_CPU_DESCRIPTOR_HANDLE handle   = {
                           d3d12->pass[i].textures.ptr 
-                        - d3d12->desc.srv_heap.gpu.ptr +
+                        - d3d12->desc.srv_heap.gpu.ptr
                         + d3d12->desc.srv_heap.cpu.ptr
                         + texture_sem->binding * d3d12->desc.srv_heap.stride
                   };
