@@ -551,7 +551,6 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif
-      bool video_force_resolution;
       bool video_hdr_enable;
       bool video_hdr_expand_gamut;
 
