@@ -431,7 +431,7 @@ void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
       { 0.64000f, 0.33000f, 0.30000f, 0.60000f, 0.15000f, 0.06000f, 0.31270f, 0.32900f }, /* Rec709  */   
       { 0.70800f, 0.29200f, 0.17000f, 0.79700f, 0.13100f, 0.04600f, 0.31270f, 0.32900f }, /* Rec2020 */  
    };
-   DXGI_HDR_METADATA_HDR10 hdr10MetaData = {};
+   DXGI_HDR_METADATA_HDR10 hdr10MetaData = {0};
    int selectedChroma                    = 0;
    HRESULT hr                            = S_OK;
    
