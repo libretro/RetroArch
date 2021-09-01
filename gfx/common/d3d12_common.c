@@ -74,6 +74,8 @@ DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47,
 #endif
 /* clang-format on */
 #endif
+const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIOutput6 = { 0x068346e8,0xaaec,
+0x4b84, {0xad,0xd7,0x13,0x7f,0x51,0x3f,0x77,0xa1 } };
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 static dylib_t     d3d12_dll;
@@ -601,7 +603,7 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
       i++;
    }
 
-   hr = bestOutput->lpVtbl->QueryInterface(bestOutput, uuidof(IDXGIOutput6), (void**)&output6);
+   hr = bestOutput->lpVtbl->QueryInterface(bestOutput, &libretro_IID_IDXGIOutput6, (void**)&output6);
 
    if (FAILED(hr))
    {
