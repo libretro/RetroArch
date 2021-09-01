@@ -267,15 +267,16 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t samples_out)
 }
 
 static bool one_shot_resample(const float* in, size_t samples_in,
-      unsigned rate, float** out, size_t* samples_out)
+      unsigned rate, const char *resampler_ident, enum resampler_quality quality,
+      float** out, size_t* samples_out)
 {
    struct resampler_data info;
    void* data                         = NULL;
    const retro_resampler_t* resampler = NULL;
    float ratio                        = (double)s_rate / (double)rate;
 
-   if (!retro_resampler_realloc(&data, &resampler, NULL,
-            RESAMPLER_QUALITY_DONTCARE, ratio))
+   if (!retro_resampler_realloc(&data, &resampler,
+         resampler_ident, quality, ratio))
       return false;
 
    /*
@@ -323,7 +324,8 @@ void audio_mixer_done(void)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
 }
 
-audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
+      const char *resampler_ident, enum resampler_quality quality)
 {
 #ifdef HAVE_RWAV
    /* WAV data */
@@ -353,8 +355,9 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
    {
       float* resampled           = NULL;
 
-      if (!one_shot_resample(pcm, samples,
-               wav.samplerate, &resampled, &samples))
+      if (!one_shot_resample(pcm, samples, wav.samplerate,
+            resampler_ident, quality,
+            &resampled, &samples))
          return NULL;
 
       memalign_free((void*)pcm);
@@ -514,6 +517,8 @@ static bool audio_mixer_play_ogg(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
       bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
    stb_vorbis_info info;
@@ -537,7 +542,7 @@ static bool audio_mixer_play_ogg(
       ratio = (double)s_rate / (double)info.sample_rate;
 
       if (!retro_resampler_realloc(&resampler_data,
-               &resamp, NULL, RESAMPLER_QUALITY_DONTCARE,
+               &resamp, resampler_ident, quality,
                ratio))
          goto error;
    }
@@ -662,6 +667,8 @@ static bool audio_mixer_play_flac(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
       bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
    float ratio                     = 1.0f;
@@ -678,7 +685,7 @@ static bool audio_mixer_play_flac(
       ratio = (double)s_rate / (double)(dr_flac->sampleRate);
 
       if (!retro_resampler_realloc(&resampler_data,
-               &resamp, NULL, RESAMPLER_QUALITY_DONTCARE,
+               &resamp, resampler_ident, quality,
                ratio))
          goto error;
    }
@@ -723,6 +730,8 @@ static bool audio_mixer_play_mp3(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
       bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
    float ratio                     = 1.0f;
@@ -748,7 +757,7 @@ static bool audio_mixer_play_mp3(
       ratio = (double)s_rate / (double)(voice->types.mp3.stream.sampleRate);
 
       if (!retro_resampler_realloc(&resampler_data,
-               &resamp, NULL, RESAMPLER_QUALITY_DONTCARE,
+               &resamp, resampler_ident, quality,
                ratio))
          goto error;
    }
@@ -786,8 +795,11 @@ error:
 }
 #endif
 
-audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
-      float volume, audio_mixer_stop_cb_t stop_cb)
+audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
+      bool repeat, float volume,
+      const char *resampler_ident,
+      enum resampler_quality quality,
+      audio_mixer_stop_cb_t stop_cb)
 {
    unsigned i;
    bool res                   = false;
@@ -808,7 +820,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
             break;
          case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_STB_VORBIS
-            res = audio_mixer_play_ogg(sound, voice, repeat, volume, stop_cb);
+            res = audio_mixer_play_ogg(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb);
 #endif
             break;
          case AUDIO_MIXER_TYPE_MOD:
@@ -818,12 +831,14 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
             break;
          case AUDIO_MIXER_TYPE_FLAC:
 #ifdef HAVE_DR_FLAC
-            res = audio_mixer_play_flac(sound, voice, repeat, volume, stop_cb);
+            res = audio_mixer_play_flac(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb);
 #endif
             break;
          case AUDIO_MIXER_TYPE_MP3:
 #ifdef HAVE_DR_MP3
-            res = audio_mixer_play_mp3(sound, voice, repeat, volume, stop_cb);
+            res = audio_mixer_play_mp3(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb);
 #endif
             break;
          case AUDIO_MIXER_TYPE_NONE:

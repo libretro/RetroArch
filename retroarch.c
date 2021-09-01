@@ -24937,8 +24937,10 @@ static void audio_driver_deinit_resampler(struct rarch_state *p_rarch)
 {
    if (p_rarch->audio_driver_resampler && p_rarch->audio_driver_resampler_data)
       p_rarch->audio_driver_resampler->free(p_rarch->audio_driver_resampler_data);
-   p_rarch->audio_driver_resampler      = NULL;
-   p_rarch->audio_driver_resampler_data = NULL;
+   p_rarch->audio_driver_resampler          = NULL;
+   p_rarch->audio_driver_resampler_data     = NULL;
+   p_rarch->audio_driver_resampler_ident[0] = '\0';
+   p_rarch->audio_driver_resampler_quality  = RESAMPLER_QUALITY_DONTCARE;
 }
 
 
@@ -25195,15 +25197,25 @@ static bool audio_driver_init_internal(
       p_rarch->audio_source_ratio_current =
       (double)settings->uints.audio_output_sample_rate / p_rarch->audio_driver_input;
 
+   if (!string_is_empty(settings->arrays.audio_resampler))
+      strlcpy(p_rarch->audio_driver_resampler_ident,
+            settings->arrays.audio_resampler,
+            sizeof(p_rarch->audio_driver_resampler_ident));
+   else
+      p_rarch->audio_driver_resampler_ident[0] = '\0';
+
+   p_rarch->audio_driver_resampler_quality =
+         audio_driver_get_resampler_quality(settings);
+
    if (!retro_resampler_realloc(
             &p_rarch->audio_driver_resampler_data,
             &p_rarch->audio_driver_resampler,
-            settings->arrays.audio_resampler,
-            audio_driver_get_resampler_quality(settings),
+            p_rarch->audio_driver_resampler_ident,
+            p_rarch->audio_driver_resampler_quality,
             p_rarch->audio_source_ratio_original))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
-            settings->arrays.audio_resampler);
+            p_rarch->audio_driver_resampler_ident);
       p_rarch->audio_driver_active = false;
    }
 
@@ -25932,6 +25944,13 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    {
       case AUDIO_MIXER_SLOT_SELECTION_MANUAL:
          free_slot = params->slot_selection_idx;
+
+         /* If we are using a manually specified
+          * slot, must free any existing stream
+          * before assigning the new one */
+         audio_driver_mixer_stop_stream(free_slot);
+         audio_driver_mixer_remove_stream(free_slot);
+
          break;
       case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
       default:
@@ -25954,7 +25973,9 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    switch (params->type)
    {
       case AUDIO_MIXER_TYPE_WAV:
-         handle = audio_mixer_load_wav(buf, (int32_t)params->bufsize);
+         handle = audio_mixer_load_wav(buf, (int32_t)params->bufsize,
+               p_rarch->audio_driver_resampler_ident,
+               p_rarch->audio_driver_resampler_quality);
          /* WAV is a special case - input buffer is not
           * free()'d when sound playback is complete (it is
           * converted to a PCM buffer, which is free()'d instead),
@@ -25992,14 +26013,20 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    {
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
          looped = true;
-         voice = audio_mixer_play(handle, looped, params->volume, stop_cb);
+         voice = audio_mixer_play(handle, looped, params->volume,
+               p_rarch->audio_driver_resampler_ident,
+               p_rarch->audio_driver_resampler_quality, stop_cb);
          break;
       case AUDIO_STREAM_STATE_PLAYING:
-         voice = audio_mixer_play(handle, looped, params->volume, stop_cb);
+         voice = audio_mixer_play(handle, looped, params->volume,
+               p_rarch->audio_driver_resampler_ident,
+               p_rarch->audio_driver_resampler_quality, stop_cb);
          break;
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
          stop_cb = audio_mixer_play_stop_sequential_cb;
-         voice = audio_mixer_play(handle, looped, params->volume, stop_cb);
+         voice = audio_mixer_play(handle, looped, params->volume,
+               p_rarch->audio_driver_resampler_ident,
+               p_rarch->audio_driver_resampler_quality, stop_cb);
          break;
       default:
          break;
@@ -26043,7 +26070,9 @@ static void audio_driver_mixer_play_stream_internal(
          p_rarch->audio_mixer_streams[i].voice =
             audio_mixer_play(p_rarch->audio_mixer_streams[i].handle,
                (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
-               1.0f, p_rarch->audio_mixer_streams[i].stop_cb);
+               1.0f, p_rarch->audio_driver_resampler_ident,
+               p_rarch->audio_driver_resampler_quality,
+               p_rarch->audio_mixer_streams[i].stop_cb);
          p_rarch->audio_mixer_streams[i].state = (enum audio_mixer_state)type;
          break;
       case AUDIO_STREAM_STATE_PLAYING:
