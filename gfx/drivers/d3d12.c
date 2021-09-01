@@ -238,13 +238,13 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-   /*
+#if 0
    d3d12->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
    d3d12->hdr.ubo_values.maxNits          = settings->floats.video_hdr_max_nits;
    d3d12->hdr.ubo_values.paperWhiteNits   = settings->floats.video_hdr_paper_white_nits;
    d3d12->hdr.ubo_values.contrast         = settings->floats.video_hdr_contrast;
    d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
-   */
+#endif
 
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
@@ -638,7 +638,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
    {
       static const char shader[] =
-#include "../d3d_shaders/hdr_sm5.hlsl.h"
+#include "d3d_shaders/hdr_sm5.hlsl.h"
             ;
 
       static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -674,7 +674,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
    {
       static const char shader[] =
-#include "../drivers/d3d_shaders/opaque_sm5.hlsl.h"
+#include "d3d_shaders/opaque_sm5.hlsl.h"
             ;
 
       static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -1342,10 +1342,8 @@ static bool d3d12_gfx_frame(
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
          Release(d3d12->chain.renderTargets[i]);
 
-      if(d3d12->hdr.enable)
-      {
+      if (d3d12->hdr.enable)
          d3d12_release_texture(&d3d12->chain.backBuffer);
-      }
 
       DXGIResizeBuffers(d3d12->chain.handle, countof(d3d12->chain.renderTargets), video_width, video_height, d3d12->chain.formats[d3d12->chain.bitDepth], DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
@@ -1388,9 +1386,7 @@ static bool d3d12_gfx_frame(
          d3d12_swapchain_color_space(d3d12, DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
       }
       else
-      {
          d3d12_swapchain_color_space(d3d12, DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
-      }
 
       d3d12_set_hdr_metadata(d3d12);      
    }
