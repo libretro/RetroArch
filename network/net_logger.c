@@ -37,6 +37,17 @@
 #error "An UDP port for the PC logging server was not set in the Makefile, cannot continue."
 #endif
 
+#ifdef ORBIS
+void logger_init(void)
+{
+   debugNetInit(PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT,3);
+
+}
+void logger_shutdown(void)
+{
+   debugNetFinish();
+}
+#else
 /* TODO/FIXME - static global variables */
 static int g_sid;
 static struct sockaddr_in target;
@@ -98,3 +109,4 @@ void logger_send_v(const char *__format, va_list args)
          (struct sockaddr*)&target,
          sizeof(target));
 }
+#endif

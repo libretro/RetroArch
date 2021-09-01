@@ -11,8 +11,10 @@ HAVE_KEYBOARD ?= 0
 PS4_TITLE_ID	:= RETROARCH
 PS4_TITLE_NAME	:= RetroArch
 
-PC_DEVELOPMENT_IP_ADDRESS  =
-PC_DEVELOPMENT_UDP_PORT	   =
+PC_DEVELOPMENT_IP_ADDRESS  = 192.168.1.12
+PC_DEVELOPMENT_UDP_PORT	   = 18194
+DEBUG=1
+AUTH_INFO = 000000000000000000000000001C004000FF000000000080000000000000000000000000000000000000008000400040000000000000008000000000000000080040FFFF000000F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 OBJ :=
 DEFINES :=
@@ -160,13 +162,13 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 
 PS4_LIBS += -lkernel_stub -lSceLibcInternal_stub  -lSceSysmodule_stub -lSceSystemService_stub \
-						-lSceUserService_stub -lSceAudioOut_stub -lScePad_stub -lSceNet_stub -lSceNetCtl_stub -lScePigletv2VSH_stub
+						-lSceUserService_stub -lSceAudioOut_stub -lScePad_stub -lSceNet_stub -lSceNetCtl_stub -lScePigletv2VSH_stub -lSceOrbisCompat_stub -lorbis -lSceIme_stub  
 
 LIBS	:= $(WHOLE_START) -lretro_ps4 $(WHOLE_END) $(PS4_LIBS)
 
 CFLAGS   := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj  -std=c11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
 CXXFLAGS := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -Wall -pedantic -m64 -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj -std=c++11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
-LDFLAGS  :=    -isysroot $(ORBISDEV)/usr -L. -Llib -Wl,--gc-sections -Wl,-z -Wl,max-page-size=0x4000 -Wl,--dynamic-linker="/libexec/ld-elf.so.1" -Wl,-pie -Wl,--eh-frame-hdr -L$(ORBISDEV)/usr/lib -target x86_64-scei-ps4-elf -T $(ORBISDEV)/linker.x $(PS4_LIBS)
+LDFLAGS  :=    -isysroot $(ORBISDEV)/usr -L. -Llib -Wl,--gc-sections -Wl,-z -Wl,max-page-size=0x4000 -Wl,--dynamic-linker="/libexec/ld-elf.so.1" -Wl,-pie -Wl,--eh-frame-hdr -L$(ORBISDEV)/usr/lib -target x86_64-scei-ps4-elf -T $(ORBISDEV)/linker.x
 ARFLAGS  := rcs
 
 ifeq ($(DEBUG), 1)
@@ -199,6 +201,14 @@ $(TARGET).elf: $(OBJ)
 $(TARGET).a: $(OBJ)
 	$(AR) $(ARFLAGS)  $(TARGET).a  $(OBJ)
 	#$(OO_PS4_TOOLCHAIN)/bin/$(CDIR)/create-eboot -in=$(TARGET).elf -out=$(TARGET).oelf --paid 0x3800000000000011
+
+install:
+	@cp homebrew.self /usr/local/orbisdev/git/ps4sh/bin/hostapp
+	@echo "Installed!"
+oelf:
+	@orbis-elf-create $(TARGET).elf homebrew.oelf
+eboot:
+	python $(ORBISDEV)/bin/make_fself.py --auth-info $(AUTH_INFO) homebrew.oelf homebrew.self
 
 clean:
 	rm -f $(OBJ) $(TARGET).elf $(TARGET).oelf
