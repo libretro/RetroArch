@@ -956,6 +956,8 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->menu.texture.handle);
    Release(d3d12->menu.texture.upload_buffer);
 
+   d3d12_release_texture(&d3d12->chain.backBuffer);
+   d3d12->chain.backBuffer.handle = NULL;
    free(d3d12->desc.sampler_heap.map);
    free(d3d12->desc.srv_heap.map);
    free(d3d12->desc.rtv_heap.map);
@@ -980,8 +982,6 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->queue.fence);
    Release(d3d12->chain.renderTargets[0]);
    Release(d3d12->chain.renderTargets[1]);
-   d3d12_release_texture(&d3d12->chain.backBuffer);
-   d3d12->chain.backBuffer.handle = NULL;
    Release(d3d12->chain.handle);
 
    Release(d3d12->queue.cmd);
