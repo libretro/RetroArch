@@ -1408,11 +1408,11 @@ static bool d3d12_gfx_frame(
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
       if (!(d3d12->hdr.support                  = 
-         d3d12_check_display_hdr_support(d3d12, uwp_get_corewindow())))
+         dxgi_check_display_hdr_support(d3d12->factory, uwp_get_corewindow())))
          d3d12->hdr.enable                = false;
 #else
       if (!(d3d12->hdr.support                  = 
-         d3d12_check_display_hdr_support(d3d12, main_window.hwnd)))
+         dxgi_check_display_hdr_support(d3d12->factory, main_window.hwnd)))
          d3d12->hdr.enable                = false;
 #endif
 

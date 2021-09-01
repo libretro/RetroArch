@@ -74,8 +74,6 @@ DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47,
 #endif
 /* clang-format on */
 #endif
-const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIOutput6 = { 0x068346e8,0xaaec,
-0x4b84, {0xad,0xd7,0x13,0x7f,0x51,0x3f,0x77,0xa1 } };
 
 #if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
 static dylib_t     d3d12_dll;
@@ -302,7 +300,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
 #ifdef HAVE_DXGI_HDR
    if (!(d3d12->hdr.support                              = 
-      d3d12_check_display_hdr_support(d3d12, hwnd)))
+      dxgi_check_display_hdr_support(d3d12->factory, hwnd)))
       d3d12->hdr.enable                            = false;
 
    d3d12->chain.bit_depth                          = d3d12->hdr.enable 
@@ -437,13 +435,6 @@ typedef struct display_chromaticities
    float white_y;
 } display_chromaticities_t;
 
-typedef enum hdr_root_constants
-{
-   HDR_ROOT_CONSTANTS_REFERENCE_WHITE_NITS = 0,
-   HDR_ROOT_CONSTANTS_DISPLAY_CURVE,
-   HDR_ROOT_CONSTANTS_COUNT
-} hdr_root_constants_t;
-
 void d3d12_swapchain_color_space(d3d12_video_t* d3d12,
       DXGI_COLOR_SPACE_TYPE color_space)
 {
@@ -544,127 +535,6 @@ void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
    {
       RARCH_ERR("[DXGI]: Failed to set HDR meta data for HDR10\n");
    }
-}
-
-inline static int dxgi_compute_intersection_area(
-      int ax1, int ay1, int ax2, int ay2,
-      int bx1, int by1, int bx2, int by2)
-{
-    return   max(0, min(ax2, bx2) - 
-             max(ax1, bx1)) 
-           * max(0, min(ay2, by2) - max(ay1, by1));
-}
-
-bool d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd) 
-{
-   DXGI_OUTPUT_DESC1 desc1;
-   DXGIOutput current_output;
-   DXGIOutput best_output;
-   DXGIOutput6 output6;
-   DXGIAdapter dxgi_adapter;
-   UINT i                    = 0;
-   bool supported            = false;
-   float best_intersect_area = -1;
-
-   if (!DXGIIsCurrent(d3d12->factory))
-   {
-      if (FAILED(DXGICreateFactory(&d3d12->factory)))
-      {
-         RARCH_ERR("[DXGI]: Failed to create DXGI factory\n");
-      }
-   }
-
-   if (FAILED(DXGIEnumAdapters(d3d12->factory, 0, &dxgi_adapter)))
-   {
-      RARCH_ERR("[DXGI]: Failed to enumerate adapters\n");
-   }
-
-   while (  DXGIEnumOutputs(dxgi_adapter, i, &current_output) 
-         != DXGI_ERROR_NOT_FOUND)
-   {
-      RECT r, rect;
-      DXGI_OUTPUT_DESC desc;
-      int intersect_area;
-      int bx1, by1, bx2, by2;
-#if 0
-      /* Get the rectangle bounds of the app window */
-      int ax1               = win32->pos_x;
-      int ay1               = win32->pos_y;
-      int ax2               = win32->pos_x + win32->pos_width; 
-      int ay2               = win32->pos_y + win32->pos_height;
-#else
-      int ax1               = 0;
-      int ay1               = 0;
-      int ax2               = 0;
-      int ay2               = 0;
-#endif
-
-      if (GetWindowRect(hwnd, &rect)) /* TODO/FIXME - won't work for WinRT */
-      {
-         ax1                = rect.left;
-         ay1                = rect.top;
-         ax2                = rect.right;
-         ay2                = rect.bottom;         
-      }
-
-      /* Get the rectangle bounds of current output */ 
-      if (FAILED(DXGIGetOutputDesc(current_output, &desc)))
-      {
-         RARCH_ERR("[DXGI]: Failed to get DXGI output description\n");
-      }
-
-      /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
-      r                      = desc.DesktopCoordinates; 
-      bx1                    = r.left;
-      by1                    = r.top;
-      bx2                    = r.right;
-      by2                    = r.bottom;
-
-      /* Compute the intersection */
-      intersect_area         = dxgi_compute_intersection_area(
-            ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
-
-      if (intersect_area > best_intersect_area)
-      {
-         best_output         = current_output;
-         AddRef(best_output);
-         best_intersect_area = (float)intersect_area;
-      }
-
-      i++;
-   }
-
-   if (FAILED(best_output->lpVtbl->QueryInterface(
-               best_output,
-               &libretro_IID_IDXGIOutput6, (void**)&output6)))
-   {
-      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 from best output\n");
-   }
-
-   if (FAILED(DXGIGetOutputDesc1(output6, &desc1)))
-   {
-      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 description\n");
-   }
-
-   supported = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
-
-   if (supported)
-      video_driver_set_hdr_support();
-   else
-   {
-      settings_t*    settings          = config_get_ptr();
-      settings->modified               = true;
-      settings->bools.video_hdr_enable = false;
-
-      video_driver_unset_hdr_support();
-   }
-
-   Release(output6);
-   Release(best_output);
-   Release(current_output);
-   Release(dxgi_adapter);
-
-   return supported;
 }
 #endif
 

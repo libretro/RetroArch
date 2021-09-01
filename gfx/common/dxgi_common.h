@@ -2,6 +2,12 @@
 
 #include <retro_inline.h>
 
+#ifndef __WINRT__
+#ifndef HAVE_DXGI_HDR
+#define HAVE_DXGI_HDR
+#endif
+#endif
+
 #ifdef __MINGW32__
 #define __REQUIRED_RPCNDR_H_VERSION__ 475
 /* Pointer parameters */
@@ -832,6 +838,12 @@ void dxgi_copy(
       DXGI_FORMAT dst_format,
       int         dst_pitch,
       void*       dst_data);
+
+#ifdef __WINRT__
+bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd);
+#else
+bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd);
+#endif
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);
 

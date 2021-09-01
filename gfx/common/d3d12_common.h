@@ -21,12 +21,6 @@
 #include "dxgi_common.h"
 #include <d3d12.h>
 
-#ifndef __WINRT__
-#ifndef HAVE_DXGI_HDR
-#define HAVE_DXGI_HDR
-#endif
-#endif
-
 typedef const ID3D12PipelineState* D3D12PipelineStateRef;
 
 /* auto-generated */
