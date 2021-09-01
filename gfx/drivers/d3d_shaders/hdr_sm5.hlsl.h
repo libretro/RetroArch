@@ -71,11 +71,8 @@ SRC(
                      color.z < 0.04045f ? scale.z : gamma.z);
    }
 
-#define USE_INVERSE_REINHARD  1
-
    float4 Hdr(float4 sdr)
    {
-#if USE_INVERSE_REINHARD
       sdr.xyz = pow(abs(sdr.xyz), 2.2f / global.contrast);               /* Display Gamma - needs to be determined by calibration screen but should be in the 0.8 - 1.4 range */
 
       float luma = dot(sdr.xyz, float3(0.2126, 0.7152, 0.0722));  /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
@@ -99,9 +96,6 @@ SRC(
                                           sdr.z > 0.5f ? hdrInvTonemap.z : sdrInvTonemap.z);
 
       float3 hdr = lerp(perLuma, perChannel, kLumaChannelRatio);
-#else
-      float3 hdr = SRGBToLinear(sdr.xyz);
-#endif /* USE_INVERSE_REINHARD */
 
       /* Now convert into HDR10 */
       float3 rec2020 = mul(k709to2020, hdr);

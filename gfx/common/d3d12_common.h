@@ -1511,6 +1511,7 @@ typedef struct
    bool                            resize_viewport;
    bool                            resize_render_targets;
    bool                            init_history;
+   bool                            backbuffer_inited;
    D3D12Resource                   menu_pipeline_vbo;
    D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
 

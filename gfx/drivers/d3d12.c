@@ -981,6 +981,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->chain.renderTargets[0]);
    Release(d3d12->chain.renderTargets[1]);
    d3d12_release_texture(&d3d12->chain.backBuffer);
+   d3d12->chain.backBuffer.handle = NULL;
    Release(d3d12->chain.handle);
 
    Release(d3d12->queue.cmd);
@@ -1343,7 +1344,10 @@ static bool d3d12_gfx_frame(
          Release(d3d12->chain.renderTargets[i]);
 
       if (d3d12->hdr.enable)
+      {
          d3d12_release_texture(&d3d12->chain.backBuffer);
+         d3d12->chain.backBuffer.handle = NULL;
+      }
 
       DXGIResizeBuffers(d3d12->chain.handle, countof(d3d12->chain.renderTargets), video_width, video_height, d3d12->chain.formats[d3d12->chain.bitDepth], DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
