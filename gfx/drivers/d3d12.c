@@ -638,7 +638,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
    {
       static const char shader[] =
-#include "../drivers/d3d_shaders/hdr_sm5.hlsl.h"
+#include "../d3d_shaders/hdr_sm5.hlsl.h"
             ;
 
       static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
