@@ -301,7 +301,9 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    hwnd = (HWND)corewindow;
 
 #ifdef HAVE_DXGI_HDR
-   d3d12_check_display_hdr_support(d3d12, hwnd);
+   if (!(d3d12->hdr.support                              = 
+      d3d12_check_display_hdr_support(d3d12, hwnd)))
+      d3d12->hdr.enable                            = false;
 
    d3d12->chain.bit_depth                          = d3d12->hdr.enable 
       ? SWAP_CHAIN_BIT_DEPTH_10 
@@ -553,7 +555,7 @@ inline static int dxgi_compute_intersection_area(
            * max(0, min(ay2, by2) - max(ay1, by1));
 }
 
-void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd) 
+bool d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd) 
 {
    DXGI_OUTPUT_DESC1 desc1;
    DXGIOutput current_output;
@@ -561,6 +563,7 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
    DXGIOutput6 output6;
    DXGIAdapter dxgi_adapter;
    UINT i                    = 0;
+   bool supported            = false;
    float best_intersect_area = -1;
 
    if (!DXGIIsCurrent(d3d12->factory))
@@ -643,10 +646,9 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
       RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 description\n");
    }
 
-   d3d12->hdr.support = (desc1.ColorSpace == 
-         DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+   supported = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
 
-   if(d3d12->hdr.support)
+   if (supported)
       video_driver_set_hdr_support();
    else
    {
@@ -654,8 +656,6 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
       settings->modified               = true;
       settings->bools.video_hdr_enable = false;
 
-      d3d12->hdr.enable = false;
-      
       video_driver_unset_hdr_support();
    }
 
@@ -663,6 +663,8 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
    Release(best_output);
    Release(current_output);
    Release(dxgi_adapter);
+
+   return supported;
 }
 #endif
 
