@@ -12832,6 +12832,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(p_rarch, DRIVER_AUDIO_MASK);
          drivers_init(p_rarch, settings, DRIVER_AUDIO_MASK, verbosity_is_enabled());
+#if defined(HAVE_AUDIOMIXER)
+         audio_driver_load_system_sounds();
+#endif
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
