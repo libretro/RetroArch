@@ -55,6 +55,13 @@
 
 #define SDL_DINGUX_NUM_FONT_GLYPHS 256
 
+#if defined(MIYOO)
+#define SDL_DINGUX_SURFACE_FLAGS_VSYNC_ON  (SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN)
+#else
+#define SDL_DINGUX_SURFACE_FLAGS_VSYNC_ON  (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN)
+#endif
+#define SDL_DINGUX_SURFACE_FLAGS_VSYNC_OFF (SDL_HWSURFACE | SDL_FULLSCREEN)
+
 typedef struct sdl_dingux_video
 {
    retro_time_t last_frame_time;
@@ -425,12 +432,8 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    const char *input_driver_name                 = settings->arrays.input_driver;
    const char *joypad_driver_name                = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync) ?
-         #if defined (MIYOO)
-         (SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN) :
-         #else
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
-         #endif
-         (SDL_HWSURFACE | SDL_FULLSCREEN);
+         SDL_DINGUX_SURFACE_FLAGS_VSYNC_ON :
+         SDL_DINGUX_SURFACE_FLAGS_VSYNC_OFF;
 
    /* Initialise graphics subsystem, if required */
    if (sdl_subsystem_flags == 0)
@@ -628,12 +631,8 @@ static void sdl_dingux_set_output(
    unsigned sanitized_width;
    unsigned sanitized_height;
    uint32_t surface_flags = (vid->vsync) ?
-         #if defined (MIYOO)
-         (SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN) :
-         #else
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
-         #endif
-         (SDL_HWSURFACE | SDL_FULLSCREEN);
+         SDL_DINGUX_SURFACE_FLAGS_VSYNC_ON :
+         SDL_DINGUX_SURFACE_FLAGS_VSYNC_OFF;
 
    /* Cache set parameters */
    vid->frame_width  = width;

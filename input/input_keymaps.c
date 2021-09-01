@@ -47,11 +47,7 @@
 #endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
-#if defined (MIYOO)
-#include "SDL/SDL.h"
-#else
 #include "SDL.h"
-#endif
 #endif
 
 #if defined(__linux__) || defined(HAVE_WAYLAND)

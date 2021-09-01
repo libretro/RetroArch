@@ -19,11 +19,7 @@
 
 #include <compat/strl.h>
 
-#if defined (MIYOO)
-#include "SDL/SDL.h"
-#else
 #include "SDL.h"
-#endif
 
 #include "../input_driver.h"
 

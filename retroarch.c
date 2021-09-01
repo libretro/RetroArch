@@ -273,11 +273,7 @@
 #endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
-   #if defined (MIYOO)
-#include "SDL/SDL.h"
-   #else
 #include "SDL.h"
-   #endif
 #endif
 
 /* RetroArch global state / macros */

@@ -8,21 +8,26 @@ TOOLCHAIN_DIR=/opt/miyoo
 # All toolchain-related variables may be
 # overridden via the command line
 
+ifdef GCW0_CC
+CC                    = $(GCW0_CC)
+else
 CC                    = $(TOOLCHAIN_DIR)/usr/bin/arm-linux-gcc
+endif
 
-
-
+ifdef GCW0_CXX
+CXX                   = $(GCW0_CXX)
+else
 CXX                   = $(TOOLCHAIN_DIR)/usr/bin/arm-linux-g++
+endif
 
-
-
+ifdef GCW0_STRIP
+STRIP                 = $(GCW0_STRIP)
+else
 STRIP                 = $(TOOLCHAIN_DIR)/usr/bin/arm-linux-strip
-
+endif
 
 GCW0_SDL_CONFIG      ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/bin/sdl-config
 GCW0_FREETYPE_CONFIG ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/bin/freetype-config
-#GCW0_MK_SQUASH_FS    ?= $(TOOLCHAIN_DIR)/usr/bin/mksquashfs
-GCW0_MK_SQUASH_FS    ?= mksquashfs
 
 GCW0_INC_DIR         ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/include
 GCW0_LIB_DIR         ?= $(TOOLCHAIN_DIR)/usr/arm-miyoo-linux-uclibcgnueabi/sysroot/usr/lib
@@ -111,7 +116,6 @@ HAVE_LIBSHAKE = 0
 
 OS = Linux
 TARGET = retroarch
-#OPK_NAME = retroarch_retrofw.opk
 
 OBJ :=
 LINK := $(CXX)
@@ -161,21 +165,6 @@ Q := @
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
-define DESKTOP_ENTRY
-[Desktop Entry]
-Name=RetroArch
-Comment=Frontend for emulators, game engines
-Exec=retroarch
-Terminal=false
-Type=Application
-StartupNotify=true
-Icon=retroarch
-Categories=emulators;
-X-OD-NeedsDownscaling=true
-endef
-export DESKTOP_ENTRY
-
-
 all: $(TARGET)
 
 -include $(RARCH_OBJ:.o=.d)
@@ -185,6 +174,10 @@ SYMBOL_MAP := -Wl,-Map=output.map
 $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+
+ifeq ($(STRIP_BIN),1)
+	$(STRIP) --strip-unneeded $(TARGET)
+endif
 
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -208,9 +201,7 @@ $(OBJDIR)/%.o: %.S $(HEADERS)
 
 clean:
 	rm -rf $(OBJDIR_BASE)
-#	rm -f $(TARGET)
 	rm -f *.d
-	# rm -rf $(OPK_NAME)
 
 .PHONY: all clean
 
