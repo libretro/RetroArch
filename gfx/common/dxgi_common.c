@@ -388,11 +388,10 @@ bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd)
 bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
 #endif
 {
-   DXGI_OUTPUT_DESC1 desc1;
-   DXGIOutput current_output;
-   DXGIOutput best_output;
-   DXGIOutput6 output6;
-   DXGIAdapter dxgi_adapter;
+   DXGIOutput6 output6       = NULL;
+   DXGIOutput best_output    = NULL;
+   DXGIOutput current_output = NULL;
+   DXGIAdapter dxgi_adapter  = NULL;
    UINT i                    = 0;
    bool supported            = false;
    float best_intersect_area = -1;
@@ -402,12 +401,14 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
       if (FAILED(DXGICreateFactory(&factory)))
       {
          RARCH_ERR("[DXGI]: Failed to create DXGI factory\n");
+         return false;
       }
    }
 
    if (FAILED(DXGIEnumAdapters(factory, 0, &dxgi_adapter)))
    {
       RARCH_ERR("[DXGI]: Failed to enumerate adapters\n");
+      return false;
    }
 
    while (  DXGIEnumOutputs(dxgi_adapter, i, &current_output) 
@@ -442,6 +443,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
       if (FAILED(DXGIGetOutputDesc(current_output, &desc)))
       {
          RARCH_ERR("[DXGI]: Failed to get DXGI output description\n");
+         goto error;
       }
 
       /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
@@ -465,32 +467,38 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
       i++;
    }
 
-   if (FAILED(best_output->lpVtbl->QueryInterface(
+   if (SUCCEEDED(best_output->lpVtbl->QueryInterface(
                best_output,
                &libretro_IID_IDXGIOutput6, (void**)&output6)))
+   {
+      DXGI_OUTPUT_DESC1 desc1;
+      if (SUCCEEDED(DXGIGetOutputDesc1(output6, &desc1)))
+      {
+         supported = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+
+         if (supported)
+            video_driver_set_hdr_support();
+         else
+         {
+            settings_t*    settings          = config_get_ptr();
+            settings->modified               = true;
+            settings->bools.video_hdr_enable = false;
+
+            video_driver_unset_hdr_support();
+         }
+      }
+      else
+      {
+         RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 description\n");
+      }
+      Release(output6);
+   }
+   else
    {
       RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 from best output\n");
    }
 
-   if (FAILED(DXGIGetOutputDesc1(output6, &desc1)))
-   {
-      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 description\n");
-   }
-
-   supported = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
-
-   if (supported)
-      video_driver_set_hdr_support();
-   else
-   {
-      settings_t*    settings          = config_get_ptr();
-      settings->modified               = true;
-      settings->bools.video_hdr_enable = false;
-
-      video_driver_unset_hdr_support();
-   }
-
-   Release(output6);
+error:
    Release(best_output);
    Release(current_output);
    Release(dxgi_adapter);
@@ -516,9 +524,11 @@ void dxgi_swapchain_color_space(
          if (FAILED(DXGISetColorSpace1(chain_handle, color_space)))
          {
             RARCH_ERR("[DXGI]: Failed to set DXGI swapchain colour space\n");
-            /* TODO/FIXME/CLARIFICATION: Is this fall-through intentional?
+            /* TODO/FIXME/CLARIFICATION: Was this fall-through intentional?
              * Should chain color space still be set even when this fails?
+             * Going to assume this was wrong and early return instead
              */
+            return;
          }
 
          *chain_color_space = color_space;
