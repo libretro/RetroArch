@@ -1328,16 +1328,6 @@ typedef struct
    float4_t                           size_data;
 } d3d12_texture_t;
 
-#ifdef HAVE_DXGI_HDR
-typedef enum swap_chain_bit_depth
-{
-   SWAP_CHAIN_BIT_DEPTH_8 = 0,
-   SWAP_CHAIN_BIT_DEPTH_10,
-   SWAP_CHAIN_BIT_DEPTH_16,
-   SWAP_CHAIN_BIT_DEPTH_COUNT
-} swap_chain_bit_depth_t;
-#endif
-
 #ifndef ALIGN
 #ifdef _MSC_VER
 #define ALIGN(x) __declspec(align(x))
@@ -1417,9 +1407,9 @@ typedef struct
       bool                        vsync;
       unsigned                    swap_interval;
 #ifdef HAVE_DXGI_HDR
-      swap_chain_bit_depth_t      bit_depth;
+      enum dxgi_swapchain_bit_depth bit_depth;
       DXGI_COLOR_SPACE_TYPE       color_space;
-      DXGI_FORMAT                 formats[SWAP_CHAIN_BIT_DEPTH_COUNT];
+      DXGI_FORMAT                 formats[DXGI_SWAPCHAIN_BIT_DEPTH_COUNT];
 #endif
    } chain;
 
@@ -1534,14 +1524,14 @@ typedef enum {
    ROOT_ID_SAMPLER_T,
    ROOT_ID_UBO,
    ROOT_ID_PC,
-   ROOT_ID_MAX,
+   ROOT_ID_MAX
 } root_signature_parameter_index_t;
 
 typedef enum {
    CS_ROOT_ID_TEXTURE_T = 0,
    CS_ROOT_ID_UAV_T,
    CS_ROOT_ID_CONSTANTS,
-   CS_ROOT_ID_MAX,
+   CS_ROOT_ID_MAX
 } compute_root_index_t;
 
 RETRO_BEGIN_DECLS
@@ -1562,10 +1552,6 @@ bool d3d12_init_pipeline(
       D3D12PipelineState*                 out);
 
 bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, void *corewindow);
-
-#ifdef HAVE_DXGI_HDR
-void d3d12_set_hdr_metadata(d3d12_video_t* d3d12);
-#endif
 
 bool d3d12_init_queue(d3d12_video_t* d3d12);
 

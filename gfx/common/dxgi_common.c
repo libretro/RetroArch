@@ -361,6 +361,18 @@ DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt)
 }
 
 #ifdef HAVE_DXGI_HDR
+typedef struct display_chromaticities
+{
+   float red_x;
+   float red_y;
+   float green_x;
+   float green_y;
+   float blue_x;
+   float blue_y;
+   float white_x;
+   float white_y;
+} display_chromaticities_t;
+
 inline static int dxgi_compute_intersection_area(
       int ax1, int ay1, int ax2, int ay2,
       int bx1, int by1, int bx2, int by2)
@@ -511,6 +523,94 @@ void dxgi_swapchain_color_space(
 
          *chain_color_space = color_space;
       }
+   }
+}
+
+void dxgi_set_hdr_metadata(
+      DXGISwapChain                 handle,
+      bool                          hdr_supported,
+      enum dxgi_swapchain_bit_depth chain_bit_depth,
+      DXGI_COLOR_SPACE_TYPE         chain_color_space,
+      float                         max_output_nits,
+      float                         min_output_nits,
+      float                         max_cll,
+      float                         max_fall
+)
+{
+   static const display_chromaticities_t 
+      display_chromaticity_list[]               =
+   {
+      { 0.64000f, 0.33000f, 0.30000f, 0.60000f, 0.15000f, 0.06000f, 0.31270f, 0.32900f }, /* Rec709  */   
+      { 0.70800f, 0.29200f, 0.17000f, 0.79700f, 0.13100f, 0.04600f, 0.31270f, 0.32900f }, /* Rec2020 */  
+   };
+   const display_chromaticities_t* chroma       = NULL;
+   DXGI_HDR_METADATA_HDR10 hdr10_meta_data      = {0};
+   int selected_chroma                          = 0;
+   
+   if (!handle)
+      return;
+
+   /* Clear the hdr meta data if the monitor does not support HDR */
+   if (!hdr_supported)
+   {
+      if (FAILED(DXGISetHDRMetaData(handle,
+                  DXGI_HDR_METADATA_TYPE_NONE, 0, NULL)))
+      {
+         RARCH_ERR("[DXGI]: Failed to set HDR meta data to none\n");
+      }
+      return;
+   }
+
+
+   /* Now select the chromacity based on colour space */
+   if (     chain_bit_depth   == DXGI_SWAPCHAIN_BIT_DEPTH_10 
+         && chain_color_space == 
+         DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)
+      selected_chroma                           = 1;
+   else
+   {
+      if (FAILED(DXGISetHDRMetaData(handle,
+                  DXGI_HDR_METADATA_TYPE_NONE, 0, NULL)))
+      {
+         RARCH_ERR("[DXGI]: Failed to set HDR meta data to none\n");
+      }
+
+      return;
+   }
+
+   /* Set the HDR meta data */
+   chroma                                       =
+      &display_chromaticity_list[selected_chroma];
+   hdr10_meta_data.RedPrimary[0]                = 
+      (UINT16)(chroma->red_x * 50000.0f);
+   hdr10_meta_data.RedPrimary[1]                = 
+      (UINT16)(chroma->red_y * 50000.0f);
+   hdr10_meta_data.GreenPrimary[0]              = 
+      (UINT16)(chroma->green_x * 50000.0f);
+   hdr10_meta_data.GreenPrimary[1]              = 
+      (UINT16)(chroma->green_y * 50000.0f);
+   hdr10_meta_data.BluePrimary[0]               = 
+      (UINT16)(chroma->blue_x * 50000.0f);
+   hdr10_meta_data.BluePrimary[1]               = 
+      (UINT16)(chroma->blue_y * 50000.0f);
+   hdr10_meta_data.WhitePoint[0]                = 
+      (UINT16)(chroma->white_x * 50000.0f);
+   hdr10_meta_data.WhitePoint[1]                = 
+      (UINT16)(chroma->white_y * 50000.0f);
+   hdr10_meta_data.MaxMasteringLuminance        = 
+      (UINT)(max_output_nits * 10000.0f);
+   hdr10_meta_data.MinMasteringLuminance        = 
+      (UINT)(min_output_nits * 10000.0f);
+   hdr10_meta_data.MaxContentLightLevel         = 
+      (UINT16)(max_cll);
+   hdr10_meta_data.MaxFrameAverageLightLevel    = 
+      (UINT16)(max_fall);
+   
+   if (FAILED(DXGISetHDRMetaData(handle,
+               DXGI_HDR_METADATA_TYPE_HDR10,
+               sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
+   {
+      RARCH_ERR("[DXGI]: Failed to set HDR meta data for HDR10\n");
    }
 }
 #endif

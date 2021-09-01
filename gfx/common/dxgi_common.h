@@ -8,6 +8,14 @@
 #endif
 #endif
 
+enum dxgi_swapchain_bit_depth
+{
+   DXGI_SWAPCHAIN_BIT_DEPTH_8 = 0,
+   DXGI_SWAPCHAIN_BIT_DEPTH_10,
+   DXGI_SWAPCHAIN_BIT_DEPTH_16,
+   DXGI_SWAPCHAIN_BIT_DEPTH_COUNT
+};
+
 #ifdef __MINGW32__
 #define __REQUIRED_RPCNDR_H_VERSION__ 475
 /* Pointer parameters */
@@ -847,6 +855,16 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd);
 #endif
 void dxgi_swapchain_color_space(DXGISwapChain handle, DXGI_COLOR_SPACE_TYPE
 *chain_color_space, DXGI_COLOR_SPACE_TYPE color_space);
+void dxgi_set_hdr_metadata(
+      DXGISwapChain                 handle,
+      bool                          hdr_supported,
+      enum dxgi_swapchain_bit_depth chain_bit_depth,
+      DXGI_COLOR_SPACE_TYPE         chain_color_space,
+      float                         max_output_nits,
+      float                         min_output_nits,
+      float                         max_cll,
+      float                         max_fall
+);
 #endif
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);

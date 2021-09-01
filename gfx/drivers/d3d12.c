@@ -260,7 +260,15 @@ static void d3d12_set_hdr_max_nits(void* data, float max_nits)
    *mapped_ubo = d3d12->hdr.ubo_values;
    D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
 
-   d3d12_set_hdr_metadata(d3d12);
+   dxgi_set_hdr_metadata(
+         d3d12->chain.handle,
+         d3d12->hdr.support,
+         d3d12->chain.bit_depth,
+         d3d12->chain.color_space,
+         d3d12->hdr.max_output_nits,
+         d3d12->hdr.min_output_nits,
+         d3d12->hdr.max_cll,
+         d3d12->hdr.max_fall);
 }
 
 static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
@@ -1349,15 +1357,16 @@ static bool d3d12_gfx_frame(
    bool widgets_active            = video_info->widgets_active;
 #endif
 #ifdef HAVE_DXGI_HDR
+   /* TODO/FIXME - cache this in video_driver_build_info */
    settings_t*    settings       = config_get_ptr();
-   if (d3d12->resize_chain || (d3d12->hdr.enable != settings->bools.video_hdr_enable))
+   bool video_hdr_enable         = settings->bools.video_hdr_enable;
+   if (d3d12->resize_chain || (d3d12->hdr.enable != video_hdr_enable))
 #else
    if (d3d12->resize_chain)
 #endif
    {
 #ifdef HAVE_DXGI_HDR
-      d3d12->hdr.enable                      = 
-         settings->bools.video_hdr_enable;
+      d3d12->hdr.enable                      = video_hdr_enable;
 #endif
 
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
@@ -1441,7 +1450,15 @@ static bool d3d12_gfx_frame(
                &d3d12->chain.color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
 
-      d3d12_set_hdr_metadata(d3d12);
+      dxgi_set_hdr_metadata(
+            d3d12->chain.handle,
+            d3d12->hdr.support,
+            d3d12->chain.bit_depth,
+            d3d12->chain.color_space,
+            d3d12->hdr.max_output_nits,
+            d3d12->hdr.min_output_nits,
+            d3d12->hdr.max_cll,
+            d3d12->hdr.max_fall);
 #endif
    }
 
@@ -1951,6 +1968,10 @@ static bool d3d12_gfx_frame(
             D3D12_RESOURCE_STATE_RENDER_TARGET,
             D3D12_RESOURCE_STATE_PRESENT);
    }
+   /* TODO/FIXME - is it intentional there is no else block here?
+      Shouldn't d3d12_resource_transition still be set for when HDR
+      is off? 
+    */
 #else
    d3d12_resource_transition(
          d3d12->queue.cmd,
