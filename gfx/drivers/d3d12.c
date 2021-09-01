@@ -246,7 +246,7 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
    d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
 #endif
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
    d3d12_hdr_uniform_t *mapped_ubo        = NULL;
@@ -558,7 +558,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          if (!d3d12->pass[i].pipe)
             goto error;
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
          d3d12->pass[i].rt.rt_view.ptr =
             d3d12->desc.rtv_heap.cpu.ptr         +
             (countof(d3d12->chain.renderTargets) + 1 + (2 * i)) 
@@ -636,7 +636,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { d3d12->desc.rootSignature };
 
    desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    desc.RTVFormats[0]              = DXGI_FORMAT_R10G10B10A2_UNORM;
 
    {
@@ -950,7 +950,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->sprites.vbo);
    Release(d3d12->menu_pipeline_vbo);
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    Release(d3d12->hdr.ubo);
 #endif
 
@@ -962,7 +962,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->menu.texture.handle);
    Release(d3d12->menu.texture.upload_buffer);
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    d3d12_release_texture(&d3d12->chain.backBuffer);
    d3d12->chain.backBuffer.handle = NULL;
 #endif
@@ -1009,7 +1009,7 @@ static void d3d12_gfx_free(void* data)
       }
    }
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    video_driver_unset_hdr_support();
 #endif
 
@@ -1074,7 +1074,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
       goto error;
    }
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    d3d12->hdr.enable                      = settings->bools.video_hdr_enable;
    d3d12->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
    d3d12->hdr.min_output_nits             = 0.001f;
@@ -1138,7 +1138,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
       D3D12Unmap(d3d12->ubo, 0, NULL);
    }
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    d3d12->hdr.ubo_view.SizeInBytes        = sizeof(d3d12_hdr_uniform_t);
    d3d12->hdr.ubo_view.BufferLocation     =
          d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_view.SizeInBytes, &d3d12->hdr.ubo);
@@ -1348,21 +1348,21 @@ static bool d3d12_gfx_frame(
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    settings_t*    settings       = config_get_ptr();
    if (d3d12->resize_chain || (d3d12->hdr.enable != settings->bools.video_hdr_enable))
 #else
    if (d3d12->resize_chain)
 #endif
    {
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
       d3d12->hdr.enable                      = settings->bools.video_hdr_enable;
 #endif
 
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
          Release(d3d12->chain.renderTargets[i]);
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
       if (d3d12->hdr.enable)
       {
          d3d12_release_texture(&d3d12->chain.backBuffer);
@@ -1392,7 +1392,7 @@ static bool d3d12_gfx_frame(
 
       video_driver_set_size(video_width, video_height);
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
       d3d12_check_display_hdr_support(d3d12, uwp_get_corewindow());
 #else
@@ -1673,7 +1673,7 @@ static bool d3d12_gfx_frame(
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    if(d3d12->hdr.enable)
    {
       d3d12_resource_transition(
@@ -1815,7 +1815,7 @@ static bool d3d12_gfx_frame(
    }
    d3d12->sprites.enabled = false;
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    /* Copy over back buffer to swap chain render targets */
    if (d3d12->hdr.enable)
    {
@@ -2142,7 +2142,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    d3d12_set_hdr_max_nits,
    d3d12_set_hdr_paper_white_nits,
    d3d12_set_hdr_contrast,

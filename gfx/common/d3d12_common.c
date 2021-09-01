@@ -290,7 +290,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #else
    DXGI_SWAP_CHAIN_DESC desc;
 #endif
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    DXGI_COLOR_SPACE_TYPE colorSpace;
 
    d3d12->chain.formats[SWAP_CHAIN_BIT_DEPTH_8]    = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -300,7 +300,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
    hwnd = (HWND)corewindow;
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    d3d12_check_display_hdr_support(d3d12, hwnd);
 
    d3d12->chain.bitDepth                           = d3d12->hdr.enable ? SWAP_CHAIN_BIT_DEPTH_10 :  SWAP_CHAIN_BIT_DEPTH_8;
@@ -324,7 +324,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    desc.BufferDesc.RefreshRate.Denominator = 1;
 #endif
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
    desc.Format               = d3d12->chain.formats[d3d12->chain.bitDepth];
 #else
@@ -375,7 +375,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->hdr.max_cll          = 0.0f;
    d3d12->hdr.max_fall         = 0.0f;
 #endif
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    colorSpace                  = 
         d3d12->hdr.enable 
       ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 
@@ -394,7 +394,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
             d3d12->device, d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
    }
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    memset(&d3d12->chain.backBuffer, 0, sizeof(d3d12->chain.backBuffer));
    d3d12->chain.backBuffer.desc.Width              = width;
    d3d12->chain.backBuffer.desc.Height             = height;
@@ -413,7 +413,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    return true;
 }
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
 typedef struct display_chromaticities
 {
    float redX;

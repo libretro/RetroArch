@@ -22,7 +22,9 @@
 #include <d3d12.h>
 
 #ifndef __WINRT__
-#define HAVE_D3D12_HDR
+#ifndef HAVE_DXGI_HDR
+#define HAVE_DXGI_HDR
+#endif
 #endif
 
 typedef const ID3D12PipelineState* D3D12PipelineStateRef;
@@ -1332,7 +1334,7 @@ typedef struct
    float4_t                           size_data;
 } d3d12_texture_t;
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
 typedef enum swap_chain_bit_depth
 {
    SWAP_CHAIN_BIT_DEPTH_8 = 0,
@@ -1361,7 +1363,7 @@ typedef struct ALIGN(16)
    float time;
 } d3d12_uniform_t;
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
 typedef struct ALIGN(16)
 {
    math_matrix_4x4   mvp;
@@ -1410,7 +1412,7 @@ typedef struct
    {
       DXGISwapChain               handle;
       D3D12Resource               renderTargets[2];
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
       d3d12_texture_t             backBuffer;
 #endif
       D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
@@ -1420,7 +1422,7 @@ typedef struct
       int                         frame_index;
       bool                        vsync;
       unsigned                    swap_interval;
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
       swap_chain_bit_depth_t      bitDepth;
       DXGI_COLOR_SPACE_TYPE       colorSpace;
       DXGI_FORMAT                 formats[SWAP_CHAIN_BIT_DEPTH_COUNT];
@@ -1440,7 +1442,7 @@ typedef struct
       int                             rotation;
    } frame;
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
    struct
    {
       d3d12_hdr_uniform_t              ubo_values;
@@ -1567,7 +1569,7 @@ bool d3d12_init_pipeline(
 
 bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, void *corewindow);
 
-#ifdef HAVE_D3D12_HDR
+#ifdef HAVE_DXGI_HDR
 void d3d12_set_hdr_metadata(d3d12_video_t* d3d12);
 void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd);
 void d3d12_swapchain_color_space(d3d12_video_t* d3d12, DXGI_COLOR_SPACE_TYPE colorSpace);
