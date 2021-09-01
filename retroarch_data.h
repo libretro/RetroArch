@@ -1713,6 +1713,7 @@ struct rarch_state
 #ifdef HAVE_OVERLAY
    enum overlay_visibility *overlay_visibility;
 #endif
+   enum resampler_quality audio_driver_resampler_quality;
 
 #ifdef HAVE_MENU
    menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
@@ -1775,6 +1776,7 @@ struct rarch_state
    char current_savefile_dir[PATH_MAX_LENGTH];
    char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
+   char audio_driver_resampler_ident[64];
 
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active;

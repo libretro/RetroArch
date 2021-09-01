@@ -68,7 +68,8 @@ void audio_mix_volume_C(float *dst, const float *src, float vol, size_t samples)
 
 void audio_mix_free_chunk(audio_chunk_t *chunk);
 
-audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate);
+audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate,
+      const char *resampler_ident, enum resampler_quality quality);
 
 size_t audio_mix_get_chunk_num_samples(audio_chunk_t *chunk);
 
