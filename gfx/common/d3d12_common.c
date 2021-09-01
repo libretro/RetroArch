@@ -457,7 +457,7 @@ void d3d12_swapchain_color_space(d3d12_video_t* d3d12,
       {
          if (FAILED(DXGISetColorSpace1(d3d12->chain.handle, color_space)))
          {
-            RARCH_ERR("[D3D12]: Failed to set swap chain colour space");
+            RARCH_ERR("[DXGI]: Failed to set DXGI swapchain colour space\n");
          }
 
          d3d12->chain.color_space = color_space;
@@ -486,7 +486,7 @@ void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
       if (FAILED(DXGISetHDRMetaData(d3d12->chain.handle,
                   DXGI_HDR_METADATA_TYPE_NONE, 0, NULL)))
       {
-         RARCH_ERR("[DXGI]: Failed to set HDR meta data to none");
+         RARCH_ERR("[DXGI]: Failed to set HDR meta data to none\n");
       }
       return;
    }
@@ -502,7 +502,7 @@ void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
       if (FAILED(DXGISetHDRMetaData(d3d12->chain.handle,
                   DXGI_HDR_METADATA_TYPE_NONE, 0, NULL)))
       {
-         RARCH_ERR("[D3D12]: Failed to set HDR meta data to none");
+         RARCH_ERR("[DXGI]: Failed to set HDR meta data to none\n");
       }
 
       return;
@@ -540,7 +540,7 @@ void d3d12_set_hdr_metadata(d3d12_video_t* d3d12)
                DXGI_HDR_METADATA_TYPE_HDR10,
                sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
    {
-      RARCH_ERR("[D3D12]: Failed to set HDR meta data for HDR10");
+      RARCH_ERR("[DXGI]: Failed to set HDR meta data for HDR10\n");
    }
 }
 
@@ -555,25 +555,25 @@ inline static int dxgi_compute_intersection_area(
 
 void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd) 
 {
-   UINT i = 0;
    DXGI_OUTPUT_DESC1 desc1;
    DXGIOutput current_output;
    DXGIOutput best_output;
    DXGIOutput6 output6;
    DXGIAdapter dxgi_adapter;
+   UINT i                    = 0;
    float best_intersect_area = -1;
 
-   if (DXGIIsCurrent(d3d12->factory) == false)
+   if (!DXGIIsCurrent(d3d12->factory))
    {
       if (FAILED(DXGICreateFactory(&d3d12->factory)))
       {
-         RARCH_ERR("[D3D12]: Failed to create dxgi factory");
+         RARCH_ERR("[DXGI]: Failed to create DXGI factory\n");
       }
    }
 
    if (FAILED(DXGIEnumAdapters(d3d12->factory, 0, &dxgi_adapter)))
    {
-      RARCH_ERR("[D3D12]: Failed to enum adapters");
+      RARCH_ERR("[DXGI]: Failed to enumerate adapters\n");
    }
 
    while (  DXGIEnumOutputs(dxgi_adapter, i, &current_output) 
@@ -607,7 +607,7 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
       /* Get the rectangle bounds of current output */ 
       if (FAILED(DXGIGetOutputDesc(current_output, &desc)))
       {
-         RARCH_ERR("[D3D12]: Failed to get dxgi output description");
+         RARCH_ERR("[DXGI]: Failed to get DXGI output description\n");
       }
 
       /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
@@ -635,12 +635,12 @@ void d3d12_check_display_hdr_support(d3d12_video_t* d3d12, HWND hwnd)
                best_output,
                &libretro_IID_IDXGIOutput6, (void**)&output6)))
    {
-      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 from best output");
+      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 from best output\n");
    }
 
    if (FAILED(DXGIGetOutputDesc1(output6, &desc1)))
    {
-      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 description");
+      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 description\n");
    }
 
    d3d12->hdr.support = (desc1.ColorSpace == 
