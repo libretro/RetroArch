@@ -25,14 +25,19 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gfx/video_defines.h"
 #include "input/input_defines.h"
 #include "led/led_defines.h"
-#include "msg_hash.h"
 
 #ifdef HAVE_LAKKA
 #include "lakka.h"
 #endif
+
+#include "msg_hash.h"
 
 #define configuration_set_float(settings, var, newvar) \
 { \
