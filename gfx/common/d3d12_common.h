@@ -1537,6 +1537,7 @@ typedef enum {
 RETRO_BEGIN_DECLS
 
 extern D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc;
+extern D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc;
 
 bool d3d12_init_base(d3d12_video_t* d3d12);
 

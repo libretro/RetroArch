@@ -633,7 +633,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    settings_t                  *     settings = config_get_ptr();
    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { d3d12->desc.rootSignature };
 
-   desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
+   desc.BlendState.RenderTarget[0] = d3d12_blend_disable_desc;
    desc.RTVFormats[0]              = DXGI_FORMAT_R10G10B10A2_UNORM;
 
    {
@@ -670,6 +670,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       ps_code = NULL;
    }
 
+   desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
    desc.RTVFormats[0]              = DXGI_FORMAT_R8G8B8A8_UNORM;
 
    {
@@ -1820,11 +1821,11 @@ static bool d3d12_gfx_frame(
       D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
 
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
-
-      d3d12_resource_transition(
-         d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
-         D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
    }
+
+   d3d12_resource_transition(
+      d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
+      D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
