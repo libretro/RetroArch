@@ -2063,6 +2063,8 @@ typedef enum apple_view_type
    APPLE_VIEW_TYPE_METAL
 } apple_view_type_t;
 
+bool retroarch_get_current_savestate_path(char *path, size_t len);
+
 RETRO_END_DECLS
 
 #endif

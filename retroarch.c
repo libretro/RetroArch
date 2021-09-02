@@ -9283,27 +9283,6 @@ static void path_fill_names(struct rarch_state *p_rarch)
    }
 }
 
-char *path_get_state(void)
-{
-   static char state_path[16384];
-   struct rarch_state *p_rarch   = &rarch_st;
-   const global_t *global        = &p_rarch->g_extern;
-   settings_t *settings          = p_rarch->configuration_settings;
-   int state_slot                = settings->ints.state_slot;
-   const char *name_savestate    = global->name.savestate;
-
-   if (state_slot > 0)
-      snprintf(state_path, sizeof(state_path), "%s%d",
-            name_savestate, state_slot);
-   else if (state_slot < 0)
-      fill_pathname_join_delim(state_path,
-            name_savestate, "auto", '.', sizeof(state_path));
-   else
-      strlcpy(state_path, name_savestate, sizeof(state_path));
-
-   return state_path;
-}
-
 char *path_get_ptr(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -9332,8 +9311,6 @@ char *path_get_ptr(enum rarch_path_type type)
          break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
-      case RARCH_PATH_STATE:
-         return path_get_state();
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -9370,8 +9347,6 @@ const char *path_get(enum rarch_path_type type)
          break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
-      case RARCH_PATH_STATE:
-         return path_get_state();
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -9578,6 +9553,31 @@ static void path_clear_all(void)
    path_clear(RARCH_PATH_CONFIG_APPEND);
    path_clear(RARCH_PATH_CORE_OPTIONS);
    path_clear(RARCH_PATH_BASENAME);
+}
+
+bool retroarch_get_current_savestate_path(char *path, size_t len)
+{
+   struct rarch_state *p_rarch = &rarch_st;
+   const global_t *global      = &p_rarch->g_extern;
+   settings_t *settings        = p_rarch->configuration_settings;
+   int state_slot              = settings ? settings->ints.state_slot : 0;
+   const char *name_savestate  = NULL;
+
+   if (!path || !global)
+      return false;
+
+   name_savestate = global->name.savestate;
+   if (string_is_empty(name_savestate))
+      return false;
+
+   if (state_slot > 0)
+      snprintf(path, len, "%s%d",  name_savestate, state_slot);
+   else if (state_slot < 0)
+      fill_pathname_join_delim(path, name_savestate, "auto", '.', len);
+   else
+      strlcpy(path, name_savestate, len);
+
+   return true;
 }
 
 enum rarch_content_type path_is_media_type(const char *path)
@@ -13093,7 +13093,7 @@ static bool command_event_main_state(
 {
    retro_ctx_size_info_t info;
    char msg[128];
-   const char *state_path;
+   char state_path[16384];
    const global_t *global      = &p_rarch->g_extern;
    settings_t *settings        = p_rarch->configuration_settings;
    bool ret                    = false;
@@ -13101,8 +13101,7 @@ static bool command_event_main_state(
 
    msg[0]                      = '\0';
 
-   if (global)
-      state_path = path_get(RARCH_PATH_STATE);
+   retroarch_get_current_savestate_path(state_path, sizeof(state_path));
 
    core_serialize_size(&info);
 

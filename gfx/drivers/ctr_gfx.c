@@ -262,12 +262,17 @@ static const char *ctr_texture_path(unsigned id)
          return "ctr/bottom_menu.png";
       case CTR_TEXTURE_STATE_THUMBNAIL:
          {
-            static char state_path[PATH_MAX_LENGTH];
+            static char texture_path[PATH_MAX_LENGTH];
 
-            snprintf(state_path, sizeof(state_path),
-               "%s.png", path_get(RARCH_PATH_STATE));
+            char state_path[PATH_MAX_LENGTH];
+            if (!retroarch_get_current_savestate_path(state_path, 
+                     sizeof(state_path)))
+               return NULL;
 
-            return path_basename(state_path);
+            snprintf(texture_path, sizeof(texture_path),
+                  "%s.png", state_path);
+
+            return path_basename(texture_path);
          }
    }
 
@@ -287,10 +292,11 @@ static void ctr_update_state_date(void *data)
 
 static bool ctr_update_state_date_from_file(void *data)
 {
-   const char *state_path;
+   char state_path[PATH_MAX_LENGTH];
    ctr_video_t *ctr = (ctr_video_t*)data;
 
-   state_path = path_get(RARCH_PATH_STATE);
+   if (!retroarch_get_current_savestate_path(state_path, sizeof(state_path)))
+      return false;
 
 #ifdef USE_CTRULIB_2
    time_t mtime;
