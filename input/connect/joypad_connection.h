@@ -59,6 +59,7 @@ struct joypad_connection
 {
     struct pad_connection_interface *iface;
     void* data;
+    void* connection;
     bool connected;
 };
 
@@ -72,7 +73,7 @@ typedef struct pad_connection_interface
    void			(*get_buttons)(void *data, input_bits_t *state);
    int16_t  	(*get_axis)(void *data, unsigned axis);
    const char*	(*get_name)(void *data);
-   int16_t      (*button)(void *data, uint16_t joykey);
+   int32_t      (*button)(void *data, uint16_t joykey);
 } pad_connection_interface_t;
 
 extern pad_connection_interface_t pad_connection_wii;

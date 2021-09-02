@@ -96,7 +96,7 @@ enum udev_input_dev_type
 /* NOTE: must be in sync with enum udev_input_dev_type */
 static const char *g_dev_type_str[] =
 {
-   "ID_INPUT_KEYBOARD",
+   "ID_INPUT_KEY",
    "ID_INPUT_MOUSE",
    "ID_INPUT_TOUCHPAD"
 };
@@ -1234,6 +1234,7 @@ static bool open_devices(udev_input_t *udev,
       return false;
 
    udev_enumerate_add_match_property(enumerate, type_str, "1");
+   udev_enumerate_add_match_subsystem(enumerate, "input");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
 
@@ -1261,23 +1262,24 @@ static bool open_devices(udev_input_t *udev,
                char ident[255];
                if (ioctl(fd, EVIOCGNAME(sizeof(ident)), ident) < 0)
                   ident[0] = '\0';
-               if ( type == UDEV_INPUT_KEYBOARD)
+               if (type == UDEV_INPUT_KEYBOARD)
                {
-                  RARCH_LOG("[udev]: Added Device Keyboard#%d %s (%s) .\n",
+                  RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
                      device_keyboard,
                      ident,
                      devnode);
                    device_keyboard++;
                }                     
-               else if (type == UDEV_INPUT_MOUSE || type== UDEV_INPUT_TOUCHPAD)
+               else if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD)
                {
-                  RARCH_LOG("[udev]: Added Device mouse#%d %s (%s) .\n",
+                  input_config_set_mouse_display_name(device_mouse, ident);
+
+                  RARCH_LOG("[udev]: Mouse #%u: \"%s\" (%s).\n",
                      device_mouse,
                      ident,
                      devnode);
                      device_mouse++;
                }                     
-                  
             }
 
             (void)check;

@@ -392,6 +392,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -434,6 +435,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -479,6 +481,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -518,6 +521,7 @@
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
+					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
@@ -616,7 +620,7 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_OPTIMIZATIONS",
+					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
@@ -703,7 +707,7 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_OPTIMIZATIONS",
+					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;

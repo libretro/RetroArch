@@ -22,8 +22,6 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#include "input_types.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -35,11 +33,13 @@
 #include <retro_miscellaneous.h>
 
 #include "input_defines.h"
+#include "input_types.h"
 
 #include "../msg_hash.h"
 #include "include/hid_types.h"
 #include "include/hid_driver.h"
 #include "include/gamepad.h"
+#include "../configuration.h"
 
 RETRO_BEGIN_DECLS
 
@@ -119,6 +119,11 @@ typedef struct
    char config_name[PATH_MAX_LENGTH]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
+
+typedef struct
+{
+   char display_name[256];
+} input_mouse_info_t;
 
 /**
  * Organizes the functions and data structures of each driver that are accessed
@@ -262,7 +267,7 @@ struct rarch_joypad_driver
    void *(*init)(void *data);
    bool (*query_pad)(unsigned);
    void (*destroy)(void);
-   int16_t (*button)(unsigned, uint16_t);
+   int32_t (*button)(unsigned, uint16_t);
    int16_t (*state)(rarch_joypad_info_t *joypad_info,
          const struct retro_keybind *binds, unsigned port);
    void (*get_buttons)(unsigned, input_bits_t *);
@@ -274,6 +279,21 @@ struct rarch_joypad_driver
    const char *ident;
 };
 
+typedef struct
+{
+   /* pointers */
+   input_driver_t                *current_driver;
+   void                          *current_data;
+   const input_device_driver_t   *primary_joypad;        /* ptr alignment */
+   const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
+
+   /* primitives */
+   bool        nonblocking_flag;
+} input_driver_state_t;
+
+
+void input_driver_init_joypads(void);
+
 /**
  * Get an enumerated list of all input driver names
  *
@@ -282,73 +302,48 @@ struct rarch_joypad_driver
 const char* config_get_input_driver_options(void);
 
 /**
- * Sets the rumble state. Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
+ * Sets the rumble state.
  * 
- * @param port      User number.
- * @param effect    Rumble effect.
- * @param strength  Strength of rumble effect.
+ * @param driver_state
+ * @param port          User number.
+ * @param joy_idx
+ * @param effect        Rumble effect.
+ * @param strength      Strength of rumble effect.
  *
  * @return true if the rumble state has been successfully set
  **/
-bool input_driver_set_rumble_state(unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength);
+bool input_driver_set_rumble(
+         input_driver_state_t *driver_state, unsigned port, unsigned joy_idx, 
+         enum retro_rumble_effect effect, uint16_t strength);
 
 /**
- * Sets the sensor state. Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE.
+ * Sets the sensor state.
  * 
+ * @param driver_state
  * @param port
- * @param effect  Sensor action
- * @param rate    Sensor rate update
+ * @param sensors_enable
+ * @param effect        Sensor action
+ * @param rate          Sensor rate update
  *
  * @return true if the sensor state has been successfully set
  **/
-bool input_sensor_set_state(unsigned port,
-      enum retro_sensor_action action, unsigned rate);
+bool input_driver_set_sensor(
+         input_driver_state_t *driver_state, unsigned port, bool sensors_enable,
+         enum retro_sensor_action action, unsigned rate);
 
 /**
  * Retrieves the sensor state associated with the provided port and ID. 
  * 
+ * @param driver_state
  * @param port
- * @param id    Sensor ID
+ * @param sensors_enable
+ * @param id            Sensor ID
  *
  * @return The current state associated with the port and ID as a float
  **/
-float input_sensor_get_input(unsigned port, unsigned id);
-
-/**
- * Retrieves the input driver state struct
- * 
- * @return The input state struct
- **/
-void *input_driver_get_data(void);
-
-/**
- * Sets the input_driver_nonblock_state flag to true
- **/
-void input_driver_set_nonblock_state(void);
-
-/**
- * Sets the input_driver_nonblock_state flag to false
- **/
-void input_driver_unset_nonblock_state(void);
-
-/**
- * If the action is INPUT_ACTION_AXIS_THRESHOLD, return the current
- * input_driver_axis_threshold.
- * 
- * @return value of input_driver_axis_threshold or NULL for actions other than
- *          INPUT_ACTION_AXIS_THRESHOLD
-**/
-float *input_driver_get_float(enum input_action action);
-
-/**
- * If the action is INPUT_ACTION_MAX_USERS, return the current
- * input_driver_max_users.
- * 
- * @return value of input_driver_axis_threshold or NULL for actions other than
- *          INPUT_ACTION_AXIS_THRESHOLD
-**/
-unsigned *input_driver_get_uint(enum input_action action);
+float input_driver_get_sensor(
+         input_driver_state_t *driver_state,
+         unsigned port, bool sensors_enable, unsigned id);
 
 /**
  * Get an enumerated list of all joypad driver names
@@ -362,6 +357,8 @@ const char* config_get_joypad_driver_options(void);
  * zero-length string, equivalent to calling input_joypad_init_first().
  *
  * @param ident  identifier of driver to initialize.
+ * @param data   joypad state data pointer, which can be NULL and will be
+ *               initialized by the new joypad driver, if one is found.
  *
  * @return The joypad driver if found, otherwise NULL.
  **/
@@ -407,41 +404,6 @@ const input_device_driver_t *input_joypad_init_driver(
 void input_pad_connect(unsigned port, input_device_driver_t *driver);
 
 
-/*****************************************************************************/
-#ifdef HAVE_HID
-#include "include/hid_driver.h"
-
-/**
- * Get an enumerated list of all HID driver names
- * 
- * @return String listing of all HID driver names, separated by '|'.
- **/
-const char* config_get_hid_driver_options(void);
-
-/**
- * Finds first suitable HID driver and initializes.
- *
- * @return HID driver if found, otherwise NULL.
- **/
-const hid_driver_t *input_hid_init_first(void);
-
-/**
- * Get a pointer to the HID driver data structure
- * 
- * @return Pointer to hid_data struct
- **/
-const void *hid_driver_get_data(void);
-
-/**
- * This should be called after we've invoked free() on the HID driver; the
- * memory will have already been freed so we need to reset the pointer.
- */
-void hid_driver_reset_data(void);
-
-#endif /* HAVE_HID */
-/*****************************************************************************/
-
-
 /**
  * line_complete callback (when carriage return is pressed)
  *
@@ -477,6 +439,42 @@ struct input_keyboard_ctx_wait
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
+
+/*************************************/
+#ifdef HAVE_HID
+#include "include/hid_driver.h"
+
+/**
+ * Get an enumerated list of all HID driver names
+ * 
+ * @return String listing of all HID driver names, separated by '|'.
+ **/
+const char* config_get_hid_driver_options(void);
+
+/**
+ * Finds first suitable HID driver and initializes.
+ *
+ * @return HID driver if found, otherwise NULL.
+ **/
+const hid_driver_t *input_hid_init_first(void);
+
+/**
+ * Get a pointer to the HID driver data structure
+ * 
+ * @return Pointer to hid_data struct
+ **/
+const void *hid_driver_get_data(void);
+
+/**
+ * This should be called after we've invoked free() on the HID driver; the
+ * memory will have already been freed so we need to reset the pointer.
+ */
+void hid_driver_reset_data(void);
+
+#endif /* HAVE_HID */
+/*************************************/
+
+
 /**
  * Set the name of the device in the specified port
  * 
@@ -490,6 +488,7 @@ void input_config_set_device_name(unsigned port, const char *name);
  * @param port
  */
 void input_config_set_device_display_name(unsigned port, const char *name);
+void input_config_set_mouse_display_name(unsigned port, const char *name);
 
 /**
  * Set the configuration path for the device in the specified port
@@ -579,6 +578,7 @@ unsigned input_config_get_device(unsigned port);
 /* Get input_device_info */
 const char *input_config_get_device_name(unsigned port);
 const char *input_config_get_device_display_name(unsigned port);
+const char *input_config_get_mouse_display_name(unsigned port);
 const char *input_config_get_device_config_path(unsigned port);
 const char *input_config_get_device_config_name(unsigned port);
 const char *input_config_get_device_joypad_driver(unsigned port);
@@ -650,28 +650,7 @@ size_t input_config_get_device_name_size(unsigned port);
 
 /*****************************************************************************/
 
-/**
- * Save the current keybinds on a port to the config file.
- * 
- * @param conf  pointer to config file object
- * @param user  user number (ie port - TODO: change to port nomenclature)
- */
-void input_config_save_keybinds_user(void *data, unsigned user);
-
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
-
-/**
- * Save a key binding to the config file.
- * 
- * @param conf    pointer to config file object
- * @param prefix  prefix name of keybind
- * @param base    base name of keybind
- * @param bind    pointer to key binding object
- * @param kb      save keyboard binds
- */
-void input_config_save_keybind(void *data, const char *prefix,
-      const char *base, const struct retro_keybind *bind,
-      bool save_empty);
 
 void input_config_reset_autoconfig_binds(unsigned port);
 void input_config_reset(void);
@@ -720,28 +699,11 @@ void input_config_reset(void);
 #define DEFAULT_MAX_PADS 16
 #endif /* defined(ANDROID) */
 
-extern input_device_driver_t dinput_joypad;
-extern input_device_driver_t linuxraw_joypad;
-extern input_device_driver_t parport_joypad;
-extern input_device_driver_t udev_joypad;
-extern input_device_driver_t xinput_joypad;
-extern input_device_driver_t sdl_joypad;
-extern input_device_driver_t sdl_dingux_joypad;
-extern input_device_driver_t ps4_joypad;
-extern input_device_driver_t ps3_joypad;
-extern input_device_driver_t psp_joypad;
-extern input_device_driver_t ps2_joypad;
-extern input_device_driver_t ctr_joypad;
-extern input_device_driver_t switch_joypad;
-extern input_device_driver_t xdk_joypad;
-extern input_device_driver_t gx_joypad;
-extern input_device_driver_t wiiu_joypad;
-extern input_device_driver_t hid_joypad;
-extern input_device_driver_t android_joypad;
-extern input_device_driver_t qnx_joypad;
-extern input_device_driver_t mfi_joypad;
-extern input_device_driver_t dos_joypad;
-extern input_device_driver_t rwebpad_joypad;
+extern input_device_driver_t *joypad_drivers[];
+extern input_driver_t *input_drivers[];
+#ifdef HAVE_HID
+extern hid_driver_t *hid_drivers[];
+#endif
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
@@ -768,37 +730,35 @@ extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
 
+extern input_device_driver_t dinput_joypad;
+extern input_device_driver_t linuxraw_joypad;
+extern input_device_driver_t parport_joypad;
+extern input_device_driver_t udev_joypad;
+extern input_device_driver_t xinput_joypad;
+extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t sdl_dingux_joypad;
+extern input_device_driver_t ps4_joypad;
+extern input_device_driver_t ps3_joypad;
+extern input_device_driver_t psp_joypad;
+extern input_device_driver_t ps2_joypad;
+extern input_device_driver_t ctr_joypad;
+extern input_device_driver_t switch_joypad;
+extern input_device_driver_t xdk_joypad;
+extern input_device_driver_t gx_joypad;
+extern input_device_driver_t wiiu_joypad;
+extern input_device_driver_t hid_joypad;
+extern input_device_driver_t android_joypad;
+extern input_device_driver_t qnx_joypad;
+extern input_device_driver_t mfi_joypad;
+extern input_device_driver_t dos_joypad;
+extern input_device_driver_t rwebpad_joypad;
+
 #ifdef HAVE_HID
 extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
 #endif /* HAVE_HID */
-
-typedef struct menu_input_ctx_line
-{
-   const char *label;
-   const char *label_setting;
-   unsigned type;
-   unsigned idx;
-   input_keyboard_line_complete_t cb;
-} menu_input_ctx_line_t;
-
-const char *menu_input_dialog_get_label_setting_buffer(void);
-
-const char *menu_input_dialog_get_label_buffer(void);
-
-const char *menu_input_dialog_get_buffer(void);
-
-unsigned menu_input_dialog_get_kb_idx(void);
-
-bool menu_input_dialog_start_search(void);
-
-bool menu_input_dialog_get_display_kb(void);
-
-bool menu_input_dialog_start(menu_input_ctx_line_t *line);
-
-void menu_input_dialog_end(void);
 
 RETRO_END_DECLS
 

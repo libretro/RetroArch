@@ -32,6 +32,10 @@
 #include "../common/sdl2_common.h"
 #endif
 
+#if defined(WEBOS) && defined(HAVE_SDL2)
+#include <SDL_webOS.h>
+#endif
+
 typedef struct gfx_ctx_sdl_data
 {
    int  width;
@@ -41,6 +45,7 @@ typedef struct gfx_ctx_sdl_data
 
    bool full;
    bool resized;
+   bool subsystem_inited;
 
 #ifdef HAVE_SDL2
    SDL_Window    *win;
@@ -73,6 +78,19 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
    sdl->win = NULL;
 }
 
+static void sdl_ctx_destroy(void *data)
+{
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+
+   if (!sdl)
+      return;
+
+   sdl_ctx_destroy_resources(sdl);
+   if (sdl->subsystem_inited)
+      SDL_QuitSubSystem(SDL_INIT_VIDEO);
+   free(sdl);
+}
+
 static void *sdl_ctx_init(void *video_driver)
 {
    gfx_ctx_sdl_data_t *sdl      = (gfx_ctx_sdl_data_t*)
@@ -86,6 +104,12 @@ static void *sdl_ctx_init(void *video_driver)
    XInitThreads();
 #endif
 
+#ifdef WEBOS
+   SDL_SetHint(SDL_HINT_WEBOS_ACCESS_POLICY_KEYS_BACK, "true");
+   SDL_SetHint(SDL_HINT_WEBOS_ACCESS_POLICY_KEYS_EXIT, "true");
+   SDL_SetHint(SDL_HINT_WEBOS_CURSOR_SLEEP_TIME, "1000");
+#endif
+
    /* Initialise graphics subsystem, if required */
    if (sdl_subsystem_flags == 0)
    {
@@ -96,6 +120,7 @@ static void *sdl_ctx_init(void *video_driver)
    {
       if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
          goto error;
+      sdl->subsystem_inited = true;
    }
 
    RARCH_LOG("[SDL_GL] SDL %i.%i.%i gfx context driver initialized.\n",
@@ -107,24 +132,11 @@ error:
    RARCH_WARN("[SDL_GL]: Failed to initialize SDL gfx context driver: %s\n",
          SDL_GetError());
 
-   sdl_ctx_destroy_resources(sdl);
-
-   if (sdl)
-      free(sdl);
+   sdl_ctx_destroy(sdl);
 
    return NULL;
 }
 
-static void sdl_ctx_destroy(void *data)
-{
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
-
-   if (!sdl)
-      return;
-
-   sdl_ctx_destroy_resources(sdl);
-   free(sdl);
-}
 
 static enum gfx_ctx_api sdl_ctx_get_api(void *data) { return sdl_api; }
 
@@ -201,7 +213,8 @@ static bool sdl_ctx_set_video_mode(void *data,
    {
       unsigned display = video_monitor_index;
 
-      sdl->win = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
+      sdl->win = SDL_CreateWindow("RetroArch",
+                               SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                width, height, SDL_WINDOW_OPENGL | fsflag);
    }

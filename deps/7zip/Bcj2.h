@@ -68,11 +68,11 @@ typedef struct
 
   unsigned state; /* BCJ2_STREAM_MAIN has more priority than BCJ2_STATE_ORIG */
 
-  UInt32 ip;
+  uint32_t ip;
   Byte temp[4];
-  UInt32 range;
-  UInt32 code;
-  UInt16 probs[2 + 256];
+  uint32_t range;
+  uint32_t code;
+  uint16_t probs[2 + 256];
 } CBcj2Dec;
 
 void Bcj2Dec_Init(CBcj2Dec *p);
@@ -104,28 +104,28 @@ typedef struct
   Byte prevByte;
 
   Byte cache;
-  UInt32 range;
-  UInt64 low;
-  UInt64 cacheSize;
+  uint32_t range;
+  uint64_t low;
+  uint64_t cacheSize;
 
-  UInt32 ip;
+  uint32_t ip;
 
   /* 32-bit ralative offset in JUMP/CALL commands is
        - (mod 4 GB)   in 32-bit mode
        - signed Int32 in 64-bit mode
      We use (mod 4 GB) check for fileSize.
      Use fileSize up to 2 GB, if you want to support 32-bit and 64-bit code conversion. */
-  UInt32 fileIp;
-  UInt32 fileSize;    /* (fileSize <= ((UInt32)1 << 31)), 0 means no_limit */
-  UInt32 relatLimit;  /* (relatLimit <= ((UInt32)1 << 31)), 0 means desable_conversion */
+  uint32_t fileIp;
+  uint32_t fileSize;    /* (fileSize <= ((uint32_t)1 << 31)), 0 means no_limit */
+  uint32_t relatLimit;  /* (relatLimit <= ((uint32_t)1 << 31)), 0 means desable_conversion */
 
-  UInt32 tempTarget;
+  uint32_t tempTarget;
   unsigned tempPos;
   Byte temp[4 * 2];
 
   unsigned flushPos;
   
-  UInt16 probs[2 + 256];
+  uint16_t probs[2 + 256];
 } CBcj2Enc;
 
 void Bcj2Enc_Init(CBcj2Enc *p);
@@ -136,10 +136,10 @@ void Bcj2Enc_Encode(CBcj2Enc *p);
 
 
 #define BCJ2_RELAT_LIMIT_NUM_BITS 26
-#define BCJ2_RELAT_LIMIT ((UInt32)1 << BCJ2_RELAT_LIMIT_NUM_BITS)
+#define BCJ2_RELAT_LIMIT ((uint32_t)1 << BCJ2_RELAT_LIMIT_NUM_BITS)
 
 /* limit for CBcj2Enc::fileSize variable */
-#define BCJ2_FileSize_MAX ((UInt32)1 << 31)
+#define BCJ2_FileSize_MAX ((uint32_t)1 << 31)
 
 EXTERN_C_END
 

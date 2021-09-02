@@ -54,15 +54,9 @@
 #endif
 
 static enum frontend_fork switch_fork_mode = FRONTEND_FORK_NONE;
-static const char *elf_path_cst = "/switch/retroarch_switch.nro";
-
 bool platform_switch_has_focus = true;
 
 #ifdef HAVE_LIBNX
-
-/* Splash */
-static uint32_t *splashData = NULL;
-
 static bool psmInitialized  = false;
 
 static AppletHookCookie applet_hook_cookie;
@@ -176,8 +170,6 @@ static void frontend_switch_get_env(
       int *argc, char *argv[], void *args, void *params_data)
 {
    unsigned i;
-   (void)args;
-
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
    logger_init();
@@ -302,13 +294,6 @@ static void frontend_switch_deinit(void *data)
    socketExit();
 #endif
 
-   /* Splash */
-   if (splashData)
-   {
-      free(splashData);
-      splashData = NULL;
-   }
-
    if (psmInitialized)
        psmExit();
 
@@ -320,16 +305,6 @@ static void frontend_switch_deinit(void *data)
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
    char game_path[PATH_MAX-4];
-#ifndef IS_SALAMANDER
-   const char *arg_data[3];
-   int args           = 0;
-   arg_data[0]        = NULL;
-
-   arg_data[args]     = elf_path_cst;
-   arg_data[args + 1] = NULL;
-   args++;
-#endif
-
    game_path[0]       = '\0';
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
@@ -338,9 +313,6 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
-      arg_data[args]     = game_path;
-      arg_data[args + 1] = NULL;
-      args++;
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
@@ -422,135 +394,6 @@ static void frontend_switch_exitspawn(char *s, size_t len, char *args)
    frontend_switch_exec(s, should_load_content);
 }
 
-#if 0
-/* TODO/FIXME - should be refactored into something that can be used for all
- * RetroArch versions, and not just Switch */
-static void argb_to_rgba8(uint32_t *buff, uint32_t height, uint32_t width)
-{
-   uint32_t h, w;
-   /* Convert */
-   for (h = 0; h < height; h++)
-   {
-      for (w = 0; w < width; w++)
-      {
-         uint32_t offset = (h * width) + w;
-         uint32_t c      = buff[offset];
-
-         uint32_t a      = (uint32_t)((c & 0xff000000) >> 24);
-         uint32_t r      = (uint32_t)((c & 0x00ff0000) >> 16);
-         uint32_t g      = (uint32_t)((c & 0x0000ff00) >> 8);
-         uint32_t b      = (uint32_t)(c & 0x000000ff);
-
-         buff[offset]    = RGBA8(r, g, b, a);
-      }
-   }
-}
-
-static void frontend_switch_showsplash(void)
-{
-   printf("[Splash] Showing splashScreen\n");
-
-   NWindow *win = nwindowGetDefault();
-   Framebuffer fb;
-   framebufferCreate(&fb, win, 1280, 720, PIXEL_FORMAT_RGBA_8888, 2);
-   framebufferMakeLinear(&fb);
-
-   if (splashData)
-   {
-      uint32_t width       = 0;
-      uint32_t height      = 0;
-      uint32_t stride;
-      uint32_t *frambuffer = (uint32_t *)framebufferBegin(&fb, &stride);
-
-      gfx_cpy_dsp_buf(frambuffer, splashData, width, height, stride, false);
-
-      framebufferEnd(&fb);
-   }
-
-   framebufferClose(&fb);
-}
-
-/* From rpng_test.c */
-static bool rpng_load_image_argb(const char *path,
-      uint32_t **data, unsigned *width, unsigned *height)
-{
-   int retval;
-   size_t file_len;
-   bool ret              = true;
-   rpng_t *rpng          = NULL;
-   void *ptr             = NULL;
-   struct nbio_t *handle = (struct nbio_t *)nbio_open(path, NBIO_READ);
-
-   if (!handle)
-      goto end;
-
-   nbio_begin_read(handle);
-
-   while (!nbio_iterate(handle))
-      svcSleepThread(3);
-
-   ptr = nbio_get_ptr(handle, &file_len);
-
-   if (!ptr)
-   {
-      ret = false;
-      goto end;
-   }
-
-   rpng = rpng_alloc();
-
-   if (!rpng)
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!rpng_set_buf_ptr(rpng, (uint8_t *)ptr, file_len))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!rpng_start(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-
-   while (rpng_iterate_image(rpng))
-      svcSleepThread(3);
-
-   if (!rpng_is_valid(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-
-   do
-   {
-      retval = rpng_process_image(rpng, (void **)data, file_len, width, height);
-      svcSleepThread(3);
-   } while (retval == IMAGE_PROCESS_NEXT);
-
-   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
-      ret = false;
-
-end:
-   if (handle)
-      nbio_free(handle);
-
-   if (rpng)
-      rpng_free(rpng);
-
-   rpng = NULL;
-
-   if (!ret)
-      free(*data);
-
-   return ret;
-}
-#endif
-
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
    svcSleepThread(rqtp->tv_nsec + (rqtp->tv_sec * 1000000000));
@@ -559,11 +402,8 @@ int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 
 long sysconf(int name)
 {
-   switch (name)
-   {
-   case 8:
+   if (name == 8)
       return 0x1000;
-   }
    return -1;
 }
 
@@ -707,6 +547,7 @@ extern void retro_get_system_info(struct retro_system_info *info);
 static void frontend_switch_init(void *data)
 {
 #ifdef HAVE_LIBNX
+   Result rc;
    bool recording_supported      = false;
 
    nifmInitialize(NifmServiceType_User);
@@ -732,15 +573,11 @@ static void frontend_switch_init(void *data)
 #endif /* IS_SALAMANDER */
 #endif /* NXLINK */
 
-   Result rc;
    rc = psmInitialize();
    if (R_SUCCEEDED(rc))
        psmInitialized = true;
    else
-   {
        RARCH_WARN("Error initializing psm\n");
-   }
-
 #endif /* HAVE_LIBNX (splash) */
 }
 
@@ -836,8 +673,8 @@ static void frontend_switch_get_os(
    strcpy_literal(s, "Horizon OS");
 
 #ifdef HAVE_LIBNX
-   *major = 0;
-   *minor = 0;
+   *major     = 0;
+   *minor     = 0;
 
    hosVersion = hosversionGet();
    *major     = HOSVER_MAJOR(hosVersion);
@@ -850,7 +687,7 @@ static void frontend_switch_get_os(
    LIB_ASSERT_OK(fail, sm_init());
    LIB_ASSERT_OK(fail_sm, sm_get_service(&set_sys, "set:sys"));
 
-   rq = ipc_make_request(3);
+   rq                     = ipc_make_request(3);
    ipc_buffer_t buffers[] = {
       ipc_make_buffer(firmware_version, 0x100, 0x1a),
    };

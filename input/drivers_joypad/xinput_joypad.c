@@ -273,7 +273,7 @@ static void xinput_joypad_destroy(void)
 }
 
 
-static int16_t xinput_joypad_button(unsigned port, uint16_t joykey)
+static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
    int xuser                  = pad_index_to_xuser_index(port);
    uint16_t btn_word          = 0;

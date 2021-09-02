@@ -533,7 +533,8 @@ void gfx_display_draw_quad(
       unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
-      float *color)
+      float *color,
+      uintptr_t *texture)
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
@@ -557,7 +558,7 @@ void gfx_display_draw_quad(
    draw.height          = h;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = gfx_display_white_texture;
+   draw.texture         = (texture != NULL) ? *texture : gfx_display_white_texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
@@ -626,34 +627,6 @@ void gfx_display_draw_polygon(
       dispctx->draw(&draw, userdata, video_width, video_height);
    if (dispctx->blend_end)
       dispctx->blend_end(userdata);
-}
-
-static void gfx_display_draw_texture(
-      gfx_display_t *p_disp,
-      gfx_display_ctx_driver_t *dispctx,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned width, unsigned height,
-      float *color, uintptr_t texture,
-      gfx_display_ctx_draw_t *draw
-      )
-{
-   if (w == 0 || h == 0)
-      return;
-   if (!dispctx || !dispctx->draw)
-      return;
-
-   draw->width              = w;
-   draw->height             = h;
-   draw->prim_type          = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw->pipeline_id        = 0;
-   draw->texture            = texture;
-   draw->x                  = x;
-   draw->y                  = height - y;
-
-   dispctx->draw(draw, userdata, video_width, video_height);
 }
 
 /* Draw the texture split into 9 sections, without scaling the corners.
@@ -1171,8 +1144,6 @@ void gfx_display_draw_keyboard(
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
    };
-   struct video_coords coords;
-   gfx_display_ctx_draw_t draw;
    math_matrix_4x4 mymat;
    gfx_display_ctx_rotate_draw_t rotate_draw;
    rotate_draw.matrix       = &mymat;
@@ -1181,12 +1152,6 @@ void gfx_display_draw_keyboard(
    rotate_draw.scale_y      = 1.0;
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
-
-   coords.vertices          = 4;
-   coords.vertex            = NULL;
-   coords.tex_coord         = NULL;
-   coords.lut_tex_coord     = NULL;
-   coords.color             = (const float*)&white[0];
 
    gfx_display_draw_quad(
          p_disp,
@@ -1199,7 +1164,8 @@ void gfx_display_draw_keyboard(
          video_height / 2.0,
          video_width,
          video_height,
-         &osk_dark[0]);
+         &osk_dark[0],
+         NULL);
 
    ptr_width  = video_width  / 11;
    ptr_height = video_height / 10;
@@ -1208,9 +1174,6 @@ void gfx_display_draw_keyboard(
       ptr_width = ptr_height;
 
    gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
-
-   draw.coords             = &coords;
-   draw.matrix_data        = &mymat;
 
    for (i = 0; i < 44; i++)
    {
@@ -1222,22 +1185,18 @@ void gfx_display_draw_keyboard(
          if (dispctx && dispctx->blend_begin)
             dispctx->blend_begin(userdata);
 
-         gfx_display_draw_texture(
-               p_disp,
-               dispctx,
-               userdata,
-               video_width,
-               video_height,
-               video_width / 2.0 - (11 * ptr_width) / 2.0 + (i % 11) 
-               * ptr_width,
-               video_height / 2.0 + ptr_height * 1.5 + line_y,
-               ptr_width, ptr_height,
-               video_width,
-               video_height,
-               &white[0],
-               hover_texture,
-               &draw
-               );
+         gfx_display_draw_quad(
+           p_disp,
+           userdata,
+           video_width,
+           video_height,
+           video_width / 2.0 - (11 * ptr_width) / 2.0 + (i % 11) * ptr_width,
+           video_height / 2.0 + ptr_height * 1.5 + line_y - ptr_height,
+           ptr_width, ptr_height,
+           video_width,
+           video_height,
+           &white[0],
+           &hover_texture);
 
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);

@@ -53,7 +53,7 @@ static bool load_xinput_dll(void)
 }
 #endif
 
-static int16_t xinput_joypad_button_state(
+static int32_t xinput_joypad_button_state(
       unsigned xuser, uint16_t btn_word,
       unsigned port, uint16_t joykey)
 {

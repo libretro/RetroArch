@@ -375,7 +375,7 @@ void *apple_gamecontroller_joypad_init(void *data)
 
 static void apple_gamecontroller_joypad_destroy(void) { }
 
-static int16_t apple_gamecontroller_joypad_button(
+static int32_t apple_gamecontroller_joypad_button(
       unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)

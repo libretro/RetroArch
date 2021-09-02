@@ -280,24 +280,35 @@ static void* task_push_http_transfer_generic(
       const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
-   task_finder_data_t find_data;
    retro_task_t  *t        = NULL;
    http_handle_t *http     = NULL;
-
-   find_data.func          = task_http_finder;
-   find_data.userdata      = (void*)url;
-
-   /* Concurrent download of the same file is not allowed */
-   if (task_queue_find(&find_data))
-   {
-      if (conn)
-         net_http_connection_free(conn);
-
-      return NULL;
-   }
+   const char    *method   = NULL;
 
    if (!conn)
       return NULL;
+
+   method = net_http_connection_method(conn);
+   if (method && (method[0] == 'P' || method[0] == 'p'))
+   {
+      /* POST requests usually mutate the server, so assume multiple calls are
+       * intended, even if they're duplicated. Additionally, they may differ
+       * only by the POST data, and task_http_finder doesn't look at that, so
+       * unique requests could be misclassified as duplicates.
+       */
+   }
+   else
+   {
+      task_finder_data_t find_data;
+      find_data.func = task_http_finder;
+      find_data.userdata = (void*)url;
+
+      /* Concurrent download of the same file is not allowed */
+      if (task_queue_find(&find_data))
+      {
+         net_http_connection_free(conn);
+         return NULL;
+      }
+   }
 
    http                    = (http_handle_t*)malloc(sizeof(*http));
 

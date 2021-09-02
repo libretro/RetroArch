@@ -198,41 +198,41 @@ MY_CPU_LE_UNALIGN means that CPU is LITTLE ENDIAN and CPU supports unaligned mem
 
 #ifdef MY_CPU_LE_UNALIGN
 
-#define GetUi16(p) (*(const UInt16 *)(const void *)(p))
-#define GetUi32(p) (*(const UInt32 *)(const void *)(p))
-#define GetUi64(p) (*(const UInt64 *)(const void *)(p))
+#define GetUi16(p) (*(const uint16_t *)(const void *)(p))
+#define GetUi32(p) (*(const uint32_t *)(const void *)(p))
+#define GetUi64(p) (*(const uint64_t *)(const void *)(p))
 
-#define SetUi16(p, v) { *(UInt16 *)(p) = (v); }
-#define SetUi32(p, v) { *(UInt32 *)(p) = (v); }
-#define SetUi64(p, v) { *(UInt64 *)(p) = (v); }
+#define SetUi16(p, v) { *(uint16_t *)(p) = (v); }
+#define SetUi32(p, v) { *(uint32_t *)(p) = (v); }
+#define SetUi64(p, v) { *(uint64_t *)(p) = (v); }
 
 #else
 
-#define GetUi16(p) ( (UInt16) ( \
+#define GetUi16(p) ( (uint16_t) ( \
              ((const Byte *)(p))[0] | \
-    ((UInt16)((const Byte *)(p))[1] << 8) ))
+    ((uint16_t)((const Byte *)(p))[1] << 8) ))
 
 #define GetUi32(p) ( \
              ((const Byte *)(p))[0]        | \
-    ((UInt32)((const Byte *)(p))[1] <<  8) | \
-    ((UInt32)((const Byte *)(p))[2] << 16) | \
-    ((UInt32)((const Byte *)(p))[3] << 24))
+    ((uint32_t)((const Byte *)(p))[1] <<  8) | \
+    ((uint32_t)((const Byte *)(p))[2] << 16) | \
+    ((uint32_t)((const Byte *)(p))[3] << 24))
 
-#define GetUi64(p) (GetUi32(p) | ((UInt64)GetUi32(((const Byte *)(p)) + 4) << 32))
+#define GetUi64(p) (GetUi32(p) | ((uint64_t)GetUi32(((const Byte *)(p)) + 4) << 32))
 
-#define SetUi16(p, v) { Byte *_ppp_ = (Byte *)(p); UInt32 _vvv_ = (v); \
+#define SetUi16(p, v) { Byte *_ppp_ = (Byte *)(p); uint32_t _vvv_ = (v); \
     _ppp_[0] = (Byte)_vvv_; \
     _ppp_[1] = (Byte)(_vvv_ >> 8); }
 
-#define SetUi32(p, v) { Byte *_ppp_ = (Byte *)(p); UInt32 _vvv_ = (v); \
+#define SetUi32(p, v) { Byte *_ppp_ = (Byte *)(p); uint32_t _vvv_ = (v); \
     _ppp_[0] = (Byte)_vvv_; \
     _ppp_[1] = (Byte)(_vvv_ >> 8); \
     _ppp_[2] = (Byte)(_vvv_ >> 16); \
     _ppp_[3] = (Byte)(_vvv_ >> 24); }
 
-#define SetUi64(p, v) { Byte *_ppp2_ = (Byte *)(p); UInt64 _vvv2_ = (v); \
-    SetUi32(_ppp2_    , (UInt32)_vvv2_); \
-    SetUi32(_ppp2_ + 4, (UInt32)(_vvv2_ >> 32)); }
+#define SetUi64(p, v) { Byte *_ppp2_ = (Byte *)(p); uint64_t _vvv2_ = (v); \
+    SetUi32(_ppp2_    , (uint32_t)_vvv2_); \
+    SetUi32(_ppp2_ + 4, (uint32_t)(_vvv2_ >> 32)); }
 
 #endif
 
@@ -252,33 +252,33 @@ MY_CPU_LE_UNALIGN means that CPU is LITTLE ENDIAN and CPU supports unaligned mem
 #pragma intrinsic(_byteswap_ulong)
 #pragma intrinsic(_byteswap_uint64)
 
-/* #define GetBe16(p) _byteswap_ushort(*(const UInt16 *)(const Byte *)(p)) */
-#define GetBe32(p) _byteswap_ulong(*(const UInt32 *)(const Byte *)(p))
-#define GetBe64(p) _byteswap_uint64(*(const UInt64 *)(const Byte *)(p))
+/* #define GetBe16(p) _byteswap_ushort(*(const uint16_t *)(const Byte *)(p)) */
+#define GetBe32(p) _byteswap_ulong(*(const uint32_t *)(const Byte *)(p))
+#define GetBe64(p) _byteswap_uint64(*(const uint64_t *)(const Byte *)(p))
 
-#define SetBe32(p, v) (*(UInt32 *)(void *)(p)) = _byteswap_ulong(v)
+#define SetBe32(p, v) (*(uint32_t *)(void *)(p)) = _byteswap_ulong(v)
 
 #elif defined(MY_CPU_LE_UNALIGN) && ( \
        (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))) \
     || (defined(__clang__) && MY__has_builtin(__builtin_bswap16)) )
 
-/* #define GetBe16(p) __builtin_bswap16(*(const UInt16 *)(const Byte *)(p)) */
-#define GetBe32(p) __builtin_bswap32(*(const UInt32 *)(const Byte *)(p))
-#define GetBe64(p) __builtin_bswap64(*(const UInt64 *)(const Byte *)(p))
+/* #define GetBe16(p) __builtin_bswap16(*(const uint16_t *)(const Byte *)(p)) */
+#define GetBe32(p) __builtin_bswap32(*(const uint32_t *)(const Byte *)(p))
+#define GetBe64(p) __builtin_bswap64(*(const uint64_t *)(const Byte *)(p))
 
-#define SetBe32(p, v) (*(UInt32 *)(void *)(p)) = __builtin_bswap32(v)
+#define SetBe32(p, v) (*(uint32_t *)(void *)(p)) = __builtin_bswap32(v)
 
 #else
 
 #define GetBe32(p) ( \
-    ((UInt32)((const Byte *)(p))[0] << 24) | \
-    ((UInt32)((const Byte *)(p))[1] << 16) | \
-    ((UInt32)((const Byte *)(p))[2] <<  8) | \
+    ((uint32_t)((const Byte *)(p))[0] << 24) | \
+    ((uint32_t)((const Byte *)(p))[1] << 16) | \
+    ((uint32_t)((const Byte *)(p))[2] <<  8) | \
              ((const Byte *)(p))[3] )
 
-#define GetBe64(p) (((UInt64)GetBe32(p) << 32) | GetBe32(((const Byte *)(p)) + 4))
+#define GetBe64(p) (((uint64_t)GetBe32(p) << 32) | GetBe32(((const Byte *)(p)) + 4))
 
-#define SetBe32(p, v) { Byte *_ppp_ = (Byte *)(p); UInt32 _vvv_ = (v); \
+#define SetBe32(p, v) { Byte *_ppp_ = (Byte *)(p); uint32_t _vvv_ = (v); \
     _ppp_[0] = (Byte)(_vvv_ >> 24); \
     _ppp_[1] = (Byte)(_vvv_ >> 16); \
     _ppp_[2] = (Byte)(_vvv_ >> 8); \
@@ -289,8 +289,8 @@ MY_CPU_LE_UNALIGN means that CPU is LITTLE ENDIAN and CPU supports unaligned mem
 
 #ifndef GetBe16
 
-#define GetBe16(p) ( (UInt16) ( \
-    ((UInt16)((const Byte *)(p))[0] << 8) | \
+#define GetBe16(p) ( (uint16_t) ( \
+    ((uint16_t)((const Byte *)(p))[0] << 8) | \
              ((const Byte *)(p))[1] ))
 
 #endif
@@ -301,12 +301,12 @@ MY_CPU_LE_UNALIGN means that CPU is LITTLE ENDIAN and CPU supports unaligned mem
 
 typedef struct
 {
-  UInt32 maxFunc;
-  UInt32 vendor[3];
-  UInt32 ver;
-  UInt32 b;
-  UInt32 c;
-  UInt32 d;
+  uint32_t maxFunc;
+  uint32_t vendor[3];
+  uint32_t ver;
+  uint32_t b;
+  uint32_t c;
+  uint32_t d;
 } Cx86cpuid;
 
 enum
@@ -316,7 +316,7 @@ enum
   CPU_FIRM_VIA
 };
 
-void MyCPUID(UInt32 function, UInt32 *a, UInt32 *b, UInt32 *c, UInt32 *d);
+void MyCPUID(uint32_t function, uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d);
 
 BoolInt x86cpuid_CheckAndRead(Cx86cpuid *p);
 int x86cpuid_GetFirm(const Cx86cpuid *p);

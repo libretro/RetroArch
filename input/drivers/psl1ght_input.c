@@ -397,7 +397,7 @@ static uint16_t transform_buttons(const padData *data)
          );
 }
 
-static int16_t ps3_joypad_button(unsigned port, uint16_t joykey)
+static int32_t ps3_joypad_button(unsigned port, uint16_t joykey)
 {
    uint16_t state                       = 0;
    if (port >= MAX_PADS)

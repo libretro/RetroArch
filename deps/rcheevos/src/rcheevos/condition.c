@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-char rc_parse_operator(const char** memaddr) {
+static int rc_parse_operator(const char** memaddr) {
   const char* oper = *memaddr;
 
   switch (*oper) {
@@ -63,7 +63,7 @@ char rc_parse_operator(const char** memaddr) {
 rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse, int is_indirect) {
   rc_condition_t* self;
   const char* aux;
-  int ret2;
+  int result;
   int can_modify = 0;
 
   aux = *memaddr;
@@ -86,6 +86,11 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
       case 'i': case 'I': self->type = RC_CONDITION_ADD_ADDRESS; can_modify = 1; break;
       case 't': case 'T': self->type = RC_CONDITION_TRIGGER; break;
       case 'z': case 'Z': self->type = RC_CONDITION_RESET_NEXT_IF; break;
+      case 'g': case 'G':
+          parse->measured_as_percent = 1;
+          self->type = RC_CONDITION_MEASURED;
+          break;
+      /* e f h j k l s u v w x y */
       default: parse->offset = RC_INVALID_CONDITION_TYPE; return 0;
     }
 
@@ -95,10 +100,9 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
     self->type = RC_CONDITION_STANDARD;
   }
 
-  ret2 = rc_parse_operand(&self->operand1, &aux, 1, is_indirect, parse);
-
-  if (ret2 < 0) {
-    parse->offset = ret2;
+  result = rc_parse_operand(&self->operand1, &aux, is_indirect, parse);
+  if (result < 0) {
+    parse->offset = result;
     return 0;
   }
 
@@ -107,8 +111,13 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
     return 0;
   }
 
-  self->oper = rc_parse_operator(&aux);
+  result = rc_parse_operator(&aux);
+  if (result < 0) {
+    parse->offset = result;
+    return 0;
+  }
 
+  self->oper = (char)result;
   switch (self->oper) {
     case RC_OPERATOR_NONE:
       /* non-modifying statements must have a second operand */
@@ -135,10 +144,6 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
         break;
       /* fallthrough */
 
-    case RC_INVALID_OPERATOR:
-      parse->offset = RC_INVALID_OPERATOR;
-      return 0;
-
     default:
       /* comparison operators are not valid on modifying statements */
       if (can_modify) {
@@ -158,10 +163,9 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
       break;
   }
 
-  ret2 = rc_parse_operand(&self->operand2, &aux, 1, is_indirect, parse);
-
-  if (ret2 < 0) {
-    parse->offset = ret2;
+  result = rc_parse_operand(&self->operand2, &aux, is_indirect, parse);
+  if (result < 0) {
+    parse->offset = result;
     return 0;
   }
 

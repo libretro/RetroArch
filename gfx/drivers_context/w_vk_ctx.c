@@ -16,7 +16,7 @@
 
 #include <math.h>
 
-/* Win32/WGL context. */
+/* Win32/Vulkan context. */
 
 /* necessary for mingw32 multimon defines: */
 #ifndef _WIN32_WINNT
@@ -57,7 +57,7 @@ typedef struct gfx_ctx_w_vk_data
 
 /* TODO/FIXME - static globals */
 static gfx_ctx_vulkan_data_t win32_vk;
-static void             *dinput_vk_wgl    = NULL;
+static void             *dinput_vk        = NULL;
 static int              win32_vk_interval = 0;
 
 void create_vk_context(HWND hwnd, bool *quit)
@@ -94,10 +94,32 @@ static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
 static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
+   settings_t *settings     = config_get_ptr();
+   float refresh_rate       = settings->floats.video_refresh_rate;
+
    win32_check_window(NULL, quit, resize, width, height);
 
    if (win32_vk.need_new_swapchain)
       *resize = true;
+
+   /* Trigger video driver init when changing refresh rate
+    * in fullscreen while dimensions stay the same.
+    * Otherwise display refresh rate will not stay at the designated rate.
+    * All other change combinations work however:
+    *  - windowed works always
+    *  - fullscreen works when dimensions and rate changes
+    * Bigger than zero difference required in order to prevent
+    * constant reinit when adjusting rate option in 0.001 increments.
+    */
+   if (win32_vk.fullscreen && g_win32_refresh_rate &&
+         g_win32_refresh_rate  != refresh_rate &&
+         abs(g_win32_refresh_rate - refresh_rate) > 0 &&
+         g_win32_resize_width  == *width &&
+         g_win32_resize_height == *height)
+   {
+      g_win32_refresh_rate = settings->floats.video_refresh_rate;
+      command_event(CMD_EVENT_REINIT, NULL);
+   }
 }
 
 static void gfx_ctx_w_vk_swap_buffers(void *data)
@@ -119,7 +141,7 @@ static bool gfx_ctx_w_vk_set_resize(void *data,
 {
    if (!vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval))
    {
-      RARCH_ERR("[Win32/Vulkan]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan]: Failed to update swapchain.\n");
       return false;
    }
 
@@ -177,7 +199,7 @@ static void gfx_ctx_w_vk_get_video_size(void *data,
 static void gfx_ctx_w_vk_destroy(void *data)
 {
    HWND            window  = win32_get_window();
-   gfx_ctx_w_vk_data_t *wgl = (gfx_ctx_w_vk_data_t*)data;
+   gfx_ctx_w_vk_data_t *vk = (gfx_ctx_w_vk_data_t*)data;
 
    vulkan_context_destroy(&win32_vk, win32_vk.vk_surface != VK_NULL_HANDLE);
    if (win32_vk.context.queue_lock)
@@ -196,8 +218,8 @@ static void gfx_ctx_w_vk_destroy(void *data)
       g_win32_restore_desktop     = false;
    }
 
-   if (wgl)
-      free(wgl);
+   if (vk)
+      free(vk);
 
    g_win32_inited               = false;
 }
@@ -205,9 +227,9 @@ static void gfx_ctx_w_vk_destroy(void *data)
 static void *gfx_ctx_w_vk_init(void *video_driver)
 {
    WNDCLASSEX wndclass     = {0};
-   gfx_ctx_w_vk_data_t *wgl = (gfx_ctx_w_vk_data_t*)calloc(1, sizeof(*wgl));
+   gfx_ctx_w_vk_data_t *vk = (gfx_ctx_w_vk_data_t*)calloc(1, sizeof(*vk));
 
-   if (!wgl)
+   if (!vk)
       return NULL;
 
    if (g_win32_inited)
@@ -223,6 +245,10 @@ static void *gfx_ctx_w_vk_init(void *video_driver)
       if (string_is_equal(settings->arrays.input_driver, "dinput"))
          wndclass.lpfnWndProc   = wnd_proc_vk_dinput;
 #endif
+#ifdef HAVE_WINRAWINPUT
+      if (string_is_equal(settings->arrays.input_driver, "raw"))
+         wndclass.lpfnWndProc   = wnd_proc_vk_winraw;
+#endif
    }
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
@@ -230,11 +256,11 @@ static void *gfx_ctx_w_vk_init(void *video_driver)
    if (!vulkan_context_init(&win32_vk, VULKAN_WSI_WIN32))
       goto error;
 
-   return wgl;
+   return vk;
 
 error:
-   if (wgl)
-      free(wgl);
+   if (vk)
+      free(vk);
    return NULL;
 }
 
@@ -246,9 +272,13 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
 
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
-      RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");
+      RARCH_ERR("[Vulkan]: win32_set_video_mode failed.\n");
       goto error;
    }
+   else
+      /* Create a new swapchain in order to prevent fullscreen
+       * emulated mailbox crash caused by refresh rate change */
+      vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval);
 
    gfx_ctx_w_vk_swap_interval(data, win32_vk_interval);
    return true;
@@ -275,7 +305,7 @@ static void gfx_ctx_w_vk_input_driver(void *data,
       if (*input_data)
       {
          *input        = &input_winraw;
-         dinput_vk_wgl = NULL;
+         dinput_vk     = NULL;
          return;
       }
    }
@@ -283,9 +313,9 @@ static void gfx_ctx_w_vk_input_driver(void *data,
 #endif
 
 #ifdef HAVE_DINPUT
-   dinput_vk_wgl  = input_driver_init_wrap(&input_dinput, joypad_name);
-   *input         = dinput_vk_wgl ? &input_dinput : NULL;
-   *input_data    = dinput_vk_wgl;
+   dinput_vk      = input_driver_init_wrap(&input_dinput, joypad_name);
+   *input         = dinput_vk ? &input_dinput : NULL;
+   *input_data    = dinput_vk;
 #endif
 }
 

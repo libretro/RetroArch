@@ -23,6 +23,7 @@
 #define CHEEVOS_JSON_KEY_BADGENAME    0x887685d9U
 #define CHEEVOS_JSON_KEY_CONSOLE_ID   0x071656e5U
 #define CHEEVOS_JSON_KEY_TOKEN        0x0e2dbd26U
+#define CHEEVOS_JSON_KEY_USERNAME     0x7c8da264U
 #define CHEEVOS_JSON_KEY_FLAGS        0x0d2e96b2U
 #define CHEEVOS_JSON_KEY_LEADERBOARDS 0xf1247d2dU
 #define CHEEVOS_JSON_KEY_RICHPRESENCE 0xf18dd230U
@@ -149,14 +150,16 @@ static int rcheevos_get_value(const char* json, unsigned key_hash,
 Returns the token or the error message
 *****************************************************************************/
 
-int rcheevos_get_token(const char* json, char* token, size_t length)
+int rcheevos_get_token(const char* json, char* username, size_t username_length,
+      char* token, size_t length)
 {
    rcheevos_get_value(json, CHEEVOS_JSON_KEY_ERROR, token, length);
 
    if (!string_is_empty(token))
       return -1;
 
-   return rcheevos_get_value(json, CHEEVOS_JSON_KEY_TOKEN, token, length);
+   return rcheevos_get_value(json, CHEEVOS_JSON_KEY_TOKEN, token, length) +
+          rcheevos_get_value(json, CHEEVOS_JSON_KEY_USERNAME, username, username_length);
 }
 
 int rcheevos_get_json_error(const char* json, char* token, size_t length)

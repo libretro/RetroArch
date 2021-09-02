@@ -78,7 +78,6 @@ else
   HAVE_MATERIALUI = 0
   HAVE_XMB = 0
   HAVE_OZONE = 0
-  HAVE_STRIPES = 0
 endif
 
 include Makefile.common

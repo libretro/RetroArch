@@ -2778,6 +2778,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_CORE_OPTIONS_RESET:
          return xmb->textures.list[XMB_TEXTURE_UNDO];
+      case MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH:
+         return xmb->textures.list[XMB_TEXTURE_FILE];
       case MENU_ENUM_LABEL_CORE_LOCK:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
@@ -4600,7 +4602,8 @@ static void xmb_draw_fullscreen_thumbnails(
             (unsigned)view_height,
             (unsigned)view_width,
             (unsigned)view_height,
-            background_color);
+            background_color,
+            NULL);
 
       /* Draw header */
       if (show_header)
@@ -4617,7 +4620,8 @@ static void xmb_draw_fullscreen_thumbnails(
                (unsigned)(header_height - frame_width),
                (unsigned)view_width,
                (unsigned)view_height,
-               header_color);
+               header_color,
+               NULL);
 
          /* Title text */
          if (menu_ticker_smooth)
@@ -4712,7 +4716,8 @@ static void xmb_draw_fullscreen_thumbnails(
                (unsigned)right_thumbnail_draw_height + (frame_width << 1),
                (unsigned)view_width,
                (unsigned)view_height,
-               frame_color);
+               frame_color,
+               NULL);
 
          /* Thumbnail */
          gfx_thumbnail_draw(
@@ -4747,7 +4752,8 @@ static void xmb_draw_fullscreen_thumbnails(
                (unsigned)left_thumbnail_draw_height + (frame_width << 1),
                (unsigned)view_width,
                (unsigned)view_height,
-               frame_color);
+               frame_color,
+               NULL);
 
          /* Thumbnail */
          gfx_thumbnail_draw(

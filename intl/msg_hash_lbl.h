@@ -23,6 +23,10 @@ MSG_HASH(
    "retro_achievements"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
+   "toggle_cheevos_hardcore"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_TWITCH,
    "twitch"
    )
@@ -1177,6 +1181,10 @@ MSG_HASH(
    "check_for_missing_firmware"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "core_option_category_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,
    "core_info_cache_enable"
    )
@@ -1315,6 +1323,10 @@ MSG_HASH(
    "core_options_reset"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH,
+   "core_options_flush"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
    "game_specific_options_create"
    )
@@ -1407,6 +1419,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
    "input_sensors_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
+   "input_auto_mouse_grab"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,
@@ -3517,6 +3533,14 @@ MSG_HASH(
    "video_window_height"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "video_window_auto_width_max"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "video_window_auto_height_max"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
    "video_fullscreen_x"
    )
@@ -3663,10 +3687,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "disconnect_device_from_a_valid_port"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Failed to set disk"
    )
 MSG_HASH(
    MSG_FAILED_TO_START_AUDIO_DRIVER,
@@ -4055,6 +4075,10 @@ MSG_HASH(
    "quick_menu_show_options"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "quick_menu_show_core_options_flush"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
    "quick_menu_show_controls"
    )
@@ -4165,6 +4189,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
    "video_window_save_position"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "video_window_custom_size_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_RGUI_BORDER_FILLER_ENABLE,

@@ -92,7 +92,7 @@ static void kpad_destroy(void)
    kpad_ready = false;
 }
 
-static int16_t kpad_button(unsigned port, uint16_t joykey)
+static int32_t kpad_button(unsigned port, uint16_t joykey)
 {
    int channel;
    if (!kpad_query_pad(port))

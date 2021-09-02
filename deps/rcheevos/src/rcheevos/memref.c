@@ -53,6 +53,11 @@ int rc_parse_memref(const char** memaddr, char* size, unsigned* address) {
   aux++;
 
   switch (*aux++) {
+    /* ordered by estimated frequency in case compiler doesn't build a jump table */
+    case 'h': case 'H': *size = RC_MEMSIZE_8_BITS; break;
+    case ' ':           *size = RC_MEMSIZE_16_BITS; break;
+    case 'x': case 'X': *size = RC_MEMSIZE_32_BITS; break;
+
     case 'm': case 'M': *size = RC_MEMSIZE_BIT_0; break;
     case 'n': case 'N': *size = RC_MEMSIZE_BIT_1; break;
     case 'o': case 'O': *size = RC_MEMSIZE_BIT_2; break;
@@ -64,17 +69,21 @@ int rc_parse_memref(const char** memaddr, char* size, unsigned* address) {
     case 'l': case 'L': *size = RC_MEMSIZE_LOW; break;
     case 'u': case 'U': *size = RC_MEMSIZE_HIGH; break;
     case 'k': case 'K': *size = RC_MEMSIZE_BITCOUNT; break;
-    case 'h': case 'H': *size = RC_MEMSIZE_8_BITS; break;
     case 'w': case 'W': *size = RC_MEMSIZE_24_BITS; break;
-    case 'x': case 'X': *size = RC_MEMSIZE_32_BITS; break;
+    case 'g': case 'G': *size = RC_MEMSIZE_32_BITS_BE; break;
+    case 'i': case 'I': *size = RC_MEMSIZE_16_BITS_BE; break;
+    case 'j': case 'J': *size = RC_MEMSIZE_24_BITS_BE; break;
+
+    /* case 'v': case 'V': */
+    /* case 'y': case 'Y': 64 bit? */
+    /* case 'z': case 'Z': 128 bit? */
 
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+      /* legacy support - addresses without a size prefix are assumed to be 16-bit */
       aux--;
-      /* fallthrough */
-    case ' ':
       *size = RC_MEMSIZE_16_BITS;
       break;
 
@@ -97,10 +106,24 @@ int rc_parse_memref(const char** memaddr, char* size, unsigned* address) {
 
 static const unsigned char rc_bits_set[16] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4 };
 
-unsigned rc_transform_memref_value(unsigned value, char size)
-{
+unsigned rc_transform_memref_value(unsigned value, char size) {
   switch (size)
   {
+    case RC_MEMSIZE_8_BITS:
+      value = (value & 0x000000ff);
+      break;
+
+    case RC_MEMSIZE_16_BITS:
+      value = (value & 0x0000ffff);
+      break;
+
+    case RC_MEMSIZE_24_BITS:
+      value = (value & 0x00ffffff);
+      break;
+
+    case RC_MEMSIZE_32_BITS:
+      break;
+
     case RC_MEMSIZE_BIT_0:
       value = (value >> 0) & 1;
       break;
@@ -146,6 +169,24 @@ unsigned rc_transform_memref_value(unsigned value, char size)
             + rc_bits_set[((value >> 4) & 0x0F)];
       break;
 
+    case RC_MEMSIZE_16_BITS_BE:
+      value = ((value & 0xFF00) >> 8) |
+              ((value & 0x00FF) << 8);
+      break;
+
+    case RC_MEMSIZE_24_BITS_BE:
+      value = ((value & 0xFF0000) >> 16) |
+               (value & 0x00FF00) |
+              ((value & 0x0000FF) << 16);
+      break;
+
+    case RC_MEMSIZE_32_BITS_BE:
+      value = ((value & 0xFF000000) >> 24) |
+              ((value & 0x00FF0000) >> 8) |
+              ((value & 0x0000FF00) << 8) |
+              ((value & 0x000000FF) << 24);
+      break;
+
     default:
       break;
   }
@@ -153,35 +194,48 @@ unsigned rc_transform_memref_value(unsigned value, char size)
   return value;
 }
 
-char rc_memref_shared_size(char size)
-{
-  switch (size) {
-    case RC_MEMSIZE_BIT_0:
-    case RC_MEMSIZE_BIT_1:
-    case RC_MEMSIZE_BIT_2:
-    case RC_MEMSIZE_BIT_3:
-    case RC_MEMSIZE_BIT_4:
-    case RC_MEMSIZE_BIT_5:
-    case RC_MEMSIZE_BIT_6:
-    case RC_MEMSIZE_BIT_7:
-    case RC_MEMSIZE_LOW:
-    case RC_MEMSIZE_HIGH:
-    case RC_MEMSIZE_BITCOUNT:
-      /* these can all share an 8-bit memref and just mask off the appropriate data in rc_transform_memref_value */
-      return RC_MEMSIZE_8_BITS;
+/* all sizes less than 8-bits (1 byte) are mapped to 8-bits. 24-bit is mapped to 32-bit
+ * as we don't expect the client to understand a request for 3 bytes. all other reads are
+ * mapped to the little-endian read of the same size. */
+static const char rc_memref_shared_sizes[] = {
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_8_BITS     */
+  RC_MEMSIZE_16_BITS, /* RC_MEMSIZE_16_BITS    */
+  RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_24_BITS    */
+  RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_32_BITS    */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_LOW        */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_HIGH       */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BIT_0      */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BIT_1      */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BIT_2      */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BIT_3      */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BIT_4      */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BIT_5      */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BIT_6      */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BIT_7      */
+  RC_MEMSIZE_8_BITS,  /* RC_MEMSIZE_BITCOUNT   */
+  RC_MEMSIZE_16_BITS, /* RC_MEMSIZE_16_BITS_BE */
+  RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_24_BITS_BE */
+  RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_32_BITS_BE */
+  RC_MEMSIZE_32_BITS  /* RC_MEMSIZE_VARIABLE   */
+};
 
-    default:
-      return size;
-  }
+char rc_memref_shared_size(char size) {
+  const size_t index = (size_t)size;
+  if (index >= sizeof(rc_memref_shared_sizes) / sizeof(rc_memref_shared_sizes[0]))
+    return size;
+
+  return rc_memref_shared_sizes[index];
 }
 
 static unsigned rc_peek_value(unsigned address, char size, rc_peek_t peek, void* ud) {
   unsigned value;
+  char shared_size;
 
   if (!peek)
     return 0;
 
-  switch (size)
+  shared_size = rc_memref_shared_size(size);
+  switch (shared_size)
   {
     case RC_MEMSIZE_8_BITS:
       value = peek(address, 1, ud);
@@ -191,27 +245,16 @@ static unsigned rc_peek_value(unsigned address, char size, rc_peek_t peek, void*
       value = peek(address, 2, ud);
       break;
 
-    case RC_MEMSIZE_24_BITS:
-      /* peek 4 bytes - don't expect the caller to understand 24-bit numbers */
-      value = peek(address, 4, ud) & 0x00FFFFFF;
-      break;
-
     case RC_MEMSIZE_32_BITS:
       value = peek(address, 4, ud);
       break;
 
     default:
-      if (rc_memref_shared_size(size) == RC_MEMSIZE_8_BITS)
-      {
-        value = peek(address, 1, ud);
-        value = rc_transform_memref_value(value, size);
-      }
-      else
-      {
-        value = 0;
-      }
-      break;
+      return 0;
   }
+
+  if (shared_size != size)
+    value = rc_transform_memref_value(value, size);
 
   return value;
 }
@@ -242,17 +285,7 @@ void rc_init_parse_state_memrefs(rc_parse_state_t* parse, rc_memref_t** memrefs)
   *memrefs = 0;
 }
 
-unsigned rc_get_memref_value(rc_memref_t* memref, int operand_type, rc_eval_state_t* eval_state) {
-  /* if this is an indirect reference, handle the indirection. */
-  if (memref->value.is_indirect) {
-    const unsigned new_address = memref->address + eval_state->add_address;
-    rc_update_memref_value(&memref->value, rc_peek_value(new_address, memref->value.size, eval_state->peek, eval_state->peek_userdata));
-  }
-
-  return rc_get_memref_value_value(&memref->value, operand_type);
-}
-
-unsigned rc_get_memref_value_value(rc_memref_value_t* memref, int operand_type) {
+static unsigned rc_get_memref_value_value(rc_memref_value_t* memref, int operand_type) {
   switch (operand_type)
   {
     /* most common case explicitly first, even though it could be handled by default case.
@@ -270,4 +303,14 @@ unsigned rc_get_memref_value_value(rc_memref_value_t* memref, int operand_type) 
     case RC_OPERAND_PRIOR:
       return memref->prior;
   }
+}
+
+unsigned rc_get_memref_value(rc_memref_t* memref, int operand_type, rc_eval_state_t* eval_state) {
+  /* if this is an indirect reference, handle the indirection. */
+  if (memref->value.is_indirect) {
+    const unsigned new_address = memref->address + eval_state->add_address;
+    rc_update_memref_value(&memref->value, rc_peek_value(new_address, memref->value.size, eval_state->peek, eval_state->peek_userdata));
+  }
+
+  return rc_get_memref_value_value(&memref->value, operand_type);
 }

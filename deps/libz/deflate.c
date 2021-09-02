@@ -1511,7 +1511,8 @@ static uInt longest_match(deflate_state *s, IPos cur_match)
        * are always equal when the other bytes match, given that
        * the hash keys are equal and that HASH_BITS >= 8.
        */
-      scan += 2, match++;
+      scan += 2;
+      match++;
       Assert(*scan == *match, "match[2]?");
 
       /* We check for insufficient lookahead only every 8th comparison;
@@ -1585,7 +1586,8 @@ static uInt longest_match(s, cur_match)
     * are always equal when the other bytes match, given that
     * the hash keys are equal and that HASH_BITS >= 8.
     */
-   scan += 2, match += 2;
+   scan += 2;
+   match += 2;
    Assert(*scan == *match, "match[2]?");
 
    /* We check for insufficient lookahead only every 8th comparison;

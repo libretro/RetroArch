@@ -69,4 +69,19 @@ extern unsigned int size_libsd_irx;
 extern unsigned char audsrv_irx;
 extern unsigned int size_audsrv_irx;
 
+extern unsigned char ps2dev9_irx;
+extern unsigned int size_ps2dev9_irx;
+
+extern unsigned char ps2atad_irx;
+extern unsigned int size_ps2atad_irx;
+
+extern unsigned char ps2hdd_irx;
+extern unsigned int size_ps2hdd_irx;
+
+extern unsigned char ps2fs_irx;
+extern unsigned int size_ps2fs_irx;
+
+extern unsigned char poweroff_irx;
+extern unsigned int size_poweroff_irx;
+
 #endif /* PS2_IRX_VARIABLES_H */
