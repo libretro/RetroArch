@@ -32,12 +32,12 @@
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
 static bool s16_to_float_neon_enabled = false;
 
-#ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
-#include <arm_neon.h>
-#else
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
 /* Avoid potential hard-float/soft-float ABI issues. */
 void convert_s16_float_asm(float *out, const int16_t *in,
       size_t samples, const float *gain);
+#else
+#include <arm_neon.h>
 #endif
 
 void convert_s16_to_float(float *out,
@@ -47,32 +47,32 @@ void convert_s16_to_float(float *out,
 
    if (s16_to_float_neon_enabled)
    {
-#ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
-      float        gf = gain / (1<<15);
-      float32x4_t vgf = {gf, gf, gf, gf};
-      while (samples >= 8)
-      {
-         float32x4x2_t oreg;
-         int16x4x2_t inreg = vld2_s16(in);
-         int32x4_t      p1 = vmovl_s16(inreg.val[0]);
-         int32x4_t      p2 = vmovl_s16(inreg.val[1]);
-         oreg.val[0]       = vmulq_f32(vcvtq_f32_s32(p1), vgf);
-         oreg.val[1]       = vmulq_f32(vcvtq_f32_s32(p2), vgf);
-         vst2q_f32(out, oreg);
-         in               += 8;
-         out              += 8;
-         samples          -= 8;
-      }
-#else
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
       size_t aligned_samples = samples & ~7;
       if (aligned_samples)
          convert_s16_float_asm(out, in, aligned_samples, &gain);
 
       /* Could do all conversion in ASM, but keep it simple for now. */
-      out     = out + aligned_samples;
-      in      = in  + aligned_samples;
-      samples = samples - aligned_samples;
-      i       = 0;
+      out                    = out + aligned_samples;
+      in                     = in  + aligned_samples;
+      samples                = samples - aligned_samples;
+      i                      = 0;
+#else
+      float        gf        = gain / (1<<15);
+      float32x4_t vgf        = {gf, gf, gf, gf};
+      while (samples >= 8)
+      {
+         float32x4x2_t oreg;
+         int16x4x2_t inreg   = vld2_s16(in);
+         int32x4_t      p1   = vmovl_s16(inreg.val[0]);
+         int32x4_t      p2   = vmovl_s16(inreg.val[1]);
+         oreg.val[0]         = vmulq_f32(vcvtq_f32_s32(p1), vgf);
+         oreg.val[1]         = vmulq_f32(vcvtq_f32_s32(p2), vgf);
+         vst2q_f32(out, oreg);
+         in                 += 8;
+         out                += 8;
+         samples            -= 8;
+      }
 #endif
    }
 

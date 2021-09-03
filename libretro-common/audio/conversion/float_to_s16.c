@@ -33,11 +33,11 @@
 
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
 static bool float_to_s16_neon_enabled = false;
-#ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
-#include <arm_neon.h>
-#else
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
 void convert_float_s16_asm(int16_t *out,
       const float *in, size_t samples);
+#else
+#include <arm_neon.h>
 #endif
 
 void convert_float_to_s16(int16_t *out,
@@ -50,7 +50,16 @@ void convert_float_to_s16(int16_t *out,
       float32x4_t vgf = {gf, gf, gf, gf};
       while (samples >= 8)
       {
-#ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
+         size_t aligned_samples = samples & ~7;
+         if (aligned_samples)
+            convert_float_s16_asm(out, in, aligned_samples);
+
+         out            = out     + aligned_samples;
+         in             = in      + aligned_samples;
+         samples        = samples - aligned_samples;
+         i              = 0;
+#else
          int16x4x2_t oreg;
          int32x4x2_t creg;
          float32x4x2_t inreg = vld2q_f32(in);
@@ -62,15 +71,6 @@ void convert_float_to_s16(int16_t *out,
          in                 += 8;
          out                += 8;
          samples            -= 8;
-#else
-         size_t aligned_samples = samples & ~7;
-         if (aligned_samples)
-            convert_float_s16_asm(out, in, aligned_samples);
-
-         out            = out     + aligned_samples;
-         in             = in      + aligned_samples;
-         samples        = samples - aligned_samples;
-         i              = 0;
 #endif
       }
    }
