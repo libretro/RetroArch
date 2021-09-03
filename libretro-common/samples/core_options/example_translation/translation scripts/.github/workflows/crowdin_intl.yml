@@ -1,0 +1,41 @@
+# Recreate libretro_core_options_intl.h using translations form Crowdin
+
+name: Crowdin Translation Integration
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'intl/*/*'
+
+jobs:
+  create_intl_file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+
+      - name: Create intl file
+        shell: bash
+        run: |
+          python3 intl/crowdin_intl.py '<path/to/libretro_core_options.h directory>'
+
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add <path/to/libretro_core_options_intl.h file>
+          git commit -m "Recreate libretro_core_options_intl.h" -a
+
+      - name: GitHub Push
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
