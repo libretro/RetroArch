@@ -3451,7 +3451,7 @@ static bool menu_driver_init_internal(
       }
    }
 
-   if (!p_rarch->menu_driver_data || !menu_init(
+   if (!p_rarch->menu_driver_data || !rarch_menu_init(
             menu_st,
             &p_rarch->dialog_st,
             p_rarch->menu_driver_ctx,

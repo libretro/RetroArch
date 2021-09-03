@@ -2140,15 +2140,7 @@ bool generic_menu_init_list(struct menu_state *menu_st,
    return true;
 }
 
-/**
- * menu_init:
- * @data                     : Menu context handle.
- *
- * Create and initialize menu handle.
- *
- * Returns: menu handle on success, otherwise NULL.
- **/
-bool menu_init(
+bool rarch_menu_init(
       struct menu_state *menu_st,
       menu_dialog_t        *p_dialog,
       const menu_ctx_driver_t *menu_driver_ctx,
