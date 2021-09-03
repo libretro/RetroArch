@@ -643,7 +643,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    settings_t                  *     settings = config_get_ptr();
    D3D12_GRAPHICS_PIPELINE_STATE_DESC desc    = { d3d12->desc.rootSignature };
 
-   desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
+   desc.BlendState.RenderTarget[0] = d3d12_blend_disable_desc;
 #ifdef HAVE_DXGI_HDR
    desc.RTVFormats[0]              = DXGI_FORMAT_R10G10B10A2_UNORM;
 
@@ -682,6 +682,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    }
 #endif
 
+   desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
    desc.RTVFormats[0]              = DXGI_FORMAT_R8G8B8A8_UNORM;
 
    {

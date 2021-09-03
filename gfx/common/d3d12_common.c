@@ -699,6 +699,19 @@ D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
    D3D12_COLOR_WRITE_ENABLE_ALL,
 };
 
+D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc = {
+   FALSE,
+   FALSE,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_LOGIC_OP_NOOP,
+   D3D12_COLOR_WRITE_ENABLE_ALL,
+};
+
 bool d3d12_init_pipeline(
       D3D12Device                         device,
       D3DBlob                             vs_code,
