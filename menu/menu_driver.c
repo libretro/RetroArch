@@ -1779,6 +1779,8 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                        /* > Cheat files */
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
+                       /* > Cheats */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)) ||
                        /* > Overlays */
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY)) ||
                        /* > Manage Cores */
