@@ -55,10 +55,10 @@ void convert_float_to_s16(int16_t *out,
          if (aligned_samples)
             convert_float_s16_asm(out, in, aligned_samples);
 
-         out            = out     + aligned_samples;
-         in             = in      + aligned_samples;
-         samples        = samples - aligned_samples;
-         i              = 0;
+         out                += aligned_samples;
+         in                 += aligned_samples;
+         samples            -= aligned_samples;
+         i                   = 0;
 #else
          int16x4x2_t oreg;
          int32x4x2_t creg;

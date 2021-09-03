@@ -53,12 +53,12 @@ void convert_s16_to_float(float *out,
          convert_s16_float_asm(out, in, aligned_samples, &gain);
 
       /* Could do all conversion in ASM, but keep it simple for now. */
-      out                    = out + aligned_samples;
-      in                     = in  + aligned_samples;
-      samples                = samples - aligned_samples;
+      out                   += aligned_samples;
+      in                    += aligned_samples;
+      samples               -= aligned_samples;
       i                      = 0;
 #else
-      float        gf        = gain / (1<<15);
+      float        gf        = gain / (1 << 15);
       float32x4_t vgf        = {gf, gf, gf, gf};
       while (samples >= 8)
       {
