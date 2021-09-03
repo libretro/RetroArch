@@ -1762,6 +1762,12 @@ static bool d3d12_gfx_frame(
       D3D12OMSetRenderTargets(
             d3d12->queue.cmd, 1,
             &d3d12->chain.back_buffer.rt_view, FALSE, NULL);
+      /* TODO/FIXME - fix this warning that shows up with Debug logging 
+       * EXECUTIONWARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE
+       * We need to set clear value during resource creation to NULL for
+       * D3D12_RESOURCE_DIMENSION_BUFFER, yet we get spammed with this
+       * warning
+       */
       D3D12ClearRenderTargetView(
             d3d12->queue.cmd, d3d12->chain.back_buffer.rt_view,
             d3d12->chain.clearcolor, 0, NULL);
