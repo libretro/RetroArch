@@ -813,6 +813,39 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
                   D3D11_SDK_VERSION, &d3d11->device,
                   &d3d11->supportedFeatureLevel, &d3d11->context)))
          return false;
+      switch (d3d11->supportedFeatureLevel)
+      {
+         case D3D_FEATURE_LEVEL_9_1:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 9.1)\n");
+            break;
+         case D3D_FEATURE_LEVEL_9_2:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 9.2)\n");
+            break;
+         case D3D_FEATURE_LEVEL_9_3:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 9.3)\n");
+            break;
+         case D3D_FEATURE_LEVEL_10_0:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 10.0)\n");
+            break;
+         case D3D_FEATURE_LEVEL_10_1:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 10.1)\n");
+            break;
+         case D3D_FEATURE_LEVEL_11_0:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 11.0)\n");
+            break;
+         case D3D_FEATURE_LEVEL_11_1:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 11.1)\n");
+            break;
+         case D3D_FEATURE_LEVEL_12_0:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 12.0)\n");
+            break;
+         case D3D_FEATURE_LEVEL_12_1:
+            RARCH_LOG("[D3D11] Device created (Feature Level: 12.1)\n");
+            break;
+         default:
+            RARCH_LOG("[D3D11] Device created (Feature Level: N/A)\n");
+            break;
+      }
    }
 
    d3d11->device->lpVtbl->QueryInterface(
