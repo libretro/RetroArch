@@ -86,7 +86,63 @@ typedef struct rarch_sinc_resampler
 } rarch_sinc_resampler_t;
 
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
-#ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
+
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
+/* Assumes that taps >= 8, and that taps is a multiple of 8. */
+void process_sinc_neon_asm(float *out, const float *left,
+      const float *right, const float *coeff, unsigned taps);
+
+static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
+   unsigned phases                = 1 << (resamp->phase_bits + resamp->subphase_bits);
+
+   uint32_t ratio                 = phases / data->ratio;
+   const float *input             = data->data_in;
+   float *output                  = data->data_out;
+   size_t frames                  = data->input_frames;
+   size_t out_frames              = 0;
+
+   while (frames)
+   {
+      while (frames && resamp->time >= phases)
+      {
+         /* Push in reverse to make filter more obvious. */
+         if (!resamp->ptr)
+            resamp->ptr = resamp->taps;
+         resamp->ptr--;
+
+         resamp->buffer_l[resamp->ptr + resamp->taps] =
+         resamp->buffer_l[resamp->ptr]                = *input++;
+
+         resamp->buffer_r[resamp->ptr + resamp->taps] =
+         resamp->buffer_r[resamp->ptr]                = *input++;
+
+         resamp->time                                -= phases;
+         frames--;
+      }
+
+      {
+         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+         unsigned taps            = resamp->taps;
+         while (resamp->time < phases)
+         {
+            unsigned phase           = resamp->time >> resamp->subphase_bits;
+            const float *phase_table = resamp->phase_table + phase * taps;
+
+            process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
+
+            output += 2;
+            out_frames++;
+            resamp->time += ratio;
+         }
+      }
+   }
+
+   data->output_frames = out_frames;
+}
+#else
 #include <arm_neon.h>
 
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
@@ -159,62 +215,8 @@ static void resampler_sinc_process_neon_intrin(void *re_, struct resampler_data 
 
    data->output_frames = out_frames;
 }
-#else
-/* Assumes that taps >= 8, and that taps is a multiple of 8. */
-void process_sinc_neon_asm(float *out, const float *left,
-      const float *right, const float *coeff, unsigned taps);
-
-static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
-{
-   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
-   unsigned phases                = 1 << (resamp->phase_bits + resamp->subphase_bits);
-
-   uint32_t ratio                 = phases / data->ratio;
-   const float *input             = data->data_in;
-   float *output                  = data->data_out;
-   size_t frames                  = data->input_frames;
-   size_t out_frames              = 0;
-
-   while (frames)
-   {
-      while (frames && resamp->time >= phases)
-      {
-         /* Push in reverse to make filter more obvious. */
-         if (!resamp->ptr)
-            resamp->ptr = resamp->taps;
-         resamp->ptr--;
-
-         resamp->buffer_l[resamp->ptr + resamp->taps] =
-         resamp->buffer_l[resamp->ptr]                = *input++;
-
-         resamp->buffer_r[resamp->ptr + resamp->taps] =
-         resamp->buffer_r[resamp->ptr]                = *input++;
-
-         resamp->time                                -= phases;
-         frames--;
-      }
-
-      {
-         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
-         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
-         unsigned taps            = resamp->taps;
-         while (resamp->time < phases)
-         {
-            unsigned phase           = resamp->time >> resamp->subphase_bits;
-            const float *phase_table = resamp->phase_table + phase * taps;
-
-            process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
-
-            output += 2;
-            out_frames++;
-            resamp->time += ratio;
-         }
-      }
-   }
-
-   data->output_frames = out_frames;
-}
 #endif
+
 #endif
 
 #if defined(__AVX__)
@@ -969,10 +971,10 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    else if (mask & RESAMPLER_SIMD_NEON && window_type != SINC_WINDOW_KAISER)
    {
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
-#ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
-      sinc_resampler.process = resampler_sinc_process_neon_intrin;
-#else
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
       sinc_resampler.process = resampler_sinc_process_neon;
+#else
+      sinc_resampler.process = resampler_sinc_process_neon_intrin;
 #endif
 #endif
    }
