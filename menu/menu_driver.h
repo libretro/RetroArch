@@ -61,11 +61,6 @@ RETRO_BEGIN_DECLS
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
 #define DATETIME_CHECK_INTERVAL    1000000
 
-#define MENU_MAX_BUTTONS           219
-#define MENU_MAX_AXES              32
-#define MENU_MAX_HATS              4
-#define MENU_MAX_MBUTTONS          32 /* Enough to cover largest libretro constant*/
-
 #define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
 #define MENU_LIST_GET_SELECTION(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
@@ -340,44 +335,6 @@ typedef struct menu_ctx_load_image
    void *data;
    enum menu_image_type type;
 } menu_ctx_load_image_t;
-
-
-
-struct menu_bind_state_port
-{
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-   bool mouse_buttons[MENU_MAX_MBUTTONS];
-   bool buttons[MENU_MAX_BUTTONS];
-};
-
-struct menu_bind_axis_state
-{
-   /* Default axis state. */
-   int16_t rested_axes[MENU_MAX_AXES];
-   /* Locked axis state. If we configured an axis,
-    * avoid having the same axis state trigger something again right away. */
-   int16_t locked_axes[MENU_MAX_AXES];
-};
-
-struct menu_bind_state
-{
-   rarch_timer_t timer_timeout;
-   rarch_timer_t timer_hold;
-
-   struct retro_keybind *output;
-   struct retro_keybind buffer;
-
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
-
-   unsigned begin;
-   unsigned last;
-   unsigned user;
-   unsigned port;
-
-   bool skip;
-};
 
 typedef struct menu_ctx_driver
 {
