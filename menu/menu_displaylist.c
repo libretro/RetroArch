@@ -6652,62 +6652,89 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_CHEATS
          if (cheat_manager_alloc_if_empty())
          {
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT),
-                     MENU_ENUM_LABEL_CHEAT_START_OR_CONT,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
-                     MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND),
-                     MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS),
-                     MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
-                     MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP),
-                     MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM),
-                     MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
-                     MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+            menu_serch_terms_t *search_terms = menu_entries_search_get_terms();
+            bool search_active               = search_terms && (search_terms->size > 0);
+            unsigned num_cheats              = cheat_manager_get_size();
+            unsigned num_cheats_shown        = 0;
+            unsigned i;
+            char on_string[32];
+            char off_string[32];
+
+            on_string[0]  = '\0';
+            off_string[0] = '\0';
+
+            /* If a search is active, all options are
+             * omitted apart from 'apply changes' */
+            if (search_active)
+            {
+               /* On/off key strings may be required,
+                * so populate them... */
+               snprintf(on_string, sizeof(on_string), ".%s",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON));
+
+               snprintf(off_string, sizeof(off_string), ".%s",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+            }
+            else
+            {
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT),
+                        MENU_ENUM_LABEL_CHEAT_START_OR_CONT,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
+                        MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND),
+                        MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS),
+                        MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
+                        MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP),
+                        MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM),
+                        MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL),
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
+                        MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+            }
+
             if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
                      msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
@@ -6715,24 +6742,77 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION, 0, 0))
                count++;
 
+            for (i = 0; i < num_cheats; i++)
             {
-               unsigned i;
-               for (i = 0; i < cheat_manager_get_size(); i++)
+               const char *cheat_description = cheat_manager_get_desc(i);
+               char cheat_label[128];
+
+               cheat_label[0] = '\0';
+
+               snprintf(cheat_label, sizeof(cheat_label),
+                     "%s #%u: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT), i);
+               if (!string_is_empty(cheat_description))
+                  strlcat(cheat_label, cheat_description, sizeof(cheat_label));
+
+               /* If a search is active, skip non-matching
+                * entries */
+               if (search_active)
                {
-                  char cheat_label[64];
+                  bool entry_valid = true;
+                  size_t j;
 
-                  cheat_label[0] = '\0';
+                  for (j = 0; j < search_terms->size; j++)
+                  {
+                     const char *search_term = search_terms->terms[j];
 
-                  snprintf(cheat_label, sizeof(cheat_label),
-                        "%s #%u: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT), i);
-                  if (cheat_manager_get_desc(i))
-                     strlcat(cheat_label, cheat_manager_get_desc(i), sizeof(cheat_label));
-                  if (menu_entries_append_enum(list,
-                           cheat_label, "", MSG_UNKNOWN,
-                           MENU_SETTINGS_CHEAT_BEGIN + i, 0, 0))
-                     count++;
+                     if (!string_is_empty(search_term))
+                     {
+                        bool cheat_on = cheat_manager_get_code_state(i);
+
+                        /* Check for 'on' keyword */
+                        if (string_is_equal_noncase(search_term, on_string))
+                        {
+                           if (!cheat_on)
+                              entry_valid = false;
+                        }
+                        /* Check for 'off' keyword */
+                        else if (string_is_equal_noncase(search_term, off_string))
+                        {
+                           if (cheat_on)
+                              entry_valid = false;
+                        }
+                        /* Normal label comparison */
+                        else if (!strcasestr(cheat_label, search_term))
+                           entry_valid = false;
+                     }
+
+                     if (!entry_valid)
+                        break;
+                  }
+
+                  if (!entry_valid)
+                     continue;
+               }
+
+               if (menu_entries_append_enum(list,
+                     cheat_label, "", MSG_UNKNOWN,
+                     MENU_SETTINGS_CHEAT_BEGIN + i, 0, 0))
+               {
+                  num_cheats_shown++;
+                  count++;
                }
             }
+
+            /* If a search is active and no results are
+             * found, show a 'no entries available' item */
+            if (search_active &&
+                (num_cheats_shown < 1) &&
+                menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0))
+               count++;
          }
 #endif
          break;
