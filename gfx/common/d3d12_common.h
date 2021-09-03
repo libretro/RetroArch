@@ -1347,17 +1347,6 @@ typedef struct ALIGN(16)
    float time;
 } d3d12_uniform_t;
 
-#ifdef HAVE_DXGI_HDR
-typedef struct ALIGN(16)
-{
-   math_matrix_4x4   mvp;
-   float             contrast;       /* 2.0f    */
-   float             paperWhiteNits; /* 200.0f  */
-   float             maxNits;        /* 1000.0f */
-   float             expandGamut;    /* 1.0f    */
-} d3d12_hdr_uniform_t;
-#endif
-
 typedef struct
 {
    unsigned    cur_mon_id;
@@ -1429,7 +1418,7 @@ typedef struct
 #ifdef HAVE_DXGI_HDR
    struct
    {
-      d3d12_hdr_uniform_t              ubo_values;
+      dxgi_hdr_uniform_t               ubo_values;
       D3D12Resource                    ubo;
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
       float                            max_output_nits;

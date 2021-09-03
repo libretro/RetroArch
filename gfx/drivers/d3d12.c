@@ -249,7 +249,7 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 #ifdef HAVE_DXGI_HDR
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
-   d3d12_hdr_uniform_t *mapped_ubo        = NULL;
+   dxgi_hdr_uniform_t *mapped_ubo         = NULL;
    D3D12_RANGE read_range                 = { 0, 0 };
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
@@ -274,7 +274,7 @@ static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
 {
    D3D12_RANGE read_range                 = { 0, 0 };
-   d3d12_hdr_uniform_t *mapped_ubo        = NULL;
+   dxgi_hdr_uniform_t *mapped_ubo         = NULL;
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
    d3d12->hdr.ubo_values.paperWhiteNits   = paper_white_nits;
@@ -288,7 +288,7 @@ static void d3d12_set_hdr_contrast(void* data, float contrast)
 {
    D3D12_RANGE read_range                 = { 0, 0 };
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
-   d3d12_hdr_uniform_t *mapped_ubo        = NULL;
+   dxgi_hdr_uniform_t *mapped_ubo         = NULL;
 
    d3d12->hdr.ubo_values.contrast         = contrast;
 
@@ -300,7 +300,7 @@ static void d3d12_set_hdr_contrast(void* data, float contrast)
 static void d3d12_set_hdr_expand_gamut(void* data, bool expand_gamut)
 {
    D3D12_RANGE read_range                 = { 0, 0 };
-   d3d12_hdr_uniform_t *mapped_ubo        = NULL;
+   dxgi_hdr_uniform_t *mapped_ubo         = NULL;
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
    d3d12->hdr.ubo_values.expandGamut      = expand_gamut;
@@ -1148,7 +1148,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    }
 
 #ifdef HAVE_DXGI_HDR
-   d3d12->hdr.ubo_view.SizeInBytes        = sizeof(d3d12_hdr_uniform_t);
+   d3d12->hdr.ubo_view.SizeInBytes        = sizeof(dxgi_hdr_uniform_t);
    d3d12->hdr.ubo_view.BufferLocation     =
          d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_view.SizeInBytes, &d3d12->hdr.ubo);
 
@@ -1159,8 +1159,8 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
 
    {
+      dxgi_hdr_uniform_t* mapped_ubo;
       D3D12_RANGE      read_range = { 0, 0 };
-      d3d12_hdr_uniform_t* mapped_ubo;
       D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
       *mapped_ubo = d3d12->hdr.ubo_values;
       D3D12Unmap(d3d12->hdr.ubo, 0, NULL);

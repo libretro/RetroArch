@@ -8,6 +8,26 @@
 #endif
 #endif
 
+#ifdef HAVE_DXGI_HDR
+#ifndef ALIGN
+#ifdef _MSC_VER
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+#endif
+
+#include <gfx/math/matrix_4x4.h>
+
+typedef struct ALIGN(16)
+{
+   math_matrix_4x4   mvp;
+   float             contrast;       /* 2.0f    */
+   float             paperWhiteNits; /* 200.0f  */
+   float             maxNits;        /* 1000.0f */
+   float             expandGamut;    /* 1.0f    */
+} dxgi_hdr_uniform_t;
+
 enum dxgi_swapchain_bit_depth
 {
    DXGI_SWAPCHAIN_BIT_DEPTH_8 = 0,
@@ -15,6 +35,7 @@ enum dxgi_swapchain_bit_depth
    DXGI_SWAPCHAIN_BIT_DEPTH_16,
    DXGI_SWAPCHAIN_BIT_DEPTH_COUNT
 };
+#endif
 
 #ifdef __MINGW32__
 #define __REQUIRED_RPCNDR_H_VERSION__ 475
