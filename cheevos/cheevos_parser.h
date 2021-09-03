@@ -23,7 +23,9 @@ RETRO_BEGIN_DECLS
 typedef void (*rcheevos_unlock_cb_t)(unsigned id, void* userdata);
 
 int rcheevos_get_json_error(const char* json, char* token, size_t length);
-int rcheevos_get_token(const char* json, char* token, size_t length);
+
+int rcheevos_get_token(const char* json, char* username, size_t username_length,
+      char* token, size_t length);
 
 int  rcheevos_get_patchdata(const char* json, rcheevos_rapatchdata_t* patchdata);
 void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata);

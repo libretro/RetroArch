@@ -36,6 +36,7 @@
 #include "../../content.h"
 #include "../../retroarch.h"
 #include "../../version.h"
+#include "../../menu/menu_input.h"
 
 struct nick_buf_s
 {

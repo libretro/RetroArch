@@ -191,9 +191,13 @@ ACHIEVEMENTS
 #include "../network/net_http_special.c"
 
 #include "../cheevos/cheevos.c"
+#include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
 #include "../cheevos/cheevos_parser.c"
 
+#include "../deps/rcheevos/src/rapi/rc_api_common.c"
+#include "../deps/rcheevos/src/rapi/rc_api_runtime.c"
+#include "../deps/rcheevos/src/rapi/rc_api_user.c"
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
 #include "../deps/rcheevos/src/rcheevos/compat.c"
 #include "../deps/rcheevos/src/rcheevos/condition.c"
@@ -660,14 +664,19 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
+
+#include "../input/input_driver.c"
+#include "../input/input_keymaps.c"
 #include "../tasks/task_autodetect.c"
+#include "../input/input_autodetect_builtin.c"
+
 #ifdef HAVE_BLISSBOX
 #include "../tasks/task_autodetect_blissbox.c"
 #endif
+
 #ifdef HAVE_AUDIOMIXER
 #include "../tasks/task_audio_mixer.c"
 #endif
-#include "../input/input_keymaps.c"
 
 #ifdef HAVE_OVERLAY
 #include "../led/drivers/led_overlay.c"
@@ -684,8 +693,6 @@ INPUT
 #include "../input/drivers/winraw_input.c"
 #endif
 #endif
-
-#include "../input/input_autodetect_builtin.c"
 
 #if defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
@@ -1077,6 +1084,7 @@ FILE
 #include "../file_path_special.c"
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
+#include "../libretro-common/lists/nested_list.c"
 #include "../libretro-common/lists/file_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/streams/file_stream.c"
@@ -1179,6 +1187,7 @@ FRONTEND
 
 #include "../core_info.c"
 #include "../core_backup.c"
+#include "../core_option_manager.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../core_updater_list.c"
@@ -1360,6 +1369,7 @@ MENU
 #endif
 
 #ifdef HAVE_MENU
+#include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 #include "../menu/menu_screensaver.c"
@@ -1397,16 +1407,7 @@ MENU
 #endif
 
 #ifdef HAVE_OZONE
-#include "../menu/drivers/ozone/ozone.c"
-#include "../menu/drivers/ozone/ozone_display.c"
-#include "../menu/drivers/ozone/ozone_entries.c"
-#include "../menu/drivers/ozone/ozone_sidebar.c"
-#include "../menu/drivers/ozone/ozone_texture.c"
-#include "../menu/drivers/ozone/ozone_theme.c"
-#endif
-
-#ifdef HAVE_STRIPES
-#include "../menu/drivers/stripes.c"
+#include "../menu/drivers/ozone.c"
 #endif
 
 #ifdef HAVE_MATERIALUI

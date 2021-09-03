@@ -60,7 +60,7 @@ static void *xdk_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int16_t xdk_joypad_button_state(
+static int32_t xdk_joypad_button_state(
       XINPUT_GAMEPAD *pad,
       uint16_t btn_word,
       unsigned port, uint16_t joykey)
@@ -119,7 +119,7 @@ static int16_t xdk_joypad_button_state(
    return 0;
 }
 
-static int16_t xdk_joypad_button(unsigned port, uint16_t joykey)
+static int32_t xdk_joypad_button(unsigned port, uint16_t joykey)
 {
    uint16_t btn_word   = 0;
    XINPUT_GAMEPAD *pad = NULL;

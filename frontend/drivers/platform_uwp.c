@@ -276,19 +276,19 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
          MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
-   char drive[]                 = " :\\";
    bool have_any_drives         = false;
-
    home_dir[0]                  = '\0';
 
    fill_pathname_home_dir(home_dir, sizeof(home_dir));
 
-   for (drive[0] = 'A'; drive[0] <= 'Z'; drive[0]++)
+   DWORD drives = GetLogicalDrives();
+   for (int i = 0; i < 26; i++)
    {
-      if (uwp_drive_exists(drive))
+      if (drives & (1 << i))
       {
+         TCHAR driveName[] = { TEXT('A') + i, TEXT(':'), TEXT('\\'), TEXT('\0') };
          menu_entries_append_enum(list,
-            drive,
+            driveName,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);

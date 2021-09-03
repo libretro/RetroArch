@@ -293,6 +293,8 @@ MSG_HASH(
    "برونداده"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 
 /* Settings > Video > CRT SwitchRes */

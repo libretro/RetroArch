@@ -223,3 +223,5 @@ param.sfo
 *.elf
 *.self
 *.vpk
+/.vs
+/deps/SPIRV-Cross/out/build/x64-Debug

@@ -15,36 +15,36 @@
 
   #define CRC_UINT32_SWAP(v) ((v >> 24) | ((v >> 8) & 0xFF00) | ((v << 8) & 0xFF0000) | (v << 24))
 
-  UInt32 MY_FAST_CALL CrcUpdateT1_BeT4(UInt32 v, const void *data, size_t size, const UInt32 *table);
-  UInt32 MY_FAST_CALL CrcUpdateT1_BeT8(UInt32 v, const void *data, size_t size, const UInt32 *table);
+  uint32_t MY_FAST_CALL CrcUpdateT1_BeT4(uint32_t v, const void *data, size_t size, const uint32_t *table);
+  uint32_t MY_FAST_CALL CrcUpdateT1_BeT8(uint32_t v, const void *data, size_t size, const uint32_t *table);
 #endif
 
 #ifndef MY_CPU_BE
-  UInt32 MY_FAST_CALL CrcUpdateT4(UInt32 v, const void *data, size_t size, const UInt32 *table);
-  UInt32 MY_FAST_CALL CrcUpdateT8(UInt32 v, const void *data, size_t size, const UInt32 *table);
+  uint32_t MY_FAST_CALL CrcUpdateT4(uint32_t v, const void *data, size_t size, const uint32_t *table);
+  uint32_t MY_FAST_CALL CrcUpdateT8(uint32_t v, const void *data, size_t size, const uint32_t *table);
 #endif
 
-typedef UInt32 (MY_FAST_CALL *CRC_FUNC)(UInt32 v, const void *data, size_t size, const UInt32 *table);
+typedef uint32_t (MY_FAST_CALL *CRC_FUNC)(uint32_t v, const void *data, size_t size, const uint32_t *table);
 
 CRC_FUNC g_CrcUpdateT4;
 CRC_FUNC g_CrcUpdateT8;
 CRC_FUNC g_CrcUpdate;
 
-UInt32 g_CrcTable[256 * CRC_NUM_TABLES];
+uint32_t g_CrcTable[256 * CRC_NUM_TABLES];
 
-UInt32 MY_FAST_CALL CrcUpdate(UInt32 v, const void *data, size_t size)
+uint32_t MY_FAST_CALL CrcUpdate(uint32_t v, const void *data, size_t size)
 {
   return g_CrcUpdate(v, data, size, g_CrcTable);
 }
 
-UInt32 MY_FAST_CALL CrcCalc(const void *data, size_t size)
+uint32_t MY_FAST_CALL CrcCalc(const void *data, size_t size)
 {
   return g_CrcUpdate(CRC_INIT_VAL, data, size, g_CrcTable) ^ CRC_INIT_VAL;
 }
 
 #define CRC_UPDATE_BYTE_2(crc, b) (table[((crc) ^ (b)) & 0xFF] ^ ((crc) >> 8))
 
-UInt32 MY_FAST_CALL CrcUpdateT1(UInt32 v, const void *data, size_t size, const UInt32 *table)
+uint32_t MY_FAST_CALL CrcUpdateT1(uint32_t v, const void *data, size_t size, const uint32_t *table)
 {
   const Byte *p = (const Byte *)data;
   const Byte *pEnd = p + size;
@@ -55,18 +55,18 @@ UInt32 MY_FAST_CALL CrcUpdateT1(UInt32 v, const void *data, size_t size, const U
 
 void MY_FAST_CALL CrcGenerateTable()
 {
-  UInt32 i;
+  uint32_t i;
   for (i = 0; i < 256; i++)
   {
-    UInt32 r = i;
+    uint32_t r = i;
     unsigned j;
     for (j = 0; j < 8; j++)
-      r = (r >> 1) ^ (kCrcPoly & ((UInt32)0 - (r & 1)));
+      r = (r >> 1) ^ (kCrcPoly & ((uint32_t)0 - (r & 1)));
     g_CrcTable[i] = r;
   }
   for (i = 256; i < 256 * CRC_NUM_TABLES; i++)
   {
-    UInt32 r = g_CrcTable[(size_t)i - 256];
+    uint32_t r = g_CrcTable[(size_t)i - 256];
     g_CrcTable[i] = g_CrcTable[r & 0xFF] ^ (r >> 8);
   }
 
@@ -93,7 +93,7 @@ void MY_FAST_CALL CrcGenerateTable()
   #else
   {
     #ifndef MY_CPU_BE
-    UInt32 k = 0x01020304;
+    uint32_t k = 0x01020304;
     const Byte *p = (const Byte *)&k;
     if (p[0] == 4 && p[1] == 3)
     {
@@ -111,7 +111,7 @@ void MY_FAST_CALL CrcGenerateTable()
     {
       for (i = 256 * CRC_NUM_TABLES - 1; i >= 256; i--)
       {
-        UInt32 x = g_CrcTable[(size_t)i - 256];
+        uint32_t x = g_CrcTable[(size_t)i - 256];
         g_CrcTable[i] = CRC_UINT32_SWAP(x);
       }
       g_CrcUpdateT4 = CrcUpdateT1_BeT4;

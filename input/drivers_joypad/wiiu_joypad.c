@@ -60,7 +60,7 @@ static void wiiu_joypad_destroy(void)
 #endif
 }
 
-static int16_t wiiu_joypad_button(unsigned port, uint16_t joykey)
+static int32_t wiiu_joypad_button(unsigned port, uint16_t joykey)
 {
    if (!wiiu_joypad_query_pad(port))
       return 0;

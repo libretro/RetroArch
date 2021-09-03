@@ -25,6 +25,10 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gfx/video_defines.h"
 #include "input/input_defines.h"
 #include "led/led_defines.h"
@@ -32,6 +36,8 @@
 #ifdef HAVE_LAKKA
 #include "lakka.h"
 #endif
+
+#include "msg_hash.h"
 
 #define configuration_set_float(settings, var, newvar) \
 { \
@@ -63,6 +69,8 @@
    strlcpy(var, newvar, sizeof(var)); \
 }
 
+#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
+
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
@@ -81,6 +89,25 @@ enum override_type
 };
 
 RETRO_BEGIN_DECLS
+
+/* Input config. */
+struct input_bind_map
+{
+   const char *base;
+
+   enum msg_hash_enums desc;
+
+   /* Meta binds get input as prefix, not input_playerN".
+    * 0 = libretro related.
+    * 1 = Common hotkey.
+    * 2 = Uncommon/obscure hotkey.
+    */
+   uint8_t meta;
+
+   uint8_t retro_key;
+
+   bool valid;
+};
 
 typedef struct settings
 {
@@ -165,6 +192,7 @@ typedef struct settings
       unsigned input_poll_type_behavior;
       unsigned input_dingux_rumble_gain;
       unsigned input_auto_game_focus;
+      unsigned input_max_users;
 
       unsigned netplay_port;
       unsigned netplay_input_latency_frames_min;
@@ -282,6 +310,8 @@ typedef struct settings
       unsigned window_position_y;
       unsigned window_position_width;
       unsigned window_position_height;
+      unsigned window_auto_width_max;
+      unsigned window_auto_height_max;
 
       unsigned video_record_threads;
 
@@ -350,6 +380,7 @@ typedef struct settings
       float slowmotion_ratio;
       float fastforward_ratio;
       float input_analog_deadzone;
+      float input_axis_threshold;
       float input_analog_sensitivity;
    } floats;
 
@@ -522,7 +553,6 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif
-      bool video_force_resolution;
 
       /* Accessibility */
       bool accessibility_enable;
@@ -558,6 +588,7 @@ typedef struct settings
       bool input_backtouch_toggle;
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
+      bool input_auto_mouse_grab;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
 #endif
@@ -689,6 +720,7 @@ typedef struct settings
       bool quick_menu_show_set_core_association;
       bool quick_menu_show_reset_core_association;
       bool quick_menu_show_options;
+      bool quick_menu_show_core_options_flush;
       bool quick_menu_show_controls;
       bool quick_menu_show_cheats;
       bool quick_menu_show_shaders;
@@ -793,6 +825,7 @@ typedef struct settings
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
       bool check_firmware_before_loading;
+      bool core_option_category_enable;
       bool core_info_cache_enable;
 #ifndef HAVE_DYNAMIC
       bool always_reload_core_on_run_content;
@@ -824,6 +857,7 @@ typedef struct settings
 
       bool video_window_show_decorations;
       bool video_window_save_positions;
+      bool video_window_custom_size_enable;
 
       bool sustained_performance_mode;
       bool playlist_use_old_format;
@@ -1041,6 +1075,27 @@ settings_t *config_get_ptr(void);
 const char *config_get_all_timezones(void);
 void config_set_timezone(char *timezone);
 #endif
+
+bool input_config_bind_map_get_valid(unsigned bind_index);
+
+void input_config_parse_joy_button(
+      char *s,
+      void *data, const char *prefix,
+      const char *btn, void *bind_data);
+
+void input_config_parse_joy_axis(
+      char *s,
+      void *conf_data, const char *prefix,
+      const char *axis, void *bind_data);
+
+void input_config_parse_mouse_button(
+      char *s,
+      void *conf_data, const char *prefix,
+      const char *btn, void *bind_data);
+
+const char *input_config_get_prefix(unsigned user, bool meta);
+
+extern const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL];
 
 RETRO_END_DECLS
 

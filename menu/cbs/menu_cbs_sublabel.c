@@ -361,6 +361,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_allow_rotate,             MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_on_core_shutdown,        MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_check_missing_firmware,  MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_category_enable,   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_info_cache_enable,        MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE)
 #ifndef HAVE_DYNAMIC
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_always_reload_core_on_run_content, MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT)
@@ -369,6 +370,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_refresh_rate,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_refresh_rate_polled,     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_enable,                  MENU_ENUM_SUBLABEL_AUDIO_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_enable_menu,             MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_sounds,                   MENU_ENUM_SUBLABEL_MENU_SOUNDS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_max_timing_skew,         MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_nonactive,               MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_disable_composition,     MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION)
@@ -434,10 +436,13 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_screenshot_flash, 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_refresh_rate, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_width,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_height,           MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_auto_width_max,   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_auto_height_max,  MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen_x,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen_y,            MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_force_resolution,        MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_save_window_position,    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_custom_size_enable, MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_pos_x,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_message_pos_y,           MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_font_size,               MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE)
@@ -528,6 +533,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_autodetect_enable,       MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_nowinkey_enable,         MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_sensors_enable,          MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_mouse_grab,         MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_game_focus,         MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_libretro,                MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO)
@@ -680,9 +686,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config_override_content
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config_override_game,     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_options,                        MENU_ENUM_SUBLABEL_SHADER_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_input_remapping_options,          MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options,                          MENU_ENUM_SUBLABEL_CORE_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_override_list,             MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options_reset,                    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_options_flush,                    MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_show_advanced_settings,                MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_threaded_data_runloop_enable,          MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_entry_rename,                 MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME)
@@ -765,6 +771,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_start_streaming,    
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_set_core_association,  MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_reset_core_association,MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_options,               MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_core_options_flush,    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_controls,              MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_shaders,               MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_show_overlays,                 MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS)
@@ -876,6 +883,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_refresh_rate,          
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_rs90_softfilter_type,     MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE)
 #endif
 #endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_screen_resolution,                     MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_index,                       MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_height,          MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_width,           MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_x,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X)
@@ -1505,6 +1514,41 @@ static int action_bind_sublabel_playlist_entry(
    return 0;
 }
 
+static int action_bind_sublabel_core_options(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   const char *category = path;
+   const char *info     = NULL;
+
+   /* If this is an options subcategory, fetch
+    * the category info string */
+   if (!string_is_empty(category))
+   {
+      core_option_manager_t *coreopts = NULL;
+
+      if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+         info = core_option_manager_get_category_info(
+               coreopts, category);
+   }
+
+   /* If this isn't a subcategory (or something
+    * went wrong...), use top level core options
+    * menu sublabel */
+   if (string_is_empty(info))
+      info = msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_OPTIONS);
+
+   if (!string_is_empty(info))
+   {
+      strlcpy(s, info, len);
+      return 1;
+   }
+
+   return 0;
+}
+
 static int action_bind_sublabel_core_option(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1517,7 +1561,8 @@ static int action_bind_sublabel_core_option(
    if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
       return 0;
 
-   info = core_option_manager_get_info(opt, type - MENU_SETTINGS_CORE_OPTION_START);
+   info = core_option_manager_get_info(opt,
+         type - MENU_SETTINGS_CORE_OPTION_START, true);
 
    if (!string_is_empty(info))
       strlcpy(s, info, len);
@@ -1944,6 +1989,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_thumbnail_background_enable);
 #endif
             break;
+         case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_screen_resolution);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_index);
+            break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_height);
             break;
@@ -2315,6 +2366,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_options);
             break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_core_options_flush);
+            break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_controls);
             break;
@@ -2616,6 +2670,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_OPTIONS_RESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_options_reset);
+            break;
+         case MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_options_flush);
             break;
          case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_input_remapping_options);
@@ -3061,6 +3118,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_sensors_enable);
             break;
+         case MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_auto_mouse_grab);
+            break;
          case MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_auto_game_focus);
             break;
@@ -3334,6 +3394,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_height);
             break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_auto_width_max);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_auto_height_max);
+            break;
          case MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_fullscreen_x);
             break;
@@ -3345,6 +3411,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_save_window_position);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_custom_size_enable);
             break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_retroarch);
@@ -3480,6 +3549,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_enable_menu);
             break;
+         case MENU_ENUM_LABEL_MENU_SOUNDS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_sounds);
+            break;
          case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_refresh_rate);
             break;
@@ -3488,6 +3560,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dummy_check_missing_firmware);
+            break;
+         case MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option_category_enable);
             break;
          case MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_info_cache_enable);

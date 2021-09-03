@@ -1723,7 +1723,7 @@
 					"-DHAVE_COCOA_METAL",
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
-					"-DDONT_WANT_ARM_OPTIMIZATIONS",
+					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
@@ -1759,7 +1759,7 @@
 					"-DHAVE_COCOA_METAL",
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
-					"-DDONT_WANT_ARM_OPTIMIZATIONS",
+					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
@@ -1814,6 +1814,7 @@
 					"$(SRCBASE)/gfx/include",
 					"$(SRCBASE)/libretro-common/include",
 					"$(SRCBASE)/libretro-common/include/compat/zlib",
+					"$(DEPS_DIR)/discord-rpc/include",
 					"$(DEPS_DIR)/libFLAC/include",
 					"$(DEPS_DIR)/7zip",
 					"$(DEPS_DIR)/rcheevos/include",
@@ -1870,6 +1871,7 @@
 					"$(SRCBASE)/gfx/include",
 					"$(SRCBASE)/libretro-common/include",
 					"$(SRCBASE)/libretro-common/include/compat/zlib",
+					"$(DEPS_DIR)/discord-rpc/include",
 					"$(DEPS_DIR)/libFLAC/include",
 					"$(DEPS_DIR)/7zip",
 					"$(DEPS_DIR)/rcheevos/include",

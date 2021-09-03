@@ -574,6 +574,7 @@ static void *udev_joypad_init(void *data)
       goto error;
 
    udev_enumerate_add_match_property(enumerate, "ID_INPUT_JOYSTICK", "1");
+   udev_enumerate_add_match_subsystem(enumerate, "input");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
 
@@ -597,7 +598,7 @@ error:
    return NULL;
 }
 
-static int16_t udev_joypad_button_state(
+static int32_t udev_joypad_button_state(
       const struct udev_joypad *pad,
       unsigned port, uint16_t joykey)
 {
@@ -629,7 +630,7 @@ static int16_t udev_joypad_button_state(
    return 0;
 }
 
-static int16_t udev_joypad_button(unsigned port, uint16_t joykey)
+static int32_t udev_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct udev_joypad *pad        = (const struct udev_joypad*)
       &udev_pads[port];

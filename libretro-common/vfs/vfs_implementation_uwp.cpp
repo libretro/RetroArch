@@ -31,6 +31,7 @@
 #include <robuffer.h>
 #include <collection.h>
 #include <functional>
+#include <fileapifromapp.h>
 
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
@@ -379,7 +380,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    if (mode == RETRO_VFS_FILE_ACCESS_READ)
    {
       desireAccess        = GENERIC_READ;
-      creationDisposition = OPEN_ALWAYS;
+      creationDisposition = OPEN_EXISTING;
    }
    else
    {
@@ -388,7 +389,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          OPEN_ALWAYS : CREATE_ALWAYS;
    }
 
-   file_handle = CreateFile2(path_str->Data(), desireAccess, FILE_SHARE_READ, creationDisposition, NULL);
+   file_handle = CreateFile2FromAppW(path_str->Data(), desireAccess, FILE_SHARE_READ, creationDisposition, NULL);
 
    if (file_handle != INVALID_HANDLE_VALUE)
    {
@@ -744,7 +745,7 @@ int retro_vfs_file_remove_impl(const char *path)
    free(path_wide);
 
    /* Try Win32 first, this should work in AppData */
-   result = DeleteFileW(path_str->Data());
+   result = DeleteFileFromAppW(path_str->Data());
    if (result)
       return 0;
 
@@ -827,6 +828,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    Platform::String^ path_str;
    IStorageItem^ item;
    DWORD file_info;
+   _WIN32_FILE_ATTRIBUTE_DATA attribdata;
 
    if (!path || !*path)
       return 0;
@@ -837,21 +839,23 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    free(path_wide);
 
    /* Try Win32 first, this should work in AppData */
-   file_info = GetFileAttributesW(path_str->Data());
-   if (file_info != INVALID_FILE_ATTRIBUTES)
+   if (GetFileAttributesExFromAppW(path_str->Data(), GetFileExInfoStandard, &attribdata))
    {
-      HANDLE file_handle = CreateFile2(path_str->Data(), GENERIC_READ, FILE_SHARE_READ, OPEN_ALWAYS, NULL);
-      if (file_handle != INVALID_HANDLE_VALUE)
-      {
-         LARGE_INTEGER sz;
-         if (GetFileSizeEx(file_handle, &sz))
-         {
-            if (size)
-               *size = sz.QuadPart;
-         }
-         CloseHandle(file_handle);
-      }
-      return (file_info & FILE_ATTRIBUTE_DIRECTORY) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
+       file_info = attribdata.dwFileAttributes;
+       if (file_info != INVALID_FILE_ATTRIBUTES)
+       {
+           if (!(file_info & FILE_ATTRIBUTE_DIRECTORY))
+           {
+               LARGE_INTEGER sz;
+               if (size)
+               {
+                   sz.HighPart = attribdata.nFileSizeHigh;
+                   sz.LowPart = attribdata.nFileSizeLow;
+                   *size = sz.QuadPart;
+               }
+           }
+           return (file_info & FILE_ATTRIBUTE_DIRECTORY) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
+       }
    }
 
    if (GetLastError() == ERROR_FILE_NOT_FOUND)
@@ -860,7 +864,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    /* Fallback to WinRT */
    item = LocateStorageFileOrFolder(path_str);
    if (!item)
-      return 0;
+       return 0;
 
    return RunAsyncAndCatchErrors<int>([&]() {
          return concurrency::create_task(item->GetBasicPropertiesAsync()).then([&](BasicProperties^ properties) {
@@ -917,7 +921,7 @@ int retro_vfs_mkdir_impl(const char *dir)
    free(dir_local);
 
    /* Try Win32 first, this should work in AppData */
-   result = CreateDirectoryW(dir_str->Data(), NULL);
+   result = CreateDirectoryFromAppW(dir_str->Data(), NULL);
    if (result)
       return 0;
    

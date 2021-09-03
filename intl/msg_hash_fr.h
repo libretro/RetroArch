@@ -1329,6 +1329,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Au plus proche"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Interpolation de l'image"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Spécifier la méthode d'interpolation d'image lorsque l'option 'Échelle à l'entier' est désactivée. 'Au plus proche' a le moins d'impact sur les performances."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Au plus proche"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Semi-linéaire"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1534,7 +1552,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Définir la taille de la fenêtre par rapport à la taille d'affichage du cœur. Alternativement, une largeur et une hauteur de fenêtre peuvent être définies ci-dessous pour une taille de fenêtre fixe."
+   "Définit la taille de la fenêtre à un multiple spécifié de la taille de la fenêtre principale."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1550,7 +1568,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Restaurer la taille et la position de la fenêtre. Si activée, cette option a la priorité sur l'échelle en mode fenêtré."
+   "Affiche tout le contenu dans une fenêtre à taille fixe aux dimensions spécifiées par 'Largeur de fenêtre' et 'Hauteur de fenêtre', et enregistrer la taille et la position de la fenêtre courante lors de la fermeture de RetroArch. Lorsque cette option est désactivée, la taille de la fenêtre est définie dynamiquement en fonction de 'Échelle en mode fenêtré'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Utiliser une taille de fenêtre personnalisée"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Affiche tout le contenu dans une fenêtre à taille fixe aux dimensions spécifiées par 'Largeur de fenêtre' et 'Hauteur de fenêtre'. Lorsque cette option est désactivée, la taille de la fenêtre est définie dynamiquement en fonction de 'Échelle en mode fenêtré'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1567,6 +1593,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Définir une hauteur personnalisée pour la fenêtre d'affichage."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Largeur de fenêtre maximale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Définit la largeur maximale de la fenêtre d'affichage lors du redimensionnement automatique basée sur 'Échelle en mode fenêtré'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Hauteur de fenêtre maximale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Définit la hauteur maximale de la fenêtre d'affichage lors du redimensionnement automatique basée sur 'Échelle en mode fenêtré'."
    )
 
 /* Settings > Video > Scaling */
@@ -2053,6 +2095,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Permettre les entrées depuis l'accéléromètre, le gyroscope et les capteurs photométriques, si pris en charge par le matériel actuel. Peut avoir un impact sur les performances et/ou augmenter la consommation d'énergie sur certaines plates-formes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Capture de la souris automatique"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Active la capture de la souris lorsque l'application est en premier plan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -2853,6 +2903,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Vérifie que tous les firmwares requis sont présents avant de tenter le chargement du contenu sélectionné."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Catégories pour les options des cœurs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Permet aux cœurs de présenter leurs options dans des sous-menus par catégories. NOTE : Le cœur doit être rechargé pour que les changements prennent effet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -6983,6 +7041,14 @@ MSG_HASH(
    "Non connecté"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Erreur réseau"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Jeu inconnu"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    "Impossible d'activer les succès avec ce cœur"
 )
@@ -9812,11 +9878,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Mappage de port réussi"
+   "Mappage du port Netplay réussi"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Mappage de port échoué"
+   "Mappage du port Netplay UPNP échoué"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -11297,6 +11363,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
    "Mode vidéo non pris en charge"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Impossible d'écrire dans le dossier des informations de cœurs - la mise en cache des informations de cœurs sera désactivée"
    )
 
 /* Lakka */

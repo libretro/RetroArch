@@ -227,7 +227,8 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             0, state->y,
             state->width, state->height,
             video_width, video_height,
-            p_dispwidget->backdrop_orig
+            p_dispwidget->backdrop_orig,
+            NULL
             );
 
       gfx_display_set_alpha(pure_white, 1.0f);
@@ -282,7 +283,8 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             0, 0,
             video_width, video_height,
             video_width, video_height,
-            pure_white
+            pure_white,
+            NULL
             );
    }
 }

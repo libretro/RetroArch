@@ -1185,6 +1185,8 @@ MSG_HASH(
    "Bilineaire Filtering"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1327,10 +1329,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "Onthoudt Venster Positie en Grootte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Onthoud de venstergrootte en -positie, dit inschakelen heeft voorrang op Venster Schaal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -3973,14 +3971,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
    "Verbonden met: \"%s (%s)\""
-   )
-MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Poorttoewijzing succesvol"
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "Poorttoewijzing mislukt"
    )
 MSG_HASH(
    MSG_WAITING_FOR_CLIENT,

@@ -27,7 +27,7 @@ static const char *android_joypad_name(unsigned pad)
 
 static void *android_joypad_init(void *data) { return (void*)-1; }
 
-static int16_t android_joypad_button_state(
+static int32_t android_joypad_button_state(
       struct android_app *android_app,
       uint8_t *buf,
       unsigned port, uint16_t joykey)
@@ -60,7 +60,7 @@ static int16_t android_joypad_button_state(
    return 0;
 }
 
-static int16_t android_joypad_button(unsigned port, uint16_t joykey)
+static int32_t android_joypad_button(unsigned port, uint16_t joykey)
 {
    struct android_app *android_app = (struct android_app*)g_android;
    uint8_t *buf                    = android_keyboard_state_get(port);

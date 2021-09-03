@@ -1503,6 +1503,10 @@ MSG_HASH(
    "GPU Index"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Select which graphics card to use."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Vertical Refresh Rate"
    )
@@ -1604,7 +1608,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Set the window size relative to the core viewport size. Alternatively, a window width and height can be set below for a fixed window size."
+   "Set the window size to the specified multiple of the core viewport size."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1620,7 +1624,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Remember window size and position, enabling this has precedence over Windowed Scale."
+   "Show all content in a fixed size window of dimensions specified by 'Window Width' and 'Window Height', and save current window size and position upon closing RetroArch. When disabled, window size will be set dynamically based on 'Windowed Scale'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Use Custom Window Size"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Show all content in a fixed size window of dimensions specified by 'Window Width' and 'Window Height'. When disabled, window size will be set dynamically based on 'Windowed Scale'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1637,6 +1649,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Set the custom height for the display window."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Maximum Window Width"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Set the maximum width of the display window when automatically resizing based on 'Windowed Scale'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Maximum Window Height"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Set the maximum height of the display window when automatically resizing based on 'Windowed Scale'."
    )
 
 /* Settings > Video > Scaling */
@@ -1667,7 +1695,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Custom Aspect Ratio'."
+   "Floating point value for video aspect ratio (width / height), used if 'Aspect Ratio' is set to 'Config'."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1824,6 +1852,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Menu Sounds"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Change menu sound settings."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2135,6 +2167,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Enable input from accelerometer, gyroscope and illuminance sensors, if supported by the current hardware. May have a performance impact and/or increase power drain on some platforms."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Automatic Mouse Grab"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Enable mouse grab on application focus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -2939,6 +2979,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Check if all the required firmware is present before attempting to load content."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Core Option Categories"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Allow cores to present options in category-based submenus. NOTE: Core must be reloaded for changes to take effect."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -4520,6 +4568,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    "Show the 'Options' option."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Show 'Flush Options to Disk'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Show the 'Flush Options to Disk' entry in the 'Options > Manage Core Options' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -6446,6 +6502,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "Set all core options to default values."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "Flush Options to Disk"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "Force current settings to be written to active options file. Ensures options are preserved in the event that a core bug causes improper shutdown of the frontend."
+   )
 
 /* - Legacy (unused) */
 MSG_HASH(
@@ -7137,10 +7201,6 @@ MSG_HASH(
    "No Achievements to Display"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_MENU,
-   "ToggleCheevosHardcore" /* not-displayed - needed to resolve submenu */
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
    "Cancel Pause Achievements Hardcore Mode"
    )
@@ -7175,6 +7235,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Not logged in"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Network Error"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Unknown Game"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
@@ -10901,6 +10969,14 @@ MSG_HASH(
    "All core options reset to default."
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Core options saved to:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Failed to save core options to:"
+   )
+MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "Could not find any next driver"
    )
@@ -12101,6 +12177,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Screen Resolution"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Select display mode."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

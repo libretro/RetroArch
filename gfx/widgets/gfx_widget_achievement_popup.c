@@ -146,7 +146,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                state->height,
                state->height,
                video_width, video_height,
-               p_dispwidget->backdrop_orig);
+               p_dispwidget->backdrop_orig,
+               NULL);
 
          /* Icon */
          if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
@@ -212,7 +213,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             state->height,
             video_width,
             video_height,
-            p_dispwidget->backdrop_orig);
+            p_dispwidget->backdrop_orig,
+	    NULL);
 
       /* Title */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,

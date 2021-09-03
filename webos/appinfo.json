@@ -1,0 +1,11 @@
+{
+    "id": "com.retroarch",
+    "version": "1.9.8",
+    "vendor": "libretro.com",
+    "title": "RetroArch",
+    "icon": "icon160.png",
+    "main": "retroarch",
+    "iconColor": "#333333",
+    "type": "native",
+    "appDescription": "Official Libretro frontend"
+}

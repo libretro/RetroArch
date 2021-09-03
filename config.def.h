@@ -66,7 +66,7 @@
 #elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #else
-#define DEFAULT_ASPECT_RATIO -1.0f
+#define DEFAULT_ASPECT_RATIO 1.3333f
 #endif
 
 #if defined(GEKKO)
@@ -75,7 +75,7 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
-#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__)
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(EMSCRIPTEN)
 #define DEFAULT_POINTER_ENABLE true
 #else
 #define DEFAULT_POINTER_ENABLE false
@@ -222,10 +222,50 @@
 #define DEFAULT_MONITOR_INDEX 0
 
 /* Window */
-/* Window size. A value of 0 uses window scale
- * multiplied by the core framebuffer size. */
-#define DEFAULT_WINDOW_WIDTH 1280
+
+/* DEFAULT_WINDOW_DECORATIONS:
+   Whether to show the usual window decorations like border, titlebar etc. */
+#ifdef WEBOS
+#define DEFAULT_WINDOW_DECORATIONS false
+#else
+#define DEFAULT_WINDOW_DECORATIONS true
+#endif
+
+/* Amount of transparency to use for the main window.
+ * 1 is the most transparent while 100 is opaque. */
+#define DEFAULT_WINDOW_OPACITY 100
+
+/* DEFAULT_WINDOW_SAVE_POSITIONS:
+ * Whether to remember window positions
+ * NOTE: Only enabled for desktop Windows
+ * at present. */
+#define DEFAULT_WINDOW_SAVE_POSITIONS false
+
+/* Whether to use custom (fixed size)
+ * window dimensions in windowed mode. */
+#ifdef WEBOS
+#define DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE true
+#else
+#define DEFAULT_WINDOW_CUSTOM_SIZE_ENABLE false
+#endif
+
+/* Window dimensions when using a fixed size
+ * window. A value of 0 disables fixed size
+ * windows, using nominal dimensions of
+ * window scale multiplied by the core
+ * framebuffer size. */
+#if defined(WEBOS)
+#define DEFAULT_WINDOW_WIDTH  1920
+#define DEFAULT_WINDOW_HEIGHT 1080
+#else
+#define DEFAULT_WINDOW_WIDTH  1280
 #define DEFAULT_WINDOW_HEIGHT 720
+#endif
+
+/* Maximum auto-set window dimensions
+ * when not using a fixed size window */
+#define DEFAULT_WINDOW_AUTO_WIDTH_MAX  1920
+#define DEFAULT_WINDOW_AUTO_HEIGHT_MAX 1080
 
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
@@ -240,19 +280,8 @@
 #define DEFAULT_FULLSCREEN_Y 0
 #endif
 
-/* Force 4k resolution */
-#define DEFAULT_FORCE_RESOLUTION false
-
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
-
-/* Amount of transparency to use for the main window.
- * 1 is the most transparent while 100 is opaque.
- */
-#define DEFAULT_WINDOW_OPACITY 100
-
-/* Whether to show the usual window decorations like border, titlebar etc. */
-#define DEFAULT_WINDOW_DECORATIONS true
 
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN false
@@ -260,6 +289,10 @@
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
 #define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
+
+/* Specifies whether cores are allowed to
+ * present core options in category submenus */
+#define DEFAULT_CORE_OPTION_CATEGORY_ENABLE true
 
 /* Specifies whether to cache core info
  * into a single (compressed) file for improved
@@ -414,7 +447,12 @@
 #define DEFAULT_DINGUX_IPU_KEEP_ASPECT true
 /* Sets image filtering method when using the
  * IPU hardware scaler in Dingux devices */
+#if defined(RETROFW)
+#define DEFAULT_DINGUX_IPU_FILTER_TYPE DINGUX_IPU_FILTER_NEAREST
+#else
 #define DEFAULT_DINGUX_IPU_FILTER_TYPE DINGUX_IPU_FILTER_BICUBIC
+#endif
+
 #if defined(DINGUX_BETA)
 /* Sets refresh rate of integral LCD panel
  * in Dingux devices */
@@ -558,6 +596,9 @@ static const bool quick_menu_show_start_streaming             = true;
 static const bool quick_menu_show_set_core_association        = true;
 static const bool quick_menu_show_reset_core_association      = true;
 static const bool quick_menu_show_options                     = true;
+
+#define DEFAULT_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH false
+
 static const bool quick_menu_show_controls                    = true;
 static const bool quick_menu_show_cheats                      = true;
 static const bool quick_menu_show_shaders                     = true;
@@ -744,7 +785,7 @@ static const bool default_savefiles_in_content_dir = false;
 static const bool default_systemfiles_in_content_dir = false;
 static const bool default_screenshots_in_content_dir = false;
 
-#if defined(RS90)
+#if defined(RS90) || defined(RETROFW)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_START_SELECT
 #elif defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_TOGGLE_L3_R3
@@ -954,7 +995,7 @@ static const bool audio_enable_menu_bgm    = false;
 /* Output samplerate. */
 #ifdef GEKKO
 #define DEFAULT_OUTPUT_RATE 32000
-#elif defined(_3DS)
+#elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
@@ -965,7 +1006,7 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(EMSCRIPTEN)
+#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #else
@@ -1038,6 +1079,13 @@ static const bool audio_enable_menu_bgm    = false;
 /* When set, all enabled cheats are auto-applied when a game is loaded. */
 #define DEFAULT_APPLY_CHEATS_AFTER_LOAD false
 
+
+#if defined(RETROFW)
+/*RETROFW jz4760 has signficant slowdown with default settings */
+#define DEFAULT_REWIND_BUFFER_SIZE (1 << 20)
+#define DEFAULT_REWIND_BUFFER_SIZE_STEP 1 
+#define DEFAULT_REWIND_GRANULARITY 6
+#else
 /* The buffer size for the rewind buffer. This needs to be about
  * 15-20MB per minute. Very game dependant. */
 #define DEFAULT_REWIND_BUFFER_SIZE (20 << 20) /* 20MiB */
@@ -1047,9 +1095,9 @@ static const bool audio_enable_menu_bgm    = false;
 
 /* How many frames to rewind at a time. */
 #define DEFAULT_REWIND_GRANULARITY 1
-
+#endif
 /* Pause gameplay when gameplay loses focus. */
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(WEBOS)
 #define DEFAULT_PAUSE_NONACTIVE false
 #else
 #define DEFAULT_PAUSE_NONACTIVE true

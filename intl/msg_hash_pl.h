@@ -1333,6 +1333,20 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Najbliższy sąsiad"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Interpolacja obrazów"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Najbliższe sąsiedztwo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Półliniowy"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1534,7 +1548,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Ustaw rozmiar okna względem rozmiaru widoku rdzenia. Alternatywnie, szerokość i wysokość okna mogą być ustawione poniżej dla stałego rozmiaru okna."
+   "Ustaw rozmiar okna na określoną wielokrotność rozmiaru głównego widoku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1549,8 +1563,8 @@ MSG_HASH(
    "Zapamiętaj położenie i rozmiar okna"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Zapamiętaj rozmiar i pozycję okna, włączenie tej opcji ma pierwszeństwo przed skalą w trybie okienkowym."
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Użyj niestandardowego rozmiaru okna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1567,6 +1581,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Ustaw niestandardowy rozmiar wysokości okna wyświetlacza. Pozostawienie go na 0 spowoduje przeskalowanie okna tak dużego, jak to możliwe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Maksymalna szerokość okna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Maksymalna wysokość okna"
    )
 
 /* Settings > Video > Scaling */
@@ -2049,6 +2071,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    "Włącz wejście z przyspieszeniomierza, żyroskopu i czujników oświetlenia, jeśli jest obsługiwane przez aktualny sprzęt. Może mieć wpływ na wydajność lub zwiększyć zużycie energii na niektórych platformach."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Automatyczne przechwytywanie myszy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
@@ -6991,6 +7017,14 @@ MSG_HASH(
    "Nie jesteś zalogowany"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Błąd sieci"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Nieznana gra"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    "Nie można aktywować osiągnięć używając tego rdzenia"
 )
@@ -9812,11 +9846,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Mapowanie portu zakończone sukcesem"
+   "Mapowanie portów Netplay zakończone sukcesem"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Mapowanie portu nie powiodło się"
+   "Mapowanie portu UPNP Netplay nie powiodło się"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,

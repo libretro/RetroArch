@@ -133,9 +133,11 @@ typedef struct rcheevos_locals_t
    enum event_command queued_command; /* action queued by background thread to be run on main thread */
 #endif
 
+   char username[32];                 /* case-corrected username */
    char token[32];                    /* user's session token */
    char hash[33];                     /* retroachievements hash for current content */
    char user_agent_prefix[128];       /* RetroArch/OS version information */
+   char user_agent_core[256];         /* RetroArch/OS/Core version information */
 
 #ifdef HAVE_MENU
    rcheevos_menuitem_t* menuitems;    /* array of items for the achievements quick menu */
@@ -146,6 +148,7 @@ typedef struct rcheevos_locals_t
    bool hardcore_active;              /* hardcore functionality is active */
    bool loaded;                       /* load task has completed */
    bool core_supports;                /* false if core explicitly disables achievements */
+   bool network_error;                /* hash lookup or login failed with network error */
    bool leaderboards_enabled;         /* leaderboards are enabled */
    bool leaderboard_notifications;    /* leaderboard notifications are enabled */
    bool leaderboard_trackers;         /* leaderboard trackers are enabled */

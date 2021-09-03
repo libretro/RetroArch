@@ -117,7 +117,7 @@ static void *psp_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int16_t psp_joypad_button(unsigned port, uint16_t joykey)
+static int32_t psp_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;

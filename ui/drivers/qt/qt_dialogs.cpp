@@ -1089,7 +1089,7 @@ void CoreOptionsDialog::onCoreOptionComboBoxCurrentIndexChanged(int index)
                      QString str = option->vals->elems[k].data;
 
                      if (!str.isEmpty() && str == val)
-                        core_option_manager_set_val(coreopts, i, k);
+                        core_option_manager_set_val(coreopts, i, k, true);
                   }
                }
             }
@@ -1163,7 +1163,7 @@ void CoreOptionsDialog::buildLayout()
             for (j = 0; j < opts; j++)
             {
                QString desc               = 
-                  core_option_manager_get_desc(coreopts, j);
+                  core_option_manager_get_desc(coreopts, j, false);
                QString val                = 
                   core_option_manager_get_val(coreopts, j);
                QComboBox *combo_box       = NULL;

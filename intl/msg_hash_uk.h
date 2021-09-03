@@ -1345,6 +1345,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
    "Метод сусідніх пікселів"
    )
+#if defined(RS90)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Інтерполяція зображення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Вкажіть метод інтерполяції зображення, коли вимкнено «Цілочисельне масштабування». Метод «Найближчий сусід» має найменший вплив на продуктивність."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "Найближчий сусід"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Напівлінійна"
+   )
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1558,7 +1576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Встановіть розмір вікна відносно розміру основної картини. Крім того, ширину і висоту можна встановити нижче для фіксованого розміру вікна."
+   "Встановити показник розміру вікна відносно розміру області перегляду ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1574,7 +1592,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Запам'ятати розмір та положення вікна, що дає перевагу над Масштабуванням Вікна."
+   "Показати весь вміст у вікні фіксованого розміру, що заданий у параметрах «Ширина вікна» й «Висота вікна», та зберігати теперішній розмір і розташування вікна при закритті RetroArch. Якщо вимкнено, розмір вікна встановлюється динамічно за параметром «Масштаб вікна»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Довільний розмір вікна"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Показати весь вміст у вікні фіксованого розміру, що заданий у параметрах «Ширина вікна» та «Висота вікна». Якщо вимкнено, розмір вікна встановлюється динамічно за параметром «Масштаб вікна»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1591,6 +1617,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Встановити користувацьку висоту для вікна дисплея."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Максимальна ширина вікна"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Встановити максимальну ширину вікна зображення при автоматичній зміні розміру за параметром «Масштаб вікна»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Максимальна висота вікна"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Встановити максимальну висоту вікна зображення при автоматичній зміні розміру за параметром «Масштаб вікна»."
    )
 
 /* Settings > Video > Scaling */
@@ -2063,6 +2105,14 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "Автоматичне захоплення миші"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "Увімкнути захоплення миші коли програма активна."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "ВИМК"
    )
@@ -2401,6 +2451,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
    "Автоматичний запуск ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   "Категорії налаштувань ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   "Включає показ налаштувань ядер за категоріями. Примітка: ядро повинно бути перезавантажено для застосування змін."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -3758,6 +3816,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
    "Немає досягнень, щоб показати"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   "Помилка мережі"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   "Невідома гра"
+)
 
 /* Quick Menu > Information */
 
@@ -5843,6 +5909,14 @@ MSG_HASH(
    "Рідний"
    )
 MSG_HASH(
+   MSG_PUBLIC_ADDRESS,
+   "Порт для мережевої гри призначено"
+   )
+MSG_HASH(
+   MSG_UPNP_FAILED,
+   "Не вдалося призначити порт UPNP"
+   )
+MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Ви покинули гру"
    )
@@ -6425,6 +6499,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Невдала спроба встановлення: "
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Неможливо писати в каталог інформації ядра. Кешування в каталог буде вимкнено"
    )
 
 /* Lakka */

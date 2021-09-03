@@ -448,6 +448,28 @@ build-retroarch-rs90-odbeta-mips32:
     - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
 
+build-retroarch-retrofw-mips32:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-dingux:odbeta
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+    STRIP_BIN:  1
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+  artifacts:
+    paths:
+    - retroarch
+    - retroarch_retrofw.opk
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - "make -j$NUMPROC -f Makefile.retrofw"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+    - "cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio"
+    - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
+
 build-retroarch-android-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build
@@ -761,7 +783,7 @@ build-static-retroarch-wiiu:
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
 build-static-retroarch-dummy-wiiu:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-wiiu:latest
   stage: build
   variables:
     MEDIA_PATH: .media

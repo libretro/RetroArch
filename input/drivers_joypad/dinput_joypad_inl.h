@@ -103,7 +103,7 @@ static BOOL CALLBACK enum_axes_cb(
    return DIENUM_CONTINUE;
 }
 
-static int16_t dinput_joypad_button_state(
+static int32_t dinput_joypad_button_state(
       const struct dinput_joypad_data *pad,
       uint16_t joykey)
 {
@@ -229,7 +229,7 @@ static int16_t dinput_joypad_axis_state(
    return val;
 }
 
-static int16_t dinput_joypad_button(unsigned port, uint16_t joykey)
+static int32_t dinput_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct dinput_joypad_data *pad = &g_pads[port];
    if (!pad || !pad->joypad)

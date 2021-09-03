@@ -11,5 +11,6 @@ Icon=retroarch
 Exec=retroarch
 Terminal=false
 StartupNotify=false
+StartupWMClass=retroarch
 Keywords=multi;engine;emulator;xmb;
 Categories=Game;Emulator;

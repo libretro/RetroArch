@@ -72,17 +72,14 @@ void rc_parse_legacy_value(rc_value_t* self, const char** memaddr, rc_parse_stat
           *ptr++ = '*';
 
           buffer_ptr = *memaddr + 1;
-          if (*buffer_ptr == '-') {
-            /* negative value automatically needs prefix, 'f' handles both float and digits, so use it */
+          if (*buffer_ptr == '-' || *buffer_ptr == '+')
+            ++buffer_ptr; /* ignore sign */
+
+          /* if it looks like a floating point number, add the 'f' prefix */
+          while (isdigit((unsigned char)*buffer_ptr))
+            ++buffer_ptr;
+          if (*buffer_ptr == '.')
             *ptr++ = 'f';
-          }
-          else {
-            /* if it looks like a floating point number, add the 'f' prefix */
-            while (isdigit(*(unsigned char*)buffer_ptr))
-              ++buffer_ptr;
-            if (*buffer_ptr == '.')
-              *ptr++ = 'f';
-          }
           break;
 
         default:
@@ -95,7 +92,12 @@ void rc_parse_legacy_value(rc_value_t* self, const char** memaddr, rc_parse_stat
 
     buffer_ptr = buffer;
     cond = rc_parse_condition(&buffer_ptr, parse, 0);
-    if (parse->offset < 0) {
+    if (parse->offset < 0)
+      return;
+
+    if (*buffer_ptr) {
+      /* whatever we copied as a single condition was not fully consumed */
+      parse->offset = RC_INVALID_COMPARISON;
       return;
     }
 

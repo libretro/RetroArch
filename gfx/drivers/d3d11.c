@@ -709,12 +709,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 #else
    d3d11->has_flip_model                   = true;
-#if 0
-   /* TODO/FIXME - disable tear support for now for UWP
-    * until we can check for this at runtime */
    d3d11->has_allow_tearing                = true;
    desc.Flags                              = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-#endif
    desc.SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 #endif
 
@@ -814,6 +810,10 @@ static void *d3d11_gfx_init(const video_info_t* video,
 #ifdef HAVE_DINPUT
    if (string_is_equal(settings->arrays.input_driver, "dinput"))
       wndclass.lpfnWndProc = wnd_proc_d3d_dinput;
+#endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      wndclass.lpfnWndProc = wnd_proc_d3d_winraw;
 #endif
 #ifdef HAVE_WINDOW
    win32_window_init(&wndclass, true, NULL);

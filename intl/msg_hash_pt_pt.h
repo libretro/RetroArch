@@ -1261,6 +1261,8 @@ MSG_HASH(
    "Filtragem bilinear"
    )
 #if defined(DINGUX)
+#if defined(RS90)
+#endif
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -1419,10 +1421,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "Lembrar posição e tamanho da janela"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Lembrar tamanho e posição da janela, habilitando isto tem precedência sobre a Escala do Janela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -4037,10 +4035,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    "O ficheiro já existe. A guardar no buffer de cópia de segurança"
-   )
-MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Endereço público"
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
