@@ -8192,6 +8192,31 @@ static void general_write_handler(rarch_setting_t *setting)
                            default_aspect;
          }
          break;
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+      case MENU_ENUM_LABEL_RUN_AHEAD_ENABLED:
+      case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
+      case MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE:
+         {
+            settings_t *settings              = config_get_ptr();
+            bool run_ahead_enabled            = settings->bools.run_ahead_enabled;
+            unsigned run_ahead_frames         = settings->uints.run_ahead_frames;
+            bool run_ahead_secondary_instance = settings->bools.run_ahead_secondary_instance;
+
+            /* If any changes here will cause second
+             * instance runahead to be enabled, must
+             * re-apply cheats to ensure that they
+             * propagate to the newly-created secondary
+             * core */
+            if (run_ahead_enabled &&
+                (run_ahead_frames > 0) &&
+                run_ahead_secondary_instance &&
+                !rarch_ctl(RARCH_CTL_IS_SECOND_CORE_LOADED, NULL) &&
+                rarch_ctl(RARCH_CTL_IS_SECOND_CORE_AVAILABLE, NULL) &&
+                command_event(CMD_EVENT_LOAD_SECOND_CORE, NULL))
+               command_event(CMD_EVENT_CHEATS_APPLY, NULL);
+         }
+         break;
+#endif
       default:
          /* Special cases */
 

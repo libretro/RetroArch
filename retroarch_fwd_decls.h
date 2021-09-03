@@ -56,6 +56,9 @@ static void rarch_init_core_options(
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch,
       settings_t *settings);
+static void secondary_core_destroy(struct rarch_state *p_rarch);
+static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
+      settings_t *settings);
 #endif
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);

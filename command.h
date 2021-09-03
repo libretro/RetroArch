@@ -73,6 +73,9 @@ enum event_command
    /* Loads core. */
    CMD_EVENT_LOAD_CORE,
    CMD_EVENT_LOAD_CORE_PERSIST,
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   CMD_EVENT_LOAD_SECOND_CORE,
+#endif
    CMD_EVENT_UNLOAD_CORE,
    CMD_EVENT_CLOSE_CONTENT,
    CMD_EVENT_LOAD_STATE,
