@@ -433,12 +433,38 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   enum d3d11_feature_level_hint
+      feat_level_hint      = D3D11_FEATURE_LEVEL_HINT_DONTCARE; 
    unsigned         i;
    d3d11_texture_t* source = NULL;
    d3d11_video_t*   d3d11  = (d3d11_video_t*)data;
+   unsigned shader_model   = 40; 
 
    if (!d3d11)
       return false;
+
+   /* Feature Level 11.0 and up should all support Shader Model 5.0 */
+   switch (d3d11->supportedFeatureLevel)
+   {
+      case D3D_FEATURE_LEVEL_11_0:
+         shader_model    = 50;
+         feat_level_hint = D3D11_FEATURE_LEVEL_HINT_11_0;
+         break;
+      case D3D_FEATURE_LEVEL_11_1:
+         shader_model    = 50;
+         feat_level_hint = D3D11_FEATURE_LEVEL_HINT_11_1;
+         break;
+      case D3D_FEATURE_LEVEL_12_0:
+         shader_model    = 50;
+         feat_level_hint = D3D11_FEATURE_LEVEL_HINT_12_0;
+         break;
+      case D3D_FEATURE_LEVEL_12_1:
+         shader_model    = 50;
+         feat_level_hint = D3D11_FEATURE_LEVEL_HINT_12_1;
+         break;
+      default:
+         break;
+   }
 
    D3D11Flush(d3d11->context);
    d3d11_free_shader_preset(d3d11);
@@ -499,7 +525,8 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       /* clang-format on */
 
       if (!slang_process(
-               d3d11->shader_preset, i, RARCH_SHADER_HLSL, 40, &semantics_map,
+               d3d11->shader_preset, i, RARCH_SHADER_HLSL, shader_model,
+               &semantics_map,
                &d3d11->pass[i].semantics))
          goto error;
 
@@ -530,12 +557,16 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
          if (!d3d11_init_shader(
                   d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
-                  &d3d11->pass[i].shader))
+                  &d3d11->pass[i].shader,
+                  feat_level_hint
+                  ))
             save_hlsl = true;
 
          if (!d3d11_init_shader(
                   d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
-                  &d3d11->pass[i].shader))
+                  &d3d11->pass[i].shader,
+                  feat_level_hint
+                  ))
             save_hlsl = true;
 
          if (save_hlsl)
@@ -1230,7 +1261,9 @@ static void *d3d11_gfx_init(const video_info_t* video,
       if (!d3d11_init_shader(
                d3d11->device, shader, sizeof(shader),
                NULL, "VSMain", "PSMain", NULL, desc,
-               countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_HDR]))
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_HDR],
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE
+               ))
          goto error;
    }
 #endif
@@ -1251,7 +1284,9 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
       if (!d3d11_init_shader(
                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
-               countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
+               countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND],
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE
+               ))
          goto error;
    }
 
@@ -1279,11 +1314,13 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
       if (!d3d11_init_shader(
                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
-               countof(desc), &d3d11->sprites.shader))
+               countof(desc), &d3d11->sprites.shader,
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE))
          goto error;
       if (!d3d11_init_shader(
                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
-               countof(desc), &d3d11->sprites.shader_font))
+               countof(desc), &d3d11->sprites.shader_font,
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE))
          goto error;
    }
 
@@ -1303,12 +1340,14 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
          if (!d3d11_init_shader(
                   d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
+                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU],
+                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
 
          if (!d3d11_init_shader(
                   d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
-                  desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
+                  desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2],
+                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
       }
 
@@ -1335,21 +1374,25 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
          if (!d3d11_init_shader(
                   d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
-                  desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
+                  desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3],
+                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
          if (!d3d11_init_shader(
                   d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
+                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4],
+                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
 
          if (!d3d11_init_shader(
                   d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5],
+                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
 
          if (!d3d11_init_shader(
                   d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
+                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6],
+                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
             goto error;
       }
    }

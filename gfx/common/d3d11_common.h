@@ -2664,6 +2664,22 @@ void d3d11_update_texture(
 DXGI_FORMAT d3d11_get_closest_match(
       D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support);
 
+enum d3d11_feature_level_hint
+{
+   D3D11_FEATURE_LEVEL_HINT_DONTCARE,
+   D3D11_FEATURE_LEVEL_HINT_1_0_CORE,
+   D3D11_FEATURE_LEVEL_HINT_9_1,
+   D3D11_FEATURE_LEVEL_HINT_9_2,
+   D3D11_FEATURE_LEVEL_HINT_9_3,
+   D3D11_FEATURE_LEVEL_HINT_10_0,
+   D3D11_FEATURE_LEVEL_HINT_10_1,
+   D3D11_FEATURE_LEVEL_HINT_11_0,
+   D3D11_FEATURE_LEVEL_HINT_11_1,
+   D3D11_FEATURE_LEVEL_HINT_12_0,
+   D3D11_FEATURE_LEVEL_HINT_12_1,
+   D3D11_FEATURE_LEVEL_HINT_12_2
+};
+
 bool d3d11_init_shader(
       D3D11Device                     device,
       const char*                     src,
@@ -2674,7 +2690,8 @@ bool d3d11_init_shader(
       LPCSTR                          gs_entry,
       const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
       UINT                            num_elements,
-      d3d11_shader_t*                 out);
+      d3d11_shader_t*                 out,
+      enum d3d11_feature_level_hint   hint);
 
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
 {
