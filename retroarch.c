@@ -12207,6 +12207,21 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             break;
          }
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+      case CMD_EVENT_LOAD_SECOND_CORE:
+         if (!runloop_state.core_running ||
+             !p_rarch->runahead_secondary_core_available)
+            return false;
+         if (p_rarch->secondary_lib_handle)
+            return true;
+         if (!secondary_core_ensure_exists(p_rarch, settings))
+         {
+            secondary_core_destroy(p_rarch);
+            p_rarch->runahead_secondary_core_available = false;
+            return false;
+         }
+         return true;
+#endif
       case CMD_EVENT_LOAD_STATE:
 #ifdef HAVE_BSV_MOVIE
          /* Immutable - disallow savestate load when
@@ -33523,6 +33538,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             }
          }
          return false;
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+      case RARCH_CTL_IS_SECOND_CORE_AVAILABLE:
+         return runloop_state.core_running &&
+               p_rarch->runahead_secondary_core_available;
+      case RARCH_CTL_IS_SECOND_CORE_LOADED:
+         return runloop_state.core_running &&
+               (p_rarch->secondary_lib_handle != NULL);
+#endif
       case RARCH_CTL_HAS_SET_USERNAME:
          return p_rarch->has_set_username;
       case RARCH_CTL_IS_INITED:
@@ -36546,15 +36569,75 @@ bool core_unset_netplay_callbacks(void)
 
 bool core_set_cheat(retro_ctx_cheat_info_t *info)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
+   struct rarch_state *p_rarch       = &rarch_st;
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   settings_t *settings              = p_rarch->configuration_settings;
+   bool run_ahead_enabled            = false;
+   unsigned run_ahead_frames         = 0;
+   bool run_ahead_secondary_instance = false;
+   bool want_runahead                = false;
+
+   if (settings)
+   {
+      run_ahead_enabled              = settings->bools.run_ahead_enabled;
+      run_ahead_frames               = settings->uints.run_ahead_frames;
+      run_ahead_secondary_instance   = settings->bools.run_ahead_secondary_instance;
+      want_runahead                  = run_ahead_enabled && (run_ahead_frames > 0);
+#ifdef HAVE_NETWORKING
+      if (want_runahead)
+         want_runahead               = !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
+#endif
+   }
+#endif
+
    p_rarch->current_core.retro_cheat_set(info->index, info->enabled, info->code);
+
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   if (want_runahead &&
+       run_ahead_secondary_instance &&
+       p_rarch->runahead_secondary_core_available &&
+       secondary_core_ensure_exists(p_rarch, settings) &&
+       p_rarch->secondary_core.retro_cheat_set)
+      p_rarch->secondary_core.retro_cheat_set(info->index, info->enabled, info->code);
+#endif
+
    return true;
 }
 
 bool core_reset_cheat(void)
 {
    struct rarch_state *p_rarch  = &rarch_st;
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   settings_t *settings              = p_rarch->configuration_settings;
+   bool run_ahead_enabled            = false;
+   unsigned run_ahead_frames         = 0;
+   bool run_ahead_secondary_instance = false;
+   bool want_runahead                = false;
+
+   if (settings)
+   {
+      run_ahead_enabled              = settings->bools.run_ahead_enabled;
+      run_ahead_frames               = settings->uints.run_ahead_frames;
+      run_ahead_secondary_instance   = settings->bools.run_ahead_secondary_instance;
+      want_runahead                  = run_ahead_enabled && (run_ahead_frames > 0);
+#ifdef HAVE_NETWORKING
+      if (want_runahead)
+         want_runahead               = !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
+#endif
+   }
+#endif
+
    p_rarch->current_core.retro_cheat_reset();
+
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   if (want_runahead &&
+       run_ahead_secondary_instance &&
+       p_rarch->runahead_secondary_core_available &&
+       secondary_core_ensure_exists(p_rarch, settings) &&
+       p_rarch->secondary_core.retro_cheat_reset)
+      p_rarch->secondary_core.retro_cheat_reset();
+#endif
+
    return true;
 }
 
