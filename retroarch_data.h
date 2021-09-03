@@ -1844,6 +1844,11 @@ struct rarch_state
     * TODO: Refactor this better. */
    bool video_driver_use_rgba;
 
+   /* Graphics driver supports HDR displays
+    * Currently only D3D11/D3D12 supports HDR displays and 
+    * whether we've enabled it */
+   bool video_driver_hdr_support;
+
    /* If set during context deinit, the driver should keep
     * graphics context alive to avoid having to reset all
     * context state. */

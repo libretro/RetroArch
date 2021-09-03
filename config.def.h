@@ -412,6 +412,21 @@
 #define DEFAULT_SHADER_ENABLE false
 #endif
 
+/* Should we enable hdr when its supported*/
+#define DEFAULT_VIDEO_HDR_ENABLE false
+
+/* The maximum nunmber of nits the actual display can show - needs to be calibrated */
+#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+
+/* The number of nits that paper white is at */
+#define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
+
+/* The contrast setting for hdr used to calculate the display gamma by dividing gamma 2.2 by this value */
+#define DEFAULT_VIDEO_HDR_CONTRAST 1.0f
+
+/* Should we expand the colour gamut when using hdr */
+#define DEFAULT_VIDEO_HDR_EXPAND_GAMUT true
+
 /* When presets are saved they will be saved using the #reference 
  * directive by default */
 #define DEFAULT_VIDEO_SHADER_PRESET_SAVE_REFERENCE_ENABLE true

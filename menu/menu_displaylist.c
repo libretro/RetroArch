@@ -6095,6 +6095,11 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
                      PARSE_ACTION, false) == 0)
                count++;
+            /* if (video_driver_supports_hdr()) */
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
                      PARSE_ACTION, false) == 0)
@@ -7915,6 +7920,37 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
+         }
+         break;
+      case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
+         {
+            if (video_driver_supports_hdr())
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+
+               /* if (settings->bools.video_hdr_enable) */
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS,
+                           PARSE_ONLY_FLOAT, false) == 0)
+                     count++;
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+                           PARSE_ONLY_FLOAT, false) == 0)
+                     count++;
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST,
+                           PARSE_ONLY_FLOAT, false) == 0)
+                     count++;
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+               }
+            }
          }
          break;
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
@@ -11637,6 +11673,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
+      case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
       case DISPLAYLIST_OPTIONS_DISK:

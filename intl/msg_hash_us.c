@@ -1316,6 +1316,36 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Resolution of 0 uses the \n"
                              "resolution of the environment.\n");
             break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
+            snprintf(s, len,
+                     "Enable HDR.\n"
+                             " \n"
+                             "If supported this enables hdr \n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
+            snprintf(s, len,
+                     "Max Nits\n"
+                             " \n"
+                             "Set the maximum no. nits the display can reproduce\n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
+            snprintf(s, len,
+                     "Paper White Nits\n"
+                             " \n"
+                             "Set the no. nits at which paper white should be\n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
+            snprintf(s, len,
+                     "Contrast\n"
+                             " \n"
+                             "The constrast setting for HDR\n");
+            break;
+        case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
+            snprintf(s, len,
+                     "Expand Gamut\n"
+                             " \n"
+                             "Once converted to linear space should we use an expanded gamut to get to HDR10\n");
+            break;
         case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             snprintf(s, len,
                      "Fastforward ratio.\n"

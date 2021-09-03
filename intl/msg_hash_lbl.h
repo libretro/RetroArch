@@ -1073,6 +1073,10 @@ MSG_HASH(
    "deferred_video_scaling_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST,
+   "deferred_video_hdr_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST,
    "deferred_video_synchronization_settings_list"
    )
@@ -3355,6 +3359,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
    "video_scaling_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
+   "video_hdr_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,

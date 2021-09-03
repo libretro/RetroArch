@@ -386,6 +386,10 @@ static const video_poke_interface_t fpga_poke_interface = {
 #ifdef HAVE_MENU
    NULL,
 #endif
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void fpga_gfx_get_poke_interface(void *data,
