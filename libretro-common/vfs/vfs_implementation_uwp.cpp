@@ -32,6 +32,7 @@
 #include <collection.h>
 #include <functional>
 #include <fileapifromapp.h>
+#include <AclAPI.h>
 
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
@@ -56,6 +57,10 @@ using namespace Windows::Storage::FileProperties;
 #include <retro_environment.h>
 #include <uwp/uwp_async.h>
 #include <uwp/uwp_file_handle_access.h>
+#include <uwp/std_filesystem_compat.h>
+
+// define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING to silence warnings
+// idk why this warning happens considering we can't use the non experimental version but whatever ig
 
 namespace
 {
@@ -377,16 +382,26 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    retro_assert(!dirpath_str->IsEmpty() && !filename_str->IsEmpty());
 
    /* Try Win32 first, this should work in AppData */
+   switch (mode)
+   {
+        case RETRO_VFS_FILE_ACCESS_READ_WRITE:
+            desireAccess = GENERIC_READ | GENERIC_WRITE;
+            break;
+        case RETRO_VFS_FILE_ACCESS_WRITE:
+            desireAccess = GENERIC_WRITE;
+            break;
+        case RETRO_VFS_FILE_ACCESS_READ:
+            desireAccess = GENERIC_READ;
+            break;
+   }
    if (mode == RETRO_VFS_FILE_ACCESS_READ)
    {
-      desireAccess        = GENERIC_READ;
       creationDisposition = OPEN_EXISTING;
    }
    else
    {
-      desireAccess        = GENERIC_WRITE;
       creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
-         OPEN_ALWAYS : CREATE_ALWAYS;
+          OPEN_ALWAYS : CREATE_ALWAYS;
    }
 
    file_handle = CreateFile2FromAppW(path_str->Data(), desireAccess, FILE_SHARE_READ, creationDisposition, NULL);
@@ -404,80 +419,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       stream->buffer_fill = 0;
       return stream;
    }
-
-   /* Fallback to WinRT */
-   return RunAsyncAndCatchErrors<libretro_vfs_implementation_file*>([&]() {
-      return concurrency::create_task(LocateStorageItem<StorageFolder>(dirpath_str)).then([&](StorageFolder^ dir) {
-         if (mode == RETRO_VFS_FILE_ACCESS_READ)
-            return dir->GetFileAsync(filename_str);
-         else
-            return dir->CreateFileAsync(filename_str, (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
-               CreationCollisionOption::OpenIfExists : CreationCollisionOption::ReplaceExisting);
-      }).then([&](StorageFile ^file) {
-
-         HANDLE_CREATION_OPTIONS creationOptions;
-         HANDLE_ACCESS_OPTIONS handleAccess;
-         HRESULT hr;
-
-         /* Try to use IStorageItemHandleAccess to get the file handle,
-          * with that we can use Win32 APIs for subsequent reads/writes
-          */
-         if (mode == RETRO_VFS_FILE_ACCESS_READ)
-         {
-            handleAccess    = HANDLE_ACCESS_OPTIONS::HAO_READ;
-            creationOptions = HANDLE_CREATION_OPTIONS::HCO_OPEN_ALWAYS;
-         }
-         else
-         {
-            handleAccess    = HANDLE_ACCESS_OPTIONS::HAO_WRITE;
-            creationOptions = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
-               HANDLE_CREATION_OPTIONS::HCO_OPEN_ALWAYS : HANDLE_CREATION_OPTIONS::HCO_CREATE_ALWAYS;
-            
-         }
-         hr = GetHandleFromStorageFile(file, &file_handle, handleAccess);
-
-         if (SUCCEEDED(hr))
-            /* Success, let's return a null pointer and continue */
-            return concurrency::create_task([&]() { return (IRandomAccessStream^) nullptr; });
-         else
-         {
-            /* Failed, open a WinRT buffer of the file */
-            FileAccessMode accessMode = (mode == RETRO_VFS_FILE_ACCESS_READ) ?
-               FileAccessMode::Read : FileAccessMode::ReadWrite;
-            return concurrency::create_task(file->OpenAsync(accessMode));
-         }
-      }).then([&](IRandomAccessStream^ fpstream) {
-         libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
-         if (!stream)
-            return (libretro_vfs_implementation_file*)NULL;
-
-         stream->orig_path   = strdup(path);
-         stream->fp          = fpstream;
-         stream->file_handle = file_handle;
-         stream->buffer_left = 0;
-         stream->buffer_fill = 0;
-
-         if (fpstream)
-         {
-            /* We are using WinRT.
-             * Preallocate a small buffer for manually buffered I/O,
-              * makes short read faster */
-            stream->fp->Seek(0);
-            int buf_size        = 8 * 1024;
-            stream->buffer      = (char*)malloc(buf_size);
-            stream->bufferp     = CreateNativeBuffer(stream->buffer, buf_size, 0);
-            stream->buffer_size = buf_size;
-         }
-         else
-         {
-            /* If we can use Win32 file API, buffering shouldn't be necessary */
-            stream->buffer      = NULL;
-            stream->bufferp     = nullptr;
-            stream->buffer_size = 0;
-         }
-         return stream;
-      });
-   }, NULL);
+   return NULL;
 }
 
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
@@ -734,36 +676,24 @@ int retro_vfs_file_remove_impl(const char *path)
 {
    BOOL result;
    wchar_t *path_wide;
-   Platform::String^ path_str;
 
    if (!path || !*path)
       return -1;
 
    path_wide = utf8_to_utf16_string_alloc(path);
    windowsize_path(path_wide);
-   path_str  = ref new Platform::String(path_wide);
-   free(path_wide);
 
    /* Try Win32 first, this should work in AppData */
-   result = DeleteFileFromAppW(path_str->Data());
+   result = DeleteFileFromAppW(path_wide);
+   free(path_wide);
    if (result)
       return 0;
 
-   if (GetLastError() == ERROR_FILE_NOT_FOUND)
-      return -1;
-
-   /* Fallback to WinRT */
-   return RunAsyncAndCatchErrors<int>([&]() {
-         return concurrency::create_task(LocateStorageItem<StorageFile>(path_str)).then([&](StorageFile^ file) {
-               return file->DeleteAsync(StorageDeleteOption::PermanentDelete);
-               }).then([&]() {
-                  return 0;
-                  });
-         }, -1);
+   return -1;
 }
 
 /* TODO: this may not work if trying to move a directory */
-int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
+/*int retro_vfs_file_rename_impl(const char* old_path, const char* new_path)
 {
    char new_file_name[PATH_MAX_LENGTH];
    char new_dir_path[PATH_MAX_LENGTH];
@@ -800,8 +730,8 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
       concurrency::task<StorageFile^> old_file_task = concurrency::create_task(LocateStorageItem<StorageFile>(old_path_str));
       concurrency::task<StorageFolder^> new_dir_task = concurrency::create_task(LocateStorageItem<StorageFolder>(new_dir_path_str));
       return concurrency::create_task([&] {
-         /* Run these two tasks in parallel */
-         /* TODO: There may be some cleaner way to express this */
+         // Run these two tasks in parallel
+         // TODO: There may be some cleaner way to express this
          concurrency::task_group group;
          group.run([&] { return old_file_task; });
          group.run([&] { return new_dir_task; });
@@ -812,6 +742,319 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
          return 0;
       });
    }, -1);
+}*/
+
+//this is enables you to copy access permissions from one file/folder to another
+//however depending on the target and where the file is being transferred to and from it may not be needed.
+//(use disgression)
+int uwp_copy_acl(const wchar_t* source, const wchar_t* target)
+{
+    PSECURITY_DESCRIPTOR sidOwnerDescriptor = nullptr;
+    PSECURITY_DESCRIPTOR sidGroupDescriptor = nullptr;
+    PSECURITY_DESCRIPTOR daclDescriptor = nullptr;
+    PSID sidOwner;
+    PSID sidGroup;
+    PACL dacl;
+    PACL sacl;
+    DWORD result;
+    HANDLE original_file = CreateFileFromAppW(source, GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    if (original_file != INVALID_HANDLE_VALUE)
+    {
+        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &daclDescriptor);
+        if (result != 0)
+        {
+            LocalFree(daclDescriptor);
+            CloseHandle(original_file);
+            return result;
+        }
+
+        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidOwnerDescriptor);
+        if (result != 0)
+        {
+            LocalFree(sidOwnerDescriptor);
+            LocalFree(daclDescriptor);
+            CloseHandle(original_file);
+            return result;
+        }
+
+        result = GetSecurityInfo(original_file, SE_FILE_OBJECT, GROUP_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidGroupDescriptor);
+
+        //close file handle regardless of result
+        CloseHandle(original_file);
+
+        if (result != 0)
+        {
+            LocalFree(sidOwnerDescriptor);
+            LocalFree(sidGroupDescriptor);
+            LocalFree(daclDescriptor);
+            CloseHandle(original_file);
+            return result;
+        }
+        CloseHandle(original_file);
+    }
+    else
+    {
+        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &daclDescriptor);
+        if (result != 0)
+        {
+            LocalFree(daclDescriptor);
+            return result;
+        }
+        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidOwnerDescriptor);
+        if (result != 0)
+        {
+            LocalFree(sidOwnerDescriptor);
+            LocalFree(daclDescriptor);
+            return result;
+        }
+        result = GetNamedSecurityInfoW(source, SE_FILE_OBJECT, GROUP_SECURITY_INFORMATION, &sidOwner, &sidGroup, &dacl, &sacl, &sidGroupDescriptor);
+        if (result != 0)
+        {
+            LocalFree(sidOwnerDescriptor);
+            LocalFree(sidGroupDescriptor);
+            LocalFree(daclDescriptor);
+            return result;
+        }
+    }
+    SECURITY_INFORMATION info = DACL_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION;
+    HANDLE target_file = CreateFileFromAppW(target, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (target_file != INVALID_HANDLE_VALUE)
+    {
+        result = SetSecurityInfo(target_file, SE_FILE_OBJECT, info, sidOwner, sidGroup, dacl, sacl);
+        CloseHandle(target_file);
+    }
+    else
+    {
+        wchar_t* temp = wcsdup(target);
+        result = SetNamedSecurityInfoW(temp, SE_FILE_OBJECT, info, sidOwner, sidGroup, dacl, sacl);
+        free(temp);
+    }
+
+    if (result != 0)
+    {
+        LocalFree(sidOwnerDescriptor);
+        LocalFree(sidGroupDescriptor);
+        LocalFree(daclDescriptor);
+        return result;
+    }
+
+    if ((sidOwnerDescriptor != nullptr && LocalFree(sidOwnerDescriptor) != nullptr) || (daclDescriptor != nullptr && LocalFree(daclDescriptor) != nullptr) || (daclDescriptor != nullptr && LocalFree(daclDescriptor) != nullptr))
+    {
+        //an error occured but idk what error code is right so we just return -1
+        return -1;
+    }
+
+    //woo we made it all the way to the end so we can return success
+    return 0;
+}
+
+int uwp_mkdir_impl(std::experimental::filesystem::path dir)
+{
+    //I feel like this should create the directory recursively but the existing implementation does not so this update won't
+    //I put in the work but I just commented out the stuff you would need
+    WIN32_FILE_ATTRIBUTE_DATA lpFileInfo;
+    bool parent_dir_exists = false;
+
+    if (dir.empty())
+        return -1;
+
+    //check if file attributes can be gotten successfully 
+    if (GetFileAttributesExFromAppW(dir.parent_path().wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
+    {
+        //check that the files attributes are not null or empty
+        if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
+        {
+            if (lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            {
+                parent_dir_exists = true;
+            }
+        }
+    }
+    if (!parent_dir_exists)
+    {
+        //try to create parent dir
+        int success = uwp_mkdir_impl(dir.parent_path());
+        if (success != 0 && success != -2)
+            return success;
+    }
+
+
+    /* Try Win32 first, this should work in AppData */
+    bool create_dir = CreateDirectoryFromAppW(dir.wstring().c_str(), NULL);
+
+    if (create_dir)
+        return 0;
+
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+        return -2;
+
+    return -1;
+}
+
+int retro_vfs_mkdir_impl(const char* dir)
+{
+    return uwp_mkdir_impl(std::filesystem::path(dir));
+}
+
+//the first run paramater is used to avoid error checking when doing recursion
+//unlike the initial implementation this can move folders even empty ones when you want to move a directory structure
+//this will fail even if a single file cannot be moved
+int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path,  bool firstrun = true)
+{
+    if (old_path.empty() || new_path.empty())
+        return -1;
+
+    if (firstrun)
+    {
+        WIN32_FILE_ATTRIBUTE_DATA lpFileInfo, targetfileinfo;
+        bool parent_dir_exists = false;
+
+
+        //make sure that parent path exists
+        if (GetFileAttributesExFromAppW(new_path.parent_path().wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
+        {
+            //check that the files attributes are not null or empty
+            if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
+            {
+                if (!(lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+                {
+                    //parent path doesn't exist ;-; so we gotta create it 
+                    uwp_mkdir_impl(new_path.parent_path());
+                }
+            }
+        }
+
+        //make sure that source path exists
+        if (GetFileAttributesExFromAppW(old_path.wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
+        {
+            //check that the files attributes are not null or empty
+            if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
+            {
+                //check if source path is a dir
+                if (lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                {
+                    //create the target dir
+                    CreateDirectoryFromAppW(new_path.wstring().c_str(), NULL);
+                    //call move function again but with first run disabled in order to move the folder
+                    int result = uwp_move_path(old_path, new_path, false);
+                    if (result != 0)
+                    {
+                        //return the error 
+                        return result;
+                    }
+                }
+                else
+                {
+                    //the file that we want to move exists so we can copy it now
+                    //check if target file already exists
+                    if (GetFileAttributesExFromAppW(new_path.wstring().c_str(), GetFileExInfoStandard, &targetfileinfo))
+                    {
+                        if (targetfileinfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && targetfileinfo.dwFileAttributes != 0 && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
+                        {
+                            //delete target file
+                            if (DeleteFileFromAppW(new_path.wstring().c_str()))
+                            {
+                                //return an error if we can't successfully delete the target file 
+                                return -1;
+                            }
+                        }
+                    }
+
+                    //move the file
+                    if (!MoveFileFromAppW(old_path.wstring().c_str(), new_path.wstring().c_str()))
+                    {
+                        //failed to move the file
+                        return -1;
+                    }
+                    //set acl - this step fucking sucks or at least to before I made a whole ass function
+                    //idk if we actually "need" to set the acl though
+                    if (uwp_copy_acl(new_path.parent_path().wstring().c_str(), new_path.wstring().c_str()) != 0)
+                    {
+                        //setting acl failed
+                        return -1;
+                    }
+                }
+            }
+        }
+
+    }
+    else
+    {
+        //we are bypassing error checking and moving a dir
+        //first we gotta get a list of files in the dir
+        wchar_t* filteredPath = wcsdup(old_path.wstring().c_str());
+        wcscat_s(filteredPath, sizeof(L"\\*.*"), L"\\*.*");
+        WIN32_FIND_DATA findDataResult;
+        HANDLE searchResults = FindFirstFileExFromAppW(filteredPath, FindExInfoBasic, &findDataResult, FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
+        if (searchResults != INVALID_HANDLE_VALUE)
+        {
+            bool fail = false;
+            do
+            {
+                if (findDataResult.cFileName != L"." && findDataResult.cFileName != L"..")
+                {
+                    std::filesystem::path temp_old = old_path;
+                    std::filesystem::path temp_new = new_path;
+                    temp_old /= findDataResult.cFileName;
+                    temp_new /= findDataResult.cFileName;
+                    if (findDataResult.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                    {
+                        CreateDirectoryFromAppW(temp_new.wstring().c_str(), NULL);
+                        int result = uwp_move_path(temp_old, temp_new, false);
+                        if (result != 0)
+                            fail = true;
+                        
+                    }
+                    else
+                    {
+                        WIN32_FILE_ATTRIBUTE_DATA targetfileinfo;
+                        //the file that we want to move exists so we can copy it now
+                        //check if target file already exists
+                        if (GetFileAttributesExFromAppW(temp_new.wstring().c_str(), GetFileExInfoStandard, &targetfileinfo))
+                        {
+                            if (targetfileinfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && targetfileinfo.dwFileAttributes != 0 && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
+                            {
+                                //delete target file
+                                if (DeleteFileFromAppW(temp_new.wstring().c_str()))
+                                {
+                                    //return an error if we can't successfully delete the target file 
+                                    fail = true;
+                                }
+                            }
+                        }
+
+                        //move the file
+                        if (!MoveFileFromAppW(temp_old.wstring().c_str(), temp_new.wstring().c_str()))
+                        {
+                            //failed to move the file
+                            fail = true;
+                        }
+                        //set acl - this step fucking sucks or at least to before I made a whole ass function
+                        //idk if we actually "need" to set the acl though
+                        if (uwp_copy_acl(new_path.wstring().c_str(), temp_new.wstring().c_str()) != 0)
+                        {
+                            //setting acl failed
+                            fail = true;
+                        }
+                    }
+                }
+            } while (FindNextFile(searchResults, &findDataResult));
+            FindClose(searchResults);
+            if (fail)
+                return -1;
+        }
+        free(filteredPath);
+    }
+    //yooooooo we finally made it all the way to the end
+    //we can now return success
+    return 0;
+}
+
+//c doesn't support default arguments so we wrap it up in a shell to enable us to use default arguments
+//default arguments mean that we can do better recursion
+int retro_vfs_file_rename_impl(const char* old_path, const char* new_path)
+{
+    return uwp_move_path(std::filesystem::path(old_path), std::filesystem::path(old_path));
 }
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)
@@ -825,9 +1068,6 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
 int retro_vfs_stat_impl(const char *path, int32_t *size)
 {
    wchar_t *path_wide;
-   Platform::String^ path_str;
-   IStorageItem^ item;
-   DWORD file_info;
    _WIN32_FILE_ATTRIBUTE_DATA attribdata;
 
    if (!path || !*path)
@@ -835,16 +1075,13 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
    path_wide = utf8_to_utf16_string_alloc(path);
    windowsize_path(path_wide);
-   path_str  = ref new Platform::String(path_wide);
-   free(path_wide);
 
    /* Try Win32 first, this should work in AppData */
-   if (GetFileAttributesExFromAppW(path_str->Data(), GetFileExInfoStandard, &attribdata))
+   if (GetFileAttributesExFromAppW(path_wide, GetFileExInfoStandard, &attribdata))
    {
-       file_info = attribdata.dwFileAttributes;
-       if (file_info != INVALID_FILE_ATTRIBUTES)
+       if (attribdata.dwFileAttributes != INVALID_FILE_ATTRIBUTES)
        {
-           if (!(file_info & FILE_ATTRIBUTE_DIRECTORY))
+           if (!(attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
            {
                LARGE_INTEGER sz;
                if (size)
@@ -854,100 +1091,16 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
                    *size = sz.QuadPart;
                }
            }
-           return (file_info & FILE_ATTRIBUTE_DIRECTORY) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
+           free(path_wide);
+           return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
        }
    }
-
-   if (GetLastError() == ERROR_FILE_NOT_FOUND)
-      return 0;
-
-   /* Fallback to WinRT */
-   item = LocateStorageFileOrFolder(path_str);
-   if (!item)
-       return 0;
-
-   return RunAsyncAndCatchErrors<int>([&]() {
-         return concurrency::create_task(item->GetBasicPropertiesAsync()).then([&](BasicProperties^ properties) {
-               if (size)
-               *size = properties->Size;
-               return item->IsOfType(StorageItemTypes::Folder) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
-               });
-         }, 0);
+   free(path_wide);
+   return 0;
 }
 
-int retro_vfs_mkdir_impl(const char *dir)
-{
-   Platform::String^ parent_path_str;
-   Platform::String^ dir_name_str;
-   Platform::String^ dir_str;
-   wchar_t *dir_name_wide, *parent_path_wide, *dir_wide;
-   char *dir_local, *tmp;
-   char parent_path[PATH_MAX_LENGTH];
-   char dir_name[PATH_MAX_LENGTH];
-   BOOL result;
-   
-   if (!dir || !*dir)
-      return -1;
 
-   dir_name[0]      = '\0';
 
-   /* If the path ends with a slash, we have to remove 
-    * it for basename to work */
-   dir_local        = strdup(dir);
-   tmp              = dir_local + strlen(dir_local) - 1;
-
-   if (PATH_CHAR_IS_SLASH(*tmp))
-      *tmp          = 0;
-
-   dir_wide         = utf8_to_utf16_string_alloc(dir_local);
-   windowsize_path(dir_wide);
-   dir_str          = ref new Platform::String(dir_wide);
-   free(dir_wide);
-
-   fill_pathname_base(dir_name, dir_local, sizeof(dir_name));
-   dir_name_wide    = utf8_to_utf16_string_alloc(dir_name);
-   dir_name_str     = ref new Platform::String(dir_name_wide);
-   free(dir_name_wide);
-
-   fill_pathname_parent_dir(parent_path, dir_local, sizeof(parent_path));
-   parent_path_wide = utf8_to_utf16_string_alloc(parent_path);
-   windowsize_path(parent_path_wide);
-   parent_path_str  = ref new Platform::String(parent_path_wide);
-   free(parent_path_wide);
-
-   retro_assert(!dir_name_str->IsEmpty() 
-         && !parent_path_str->IsEmpty());
-
-   free(dir_local);
-
-   /* Try Win32 first, this should work in AppData */
-   result = CreateDirectoryFromAppW(dir_str->Data(), NULL);
-   if (result)
-      return 0;
-   
-   if (GetLastError() == ERROR_ALREADY_EXISTS)
-      return -2;
-
-   /* Fallback to WinRT */
-   return RunAsyncAndCatchErrors<int>([&]() {
-         return concurrency::create_task(LocateStorageItem<StorageFolder>(
-                  parent_path_str)).then([&](StorageFolder^ parent) {
-                  return parent->CreateFolderAsync(dir_name_str);
-                  }).then([&](concurrency::task<StorageFolder^> new_dir) {
-                     try
-                     {
-                     new_dir.get();
-                     }
-                     catch (Platform::COMException^ e)
-                     {
-                     if (e->HResult == HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS))
-                     return -2;
-                     throw;
-                     }
-                     return 0;
-                     });
-         }, -1);
-}
 
 #ifdef VFS_FRONTEND
 struct retro_vfs_dir_handle
@@ -1028,24 +1181,6 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
 
    free(rdir);
    return 0;
-}
-
-bool uwp_drive_exists(const char *path)
-{
-   wchar_t *path_wide;
-   Platform::String^ path_str;
-   if (!path || !*path)
-      return 0;
-
-   path_wide = utf8_to_utf16_string_alloc(path);
-   path_str  = ref new Platform::String(path_wide);
-   free(path_wide);
-
-   return RunAsyncAndCatchErrors<bool>([&]() {
-         return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path_str)).then([](StorageFolder^ properties) {
-               return true;
-               });
-         }, false);
 }
 
 char* uwp_trigger_picker(void)
