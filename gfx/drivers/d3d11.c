@@ -1607,18 +1607,18 @@ static bool d3d11_gfx_frame(
    bool widgets_active            = video_info->widgets_active;
 #endif
 #ifdef HAVE_DXGI_HDR
-   settings_t* settings           = config_get_ptr();
+   bool video_hdr_enable          = video_info->hdr_enable;
 
    if (   d3d11->resize_chain || 
-         (d3d11->hdr.enable != settings->bools.video_hdr_enable))
+         (d3d11->hdr.enable != video_hdr_enable))
 #else
    if (d3d11->resize_chain)
 #endif
    {
-      UINT swapchain_flags         = d3d11->has_allow_tearing 
+      UINT swapchain_flags        = d3d11->has_allow_tearing 
          ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
 #ifdef HAVE_DXGI_HDR
-      d3d11->hdr.enable            = settings->bools.video_hdr_enable;
+      d3d11->hdr.enable           = video_hdr_enable;
 
       if(d3d11->hdr.enable)
          d3d11_release_texture(&d3d11->back_buffer);
@@ -1631,27 +1631,27 @@ static bool d3d11_gfx_frame(
             swapchain_flags);
 #endif
 
-      d3d11->viewport.Width  = video_width;
-      d3d11->viewport.Height = video_height;
-      d3d11->scissor.right   = video_width;
-      d3d11->scissor.bottom  = video_height;
+      d3d11->viewport.Width       = video_width;
+      d3d11->viewport.Height      = video_height;
+      d3d11->scissor.right        = video_width;
+      d3d11->scissor.bottom       = video_height;
 
       d3d11->ubo_values.OutputSize.width  = d3d11->viewport.Width;
       d3d11->ubo_values.OutputSize.height = d3d11->viewport.Height;
 
-      d3d11->resize_chain    = false;
-      d3d11->resize_viewport = true;
+      d3d11->resize_chain         = false;
+      d3d11->resize_viewport      = true;
       video_driver_set_size(video_width, video_height);
 
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
-      if (!(d3d11->hdr.support                  = 
+      if (!(d3d11->hdr.support    = 
                dxgi_check_display_hdr_support(d3d11->factory, uwp_get_corewindow())))
-         d3d11->hdr.enable                = false;
+         d3d11->hdr.enable        = false;
 #else
-      if (!(d3d11->hdr.support                  = 
+      if (!(d3d11->hdr.support    = 
                dxgi_check_display_hdr_support(d3d11->factory, main_window.hwnd)))
-         d3d11->hdr.enable                = false;
+         d3d11->hdr.enable        = false;
 #endif
 
       if(d3d11->hdr.enable)
@@ -1683,7 +1683,6 @@ static bool d3d11_gfx_frame(
             d3d11->hdr.min_output_nits,
             d3d11->hdr.max_cll,
             d3d11->hdr.max_fall);
-
 #endif
    }
 

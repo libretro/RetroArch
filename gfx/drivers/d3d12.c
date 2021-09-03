@@ -1358,16 +1358,14 @@ static bool d3d12_gfx_frame(
    bool widgets_active            = video_info->widgets_active;
 #endif
 #ifdef HAVE_DXGI_HDR
-   /* TODO/FIXME - cache this in video_driver_build_info */
-   settings_t*    settings       = config_get_ptr();
-   bool video_hdr_enable         = settings->bools.video_hdr_enable;
+   bool video_hdr_enable          = video_info->hdr_enable;
    if (d3d12->resize_chain || (d3d12->hdr.enable != video_hdr_enable))
 #else
    if (d3d12->resize_chain)
 #endif
    {
 #ifdef HAVE_DXGI_HDR
-      d3d12->hdr.enable                      = video_hdr_enable;
+      d3d12->hdr.enable           = video_hdr_enable;
 #endif
 
       for (i = 0; i < countof(d3d12->chain.renderTargets); i++)

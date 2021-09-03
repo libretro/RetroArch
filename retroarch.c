@@ -29178,6 +29178,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->height                      = p_rarch->video_driver_height;
 
    video_info->use_rgba                    = p_rarch->video_driver_use_rgba;
+   video_info->hdr_enable                  = settings->bools.video_hdr_enable;
 
    video_info->libretro_running            = false;
    video_info->msg_bgcolor_enable          =

@@ -1245,7 +1245,7 @@ typedef struct video_frame_info
    bool menu_screensaver_active;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
-
+   bool hdr_enable;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
