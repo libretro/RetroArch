@@ -284,9 +284,9 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    HRESULT hr;
    HWND hwnd;
 #ifdef __WINRT__
-   DXGI_SWAP_CHAIN_DESC1 desc;
+   DXGI_SWAP_CHAIN_DESC1 desc              = {{0}};
 #else
-   DXGI_SWAP_CHAIN_DESC desc;
+   DXGI_SWAP_CHAIN_DESC desc               = {{0}};
 #endif
 #ifdef HAVE_DXGI_HDR
    DXGI_COLOR_SPACE_TYPE color_space;
@@ -306,12 +306,6 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->chain.bit_depth                          = d3d12->hdr.enable 
       ? DXGI_SWAPCHAIN_BIT_DEPTH_10 
       : DXGI_SWAPCHAIN_BIT_DEPTH_8;
-#endif
-
-#ifdef __WINRT__
-   memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC1));
-#else
-   memset(&desc, 0, sizeof(DXGI_SWAP_CHAIN_DESC));
 #endif
 
    desc.BufferCount          = countof(d3d12->chain.renderTargets);
@@ -368,6 +362,7 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    DXGIMakeWindowAssociation(d3d12->factory, hwnd, DXGI_MWA_NO_ALT_ENTER);
 #endif
 
+#ifdef HAVE_DXGI_HDR
    /* Check display HDR support and 
       initialize ST.2084 support to match 
       the display's support. */
@@ -377,7 +372,6 @@ bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->hdr.max_cll          = 0.0f;
    d3d12->hdr.max_fall         = 0.0f;
 #endif
-#ifdef HAVE_DXGI_HDR
    color_space                 = 
         d3d12->hdr.enable 
       ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 

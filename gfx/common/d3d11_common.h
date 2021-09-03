@@ -2529,6 +2529,9 @@ typedef struct
    D3D11RasterizerState  scissor_disabled;
    D3D11Buffer           ubo;
    d3d11_uniform_t       ubo_values;
+#ifdef HAVE_DXGI_HDR
+   d3d11_texture_t       back_buffer;
+#endif
    D3D11SamplerState     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
@@ -2549,6 +2552,12 @@ typedef struct
    bool                  has_flip_model;
    bool                  has_allow_tearing;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
+#ifdef HAVE_DXGI_HDR
+   enum dxgi_swapchain_bit_depth 
+                         chain_bit_depth;
+   DXGI_COLOR_SPACE_TYPE chain_color_space;
+   DXGI_FORMAT           chain_formats[DXGI_SWAPCHAIN_BIT_DEPTH_COUNT];
+#endif
 #ifdef __WINRT__
    DXGIFactory2 factory;
 #else
@@ -2561,6 +2570,20 @@ typedef struct
       bool enable;
       struct retro_hw_render_interface_d3d11 iface;
    } hw;
+
+#ifdef HAVE_DXGI_HDR
+   struct
+   {
+      dxgi_hdr_uniform_t               ubo_values;
+      D3D11Buffer                      ubo;
+      float                            max_output_nits;
+      float                            min_output_nits;
+      float                            max_cll;
+      float                            max_fall;
+      bool                             support;
+      bool                             enable;
+   } hdr;
+#endif
 
 	struct
    {

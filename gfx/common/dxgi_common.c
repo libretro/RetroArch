@@ -418,18 +418,10 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
       DXGI_OUTPUT_DESC desc;
       int intersect_area;
       int bx1, by1, bx2, by2;
-#if 0
-      /* Get the rectangle bounds of the app window */
-      int ax1               = win32->pos_x;
-      int ay1               = win32->pos_y;
-      int ax2               = win32->pos_x + win32->pos_width; 
-      int ay2               = win32->pos_y + win32->pos_height;
-#else
       int ax1               = 0;
       int ay1               = 0;
       int ax2               = 0;
       int ay2               = 0;
-#endif
 
       if (GetWindowRect(hwnd, &rect)) /* TODO/FIXME - won't work for WinRT */
       {
