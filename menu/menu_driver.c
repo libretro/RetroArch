@@ -540,7 +540,7 @@ bool menu_input_key_bind_poll_find_hold_pad(
    return false;
 }
 
-static bool menu_input_key_bind_poll_find_hold(
+bool menu_input_key_bind_poll_find_hold(
       unsigned max_users,
       struct menu_bind_state *new_state,
       struct retro_keybind * output)

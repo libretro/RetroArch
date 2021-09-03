@@ -239,6 +239,11 @@ bool menu_input_dialog_get_display_kb(void);
 
 void menu_input_dialog_end(void);
 
+bool menu_input_key_bind_poll_find_hold(
+      unsigned max_users,
+      struct menu_bind_state *new_state,
+      struct retro_keybind * output);
+
 RETRO_END_DECLS
 
 #endif
