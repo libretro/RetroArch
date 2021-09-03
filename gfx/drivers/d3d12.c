@@ -1962,23 +1962,14 @@ static bool d3d12_gfx_frame(
             &d3d12->chain.scissorRect);
 
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
-      d3d12_resource_transition(
-            d3d12->queue.cmd,
-            d3d12->chain.renderTargets[d3d12->chain.frame_index],
-            D3D12_RESOURCE_STATE_RENDER_TARGET,
-            D3D12_RESOURCE_STATE_PRESENT);
    }
-   /* TODO/FIXME - is it intentional there is no else block here?
-      Shouldn't d3d12_resource_transition still be set for when HDR
-      is off? 
-    */
-#else
+#endif
+
    d3d12_resource_transition(
          d3d12->queue.cmd,
          d3d12->chain.renderTargets[d3d12->chain.frame_index],
          D3D12_RESOURCE_STATE_RENDER_TARGET,
          D3D12_RESOURCE_STATE_PRESENT);
-#endif
 
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
