@@ -13099,7 +13099,7 @@ static bool command_event_main_state(
    bool ret                    = false;
    bool push_msg               = true;
 
-   msg[0]                      = '\0';
+   state_path[0] = msg[0]      = '\0';
 
    retroarch_get_current_savestate_path(state_path, sizeof(state_path));
 
