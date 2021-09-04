@@ -1417,10 +1417,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "自定義畫面比例"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "如果長寬比設定為「自訂長寬比」，畫面比例 (長/寬) 可以為浮點數。"
-   )
 #if defined(DINGUX)
 #endif
 MSG_HASH(
@@ -1439,6 +1435,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "自定義畫面高度"
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
