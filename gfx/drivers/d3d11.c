@@ -1950,9 +1950,6 @@ static bool d3d11_gfx_frame(
          }
 
          D3D11SetRenderTargets(context, 1, &d3d11->pass[i].rt.rt_view, NULL);
-#if 0
-         D3D11ClearRenderTargetView(context, d3d11->pass[i].rt.rt_view, d3d11->clearcolor);
-#endif
          D3D11SetViewports(context, 1, &d3d11->pass[i].viewport);
 
          D3D11Draw(context, 4, 0);
@@ -2076,6 +2073,7 @@ static bool d3d11_gfx_frame(
    /* Copy over back buffer to swap chain render targets */
    if(d3d11->hdr.enable)
    {
+      ID3D11ShaderResourceView* nullSRV[1] = {NULL};
       D3D11SetRenderTargets(context, 1, &rtv, NULL);
       D3D11ClearRenderTargetView(context, rtv,
             d3d11->clearcolor);
@@ -2104,7 +2102,6 @@ static bool d3d11_gfx_frame(
 
       D3D11Draw(context, 4, 0);
 
-      ID3D11ShaderResourceView* nullSRV[1] = {NULL};
       D3D11SetPShaderResources(context, 0, 1, nullSRV);
    }
 #endif
