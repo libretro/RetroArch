@@ -1545,10 +1545,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "نسبة الجوانب المخصصة"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "قيمة النقاط العائمة لنسبة عرض الفيديو (العرض / الارتفاع)، تستخدم إذا تم تعيين نسبة الجوانب إلى 'نسبة الجوانب المخصصة'."
-   )
 #if defined(DINGUX)
 #endif
 MSG_HASH(
@@ -1575,6 +1571,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "ارتفاع العرض المخصص الذي يتم استخدامه إذا تم تعيين نسبة الجانب إلى 'نسبة الجوانب المخصصة'."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 

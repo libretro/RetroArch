@@ -9,87 +9,55 @@
 /* Top-Level Menu */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   "Menú principal"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   "Paramètres"
+   "සැකසුම්"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   "Favorits"
+   "ප්‍රියතමයන්"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   "Istoric"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "Imatges"
+   "ඉතිහාසය"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   "Musica"
+   "සංගීතය"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "Vidèos"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "Jòc en ret"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   "Explorar"
+   "දෘශ්‍යක"
    )
 
 /* Main Menu */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   "Menú rapid"
+   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   "අන්තර්ගතය පූරණය"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Cargar disc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Clonar disc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Listas de lectura"
+   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   "අන්තර්ගතය ආයාතකරන්න"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
-   "Paramètres"
+   "සැකසුම්"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS,
+   "වැඩසටහන වින්‍යාස කරන්න."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   "තොරතුර"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Fichièr de configuracion"
+   "වින්‍යාස ගොනුව"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   "Ajuda"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Reaviar RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Reaviar lo programa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Quitar RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Quitar lo programa."
+   "උදව්"
    )
 
 /* Main Menu > Load Core */
@@ -106,29 +74,9 @@ MSG_HASH(
 
 /* Main Menu > Information */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "Informacions ret"
-   )
 
 /* Main Menu > Information > Core Information */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   "Categorias"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   "Autor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   "Autorizacions"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   "Licéncia"
-   )
 
 /* Main Menu > Information > System Information */
 
@@ -138,26 +86,6 @@ MSG_HASH(
 
 /* Main Menu > Information > Database Manager > Information */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   "Nom"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   "Descripcion"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   "Tipe"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   "Editor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   "Desvolopaire"
-   )
 
 /* Main Menu > Configuration File */
 
@@ -167,28 +95,12 @@ MSG_HASH(
 
 /* Main Menu > Help > Basic Menu Controls */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   "Lançar"
-   )
 
 /* Settings */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   "Utilizaire"
-   )
 
 /* Settings > Drivers */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-   "Vidèo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   "Menú"
-   )
 
 /* Settings > Video */
 
