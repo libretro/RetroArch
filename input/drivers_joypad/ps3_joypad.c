@@ -289,6 +289,7 @@ input_device_driver_t ps3_joypad = {
    ps3_joypad_axis,
    ps3_joypad_poll,
    ps3_joypad_rumble,
+   NULL,
    ps3_joypad_name,
    "ps3",
 };

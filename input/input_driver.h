@@ -340,6 +340,7 @@ struct rarch_joypad_driver
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
+   bool (*set_rumble_gain)(unsigned, unsigned);
    const char *(*name)(unsigned);
 
    const char *ident;
@@ -381,6 +382,18 @@ const char* config_get_input_driver_options(void);
 bool input_driver_set_rumble(
          input_driver_state_t *driver_state, unsigned port, unsigned joy_idx, 
          enum retro_rumble_effect effect, uint16_t strength);
+/**
+ * Sets the rumble gain.
+ *
+ * @param driver_state
+ * @param gain             Rumble gain, 0-100 [%]
+ * @param input_max_users
+ *
+ * @return true if the rumble gain has been successfully set
+ **/
+bool input_driver_set_rumble_gain(
+         input_driver_state_t *driver_state, unsigned gain,
+         unsigned input_max_users);
 
 /**
  * Sets the sensor state.

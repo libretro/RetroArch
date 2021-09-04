@@ -219,6 +219,7 @@ input_device_driver_t rwebpad_joypad = {
    rwebpad_joypad_axis,
    rwebpad_joypad_poll,
    NULL,
+   NULL,
    rwebpad_joypad_name,
    "rwebpad",
 };

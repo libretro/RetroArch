@@ -8139,6 +8139,12 @@ static void general_write_handler(rarch_setting_t *setting)
                *setting->value.target.unsigned_integer);
          }
          break;
+      case MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN:
+         {
+            input_set_rumble_gain(
+               *setting->value.target.unsigned_integer);
+         }
+         break;
       case MENU_ENUM_LABEL_WIFI_ENABLED:
 #ifdef HAVE_NETWORKING
          if (*setting->value.target.boolean)
@@ -12918,13 +12924,12 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.input_dingux_rumble_gain,
-                  MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
-                  MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-                  DEFAULT_DINGUX_RUMBLE_GAIN,
+                  &settings->uints.input_rumble_gain,
+                  MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,
+                  MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+                  DEFAULT_RUMBLE_GAIN,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -12932,8 +12937,9 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_percentage;
             menu_settings_list_current_add_range(list, list_info, 0, 100, 5, true, true);
-#endif
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.input_poll_type_behavior,
@@ -13337,17 +13343,13 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-            if (string_is_equal(settings->arrays.input_driver, "android") ||
-                string_is_equal(settings->arrays.input_joypad_driver, "sdl_dingux"))
-            {
-               CONFIG_ACTION(
-                     list, list_info,
-                     MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-                     MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group);
-            }
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
 
             CONFIG_ACTION(
                   list, list_info,

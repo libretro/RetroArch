@@ -78,7 +78,8 @@ static input_device_driver_t null_joypad = {
    NULL, /* get_buttons */
    NULL, /* axis */
    NULL, /* poll */
-   NULL,
+   NULL, /* rumble */
+   NULL, /* rumble_gain */
    NULL, /* name */
    "null",
 };
@@ -322,6 +323,25 @@ bool input_driver_set_rumble(
       rumble_state = sec_joypad->set_rumble(joy_idx, effect, strength);
 
    return rumble_state;
+}
+
+/**************************************/
+
+bool input_driver_set_rumble_gain(
+         input_driver_state_t *driver_state, unsigned gain,
+         unsigned input_max_users)
+{
+   unsigned i;
+
+   if (driver_state->primary_joypad
+      && driver_state->primary_joypad->set_rumble_gain)
+   {
+      for (i = 0; i < input_max_users; i++)
+         driver_state->primary_joypad->set_rumble_gain(i, gain);
+      return true;
+   }
+   else
+      return false;
 }
 
 /**************************************/

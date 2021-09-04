@@ -2018,8 +2018,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "تمكين اهتزاز الجهاز (للنواة المدعومة)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
