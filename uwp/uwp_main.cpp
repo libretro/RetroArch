@@ -631,10 +631,19 @@ extern "C" {
 	}
 
 	void win32_show_cursor(void *data, bool state)
-   {
-      CoreWindow::GetForCurrentThread()->PointerCursor = state ? ref new CoreCursor(CoreCursorType::Arrow, 0) : nullptr;
-   }
+	{
+		CoreWindow::GetForCurrentThread()->PointerCursor = state ? ref new CoreCursor(CoreCursorType::Arrow, 0) : nullptr;
+	}
 
+	bool win32_get_client_rect(RECT* rect)
+	{
+		rect->top	   = ApplicationView::GetForCurrentView()->VisibleBounds.Top;
+		rect->left	   = ApplicationView::GetForCurrentView()->VisibleBounds.Left;
+		rect->bottom	= ApplicationView::GetForCurrentView()->VisibleBounds.Bottom;
+		rect->right	   = ApplicationView::GetForCurrentView()->VisibleBounds.Right;
+
+	   return true;
+	}
 
 	bool win32_get_metrics(void* data,
 		enum display_metric_types type, float* value)

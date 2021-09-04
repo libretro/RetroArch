@@ -501,6 +501,12 @@ static INLINE BOOL DXGIIsCurrent(DXGIFactory factory)
 {
    return factory->lpVtbl->IsCurrent(factory);
 }
+#ifdef __WINRT__
+static INLINE BOOL DXGIIsCurrent2(DXGIFactory2 factory)
+{
+   return factory->lpVtbl->IsCurrent(factory);
+}
+#endif
 static INLINE ULONG DXGIReleaseAdapter(DXGIAdapter adapter)
 {
    return adapter->lpVtbl->Release(adapter);

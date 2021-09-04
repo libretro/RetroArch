@@ -1964,11 +1964,6 @@ static bool d3d11_gfx_frame(
 #ifdef HAVE_DXGI_HDR
    if(d3d11->hdr.enable)
    {
-      /* TODO/FIXME - 
-       * following D3D11 warnings are spammed in Debug mode -
-       * Forcing PS shader resource slot 0 to NULL. [ STATE_SETTING WARNING #7: DEVICE_PSSETSHADERRESOURCES_HAZARD]
-       * Resource being set to OM RenderTarget slot 0 is still bound on input! [ STATE_SETTING WARNING #9: DEVICE_OMSETRENDERTARGETS_HAZARD]
-       */
       D3D11SetRenderTargets(context, 1, &d3d11->back_buffer.rt_view, NULL);
       D3D11ClearRenderTargetView(context, d3d11->back_buffer.rt_view, d3d11->clearcolor);
    }
@@ -2108,6 +2103,9 @@ static bool d3d11_gfx_frame(
             D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
       D3D11Draw(context, 4, 0);
+
+      ID3D11ShaderResourceView* nullSRV[1] = {NULL};
+      D3D11SetPShaderResources(context, 0, 1, nullSRV);
    }
 #endif
 
