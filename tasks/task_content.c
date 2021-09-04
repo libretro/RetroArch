@@ -810,10 +810,19 @@ static bool content_file_extract_from_archive(
 
    RARCH_LOG("[CONTENT LOAD]: Core requires uncompressed content - "
          "extracting archive to temporary directory.\n");
+         
+   /* Set valid_exts if content_path tells the file extension */
+   char valid_exts_tmp[9] = "";
+   const char *valid_exts_final = valid_exts;
+   const char *ext = path_get_extension(*content_path);
+   if (strlen(ext) > 0) {
+      strncpy(valid_exts_tmp, ext, 8);
+      valid_exts_final = valid_exts_tmp;
+   }
 
    /* Attempt to extract file  */
    if (!file_archive_extract_file(
-         *content_path, valid_exts,
+         *content_path, valid_exts_final,
          string_is_empty(content_ctx->directory_cache) ?
                NULL : content_ctx->directory_cache,
          temp_path, sizeof(temp_path)))
