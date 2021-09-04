@@ -128,6 +128,9 @@ MSG_HASH(
 #if defined(DINGUX)
 #endif
 
+/* Settings > Video > HDR */
+
+
 /* Settings > Video > Synchronization */
 
 

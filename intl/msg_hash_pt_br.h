@@ -1261,6 +1261,10 @@ MSG_HASH(
    "Altera as configurações de escala de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Altere as configurações de vídeo do HDR."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Sincronização"
    )
@@ -1548,7 +1552,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Defina o tamanho da janela para o múltiplo definido no tamanho do ponto central de visualização."
+   "Defina o tamanho da janela para o múltiplo especificado do tamanho da área de exibição do núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1568,7 +1572,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "Utilize um tamanho personalizado da janela"
+   "Usar tamanho personalizado da janela"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
@@ -1635,7 +1639,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor em ponto flutuante da proporção de tela (largura/altura), utilizado se a proporção de tela estiver definido como 'Proporção de tela personalizada'."
+   "Valor do ponto flutuante (largura/altura) da proporção do vídeo, usado se a 'Proporção de tela' for definhada como 'Configuração'."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1686,6 +1690,25 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Elimina alguns pixels ao redor das bordas da imagem habitualmente deixada em branco pelos desenvolvedores, que por vezes têm pixels descartados."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Ative o HDR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Ative o HDR caso o seu display seja compatível"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Contraste"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Expanda o gama"
    )
 
 /* Settings > Video > Synchronization */
@@ -1784,6 +1807,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Sons do menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Altera as configurações de som do menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -4478,6 +4505,14 @@ MSG_HASH(
    "Mostre a opção 'Opções'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Mostrar 'Gravar opções em disco'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Mostra a opção 'Gravar opções em disco' dentro do menu Opções -> Gerenciar opções do núcleo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    "Mostrar 'Controles'"
    )
@@ -6369,6 +6404,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "Redefine todas as opções do núcleo para os seus valores iniciais."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "Gravar opções em disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "Força as configurações atuais a serem salvas no arquivo ativo de opções, assegurando que a configuração seja preservada no caso de que uma falha no núcleo cause o fechamento da interface."
    )
 
 /* - Legacy (unused) */
@@ -10189,6 +10232,14 @@ MSG_HASH(
    "Todas as opções do núcleo foram restauradas para os valores padrões."
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "As opções do núcleo foram salvas em:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Falha ao salvar as opções do núcleo em:"
+   )
+MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "Não foi possível encontrar nenhum driver seguinte"
    )
@@ -10415,6 +10466,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SAVE_SRAM,
    "Falha em salvar SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Houve uma falha ao carregar a SRAM"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
@@ -11786,6 +11841,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (alta resolução)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Toque na tela para ir\npara o menu do Retroarch"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "o bottom_menu.png não foi encontrado\nna pasta assets/ctr"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Nenhum\nDado"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "Nenhuma\nCaptura de tela"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Resumir o jogo"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Crie um\nPonto de restauração"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Carregue um\nPonto de restauração"
    )
 #endif
 #ifdef HAVE_QT

@@ -1500,6 +1500,9 @@ MSG_HASH(
    "Αφαιρεί μερικά pixel γύρω από την εικόνα όπου εθιμικά οι προγραμματιστές άφηναν κενά ή και που περιέχουν άχρηστα pixel."
    )
 
+/* Settings > Video > HDR */
+
+
 /* Settings > Video > Synchronization */
 
 MSG_HASH(

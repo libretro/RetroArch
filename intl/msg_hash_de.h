@@ -1411,6 +1411,10 @@ MSG_HASH(
    "GPU-Index"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Zu verwendende Grafikkarte auswählen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Vertikale Signalfrequenz"
    )
@@ -1500,7 +1504,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "Fenstermodus-Skalierung"
+   "Fenster-Skalierung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Die Fenstergröße auf das angegebene Vielfache der Größe der Core-Anzeige setzen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -1513,6 +1521,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
    "Fensterposition und -größe merken"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Den gesamten Inhalt in einem Fenster fester Größe anzeigen, dessen Abmessungen durch 'Fensterbreite' und 'Fensterhöhe' festgelegt sind, und die aktuelle Fenstergröße und -position beim Schließen von RetroArch speichern. Wenn deaktiviert, wird die Fenstergröße dynamisch basierend auf der 'Fenster-Skalierung' festgelegt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Benutzerdefinierte Fenstergröße verwenden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Den gesamten Inhalt in einem Fenster fester Größe anzeigen, dessen Abmessungen durch 'Fensterbreite' und 'Fensterhöhe' festgelegt sind. Wenn deaktiviert, wird die Fenstergröße dynamisch basierend auf der 'Fenster-Skalierung' festgelegt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1529,6 +1549,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    "Benutzerdefinierte Fensterhöhe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Maximale Fensterbreite"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Die maximale Breite des Anzeigefensters bei der automatischen Größenanpassung auf Basis der 'Fenster-Skalierung' festlegen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Maximale Fensterhöhe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Die maximale Höhe des Anzeigefensters bei der automatischen Größenanpassung auf Basis der 'Fenster-Skalierung' festlegen."
    )
 
 /* Settings > Video > Scaling */
@@ -1556,10 +1592,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Benutzerdefiniertes Seitenverhältnis"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Gleitkomma-Wert für das Seitenverhältnis (Breite / Höhe). Wird verwendet, wenn das Bildseitenverhältnis auf \"Benutzerdefiniertes Seitenverhältnis\" eingestellt ist."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1610,6 +1642,21 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Einige Pixel an den Bildrändern abschneiden, die üblicherweise von Entwicklern leer gelassen werden und manchmal auch Müll-Pixel enthalten."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "HDR aktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Kontrast"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Gamut erweitern"
    )
 
 /* Settings > Video > Synchronization */
@@ -10117,6 +10164,10 @@ MSG_HASH(
    "Fehler beim Speichern des SRAM"
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Fehler beim Laden des SRAM"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
    "Fehler beim Speichern des Spielstands in"
    )
@@ -11075,6 +11126,10 @@ MSG_HASH(
    "Bildschirm-Auflösung"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Anzeigemodus wählen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "Beenden"
    )
@@ -11498,6 +11553,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (hohe Auflösung)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Hier berühren, um das\nRetroArch-Menü\naufzurufen."
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "bottom_menu.png nicht gefunden\nim assets/ctr Ordner"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Keine\nDaten"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "Kein\nScreenshot"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Spiel fortsetzen"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Speicherpunkt\nerstellen"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Speicherpunkt\nladen"
    )
 #endif
 #ifdef HAVE_QT
