@@ -138,6 +138,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_enable,      MENU_ENUM_SUBLABEL_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_paper_white_nits,      MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_max_nits,      MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_contrast,      MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_hdr_expand_gamut,      MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres_super,       MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres_x_axis_centering,       MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_crt_switchres_porch_adjust,       MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST)
@@ -3897,6 +3898,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_contrast);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_hdr_expand_gamut);
             break;
          case MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_output_settings_list);

@@ -2,10 +2,8 @@
 
 #include <retro_inline.h>
 
-#ifndef __WINRT__
 #ifndef HAVE_DXGI_HDR
 #define HAVE_DXGI_HDR
-#endif
 #endif
 
 #ifdef HAVE_DXGI_HDR
