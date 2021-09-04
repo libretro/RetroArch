@@ -12,6 +12,7 @@
 - CHEATS/RUNAHEAD: Fix cheats when using second instance runahead
 - CONFIG: Add option to (force-)write current core options to disk (Quick Menu)
 - CORE INFO CACHE: Remove core path from core info cache. Should make core info caches portable now (for example: you can move RetroArch to a separate dir and they would still work).
+- D3D11: Use Shader Model 5.0 for frontend shaders if D3D11 Feature level is at least 11.0 or higher. Should fix some new shaders that require SM 5.0 (like AMD FSR)
 - D3D11: Add HDR support (disabled for UWP for now)
 - D3D12: Add HDR support (disabled for UWP for now)
 - EMSCRIPTEN: Fixed web player bug with filesystem and runtime
