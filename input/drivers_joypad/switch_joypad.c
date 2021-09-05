@@ -317,41 +317,86 @@ static void switch_joypad_poll(void)
       if (input_split_joycon && !handheld) {
          if (hidGetNpadDeviceType((HidNpadIdType)i) & HidDeviceTypeBits_JoyLeft) {
             if (pad_button & HidNpadButton_Left)
-               button_state[i] = (uint16_t)HidNpadButton_B;
-            else if (pad_button & HidNpadButton_Up)
-               button_state[i] = (uint16_t)HidNpadButton_Y;
-            else if (pad_button & HidNpadButton_Right)
-               button_state[i] = (uint16_t)HidNpadButton_X;
-            else if (pad_button & HidNpadButton_Down)
-               button_state[i] = (uint16_t)HidNpadButton_A;
-            else if (pad_button & HidNpadButton_LeftSL)
-               button_state[i] = (uint16_t)HidNpadButton_L;
-            else if (pad_button & HidNpadButton_LeftSR)
-               button_state[i] = (uint16_t)HidNpadButton_R;
-            else
-               button_state[i] = pad_button;
+            {
+               pad_button -= (uint16_t)HidNpadButton_Left;
+               pad_button |= (uint16_t)HidNpadButton_B;
+            }
+            if (pad_button & HidNpadButton_Up)
+            {
+               pad_button -= (uint16_t)HidNpadButton_Up;
+               pad_button |= (uint16_t)HidNpadButton_Y;
+            }
+            if (pad_button & HidNpadButton_Right)
+            {
+               pad_button -= (uint16_t)HidNpadButton_Right;
+               pad_button |= (uint16_t)HidNpadButton_X;
+            }
+            if (pad_button & HidNpadButton_Down)
+            {
+               pad_button -= (uint16_t)HidNpadButton_Down;
+               pad_button |= (uint16_t)HidNpadButton_A;
+            }
+            if (pad_button & HidNpadButton_LeftSL)
+            {
+               pad_button -= (uint16_t)HidNpadButton_LeftSL;
+               pad_button |= (uint16_t)HidNpadButton_L;
+            }
+            if (pad_button & HidNpadButton_LeftSR)
+            {
+               pad_button -= (uint16_t)HidNpadButton_LeftSR;
+               pad_button |= (uint16_t)HidNpadButton_R;
+            }
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]
                [RETRO_DEVICE_ID_ANALOG_X] = -stick_left_state.y;
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]
                [RETRO_DEVICE_ID_ANALOG_Y] = -stick_left_state.x;
          }
          else if (hidGetNpadDeviceType((HidNpadIdType)i) & HidDeviceTypeBits_JoyRight) {
+            bool keyB, keyY, keyA, keyX;
+            keyB = keyY = keyA = keyX = false;
             if (pad_button & HidNpadButton_A)
-               button_state[i] = (uint16_t)HidNpadButton_B;
-            else if (pad_button & HidNpadButton_B)
-               button_state[i] = (uint16_t)HidNpadButton_Y;
-            else if (pad_button & HidNpadButton_X)
-               button_state[i] = (uint16_t)HidNpadButton_A;
-            else if (pad_button & HidNpadButton_Y)
-               button_state[i] = (uint16_t)HidNpadButton_X;
-            else if (pad_button & HidNpadButton_RightSL)
-               button_state[i] = (uint16_t)HidNpadButton_L;
-            else if (pad_button & HidNpadButton_RightSR)
-               button_state[i] = (uint16_t)HidNpadButton_R;
-            else if (pad_button & HidNpadButton_StickR)
-               button_state[i] = (uint16_t)HidNpadButton_StickL;
-            else
-               button_state[i] = pad_button;
+            {
+               pad_button -= (uint16_t)HidNpadButton_A;
+               keyB = true;
+            }
+            if (pad_button & HidNpadButton_B)
+            {
+               pad_button -= (uint16_t)HidNpadButton_B;
+               keyY = true;
+            }
+            if (pad_button & HidNpadButton_X)
+            {
+               pad_button -= (uint16_t)HidNpadButton_X;
+               keyA = true;
+            }
+            if (pad_button & HidNpadButton_Y)
+            {
+               pad_button -= (uint16_t)HidNpadButton_Y;
+               keyX = true;
+            }
+            if (pad_button & HidNpadButton_RightSL)
+            {
+               pad_button -= (uint16_t)HidNpadButton_RightSL;
+               pad_button |= (uint16_t)HidNpadButton_L;
+            }
+            if (pad_button & HidNpadButton_RightSR)
+            {
+               pad_button -= (uint16_t)HidNpadButton_RightSR;
+               pad_button |= (uint16_t)HidNpadButton_R;
+            }
+            if (pad_button & HidNpadButton_StickR)
+            {
+               pad_button -= (uint16_t)HidNpadButton_StickR;
+               pad_button |= (uint16_t)HidNpadButton_StickL;
+            }
+            if (keyB == true)
+               pad_button |= (uint16_t)HidNpadButton_B;
+            if (keyY == true)
+               pad_button |= (uint16_t)HidNpadButton_Y;
+            if (keyA == true)
+               pad_button |= (uint16_t)HidNpadButton_A;
+            if (keyX == true)
+               pad_button |= (uint16_t)HidNpadButton_X;
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]
                [RETRO_DEVICE_ID_ANALOG_X] = stick_right_state.y;
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]
@@ -360,12 +405,12 @@ static void switch_joypad_poll(void)
       }
       else
       {
-         button_state[i] = pad_button;
          analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]
             [RETRO_DEVICE_ID_ANALOG_X] = stick_left_state.x;
          analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT]
             [RETRO_DEVICE_ID_ANALOG_Y] = -stick_left_state.y;
       }
+      button_state[i] = pad_button;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT]
          [RETRO_DEVICE_ID_ANALOG_X] = stick_right_state.x;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT]
