@@ -2353,7 +2353,7 @@ HWND win32_get_window(void)
 
 bool win32_get_client_rect(RECT* rect)
 {
-   return GetWindowRect(main_window.hwnd, &rect);
+   return GetWindowRect(main_window.hwnd, rect);
 }
 
 void win32_window_reset(void)
