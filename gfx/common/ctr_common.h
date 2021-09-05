@@ -153,6 +153,10 @@ typedef struct ctr_video
    bool state_data_exist;
    char state_date[CTR_STATE_DATE_SIZE];
    int state_slot;
+   bool bottom_check_idle;
+   bool bottom_is_idle;
+   bool bottom_is_fading;
+   u64  idle_timestamp;
    ctr_bottom_menu bottom_menu;
    ctr_bottom_menu prev_bottom_menu;
    struct ctr_bottom_texture_data *bottom_textures;
