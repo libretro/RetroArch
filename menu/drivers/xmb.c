@@ -837,13 +837,14 @@ static void *xmb_list_get_entry(void *data,
 }
 
 static void xmb_draw_icon(
-      void *userdata,
       gfx_display_t *p_disp,
+      void *userdata,
       gfx_display_ctx_driver_t *dispctx,
       unsigned video_width,
       unsigned video_height,
       bool xmb_shadows_enable,
-      int icon_size,
+      int icon_width,
+      int icon_height,
       uintptr_t texture,
       float x,
       float y,
@@ -860,10 +861,10 @@ static void xmb_draw_icon(
    struct video_coords coords;
 
    if (
-         (x < (-icon_size / 2.0f)) ||
+         (x < (-icon_width / 2.0f)) ||
          (x > width)               ||
-         (y < (icon_size  / 2.0f)) ||
-         (y > height + icon_size)
+         (y < (icon_height  / 2.0f)) ||
+         (y > height + icon_height)
       )
       return;
 
@@ -872,8 +873,8 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
-   draw.width           = icon_size;
-   draw.height          = icon_size;
+   draw.width           = icon_width;
+   draw.height          = icon_height;
    draw.rotation        = rotation;
    draw.scale_factor    = scale_factor;
 #if defined(VITA) || defined(WIIU)
@@ -897,8 +898,8 @@ static void xmb_draw_icon(
 #if defined(VITA) || defined(WIIU)
       if (scale_factor < 1)
       {
-         draw.x         = draw.x + (icon_size-draw.width)/2;
-         draw.y         = draw.y + (icon_size-draw.width)/2;
+         draw.x        += (icon_width - draw.width)/2;
+         draw.y        += (icon_height - draw.width)/2;
       }
 #endif
       if (draw.height > 0 && draw.width > 0)
@@ -913,8 +914,8 @@ static void xmb_draw_icon(
 #if defined(VITA) || defined(WIIU)
    if (scale_factor < 1)
    {
-      draw.x            = draw.x + (icon_size-draw.width)/2;
-      draw.y            = draw.y + (icon_size-draw.width)/2;
+      draw.x           += (icon_width - draw.width) / 2;
+      draw.y           += (icon_height - draw.width) / 2;
    }
 #endif
    if (draw.height > 0 && draw.width > 0)
@@ -3544,12 +3545,13 @@ static int xmb_draw_item(
       gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
       xmb_draw_icon(
-            userdata,
             p_disp,
+            userdata,
             dispctx,
             video_width,
             video_height,
             xmb_shadows_enable,
+            xmb->icon_size,
             xmb->icon_size,
             texture,
             x,
@@ -3568,12 +3570,13 @@ static int xmb_draw_item(
 
    if (texture_switch != 0 && color[3] != 0 && !xmb->assets_missing)
       xmb_draw_icon(
-            userdata,
             p_disp,
+            userdata,
             dispctx,
             video_width,
             video_height,
             xmb_shadows_enable,
+            xmb->icon_size,
             xmb->icon_size,
             texture_switch,
             node->x + xmb->margins_screen_left
@@ -5176,12 +5179,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             if (dispctx && dispctx->blend_begin)
                dispctx->blend_begin(userdata);
             xmb_draw_icon(
-                  userdata,
                   p_disp,
+                  userdata,
                   dispctx,
                   video_width,
                   video_height,
                   xmb_shadows_enable,
+                  xmb->icon_size,
                   xmb->icon_size,
                   xmb->textures.list[
                   powerstate.charging? XMB_TEXTURE_BATTERY_CHARGING   :
@@ -5232,12 +5236,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (dispctx && dispctx->blend_begin)
             dispctx->blend_begin(userdata);
          xmb_draw_icon(
-               userdata,
                p_disp,
+               userdata,
                dispctx,
                video_width,
                video_height,
                xmb_shadows_enable,
+               xmb->icon_size,
                xmb->icon_size,
                xmb->textures.list[XMB_TEXTURE_CLOCK],
                video_width - xmb->icon_size - x_pos,
@@ -5281,12 +5286,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
       xmb_draw_icon(
-            userdata,
             p_disp,
+            userdata,
             dispctx,
             video_width,
             video_height,
             xmb_shadows_enable,
+            xmb->icon_size,
             xmb->icon_size,
             xmb->textures.list[XMB_TEXTURE_ARROW],
             xmb->x + xmb->margins_screen_left +
@@ -5368,12 +5374,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
             xmb_draw_icon(
-                  userdata,
                   p_disp,
+                  userdata,
                   dispctx,
                   video_width,
                   video_height,
                   xmb_shadows_enable,
+                  xmb->icon_size,
                   xmb->icon_size,
                   texture,
                   x,

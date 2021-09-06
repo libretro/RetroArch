@@ -2362,11 +2362,12 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
 }
 
 static void materialui_draw_icon(
-      void *userdata,
       gfx_display_t *p_disp,
+      void *userdata,
       unsigned video_width,
       unsigned video_height,
-      unsigned icon_size,
+      unsigned icon_width,
+      unsigned icon_height,
       uintptr_t texture,
       float x, float y,
       float rotation, float scale_factor,
@@ -2387,9 +2388,9 @@ static void materialui_draw_icon(
    coords.color         = (const float*)color;
 
    draw.x               = x;
-   draw.y               = video_height - y - icon_size;
-   draw.width           = icon_size;
-   draw.height          = icon_size;
+   draw.y               = video_height - y - icon_height;
+   draw.width           = icon_width;
+   draw.height          = icon_height;
    draw.scale_factor    = scale_factor;
    draw.rotation        = rotation;
    draw.coords          = &coords;
@@ -2474,9 +2475,11 @@ static void materialui_draw_thumbnail(
                   mui->colors.missing_thumbnail_icon, alpha);
 
             materialui_draw_icon(
-                  userdata, p_disp,
+                  p_disp,
+                  userdata,
                   video_width,
                   video_height,
+                  (unsigned)icon_size,
                   (unsigned)icon_size,
                   mui->textures.list[MUI_TEXTURE_IMAGE],
                   bg_x + (bg_width - icon_size) / 2.0f,
@@ -3883,9 +3886,11 @@ static void materialui_render_switch_icon(
    /* Draw background */
    if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
       materialui_draw_icon(
-            userdata, p_disp,
+            p_disp,
+            userdata,
             video_width,
             video_height,
+            mui->icon_size,
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_SWITCH_BG],
             x,
@@ -3898,9 +3903,11 @@ static void materialui_render_switch_icon(
    /* Draw switch */
    if (mui->textures.list[switch_texture_index])
       materialui_draw_icon(
-            userdata, p_disp,
+            p_disp,
+            userdata,
             video_width,
             video_height,
+            mui->icon_size,
             mui->icon_size,
             mui->textures.list[switch_texture_index],
             x,
@@ -4024,9 +4031,11 @@ static void materialui_render_menu_entry_default(
    if (icon_texture)
    {
       materialui_draw_icon(
-            userdata, p_disp,
+            p_disp,
+            userdata,
             video_width,
             video_height,
+            mui->icon_size,
             mui->icon_size,
             (uintptr_t)icon_texture,
             entry_x + (int)mui->landscape_optimization.entry_margin,
@@ -4194,9 +4203,11 @@ static void materialui_render_menu_entry_default(
             /* Draw checkmark */
             if (mui->textures.list[MUI_TEXTURE_CHECKMARK])
                materialui_draw_icon(
-                     userdata, p_disp,
+                     p_disp,
+                     userdata,
                      video_width,
                      video_height,
+                     mui->icon_size,
                      mui->icon_size,
                      mui->textures.list[MUI_TEXTURE_CHECKMARK],
                      entry_x + node->entry_width - (int)mui->margin - (int)mui->landscape_optimization.entry_margin - (int)mui->icon_size,
@@ -5662,9 +5673,11 @@ static void materialui_render_header(
             }
 
             materialui_draw_icon(
-                  userdata, p_disp,
+                  p_disp,
+                  userdata,
                   video_width,
                   video_height,
+                  mui->sys_bar_icon_size,
                   mui->sys_bar_icon_size,
                   (uintptr_t)texture_battery,
                   (int)video_width - (
@@ -5803,9 +5816,11 @@ static void materialui_render_header(
       menu_title_margin = mui->icon_size;
 
       materialui_draw_icon(
-            userdata, p_disp,
+            p_disp,
+            userdata,
             video_width,
             video_height,
+            mui->icon_size,
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_BACK],
             0,
@@ -5822,9 +5837,11 @@ static void materialui_render_header(
    if (show_search_icon)
    {
       materialui_draw_icon(
-            userdata, p_disp,
+            p_disp,
+            userdata,
             video_width,
             video_height,
+            mui->icon_size,
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_SEARCH],
             (int)video_width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
@@ -5843,9 +5860,11 @@ static void materialui_render_header(
       if (show_switch_view_icon)
       {
          materialui_draw_icon(
-               userdata, p_disp,
+               p_disp,
+               userdata,
                video_width,
                video_height,
+               mui->icon_size,
                mui->icon_size,
                mui->textures.list[MUI_TEXTURE_SWITCH_VIEW],
                (int)video_width - (2 * (int)mui->icon_size) 
@@ -6001,9 +6020,11 @@ static void materialui_render_nav_bar_bottom(
 
    /* > Back - left hand side */
    materialui_draw_icon(
-         userdata, p_disp,
+         p_disp,
+         userdata,
          video_width,
          video_height,
+         mui->icon_size,
          mui->icon_size,
          mui->textures.list[mui->nav_bar.back_tab.texture_index],
          (int)((0.5f * tab_width) - ((float)mui->icon_size / 2.0f)),
@@ -6017,9 +6038,11 @@ static void materialui_render_nav_bar_bottom(
 
    /* > Resume - right hand side */
    materialui_draw_icon(
-         userdata, p_disp,
+         p_disp,
+         userdata,
          video_width,
          video_height,
+         mui->icon_size,
          mui->icon_size,
          mui->textures.list[mui->nav_bar.resume_tab.texture_index],
          (int)((((float)num_tabs - 0.5f) * tab_width) - ((float)mui->icon_size / 2.0f)),
@@ -6040,9 +6063,11 @@ static void materialui_render_nav_bar_bottom(
 
       /* Draw icon */
       materialui_draw_icon(
-            userdata, p_disp,
+            p_disp,
+            userdata,
             video_width,
             video_height,
+            mui->icon_size,
             mui->icon_size,
             mui->textures.list[tab->texture_index],
             (((float)i + 1.5f) * tab_width) 
@@ -6126,9 +6151,11 @@ static void materialui_render_nav_bar_right(
 
    /* > Back - bottom */
    materialui_draw_icon(
-         userdata, p_disp,
+         p_disp,
+         userdata,
          video_width,
          video_height,
+         mui->icon_size,
          mui->icon_size,
          mui->textures.list[mui->nav_bar.back_tab.texture_index],
          nav_bar_x,
@@ -6142,9 +6169,11 @@ static void materialui_render_nav_bar_right(
 
    /* > Resume - top */
    materialui_draw_icon(
-         userdata, p_disp,
+         p_disp,
+         userdata,
          video_width,
          video_height,
+         mui->icon_size,
          mui->icon_size,
          mui->textures.list[mui->nav_bar.resume_tab.texture_index],
          nav_bar_x,
@@ -6166,9 +6195,11 @@ static void materialui_render_nav_bar_right(
 
       /* Draw icon */
       materialui_draw_icon(
-            userdata, p_disp,
+            p_disp,
+            userdata,
             video_width,
             video_height,
+            mui->icon_size,
             mui->icon_size,
             mui->textures.list[tab->texture_index],
             nav_bar_x,
