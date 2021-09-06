@@ -316,7 +316,20 @@ void gfx_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h,
       unsigned width, unsigned height,
-      float *color, unsigned offset, float scale_factor, uintptr_t texture);
+      float *color, unsigned offset, float scale_factor,
+      uintptr_t texture);
+
+void gfx_display_draw_icon(
+      gfx_display_t *p_disp,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      unsigned icon_width,
+      unsigned icon_height,
+      uintptr_t texture,
+      float x, float y,
+      float rotation, float scale_factor,
+      float *color);
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
       gfx_display_ctx_rotate_draw_t *draw, void *data);

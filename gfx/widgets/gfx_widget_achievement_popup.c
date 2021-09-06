@@ -157,7 +157,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                if (dispctx->blend_begin)
                   dispctx->blend_begin(video_info->userdata);
                if (dispctx->draw)
-                  gfx_widgets_draw_icon(
+                  gfx_display_draw_icon(
                         p_disp,
                         video_info->userdata,
                         video_width,
@@ -177,7 +177,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       /* Badge */
       else
       {
-         gfx_widgets_draw_icon(
+         gfx_display_draw_icon(
                p_disp,
                video_info->userdata,
                video_width,

@@ -191,7 +191,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
 
          if (dispctx && dispctx->blend_begin)
             dispctx->blend_begin(userdata);
-         gfx_widgets_draw_icon(
+         gfx_display_draw_icon(
                p_disp,
                userdata,
                video_width,

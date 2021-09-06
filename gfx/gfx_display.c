@@ -1118,6 +1118,58 @@ void gfx_display_set_msg_force(bool state)
    p_disp->msg_force       = state;
 }
 
+void gfx_display_draw_icon(
+      gfx_display_t *p_disp,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      unsigned icon_width,
+      unsigned icon_height,
+      uintptr_t texture,
+      float x, float y,
+      float rotation, float scale_factor,
+      float *color)
+{
+   gfx_display_ctx_rotate_draw_t rotate_draw;
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
+   math_matrix_4x4 mymat;
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+
+   if (!texture)
+      return;
+
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = rotation;
+   rotate_draw.scale_x      = scale_factor;
+   rotate_draw.scale_y      = scale_factor;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = color;
+
+   draw.x               = x;
+   draw.y               = video_height - y - icon_height;
+   draw.width           = icon_width;
+   draw.height          = icon_height;
+   draw.scale_factor    = scale_factor;
+   draw.rotation        = rotation;
+   draw.coords          = &coords;
+   draw.matrix_data     = &mymat;
+   draw.texture         = texture;
+   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline_id     = 0;
+
+   if (draw.height > 0 && draw.width > 0)
+      dispctx->draw(&draw, userdata, video_width, video_height);
+}
+
 void gfx_display_draw_keyboard(
       gfx_display_t *p_disp,
       void *userdata,

@@ -172,7 +172,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      if (dispctx->blend_begin)
                         dispctx->blend_begin(video_info->userdata);
                      if (dispctx->draw)
-                        gfx_widgets_draw_icon(
+                        gfx_display_draw_icon(
                               p_disp,
                               video_info->userdata,
                               video_width, video_height,
@@ -188,7 +188,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                {
                   /* achievement badge */
                   if (dispctx->draw)
-                     gfx_widgets_draw_icon(
+                     gfx_display_draw_icon(
                            p_disp,
                            video_info->userdata,
                            video_width,

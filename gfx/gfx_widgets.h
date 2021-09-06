@@ -278,18 +278,6 @@ float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,
       const float image_width, const float image_height);
 
-void gfx_widgets_draw_icon(
-      void *data_disp,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      unsigned icon_width,
-      unsigned icon_height,
-      uintptr_t texture,
-      float x, float y,
-      float rotation, float scale_factor,
-      float *color);
-
 void gfx_widgets_draw_text(
       gfx_widget_font_data_t* font_data,
       const char *text,

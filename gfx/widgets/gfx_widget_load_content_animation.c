@@ -797,7 +797,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                if (dispctx->blend_begin)
                   dispctx->blend_begin(userdata);
                if (dispctx->draw)
-                  gfx_widgets_draw_icon(
+                  gfx_display_draw_icon(
                         p_disp,
                         userdata,
                         video_width,

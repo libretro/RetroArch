@@ -233,7 +233,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
 
       gfx_display_set_alpha(pure_white, 1.0f);
       if (p_disp->dispctx->draw)
-         gfx_widgets_draw_icon(
+         gfx_display_draw_icon(
                p_disp,
                userdata,
                video_width,
