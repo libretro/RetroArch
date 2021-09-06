@@ -170,6 +170,9 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       /* Backdrop */
       gfx_display_set_alpha(backdrop_orig, state->alpha);
 
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -189,8 +192,6 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       {
          gfx_display_set_alpha(pure_white, state->text_alpha);
 
-         if (dispctx && dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
          gfx_display_draw_icon(
                p_disp,
                userdata,
@@ -201,9 +202,10 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                0, 0,
                0, 1, pure_white
                );
-         if (dispctx && dispctx->blend_end)
-            dispctx->blend_end(userdata);
       }
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
 
       if (state->mute)
       {
@@ -225,6 +227,9 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
          /* Bar */
          gfx_display_set_alpha(bar_background, state->text_alpha);
          gfx_display_set_alpha(bar_foreground, state->text_alpha);
+
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
 
          gfx_display_draw_quad(
                p_disp,
@@ -249,6 +254,9 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                bar_foreground,
                NULL
                );
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
 
          /* Text */
          snprintf(msg, sizeof(msg), (state->db >= 0 ? "+%.1f dB" : "%.1f dB"),

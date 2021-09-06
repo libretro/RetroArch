@@ -134,6 +134,9 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
 
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(video_info->userdata);
+
       /* Default icon */
       if (!state->queue[state->queue_read_index].badge)
       {
@@ -149,47 +152,40 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                p_dispwidget->backdrop_orig,
                NULL);
 
-         if (dispctx)
-         {
-            /* Icon */
-            if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
-            {
-               if (dispctx->blend_begin)
-                  dispctx->blend_begin(video_info->userdata);
-               if (dispctx->draw)
-                  gfx_display_draw_icon(
-                        p_disp,
-                        video_info->userdata,
-                        video_width,
-                        video_height,
-                        state->height,
-                        state->height,
-                        p_dispwidget->gfx_widgets_icons_textures[
-                        MENU_WIDGETS_ICON_ACHIEVEMENT],
-                        0,
-                        state->y,
-                        0, 1, pure_white);
-               if (dispctx->blend_end)
-                  dispctx->blend_end(video_info->userdata);
-            }
-         }
+         /* Icon */
+         if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
+            if (dispctx->draw)
+               gfx_display_draw_icon(
+                     p_disp,
+                     video_info->userdata,
+                     video_width,
+                     video_height,
+                     state->height,
+                     state->height,
+                     p_dispwidget->gfx_widgets_icons_textures[
+                     MENU_WIDGETS_ICON_ACHIEVEMENT],
+                     0,
+                     state->y,
+                     0, 1, pure_white);
+
       }
       /* Badge */
       else
       {
-         gfx_display_draw_icon(
-               p_disp,
-               video_info->userdata,
-               video_width,
-               video_height,
-               state->height,
-               state->height,
-               state->queue[state->queue_read_index].badge,
-               0,
-               state->y,
-               0,
-               1,
-               pure_white);
+         if (dispctx->draw)
+            gfx_display_draw_icon(
+                  p_disp,
+                  video_info->userdata,
+                  video_width,
+                  video_height,
+                  state->height,
+                  state->height,
+                  state->queue[state->queue_read_index].badge,
+                  0,
+                  state->y,
+                  0,
+                  1,
+                  pure_white);
       }
 
       /* I _think_ state->unfold changes in another thread */
@@ -219,6 +215,9 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             video_height,
             p_dispwidget->backdrop_orig,
 	    NULL);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(video_info->userdata);
 
       /* Title */
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,

@@ -229,6 +229,7 @@ void gfx_display_init(void);
 
 void gfx_display_draw_cursor(
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,

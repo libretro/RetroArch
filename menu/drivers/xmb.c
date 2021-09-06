@@ -4379,6 +4379,7 @@ static void xmb_draw_fullscreen_thumbnails(
       xmb_handle_t *xmb,
       gfx_animation_t *p_anim,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -4600,6 +4601,9 @@ static void xmb_draw_fullscreen_thumbnails(
       gfx_display_set_alpha(
             frame_color, xmb->fullscreen_thumbnail_alpha);
 
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
       /* Darken background */
       gfx_display_draw_quad(
             p_disp,
@@ -4615,9 +4619,15 @@ static void xmb_draw_fullscreen_thumbnails(
             background_color,
             NULL);
 
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+
       /* Draw header */
       if (show_header)
       {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+
          /* Background */
          gfx_display_draw_quad(
                p_disp,
@@ -4632,6 +4642,9 @@ static void xmb_draw_fullscreen_thumbnails(
                (unsigned)view_height,
                header_color,
                NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
 
          /* Title text */
          if (menu_ticker_smooth)
@@ -4712,6 +4725,9 @@ static void xmb_draw_fullscreen_thumbnails(
       /* > Right */
       if (show_right_thumbnail)
       {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+
          /* Background */
          gfx_display_draw_quad(
                p_disp,
@@ -4728,6 +4744,9 @@ static void xmb_draw_fullscreen_thumbnails(
                (unsigned)view_height,
                frame_color,
                NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
 
          /* Thumbnail */
          gfx_thumbnail_draw(
@@ -4748,6 +4767,9 @@ static void xmb_draw_fullscreen_thumbnails(
       /* > Left */
       if (show_left_thumbnail)
       {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+
          /* Background */
          gfx_display_draw_quad(
                p_disp,
@@ -4764,6 +4786,9 @@ static void xmb_draw_fullscreen_thumbnails(
                (unsigned)view_height,
                frame_color,
                NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
 
          /* Thumbnail */
          gfx_thumbnail_draw(
@@ -5462,6 +5487,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb,
          p_anim,
          p_disp,
+         p_disp->dispctx,
          userdata,
          video_width,
          video_height,
@@ -5504,8 +5530,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       gfx_display_set_alpha(xmb_coord_white, MIN(xmb->alpha, 1.00f));
       if (cursor_visible)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
          gfx_display_draw_cursor(
                p_disp,
+               dispctx,
                userdata,
                video_width,
                video_height,
@@ -5517,6 +5547,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                xmb->pointer.y,
                video_width,
                video_height);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
    }
 
    video_driver_set_viewport(video_width, video_height, false, true);

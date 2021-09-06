@@ -725,6 +725,9 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          gfx_display_set_alpha(state->bg_underlay_color,
                bg_alpha * state->bg_underlay_alpha);
 
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+
          /* > Background underlay */
          gfx_display_draw_quad(
                p_disp,
@@ -783,53 +786,52 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                video_height,
                state->bg_color,
                NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
 
-      if (dispctx)
+      /* Draw icon */
+      if (icon_alpha > 0.0f)
       {
-         /* Draw icon */
-         if (icon_alpha > 0.0f)
-         {
-            gfx_display_set_alpha(state->icon_color, icon_alpha);
+         gfx_display_set_alpha(state->icon_color, icon_alpha);
 
-            if (state->icon_texture)
-            {
-               if (dispctx->blend_begin)
-                  dispctx->blend_begin(userdata);
-               if (dispctx->draw)
-                  gfx_display_draw_icon(
-                        p_disp,
-                        userdata,
-                        video_width,
-                        video_height,
-                        state->icon_size,
-                        state->icon_size,
-                        state->icon_texture,
-                        icon_x,
-                        state->icon_y,
-                        0.0f,
-                        1.0f,
-                        state->icon_color);
-               if (dispctx->blend_end)
-                  dispctx->blend_end(userdata);
-            }
-            /* If there is no icon, draw a placeholder
-             * (otherwise layout will look terrible...) */
-            else
-               gfx_display_draw_quad(
-                     p_disp,
-                     userdata,
-                     video_width,
-                     video_height,
-                     icon_x,
-                     state->icon_y,
-                     state->icon_size,
-                     state->icon_size,
-                     video_width,
-                     video_height,
-                     state->icon_color,
-                     NULL);
-         }
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+
+         if (state->icon_texture)
+            gfx_display_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  state->icon_size,
+                  state->icon_size,
+                  state->icon_texture,
+                  icon_x,
+                  state->icon_y,
+                  0.0f,
+                  1.0f,
+                  state->icon_color);
+         /* If there is no icon, draw a placeholder
+          * (otherwise layout will look terrible...) */
+         else
+            gfx_display_draw_quad(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  icon_x,
+                  state->icon_y,
+                  state->icon_size,
+                  state->icon_size,
+                  video_width,
+                  video_height,
+                  state->icon_color,
+                  NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
 
       /* Draw text */
@@ -901,6 +903,9 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          state->margin_shadow_right_color[7]  = bg_alpha;
          state->margin_shadow_right_color[15] = bg_alpha;
 
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+
          /* > Left */
          gfx_display_draw_quad(
                p_disp,
@@ -930,6 +935,9 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                video_height,
                state->margin_shadow_right_color,
 	       NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
    }
 }

@@ -128,6 +128,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          x                           = video_width - widget_width - spacing;
          y                          -= (widget_height + spacing);
 
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(video_info->userdata);
+
          /* Backdrop */
          gfx_display_draw_quad(
                p_disp,
@@ -137,6 +140,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                video_width, video_height,
                p_dispwidget->backdrop_orig,
                NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(video_info->userdata);
 
          /* Text */
          gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,

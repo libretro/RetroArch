@@ -539,7 +539,7 @@ void gfx_display_draw_quad(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t 
-      *dispctx             = p_disp->dispctx;
+      *dispctx          = p_disp->dispctx;
 
    if (w == 0 || h == 0)
       return;
@@ -564,12 +564,8 @@ void gfx_display_draw_quad(
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
 
-   if (dispctx->blend_begin)
-      dispctx->blend_begin(data);
    if (dispctx->draw)
       dispctx->draw(&draw, data, video_width, video_height);
-   if (dispctx->blend_end)
-      dispctx->blend_end(data);
 }
 
 void gfx_display_draw_polygon(
@@ -999,6 +995,7 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
  */
 void gfx_display_draw_cursor(
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -1008,10 +1005,6 @@ void gfx_display_draw_cursor(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-
-   if (!dispctx)
-      return;
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -1031,12 +1024,8 @@ void gfx_display_draw_cursor(
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
 
-   if (dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
    if (dispctx->draw)
       dispctx->draw(&draw, userdata, video_width, video_height);
-   if (dispctx->blend_end)
-      dispctx->blend_end(userdata);
 }
 
 /* Setup: Initializes the font associated
@@ -1205,6 +1194,9 @@ void gfx_display_draw_keyboard(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
+
    gfx_display_draw_quad(
          p_disp,
          userdata,
@@ -1218,6 +1210,9 @@ void gfx_display_draw_keyboard(
          video_height,
          &osk_dark[0],
          NULL);
+
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    ptr_width  = video_width  / 11;
    ptr_height = video_height / 10;

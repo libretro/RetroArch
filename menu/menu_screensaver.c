@@ -753,6 +753,7 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
    void *userdata = NULL;
    unsigned video_width;
    unsigned video_height;
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!screensaver)
       return;
@@ -763,6 +764,9 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
 
    /* Set viewport */
    video_driver_set_viewport(video_width, video_height, true, false);
+
+   if (dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
 
    /* Draw background */
    gfx_display_draw_quad(

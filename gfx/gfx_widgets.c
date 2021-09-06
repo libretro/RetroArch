@@ -1073,6 +1073,9 @@ static int gfx_widgets_draw_indicator(
       unsigned height = p_dispwidget->simple_widget_height * 2;
       width           = height;
 
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -1086,24 +1089,20 @@ static int gfx_widgets_draw_indicator(
 
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
-      if (dispctx)
-      {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-         if (dispctx->draw)
-            gfx_display_draw_icon(
-                  p_disp,
-                  userdata,
-                  video_width,
-                  video_height,
-                  width, height,
-                  icon, top_right_x_advance - width, y,
-                  0, 1,
-                  p_dispwidget->pure_white
-                  );
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
-      }
+      if (dispctx->draw)
+         gfx_display_draw_icon(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               width, height,
+               icon, top_right_x_advance - width, y,
+               0, 1,
+               p_dispwidget->pure_white
+               );
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
    else
    {
@@ -1113,6 +1112,9 @@ static int gfx_widgets_draw_indicator(
       width = font_driver_get_message_width(p_dispwidget->gfx_widget_fonts.regular.font,
             txt,
             (unsigned)strlen(txt), 1) + p_dispwidget->simple_widget_padding * 2;
+
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
       gfx_display_draw_quad(
             p_disp,
@@ -1124,6 +1126,9 @@ static int gfx_widgets_draw_indicator(
             p_dispwidget->backdrop_orig,
             NULL
       );
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
             txt,
@@ -1213,6 +1218,10 @@ static void gfx_widgets_draw_task_msg(
    rect_height = p_dispwidget->msg_queue_height / 2;
 
    gfx_display_set_alpha(msg_queue_current_background, msg->alpha);
+
+   if (dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
+
    gfx_display_draw_quad(
          p_disp,
          userdata,
@@ -1221,7 +1230,7 @@ static void gfx_widgets_draw_task_msg(
          rect_width, rect_height,
          video_width, video_height,
          msg_queue_current_background,
-	 NULL
+         NULL
          );
 
    /* Progress bar */
@@ -1249,8 +1258,6 @@ static void gfx_widgets_draw_task_msg(
    gfx_display_set_alpha(p_dispwidget->pure_white, msg->alpha);
    if (dispctx)
    {
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
       if (dispctx->draw)
          gfx_display_draw_icon(
                p_disp,
@@ -1268,9 +1275,10 @@ static void gfx_widgets_draw_task_msg(
                msg->task_finished ? 0 : msg->hourglass_rotation,
                1,
                p_dispwidget->pure_white);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
    }
+
+   if (dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    /* Text */
    text_y_base = video_height 
@@ -1397,28 +1405,28 @@ static void gfx_widgets_draw_regular_msg(
                   (int)(video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y),
                   0, 1, p_dispwidget->msg_queue_bg);
 
+         /* Background */
+         bar_width = p_dispwidget->simple_widget_padding + msg->width;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               p_dispwidget->msg_queue_rect_start_x,
+               video_height - msg->offset_y,
+               bar_width,
+               p_dispwidget->msg_queue_height,
+               video_width,
+               video_height,
+               p_dispwidget->msg_queue_bg,
+               NULL
+               );
+
          if (dispctx->blend_end)
             dispctx->blend_end(userdata);
       }
    }
-
-   /* Background */
-   bar_width = p_dispwidget->simple_widget_padding + msg->width;
-
-   gfx_display_draw_quad(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         p_dispwidget->msg_queue_rect_start_x,
-         video_height - msg->offset_y,
-         bar_width,
-         p_dispwidget->msg_queue_height,
-         video_width,
-         video_height,
-         p_dispwidget->msg_queue_bg,
-	 NULL
-         );
 
    /* Text */
    text_color = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha*255.0f));
@@ -1549,6 +1557,7 @@ void gfx_widgets_frame(void *data)
    gfx_widgets_font_bind(&p_dispwidget->gfx_widget_fonts.msg_queue);
 
 #ifdef HAVE_TRANSLATE
+
    /* AI Service overlay */
    if (p_dispwidget->ai_service_overlay_state > 0)
    {
@@ -1559,11 +1568,11 @@ void gfx_widgets_frame(void *data)
       0.00, 1.00, 0.00, 1.00,
       };
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
       if (p_dispwidget->ai_service_overlay_texture)
       {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
          if (dispctx->draw)
             gfx_display_draw_icon(
                   p_disp,
@@ -1579,8 +1588,6 @@ void gfx_widgets_frame(void *data)
                   1,
                   p_dispwidget->pure_white
                   );
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
       }
 
       /* top line */
@@ -1594,7 +1601,7 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             outline_color,
-	    NULL
+            NULL
             );
       /* bottom line */
       gfx_display_draw_quad(
@@ -1608,7 +1615,7 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             outline_color,
-	    NULL
+            NULL
             );
       /* left line */
       gfx_display_draw_quad(
@@ -1623,7 +1630,7 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             outline_color,
-	    NULL
+            NULL
             );
       /* right line */
       gfx_display_draw_quad(
@@ -1637,11 +1644,13 @@ void gfx_widgets_frame(void *data)
             video_width,
             video_height,
             outline_color,
-	    NULL
+            NULL
             );
 
       if (p_dispwidget->ai_service_overlay_state == 2)
           p_dispwidget->ai_service_overlay_state = 3;
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 #endif
 
@@ -1671,6 +1680,9 @@ void gfx_widgets_frame(void *data)
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -1684,6 +1696,9 @@ void gfx_widgets_frame(void *data)
             p_dispwidget->backdrop_orig,
 	    NULL
             );
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
             text,

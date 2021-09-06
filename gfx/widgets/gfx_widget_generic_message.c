@@ -414,11 +414,11 @@ static void gfx_widget_generic_message_frame(void *data, void *user_data)
       float widget_alpha, bg_y, text_y;
       video_frame_info_t *video_info         = (video_frame_info_t*)data;
       dispgfx_widget_t *p_dispwidget         = (dispgfx_widget_t*)user_data;
-
       unsigned video_width                   = video_info->width;
       unsigned video_height                  = video_info->height;
       void *userdata                         = video_info->userdata;
       gfx_display_t *p_disp                  = (gfx_display_t*)video_info->disp_userdata;
+      gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
       gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;
       size_t msg_queue_size                  = p_dispwidget->current_msgs_size;
 
@@ -461,6 +461,9 @@ static void gfx_widget_generic_message_frame(void *data, void *user_data)
          gfx_display_set_alpha(state->frame_color, widget_alpha);
          text_color = COLOR_TEXT_ALPHA(state->text_color,
                (unsigned)(widget_alpha * 255.0f));
+
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
 
          /* Background */
          gfx_display_draw_quad(
@@ -523,6 +526,9 @@ static void gfx_widget_generic_message_frame(void *data, void *user_data)
                video_height,
                state->frame_color,
                NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
 
          /* Message */
          gfx_widgets_draw_text(

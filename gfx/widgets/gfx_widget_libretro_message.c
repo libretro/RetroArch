@@ -340,6 +340,7 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
    {
       video_frame_info_t *video_info         = (video_frame_info_t*)data;
       gfx_display_t *p_disp                  = (gfx_display_t*)video_info->disp_userdata;
+      gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
       dispgfx_widget_t *p_dispwidget         = (dispgfx_widget_t*)user_data;
 
       unsigned video_width                   = video_info->width;
@@ -400,6 +401,9 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
          gfx_display_set_alpha(bg_color, bg_alpha);
          gfx_display_set_alpha(state->frame_color, bg_alpha);
 
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+
          /* Background */
          gfx_display_draw_quad(
                p_disp,
@@ -443,6 +447,9 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                video_height,
                state->frame_color,
                NULL);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
 
       /* Draw text */

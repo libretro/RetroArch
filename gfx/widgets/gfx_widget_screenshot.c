@@ -207,6 +207,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    unsigned video_height                = video_info->height;
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_display_t            *p_disp     = (gfx_display_t*)video_info->disp_userdata;
+   gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
    gfx_animation_t          *p_anim     = state->p_anim;
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
@@ -219,6 +220,9 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       gfx_animation_ctx_ticker_t ticker;
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
+
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
       gfx_display_draw_quad(
             p_disp,
@@ -244,6 +248,9 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
                0, state->y,
                0, 1, pure_white
                );
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
 
       gfx_widgets_draw_text(font_regular,
             msg_hash_to_str(MSG_SCREENSHOT_SAVED),
@@ -276,6 +283,8 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    if (state->alpha > 0.0f)
    {
       gfx_display_set_alpha(pure_white, state->alpha);
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -287,6 +296,8 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             pure_white,
             NULL
             );
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 }
 

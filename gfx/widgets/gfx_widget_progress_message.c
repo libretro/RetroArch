@@ -228,7 +228,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       unsigned video_height                = video_info->height;
       void *userdata                       = video_info->userdata;
       gfx_display_t *p_disp                = (gfx_display_t*)video_info->disp_userdata;
-
+      gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
       float *backdrop_color                = p_dispwidget->backdrop_orig;
       unsigned text_color                  = COLOR_TEXT_ALPHA(0xFFFFFFFF, (unsigned)(state->alpha * 255.0f));
 
@@ -239,6 +239,9 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
 
       /* Draw backdrop */
       gfx_display_set_alpha(backdrop_color, state->alpha * DEFAULT_BACKDROP);
+
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
       gfx_display_draw_quad(
             p_disp,
@@ -296,6 +299,9 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
             video_height,
             bar_color,
             NULL);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
 
       /* Draw message text */
       gfx_widgets_draw_text(
