@@ -3515,81 +3515,87 @@ static int xmb_draw_item(
             TEXT_ALIGN_LEFT,
             width, height, xmb->font);
 
-   gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
 
-   if (
-         (!xmb->assets_missing) &&
-         (color[3] != 0) &&
-         (
-            (entry.checked) ||
-            !((entry_type >= MENU_SETTING_DROPDOWN_ITEM) && (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL))
-         )
-      )
+   if (!xmb->assets_missing)
    {
-      math_matrix_4x4 mymat_tmp;
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-            entry.enum_idx, entry_type, (i == current), entry.checked);
-      float x                  = icon_x;
-      float y                  = icon_y;
-      float rotation           = 0;
-      float scale_factor       = node->zoom;
+      if (dispctx && dispctx->draw && color[3] != 0)
+      {
+         gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
 
-      rotate_draw.matrix       = &mymat_tmp;
-      rotate_draw.rotation     = rotation;
-      rotate_draw.scale_x      = scale_factor;
-      rotate_draw.scale_y      = scale_factor;
-      rotate_draw.scale_z      = 1;
-      rotate_draw.scale_enable = true;
+         if (
+               (
+                         entry.checked
+                   || !((entry_type >= MENU_SETTING_DROPDOWN_ITEM) 
+                   &&   (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL))
+               )
+            )
+         {
+            math_matrix_4x4 mymat_tmp;
+            gfx_display_ctx_rotate_draw_t rotate_draw;
+            uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
+                  entry.enum_idx, entry_type, (i == current), entry.checked);
+            float x                  = icon_x;
+            float y                  = icon_y;
+            float rotation           = 0;
+            float scale_factor       = node->zoom;
 
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+            rotate_draw.matrix       = &mymat_tmp;
+            rotate_draw.rotation     = rotation;
+            rotate_draw.scale_x      = scale_factor;
+            rotate_draw.scale_y      = scale_factor;
+            rotate_draw.scale_z      = 1;
+            rotate_draw.scale_enable = true;
 
-      xmb_draw_icon(
-            p_disp,
-            userdata,
-            dispctx,
-            video_width,
-            video_height,
-            xmb_shadows_enable,
-            xmb->icon_size,
-            xmb->icon_size,
-            texture,
-            x,
-            y,
-            width,
-            height,
-            1.0,
-            rotation,
-            scale_factor,
-            &color[0],
-            xmb->shadow_offset,
-            &mymat_tmp);
+            gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+
+            xmb_draw_icon(
+                  p_disp,
+                  userdata,
+                  dispctx,
+                  video_width,
+                  video_height,
+                  xmb_shadows_enable,
+                  xmb->icon_size,
+                  xmb->icon_size,
+                  texture,
+                  x,
+                  y,
+                  width,
+                  height,
+                  1.0,
+                  rotation,
+                  scale_factor,
+                  &color[0],
+                  xmb->shadow_offset,
+                  &mymat_tmp);
+         }
+
+         gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
+
+         if (texture_switch != 0)
+            xmb_draw_icon(
+                  p_disp,
+                  userdata,
+                  dispctx,
+                  video_width,
+                  video_height,
+                  xmb_shadows_enable,
+                  xmb->icon_size,
+                  xmb->icon_size,
+                  texture_switch,
+                  node->x + xmb->margins_screen_left
+                  + xmb->icon_spacing_horizontal
+                  + xmb->icon_size / 2.0 + xmb->margins_setting_left,
+                  xmb->margins_screen_top + node->y + xmb->icon_size / 2.0,
+                  width, height,
+                  node->alpha,
+                  0,
+                  1,
+                  &color[0],
+                  xmb->shadow_offset,
+                  mymat);
+      }
    }
-
-   gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
-
-   if (texture_switch != 0 && color[3] != 0 && !xmb->assets_missing)
-      xmb_draw_icon(
-            p_disp,
-            userdata,
-            dispctx,
-            video_width,
-            video_height,
-            xmb_shadows_enable,
-            xmb->icon_size,
-            xmb->icon_size,
-            texture_switch,
-            node->x + xmb->margins_screen_left
-            + xmb->icon_spacing_horizontal
-            + xmb->icon_size / 2.0 + xmb->margins_setting_left,
-            xmb->margins_screen_top + node->y + xmb->icon_size / 2.0,
-            width, height,
-            node->alpha,
-            0,
-            1,
-            &color[0],
-            xmb->shadow_offset,
-            mymat);
 
    return 0;
 }
@@ -3597,6 +3603,7 @@ static int xmb_draw_item(
 static void xmb_draw_items(
       void *userdata,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       gfx_animation_t *p_anim,
       settings_t *settings,
       unsigned video_width,
@@ -3613,16 +3620,19 @@ static void xmb_draw_items(
    gfx_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node             = NULL;
    size_t end                        = 0;
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!list || !list->size || !xmb)
       return;
 
    if (cat_selection_ptr > xmb->system_tab_end)
-      core_node = xmb_get_userdata_from_horizontal_list(
-            xmb, (unsigned)(cat_selection_ptr - (xmb->system_tab_end + 1)));
+      core_node             = 
+         xmb_get_userdata_from_horizontal_list(
+               xmb,
+               (unsigned)(cat_selection_ptr 
+                  - (xmb->system_tab_end + 1)));
 
-   end                      = list ? list->size : 0;
+   if (list)
+      end                   = list->size;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;
@@ -3651,7 +3661,7 @@ static void xmb_draw_items(
    xmb_calculate_visible_range(xmb, height,
          end, (unsigned)current, &first, &last);
 
-   if (dispctx && dispctx->blend_begin)
+   if (dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
    for (i = first; i <= last; i++)
@@ -3673,7 +3683,7 @@ static void xmb_draw_items(
          break;
    }
 
-   if (dispctx && dispctx->blend_end)
+   if (dispctx->blend_end)
       dispctx->blend_end(userdata);
 }
 
@@ -5174,39 +5184,43 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          size_t x_pos      = xmb->icon_size / 6;
          size_t x_pos_icon = xmb->margins_title_left;
 
-         if (!xmb->assets_missing)
+         if (dispctx)
          {
-            if (dispctx && dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
-            xmb_draw_icon(
-                  p_disp,
-                  userdata,
-                  dispctx,
-                  video_width,
-                  video_height,
-                  xmb_shadows_enable,
-                  xmb->icon_size,
-                  xmb->icon_size,
-                  xmb->textures.list[
-                  powerstate.charging? XMB_TEXTURE_BATTERY_CHARGING   :
-                  (powerstate.percent > 80)? XMB_TEXTURE_BATTERY_FULL :
-                  (powerstate.percent > 60)? XMB_TEXTURE_BATTERY_80   :
-                  (powerstate.percent > 40)? XMB_TEXTURE_BATTERY_60   :
-                  (powerstate.percent > 20)? XMB_TEXTURE_BATTERY_40   :
-                  XMB_TEXTURE_BATTERY_20
-                  ],
-                  video_width - (xmb->icon_size / 2) - x_pos_icon,
-                  xmb->icon_size,
-                  video_width,
-                  video_height,
-                  1,
-                  0,
-                  1,
-                  &item_color[0],
-                  xmb->shadow_offset,
-                  &mymat);
-                  if (dispctx && dispctx->blend_end)
-                     dispctx->blend_end(userdata);
+            if (!xmb->assets_missing)
+            {
+               if (dispctx->blend_begin)
+                  dispctx->blend_begin(userdata);
+               if (dispctx->draw)
+                  xmb_draw_icon(
+                        p_disp,
+                        userdata,
+                        dispctx,
+                        video_width,
+                        video_height,
+                        xmb_shadows_enable,
+                        xmb->icon_size,
+                        xmb->icon_size,
+                        xmb->textures.list[
+                        powerstate.charging? XMB_TEXTURE_BATTERY_CHARGING   :
+                        (powerstate.percent > 80)? XMB_TEXTURE_BATTERY_FULL :
+                        (powerstate.percent > 60)? XMB_TEXTURE_BATTERY_80   :
+                        (powerstate.percent > 40)? XMB_TEXTURE_BATTERY_60   :
+                        (powerstate.percent > 20)? XMB_TEXTURE_BATTERY_40   :
+                        XMB_TEXTURE_BATTERY_20
+                        ],
+                        video_width - (xmb->icon_size / 2) - x_pos_icon,
+                        xmb->icon_size,
+                        video_width,
+                        video_height,
+                        1,
+                        0,
+                        1,
+                        &item_color[0],
+                        xmb->shadow_offset,
+                        &mymat);
+                        if (dispctx->blend_end)
+                           dispctx->blend_end(userdata);
+            }
          }
 
          percent_width = (unsigned)
@@ -5226,37 +5240,41 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       char timedate[255];
       int x_pos = 0;
 
-      if (!xmb->assets_missing)
+      if (dispctx)
       {
-         int x_pos = 0;
+         if (!xmb->assets_missing)
+         {
+            int x_pos = 0;
 
-         if (percent_width)
-            x_pos = percent_width + (xmb->icon_size / 2.5);
+            if (percent_width)
+               x_pos = percent_width + (xmb->icon_size / 2.5);
 
-         if (dispctx && dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-         xmb_draw_icon(
-               p_disp,
-               userdata,
-               dispctx,
-               video_width,
-               video_height,
-               xmb_shadows_enable,
-               xmb->icon_size,
-               xmb->icon_size,
-               xmb->textures.list[XMB_TEXTURE_CLOCK],
-               video_width - xmb->icon_size - x_pos,
-               xmb->icon_size,
-               video_width,
-               video_height,
-               1,
-               0,
-               1,
-               &item_color[0],
-               xmb->shadow_offset,
-               &mymat);
-         if (dispctx && dispctx->blend_end)
-            dispctx->blend_end(userdata);
+            if (dispctx->blend_begin)
+               dispctx->blend_begin(userdata);
+            if (dispctx->draw)
+               xmb_draw_icon(
+                     p_disp,
+                     userdata,
+                     dispctx,
+                     video_width,
+                     video_height,
+                     xmb_shadows_enable,
+                     xmb->icon_size,
+                     xmb->icon_size,
+                     xmb->textures.list[XMB_TEXTURE_CLOCK],
+                     video_width - xmb->icon_size - x_pos,
+                     xmb->icon_size,
+                     video_width,
+                     video_height,
+                     1,
+                     0,
+                     1,
+                     &item_color[0],
+                     xmb->shadow_offset,
+                     &mymat);
+            if (dispctx->blend_end)
+               dispctx->blend_end(userdata);
+         }
       }
 
       timedate[0]             = '\0';
@@ -5277,102 +5295,19 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_width, video_height, xmb->font);
    }
 
-   /* Arrow image */
-   gfx_display_set_alpha(item_color,
-         MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
-   if (!xmb->assets_missing)
+   if (dispctx)
    {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      xmb_draw_icon(
-            p_disp,
-            userdata,
-            dispctx,
-            video_width,
-            video_height,
-            xmb_shadows_enable,
-            xmb->icon_size,
-            xmb->icon_size,
-            xmb->textures.list[XMB_TEXTURE_ARROW],
-            xmb->x + xmb->margins_screen_left +
-            xmb->icon_spacing_horizontal -
-            xmb->icon_size / 2.0 + xmb->icon_size,
-            xmb->margins_screen_top +
-            xmb->icon_size / 2.0 + xmb->icon_spacing_vertical
-            * xmb->active_item_factor,
-            video_width,
-            video_height,
-            xmb->textures_arrow_alpha,
-            0,
-            1,
-            &item_color[0],
-            xmb->shadow_offset,
-            &mymat);
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
-   }
-
-   /* Horizontal tab icons */
-   if (!xmb->assets_missing)
-   {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-
-      for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-            + xmb->system_tab_end; i++)
+      if (!xmb->assets_missing)
       {
-         xmb_node_t *node = xmb_get_node(xmb, i);
+         /* Arrow image */
+         gfx_display_set_alpha(item_color,
+               MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
-         if (!node)
-            continue;
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
 
-         gfx_display_set_alpha(item_color, MIN(node->alpha, xmb->alpha));
-
-         if (item_color[3] != 0)
-         {
-            gfx_display_ctx_rotate_draw_t rotate_draw;
-            math_matrix_4x4 mymat;
-            uintptr_t texture        = node->icon;
-            float x                  = xmb->x + xmb->categories_x_pos +
-               xmb->margins_screen_left +
-               xmb->icon_spacing_horizontal
-               * (i + 1) - xmb->icon_size / 2.0;
-            float y                  = xmb->margins_screen_top
-               + xmb->icon_size / 2.0;
-            float rotation           = 0;
-            float scale_factor       = node->zoom;
-
-            /* Check whether we need to fade out icons
-             * overlapping the top right thumbnail image */
-            if (fade_tab_icons)
-            {
-               float x_threshold = fade_tab_icons_x_threshold - (xmb->icon_size * 1.5f);
-
-               if (x > x_threshold)
-               {
-                  float fade_alpha      = item_color[3];
-                  float fade_offset     = (x - x_threshold) * 2.0f;
-
-                  fade_offset = (fade_offset > xmb->icon_size) ? xmb->icon_size : fade_offset;
-                  fade_alpha *= 1.0f - (fade_offset / xmb->icon_size);
-
-                  if (fade_alpha <= 0.0f)
-                     continue;
-
-                  gfx_display_set_alpha(item_color, fade_alpha);
-               }
-            }
-
-            rotate_draw.matrix       = &mymat;
-            rotate_draw.rotation     = rotation;
-            rotate_draw.scale_x      = scale_factor;
-            rotate_draw.scale_y      = scale_factor;
-            rotate_draw.scale_z      = 1;
-            rotate_draw.scale_enable = true;
-
-            gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
-
+         if (dispctx->draw)
             xmb_draw_icon(
                   p_disp,
                   userdata,
@@ -5382,60 +5317,143 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   xmb_shadows_enable,
                   xmb->icon_size,
                   xmb->icon_size,
-                  texture,
-                  x,
-                  y,
+                  xmb->textures.list[XMB_TEXTURE_ARROW],
+                  xmb->x + xmb->margins_screen_left +
+                  xmb->icon_spacing_horizontal -
+                  xmb->icon_size / 2.0 + xmb->icon_size,
+                  xmb->margins_screen_top +
+                  xmb->icon_size / 2.0 + xmb->icon_spacing_vertical
+                  * xmb->active_item_factor,
                   video_width,
                   video_height,
-                  1.0,
-                  rotation,
-                  scale_factor,
+                  xmb->textures_arrow_alpha,
+                  0,
+                  1,
                   &item_color[0],
                   xmb->shadow_offset,
                   &mymat);
+
+         /* Horizontal tab icons */
+         for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
+               + xmb->system_tab_end; i++)
+         {
+            xmb_node_t *node = xmb_get_node(xmb, i);
+
+            if (!node)
+               continue;
+
+            gfx_display_set_alpha(item_color, MIN(node->alpha, xmb->alpha));
+
+            if (item_color[3] != 0)
+            {
+               gfx_display_ctx_rotate_draw_t rotate_draw;
+               math_matrix_4x4 mymat;
+               uintptr_t texture        = node->icon;
+               float x                  = xmb->x + xmb->categories_x_pos +
+                  xmb->margins_screen_left +
+                  xmb->icon_spacing_horizontal
+                  * (i + 1) - xmb->icon_size / 2.0;
+               float y                  = xmb->margins_screen_top
+                  + xmb->icon_size / 2.0;
+               float rotation           = 0;
+               float scale_factor       = node->zoom;
+
+               /* Check whether we need to fade out icons
+                * overlapping the top right thumbnail image */
+               if (fade_tab_icons)
+               {
+                  float x_threshold = fade_tab_icons_x_threshold - (xmb->icon_size * 1.5f);
+
+                  if (x > x_threshold)
+                  {
+                     float fade_alpha      = item_color[3];
+                     float fade_offset     = (x - x_threshold) * 2.0f;
+
+                     fade_offset = (fade_offset > xmb->icon_size) ? xmb->icon_size : fade_offset;
+                     fade_alpha *= 1.0f - (fade_offset / xmb->icon_size);
+
+                     if (fade_alpha <= 0.0f)
+                        continue;
+
+                     gfx_display_set_alpha(item_color, fade_alpha);
+                  }
+               }
+
+               rotate_draw.matrix       = &mymat;
+               rotate_draw.rotation     = rotation;
+               rotate_draw.scale_x      = scale_factor;
+               rotate_draw.scale_y      = scale_factor;
+               rotate_draw.scale_z      = 1;
+               rotate_draw.scale_enable = true;
+
+               gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+
+               xmb_draw_icon(
+                     p_disp,
+                     userdata,
+                     dispctx,
+                     video_width,
+                     video_height,
+                     xmb_shadows_enable,
+                     xmb->icon_size,
+                     xmb->icon_size,
+                     texture,
+                     x,
+                     y,
+                     video_width,
+                     video_height,
+                     1.0,
+                     rotation,
+                     scale_factor,
+                     &item_color[0],
+                     xmb->shadow_offset,
+                     &mymat);
+            }
          }
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
       }
 
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      /* Vertical icons */
+      xmb_draw_items(
+            userdata,
+            p_disp,
+            dispctx,
+            p_anim,
+            settings,
+            video_width,
+            video_height,
+            xmb_shadows_enable,
+            xmb,
+            &xmb->selection_buf_old,
+            xmb->selection_ptr_old,
+            (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
+            ? xmb->categories_selection_ptr :
+            xmb->categories_selection_ptr_old,
+            &item_color[0],
+            video_width,
+            video_height);
+
+      selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+      xmb_draw_items(
+            userdata,
+            p_disp,
+            dispctx,
+            p_anim,
+            settings,
+            video_width,
+            video_height,
+            xmb_shadows_enable,
+            xmb,
+            selection_buf,
+            selection,
+            xmb->categories_selection_ptr,
+            &item_color[0],
+            video_width,
+            video_height);
    }
-
-   /* Vertical icons */
-   xmb_draw_items(
-         userdata,
-         p_disp,
-         p_anim,
-         settings,
-         video_width,
-         video_height,
-         xmb_shadows_enable,
-         xmb,
-         &xmb->selection_buf_old,
-         xmb->selection_ptr_old,
-         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
-         ? xmb->categories_selection_ptr :
-         xmb->categories_selection_ptr_old,
-         &item_color[0],
-         video_width,
-         video_height);
-
-   selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   xmb_draw_items(
-         userdata,
-         p_disp,
-         p_anim,
-         settings,
-         video_width,
-         video_height,
-         xmb_shadows_enable,
-         xmb,
-         selection_buf,
-         selection,
-         xmb->categories_selection_ptr,
-         &item_color[0],
-         video_width,
-         video_height);
 
    font_driver_flush(video_width, video_height, xmb->font);
    font_driver_flush(video_width, video_height, xmb->font2);
