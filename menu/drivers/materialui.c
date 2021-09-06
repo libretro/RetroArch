@@ -2363,6 +2363,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
 
 static void materialui_draw_icon(
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -2376,10 +2377,6 @@ static void materialui_draw_icon(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -2399,14 +2396,8 @@ static void materialui_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
 
-   if (dispctx)
-   {
-      if (dispctx->draw)
-         if (draw.height > 0 && draw.width > 0)
-            dispctx->draw(&draw, userdata, video_width, video_height);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
-   }
+   if (draw.height > 0 && draw.width > 0)
+      dispctx->draw(&draw, userdata, video_width, video_height);
 }
 
 static void materialui_draw_thumbnail(
@@ -2414,6 +2405,7 @@ static void materialui_draw_thumbnail(
       gfx_thumbnail_t *thumbnail,
       settings_t *settings,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -2474,20 +2466,29 @@ static void materialui_draw_thumbnail(
             gfx_display_set_alpha(
                   mui->colors.missing_thumbnail_icon, alpha);
 
-            materialui_draw_icon(
-                  p_disp,
-                  userdata,
-                  video_width,
-                  video_height,
-                  (unsigned)icon_size,
-                  (unsigned)icon_size,
-                  mui->textures.list[MUI_TEXTURE_IMAGE],
-                  bg_x + (bg_width - icon_size) / 2.0f,
-                  bg_y + (bg_height - icon_size) / 2.0f,
-                  0.0f,
-                  1.0f,
-                  mui->colors.missing_thumbnail_icon,
-                  mymat);
+            if (dispctx)
+            {
+               if (dispctx->blend_begin)
+                  dispctx->blend_begin(userdata);
+               if (dispctx->draw)
+                  materialui_draw_icon(
+                        p_disp,
+                        dispctx,
+                        userdata,
+                        video_width,
+                        video_height,
+                        (unsigned)icon_size,
+                        (unsigned)icon_size,
+                        mui->textures.list[MUI_TEXTURE_IMAGE],
+                        bg_x + (bg_width - icon_size) / 2.0f,
+                        bg_y + (bg_height - icon_size) / 2.0f,
+                        0.0f,
+                        1.0f,
+                        mui->colors.missing_thumbnail_icon,
+                        mymat);
+               if (dispctx->blend_end)
+                  dispctx->blend_end(userdata);
+            }
          }
          break;
       case GFX_THUMBNAIL_STATUS_AVAILABLE:
@@ -3865,6 +3866,7 @@ static void materialui_render_switch_icon(
       materialui_handle_t *mui,
       materialui_node_t *node,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -3885,37 +3887,59 @@ static void materialui_render_switch_icon(
 
    /* Draw background */
    if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
-      materialui_draw_icon(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->icon_size,
-            mui->textures.list[MUI_TEXTURE_SWITCH_BG],
-            x,
-            y,
-            0,
-            1,
-            bg_color,
-            mymat);
+   {
+      if (dispctx)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            materialui_draw_icon(
+                  p_disp,
+                  dispctx,
+                  userdata,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  mui->icon_size,
+                  mui->textures.list[MUI_TEXTURE_SWITCH_BG],
+                  x,
+                  y,
+                  0,
+                  1,
+                  bg_color,
+                  mymat);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
+   }
 
    /* Draw switch */
    if (mui->textures.list[switch_texture_index])
-      materialui_draw_icon(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->icon_size,
-            mui->textures.list[switch_texture_index],
-            x,
-            y,
-            0,
-            1,
-            switch_color,
-            mymat);
+   {
+      if (dispctx)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            materialui_draw_icon(
+                  p_disp,
+                  dispctx,
+                  userdata,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  mui->icon_size,
+                  mui->textures.list[switch_texture_index],
+                  x,
+                  y,
+                  0,
+                  1,
+                  switch_color,
+                  mymat);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
+   }
 }
 
 /* Used for standard, non-playlist entries
@@ -3950,6 +3974,7 @@ static void materialui_render_menu_entry_default(
    uintptr_t icon_texture                            = 0;
    bool draw_text_outside                            = (x_offset != 0);
    gfx_display_t *p_disp                             = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx                 = p_disp->dispctx;
 
    {
       rotate_draw.matrix       = &mymat;
@@ -4030,20 +4055,29 @@ static void materialui_render_menu_entry_default(
 
    if (icon_texture)
    {
-      materialui_draw_icon(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->icon_size,
-            (uintptr_t)icon_texture,
-            entry_x + (int)mui->landscape_optimization.entry_margin,
-            entry_y + (node->entry_height / 2.0f) - (mui->icon_size / 2.0f),
-            0,
-            1,
-            mui->colors.list_icon,
-            &mymat);
+      if (dispctx)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            materialui_draw_icon(
+                  p_disp,
+                  dispctx,
+                  userdata,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  mui->icon_size,
+                  (uintptr_t)icon_texture,
+                  entry_x + (int)mui->landscape_optimization.entry_margin,
+                  entry_y + (node->entry_height / 2.0f) - (mui->icon_size / 2.0f),
+                  0,
+                  1,
+                  mui->colors.list_icon,
+                  &mymat);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
 
       entry_margin += mui->icon_size;
       usable_width -= mui->icon_size;
@@ -4182,7 +4216,8 @@ static void materialui_render_menu_entry_default(
          break;
       case MUI_ENTRY_VALUE_SWITCH_ON:
          {
-            materialui_render_switch_icon(mui, node, p_disp, userdata,
+            materialui_render_switch_icon(mui, node, p_disp, dispctx,
+                  userdata,
                   video_width, video_height, value_icon_y, x_offset,
                   true,
                   &mymat);
@@ -4191,7 +4226,8 @@ static void materialui_render_menu_entry_default(
          break;
       case MUI_ENTRY_VALUE_SWITCH_OFF:
          {
-            materialui_render_switch_icon(mui, node, p_disp, userdata,
+            materialui_render_switch_icon(mui, node, p_disp, dispctx,
+                  userdata,
                   video_width, video_height, value_icon_y, x_offset,
                   false,
                   &mymat);
@@ -4202,20 +4238,35 @@ static void materialui_render_menu_entry_default(
          {
             /* Draw checkmark */
             if (mui->textures.list[MUI_TEXTURE_CHECKMARK])
-               materialui_draw_icon(
-                     p_disp,
-                     userdata,
-                     video_width,
-                     video_height,
-                     mui->icon_size,
-                     mui->icon_size,
-                     mui->textures.list[MUI_TEXTURE_CHECKMARK],
-                     entry_x + node->entry_width - (int)mui->margin - (int)mui->landscape_optimization.entry_margin - (int)mui->icon_size,
-                     value_icon_y,
-                     0,
-                     1,
-                     mui->colors.list_switch_on,
-                     &mymat);
+            {
+               if (dispctx)
+               {
+                  if (dispctx->blend_begin)
+                     dispctx->blend_begin(userdata);
+                  if (dispctx->draw)
+                     materialui_draw_icon(
+                           p_disp,
+                           dispctx,
+                           userdata,
+                           video_width,
+                           video_height,
+                           mui->icon_size,
+                           mui->icon_size,
+                           mui->textures.list[MUI_TEXTURE_CHECKMARK],
+                           entry_x 
+                           + node->entry_width 
+                           - (int)mui->margin 
+                           - (int)mui->landscape_optimization.entry_margin 
+                           - (int)mui->icon_size,
+                           value_icon_y,
+                           0,
+                           1,
+                           mui->colors.list_switch_on,
+                           &mymat);
+                  if (dispctx->blend_end)
+                     dispctx->blend_end(userdata);
+               }
+            }
 
             entry_value_width = mui->icon_size;
          }
@@ -4305,14 +4356,16 @@ static void materialui_render_menu_entry_playlist_list(
    bool draw_text_outside     = (x_offset != 0);
    settings_t *settings       = config_get_ptr();
    gfx_display_t *p_disp      = disp_get_ptr();
+   gfx_display_ctx_driver_t 
+      *dispctx                = p_disp->dispctx;
 
    {
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1;
-      rotate_draw.scale_enable = true;
+      rotate_draw.matrix      = &mymat;
+      rotate_draw.rotation    = 0.0f;
+      rotate_draw.scale_x     = 1.0f;
+      rotate_draw.scale_y     = 1.0f;
+      rotate_draw.scale_z     = 1;
+      rotate_draw.scale_enable= true;
 
       gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
    }
@@ -4375,6 +4428,7 @@ static void materialui_render_menu_entry_playlist_list(
             &node->thumbnails.primary,
             settings,
             p_disp,
+            dispctx,
             userdata,
             video_width,
             video_height,
@@ -4394,6 +4448,7 @@ static void materialui_render_menu_entry_playlist_list(
                &node->thumbnails.secondary,
                settings,
                p_disp,
+               dispctx,
                userdata,
                video_width,
                video_height,
@@ -4559,8 +4614,10 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    bool draw_divider       = (usable_width > 0) &&
                ((divider_y + (mui->entry_divider_width * 2)) <
                      (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
-   gfx_display_t *p_disp   = disp_get_ptr();
    settings_t *settings    = config_get_ptr();
+   gfx_display_t *p_disp   = disp_get_ptr();
+   gfx_display_ctx_driver_t 
+      *dispctx             = p_disp->dispctx;
 
    {
       rotate_draw.matrix       = &mymat;
@@ -4599,6 +4656,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
          &node->thumbnails.primary,
          settings,
          p_disp,
+         dispctx,
          userdata,
          video_width,
          video_height,
@@ -4613,6 +4671,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
          &node->thumbnails.secondary,
          settings,
          p_disp,
+         dispctx,
          userdata,
          video_width,
          video_height,
@@ -4852,6 +4911,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
          (mui->landscape_optimization.enabled ? mui->entry_divider_width : 0);
    float thumbnail_y          = background_y + (float)mui->margin;
    gfx_display_t *p_disp      = disp_get_ptr();
+   gfx_display_ctx_driver_t 
+      *dispctx                = p_disp->dispctx;
    settings_t *settings       = config_get_ptr();
 
    /* Sanity check */
@@ -4947,6 +5008,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             primary_thumbnail,
             settings,
             p_disp,
+            dispctx,
             userdata,
             video_width,
             video_height,
@@ -4961,6 +5023,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             secondary_thumbnail,
             settings,
             p_disp,
+            dispctx,
             userdata,
             video_width,
             video_height,
@@ -5533,6 +5596,8 @@ static void materialui_render_header(
       materialui_handle_t *mui,
       settings_t *settings,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t 
+      *dispctx,
       void *userdata,
       unsigned video_width, unsigned video_height,
       math_matrix_4x4 *mymat)
@@ -5672,24 +5737,33 @@ static void materialui_render_header(
                   texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_20];
             }
 
-            materialui_draw_icon(
-                  p_disp,
-                  userdata,
-                  video_width,
-                  video_height,
-                  mui->sys_bar_icon_size,
-                  mui->sys_bar_icon_size,
-                  (uintptr_t)texture_battery,
-                  (int)video_width - (
-                     (int)mui->sys_bar_cache.battery_percent_width +
-                     (int)mui->sys_bar_margin                      + 
-                     (int)mui->sys_bar_icon_size                   + 
-                     (int)mui->nav_bar_layout_width),
-                  0,
-                  0,
-                  1,
-                  mui->colors.sys_bar_icon,
-                  mymat);
+            if (dispctx)
+            {
+               if (dispctx->blend_begin)
+                  dispctx->blend_begin(userdata);
+               if (dispctx->draw)
+                  materialui_draw_icon(
+                        p_disp,
+                        dispctx,
+                        userdata,
+                        video_width,
+                        video_height,
+                        mui->sys_bar_icon_size,
+                        mui->sys_bar_icon_size,
+                        (uintptr_t)texture_battery,
+                        (int)video_width - (
+                           (int)mui->sys_bar_cache.battery_percent_width +
+                           (int)mui->sys_bar_margin                      + 
+                           (int)mui->sys_bar_icon_size                   + 
+                           (int)mui->nav_bar_layout_width),
+                        0,
+                        0,
+                        1,
+                        mui->colors.sys_bar_icon,
+                        mymat);
+               if (dispctx->blend_end)
+                  dispctx->blend_end(userdata);
+            }
 
             /* Draw percent text */
             gfx_display_draw_text(mui->font_data.hint.font,
@@ -5815,20 +5889,29 @@ static void materialui_render_header(
    {
       menu_title_margin = mui->icon_size;
 
-      materialui_draw_icon(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->icon_size,
-            mui->textures.list[MUI_TEXTURE_BACK],
-            0,
-            (int)mui->sys_bar_height,
-            0,
-            1,
-            mui->colors.header_icon,
-            mymat);
+      if (dispctx)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            materialui_draw_icon(
+                  p_disp,
+                  dispctx,
+                  userdata,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  mui->icon_size,
+                  mui->textures.list[MUI_TEXTURE_BACK],
+                  0,
+                  (int)mui->sys_bar_height,
+                  0,
+                  1,
+                  mui->colors.header_icon,
+                  mymat);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
    }
 
    usable_title_bar_width -= menu_title_margin;
@@ -5836,20 +5919,29 @@ static void materialui_render_header(
    /* > Draw 'search' icon, if required */
    if (show_search_icon)
    {
-      materialui_draw_icon(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->icon_size,
-            mui->textures.list[MUI_TEXTURE_SEARCH],
-            (int)video_width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
-            (int)mui->sys_bar_height,
-            0,
-            1,
-            mui->colors.header_icon,
-            mymat);
+      if (dispctx)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            materialui_draw_icon(
+                  p_disp,
+                  dispctx,
+                  userdata,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  mui->icon_size,
+                  mui->textures.list[MUI_TEXTURE_SEARCH],
+                  (int)video_width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
+                  (int)mui->sys_bar_height,
+                  0,
+                  1,
+                  mui->colors.header_icon,
+                  mymat);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
 
       usable_title_bar_width -= mui->icon_size;
 
@@ -5859,21 +5951,30 @@ static void materialui_render_header(
        *   'search' is also shown... */
       if (show_switch_view_icon)
       {
-         materialui_draw_icon(
-               p_disp,
-               userdata,
-               video_width,
-               video_height,
-               mui->icon_size,
-               mui->icon_size,
-               mui->textures.list[MUI_TEXTURE_SWITCH_VIEW],
-               (int)video_width - (2 * (int)mui->icon_size) 
-               - (int)mui->nav_bar_layout_width,
-               (int)mui->sys_bar_height,
-               0,
-               1,
-               mui->colors.header_icon,
-               mymat);
+         if (dispctx)
+         {
+            if (dispctx->blend_begin)
+               dispctx->blend_begin(userdata);
+            if (dispctx->draw)
+               materialui_draw_icon(
+                     p_disp,
+                     dispctx,
+                     userdata,
+                     video_width,
+                     video_height,
+                     mui->icon_size,
+                     mui->icon_size,
+                     mui->textures.list[MUI_TEXTURE_SWITCH_VIEW],
+                     (int)video_width - (2 * (int)mui->icon_size) 
+                     - (int)mui->nav_bar_layout_width,
+                     (int)mui->sys_bar_height,
+                     0,
+                     1,
+                     mui->colors.header_icon,
+                     mymat);
+            if (dispctx->blend_end)
+               dispctx->blend_end(userdata);
+         }
 
          usable_title_bar_width -= mui->icon_size;
       }
@@ -5968,6 +6069,7 @@ static void materialui_render_header(
 static void materialui_render_nav_bar_bottom(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width, unsigned video_height,
       math_matrix_4x4 *mymat)
@@ -6018,86 +6120,107 @@ static void materialui_render_nav_bar_bottom(
 
    /* Draw tabs */
 
-   /* > Back - left hand side */
-   materialui_draw_icon(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         mui->icon_size,
-         mui->icon_size,
-         mui->textures.list[mui->nav_bar.back_tab.texture_index],
-         (int)((0.5f * tab_width) - ((float)mui->icon_size / 2.0f)),
-         nav_bar_y,
-         0,
-         1,
-         mui->nav_bar.back_tab.enabled 
-         ? mui->colors.nav_bar_icon_passive
-         : mui->colors.nav_bar_icon_disabled,
-         mymat);
-
-   /* > Resume - right hand side */
-   materialui_draw_icon(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         mui->icon_size,
-         mui->icon_size,
-         mui->textures.list[mui->nav_bar.resume_tab.texture_index],
-         (int)((((float)num_tabs - 0.5f) * tab_width) - ((float)mui->icon_size / 2.0f)),
-         nav_bar_y,
-         0,
-         1,
-         mui->nav_bar.resume_tab.enabled 
-         ? mui->colors.nav_bar_icon_passive
-         : mui->colors.nav_bar_icon_disabled,
-         mymat);
-
-   /* Menu tabs - in the centre, left to right */
-   for (i = 0; i < mui->nav_bar.num_menu_tabs; i++)
+   if (dispctx)
    {
-      materialui_nav_bar_menu_tab_t *tab = &mui->nav_bar.menu_tabs[i];
-      float *draw_color                  = tab->active ?
-            mui->colors.nav_bar_icon_active : mui->colors.nav_bar_icon_passive;
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (dispctx->draw)
+      {
+         /* > Back - left hand side */
+         materialui_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
+               video_width,
+               video_height,
+               mui->icon_size,
+               mui->icon_size,
+               mui->textures.list[mui->nav_bar.back_tab.texture_index],
+               (int)((0.5f * tab_width) - ((float)mui->icon_size / 2.0f)),
+               nav_bar_y,
+               0,
+               1,
+               mui->nav_bar.back_tab.enabled 
+               ? mui->colors.nav_bar_icon_passive
+               : mui->colors.nav_bar_icon_disabled,
+               mymat);
+         /* > Resume - right hand side */
+         materialui_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
+               video_width,
+               video_height,
+               mui->icon_size,
+               mui->icon_size,
+               mui->textures.list[mui->nav_bar.resume_tab.texture_index],
+               (int)((((float)num_tabs - 0.5f) * tab_width) - ((float)mui->icon_size / 2.0f)),
+               nav_bar_y,
+               0,
+               1,
+               mui->nav_bar.resume_tab.enabled 
+               ? mui->colors.nav_bar_icon_passive
+               : mui->colors.nav_bar_icon_disabled,
+               mymat);
+      }
 
-      /* Draw icon */
-      materialui_draw_icon(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->icon_size,
-            mui->textures.list[tab->texture_index],
-            (((float)i + 1.5f) * tab_width) 
-            - ((float)mui->icon_size / 2.0f),
-            nav_bar_y,
-            0,
-            1,
-            draw_color,
-            mymat);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
 
-      /* Draw selection marker */
-      gfx_display_draw_quad(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            (int)((i + 1) * tab_width_int),
-            selection_marker_y,
-            selection_marker_width,
-            selection_marker_height,
-            video_width,
-            video_height,
-            draw_color,
-            NULL);
+      /* Menu tabs - in the centre, left to right */
+      for (i = 0; i < mui->nav_bar.num_menu_tabs; i++)
+      {
+         materialui_nav_bar_menu_tab_t *tab = &mui->nav_bar.menu_tabs[i];
+         float *draw_color                  = tab->active 
+            ? mui->colors.nav_bar_icon_active
+            : mui->colors.nav_bar_icon_passive;
+
+         /* Draw icon */
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            materialui_draw_icon(
+                  p_disp,
+                  dispctx,
+                  userdata,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  mui->icon_size,
+                  mui->textures.list[tab->texture_index],
+                  (((float)i + 1.5f) * tab_width) 
+                  - ((float)mui->icon_size / 2.0f),
+                  nav_bar_y,
+                  0,
+                  1,
+                  draw_color,
+                  mymat);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+
+         /* Draw selection marker */
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               (int)((i + 1) * tab_width_int),
+               selection_marker_y,
+               selection_marker_width,
+               selection_marker_height,
+               video_width,
+               video_height,
+               draw_color,
+               NULL);
+      }
    }
+
 }
 
 static void materialui_render_nav_bar_right(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -6149,87 +6272,106 @@ static void materialui_render_nav_bar_right(
 
    /* Draw tabs */
 
-   /* > Back - bottom */
-   materialui_draw_icon(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         mui->icon_size,
-         mui->icon_size,
-         mui->textures.list[mui->nav_bar.back_tab.texture_index],
-         nav_bar_x,
-         (int)((((float)num_tabs - 0.5f) * tab_height) - ((float)mui->icon_size / 2.0f)),
-         0,
-         1,
-         mui->nav_bar.back_tab.enabled 
-         ? mui->colors.nav_bar_icon_passive
-         : mui->colors.nav_bar_icon_disabled,
-         mymat);
-
-   /* > Resume - top */
-   materialui_draw_icon(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         mui->icon_size,
-         mui->icon_size,
-         mui->textures.list[mui->nav_bar.resume_tab.texture_index],
-         nav_bar_x,
-         (int)((0.5f * tab_height) 
-            - ((float)mui->icon_size / 2.0f)),
-         0,
-         1,
-         mui->nav_bar.resume_tab.enabled
-         ? mui->colors.nav_bar_icon_passive 
-         : mui->colors.nav_bar_icon_disabled,
-         mymat);
-
-   /* Menu tabs - in the centre, top to bottom */
-   for (i = 0; i < mui->nav_bar.num_menu_tabs; i++)
+   if (dispctx)
    {
-      materialui_nav_bar_menu_tab_t *tab = &mui->nav_bar.menu_tabs[i];
-      float *draw_color                  = tab->active ?
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (dispctx->draw)
+      {
+         /* > Back - bottom */
+         materialui_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
+               video_width,
+               video_height,
+               mui->icon_size,
+               mui->icon_size,
+               mui->textures.list[mui->nav_bar.back_tab.texture_index],
+               nav_bar_x,
+               (int)((((float)num_tabs - 0.5f) * tab_height) - ((float)mui->icon_size / 2.0f)),
+               0,
+               1,
+               mui->nav_bar.back_tab.enabled 
+               ? mui->colors.nav_bar_icon_passive
+               : mui->colors.nav_bar_icon_disabled,
+               mymat);
+         /* > Resume - top */
+         materialui_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
+               video_width,
+               video_height,
+               mui->icon_size,
+               mui->icon_size,
+               mui->textures.list[mui->nav_bar.resume_tab.texture_index],
+               nav_bar_x,
+               (int)((0.5f * tab_height) 
+                  - ((float)mui->icon_size / 2.0f)),
+               0,
+               1,
+               mui->nav_bar.resume_tab.enabled
+               ? mui->colors.nav_bar_icon_passive 
+               : mui->colors.nav_bar_icon_disabled,
+               mymat);
+      }
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+
+      /* Menu tabs - in the centre, top to bottom */
+      for (i = 0; i < mui->nav_bar.num_menu_tabs; i++)
+      {
+         materialui_nav_bar_menu_tab_t *tab = &mui->nav_bar.menu_tabs[i];
+         float *draw_color                  = tab->active ?
             mui->colors.nav_bar_icon_active : mui->colors.nav_bar_icon_passive;
 
-      /* Draw icon */
-      materialui_draw_icon(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            mui->icon_size,
-            mui->icon_size,
-            mui->textures.list[tab->texture_index],
-            nav_bar_x,
-            (((float)i + 1.5f) * tab_height) 
-            - ((float)mui->icon_size / 2.0f),
-            0,
-            1,
-            draw_color,
-            mymat);
+         /* Draw icon */
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            materialui_draw_icon(
+                  p_disp,
+                  dispctx,
+                  userdata,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  mui->icon_size,
+                  mui->textures.list[tab->texture_index],
+                  nav_bar_x,
+                  (((float)i + 1.5f) * tab_height) 
+                  - ((float)mui->icon_size / 2.0f),
+                  0,
+                  1,
+                  draw_color,
+                  mymat);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
 
-      /* Draw selection marker */
-      gfx_display_draw_quad(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            selection_marker_x,
-            (int)((i + 1) * tab_height_int),
-            selection_marker_width,
-            selection_marker_height,
-            video_width,
-            video_height,
-            draw_color,
-            NULL);
+         /* Draw selection marker */
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               selection_marker_x,
+               (int)((i + 1) * tab_height_int),
+               selection_marker_width,
+               selection_marker_height,
+               video_width,
+               video_height,
+               draw_color,
+               NULL);
+      }
    }
 }
 
 static void materialui_render_nav_bar(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -6239,7 +6381,7 @@ static void materialui_render_nav_bar(
    {
       case MUI_NAV_BAR_LOCATION_RIGHT:
          materialui_render_nav_bar_right(
-            mui, p_disp, userdata, video_width, video_height,
+            mui, p_disp, dispctx, userdata, video_width, video_height,
             mymat);
          break;
       case MUI_NAV_BAR_LOCATION_HIDDEN:
@@ -6249,7 +6391,7 @@ static void materialui_render_nav_bar(
       case MUI_NAV_BAR_LOCATION_BOTTOM:
       default:
          materialui_render_nav_bar_bottom(
-            mui, p_disp, userdata, video_width, video_height,
+            mui, p_disp, dispctx, userdata, video_width, video_height,
             mymat);
          break;
    }
@@ -6903,6 +7045,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    materialui_handle_t *mui       = (materialui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
+   gfx_display_ctx_driver_t 
+      *dispctx                    = p_disp->dispctx;
    size_t selection               = menu_navigation_get_selection();
    unsigned header_height         = p_disp->header_height;
    enum gfx_animation_ticker_type
@@ -7048,11 +7192,13 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_width, video_height, header_height, selection);
 
    /* Draw title + system bar */
-   materialui_render_header(mui, settings, p_disp, userdata,
+   materialui_render_header(mui, settings, p_disp,
+         dispctx,
+         userdata,
          video_width, video_height, &mymat);
 
    /* Draw navigation bar */
-   materialui_render_nav_bar(mui, p_disp, userdata, 
+   materialui_render_nav_bar(mui, p_disp, dispctx, userdata, 
          video_width, video_height, &mymat);
 
    /* Flush second layer of text

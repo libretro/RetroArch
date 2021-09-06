@@ -2384,6 +2384,7 @@ static void ozone_font_flush(
 
 static void ozone_draw_icon(
       gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -2398,9 +2399,6 @@ static void ozone_draw_icon(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   gfx_display_ctx_driver_t 
-      *dispctx              = p_disp->dispctx;
-
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -2841,81 +2839,86 @@ static void ozone_draw_sidebar(
 
    /* Menu tabs */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_padding_vertical;
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
 
+   if (dispctx)
    {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = true;
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
-   }
+      {
+         gfx_display_ctx_rotate_draw_t rotate_draw;
+         rotate_draw.matrix       = &mymat;
+         rotate_draw.rotation     = 0.0f;
+         rotate_draw.scale_x      = 1.0f;
+         rotate_draw.scale_y      = 1.0f;
+         rotate_draw.scale_z      = 1.0f;
+         rotate_draw.scale_enable = true;
 
-   for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
-   {
-      enum msg_hash_enums value_idx;
-      const char *title    = NULL;
-      bool     selected    = (ozone->categories_selection_ptr == i);
-      unsigned     icon    = ozone_system_tabs_icons[ozone->tabs[i]];
+         gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+      }
 
-      uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
-      float *col           = (selected ? ozone->theme->text_selected : ozone->theme->entries_icon);
+      for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
+      {
+         enum msg_hash_enums value_idx;
+         const char *title    = NULL;
+         bool     selected    = (ozone->categories_selection_ptr == i);
+         unsigned     icon    = ozone_system_tabs_icons[ozone->tabs[i]];
 
-      if (!col)
-         col               = ozone->pure_white;
+         uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
+         float *col           = (selected ? ozone->theme->text_selected : ozone->theme->entries_icon);
 
-      /* Icon */
-      ozone_draw_icon(
-            p_disp,
-            userdata,
-            video_width,
-            video_height,
-            ozone->dimensions.sidebar_entry_icon_size,
-            ozone->dimensions.sidebar_entry_icon_size,
-            ozone->tab_textures[icon],
-            ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding,
-            y + ozone->dimensions.sidebar_entry_height / 2 - ozone->dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar,
-            video_width,
-            video_height,
-            0.0f,
-            1.0f,
-            col,
-            &mymat);
+         if (!col)
+            col               = ozone->pure_white;
 
-      value_idx = ozone_system_tabs_value[ozone->tabs[i]];
-      title     = msg_hash_to_str(value_idx);
-
-      /* Text */
-      if (!ozone->sidebar_collapsed)
-         gfx_display_draw_text(
-               ozone->fonts.sidebar.font,
-               title,
-               ozone->sidebar_offset 
-               + ozone->dimensions.sidebar_padding_horizontal 
-               + ozone->dimensions.sidebar_entry_icon_padding * 2 
-               + ozone->dimensions.sidebar_entry_icon_size,
-               y + ozone->dimensions.sidebar_entry_height / 2.0f 
-               + ozone->fonts.sidebar.line_centre_offset 
-               + ozone->animations.scroll_y_sidebar,
+         /* Icon */
+         ozone_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
                video_width,
                video_height,
-               text_color,
-               TEXT_ALIGN_LEFT,
+               ozone->dimensions.sidebar_entry_icon_size,
+               ozone->dimensions.sidebar_entry_icon_size,
+               ozone->tab_textures[icon],
+               ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding,
+               y + ozone->dimensions.sidebar_entry_height / 2 - ozone->dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar,
+               video_width,
+               video_height,
+               0.0f,
                1.0f,
-               false,
-               1.0f,
-               true);
+               col,
+               &mymat);
 
-      y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
+         value_idx = ozone_system_tabs_value[ozone->tabs[i]];
+         title     = msg_hash_to_str(value_idx);
+
+         /* Text */
+         if (!ozone->sidebar_collapsed)
+            gfx_display_draw_text(
+                  ozone->fonts.sidebar.font,
+                  title,
+                  ozone->sidebar_offset 
+                  + ozone->dimensions.sidebar_padding_horizontal 
+                  + ozone->dimensions.sidebar_entry_icon_padding * 2 
+                  + ozone->dimensions.sidebar_entry_icon_size,
+                  y + ozone->dimensions.sidebar_entry_height / 2.0f 
+                  + ozone->fonts.sidebar.line_centre_offset 
+                  + ozone->animations.scroll_y_sidebar,
+                  video_width,
+                  video_height,
+                  text_color,
+                  TEXT_ALIGN_LEFT,
+                  1.0f,
+                  false,
+                  1.0f,
+                  true);
+
+         y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
+      }
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
-
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
 
    /* Console tabs */
    if (horizontal_list_size > 0)
@@ -2957,6 +2960,7 @@ static void ozone_draw_sidebar(
          /* Icon */
          ozone_draw_icon(
                p_disp,
+               dispctx,
                userdata,
                video_width,
                video_height,
@@ -4033,6 +4037,7 @@ static void ozone_draw_entry_value(
          dispctx->blend_begin(userdata);
       ozone_draw_icon(
             p_disp,
+            dispctx,
             userdata,
             video_width,
             video_height,
@@ -4148,6 +4153,7 @@ static void ozone_draw_no_thumbnail_available(
       if (dispctx->draw)
          ozone_draw_icon(
                p_disp,
+               dispctx,
                userdata,
                video_width,
                video_height,
@@ -4727,6 +4733,7 @@ border_iterate:
             if (dispctx->draw)
                ozone_draw_icon(
                      p_disp,
+                     dispctx,
                      userdata,
                      video_width,
                      video_height,
@@ -5324,6 +5331,7 @@ static void ozone_draw_thumbnail_bar(
             if (dispctx->draw)
                ozone_draw_icon(
                      p_disp,
+                     dispctx,
                      userdata,
                      video_width,
                      video_height,
@@ -8394,6 +8402,7 @@ static void ozone_draw_header(
          if (discord_avatar_is_ready())
             ozone_draw_icon(
                   p_disp,
+                  dispctx,
                   userdata,
                   video_width,
                   video_height,
@@ -8412,6 +8421,7 @@ static void ozone_draw_header(
 #endif
             ozone_draw_icon(
                   p_disp,
+                  dispctx,
                   userdata,
                   video_width,
                   video_height,
@@ -8470,6 +8480,7 @@ static void ozone_draw_header(
             if (dispctx->draw)
                ozone_draw_icon(
                      p_disp,
+                     dispctx,
                      userdata,
                      video_width,
                      video_height,
@@ -8527,6 +8538,7 @@ static void ozone_draw_header(
          if (dispctx->draw)
             ozone_draw_icon(
                   p_disp,
+                  dispctx,
                   userdata,
                   video_width,
                   video_height,
@@ -8637,6 +8649,7 @@ static void ozone_draw_footer(
          /* > ok */
          ozone_draw_icon(
                p_disp,
+               dispctx,
                userdata,
                video_width,
                video_height,
@@ -8657,6 +8670,7 @@ static void ozone_draw_footer(
          /* > back */
          ozone_draw_icon(
                p_disp,
+               dispctx,
                userdata,
                video_width,
                video_height,
@@ -8676,6 +8690,7 @@ static void ozone_draw_footer(
          /* > search */
          ozone_draw_icon(
                p_disp,
+               dispctx,
                userdata,
                video_width,
                video_height,
@@ -8694,6 +8709,7 @@ static void ozone_draw_footer(
          if (fullscreen_thumbnails_available)
             ozone_draw_icon(
                   p_disp,
+                  dispctx,
                   userdata,
                   video_width,
                   video_height,
@@ -8712,6 +8728,7 @@ static void ozone_draw_footer(
          if (metadata_override_available)
             ozone_draw_icon(
                   p_disp,
+                  dispctx,
                   userdata,
                   video_width,
                   video_height,
@@ -8901,6 +8918,7 @@ static void ozone_draw_footer(
          if (dispctx->draw)
             ozone_draw_icon(
                   p_disp,
+                  dispctx,
                   userdata,
                   video_width,
                   video_height,
