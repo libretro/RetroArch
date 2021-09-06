@@ -112,6 +112,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       dispgfx_widget_t         *p_dispwidget = (dispgfx_widget_t*)userdata;
       const video_frame_info_t *video_info   = (const video_frame_info_t*)data;
       gfx_display_t *p_disp                  = (gfx_display_t*)video_info->disp_userdata;
+      gfx_display_ctx_driver_t* dispctx      = p_disp->dispctx;
       const unsigned video_width             = video_info->width;
       const unsigned video_height            = video_info->height;
       const unsigned spacing                 = MIN(video_width, video_height) / 64;
@@ -156,39 +157,46 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          x = video_width;
          y -= (widget_size + spacing);
 
-         for (i = 0; i < state->challenge_count; ++i)
+         if (dispctx)
          {
-            x -= (widget_size + spacing);
-
-            if (!state->challenge_info[i].image)
+            for (i = 0; i < state->challenge_count; ++i)
             {
-               /* default icon */
-               if (p_dispwidget->gfx_widgets_icons_textures[
-                     MENU_WIDGETS_ICON_ACHIEVEMENT])
+               x -= (widget_size + spacing);
+
+               if (!state->challenge_info[i].image)
                {
-                  gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
-                  if (dispctx && dispctx->blend_begin)
-                     dispctx->blend_begin(video_info->userdata);
-
-                  gfx_widgets_draw_icon(video_info->userdata,
-                        p_disp, video_width, video_height,
-                        widget_size, widget_size,
-                        p_dispwidget->gfx_widgets_icons_textures[
+                  /* default icon */
+                  if (p_dispwidget->gfx_widgets_icons_textures[
+                        MENU_WIDGETS_ICON_ACHIEVEMENT])
+                  {
+                     if (dispctx->blend_begin)
+                        dispctx->blend_begin(video_info->userdata);
+                     if (dispctx->draw)
+                        gfx_widgets_draw_icon(
+                              p_disp,
+                              video_info->userdata,
+                              video_width, video_height,
+                              widget_size, widget_size,
+                              p_dispwidget->gfx_widgets_icons_textures[
                               MENU_WIDGETS_ICON_ACHIEVEMENT],
-                        x, y, 0, 1, pure_white);
-
-                  if (dispctx && dispctx->blend_end)
-                     dispctx->blend_end(video_info->userdata);
+                              x, y, 0, 1, pure_white);
+                     if (dispctx->blend_end)
+                        dispctx->blend_end(video_info->userdata);
+                  }
                }
-            }
-            else
-            {
-               /* achievement badge */
-               gfx_widgets_draw_icon(video_info->userdata,
-                     p_disp, video_width, video_height,
-                     widget_size, widget_size,
-                     state->challenge_info[i].image,
-                     x, y, 0, 1, pure_white);
+               else
+               {
+                  /* achievement badge */
+                  if (dispctx->draw)
+                     gfx_widgets_draw_icon(
+                           p_disp,
+                           video_info->userdata,
+                           video_width,
+                           video_height,
+                           widget_size, widget_size,
+                           state->challenge_info[i].image,
+                           x, y, 0, 1, pure_white);
+               }
             }
          }
       }

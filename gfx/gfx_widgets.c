@@ -663,8 +663,8 @@ static void gfx_widgets_msg_queue_kill(
 }
 
 void gfx_widgets_draw_icon(
-      void *userdata,
       void *data_disp,
+      void *userdata,
       unsigned video_width,
       unsigned video_height,
       unsigned icon_width,
@@ -1140,20 +1140,24 @@ static int gfx_widgets_draw_indicator(
 
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            width, height,
-            icon, top_right_x_advance - width, y,
-            0, 1,
-            p_dispwidget->pure_white
-            );
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      if (dispctx)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+            gfx_widgets_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  width, height,
+                  icon, top_right_x_advance - width, y,
+                  0, 1,
+                  p_dispwidget->pure_white
+                  );
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
    }
    else
    {
@@ -1297,26 +1301,30 @@ static void gfx_widgets_draw_task_msg(
 
    /* Icon */
    gfx_display_set_alpha(p_dispwidget->pure_white, msg->alpha);
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   gfx_widgets_draw_icon(
-         userdata,
-         p_disp,
-         video_width,
-         video_height,
-         p_dispwidget->msg_queue_height / 2,
-         p_dispwidget->msg_queue_height / 2,
-         p_dispwidget->gfx_widgets_icons_textures[
-         msg->task_finished 
-         ? MENU_WIDGETS_ICON_CHECK 
-         : MENU_WIDGETS_ICON_HOURGLASS],
-         p_dispwidget->msg_queue_task_hourglass_x,
-         video_height - msg->offset_y,
-         msg->task_finished ? 0 : msg->hourglass_rotation,
-         1,
-         p_dispwidget->pure_white);
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+      if (dispctx->draw)
+         gfx_widgets_draw_icon(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               p_dispwidget->msg_queue_height / 2,
+               p_dispwidget->msg_queue_height / 2,
+               p_dispwidget->gfx_widgets_icons_textures[
+               msg->task_finished 
+               ? MENU_WIDGETS_ICON_CHECK 
+               : MENU_WIDGETS_ICON_HOURGLASS],
+               p_dispwidget->msg_queue_task_hourglass_x,
+               video_height - msg->offset_y,
+               msg->task_finished ? 0 : msg->hourglass_rotation,
+               1,
+               p_dispwidget->pure_white);
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
 
    /* Text */
    text_y_base = video_height 
@@ -1421,26 +1429,31 @@ static void gfx_widgets_draw_regular_msg(
             * msg->unfold, video_height);
    }
 
-   if (p_dispwidget->msg_queue_has_icons)
+   if (dispctx)
    {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      /* (int) cast is to be consistent with the rect drawing 
-       * and prevent alignment issues, don't remove it */
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon_rect,
-            p_dispwidget->msg_queue_spacing,
-            (int)(video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y),
-            0, 1, p_dispwidget->msg_queue_bg);
+      if (p_dispwidget->msg_queue_has_icons)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
 
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+         /* (int) cast is to be consistent with the rect drawing 
+          * and prevent alignment issues, don't remove it */
+         if (dispctx->draw)
+            gfx_widgets_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  p_dispwidget->msg_queue_icon_size_x,
+                  p_dispwidget->msg_queue_icon_size_y,
+                  p_dispwidget->msg_queue_icon_rect,
+                  p_dispwidget->msg_queue_spacing,
+                  (int)(video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y),
+                  0, 1, p_dispwidget->msg_queue_bg);
+
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
    }
 
    /* Background */
@@ -1484,51 +1497,62 @@ static void gfx_widgets_draw_regular_msg(
                video_width, video_height);
    }
 
-   if (p_dispwidget->msg_queue_has_icons)
+   if (dispctx)
    {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      if (p_dispwidget->msg_queue_has_icons)
+      {
+         if (dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+         if (dispctx->draw)
+         {
+            gfx_widgets_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  p_dispwidget->msg_queue_icon_size_x,
+                  p_dispwidget->msg_queue_icon_size_y,
+                  p_dispwidget->msg_queue_icon,
+                  p_dispwidget->msg_queue_spacing,
+                  video_height 
+                  - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y,
+                  0,
+                  1,
+                  msg_queue_info);
+            gfx_widgets_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  p_dispwidget->msg_queue_icon_size_x,
+                  p_dispwidget->msg_queue_icon_size_y,
+                  p_dispwidget->msg_queue_icon_outline,
+                  p_dispwidget->msg_queue_spacing,
+                  video_height 
+                  - msg->offset_y 
+                  - p_dispwidget->msg_queue_icon_offset_y, 
+                  0,
+                  1,
+                  p_dispwidget->pure_white);
 
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon,
-            p_dispwidget->msg_queue_spacing, video_height 
-            - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y, 
-            0, 1, msg_queue_info);
+            gfx_widgets_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  p_dispwidget->msg_queue_internal_icon_size,
+                  p_dispwidget->msg_queue_internal_icon_size,
+                  icon,
+                  p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_internal_icon_offset,
+                  video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y + p_dispwidget->msg_queue_internal_icon_offset, 
+                  0,
+                  1,
+                  p_dispwidget->pure_white);
+         }
 
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon_outline,
-            p_dispwidget->msg_queue_spacing,
-            video_height 
-            - msg->offset_y 
-            - p_dispwidget->msg_queue_icon_offset_y, 
-            0, 1,
-            p_dispwidget->pure_white);
-
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_internal_icon_size, p_dispwidget->msg_queue_internal_icon_size,
-            icon, p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_internal_icon_offset,
-            video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y + p_dispwidget->msg_queue_internal_icon_offset, 
-            0, 1,
-            p_dispwidget->pure_white);
-
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+         if (dispctx->blend_end)
+            dispctx->blend_end(userdata);
+      }
    }
 }
 
@@ -1594,20 +1618,21 @@ void gfx_widgets_frame(void *data)
       {
          if (dispctx->blend_begin)
             dispctx->blend_begin(userdata);
-         gfx_widgets_draw_icon(
-               userdata,
-               p_disp,
-               video_width,
-               video_height,
-               video_width,
-               video_height,
-               p_dispwidget->ai_service_overlay_texture,
-               0,
-               0,
-               0,
-               1,
-               p_dispwidget->pure_white
-               );
+         if (dispctx->draw)
+            gfx_widgets_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_width,
+                  video_height,
+                  video_width,
+                  video_height,
+                  p_dispwidget->ai_service_overlay_texture,
+                  0,
+                  0,
+                  0,
+                  1,
+                  p_dispwidget->pure_white
+                  );
          if (dispctx->blend_end)
             dispctx->blend_end(userdata);
       }

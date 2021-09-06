@@ -785,49 +785,51 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                NULL);
       }
 
-      /* Draw icon */
-      if (icon_alpha > 0.0f)
+      if (dispctx)
       {
-         gfx_display_set_alpha(state->icon_color, icon_alpha);
-
-         if (state->icon_texture)
+         /* Draw icon */
+         if (icon_alpha > 0.0f)
          {
-            if (dispctx && dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
+            gfx_display_set_alpha(state->icon_color, icon_alpha);
 
-            gfx_widgets_draw_icon(
-                  userdata,
-                  p_disp,
-                  video_width,
-                  video_height,
-                  state->icon_size,
-                  state->icon_size,
-                  state->icon_texture,
-                  icon_x,
-                  state->icon_y,
-                  0.0f,
-                  1.0f,
-                  state->icon_color);
-
-            if (dispctx && dispctx->blend_end)
-               dispctx->blend_end(userdata);
+            if (state->icon_texture)
+            {
+               if (dispctx->blend_begin)
+                  dispctx->blend_begin(userdata);
+               if (dispctx->draw)
+                  gfx_widgets_draw_icon(
+                        p_disp,
+                        userdata,
+                        video_width,
+                        video_height,
+                        state->icon_size,
+                        state->icon_size,
+                        state->icon_texture,
+                        icon_x,
+                        state->icon_y,
+                        0.0f,
+                        1.0f,
+                        state->icon_color);
+               if (dispctx->blend_end)
+                  dispctx->blend_end(userdata);
+            }
+            /* If there is no icon, draw a placeholder
+             * (otherwise layout will look terrible...) */
+            else
+               gfx_display_draw_quad(
+                     p_disp,
+                     userdata,
+                     video_width,
+                     video_height,
+                     icon_x,
+                     state->icon_y,
+                     state->icon_size,
+                     state->icon_size,
+                     video_width,
+                     video_height,
+                     state->icon_color,
+                     NULL);
          }
-         /* If there is no icon, draw a placeholder
-          * (otherwise layout will look terrible...) */
-         else
-            gfx_display_draw_quad(
-                  p_disp,
-                  userdata,
-                  video_width,
-                  video_height,
-                  icon_x,
-                  state->icon_y,
-                  state->icon_size,
-                  state->icon_size,
-                  video_width,
-                  video_height,
-                  state->icon_color,
-		  NULL);
       }
 
       /* Draw text */

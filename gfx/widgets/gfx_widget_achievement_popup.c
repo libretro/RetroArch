@@ -149,33 +149,37 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                p_dispwidget->backdrop_orig,
                NULL);
 
-         /* Icon */
-         if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
+         if (dispctx)
          {
-            if (dispctx && dispctx->blend_begin)
-               dispctx->blend_begin(video_info->userdata);
-            gfx_widgets_draw_icon(
-                  video_info->userdata,
-                  p_disp,
-                  video_width,
-                  video_height,
-                  state->height,
-                  state->height,
-                  p_dispwidget->gfx_widgets_icons_textures[
-                  MENU_WIDGETS_ICON_ACHIEVEMENT],
-                  0,
-                  state->y,
-                  0, 1, pure_white);
-            if (dispctx && dispctx->blend_end)
-               dispctx->blend_end(video_info->userdata);
+            /* Icon */
+            if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
+            {
+               if (dispctx->blend_begin)
+                  dispctx->blend_begin(video_info->userdata);
+               if (dispctx->draw)
+                  gfx_widgets_draw_icon(
+                        p_disp,
+                        video_info->userdata,
+                        video_width,
+                        video_height,
+                        state->height,
+                        state->height,
+                        p_dispwidget->gfx_widgets_icons_textures[
+                        MENU_WIDGETS_ICON_ACHIEVEMENT],
+                        0,
+                        state->y,
+                        0, 1, pure_white);
+               if (dispctx->blend_end)
+                  dispctx->blend_end(video_info->userdata);
+            }
          }
       }
       /* Badge */
       else
       {
          gfx_widgets_draw_icon(
-               video_info->userdata,
                p_disp,
+               video_info->userdata,
                video_width,
                video_height,
                state->height,

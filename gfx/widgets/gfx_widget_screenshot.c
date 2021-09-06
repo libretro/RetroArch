@@ -232,17 +232,18 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             );
 
       gfx_display_set_alpha(pure_white, 1.0f);
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            state->thumbnail_width,
-            state->thumbnail_height,
-            state->texture,
-            0, state->y,
-            0, 1, pure_white
-            );
+      if (p_disp->dispctx->draw)
+         gfx_widgets_draw_icon(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               state->thumbnail_width,
+               state->thumbnail_height,
+               state->texture,
+               0, state->y,
+               0, 1, pure_white
+               );
 
       gfx_widgets_draw_text(font_regular,
             msg_hash_to_str(MSG_SCREENSHOT_SAVED),

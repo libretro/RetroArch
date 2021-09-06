@@ -279,8 +279,8 @@ float gfx_widgets_get_thumbnail_scale_factor(
       const float image_width, const float image_height);
 
 void gfx_widgets_draw_icon(
-      void *userdata,
       void *data_disp,
+      void *userdata,
       unsigned video_width,
       unsigned video_height,
       unsigned icon_width,
