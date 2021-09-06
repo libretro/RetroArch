@@ -1890,13 +1890,10 @@ static void xmb_list_switch_old(xmb_handle_t *xmb,
 static void xmb_list_switch_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
-   unsigned i, first, last, height;
-   size_t end                         = 0;
-
-   end   = list ? list->size : 0;
-
-   first = 0;
-   last  = (unsigned)(end > 0 ? end - 1 : 0);
+   unsigned i, height;
+   size_t end     = list ? list->size : 0;
+   unsigned first = 0;
+   unsigned last  = (unsigned)(end > 0 ? end - 1 : 0);
 
    video_driver_get_size(NULL, &height);
    xmb_calculate_visible_range(xmb, height,

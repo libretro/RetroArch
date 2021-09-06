@@ -3885,61 +3885,51 @@ static void materialui_render_switch_icon(
          (int)mui->landscape_optimization.entry_margin -
          (int)mui->margin - (int)mui->icon_size;
 
-   /* Draw background */
-   if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
+   if (dispctx && dispctx->draw)
    {
-      if (dispctx)
-      {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-         if (dispctx->draw)
-            materialui_draw_icon(
-                  p_disp,
-                  dispctx,
-                  userdata,
-                  video_width,
-                  video_height,
-                  mui->icon_size,
-                  mui->icon_size,
-                  mui->textures.list[MUI_TEXTURE_SWITCH_BG],
-                  x,
-                  y,
-                  0,
-                  1,
-                  bg_color,
-                  mymat);
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
-      }
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      /* Draw background */
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
+         materialui_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
+               video_width,
+               video_height,
+               mui->icon_size,
+               mui->icon_size,
+               mui->textures.list[MUI_TEXTURE_SWITCH_BG],
+               x,
+               y,
+               0,
+               1,
+               bg_color,
+               mymat);
+
+      /* Draw switch */
+      if (mui->textures.list[switch_texture_index])
+         materialui_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
+               video_width,
+               video_height,
+               mui->icon_size,
+               mui->icon_size,
+               mui->textures.list[switch_texture_index],
+               x,
+               y,
+               0,
+               1,
+               switch_color,
+               mymat);
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 
-   /* Draw switch */
-   if (mui->textures.list[switch_texture_index])
-   {
-      if (dispctx)
-      {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-         if (dispctx->draw)
-            materialui_draw_icon(
-                  p_disp,
-                  dispctx,
-                  userdata,
-                  video_width,
-                  video_height,
-                  mui->icon_size,
-                  mui->icon_size,
-                  mui->textures.list[switch_texture_index],
-                  x,
-                  y,
-                  0,
-                  1,
-                  switch_color,
-                  mymat);
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
-      }
-   }
 }
 
 /* Used for standard, non-playlist entries
@@ -5885,102 +5875,86 @@ static void materialui_render_header(
    /* > Draw 'back' icon, if required */
    menu_title_margin = mui->margin;
 
-   if (show_back_icon)
+   if (dispctx && dispctx->draw)
    {
-      menu_title_margin = mui->icon_size;
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
 
-      if (dispctx)
+      if (show_back_icon)
       {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-         if (dispctx->draw)
-            materialui_draw_icon(
-                  p_disp,
-                  dispctx,
-                  userdata,
-                  video_width,
-                  video_height,
-                  mui->icon_size,
-                  mui->icon_size,
-                  mui->textures.list[MUI_TEXTURE_BACK],
-                  0,
-                  (int)mui->sys_bar_height,
-                  0,
-                  1,
-                  mui->colors.header_icon,
-                  mymat);
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
-      }
-   }
-
-   usable_title_bar_width -= menu_title_margin;
-
-   /* > Draw 'search' icon, if required */
-   if (show_search_icon)
-   {
-      if (dispctx)
-      {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
-         if (dispctx->draw)
-            materialui_draw_icon(
-                  p_disp,
-                  dispctx,
-                  userdata,
-                  video_width,
-                  video_height,
-                  mui->icon_size,
-                  mui->icon_size,
-                  mui->textures.list[MUI_TEXTURE_SEARCH],
-                  (int)video_width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
-                  (int)mui->sys_bar_height,
-                  0,
-                  1,
-                  mui->colors.header_icon,
-                  mymat);
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
+         menu_title_margin = mui->icon_size;
+         materialui_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
+               video_width,
+               video_height,
+               mui->icon_size,
+               mui->icon_size,
+               mui->textures.list[MUI_TEXTURE_BACK],
+               0,
+               (int)mui->sys_bar_height,
+               0,
+               1,
+               mui->colors.header_icon,
+               mymat);
       }
 
-      usable_title_bar_width -= mui->icon_size;
+      usable_title_bar_width -= menu_title_margin;
 
-      /* > Draw 'switch view' icon, if required
-       *   Note: We can take a shortcut here because
-       *   'switch view' can only be shown if
-       *   'search' is also shown... */
-      if (show_switch_view_icon)
+      /* > Draw 'search' icon, if required */
+      if (show_search_icon)
       {
-         if (dispctx)
-         {
-            if (dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
-            if (dispctx->draw)
-               materialui_draw_icon(
-                     p_disp,
-                     dispctx,
-                     userdata,
-                     video_width,
-                     video_height,
-                     mui->icon_size,
-                     mui->icon_size,
-                     mui->textures.list[MUI_TEXTURE_SWITCH_VIEW],
-                     (int)video_width - (2 * (int)mui->icon_size) 
-                     - (int)mui->nav_bar_layout_width,
-                     (int)mui->sys_bar_height,
-                     0,
-                     1,
-                     mui->colors.header_icon,
-                     mymat);
-            if (dispctx->blend_end)
-               dispctx->blend_end(userdata);
-         }
+         materialui_draw_icon(
+               p_disp,
+               dispctx,
+               userdata,
+               video_width,
+               video_height,
+               mui->icon_size,
+               mui->icon_size,
+               mui->textures.list[MUI_TEXTURE_SEARCH],
+               (int)video_width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
+               (int)mui->sys_bar_height,
+               0,
+               1,
+               mui->colors.header_icon,
+               mymat);
 
          usable_title_bar_width -= mui->icon_size;
+
+         /* > Draw 'switch view' icon, if required
+          *   Note: We can take a shortcut here because
+          *   'switch view' can only be shown if
+          *   'search' is also shown... */
+         if (show_switch_view_icon)
+         {
+            materialui_draw_icon(
+                  p_disp,
+                  dispctx,
+                  userdata,
+                  video_width,
+                  video_height,
+                  mui->icon_size,
+                  mui->icon_size,
+                  mui->textures.list[MUI_TEXTURE_SWITCH_VIEW],
+                    (int)video_width - (2 * (int)mui->icon_size) 
+                  - (int)mui->nav_bar_layout_width,
+                    (int)mui->sys_bar_height,
+                  0,
+                  1,
+                  mui->colors.header_icon,
+                  mymat);
+
+            usable_title_bar_width -= mui->icon_size;
+         }
       }
+      else
+         usable_title_bar_width -= mui->margin;
+
+      if (dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
-   else
-      usable_title_bar_width -= mui->margin;
 
    /* If landscape optimisation is enabled and we are
     * drawing a back icon but no search icon (and by
