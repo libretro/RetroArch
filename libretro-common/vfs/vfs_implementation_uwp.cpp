@@ -177,15 +177,15 @@ namespace
          }
          catch (Platform::AccessDeniedException^ e)
          {
-            Windows::UI::Popups::MessageDialog^ dialog =
-               ref new Windows::UI::Popups::MessageDialog("Path \"" + path + "\" is not currently accessible. Please open any containing directory to access it.");
+            //for some reason the path is inaccessible from within here???
+            Windows::UI::Popups::MessageDialog^ dialog = ref new Windows::UI::Popups::MessageDialog("Path is not currently accessible. Please open any containing directory to access it.");
             dialog->Commands->Append(ref new Windows::UI::Popups::UICommand("Open file picker"));
             dialog->Commands->Append(ref new Windows::UI::Popups::UICommand("Cancel"));
             return concurrency::create_task(dialog->ShowAsync()).then([path](Windows::UI::Popups::IUICommand^ cmd) {
                if (cmd->Label == "Open file picker")
                {
                   return TriggerPickerAddDialog().then([path](Platform::String^ added_path) {
-                     /* Retry */
+                     // Retry
                      return LocateStorageItem<T>(path);
                   });
                }
@@ -991,7 +991,7 @@ int uwp_move_path(std::filesystem::path old_path, std::filesystem::path new_path
             bool fail = false;
             do
             {
-                if (findDataResult.cFileName != L"." && findDataResult.cFileName != L"..")
+                if (wcscmp(findDataResult.cFileName, L".") != 0 && wcscmp(findDataResult.cFileName, L"..") != 0)
                 {
                     std::filesystem::path temp_old = old_path;
                     std::filesystem::path temp_new = new_path;
@@ -1113,30 +1113,93 @@ struct libretro_vfs_implementation_dir
    char *entry_name;
 };
 
-libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *name, bool include_hidden)
+libretro_vfs_implementation_dir* retro_vfs_opendir_impl(const char* name, bool include_hidden)
 {
-   wchar_t *name_wide;
-   Platform::String^ name_str;
-   libretro_vfs_implementation_dir *rdir;
+    wchar_t* name_wide;
+    Platform::String^ name_str;
+    libretro_vfs_implementation_dir* rdir;
 
-   if (!name || !*name)
-      return NULL;
+    if (!name || !*name)
+        return NULL;
 
-   rdir = (libretro_vfs_implementation_dir*)calloc(1, sizeof(*rdir));
-   if (!rdir)
-      return NULL;
+    rdir = (libretro_vfs_implementation_dir*)calloc(1, sizeof(*rdir));
+    if (!rdir)
+        return NULL;
 
-   name_wide = utf8_to_utf16_string_alloc(name);
-   windowsize_path(name_wide);
-   name_str  = ref new Platform::String(name_wide);
-   free(name_wide);
+    name_wide = utf8_to_utf16_string_alloc(name);
+    windowsize_path(name_wide);
+    name_str = ref new Platform::String(name_wide);
+    free(name_wide);
 
-   rdir->directory = RunAsyncAndCatchErrors<IVectorView<IStorageItem^>^>([&]() {
-      return concurrency::create_task(LocateStorageItem<StorageFolder>(name_str)).then([&](StorageFolder^ folder) {
-         return folder->GetItemsAsync();
-      });
-   }, nullptr);
 
+    WIN32_FILE_ATTRIBUTE_DATA lpFileInfo;
+    std::filesystem::path dir(name);
+
+    if (dir.empty())
+        return NULL;
+
+   if (!(rdir->directory))
+   {
+       //check if file attributes can be gotten successfully 
+       if (GetFileAttributesExFromAppW(dir.parent_path().wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
+       {
+           //check that the files attributes are not null or empty
+           if (lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES && lpFileInfo.dwFileAttributes != 0)
+           {
+               if (lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+               {
+                   std::wstring filteredPath(dir.wstring().c_str());
+                   WIN32_FIND_DATA findDataResult;
+                   if (filteredPath[filteredPath.size() - 1] == '\\')
+                       filteredPath.erase(filteredPath.size() - 1);
+                   filteredPath += L"\\*.*";
+                   HANDLE searchResults = FindFirstFileExFromAppW(filteredPath.c_str(), FindExInfoBasic, &findDataResult, FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
+                   if (searchResults != INVALID_HANDLE_VALUE)
+                   {
+                       Platform::Collections::Vector<IStorageItem^>^ result = ref new Platform::Collections::Vector<IStorageItem^>();
+                       do
+                       {
+                           if (wcscmp(findDataResult.cFileName, L".") != 0 && wcscmp(findDataResult.cFileName, L"..") != 0)
+                           {
+                               if (!((findDataResult.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) || (findDataResult.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM)))
+                               {
+                                   std::filesystem::path temp_new = dir;
+                                   temp_new /= findDataResult.cFileName;
+
+                                   std::wstring temp_path = temp_new.generic_wstring();
+                                   while (true) {
+                                       size_t p = temp_path.find(L"/");
+                                       if (p == std::wstring::npos) break;
+                                       temp_path.replace(p, 1, L"\\");
+                                   }
+                                   IStorageItem^ item;
+                                   if (findDataResult.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                                   {
+                                       item = RunAsyncAndCatchErrors<StorageFolder^>([&]() {
+                                           return concurrency::create_task(LocateStorageItem<StorageFolder>(ref new Platform::String(temp_path.c_str())));
+                                       }, nullptr);
+                                   }
+                                   else
+                                   {
+                                       item = RunAsyncAndCatchErrors<StorageFile^>([&]() {
+                                           return concurrency::create_task(LocateStorageItem<StorageFile>(ref new Platform::String(temp_path.c_str())));
+                                       }, nullptr);
+                                   }
+
+                                   if (item)
+                                       if (result)
+                                           result->Append(item);
+                               }
+                           }
+                       } while (FindNextFile(searchResults, &findDataResult));
+                       FindClose(searchResults);
+                       if (result)
+                           rdir->directory = result->GetView();
+                   }
+               }
+           }
+       }
+   }
    if (rdir->directory)
       return rdir;
 
