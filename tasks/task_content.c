@@ -802,21 +802,24 @@ static bool content_file_extract_from_archive(
       char **error_string)
 {
    const char *temp_path_ptr = NULL;
+   const char *valid_exts_final = NULL;
+   const char *ext = NULL;
    char temp_path[PATH_MAX_LENGTH];
    char msg[1024];
+   char valid_exts_tmp[9];
 
    temp_path[0] = '\0';
    msg[0]       = '\0';
+   valid_exts_tmp[0] = '\0';
 
    RARCH_LOG("[CONTENT LOAD]: Core requires uncompressed content - "
          "extracting archive to temporary directory.\n");
          
    /* Set valid_exts if content_path tells the file extension */
-   char valid_exts_tmp[9] = "";
-   const char *valid_exts_final = valid_exts;
-   const char *ext = path_get_extension(*content_path);
+   valid_exts_final = valid_exts;
+   ext = path_get_extension(*content_path);
    if (strlen(ext) > 0) {
-      strncpy(valid_exts_tmp, ext, 8);
+      strlcpy(valid_exts_tmp, ext, sizeof(valid_exts_tmp));
       valid_exts_final = valid_exts_tmp;
    }
 
