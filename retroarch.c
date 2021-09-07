@@ -29167,28 +29167,27 @@ bool video_driver_translate_coord_viewport(
       int16_t *res_x,        int16_t *res_y,
       int16_t *res_screen_x, int16_t *res_screen_y)
 {
-   int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
    int norm_vp_width         = (int)vp->width;
    int norm_vp_height        = (int)vp->height;
    int norm_full_vp_width    = (int)vp->full_width;
    int norm_full_vp_height   = (int)vp->full_height;
-   if (norm_vp_width <= 0 ||
-       norm_vp_height <= 0 ||
-       norm_full_vp_width <= 0 ||
+   int scaled_screen_x       = -0x8000; /* OOB */
+   int scaled_screen_y       = -0x8000; /* OOB */
+   int scaled_x              = -0x8000; /* OOB */
+   int scaled_y              = -0x8000; /* OOB */
+   if (norm_vp_width       <= 0 ||
+       norm_vp_height      <= 0 ||
+       norm_full_vp_width  <= 0 ||
        norm_full_vp_height <= 0)
       return false;
 
    if (mouse_x >= 0 && mouse_x <= norm_full_vp_width)
       scaled_screen_x = ((2 * mouse_x * 0x7fff)
             / norm_full_vp_width)  - 0x7fff;
-   else
-      scaled_screen_x = -0x8000; /* OOB */
 
    if (mouse_y >= 0 && mouse_y <= norm_full_vp_height)
       scaled_screen_y = ((2 * mouse_y * 0x7fff)
             / norm_full_vp_height) - 0x7fff;
-   else
-      scaled_screen_y = -0x8000; /* OOB */
 
    mouse_x           -= vp->x;
    mouse_y           -= vp->y;
@@ -29202,8 +29201,6 @@ bool video_driver_translate_coord_viewport(
    if (mouse_y >= 0 && mouse_y <= norm_vp_height)
       scaled_y        = ((2 * mouse_y * 0x7fff)
             / norm_vp_height) - 0x7fff;
-   else
-      scaled_y        = -0x8000; /* OOB */
 
    *res_x             = scaled_x;
    *res_y             = scaled_y;
