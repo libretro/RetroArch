@@ -648,6 +648,11 @@ char *input_config_get_device_name_ptr(unsigned port);
  */
 size_t input_config_get_device_name_size(unsigned port);
 
+bool input_driver_toggle_button_combo(
+      unsigned mode,
+      retro_time_t current_time,
+      input_bits_t* p_input);
+
 /*****************************************************************************/
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
