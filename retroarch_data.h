@@ -1119,21 +1119,6 @@ struct turbo_buttons
    bool mode1_enable[MAX_USERS];
 };
 
-struct input_keyboard_line
-{
-   char *buffer;
-   void *userdata;
-   /** Line complete callback.
-    * Calls back after return is
-    * pressed with the completed line.
-    * Line can be NULL.
-    **/
-   input_keyboard_line_complete_t cb;
-   size_t ptr;
-   size_t size;
-   bool enabled;
-};
-
 typedef struct input_game_focus_state
 {
    bool enabled;
