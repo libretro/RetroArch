@@ -316,6 +316,96 @@ bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 bool input_overlay_add_inputs(input_overlay_t *ol,
       bool show_touched, unsigned port);
 
+void input_overlay_poll(
+      input_overlay_t *ol,
+      input_overlay_state_t *out,
+      int16_t norm_x, int16_t norm_y, float touch_scale);
+
+/**
+ * input_overlay_poll_clear:
+ * @ol                    : overlay handle
+ *
+ * Call when there is nothing to poll. Allows overlay to
+ * clear certain state.
+ **/
+void input_overlay_poll_clear(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol, float opacity);
+
+/**
+ * input_overlay_post_poll:
+ *
+ * Called after all the input_overlay_poll() calls to
+ * update the range modifiers for pressed/unpressed regions
+ * and alpha mods.
+ **/
+void input_overlay_post_poll(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol,
+      bool show_input, float opacity);
+
+void input_overlay_load_active(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol, float opacity);
+
+void input_overlay_parse_layout(
+      const struct overlay *ol,
+      const overlay_layout_desc_t *layout_desc,
+      float display_aspect_ratio,
+      overlay_layout_t *overlay_layout);
+
+void input_overlay_set_vertex_geom(input_overlay_t *ol);
+
+void input_overlay_free_overlays(input_overlay_t *ol);
+
+/**
+ * input_overlay_scale:
+ * @ol                    : Overlay handle.
+ * @layout                : Scale + offset factors.
+ *
+ * Scales the overlay and all its associated descriptors
+ * and applies any aspect ratio/offset factors.
+ **/
+void input_overlay_scale(struct overlay *ol,
+      const overlay_layout_t *layout);
+
+/**
+ * input_overlay_set_scale_factor:
+ * @ol                    : Overlay handle.
+ * @layout_desc           : Scale + offset factors.
+ *
+ * Scales the overlay and applies any aspect ratio/
+ * offset factors.
+ **/
+void input_overlay_set_scale_factor(
+      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc,
+      unsigned video_driver_width,
+      unsigned video_driver_height);
+
+/**
+ * input_overlay_set_alpha_mod:
+ * @ol                    : Overlay handle.
+ * @mod                   : New modulating factor to apply.
+ *
+ * Sets a modulating factor for alpha channel. Default is 1.0.
+ * The alpha factor is applied for all overlays.
+ **/
+void input_overlay_set_alpha_mod(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol, float mod);
+
+enum overlay_visibility input_overlay_get_visibility(
+      enum overlay_visibility *visibility,
+      int overlay_idx);
+
+/**
+ * input_overlay_free:
+ * @ol                    : Overlay handle.
+ *
+ * Frees overlay handle.
+ **/
+void input_overlay_free(input_overlay_t *ol);
+
 RETRO_END_DECLS
 
 #endif

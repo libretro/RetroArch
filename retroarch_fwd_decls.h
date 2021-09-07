@@ -101,13 +101,6 @@ static bool recording_deinit(struct rarch_state *p_rarch);
 #ifdef HAVE_OVERLAY
 static void retroarch_overlay_init(struct rarch_state *p_rarch);
 static void retroarch_overlay_deinit(struct rarch_state *p_rarch);
-static void input_overlay_set_alpha_mod(struct rarch_state *p_rarch,
-      input_overlay_t *ol, float mod);
-static void input_overlay_set_scale_factor(struct rarch_state *p_rarch,
-      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc);
-static void input_overlay_load_active(
-      struct rarch_state *p_rarch,
-      input_overlay_t *ol, float opacity);
 static void input_overlay_auto_rotate_(struct rarch_state *p_rarch,
       bool input_overlay_enable, input_overlay_t *ol);
 #endif

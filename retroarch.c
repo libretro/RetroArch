@@ -12334,7 +12334,7 @@ bool command_event(enum event_command cmd, void *data)
             p_rarch->overlay_ptr->active   = &p_rarch->overlay_ptr->overlays[
                p_rarch->overlay_ptr->index];
 
-            input_overlay_load_active(p_rarch,
+            input_overlay_load_active(p_rarch->overlay_visibility,
                   p_rarch->overlay_ptr, input_overlay_opacity);
 
             p_rarch->overlay_ptr->blocked    = true;
@@ -12609,7 +12609,8 @@ bool command_event(enum event_command cmd, void *data)
             layout_desc.touch_scale             = (float)settings->uints.input_touch_scale;
             layout_desc.auto_scale              = settings->bools.input_overlay_auto_scale;
 
-            input_overlay_set_scale_factor(p_rarch, p_rarch->overlay_ptr, &layout_desc);
+            input_overlay_set_scale_factor(p_rarch->overlay_ptr, &layout_desc,
+                  p_rarch->video_driver_width, p_rarch->video_driver_height);
          }
 #endif
          break;
@@ -12619,7 +12620,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             float input_overlay_opacity = settings->floats.input_overlay_opacity;
-            input_overlay_set_alpha_mod(p_rarch,
+            input_overlay_set_alpha_mod(p_rarch->overlay_visibility,
                   p_rarch->overlay_ptr, input_overlay_opacity);
          }
 #endif
@@ -18631,342 +18632,6 @@ static bool bsv_movie_check(struct rarch_state *p_rarch,
 static bool video_driver_overlay_interface(
       const video_overlay_interface_t **iface);
 
-static void input_overlay_parse_layout(
-      const struct overlay *ol,
-      const overlay_layout_desc_t *layout_desc,
-      float display_aspect_ratio,
-      overlay_layout_t *overlay_layout)
-{
-   /* Set default values */
-   overlay_layout->x_scale      = 1.0f;
-   overlay_layout->y_scale      = 1.0f;
-   overlay_layout->x_separation = 0.0f;
-   overlay_layout->y_separation = 0.0f;
-   overlay_layout->x_offset     = 0.0f;
-   overlay_layout->y_offset     = 0.0f;
-
-   /* Perform auto-scaling, if required */
-   if (layout_desc->auto_scale)
-   {
-      /* Sanity check - if scaling is blocked,
-       * or aspect ratios are invalid, then we
-       * can do nothing */
-      if (ol->block_scale ||
-          (ol->aspect_ratio <= 0.0f) ||
-          (display_aspect_ratio <= 0.0f))
-         return;
-
-      /* If display is wider than overlay,
-       * reduce width */
-      if (display_aspect_ratio >
-            ol->aspect_ratio)
-      {
-         overlay_layout->x_scale = ol->aspect_ratio /
-               display_aspect_ratio;
-
-         if (overlay_layout->x_scale <= 0.0f)
-         {
-            overlay_layout->x_scale = 1.0f;
-            return;
-         }
-
-         /* If X separation is permitted, move elements
-          * horizontally towards the edges of the screen */
-         if (!ol->block_x_separation)
-            overlay_layout->x_separation = ((1.0f / overlay_layout->x_scale) - 1.0f) * 0.5f;
-      }
-      /* If display is taller than overlay,
-       * reduce height */
-      else
-      {
-         overlay_layout->y_scale = display_aspect_ratio /
-               ol->aspect_ratio;
-
-         if (overlay_layout->y_scale <= 0.0f)
-         {
-            overlay_layout->y_scale = 1.0f;
-            return;
-         }
-
-         /* If Y separation is permitted and display has
-          * a *landscape* orientation, move elements
-          * vertically towards the edges of the screen
-          * > Portrait overlays typically have all elements
-          *   below the centre line, so Y separation
-          *   provides no real benefit */
-         if ((display_aspect_ratio > 1.0f) &&
-             !ol->block_y_separation)
-            overlay_layout->y_separation = ((1.0f / overlay_layout->y_scale) - 1.0f) * 0.5f;
-      }
-
-      return;
-   }
-
-   /* Regular 'manual' scaling/position adjustment
-    * > Landscape display orientations */
-   if (display_aspect_ratio > 1.0f)
-   {
-      float scale         = layout_desc->scale_landscape;
-      float aspect_adjust = layout_desc->aspect_adjust_landscape;
-
-      /* Note: Y offsets have their sign inverted,
-       * since from a usability perspective positive
-       * values should move the overlay upwards */
-      overlay_layout->x_offset = layout_desc->x_offset_landscape;
-      overlay_layout->y_offset = layout_desc->y_offset_landscape * -1.0f;
-
-      if (!ol->block_x_separation)
-         overlay_layout->x_separation = layout_desc->x_separation_landscape;
-      if (!ol->block_y_separation)
-         overlay_layout->y_separation = layout_desc->y_separation_landscape;
-
-      if (!ol->block_scale)
-      {
-         /* In landscape orientations, aspect correction
-          * adjusts the overlay width */
-         overlay_layout->x_scale = (aspect_adjust >= 0.0f) ?
-               (scale * (aspect_adjust + 1.0f)) :
-               (scale / ((aspect_adjust * -1.0f) + 1.0f));
-         overlay_layout->y_scale = scale;
-      }
-   }
-   /* > Portrait display orientations */
-   else
-   {
-      float scale         = layout_desc->scale_portrait;
-      float aspect_adjust = layout_desc->aspect_adjust_portrait;
-
-      overlay_layout->x_offset = layout_desc->x_offset_portrait;
-      overlay_layout->y_offset = layout_desc->y_offset_portrait * -1.0f;
-
-      if (!ol->block_x_separation)
-         overlay_layout->x_separation = layout_desc->x_separation_portrait;
-      if (!ol->block_y_separation)
-         overlay_layout->y_separation = layout_desc->y_separation_portrait;
-
-      if (!ol->block_scale)
-      {
-         /* In portrait orientations, aspect correction
-          * adjusts the overlay height */
-         overlay_layout->x_scale = scale;
-         overlay_layout->y_scale = (aspect_adjust >= 0.0f) ?
-               (scale * (aspect_adjust + 1.0f)) :
-               (scale / ((aspect_adjust * -1.0f) + 1.0f));
-      }
-   }
-}
-
-/**
- * input_overlay_scale:
- * @ol                    : Overlay handle.
- * @layout                : Scale + offset factors.
- *
- * Scales the overlay and all its associated descriptors
- * and applies any aspect ratio/offset factors.
- **/
-static void input_overlay_scale(struct overlay *ol,
-      const overlay_layout_t *layout)
-{
-   size_t i;
-
-   ol->mod_w = ol->w * layout->x_scale;
-   ol->mod_h = ol->h * layout->y_scale;
-   ol->mod_x = (ol->center_x + (ol->x - ol->center_x) *
-         layout->x_scale) + layout->x_offset;
-   ol->mod_y = (ol->center_y + (ol->y - ol->center_y) *
-         layout->y_scale) + layout->y_offset;
-
-   for (i = 0; i < ol->size; i++)
-   {
-      struct overlay_desc *desc = &ol->descs[i];
-      float x_shift_offset      = 0.0f;
-      float y_shift_offset      = 0.0f;
-      float scale_w;
-      float scale_h;
-      float adj_center_x;
-      float adj_center_y;
-
-      /* Apply 'x separation' factor */
-      if (desc->x < (0.5f - 0.0001f))
-         x_shift_offset = layout->x_separation * -1.0f;
-      else if (desc->x > (0.5f + 0.0001f))
-         x_shift_offset = layout->x_separation;
-
-      desc->x_shift = desc->x + x_shift_offset;
-
-      /* Apply 'y separation' factor */
-      if (desc->y < (0.5f - 0.0001f))
-         y_shift_offset = layout->y_separation * -1.0f;
-      else if (desc->y > (0.5f + 0.0001f))
-         y_shift_offset = layout->y_separation;
-
-      desc->y_shift = desc->y + y_shift_offset;
-
-      scale_w       = ol->mod_w * desc->range_x;
-      scale_h       = ol->mod_h * desc->range_y;
-      adj_center_x  = ol->mod_x + desc->x_shift * ol->mod_w;
-      adj_center_y  = ol->mod_y + desc->y_shift * ol->mod_h;
-
-      desc->mod_w   = 2.0f * scale_w;
-      desc->mod_h   = 2.0f * scale_h;
-      desc->mod_x   = adj_center_x - scale_w;
-      desc->mod_y   = adj_center_y - scale_h;
-   }
-}
-
-static void input_overlay_set_vertex_geom(input_overlay_t *ol)
-{
-   size_t i;
-
-   if (ol->active->image.pixels)
-      ol->iface->vertex_geom(ol->iface_data, 0,
-            ol->active->mod_x, ol->active->mod_y,
-            ol->active->mod_w, ol->active->mod_h);
-
-   if (ol->iface->vertex_geom)
-      for (i = 0; i < ol->active->size; i++)
-      {
-         struct overlay_desc *desc = &ol->active->descs[i];
-
-         if (!desc->image.pixels)
-            continue;
-
-         ol->iface->vertex_geom(ol->iface_data, desc->image_index,
-               desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
-      }
-}
-
-/**
- * input_overlay_set_scale_factor:
- * @ol                    : Overlay handle.
- * @layout_desc           : Scale + offset factors.
- *
- * Scales the overlay and applies any aspect ratio/
- * offset factors.
- **/
-static void input_overlay_set_scale_factor(struct rarch_state *p_rarch,
-      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc)
-{
-   float display_aspect_ratio = 0.0f;
-   size_t i;
-
-   if (!ol || !layout_desc)
-      return;
-
-   if (p_rarch->video_driver_height > 0)
-      display_aspect_ratio = (float)p_rarch->video_driver_width /
-            (float)p_rarch->video_driver_height;
-
-   for (i = 0; i < ol->size; i++)
-   {
-      struct overlay *current_overlay = &ol->overlays[i];
-      overlay_layout_t overlay_layout;
-
-      input_overlay_parse_layout(current_overlay,
-            layout_desc, display_aspect_ratio, &overlay_layout);
-      input_overlay_scale(current_overlay, &overlay_layout);
-   }
-
-   input_overlay_set_vertex_geom(ol);
-}
-
-void input_overlay_free_overlay(struct overlay *overlay)
-{
-   size_t i;
-
-   if (!overlay)
-      return;
-
-   for (i = 0; i < overlay->size; i++)
-      image_texture_free(&overlay->descs[i].image);
-
-   if (overlay->load_images)
-      free(overlay->load_images);
-   overlay->load_images = NULL;
-   if (overlay->descs)
-      free(overlay->descs);
-   overlay->descs       = NULL;
-   image_texture_free(&overlay->image);
-}
-
-static void input_overlay_free_overlays(input_overlay_t *ol)
-{
-   size_t i;
-
-   if (!ol || !ol->overlays)
-      return;
-
-   for (i = 0; i < ol->size; i++)
-      input_overlay_free_overlay(&ol->overlays[i]);
-
-   free(ol->overlays);
-   ol->overlays = NULL;
-}
-
-static enum overlay_visibility input_overlay_get_visibility(
-      struct rarch_state *p_rarch,
-      int overlay_idx)
-{
-   enum overlay_visibility *visibility = p_rarch->overlay_visibility;
-
-    if (!visibility)
-       return OVERLAY_VISIBILITY_DEFAULT;
-    if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
-       return OVERLAY_VISIBILITY_DEFAULT;
-    return visibility[overlay_idx];
-}
-
-
-static bool input_overlay_is_hidden(
-      struct rarch_state *p_rarch,
-      int overlay_idx)
-{
-    return (input_overlay_get_visibility(p_rarch, overlay_idx)
-          == OVERLAY_VISIBILITY_HIDDEN);
-}
-
-/**
- * input_overlay_set_alpha_mod:
- * @ol                    : Overlay handle.
- * @mod                   : New modulating factor to apply.
- *
- * Sets a modulating factor for alpha channel. Default is 1.0.
- * The alpha factor is applied for all overlays.
- **/
-static void input_overlay_set_alpha_mod(
-      struct rarch_state *p_rarch,
-      input_overlay_t *ol, float mod)
-{
-   unsigned i;
-
-   if (!ol)
-      return;
-
-   for (i = 0; i < ol->active->load_images_size; i++)
-   {
-      if (input_overlay_is_hidden(p_rarch, i))
-          ol->iface->set_alpha(ol->iface_data, i, 0.0);
-      else
-          ol->iface->set_alpha(ol->iface_data, i, mod);
-   }
-}
-
-
-static void input_overlay_load_active(
-      struct rarch_state *p_rarch,
-      input_overlay_t *ol, float opacity)
-{
-   if (ol->iface->load)
-      ol->iface->load(ol->iface_data, ol->active->load_images,
-            ol->active->load_images_size);
-
-   input_overlay_set_alpha_mod(p_rarch, ol, opacity);
-   input_overlay_set_vertex_geom(ol);
-
-   if (ol->iface->full_screen)
-      ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
-}
-
 /* Attempts to automatically rotate the specified overlay.
  * Depends upon proper naming conventions in overlay
  * config file. */
@@ -19037,249 +18702,6 @@ static void input_overlay_auto_rotate_(
    }
 }
 
-/**
- * inside_hitbox:
- * @desc                  : Overlay descriptor handle.
- * @x                     : X coordinate value.
- * @y                     : Y coordinate value.
- *
- * Check whether the given @x and @y coordinates of the overlay
- * descriptor @desc is inside the overlay descriptor's hitbox.
- *
- * Returns: true (1) if X, Y coordinates are inside a hitbox,
- * otherwise false (0).
- **/
-static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
-{
-   if (!desc)
-      return false;
-
-   switch (desc->hitbox)
-   {
-      case OVERLAY_HITBOX_RADIAL:
-      {
-         /* Ellipsis. */
-         float x_dist  = (x - desc->x_shift) / desc->range_x_mod;
-         float y_dist  = (y - desc->y_shift) / desc->range_y_mod;
-         float sq_dist = x_dist * x_dist + y_dist * y_dist;
-         return (sq_dist <= 1.0f);
-      }
-
-      case OVERLAY_HITBOX_RECT:
-         return
-            (fabs(x - desc->x_shift) <= desc->range_x_mod) &&
-            (fabs(y - desc->y_shift) <= desc->range_y_mod);
-   }
-
-   return false;
-}
-
-/**
- * input_overlay_poll:
- * @out                   : Polled output data.
- * @norm_x                : Normalized X coordinate.
- * @norm_y                : Normalized Y coordinate.
- *
- * Polls input overlay.
- *
- * @norm_x and @norm_y are the result of
- * input_translate_coord_viewport().
- **/
-static void input_overlay_poll(
-      input_overlay_t *ol,
-      input_overlay_state_t *out,
-      int16_t norm_x, int16_t norm_y, float touch_scale)
-{
-   size_t i;
-
-   /* norm_x and norm_y is in [-0x7fff, 0x7fff] range,
-    * like RETRO_DEVICE_POINTER. */
-   float x = (float)(norm_x + 0x7fff) / 0xffff;
-   float y = (float)(norm_y + 0x7fff) / 0xffff;
-
-   x -= ol->active->mod_x;
-   y -= ol->active->mod_y;
-   x /= ol->active->mod_w;
-   y /= ol->active->mod_h;
-
-   x *= touch_scale;
-   y *= touch_scale;
-
-   for (i = 0; i < ol->active->size; i++)
-   {
-      float x_dist, y_dist;
-      unsigned int base         = 0;
-      struct overlay_desc *desc = &ol->active->descs[i];
-
-      if (!inside_hitbox(desc, x, y))
-         continue;
-
-      desc->updated = true;
-      x_dist        = x - desc->x_shift;
-      y_dist        = y - desc->y_shift;
-
-      switch (desc->type)
-      {
-         case OVERLAY_TYPE_BUTTONS:
-            {
-               bits_or_bits(out->buttons.data,
-                     desc->button_mask.data,
-                     ARRAY_SIZE(desc->button_mask.data));
-
-               if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
-                  ol->next_index = desc->next_index;
-            }
-            break;
-         case OVERLAY_TYPE_KEYBOARD:
-            if (desc->retro_key_idx < RETROK_LAST)
-               OVERLAY_SET_KEY(out, desc->retro_key_idx);
-            break;
-         case OVERLAY_TYPE_ANALOG_RIGHT:
-            base = 2;
-            /* fall-through */
-         default:
-            {
-               float x_val           = x_dist / desc->range_x;
-               float y_val           = y_dist / desc->range_y;
-               float x_val_sat       = x_val / desc->analog_saturate_pct;
-               float y_val_sat       = y_val / desc->analog_saturate_pct;
-               out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f)
-                  * 32767.0f;
-               out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f)
-                  * 32767.0f;
-            }
-            break;
-      }
-
-      if (desc->movable)
-      {
-         desc->delta_x = clamp_float(x_dist, -desc->range_x, desc->range_x)
-            * ol->active->mod_w;
-         desc->delta_y = clamp_float(y_dist, -desc->range_y, desc->range_y)
-            * ol->active->mod_h;
-      }
-   }
-
-   if (!bits_any_set(out->buttons.data, ARRAY_SIZE(out->buttons.data)))
-      ol->blocked = false;
-   else if (ol->blocked)
-      memset(out, 0, sizeof(*out));
-}
-
-/**
- * input_overlay_update_desc_geom:
- * @ol                    : overlay handle.
- * @desc                  : overlay descriptors handle.
- *
- * Update input overlay descriptors' vertex geometry.
- **/
-static void input_overlay_update_desc_geom(input_overlay_t *ol,
-      struct overlay_desc *desc)
-{
-   if (!desc->image.pixels || !desc->movable)
-      return;
-
-   if (ol->iface->vertex_geom)
-      ol->iface->vertex_geom(ol->iface_data, desc->image_index,
-            desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
-            desc->mod_w, desc->mod_h);
-
-   desc->delta_x = 0.0f;
-   desc->delta_y = 0.0f;
-}
-
-/**
- * input_overlay_post_poll:
- *
- * Called after all the input_overlay_poll() calls to
- * update the range modifiers for pressed/unpressed regions
- * and alpha mods.
- **/
-static void input_overlay_post_poll(
-      struct rarch_state *p_rarch, input_overlay_t *ol,
-      bool show_input, float opacity)
-{
-   size_t i;
-
-   input_overlay_set_alpha_mod(p_rarch, ol, opacity);
-
-   for (i = 0; i < ol->active->size; i++)
-   {
-      struct overlay_desc *desc = &ol->active->descs[i];
-
-      desc->range_x_mod = desc->range_x;
-      desc->range_y_mod = desc->range_y;
-
-      if (desc->updated)
-      {
-         /* If pressed this frame, change the hitbox. */
-         desc->range_x_mod *= desc->range_mod;
-         desc->range_y_mod *= desc->range_mod;
-
-         if (show_input && desc->image.pixels)
-         {
-            if (ol->iface->set_alpha)
-               ol->iface->set_alpha(ol->iface_data, desc->image_index,
-                     desc->alpha_mod * opacity);
-         }
-      }
-
-      input_overlay_update_desc_geom(ol, desc);
-      desc->updated = false;
-   }
-}
-
-/**
- * input_overlay_poll_clear:
- * @ol                    : overlay handle
- *
- * Call when there is nothing to poll. Allows overlay to
- * clear certain state.
- **/
-static void input_overlay_poll_clear(
-      struct rarch_state *p_rarch,
-      input_overlay_t *ol, float opacity)
-{
-   size_t i;
-
-   ol->blocked = false;
-
-   input_overlay_set_alpha_mod(p_rarch, ol, opacity);
-
-   for (i = 0; i < ol->active->size; i++)
-   {
-      struct overlay_desc *desc = &ol->active->descs[i];
-
-      desc->range_x_mod = desc->range_x;
-      desc->range_y_mod = desc->range_y;
-      desc->updated     = false;
-
-      desc->delta_x     = 0.0f;
-      desc->delta_y     = 0.0f;
-      input_overlay_update_desc_geom(ol, desc);
-   }
-}
-
-
-/**
- * input_overlay_free:
- * @ol                    : Overlay handle.
- *
- * Frees overlay handle.
- **/
-static void input_overlay_free(input_overlay_t *ol)
-{
-   if (!ol)
-      return;
-
-   input_overlay_free_overlays(ol);
-
-   if (ol->iface->enable)
-      ol->iface->enable(ol->iface_data, false);
-
-   free(ol);
-}
-
 /* task_data = overlay_task_data_t* */
 static void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
@@ -19327,7 +18749,7 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->iface      = iface;
    ol->iface_data = p_rarch->video_driver_data;
 
-   input_overlay_load_active(p_rarch, ol, data->overlay_opacity);
+   input_overlay_load_active(p_rarch->overlay_visibility, ol, data->overlay_opacity);
 
    /* Enable or disable the overlay. */
    ol->enable = data->overlay_enable;
@@ -19335,7 +18757,8 @@ static void input_overlay_loaded(retro_task_t *task,
    if (ol->iface->enable)
       ol->iface->enable(ol->iface_data, data->overlay_enable);
 
-   input_overlay_set_scale_factor(p_rarch, ol, &data->layout_desc);
+   input_overlay_set_scale_factor(ol, &data->layout_desc,
+         p_rarch->video_driver_width, p_rarch->video_driver_height);
 
    ol->next_index = (unsigned)((ol->index + 1) % ol->size);
    ol->state      = OVERLAY_STATUS_NONE;
@@ -19395,7 +18818,6 @@ void input_overlay_set_visibility(int overlay_idx,
    if (vis == OVERLAY_VISIBILITY_HIDDEN)
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
 }
-
 
 /*
  * input_poll_overlay:
@@ -19596,9 +19018,9 @@ static void input_poll_overlay(
             input_overlay_show_inputs_port);
 
    if (button_pressed || polled)
-      input_overlay_post_poll(p_rarch, ol, button_pressed, opacity);
+      input_overlay_post_poll(p_rarch->overlay_visibility, ol, button_pressed, opacity);
    else
-      input_overlay_poll_clear(p_rarch, ol, opacity);
+      input_overlay_poll_clear(p_rarch->overlay_visibility, ol, opacity);
 }
 
 static void retroarch_overlay_deinit(struct rarch_state *p_rarch)
