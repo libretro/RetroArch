@@ -21,6 +21,11 @@
 
 #include "input_driver.h"
 
+#ifdef HAVE_NETWORKING
+#include <net/net_compat.h>
+#include <net/net_socket.h>
+#endif
+
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../configuration.h"
@@ -687,3 +692,107 @@ int16_t input_joypad_axis(
 
    return val;
 }
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+static bool input_remote_init_network(input_remote_t *handle,
+      uint16_t port, unsigned user)
+{
+   int fd;
+   struct addrinfo *res  = NULL;
+
+   port = port + user;
+
+   if (!network_init())
+      return false;
+
+   RARCH_LOG("Bringing up remote interface on port %hu.\n",
+         (unsigned short)port);
+
+   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
+
+   if (fd < 0)
+      goto error;
+
+   handle->net_fd[user] = fd;
+
+   if (!socket_nonblock(handle->net_fd[user]))
+      goto error;
+
+   if (!socket_bind(handle->net_fd[user], res))
+   {
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
+      goto error;
+   }
+
+   freeaddrinfo_retro(res);
+   return true;
+
+error:
+   if (res)
+      freeaddrinfo_retro(res);
+   return false;
+}
+
+void input_remote_free(input_remote_t *handle, unsigned max_users)
+{
+   unsigned user;
+   for (user = 0; user < max_users; user ++)
+      socket_close(handle->net_fd[user]);
+
+   free(handle);
+}
+
+static input_remote_t *input_remote_new(
+      settings_t *settings,
+      uint16_t port, unsigned max_users)
+{
+   unsigned user;
+   input_remote_t      *handle = (input_remote_t*)
+      calloc(1, sizeof(*handle));
+
+   if (!handle)
+      return NULL;
+
+   for (user = 0; user < max_users; user ++)
+   {
+      handle->net_fd[user] = -1;
+      if (settings->bools.network_remote_enable_user[user])
+         if (!input_remote_init_network(handle, port, user))
+         {
+            input_remote_free(handle, max_users);
+            return NULL;
+         }
+   }
+
+   return handle;
+}
+
+void input_remote_parse_packet(
+      input_remote_state_t *input_state,
+      struct remote_message *msg, unsigned user)
+{
+   /* Parse message */
+   switch (msg->device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         input_state->buttons[user] &= ~(1 << msg->id);
+         if (msg->state)
+            input_state->buttons[user] |= 1 << msg->id;
+         break;
+      case RETRO_DEVICE_ANALOG:
+         input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
+         break;
+   }
+}
+
+input_remote_t *input_driver_init_remote(
+      settings_t *settings,
+      unsigned num_active_users)
+{
+   unsigned network_remote_base_port = settings->uints.network_remote_base_port;
+   return input_remote_new(
+         settings,
+         network_remote_base_port,
+         num_active_users);
+}
+#endif
