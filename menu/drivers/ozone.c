@@ -9541,7 +9541,7 @@ static void ozone_populate_entries(void *data,
        * (Ozone is a fickle beast...) */
       if (ozone->is_playlist)
       {
-         menu_serch_terms_t *menu_search_terms =
+         menu_search_terms_t *menu_search_terms=
                menu_entries_search_get_terms();
          size_t num_search_terms               =
                menu_search_terms ? menu_search_terms->size : 0;

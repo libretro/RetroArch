@@ -1747,77 +1747,6 @@ int menu_entry_action(
    return -1;
 }
 
-/**
- * menu_entries_elem_get_first_char:
- * @list                     : File list handle.
- * @offset                   : Offset index of element.
- *
- * Gets the first character of an element in the
- * file list.
- *
- * Returns: first character of element in file list.
- **/
-static int menu_entries_elem_get_first_char(
-      file_list_t *list, unsigned offset)
-{
-   const char *path =   list->list[offset].alt
-                      ? list->list[offset].alt
-                      : list->list[offset].path;
-   int ret          = path ? TOLOWER((int)*path) : 0;
-
-   /* "Normalize" non-alphabetical entries so they
-    * are lumped together for purposes of jumping. */
-   if (ret < 'a')
-      return ('a' - 1);
-   else if (ret > 'z')
-      return ('z' + 1);
-   return ret;
-}
-
-static void menu_entries_build_scroll_indices(
-      struct menu_state *menu_st,
-      file_list_t *list)
-{
-   bool current_is_dir             = false;
-   size_t i                        = 0;
-   int current                     = menu_entries_elem_get_first_char(list, 0);
-   unsigned type                   = list->list[0].type;
-
-   menu_st->scroll.index_list[0]   = 0;
-   menu_st->scroll.index_size      = 1;
-
-   if (type == FILE_TYPE_DIRECTORY)
-      current_is_dir               = true;
-
-   for (i = 1; i < list->size; i++)
-   {
-      int first    = menu_entries_elem_get_first_char(list, (unsigned)i);
-      bool is_dir  = false;
-      unsigned idx = (unsigned)i;
-
-      type         = list->list[idx].type;
-
-      if (type == FILE_TYPE_DIRECTORY)
-         is_dir = true;
-
-      if ((current_is_dir && !is_dir) || (first > current))
-      {
-         /* Add scroll index */
-         menu_st->scroll.index_list[menu_st->scroll.index_size]   = i;
-         if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
-            menu_st->scroll.index_size++;
-      }
-
-      current        = first;
-      current_is_dir = is_dir;
-   }
-
-   /* Add scroll index */
-   menu_st->scroll.index_list[menu_st->scroll.index_size]   = list->size - 1;
-   if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
-      menu_st->scroll.index_size++;
-}
-
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -2420,7 +2349,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    return true;
 }
 
-static menu_serch_terms_t *menu_entries_search_get_terms_internal(void)
+static menu_search_terms_t *menu_entries_search_get_terms_internal(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
@@ -2441,7 +2370,7 @@ static menu_serch_terms_t *menu_entries_search_get_terms_internal(void)
 
 bool menu_entries_search_push(const char *search_term)
 {
-   menu_serch_terms_t *search = menu_entries_search_get_terms_internal();
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
    size_t i;
 
@@ -2478,7 +2407,7 @@ bool menu_entries_search_push(const char *search_term)
 
 bool menu_entries_search_pop(void)
 {
-   menu_serch_terms_t *search = menu_entries_search_get_terms_internal();
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
 
    /* Do nothing if list of search terms is empty */
    if (!search ||
@@ -2492,9 +2421,9 @@ bool menu_entries_search_pop(void)
    return true;
 }
 
-menu_serch_terms_t *menu_entries_search_get_terms(void)
+menu_search_terms_t *menu_entries_search_get_terms(void)
 {
-   menu_serch_terms_t *search = menu_entries_search_get_terms_internal();
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
 
    if (!search ||
        (search->size == 0))
@@ -2507,7 +2436,7 @@ menu_serch_terms_t *menu_entries_search_get_terms(void)
  * search terms to specified string */
 void menu_entries_search_append_terms_string(char *s, size_t len)
 {
-   menu_serch_terms_t *search = menu_entries_search_get_terms_internal();
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
 
    if (search &&
        (search->size > 0) &&
@@ -2631,23 +2560,6 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 
 end:
    return match_found;
-}
-
-static void menu_display_common_image_upload(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      struct texture_image *img,
-      void *user_data,
-      unsigned type)
-{
-   if (     menu_driver_ctx
-         && menu_driver_ctx->load_image)
-      menu_driver_ctx->load_image(menu_userdata,
-            img, (enum menu_image_type)type);
-
-   image_texture_free(img);
-   free(img);
-   free(user_data);
 }
 
 /* TODO/FIXME - seems only RGUI uses this - can this be
@@ -3271,24 +3183,6 @@ bool menu_driver_list_cache(menu_ctx_list_t *list)
    p_rarch->menu_driver_ctx->list_cache(p_rarch->menu_userdata,
          list->type, list->action);
    return true;
-}
-
-static enum menu_driver_id_type menu_driver_set_id(const char *driver_name)
-{
-   if (!string_is_empty(driver_name))
-   {
-      if (string_is_equal(driver_name, "rgui"))
-         return MENU_DRIVER_ID_RGUI;
-      else if (string_is_equal(driver_name, "ozone"))
-         return MENU_DRIVER_ID_OZONE;
-      else if (string_is_equal(driver_name, "glui"))
-         return MENU_DRIVER_ID_GLUI;
-      else if (string_is_equal(driver_name, "xmb"))
-         return MENU_DRIVER_ID_XMB;
-      else if (string_is_equal(driver_name, "stripes"))
-         return MENU_DRIVER_ID_STRIPES;
-   }
-   return MENU_DRIVER_ID_UNKNOWN;
 }
 
 static bool menu_driver_init_internal(
@@ -4318,7 +4212,6 @@ clear:
 }
 
 static bool menu_shader_manager_save_preset_internal(
-      struct rarch_state *p_rarch,
       bool save_reference,
       const struct video_shader *shader,
       const char *basename,
@@ -4446,7 +4339,6 @@ static bool menu_shader_manager_save_preset_internal(
 }
 
 static bool menu_shader_manager_operate_auto_preset(
-      struct rarch_state *p_rarch,
       struct retro_system_info *system,
       settings_t *settings,
       enum auto_shader_operation op,
@@ -4520,7 +4412,6 @@ static bool menu_shader_manager_operate_auto_preset(
    {
       case AUTO_SHADER_OP_SAVE:
          return menu_shader_manager_save_preset_internal(
-               p_rarch,
                settings->bools.video_shader_preset_save_reference_enable,
                shader, file,
                dir_video_shader,
@@ -4638,7 +4529,7 @@ bool menu_shader_manager_save_auto_preset(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         p_rarch, system, settings,
+         system, settings,
          AUTO_SHADER_OP_SAVE, shader,
          dir_video_shader,
          dir_menu_config,
@@ -4678,7 +4569,6 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    preset_dirs[2] = config_directory;
 
    return menu_shader_manager_save_preset_internal(
-         p_rarch,
          settings->bools.video_shader_preset_save_reference_enable,
          shader, basename,
          dir_video_shader,
@@ -4702,7 +4592,7 @@ bool menu_shader_manager_remove_auto_preset(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         p_rarch, system, settings,
+         system, settings,
          AUTO_SHADER_OP_REMOVE, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -4724,7 +4614,7 @@ bool menu_shader_manager_auto_preset_exists(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         p_rarch, system, settings,
+         system, settings,
          AUTO_SHADER_OP_EXISTS, NULL,
          dir_video_shader,
          dir_menu_config,

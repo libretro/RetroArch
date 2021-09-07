@@ -2255,3 +2255,111 @@ void menu_input_set_pointer_visibility(
       }
    }
 }
+
+/**
+ * menu_entries_elem_get_first_char:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Gets the first character of an element in the
+ * file list.
+ *
+ * Returns: first character of element in file list.
+ **/
+int menu_entries_elem_get_first_char(
+      file_list_t *list, unsigned offset)
+{
+   const char *path =   list->list[offset].alt
+                      ? list->list[offset].alt
+                      : list->list[offset].path;
+   int ret          = path ? TOLOWER((int)*path) : 0;
+
+   /* "Normalize" non-alphabetical entries so they
+    * are lumped together for purposes of jumping. */
+   if (ret < 'a')
+      return ('a' - 1);
+   else if (ret > 'z')
+      return ('z' + 1);
+   return ret;
+}
+
+void menu_entries_build_scroll_indices(
+      struct menu_state *menu_st,
+      file_list_t *list)
+{
+   bool current_is_dir             = false;
+   size_t i                        = 0;
+   int current                     = menu_entries_elem_get_first_char(list, 0);
+   unsigned type                   = list->list[0].type;
+
+   menu_st->scroll.index_list[0]   = 0;
+   menu_st->scroll.index_size      = 1;
+
+   if (type == FILE_TYPE_DIRECTORY)
+      current_is_dir               = true;
+
+   for (i = 1; i < list->size; i++)
+   {
+      int first    = menu_entries_elem_get_first_char(list, (unsigned)i);
+      bool is_dir  = false;
+      unsigned idx = (unsigned)i;
+
+      type         = list->list[idx].type;
+
+      if (type == FILE_TYPE_DIRECTORY)
+         is_dir = true;
+
+      if ((current_is_dir && !is_dir) || (first > current))
+      {
+         /* Add scroll index */
+         menu_st->scroll.index_list[menu_st->scroll.index_size]   = i;
+         if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
+            menu_st->scroll.index_size++;
+      }
+
+      current        = first;
+      current_is_dir = is_dir;
+   }
+
+   /* Add scroll index */
+   menu_st->scroll.index_list[menu_st->scroll.index_size]   = list->size - 1;
+   if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
+      menu_st->scroll.index_size++;
+}
+
+void menu_display_common_image_upload(
+      const menu_ctx_driver_t *menu_driver_ctx,
+      void *menu_userdata,
+      struct texture_image *img,
+      void *user_data,
+      unsigned type)
+{
+   if (     menu_driver_ctx
+         && menu_driver_ctx->load_image)
+      menu_driver_ctx->load_image(menu_userdata,
+            img, (enum menu_image_type)type);
+
+   image_texture_free(img);
+   free(img);
+   free(user_data);
+}
+
+enum menu_driver_id_type menu_driver_set_id(
+      const char *driver_name)
+{
+   if (!string_is_empty(driver_name))
+   {
+      if (string_is_equal(driver_name, "rgui"))
+         return MENU_DRIVER_ID_RGUI;
+      else if (string_is_equal(driver_name, "ozone"))
+         return MENU_DRIVER_ID_OZONE;
+      else if (string_is_equal(driver_name, "glui"))
+         return MENU_DRIVER_ID_GLUI;
+      else if (string_is_equal(driver_name, "xmb"))
+         return MENU_DRIVER_ID_XMB;
+      else if (string_is_equal(driver_name, "stripes"))
+         return MENU_DRIVER_ID_STRIPES;
+   }
+   return MENU_DRIVER_ID_UNKNOWN;
+}
+
