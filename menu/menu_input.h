@@ -286,6 +286,11 @@ bool menu_input_key_bind_poll_find_hold(
       struct menu_bind_state *new_state,
       struct retro_keybind * output);
 
+void menu_input_set_pointer_visibility(
+      menu_input_pointer_hw_state_t *pointer_hw_state,
+      menu_input_t *menu_input,
+      retro_time_t current_time);
+
 RETRO_END_DECLS
 
 #endif
