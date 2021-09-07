@@ -6760,8 +6760,9 @@ static int action_ok_video_resolution(const char *path,
 #if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
    unsigned width   = 0;
    unsigned  height = 0;
+   char desc[64] = {0};
 
-   if (video_driver_get_video_output_size(&width, &height))
+   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
       char msg[PATH_MAX_LENGTH];
 
@@ -6777,8 +6778,12 @@ static int action_ok_video_resolution(const char *path,
       else
 #endif
          snprintf(msg, sizeof(msg),
-               "Applying: %dx%d\n START to reset",
+               "Applying: %dx%d",
                width, height);
+         /* Add description of resolution */
+         if (!string_is_empty(desc))
+            snprintf(msg, sizeof(msg), "%s - %s", msg, desc);
+         snprintf(msg, sizeof(msg), "%s\n START to reset", msg);
       runloop_msg_queue_push(msg, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }

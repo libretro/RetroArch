@@ -345,9 +345,9 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
 static void gfx_ctx_w_vk_set_flags(void *data, uint32_t flags) { }
 
 static void gfx_ctx_w_vk_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void gfx_ctx_w_vk_get_video_output_prev(void *data) { }

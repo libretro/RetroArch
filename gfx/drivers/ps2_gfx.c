@@ -543,7 +543,7 @@ static void ps2_set_filtering(void *data, unsigned index, bool smooth, bool ctx_
 }
 
 static void ps2_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    global_t *global = global_get_ptr();
    if (!global)
@@ -557,6 +557,8 @@ static void ps2_get_video_output_size(void *data,
       global->console.screen.resolutions.current.id].width;
    *height = rm_mode_table[
       global->console.screen.resolutions.current.id].height;
+
+   strlcpy(desc, rm_mode_table[global->console.screen.resolutions.current.id].desc, desc_len);
 }
 
 static void ps2_get_video_output_prev(void *data)

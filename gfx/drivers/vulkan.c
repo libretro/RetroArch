@@ -2590,14 +2590,14 @@ static uint32_t vulkan_get_flags(void *data)
 }
 
 static void vulkan_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->ctx_driver || !vk->ctx_driver->get_video_output_size)
       return;
    vk->ctx_driver->get_video_output_size(
          vk->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void vulkan_get_video_output_prev(void *data)

@@ -7194,13 +7194,14 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
-#if defined(GEKKO) || defined(PS2)
+#if defined(GEKKO)
          {
             unsigned width = 0, height = 0;
+            char desc[64] = {0};
 
             command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
-            if (video_driver_get_video_output_size(&width, &height))
+            if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
             {
                char msg[128] = {0};
 
@@ -7210,9 +7211,15 @@ bool command_event(enum event_command cmd, void *data)
                   snprintf(msg, sizeof(msg), "%s: DEFAULT",
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION));
                else
+               {
                   snprintf(msg, sizeof(msg),"%s: %dx%d",
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION),
                         width, height);
+                  /* Add description of resolution */
+                  if (!string_is_empty(desc))
+                     snprintf(msg, sizeof(msg), "%s - %s", msg, desc);
+               }
+
                runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
          }
@@ -18454,13 +18461,13 @@ bool video_driver_set_video_mode(unsigned width,
    return false;
 }
 
-bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
+bool video_driver_get_video_output_size(unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    struct rarch_state            *p_rarch = &rarch_st;
    if (!p_rarch->video_driver_poke || !p_rarch->video_driver_poke->get_video_output_size)
       return false;
    p_rarch->video_driver_poke->get_video_output_size(p_rarch->video_driver_data,
-         width, height);
+         width, height, desc, desc_len);
    return true;
 }
 

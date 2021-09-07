@@ -2221,14 +2221,14 @@ static void gl_core_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void gl_core_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    gl_core_t   *gl = (gl_core_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
       return;
    gl->ctx_driver->get_video_output_size(
          gl->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void gl_core_get_video_output_prev(void *data)
