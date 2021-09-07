@@ -12768,6 +12768,12 @@ bool command_event(enum event_command cmd, void *data)
          {
             struct retro_hw_render_callback *hwr = NULL;
             rarch_system_info_t *sys_info        = &runloop_state.system;
+            char state_path[PATH_MAX_LENGTH];
+
+            /* The platform that uses ram_state_save calls it when the content
+             * ends and writes it to a file */
+            if (retroarch_get_current_savestate_path(state_path, sizeof(state_path)))
+               command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 
             /* Save last selected disk index, if required */
             if (sys_info)
