@@ -451,91 +451,6 @@ void *video_driver_get_data(void)
    return p_rarch->video_driver_data;
 }
 
-static int16_t input_state_wrap(
-      input_driver_t *current_input,
-      void *data,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      bool keyboard_mapping_blocked,
-      unsigned _port,
-      unsigned device,
-      unsigned idx,
-      unsigned id)
-{
-   int16_t ret                   = 0;
-
-   /* Do a bitwise OR to combine input states together */
-
-   if (device == RETRO_DEVICE_JOYPAD)
-   {
-      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-      {
-         if (joypad)
-            ret                    |= joypad->state(
-                  joypad_info, binds[_port], _port);
-         if (sec_joypad)
-            ret                    |= sec_joypad->state(
-                  joypad_info, binds[_port], _port);
-      }
-      else
-      {
-         /* Do a bitwise OR to combine both input
-          * states together */
-         if (binds[_port][id].valid)
-         {
-            /* Auto-binds are per joypad, not per user. */
-            const uint64_t bind_joykey     = binds[_port][id].joykey;
-            const uint64_t bind_joyaxis    = binds[_port][id].joyaxis;
-            const uint64_t autobind_joykey = joypad_info->auto_binds[id].joykey;
-            const uint64_t autobind_joyaxis= joypad_info->auto_binds[id].joyaxis;
-            uint16_t port                  = joypad_info->joy_idx;
-            float axis_threshold           = joypad_info->axis_threshold;
-            const uint64_t joykey          = (bind_joykey != NO_BTN)
-               ? bind_joykey  : autobind_joykey;
-            const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
-               ? bind_joyaxis : autobind_joyaxis;
-
-            if (joypad)
-            {
-               if ((uint16_t)joykey != NO_BTN && joypad->button(
-                        port, (uint16_t)joykey))
-                  return 1;
-               if (joyaxis != AXIS_NONE &&
-                     ((float)abs(joypad->axis(port, joyaxis))
-                      / 0x8000) > axis_threshold)
-                  return 1;
-            }
-            if (sec_joypad)
-            {
-               if ((uint16_t)joykey != NO_BTN && sec_joypad->button(
-                        port, (uint16_t)joykey))
-                  return 1;
-               if (joyaxis != AXIS_NONE &&
-                     ((float)abs(sec_joypad->axis(port, joyaxis))
-                      / 0x8000) > axis_threshold)
-                  return 1;
-            }
-         }
-      }
-   }
-
-   if (current_input && current_input->input_state)
-      ret |= current_input->input_state(
-            data,
-            joypad,
-            sec_joypad,
-            joypad_info,
-            binds,
-            keyboard_mapping_blocked,
-            _port,
-            device,
-            idx,
-            id);
-   return ret;
-}
-
 /* DRIVERS */
 
 /**
@@ -732,11 +647,11 @@ bool menu_input_key_bind_set_mode(
    const input_device_driver_t 
       *joypad                          = input_driver_st->primary_joypad;
 #ifdef HAVE_MFI
-      const input_device_driver_t
-         *sec_joypad                   = input_driver_st->secondary_joypad;
+   const input_device_driver_t
+      *sec_joypad                      = input_driver_st->secondary_joypad;
 #else
-      const input_device_driver_t
-         *sec_joypad                   = NULL;
+   const input_device_driver_t
+      *sec_joypad                      = NULL;
 #endif
    menu_input_t *menu_input            = &p_rarch->menu_input_state;
    settings_t     *settings            = p_rarch->configuration_settings;
@@ -21397,47 +21312,6 @@ static int16_t input_state(unsigned port, unsigned device,
 #endif
 
    return result;
-}
-
-static int16_t input_joypad_axis(
-      float input_analog_deadzone,
-      float input_analog_sensitivity,
-      const input_device_driver_t *drv,
-      unsigned port, uint32_t joyaxis, float normal_mag)
-{
-   int16_t val                    = (joyaxis != AXIS_NONE) ? drv->axis(port, joyaxis) : 0;
-
-   if (input_analog_deadzone)
-   {
-      /* if analog value is below the deadzone, ignore it
-       * normal magnitude is calculated radially for analog sticks
-       * and linearly for analog buttons */
-      if (normal_mag <= input_analog_deadzone)
-         return 0;
-
-      /* due to the way normal_mag is calculated differently for buttons and
-       * sticks, this results in either a radial scaled deadzone for sticks
-       * or linear scaled deadzone for analog buttons */
-      val = val * MAX(1.0f,(1.0f / normal_mag)) * MIN(1.0f,
-            ((normal_mag - input_analog_deadzone)
-          / (1.0f - input_analog_deadzone)));
-   }
-
-   if (input_analog_sensitivity != 1.0f)
-   {
-      float normalized = (1.0f / 0x7fff) * val;
-      int      new_val = 0x7fff * normalized  *
-         input_analog_sensitivity;
-
-      if (new_val > 0x7fff)
-         return 0x7fff;
-      else if (new_val < -0x7fff)
-         return -0x7fff;
-
-      return new_val;
-   }
-
-   return val;
 }
 
 /* MENU INPUT */

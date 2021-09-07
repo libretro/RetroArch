@@ -653,6 +653,25 @@ bool input_driver_toggle_button_combo(
       retro_time_t current_time,
       input_bits_t* p_input);
 
+int16_t input_state_wrap(
+      input_driver_t *current_input,
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned _port,
+      unsigned device,
+      unsigned idx,
+      unsigned id);
+
+int16_t input_joypad_axis(
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
+      const input_device_driver_t *drv,
+      unsigned port, uint32_t joyaxis, float normal_mag);
+
 /*****************************************************************************/
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
