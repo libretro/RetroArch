@@ -27,10 +27,54 @@
 #define GS_TEXT GS_SETREG_RGBA(0x80,0x80,0x80,0x80)
 /* turn black GS Screen */
 #define GS_BLACK GS_SETREG_RGBA(0x00,0x00,0x00,0x80)
+/* default alpha logic */
+#define GS_DEFAULT_ALPHA GS_SETREG_ALPHA(0, 1, 0, 1, 0)
 
-#define NTSC_WIDTH  640
-#define NTSC_HEIGHT 448
+#define NUM_RM_VMODES 8
+#define PS2_RESOLUTION_LAST NUM_RM_VMODES - 1
+#define RM_VMODE_AUTO 0
 
+enum rm_aratio {
+    RM_ARATIO_4_3 = 0,
+    RM_ARATIO_16_9,
+};
+
+// RM Vmode -> GS Vmode conversion table
+struct rm_mode
+{
+    char mode;
+    char hsync; // In KHz
+    short int width;
+    short int height;
+    short int passes;
+    short int VCK;
+    short int interlace;
+    short int field;
+    short int aratio;
+    short int PAR1; // Pixel Aspect Ratio 1 (For video modes with non-square pixels, like PAL/NTSC)
+    short int PAR2; // Pixel Aspect Ratio 2 (For video modes with non-square pixels, like PAL/NTSC)
+    char desc[64];
+};
+
+static struct rm_mode rm_mode_table[NUM_RM_VMODES] = {
+    // 24 bit color mode with black borders
+    {-1,                 16,  640,   -1,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, -1, 15, "AUTO"}, // AUTO
+    {GS_MODE_PAL,        16,  640,  512,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 16, 15, "PAL@50Hz"}, // PAL@50Hz
+    {GS_MODE_NTSC,       16,  640,  448,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 14, 15, "NTSC@60Hz"}, // NTSC@60Hz
+    {GS_MODE_PAL,        16,  640,  256,  1, 2, GS_NONINTERLACED, GS_FIELD, RM_ARATIO_4_3, 16, 15, "PAL@50Hz"}, // PAL@50Hz
+    {GS_MODE_NTSC,       16,  640,  224,  1, 2, GS_NONINTERLACED, GS_FIELD, RM_ARATIO_4_3, 14, 15, "NTSC@60Hz"}, // NTSC@60Hz
+    {GS_MODE_DTV_480P,   31,  640,  448,  1, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3, 14, 15, "DTV480P@60Hz"}, // DTV480P@60Hz
+    {GS_MODE_DTV_576P,   31,  640,  512,  1, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3, 16, 15, "DTV576P@50Hz"}, // DTV576P@50Hz
+    {GS_MODE_VGA_640_60, 31,  640,  480,  1, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3,  1,  1, "VGA640x480@60Hz"}, // VGA640x480@60Hz
+    // 24 bit color mode full screen, multi-pass (2 passes, HIRES)
+   //  {GS_MODE_PAL,        16,  704,  576,  2, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 12, 11, "PAL@50Hz"}, // PAL@50Hz
+   //  {GS_MODE_NTSC,       16,  704,  480,  2, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 10, 11, "NTSC@60Hz"}, // NTSC@60Hz
+   //  {GS_MODE_DTV_480P,   31,  704,  480,  2, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3, 10, 11, "DTV480P@60Hz"}, // DTV480P@60Hz
+   //  {GS_MODE_DTV_576P,   31,  704,  576,  2, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3, 12, 11, "DTV576P@50Hz"}, // DTV576P@50Hz
+    // 16 bit color mode full screen, multi-pass (3 passes, HIRES)
+   //  {GS_MODE_DTV_720P,   31, 1280,  720,  3, 1, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_16_9, 1,  1, "HDTV720P@60Hz"}, // HDTV720P@60Hz
+   //  {GS_MODE_DTV_1080I,  31, 1920, 1080,  3, 1, GS_INTERLACED,    GS_FRAME, RM_ARATIO_16_9, 1,  1, "HDTV1080I@60Hz"}, // HDTV1080I@60Hz
+};
 typedef struct ps2_video
 {
    /* I need to create this additional field
@@ -40,6 +84,11 @@ typedef struct ps2_video
    bool vsync;
    int vsync_callback_id;
    bool force_aspect;
+
+   int8_t vmode;
+   bool hires;
+   int video_window_offset_x;
+   int video_window_offset_y;
 
    int PSM;
    int menu_filter;
@@ -66,7 +115,108 @@ static int vsync_handler()
    return 0;
 }
 
-static GSGLOBAL *init_GSGlobal(void)
+static void rmEnd(ps2_video_t *ps2)
+{
+   if (!ps2->gsGlobal)
+      return;
+
+   if (ps2->hires)
+   {
+      gsKit_hires_deinit_global(ps2->gsGlobal);
+   }
+   else
+   {
+      gsKit_deinit_global(ps2->gsGlobal);
+   }
+   ps2->vmode = -1;
+}
+
+static void updateOffSetsIfNeeded(ps2_video_t *ps2)
+{
+   bool shouldUpdate = false;
+   settings_t *settings = config_get_ptr();
+   int video_window_offset_x = settings->ints.video_window_offset_x;
+   int video_window_offset_y = settings->ints.video_window_offset_y;
+
+   if (video_window_offset_x != ps2->video_window_offset_x || video_window_offset_y != ps2->video_window_offset_y)
+      shouldUpdate = true;
+
+   if (!shouldUpdate)
+      return;
+
+   ps2->video_window_offset_x = video_window_offset_x;
+   ps2->video_window_offset_y = video_window_offset_y;
+
+   gsKit_set_display_offset(ps2->gsGlobal, ps2->video_window_offset_x * rm_mode_table[ps2->vmode].VCK, ps2->video_window_offset_y);
+   RARCH_LOG("RENDERMAN Change offset: %d, %d\n", ps2->video_window_offset_x, ps2->video_window_offset_y);
+}
+
+static int rmSetMode(ps2_video_t *ps2, int force)
+{
+   global_t *global = global_get_ptr();
+
+   // we don't want to set the vmode without a reason...
+    int changed = (ps2->vmode != global->console.screen.resolutions.current.id || force);
+    if (changed) {
+        // Cleanup previous gsKit instance
+        if (ps2->vmode >= 0)
+            rmEnd(ps2);
+
+      ps2->vmode = global->console.screen.resolutions.current.id;
+      ps2->hires = (rm_mode_table[ps2->vmode].passes > 1) ? 1 : 0;
+
+      if (ps2->hires) {
+         ps2->gsGlobal = gsKit_hires_init_global();
+      } else {
+         ps2->gsGlobal = gsKit_init_global();
+      }
+      ps2->gsGlobal->Mode = rm_mode_table[ps2->vmode].mode;
+      ps2->gsGlobal->Width = rm_mode_table[ps2->vmode].width;
+      ps2->gsGlobal->Height = rm_mode_table[ps2->vmode].height;
+      ps2->gsGlobal->Interlace = rm_mode_table[ps2->vmode].interlace;
+      ps2->gsGlobal->Field = rm_mode_table[ps2->vmode].field;
+      ps2->gsGlobal->PSM = GS_PSM_CT16;
+      ps2->gsGlobal->PSMZ = GS_PSMZ_16S;
+      ps2->gsGlobal->DoubleBuffering = GS_SETTING_OFF;
+      ps2->gsGlobal->ZBuffering = GS_SETTING_OFF;
+      ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
+
+      if ((ps2->gsGlobal->Interlace == GS_INTERLACED) && (ps2->gsGlobal->Field == GS_FRAME))
+         ps2->gsGlobal->Height /= 2;
+
+      // Coordinate space ranges from 0 to 4096 pixels
+      // Center the buffer in the coordinate space
+      ps2->gsGlobal->OffsetX = ((4096 - ps2->gsGlobal->Width) / 2) * 16;
+      ps2->gsGlobal->OffsetY = ((4096 - ps2->gsGlobal->Height) / 2) * 16;
+
+      if (ps2->hires) {
+         gsKit_hires_init_screen(ps2->gsGlobal, rm_mode_table[ps2->vmode].passes);
+      } else {
+         gsKit_init_screen(ps2->gsGlobal);
+         gsKit_mode_switch(ps2->gsGlobal, GS_ONESHOT);
+      }
+
+      gsKit_set_test(ps2->gsGlobal, GS_ZTEST_OFF);
+      gsKit_set_primalpha(ps2->gsGlobal, GS_DEFAULT_ALPHA, 0);
+
+      // reset the contents of the screen to avoid garbage being displayed
+      if (ps2->hires) {
+         gsKit_hires_sync(ps2->gsGlobal);
+         gsKit_hires_flip(ps2->gsGlobal);
+      } else {
+         gsKit_clear(ps2->gsGlobal, GS_BLACK);
+         gsKit_sync_flip(ps2->gsGlobal);
+      }
+
+      RARCH_LOG("RENDERMAN New vmode: %d, %d x %d\n", ps2->vmode, ps2->gsGlobal->Width, ps2->gsGlobal->Height);
+   }
+
+   updateOffSetsIfNeeded(ps2);
+
+    return changed;
+}
+
+static void rmInit(ps2_video_t *ps2)
 {
    ee_sema_t sema;
    sema.init_count = 0;
@@ -74,42 +224,19 @@ static GSGLOBAL *init_GSGlobal(void)
    sema.option = 0;
    vsync_sema_id = CreateSema(&sema);
 
-   GSGLOBAL *gsGlobal        = gsKit_init_global();
+   short int mode = gsKit_check_rom();
 
-   gsGlobal->Mode            = GS_MODE_NTSC;
-   gsGlobal->Interlace       = GS_INTERLACED;
-   gsGlobal->Field           = GS_FIELD;
-   gsGlobal->Width           = NTSC_WIDTH;
-   gsGlobal->Height          = NTSC_HEIGHT;
+   rm_mode_table[RM_VMODE_AUTO].mode = mode;
+   rm_mode_table[RM_VMODE_AUTO].height = (mode == GS_MODE_PAL) ? 512 : 448;
+   rm_mode_table[RM_VMODE_AUTO].PAR1 = (mode == GS_MODE_PAL) ? 16 : 14;
 
-   gsGlobal->PSM             = GS_PSM_CT16;
-   gsGlobal->PSMZ            = GS_PSMZ_16;
-   gsGlobal->DoubleBuffering = GS_SETTING_OFF;
-   gsGlobal->ZBuffering      = GS_SETTING_OFF;
-   gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
-
-   dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
+   dmaKit_init(D_CTRL_RELE_OFF, D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
                D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
 
-   /* Initialize the DMAC */
+   // Initialize the DMAC
    dmaKit_chan_init(DMA_CHANNEL_GIF);
 
-   gsKit_init_screen(gsGlobal);
-   gsKit_mode_switch(gsGlobal, GS_ONESHOT);
-
-   gsKit_set_test(gsGlobal, GS_ZTEST_OFF);
-   gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
-
-   gsKit_clear(gsGlobal, GS_BLACK);
-
-   return gsGlobal;
-}
-
-static void deinit_GSGlobal(GSGLOBAL *gsGlobal)
-{
-   gsKit_clear(gsGlobal, GS_BLACK);
-   gsKit_vram_clear(gsGlobal);
-   gsKit_deinit_global(gsGlobal);
+   rmSetMode(ps2, 1);
 }
 
 /* Copy of gsKit_sync_flip, but without the 'flip' */
@@ -148,7 +275,7 @@ static GSTEXTURE *prepare_new_texture(void)
 
 static void init_ps2_video(ps2_video_t *ps2)
 {
-   ps2->gsGlobal    = init_GSGlobal();
+   rmInit(ps2);
    gsKit_TexManager_init(ps2->gsGlobal);
 
    ps2->vp.x                = 0;
@@ -161,6 +288,11 @@ static void init_ps2_video(ps2_video_t *ps2)
    ps2->vsync_callback_id = gsKit_add_vsync_handler(vsync_handler);
    ps2->menuTexture = prepare_new_texture();
    ps2->coreTexture = prepare_new_texture();
+
+   ps2->vmode = 0;
+   ps2->hires = false;
+   ps2->video_window_offset_x = 0;
+   ps2->video_window_offset_y = 0;
 
    /* Used for cores that supports palette */
    ps2->iface.interface_type    = RETRO_HW_RENDER_INTERFACE_GSKIT_PS2;
@@ -300,6 +432,9 @@ static bool ps2_gfx_frame(void *data, const void *frame,
       printf("ps2_gfx_frame %llu\n", frame_count);
 #endif
 
+   // Check if user change offset values
+   updateOffSetsIfNeeded(ps2);
+
    if (frame)
    {
       struct retro_hw_ps2_insets padding = empty_ps2_insets;
@@ -382,7 +517,7 @@ static void ps2_gfx_free(void *data)
    free(ps2->coreTexture);
 
    gsKit_remove_vsync_handler(ps2->vsync_callback_id);
-   deinit_GSGlobal(ps2->gsGlobal);
+   rmEnd(ps2);
 
    if (vsync_sema_id >= 0)
       DeleteSema(vsync_sema_id);
@@ -393,11 +528,61 @@ static void ps2_gfx_free(void *data)
 static bool ps2_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
 
+static void ps2_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
+      bool fullscreen)
+{
+   ps2_video_t *ps2 = (ps2_video_t*)data;
+   rmSetMode(ps2, 0);
+}
+
 static void ps2_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
 
    ps2->menu_filter = smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
+}
+
+static void ps2_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return;
+
+   /* If the current index is out of bound default it to zero */
+   if (global->console.screen.resolutions.current.id > PS2_RESOLUTION_LAST)
+      global->console.screen.resolutions.current.id = 0;
+
+   *width  = rm_mode_table[
+      global->console.screen.resolutions.current.id].width;
+   *height = rm_mode_table[
+      global->console.screen.resolutions.current.id].height;
+}
+
+static void ps2_get_video_output_prev(void *data)
+{
+   global_t *global = global_get_ptr();
+
+   if (global->console.screen.resolutions.current.id == 0)
+   {
+      global->console.screen.resolutions.current.id = PS2_RESOLUTION_LAST;
+      return;
+   }
+
+   global->console.screen.resolutions.current.id--;
+}
+
+static void ps2_get_video_output_next(void *data)
+{
+   global_t *global = global_get_ptr();
+
+   if (global->console.screen.resolutions.current.id >= PS2_RESOLUTION_LAST)
+   {
+      global->console.screen.resolutions.current.id = 0;
+      return;
+   }
+
+   global->console.screen.resolutions.current.id++;
 }
 
 static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
@@ -448,12 +633,12 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL,          /* get_flags  */
    NULL,
    NULL,
-   NULL,
+   ps2_set_video_mode,
    NULL, /* get_refresh_rate */
    ps2_set_filtering,
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
+   ps2_get_video_output_size,
+   ps2_get_video_output_prev,
+   ps2_get_video_output_next,
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
    NULL, /* set_aspect_ratio */

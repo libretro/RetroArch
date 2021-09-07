@@ -486,7 +486,7 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || !defined(__PSL1GHT__) && !defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && !defined(__PS3__)
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
 

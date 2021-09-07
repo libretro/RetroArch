@@ -7194,7 +7194,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
-#if defined(GEKKO)
+#if defined(GEKKO) || defined(PS2)
          {
             unsigned width = 0, height = 0;
 

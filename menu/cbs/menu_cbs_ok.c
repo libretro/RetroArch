@@ -6757,7 +6757,7 @@ static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || !defined(__PSL1GHT__) && defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
    unsigned width   = 0;
    unsigned  height = 0;
 
