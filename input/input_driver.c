@@ -796,3 +796,133 @@ input_remote_t *input_driver_init_remote(
          num_active_users);
 }
 #endif
+
+#ifdef HAVE_OVERLAY
+bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
+      input_overlay_state_t *ol_state, unsigned port)
+{
+   switch(desc->type)
+   {
+      case OVERLAY_TYPE_BUTTONS:
+         {
+            unsigned i;
+            bool all_buttons_pressed        = false;
+
+            /* Check each bank of the mask */
+            for (i = 0; i < ARRAY_SIZE(desc->button_mask.data); ++i)
+            {
+               /* Get bank */
+               uint32_t bank_mask = BITS_GET_ELEM(desc->button_mask,i);
+               unsigned        id = i * 32;
+
+               /* Worth pursuing? Have we got any bits left in here? */
+               while (bank_mask)
+               {
+                  /* If this bit is set then we need to query the pad
+                   * The button must be pressed.*/
+                  if (bank_mask & 1)
+                  {
+                     /* Light up the button if pressed */
+                     if (ol_state ?
+                           !BIT256_GET(ol_state->buttons, id) :
+                           !input_state_internal(port, RETRO_DEVICE_JOYPAD, 0, id))
+                     {
+                        /* We need ALL of the inputs to be active,
+                         * abort. */
+                        desc->updated    = false;
+                        return false;
+                     }
+
+                     all_buttons_pressed = true;
+                     desc->updated       = true;
+                  }
+
+                  bank_mask >>= 1;
+                  ++id;
+               }
+            }
+
+            return all_buttons_pressed;
+         }
+
+      case OVERLAY_TYPE_ANALOG_LEFT:
+      case OVERLAY_TYPE_ANALOG_RIGHT:
+         {
+            float analog_x;
+            float analog_y;
+            float dx;
+            float dy;
+
+            if (ol_state)
+            {
+               unsigned index_offset = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
+               analog_x              = (float)ol_state->analog[index_offset];
+               analog_y              = (float)ol_state->analog[index_offset + 1];
+            }
+            else
+            {
+               unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
+                  RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
+
+               analog_x              = input_state_internal(port, RETRO_DEVICE_ANALOG,
+                     index, RETRO_DEVICE_ID_ANALOG_X);
+               analog_y              = input_state_internal(port, RETRO_DEVICE_ANALOG,
+                     index, RETRO_DEVICE_ID_ANALOG_Y);
+            }
+
+            dx = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
+            dy = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
+
+            /* Only modify overlay delta_x/delta_y values
+             * if we are monitoring input from a physical
+             * controller */
+            if (!ol_state)
+            {
+               desc->delta_x = dx;
+               desc->delta_y = dy;
+            }
+
+            /* Maybe use some option here instead of 0, only display
+             * changes greater than some magnitude */
+            if ((dx * dx) > 0 || (dy * dy) > 0)
+               return true;
+         }
+         break;
+
+      case OVERLAY_TYPE_KEYBOARD:
+         if (ol_state ?
+               OVERLAY_GET_KEY(ol_state, desc->retro_key_idx) :
+               input_state_internal(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
+         {
+            desc->updated  = true;
+            return true;
+         }
+         break;
+
+      default:
+         break;
+   }
+
+   return false;
+}
+
+bool input_overlay_add_inputs(input_overlay_t *ol,
+      bool show_touched, unsigned port)
+{
+   unsigned i;
+   bool button_pressed             = false;
+   input_overlay_state_t *ol_state = &ol->overlay_state;
+
+   if (!ol_state)
+      return false;
+
+   for (i = 0; i < ol->active->size; i++)
+   {
+      overlay_desc_t *desc  = &(ol->active->descs[i]);
+      button_pressed       |= input_overlay_add_inputs_inner(desc,
+            show_touched ? ol_state : NULL, port);
+   }
+
+   return button_pressed;
+}
+#endif

@@ -96,13 +96,6 @@
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
 
-#ifdef HAVE_OVERLAY
-#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-
-#define MAX_VISIBILITY 32
-#endif
-
 #ifdef HAVE_THREADS
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
 #else
@@ -1113,38 +1106,6 @@ typedef struct my_list_t
    int capacity;
    int size;
 } my_list;
-
-#ifdef HAVE_OVERLAY
-typedef struct input_overlay_state
-{
-   uint32_t keys[RETROK_LAST / 32 + 1];
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4];
-   /* This is a bitmask of (1 << key_bind_id). */
-   input_bits_t buttons;
-} input_overlay_state_t;
-
-struct input_overlay
-{
-   struct overlay *overlays;
-   const struct overlay *active;
-   void *iface_data;
-   const video_overlay_interface_t *iface;
-   input_overlay_state_t overlay_state;
-
-   size_t index;
-   size_t size;
-
-   unsigned next_index;
-
-   enum overlay_status state;
-
-   bool enable;
-   bool blocked;
-   bool alive;
-};
-#endif
-
 
 typedef struct turbo_buttons turbo_buttons_t;
 

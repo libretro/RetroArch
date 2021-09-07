@@ -34,6 +34,9 @@
 
 #include "input_defines.h"
 #include "input_types.h"
+#ifdef HAVE_OVERLAY
+#include "input_overlay.h"
+#endif
 
 #include "../msg_hash.h"
 #include "include/hid_types.h"
@@ -721,6 +724,9 @@ input_remote_t *input_driver_init_remote(
 
 void input_remote_free(input_remote_t *handle, unsigned max_users);
 #endif
+
+int16_t input_state_internal(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
 
 /*****************************************************************************/
 

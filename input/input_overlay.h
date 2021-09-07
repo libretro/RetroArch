@@ -27,6 +27,11 @@
 
 #include "input_driver.h"
 
+#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+
+#define MAX_VISIBILITY 32
+
 RETRO_BEGIN_DECLS
 
 /* Overlay driver acts as a medium between input drivers
@@ -111,6 +116,46 @@ enum overlay_show_input_type
    OVERLAY_SHOW_INPUT_LAST
 };
 
+struct overlay_desc
+{
+   struct texture_image image;
+
+   enum overlay_hitbox hitbox;
+   enum overlay_type type;
+
+   bool updated;
+   bool movable;
+
+   unsigned next_index;
+   unsigned image_index;
+
+   float alpha_mod;
+   float range_mod;
+   float analog_saturate_pct;
+   float range_x, range_y;
+   float range_x_mod, range_y_mod;
+   float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
+   float x;
+   float y;
+   /* These are 'raw' x/y values shifted
+    * by a user-configured offset (c.f.
+    * OVERLAY_X/Y_SEPARATION). Used to determine
+    * correct hitbox locations. By default,
+    * will be equal to x/y */
+   float x_shift;
+   float y_shift;
+
+   /* This is a retro_key value for keyboards */
+   unsigned retro_key_idx;
+
+   /* This is a bit mask of all input binds to set with this overlay control */
+   input_bits_t button_mask;
+
+   char next_index_name[64];
+};
+
+
 struct overlay
 {
    struct overlay_desc *descs;
@@ -169,43 +214,33 @@ struct overlay
    char name[64];
 };
 
-struct overlay_desc
+typedef struct input_overlay_state
 {
-   struct texture_image image;
+   uint32_t keys[RETROK_LAST / 32 + 1];
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4];
+   /* This is a bitmask of (1 << key_bind_id). */
+   input_bits_t buttons;
+} input_overlay_state_t;
 
-   enum overlay_hitbox hitbox;
-   enum overlay_type type;
+struct input_overlay
+{
+   struct overlay *overlays;
+   const struct overlay *active;
+   void *iface_data;
+   const video_overlay_interface_t *iface;
+   input_overlay_state_t overlay_state;
 
-   bool updated;
-   bool movable;
+   size_t index;
+   size_t size;
 
    unsigned next_index;
-   unsigned image_index;
 
-   float alpha_mod;
-   float range_mod;
-   float analog_saturate_pct;
-   float range_x, range_y;
-   float range_x_mod, range_y_mod;
-   float mod_x, mod_y, mod_w, mod_h;
-   float delta_x, delta_y;
-   float x;
-   float y;
-   /* These are 'raw' x/y values shifted
-    * by a user-configured offset (c.f.
-    * OVERLAY_X/Y_SEPARATION). Used to determine
-    * correct hitbox locations. By default,
-    * will be equal to x/y */
-   float x_shift;
-   float y_shift;
+   enum overlay_status state;
 
-   /* This is a retro_key value for keyboards */
-   unsigned retro_key_idx;
-
-   /* This is a bit mask of all input binds to set with this overlay control */
-   input_bits_t button_mask;
-
-   char next_index_name[64];
+   bool enable;
+   bool blocked;
+   bool alive;
 };
 
 /* Holds general layout information for an
@@ -260,6 +295,26 @@ typedef struct
 void input_overlay_free_overlay(struct overlay *overlay);
 
 void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
+
+/**
+ * input_overlay_add_inputs:
+ * @desc : pointer to overlay description
+ * @ol_state : pointer to overlay state. If valid, inputs
+ *             that are actually 'touched' on the overlay
+ *             itself will displayed. If NULL, inputs from
+ *             the device connected to 'port' will be displayed.
+ * @port : when ol_state is NULL, specifies the port of
+ *         the input device from which input will be
+ *         displayed.
+ *
+ * Adds inputs from current_input to the overlay, so it's displayed
+ * returns true if an input that is pressed will change the overlay
+ */
+bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
+      input_overlay_state_t *ol_state, unsigned port);
+
+bool input_overlay_add_inputs(input_overlay_t *ol,
+      bool show_touched, unsigned port);
 
 RETRO_END_DECLS
 

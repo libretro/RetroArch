@@ -63,8 +63,6 @@ static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 #endif
-static int16_t input_state_internal(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 static void video_driver_frame(const void *data, unsigned width,
