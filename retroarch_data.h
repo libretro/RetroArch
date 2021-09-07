@@ -56,7 +56,6 @@
 #endif
 
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
-#define HOLD_BTN_DELAY_SEC 2
 
 #define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
 
@@ -96,13 +95,6 @@
 
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
-
-#ifdef HAVE_OVERLAY
-#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-
-#define MAX_VISIBILITY 32
-#endif
 
 #ifdef HAVE_THREADS
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
@@ -1099,45 +1091,9 @@ typedef struct
    enum gfx_ctx_api api;
 } gfx_api_gpu_map;
 
-struct remote_message
-{
-   int port;
-   int device;
-   int index;
-   int id;
-   uint16_t state;
-};
-
-struct input_remote
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   int net_fd[MAX_USERS];
-#endif
-   bool state[RARCH_BIND_LIST_END];
-};
-
 #ifdef HAVE_BSV_MOVIE
 typedef struct bsv_movie bsv_movie_t;
 #endif
-
-typedef struct input_remote input_remote_t;
-
-typedef struct input_remote_state
-{
-   /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons[MAX_USERS];
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4][MAX_USERS];
-} input_remote_state_t;
-
-typedef struct input_list_element_t
-{
-   int16_t *state;
-   unsigned port;
-   unsigned device;
-   unsigned index;
-   unsigned int state_size;
-} input_list_element;
 
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
@@ -1151,38 +1107,6 @@ typedef struct my_list_t
    int size;
 } my_list;
 
-#ifdef HAVE_OVERLAY
-typedef struct input_overlay_state
-{
-   uint32_t keys[RETROK_LAST / 32 + 1];
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4];
-   /* This is a bitmask of (1 << key_bind_id). */
-   input_bits_t buttons;
-} input_overlay_state_t;
-
-struct input_overlay
-{
-   struct overlay *overlays;
-   const struct overlay *active;
-   void *iface_data;
-   const video_overlay_interface_t *iface;
-   input_overlay_state_t overlay_state;
-
-   size_t index;
-   size_t size;
-
-   unsigned next_index;
-
-   enum overlay_status state;
-
-   bool enable;
-   bool blocked;
-   bool alive;
-};
-#endif
-
-
 typedef struct turbo_buttons turbo_buttons_t;
 
 /* Turbo support. */
@@ -1193,21 +1117,6 @@ struct turbo_buttons
    uint16_t enable[MAX_USERS];
    bool frame_enable[MAX_USERS];
    bool mode1_enable[MAX_USERS];
-};
-
-struct input_keyboard_line
-{
-   char *buffer;
-   void *userdata;
-   /** Line complete callback.
-    * Calls back after return is
-    * pressed with the completed line.
-    * Line can be NULL.
-    **/
-   input_keyboard_line_complete_t cb;
-   size_t ptr;
-   size_t size;
-   bool enabled;
 };
 
 typedef struct input_game_focus_state

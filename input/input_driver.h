@@ -34,6 +34,9 @@
 
 #include "input_defines.h"
 #include "input_types.h"
+#ifdef HAVE_OVERLAY
+#include "input_overlay.h"
+#endif
 
 #include "../msg_hash.h"
 #include "include/hid_types.h"
@@ -97,6 +100,31 @@ struct retro_keybind
    bool valid;
 };
 
+
+/**
+ * line_complete callback (when carriage return is pressed)
+ *
+ * @param userdata User data which will be passed to subsequent callbacks.
+ * @param line      the line of input, which can be NULL.
+ **/
+typedef void (*input_keyboard_line_complete_t)(void *userdata,
+      const char *line);
+
+struct input_keyboard_line
+{
+   char *buffer;
+   void *userdata;
+   /** Line complete callback.
+    * Calls back after return is
+    * pressed with the completed line.
+    * Line can be NULL.
+    **/
+   input_keyboard_line_complete_t cb;
+   size_t ptr;
+   size_t size;
+   bool enabled;
+};
+
 extern struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 extern struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 
@@ -120,10 +148,48 @@ typedef struct
    bool autoconfigured;
 } input_device_info_t;
 
+struct remote_message
+{
+   int port;
+   int device;
+   int index;
+   int id;
+   uint16_t state;
+};
+
+struct input_remote
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   int net_fd[MAX_USERS];
+#endif
+   bool state[RARCH_BIND_LIST_END];
+};
+
+
 typedef struct
 {
    char display_name[256];
 } input_mouse_info_t;
+
+typedef struct input_remote input_remote_t;
+
+typedef struct input_remote_state
+{
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons[MAX_USERS];
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4][MAX_USERS];
+} input_remote_state_t;
+
+typedef struct input_list_element_t
+{
+   int16_t *state;
+   unsigned port;
+   unsigned device;
+   unsigned index;
+   unsigned int state_size;
+} input_list_element;
+
 
 /**
  * Organizes the functions and data structures of each driver that are accessed
@@ -405,15 +471,6 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver);
 
 
 /**
- * line_complete callback (when carriage return is pressed)
- *
- * @param userdata User data which will be passed to subsequent callbacks.
- * @param line      the line of input, which can be NULL.
- **/
-typedef void (*input_keyboard_line_complete_t)(void *userdata,
-      const char *line);
-
-/**
  * Callback for keypress events
  * 
  * @param userdata The user data that was passed through from the keyboard press callback.
@@ -647,6 +704,104 @@ char *input_config_get_device_name_ptr(unsigned port);
  * @return the size of the device name on the specified port
  */
 size_t input_config_get_device_name_size(unsigned port);
+
+bool input_driver_toggle_button_combo(
+      unsigned mode,
+      retro_time_t current_time,
+      input_bits_t* p_input);
+
+int16_t input_state_wrap(
+      input_driver_t *current_input,
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind **binds,
+      bool keyboard_mapping_blocked,
+      unsigned _port,
+      unsigned device,
+      unsigned idx,
+      unsigned id);
+
+int16_t input_joypad_axis(
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
+      const input_device_driver_t *drv,
+      unsigned port, uint32_t joyaxis, float normal_mag);
+
+/**
+ * input_joypad_analog:
+ * @drv                     : Input device driver handle.
+ * @port                    : User number.
+ * @idx                     : Analog key index.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
+ * @ident                   : Analog key identifier.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_ID_ANALOG_X
+ *                            - RETRO_DEVICE_ID_ANALOG_Y
+ * @binds                   : Binds of user.
+ *
+ * Gets analog value of analog key identifiers @idx and @ident
+ * from user with number @port with provided keybinds (@binds).
+ *
+ * Returns: analog value on success, otherwise 0.
+ **/
+int16_t input_joypad_analog_button(
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
+      const input_device_driver_t *drv,
+      rarch_joypad_info_t *joypad_info,
+      unsigned ident,
+      const struct retro_keybind *bind);
+
+int16_t input_joypad_analog_axis(
+      unsigned input_analog_dpad_mode,
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
+      const input_device_driver_t *drv,
+      rarch_joypad_info_t *joypad_info,
+      unsigned idx,
+      unsigned ident,
+      const struct retro_keybind *binds);
+
+bool input_keyboard_line_append(
+      struct input_keyboard_line *keyboard_line,
+      const char *word);
+
+/**
+ * input_keyboard_start_line:
+ * @userdata                 : Userdata.
+ * @cb                       : Line complete callback function.
+ *
+ * Sets function pointer for keyboard line handle.
+ *
+ * The underlying buffer can be reallocated at any time
+ * (or be NULL), but the pointer to it remains constant
+ * throughout the objects lifetime.
+ *
+ * Returns: underlying buffer of the keyboard line.
+ **/
+const char **input_keyboard_start_line(
+      void *userdata,
+      struct input_keyboard_line *keyboard_line,
+      input_keyboard_line_complete_t cb);
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+void input_remote_parse_packet(
+      input_remote_state_t *input_state,
+      struct remote_message *msg, unsigned user);
+
+input_remote_t *input_driver_init_remote(
+      settings_t *settings,
+      unsigned num_active_users);
+
+void input_remote_free(input_remote_t *handle, unsigned max_users);
+#endif
+
+int16_t input_state_internal(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
 
 /*****************************************************************************/
 
