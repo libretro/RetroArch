@@ -21515,8 +21515,8 @@ static void input_keys_pressed(
                focus_normal, focus_binds_auto))
       {
          if (input_state_wrap(
-                  p_rarch->input_driver_state.current_driver,
-                  p_rarch->input_driver_state.current_data,
+                  input_driver_st->current_driver,
+                  input_driver_st->current_data,
                   input_driver_st->primary_joypad,
                   sec_joypad,
                   joypad_info,
@@ -21534,8 +21534,8 @@ static void input_keys_pressed(
       /* Check the libretro input first */
       if (!p_rarch->input_driver_block_libretro_input)
          ret = input_state_wrap(
-               p_rarch->input_driver_state.current_driver,
-               p_rarch->input_driver_state.current_data,
+               input_driver_st->current_driver,
+               input_driver_st->current_data,
                input_driver_st->primary_joypad,
                sec_joypad,
                joypad_info, &binds[port],
@@ -21574,8 +21574,8 @@ static void input_keys_pressed(
       {
          bool bit_pressed = binds[port][i].valid
             && input_state_wrap(
-                  p_rarch->input_driver_state.current_driver,
-                  p_rarch->input_driver_state.current_data,
+                  input_driver_st->current_driver,
+                  input_driver_st->current_data,
                   input_driver_st->primary_joypad,
                   sec_joypad,
                   joypad_info,
@@ -21620,16 +21620,6 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
       return ret;
    }
    return NULL;
-}
-
-static bool input_driver_init(struct rarch_state *p_rarch,
-      settings_t *settings)
-{
-   if (p_rarch->input_driver_state.current_driver)
-      p_rarch->input_driver_state.current_data = input_driver_init_wrap(
-            p_rarch->input_driver_state.current_driver, settings->arrays.input_joypad_driver);
-
-   return (p_rarch->input_driver_state.current_data != NULL);
 }
 
 static bool input_driver_find_driver(
@@ -25893,8 +25883,11 @@ static void video_driver_init_input(
       settings_t *settings,
       bool verbosity_enabled)
 {
+   void              *new_data = NULL;
    struct rarch_state *p_rarch = &rarch_st;
-   input_driver_t      **input = &p_rarch->input_driver_state.current_driver;
+   input_driver_state_t 
+      *input_driver_st         = &p_rarch->input_driver_state;
+   input_driver_t      **input = &input_driver_st->current_driver;
    if (*input)
       return;
 
@@ -25912,11 +25905,17 @@ static void video_driver_init_input(
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
     * in a similar fashion anyways. */
-   if (!p_rarch->input_driver_state.current_driver || !input_driver_init(p_rarch, settings))
+   if (  !input_driver_st->current_driver || 
+         !(new_data = input_driver_init_wrap(
+               input_driver_st->current_driver,
+               settings->arrays.input_joypad_driver)))
    {
       RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
       retroarch_fail(p_rarch, 1, "video_driver_init_input()");
+      return;
    }
+
+   input_driver_st->current_data = new_data;
 }
 
 /**
@@ -25924,13 +25923,14 @@ static void video_driver_init_input(
  *
  * Computes monitor FPS statistics.
  **/
-static void video_driver_monitor_compute_fps_statistics(struct rarch_state *p_rarch)
+static void video_driver_monitor_compute_fps_statistics(uint64_t
+      frame_time_count)
 {
    double        avg_fps       = 0.0;
    double        stddev        = 0.0;
    unsigned        samples     = 0;
 
-   if (p_rarch->video_driver_frame_time_count <
+   if (frame_time_count <
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
       RARCH_LOG(
@@ -26042,7 +26042,7 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
       return;
 #endif
 
-   video_driver_monitor_compute_fps_statistics(p_rarch);
+   video_driver_monitor_compute_fps_statistics(p_rarch->video_driver_frame_time_count);
 }
 
 static video_pixel_scaler_t *video_driver_pixel_converter_init(
@@ -26129,7 +26129,8 @@ static void video_driver_set_viewport_config(
 
 static void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom)
 {
-   unsigned len, highest, i, aspect_x, aspect_y;
+   unsigned len, i, aspect_x, aspect_y;
+   unsigned highest                  = 1;
    unsigned width                    = geom->base_width;
    unsigned height                   = geom->base_height;
    unsigned int rotation             = retroarch_get_rotation();
@@ -26137,8 +26138,7 @@ static void video_driver_set_viewport_square_pixel(struct retro_game_geometry *g
    if (width == 0 || height == 0)
       return;
 
-   len      = MIN(width, height);
-   highest  = 1;
+   len                               = MIN(width, height);
 
    for (i = 1; i < len; i++)
    {
@@ -26971,7 +26971,7 @@ void video_driver_set_viewport_core(void)
 
 void video_driver_set_viewport_full(void)
 {
-   unsigned width = 0;
+   unsigned width  = 0;
    unsigned height = 0;   
 
    video_driver_get_size(&width, &height);
@@ -28276,7 +28276,8 @@ void video_driver_get_window_title(char *buf, unsigned len)
 
 /**
  * video_context_driver_init:
- * @data                    : Input data.
+ * @core_set_shared_context : Boolean value that tells us whether shared context
+ *                            is set.
  * @ctx                     : Graphics context driver to initialize.
  * @ident                   : Identifier of graphics context driver to find.
  * @api                     : API of higher-level graphics API.
@@ -28291,7 +28292,7 @@ void video_driver_get_window_title(char *buf, unsigned len)
  * otherwise NULL.
  **/
 static const gfx_ctx_driver_t *video_context_driver_init(
-      struct rarch_state *p_rarch,
+      bool core_set_shared_context,
       settings_t *settings,
       void *data,
       const gfx_ctx_driver_t *ctx,
@@ -28315,7 +28316,7 @@ static const gfx_ctx_driver_t *video_context_driver_init(
    if (ctx->bind_hw_render)
    {
       bool  video_shared_context  =
-         settings->bools.video_shared_context || p_rarch->core_set_shared_context;
+         settings->bools.video_shared_context || core_set_shared_context;
 
       ctx->bind_hw_render(*ctx_data,
             video_shared_context && hw_render_ctx);
@@ -28346,7 +28347,8 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
 
    if (i >= 0)
    {
-      const gfx_ctx_driver_t *ctx = video_context_driver_init(p_rarch,
+      const gfx_ctx_driver_t *ctx = video_context_driver_init(
+            p_rarch->core_set_shared_context,
             settings,
             data,
             gfx_ctx_vk_drivers[i], ident,
@@ -28362,7 +28364,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               p_rarch,
+               p_rarch->core_set_shared_context,
                settings,
                data,
                gfx_ctx_vk_drivers[i], ident,
@@ -28401,7 +28403,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            p_rarch,
+            p_rarch->core_set_shared_context,
             settings,
             data,
             gfx_ctx_gl_drivers[i], ident,
@@ -28417,7 +28419,7 @@ static const gfx_ctx_driver_t *gl_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               p_rarch,
+               p_rarch->core_set_shared_context,
                settings,
                data,
                gfx_ctx_gl_drivers[i], ident,
