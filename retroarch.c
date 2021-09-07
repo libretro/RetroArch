@@ -1341,7 +1341,9 @@ int generic_menu_entry_action(
    struct rarch_state *p_rarch    = &rarch_st;
    const menu_ctx_driver_t
       *menu_driver_ctx            = p_rarch->menu_driver_ctx;
+   menu_handle_t *menu            = p_rarch->menu_driver_data;
    settings_t   *settings         = p_rarch->configuration_settings;
+   void *menu_userdata            = p_rarch->menu_userdata;
    bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    size_t scroll_accel            = menu_st->scroll.acceleration;
@@ -1378,7 +1380,7 @@ int generic_menu_entry_action(
                menu_driver_navigation_set(true);
 
                if (menu_driver_ctx->navigation_decrement)
-                  menu_driver_ctx->navigation_decrement(p_rarch->menu_userdata);
+                  menu_driver_ctx->navigation_decrement(menu_userdata);
             }
          }
          break;
@@ -1408,7 +1410,7 @@ int generic_menu_entry_action(
                }
 
                if (menu_driver_ctx->navigation_increment)
-                  menu_driver_ctx->navigation_increment(p_rarch->menu_userdata);
+                  menu_driver_ctx->navigation_increment(menu_userdata);
             }
          }
          break;
@@ -1430,7 +1432,7 @@ int generic_menu_entry_action(
 
             if (menu_driver_ctx->navigation_descend_alphabet)
                menu_driver_ctx->navigation_descend_alphabet(
-                     p_rarch->menu_userdata, &menu_st->selection_ptr);
+                     menu_userdata, &menu_st->selection_ptr);
          }
          break;
       case MENU_ACTION_SCROLL_DOWN:
@@ -1452,7 +1454,7 @@ int generic_menu_entry_action(
 
             if (menu_driver_ctx->navigation_ascend_alphabet)
                menu_driver_ctx->navigation_ascend_alphabet(
-                     p_rarch->menu_userdata, &menu_st->selection_ptr);
+                     menu_userdata, &menu_st->selection_ptr);
          }
          break;
       case MENU_ACTION_CANCEL:
@@ -1526,7 +1528,7 @@ int generic_menu_entry_action(
       title_name  [0]  = '\0';
       current_label[0] = '\0';
 
-      get_current_menu_value(&p_rarch->menu_driver_state,
+      get_current_menu_value(menu_st,
             current_value, sizeof(current_value));
 
       switch (action)
@@ -1545,7 +1547,7 @@ int generic_menu_entry_action(
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_CANCEL:
             menu_entries_get_title(title_name, sizeof(title_name));
-            get_current_menu_label(&p_rarch->menu_driver_state, current_label, sizeof(current_label));
+            get_current_menu_label(menu_st, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_UP:
          case MENU_ACTION_DOWN:
@@ -1554,7 +1556,7 @@ int generic_menu_entry_action(
          case MENU_ACTION_SELECT:
          case MENU_ACTION_SEARCH:
          case MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL:
-            get_current_menu_label(&p_rarch->menu_driver_state, current_label, sizeof(current_label));
+            get_current_menu_label(menu_st, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_SCAN:
          case MENU_ACTION_INFO:
@@ -1588,9 +1590,8 @@ int generic_menu_entry_action(
    }
 #endif
 
-   if (p_rarch->menu_driver_state.pending_close_content)
+   if (menu_st->pending_close_content)
    {
-      menu_handle_t       *menu = p_rarch->menu_driver_data;
       const char *content_path  = path_get(RARCH_PATH_CONTENT);
       const char *menu_flush_to = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
 
@@ -1604,9 +1605,8 @@ int generic_menu_entry_action(
       command_event(CMD_EVENT_UNLOAD_CORE, NULL);
       menu_entries_flush_stack(menu_flush_to, 0);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
-      menu_st->selection_ptr   = 0;
-
-      p_rarch->menu_driver_state.pending_close_content = false;
+      menu_st->selection_ptr         = 0;
+      menu_st->pending_close_content = false;
    }
 
    return ret;
