@@ -1556,6 +1556,17 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    return true;
 }
 
+/**
+ * content_ram_state_pending:
+ * Check a ram state write to disk.
+ *
+ * Returns: true if need to write, false otherwise.
+ **/
+bool content_ram_state_pending(void)
+{
+   return ram_buf.to_write_file;
+}
+
 static bool task_save_state_finder(retro_task_t *task, void *user_data)
 {
    if (!task)
