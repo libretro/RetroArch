@@ -86,6 +86,12 @@ struct save_state_buf
    char path[PATH_MAX_LENGTH];
 };
 
+struct ram_save_state_buf
+{
+   struct save_state_buf state_buf;
+   bool to_write_file;
+};
+
 struct sram_block
 {
    void *data;
@@ -153,7 +159,7 @@ static struct save_state_buf undo_load_buf;
 
 /* Buffer that stores state instead of file.
  * This is useful for devices with slow I/O. */
-static struct save_state_buf ram_buf;
+static struct ram_save_state_buf ram_buf;
 
 #ifdef HAVE_THREADS
 /* TODO/FIXME - global state - perhaps move outside this file */
@@ -1550,6 +1556,17 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    return true;
 }
 
+/**
+ * content_ram_state_pending:
+ * Check a ram state write to disk.
+ *
+ * Returns: true if need to write, false otherwise.
+ **/
+bool content_ram_state_pending(void)
+{
+   return ram_buf.to_write_file;
+}
+
 static bool task_save_state_finder(retro_task_t *task, void *user_data)
 {
    if (!task)
@@ -1673,14 +1690,15 @@ bool content_reset_savestate_backups(void)
    undo_load_buf.path[0] = '\0';
    undo_load_buf.size    = 0;
 
-   if (ram_buf.data)
+   if (ram_buf.state_buf.data)
    {
-      free(ram_buf.data);
-      ram_buf.data       = NULL;
+      free(ram_buf.state_buf.data);
+      ram_buf.state_buf.data = NULL;
    }
 
-   ram_buf.path[0]       = '\0';
-   ram_buf.size          = 0;
+   ram_buf.state_buf.path[0] = '\0';
+   ram_buf.state_buf.size    = 0;
+   ram_buf.to_write_file     = false;
 
    return true;
 }
@@ -1833,15 +1851,18 @@ bool content_load_state_from_ram(void)
    bool ret                  = false;
    void* temp_data           = NULL;
 
+   if (!ram_buf.state_buf.data)
+      return false;
+
    RARCH_LOG("[State]: %s, %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
-         (unsigned)ram_buf.size,
+         (unsigned)ram_buf.state_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
    /* We need to make a temporary copy of the buffer, to allow the swap below */
-   temp_data              = malloc(ram_buf.size);
-   temp_data_size         = ram_buf.size;
-   memcpy(temp_data, ram_buf.data, ram_buf.size);
+   temp_data              = malloc(ram_buf.state_buf.size);
+   temp_data_size         = ram_buf.state_buf.size;
+   memcpy(temp_data, ram_buf.state_buf.data, ram_buf.state_buf.size);
 
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
@@ -1908,22 +1929,23 @@ bool content_save_state_to_ram(void)
    }
 
    /* If we were holding onto an old state already, clean it up first */
-   if (ram_buf.data)
+   if (ram_buf.state_buf.data)
    {
-      free(ram_buf.data);
-      ram_buf.data = NULL;
+      free(ram_buf.state_buf.data);
+      ram_buf.state_buf.data = NULL;
    }
 
-   ram_buf.data = malloc(serial_size);
-   if (!ram_buf.data)
+   ram_buf.state_buf.data = malloc(serial_size);
+   if (!ram_buf.state_buf.data)
    {
       free(data);
       return false;
    }
 
-   memcpy(ram_buf.data, data, serial_size);
+   memcpy(ram_buf.state_buf.data, data, serial_size);
    free(data);
-   ram_buf.size = serial_size;
+   ram_buf.state_buf.size = serial_size;
+   ram_buf.to_write_file = true;
 
    return true;
 }
@@ -1948,17 +1970,23 @@ bool content_ram_state_to_file(const char *path)
    if (!path)
       return false;
 
-   if (!ram_buf.data)
+   if (!ram_buf.state_buf.data)
+      return false;
+
+   if (!ram_buf.to_write_file)
       return false;
 
 #if defined(HAVE_ZLIB)
    if (compress_files)
       write_success = rzipstream_write_file(
-         path, ram_buf.data, ram_buf.size);
+         path, ram_buf.state_buf.data, ram_buf.state_buf.size);
    else
 #endif
       write_success = filestream_write_file(
-         path, ram_buf.data, ram_buf.size);
+         path, ram_buf.state_buf.data, ram_buf.state_buf.size);
+
+   if (write_success)
+      ram_buf.to_write_file = false;
 
    return write_success;
 }

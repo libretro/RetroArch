@@ -60,6 +60,9 @@ bool content_load_state(const char* path, bool load_to_backup_buffer, bool autol
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk, bool autosave);
 
+/* Check a ram state write to disk. */
+bool content_ram_state_pending(void);
+
 /* Gets the number of bytes required to serialize the state. */
 size_t content_get_serialized_size(void);
 

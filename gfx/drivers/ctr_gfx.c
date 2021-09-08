@@ -433,17 +433,7 @@ static void save_state_to_file(void *data)
    ctr_video_t *ctr = (ctr_video_t*)data;
 
    char state_path[PATH_MAX_LENGTH];
-   global_t *global = global_get_ptr();
-   const char *name_savestate = global->name.savestate;
-
-   if (ctr->state_slot > 0)
-      snprintf(state_path, sizeof(state_path), "%s%d", name_savestate,
-            ctr->state_slot);
-   else if (ctr->state_slot < 0)
-      fill_pathname_join_delim(state_path,
-            name_savestate, "auto", '.', sizeof(state_path));
-   else
-      strlcpy(state_path, name_savestate, sizeof(state_path));
+   retroarch_get_current_savestate_path(state_path, sizeof(state_path));
 
    command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
@@ -566,7 +556,6 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                ctr_state_thumbnail_geom(ctr);
 
                ctr->state_data_exist = true;
-               ctr->state_data_on_ram = true;
                ctr->render_state_from_png_file = false;
 
                ctr_update_state_date(ctr);
@@ -592,9 +581,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                   state_tmp_touch.py < 230 &&
                   ctr->state_data_exist) 
             {
-               if (ctr->state_data_on_ram)
-                  command_event(CMD_EVENT_LOAD_STATE_FROM_RAM, NULL);
-               else
+               if (!command_event(CMD_EVENT_LOAD_STATE_FROM_RAM, NULL))
                   command_event(CMD_EVENT_LOAD_STATE, NULL);
                BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             }
@@ -608,13 +595,10 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
          !rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
       return;
 
+
    if (ctr->state_slot != config_slot)
    {
-      if (ctr->state_data_on_ram)
-      {
-         save_state_to_file(ctr);
-         ctr->state_data_on_ram = false;
-      }
+      save_state_to_file(ctr);
 
       ctr->state_slot = config_slot;
 
@@ -944,11 +928,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
    {
       ctr_set_bottom_screen_enable(hook == APTHOOK_ONSUSPEND, ctr->bottom_is_idle);
 
-      if (ctr->state_data_on_ram)
-      {
-         save_state_to_file(ctr);
-         ctr->state_data_on_ram = false;
-      }
+      save_state_to_file(ctr);
    }
    
    if (menu_driver_is_alive())
@@ -1019,7 +999,6 @@ static void* ctr_init(const video_info_t* video,
 
    ctr->init_bottom_menu = false;
    ctr->state_data_exist = false;
-   ctr->state_data_on_ram = false;
    ctr->render_font_bottom = false;
    ctr->refresh_bottom_menu = true;
    ctr->render_state_from_png_file = false;
@@ -1771,9 +1750,6 @@ static void ctr_free(void* data)
 
    if (!ctr)
       return;
-
-   if (ctr->state_data_on_ram)
-      save_state_to_file(ctr);
 
    aptUnhook(&ctr->lcd_aptHook);
    gspSetEventCallback(GSPGPU_EVENT_VBlank0, NULL, NULL, true);

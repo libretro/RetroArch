@@ -149,7 +149,6 @@ typedef struct ctr_video
    bool refresh_bottom_menu;
    bool render_font_bottom;
    bool render_state_from_png_file;
-   bool state_data_on_ram;
    bool state_data_exist;
    char state_date[CTR_STATE_DATE_SIZE];
    int state_slot;
