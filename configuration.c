@@ -4513,8 +4513,26 @@ bool config_save_overrides(enum override_type type, void *data)
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
          if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
+         {
+#ifdef HAVE_CHEEVOS
+            /* As authentication doesn't occur until after content is loaded,
+             * the achievement authentication token might only exist in the
+             * override set, and therefore differ from the master config set.
+             * Storing the achievement authentication token in an override
+             * is a recipe for disaster. If it expires and the user generates
+             * a new token, then the override will be out of date and the
+             * user will have to reauthenticate for each override (and also
+             * remember to update each override). Also exclude the username
+             * as it's directly tied to the token and password.
+             */
+            if (string_is_equal(array_settings[i].ident, "cheevos_token") ||
+                string_is_equal(array_settings[i].ident, "cheevos_password") ||
+                string_is_equal(array_settings[i].ident, "cheevos_username"))
+               continue;
+#endif
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
+         }
       }
 
       for (i = 0; i < (unsigned)path_settings_size; i++)
