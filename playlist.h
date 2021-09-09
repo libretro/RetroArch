@@ -250,6 +250,20 @@ void playlist_resolve_path(enum playlist_file_mode mode,
       bool is_core, char *path, size_t len);
 
 /**
+ * playlist_content_path_is_valid:
+ * @path      : Content path
+ *
+ * Checks whether specified playlist content path
+ * refers to an existent file. Handles all playlist
+ * content path 'types' (i.e. can validate paths
+ * referencing files inside archives).
+ *
+ * Returns true if file referenced by content
+ * path exists on the host filesystem.
+ **/
+bool playlist_content_path_is_valid(const char *path);
+
+/**
  * playlist_push:
  * @playlist        	   : Playlist handle.
  *
@@ -338,12 +352,19 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name);
 
-char *playlist_get_default_core_path(playlist_t *playlist);
-char *playlist_get_default_core_name(playlist_t *playlist);
+const char *playlist_get_default_core_path(playlist_t *playlist);
+const char *playlist_get_default_core_name(playlist_t *playlist);
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
 enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id);
 enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist);
+const char *playlist_get_scan_content_dir(playlist_t *playlist);
+const char *playlist_get_scan_file_exts(playlist_t *playlist);
+const char *playlist_get_scan_dat_file_path(playlist_t *playlist);
+bool playlist_get_scan_search_recursively(playlist_t *playlist);
+bool playlist_get_scan_search_archives(playlist_t *playlist);
+bool playlist_get_scan_filter_dat_content(playlist_t *playlist);
+bool playlist_scan_refresh_enabled(playlist_t *playlist);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
 void playlist_set_default_core_name(playlist_t *playlist, const char *core_name);
@@ -351,6 +372,12 @@ void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_d
 void playlist_set_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode);
 void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_mode);
+void playlist_set_scan_content_dir(playlist_t *playlist, const char *content_dir);
+void playlist_set_scan_file_exts(playlist_t *playlist, const char *file_exts);
+void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_path);
+void playlist_set_scan_search_recursively(playlist_t *playlist, bool search_recursively);
+void playlist_set_scan_search_archives(playlist_t *playlist, bool search_archives);
+void playlist_set_scan_filter_dat_content(playlist_t *playlist, bool filter_dat_content);
 
 /* Returns true if specified entry has a valid
  * core association (i.e. a non-empty string
