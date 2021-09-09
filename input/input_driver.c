@@ -22,6 +22,7 @@
 #include <clamping.h>
 
 #include "input_driver.h"
+#include "input_keymaps.h"
 
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
@@ -1713,3 +1714,126 @@ void input_overlay_free(input_overlay_t *ol)
    free(ol);
 }
 #endif
+
+/**
+ * input_config_translate_str_to_rk:
+ * @str                            : String to translate to key ID.
+ *
+ * Translates tring representation to key identifier.
+ *
+ * Returns: key identifier.
+ **/
+enum retro_key input_config_translate_str_to_rk(const char *str)
+{
+   size_t i;
+   if (strlen(str) == 1 && ISALPHA((int)*str))
+      return (enum retro_key)(RETROK_a + (TOLOWER((int)*str) - (int)'a'));
+   for (i = 0; input_config_key_map[i].str; i++)
+   {
+      if (string_is_equal_noncase(input_config_key_map[i].str, str))
+         return input_config_key_map[i].key;
+   }
+
+   RARCH_WARN("[Input]: Key name \"%s\" not found.\n", str);
+   return RETROK_UNKNOWN;
+}
+
+/**
+ * input_config_translate_str_to_bind_id:
+ * @str                            : String to translate to bind ID.
+ *
+ * Translate string representation to bind ID.
+ *
+ * Returns: Bind ID value on success, otherwise
+ * RARCH_BIND_LIST_END on not found.
+ **/
+unsigned input_config_translate_str_to_bind_id(const char *str)
+{
+   unsigned i;
+
+   for (i = 0; input_config_bind_map[i].valid; i++)
+      if (string_is_equal(str, input_config_bind_map[i].base))
+         return i;
+
+   return RARCH_BIND_LIST_END;
+}
+
+void input_config_get_bind_string_joykey(
+      bool input_descriptor_label_show,
+      char *buf, const char *prefix,
+      const struct retro_keybind *bind, size_t size)
+{
+   if (GET_HAT_DIR(bind->joykey))
+   {
+      if (bind->joykey_label &&
+            !string_is_empty(bind->joykey_label)
+            && input_descriptor_label_show)
+         fill_pathname_join_delim_concat(buf, prefix,
+               bind->joykey_label, ' ', " (hat)", size);
+      else
+      {
+         const char *dir = "?";
+
+         switch (GET_HAT_DIR(bind->joykey))
+         {
+            case HAT_UP_MASK:
+               dir = "up";
+               break;
+            case HAT_DOWN_MASK:
+               dir = "down";
+               break;
+            case HAT_LEFT_MASK:
+               dir = "left";
+               break;
+            case HAT_RIGHT_MASK:
+               dir = "right";
+               break;
+            default:
+               break;
+         }
+         snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
+               (unsigned)GET_HAT(bind->joykey), dir,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+      }
+   }
+   else
+   {
+      if (bind->joykey_label &&
+            !string_is_empty(bind->joykey_label)
+            && input_descriptor_label_show)
+         fill_pathname_join_delim_concat(buf, prefix,
+               bind->joykey_label, ' ', " (btn)", size);
+      else
+         snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   }
+}
+
+void input_config_get_bind_string_joyaxis(
+      bool input_descriptor_label_show,
+      char *buf, const char *prefix,
+      const struct retro_keybind *bind, size_t size)
+{
+   if (bind->joyaxis_label &&
+         !string_is_empty(bind->joyaxis_label)
+         && input_descriptor_label_show)
+      fill_pathname_join_delim_concat(buf, prefix,
+            bind->joyaxis_label, ' ', " (axis)", size);
+   else
+   {
+      unsigned axis        = 0;
+      char dir             = '\0';
+      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '-';
+         axis = AXIS_NEG_GET(bind->joyaxis);
+      }
+      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '+';
+         axis = AXIS_POS_GET(bind->joyaxis);
+      }
+      snprintf(buf, size, "%s%c%u (%s)", prefix, dir, axis,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   }
+}

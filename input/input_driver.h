@@ -813,6 +813,16 @@ input_remote_t *input_driver_init_remote(
 void input_remote_free(input_remote_t *handle, unsigned max_users);
 #endif
 
+void input_config_get_bind_string_joyaxis(
+      bool input_descriptor_label_show,
+      char *buf, const char *prefix,
+      const struct retro_keybind *bind, size_t size);
+
+void input_config_get_bind_string_joykey(
+      bool input_descriptor_label_show,
+      char *buf, const char *prefix,
+      const struct retro_keybind *bind, size_t size);
+
 int16_t input_state_internal(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
