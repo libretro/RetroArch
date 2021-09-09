@@ -948,7 +948,7 @@ bool command_event_save_auto_state(
 void command_event_init_cheats(
       bool apply_cheats_after_load,
       const char *path_cheat_db,
-      bsv_movie_t *bsv_movie_state_handle)
+      void *bsv_movie_data)
 {
 #ifdef HAVE_NETWORKING
    bool allow_cheats             = !netplay_driver_ctl(
@@ -957,6 +957,8 @@ void command_event_init_cheats(
    bool allow_cheats             = true;
 #endif
 #ifdef HAVE_BSV_MOVIE
+   bsv_movie_t *
+	  bsv_movie_state_handle      = (bsv_movie_t*)bsv_movie_data;
    allow_cheats                 &= !(bsv_movie_state_handle != NULL);
 #endif
 

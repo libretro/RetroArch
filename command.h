@@ -382,7 +382,7 @@ bool command_set_shader(command_t *cmd, const char *arg);
 void command_event_init_cheats(
       bool apply_cheats_after_load,
       const char *path_cheat_db,
-      bsv_movie_t *bsv_movie_state_handle);
+      void *bsv_movie_data);
 #endif
 
 #if defined(HAVE_COMMAND)
