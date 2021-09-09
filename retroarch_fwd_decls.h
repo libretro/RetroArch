@@ -101,8 +101,6 @@ static bool recording_deinit(struct rarch_state *p_rarch);
 #ifdef HAVE_OVERLAY
 static void retroarch_overlay_init(struct rarch_state *p_rarch);
 static void retroarch_overlay_deinit(struct rarch_state *p_rarch);
-static void input_overlay_auto_rotate_(struct rarch_state *p_rarch,
-      bool input_overlay_enable, input_overlay_t *ol);
 #endif
 
 #ifdef HAVE_AUDIOMIXER

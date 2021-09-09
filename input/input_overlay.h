@@ -316,6 +316,15 @@ bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 bool input_overlay_add_inputs(input_overlay_t *ol,
       bool show_touched, unsigned port);
 
+/* Attempts to automatically rotate the specified overlay.
+ * Depends upon proper naming conventions in overlay
+ * config file. */
+void input_overlay_auto_rotate_(
+      unsigned video_driver_width,
+      unsigned video_driver_height,
+      bool input_overlay_enable,
+      input_overlay_t *ol);
+
 void input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,

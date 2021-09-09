@@ -29,6 +29,7 @@
 #include <net/net_socket.h>
 #endif
 
+#include "../command.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../configuration.h"
@@ -1712,6 +1713,74 @@ void input_overlay_free(input_overlay_t *ol)
       ol->iface->enable(ol->iface_data, false);
 
    free(ol);
+}
+
+void input_overlay_auto_rotate_(
+      unsigned video_driver_width,
+      unsigned video_driver_height,
+      bool input_overlay_enable,
+      input_overlay_t *ol)
+{
+   size_t i;
+   enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_PORTRAIT;
+   enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
+   bool tmp                                            = false;
+
+   /* Sanity check */
+   if (!ol || !ol->alive || !input_overlay_enable)
+      return;
+
+   /* Get current screen orientation */
+   if (video_driver_width > video_driver_height)
+      screen_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
+
+   /* Get orientation of active overlay */
+   if (!string_is_empty(ol->active->name))
+   {
+      if (strstr(ol->active->name, "landscape"))
+         active_overlay_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
+      else if (strstr(ol->active->name, "portrait"))
+         active_overlay_orientation = OVERLAY_ORIENTATION_PORTRAIT;
+   }
+
+   /* Sanity check */
+   if (active_overlay_orientation == OVERLAY_ORIENTATION_NONE)
+      return;
+
+   /* If screen and overlay have the same orientation,
+    * no action is required */
+   if (screen_orientation == active_overlay_orientation)
+      return;
+
+   /* Attempt to find index of overlay corresponding
+    * to opposite orientation */
+   for (i = 0; i < ol->active->size; i++)
+   {
+      overlay_desc_t *desc = &ol->active->descs[i];
+
+      if (!desc)
+         continue;
+
+      if (!string_is_empty(desc->next_index_name))
+      {
+         bool next_overlay_found = false;
+         if (active_overlay_orientation == OVERLAY_ORIENTATION_LANDSCAPE)
+            next_overlay_found = (strstr(desc->next_index_name, "portrait") != 0);
+         else
+            next_overlay_found = (strstr(desc->next_index_name, "landscape") != 0);
+
+         if (next_overlay_found)
+         {
+            /* We have a valid target overlay
+             * > Trigger 'overly next' command event
+             * Note: tmp == false. This prevents CMD_EVENT_OVERLAY_NEXT
+             * from calling input_overlay_auto_rotate_() again */
+            ol->next_index     = desc->next_index;
+            command_event(CMD_EVENT_OVERLAY_NEXT, &tmp);
+            break;
+         }
+      }
+   }
 }
 #endif
 

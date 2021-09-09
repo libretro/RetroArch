@@ -12364,7 +12364,9 @@ bool command_event(enum event_command cmd, void *data)
             if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
-                     input_overlay_auto_rotate_(p_rarch,
+                     input_overlay_auto_rotate_(
+                           p_rarch->video_driver_width,
+                           p_rarch->video_driver_height,
                            settings->bools.input_overlay_enable,
                            p_rarch->overlay_ptr);
          }
@@ -18656,76 +18658,6 @@ static bool bsv_movie_check(struct rarch_state *p_rarch,
 static bool video_driver_overlay_interface(
       const video_overlay_interface_t **iface);
 
-/* Attempts to automatically rotate the specified overlay.
- * Depends upon proper naming conventions in overlay
- * config file. */
-static void input_overlay_auto_rotate_(
-      struct rarch_state *p_rarch,
-      bool input_overlay_enable,
-      input_overlay_t *ol)
-{
-   size_t i;
-   enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_PORTRAIT;
-   enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
-   bool tmp                                            = false;
-
-   /* Sanity check */
-   if (!ol || !ol->alive || !input_overlay_enable)
-      return;
-
-   /* Get current screen orientation */
-   if (p_rarch->video_driver_width > p_rarch->video_driver_height)
-      screen_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
-
-   /* Get orientation of active overlay */
-   if (!string_is_empty(ol->active->name))
-   {
-      if (strstr(ol->active->name, "landscape"))
-         active_overlay_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
-      else if (strstr(ol->active->name, "portrait"))
-         active_overlay_orientation = OVERLAY_ORIENTATION_PORTRAIT;
-   }
-
-   /* Sanity check */
-   if (active_overlay_orientation == OVERLAY_ORIENTATION_NONE)
-      return;
-
-   /* If screen and overlay have the same orientation,
-    * no action is required */
-   if (screen_orientation == active_overlay_orientation)
-      return;
-
-   /* Attempt to find index of overlay corresponding
-    * to opposite orientation */
-   for (i = 0; i < p_rarch->overlay_ptr->active->size; i++)
-   {
-      overlay_desc_t *desc = &p_rarch->overlay_ptr->active->descs[i];
-
-      if (!desc)
-         continue;
-
-      if (!string_is_empty(desc->next_index_name))
-      {
-         bool next_overlay_found = false;
-         if (active_overlay_orientation == OVERLAY_ORIENTATION_LANDSCAPE)
-            next_overlay_found = (strstr(desc->next_index_name, "portrait") != 0);
-         else
-            next_overlay_found = (strstr(desc->next_index_name, "landscape") != 0);
-
-         if (next_overlay_found)
-         {
-            /* We have a valid target overlay
-             * > Trigger 'overly next' command event
-             * Note: tmp == false. This prevents CMD_EVENT_OVERLAY_NEXT
-             * from calling input_overlay_auto_rotate_() again */
-            ol->next_index     = desc->next_index;
-            command_event(CMD_EVENT_OVERLAY_NEXT, &tmp);
-            break;
-         }
-      }
-   }
-}
-
 /* task_data = overlay_task_data_t* */
 static void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
@@ -18805,7 +18737,9 @@ static void input_overlay_loaded(retro_task_t *task,
 
    /* Attempt to automatically rotate overlay, if required */
    if (inp_overlay_auto_rotate)
-      input_overlay_auto_rotate_(p_rarch,
+      input_overlay_auto_rotate_(
+            p_rarch->video_driver_width,
+            p_rarch->video_driver_height,
             input_overlay_enable,
             p_rarch->overlay_ptr);
 
@@ -33404,7 +33338,9 @@ static enum runloop_state runloop_check_state(
 
          /* Check overlay rotation, if required */
          if (input_overlay_auto_rotate)
-            input_overlay_auto_rotate_(p_rarch,
+            input_overlay_auto_rotate_(
+                  p_rarch->video_driver_width,
+                  p_rarch->video_driver_height,
                   settings->bools.input_overlay_enable,
                   p_rarch->overlay_ptr);
 
