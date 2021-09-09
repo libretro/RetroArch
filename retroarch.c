@@ -8279,16 +8279,6 @@ static void retroarch_msg_queue_init(void)
 /* COMMAND */
 
 #ifdef HAVE_COMMAND
-bool command_version(command_t *cmd, const char* arg)
-{
-   char reply[256]             = {0};
-
-   snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
-   cmd->replier(cmd, reply, strlen(reply));
-
-   return true;
-}
-
 bool command_get_status(command_t *cmd, const char* arg)
 {
    char reply[4096]            = {0};
@@ -8366,72 +8356,18 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    return true;
 }
 
-static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address)
-{
-   const rarch_memory_descriptor_t* desc = mmap->descriptors;
-   const rarch_memory_descriptor_t* end  = desc + mmap->num_descriptors;
-
-   for (; desc < end; desc++)
-   {
-      if (desc->core.select == 0)
-      {
-         /* if select is 0, attempt to explicitly match the address */
-         if (address >= desc->core.start && address < desc->core.start + desc->core.len)
-            return desc;
-      }
-      else
-      {
-         /* otherwise, attempt to match the address by matching the select bits */
-         if (((desc->core.start ^ address) & desc->core.select) == 0)
-         {
-            /* sanity check - make sure the descriptor is large enough to hold the target address */
-            if (address - desc->core.start < desc->core.len)
-               return desc;
-         }
-      }
-   }
-
-   return NULL;
-}
-
-static uint8_t* command_memory_get_pointer(unsigned address,
-      unsigned int* max_bytes, int for_write, char* reply_at, size_t len)
-{
-   const rarch_system_info_t* system = &runloop_state.system;
-   if (!system || system->mmaps.num_descriptors == 0)
-      strlcpy(reply_at, " -1 no memory map defined\n", len);
-   else
-   {
-      const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&system->mmaps, address);
-      if (!desc)
-         strlcpy(reply_at, " -1 no descriptor for address\n", len);
-      else if (!desc->core.ptr)
-         strlcpy(reply_at, " -1 no data for descriptor\n", len);
-      else if (for_write && (desc->core.flags & RETRO_MEMDESC_CONST))
-         strlcpy(reply_at, " -1 descriptor data is readonly\n", len);
-      else
-      {
-         const size_t offset = address - desc->core.start;
-         *max_bytes = (desc->core.len - offset);
-         return (uint8_t*)desc->core.ptr + desc->core.offset + offset;
-      }
-   }
-
-   *max_bytes = 0;
-   return NULL;
-}
-
 bool command_read_memory(command_t *cmd, const char *arg)
 {
    unsigned i;
-   char* reply                  = NULL;
-   char* reply_at               = NULL;
-   const uint8_t* data          = NULL;
-   unsigned int nbytes          = 0;
-   unsigned int alloc_size      = 0;
-   unsigned int address         = -1;
-   unsigned int len             = 0;
-   unsigned int max_bytes       = 0;
+   char* reply                       = NULL;
+   char* reply_at                    = NULL;
+   const uint8_t* data               = NULL;
+   unsigned int nbytes               = 0;
+   unsigned int alloc_size           = 0;
+   unsigned int address              = -1;
+   unsigned int len                  = 0;
+   unsigned int max_bytes            = 0;
+   const rarch_system_info_t* system = &runloop_state.system;
 
    if (sscanf(arg, "%x %u", &address, &nbytes) != 2)
       return false;
@@ -8441,7 +8377,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
    reply      = (char*)malloc(alloc_size);
    reply_at   = reply + snprintf(reply, alloc_size - 1, "READ_CORE_MEMORY %x", address);
 
-   data       = command_memory_get_pointer(address, &max_bytes, 0, reply_at, alloc_size - strlen(reply));
+   data       = command_memory_get_pointer(system, address, &max_bytes, 0, reply_at, alloc_size - strlen(reply));
 
    if (data)
    {
@@ -8467,8 +8403,10 @@ bool command_write_memory(command_t *cmd, const char *arg)
    unsigned int address         = (unsigned int)strtoul(arg, (char**)&arg, 16);
    unsigned int max_bytes       = 0;
    char reply[128]              = "";
+   const rarch_system_info_t
+      *system                   = &runloop_state.system;
    char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
-   uint8_t *data                = command_memory_get_pointer(address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
+   uint8_t *data                = command_memory_get_pointer(system, address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
 
    if (data)
    {
@@ -9811,136 +9749,6 @@ static bool command_event_disk_control_append_image(
    return true;
 }
 
-/**
- * event_set_volume:
- * @gain      : amount of gain to be applied to current volume level.
- *
- * Adjusts the current audio volume level.
- *
- **/
-static void command_event_set_volume(
-      settings_t *settings,
-      float gain,
-      bool widgets_active,
-      bool audio_driver_mute_enable)
-{
-   char msg[128];
-   float new_volume            = settings->floats.audio_volume + gain;
-
-   new_volume                  = MAX(new_volume, -80.0f);
-   new_volume                  = MIN(new_volume, 12.0f);
-
-   configuration_set_float(settings, settings->floats.audio_volume, new_volume);
-
-   snprintf(msg, sizeof(msg), "%s: %.1f dB",
-         msg_hash_to_str(MSG_AUDIO_VOLUME),
-         new_volume);
-
-#if defined(HAVE_GFX_WIDGETS)
-   if (widgets_active)
-      gfx_widget_volume_update_and_show(new_volume,
-            audio_driver_mute_enable);
-   else
-#endif
-      runloop_msg_queue_push(msg, 1, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   RARCH_LOG("[Audio]: %s\n", msg);
-
-   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
-}
-
-/**
- * event_set_mixer_volume:
- * @gain      : amount of gain to be applied to current volume level.
- *
- * Adjusts the current audio volume level.
- *
- **/
-static void command_event_set_mixer_volume(
-      settings_t *settings,
-      float gain)
-{
-   char msg[128];
-   float new_volume            = settings->floats.audio_mixer_volume + gain;
-
-   new_volume                  = MAX(new_volume, -80.0f);
-   new_volume                  = MIN(new_volume, 12.0f);
-
-   configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
-
-   snprintf(msg, sizeof(msg), "%s: %.1f dB",
-         msg_hash_to_str(MSG_AUDIO_VOLUME),
-         new_volume);
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   RARCH_LOG("[Audio]: %s\n", msg);
-
-   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
-}
-
-/**
- * command_event_init_controllers:
- *
- * Initialize libretro controllers.
- **/
-static void command_event_init_controllers(rarch_system_info_t *info,
-      settings_t *settings, unsigned num_active_users)
-{
-   unsigned port;
-   unsigned num_core_ports = info->ports.size;
-
-   for (port = 0; port < num_core_ports; port++)
-   {
-      unsigned i;
-      retro_ctx_controller_info_t pad;
-      unsigned device                                 = RETRO_DEVICE_NONE;
-      const struct retro_controller_description *desc = NULL;
-
-      /* Check whether current core port is mapped
-       * to an input device
-       * > If is not, leave 'device' set to
-       *   'RETRO_DEVICE_NONE'
-       * > For example: if input ports 0 and 1 are
-       *   mapped to core port 0, core port 1 will
-       *   be unmapped and should be disabled */
-      for (i = 0; i < num_active_users; i++)
-      {
-         if (i >= MAX_USERS)
-            break;
-
-         if (port == settings->uints.input_remap_ports[i])
-         {
-            device = input_config_get_device(port);
-            break;
-         }
-      }
-
-      desc = libretro_find_controller_description(
-            &info->ports.data[port], device);
-
-      if (desc && !desc->desc)
-      {
-         /* If we're trying to connect a completely unknown device,
-          * revert back to JOYPAD. */
-         if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
-         {
-            /* Do not fix device,
-             * because any use of dummy core will reset this,
-             * which is not a good idea. */
-            RARCH_WARN("[Input]: Input device ID %u is unknown to this "
-                  "libretro implementation. Using RETRO_DEVICE_JOYPAD.\n",
-                  device);
-            device = RETRO_DEVICE_JOYPAD;
-         }
-      }
-
-      pad.device     = device;
-      pad.port       = port;
-      core_set_controller_port_device(&pad);
-   }
-}
-
 #ifdef HAVE_CONFIGFILE
 static void command_event_disable_overrides(void)
 {
@@ -10248,10 +10056,7 @@ static bool event_init_content(
       path_fill_names(p_rarch);
 
    if (!content_init())
-   {
-      runloop_state.core_running = false;
       return false;
-   }
 
    command_event_set_savestate_auto_index(settings, global);
 
@@ -10531,7 +10336,10 @@ static bool command_event_init_core(
          p_rarch->current_savefile_dir);
 
    if (!event_init_content(settings, p_rarch))
+   {
+      runloop_state.core_running = false;
       return false;
+   }
 
    /* Verify that initial disk index was set correctly */
    disk_control_verify_initial_index(&sys_info->disk_control,
@@ -10549,70 +10357,7 @@ static bool command_event_init_core(
    return true;
 }
 
-static bool command_event_save_auto_state(
-      bool savestate_auto_save,
-      global_t *global,
-      const enum rarch_core_type current_core_type)
-{
-   bool ret                    = false;
-   char savestate_name_auto[PATH_MAX_LENGTH];
-
-   if (!global || !savestate_auto_save)
-      return false;
-   if (current_core_type == CORE_TYPE_DUMMY)
-      return false;
-
-   if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
-      return false;
-
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return false;
-#endif
-
-   savestate_name_auto[0]      = '\0';
-
-   fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         ".auto", sizeof(savestate_name_auto));
-
-   ret = content_save_state((const char*)savestate_name_auto, true, true);
-   RARCH_LOG("%s \"%s\" %s.\n",
-         msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
-         savestate_name_auto, ret ?
-         "succeeded" : "failed");
-
-   return true;
-}
-
 #ifdef HAVE_CONFIGFILE
-static bool command_event_save_config(
-      const char *config_path,
-      char *s, size_t len)
-{
-   bool path_exists = !string_is_empty(config_path);
-   const char *str  = path_exists ? config_path :
-      path_get(RARCH_PATH_CONFIG);
-
-   if (path_exists && config_save_file(config_path))
-   {
-      snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-            config_path);
-      RARCH_LOG("[Config]: %s\n", s);
-      return true;
-   }
-
-   if (!string_is_empty(str))
-   {
-      snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-            str);
-      RARCH_ERR("[Config]: %s\n", s);
-   }
-
-   return false;
-}
-
 /**
  * command_event_save_core_config:
  *
@@ -10705,7 +10450,7 @@ static bool command_event_save_core_config(
       /* Overrides block config file saving,
        * make it appear as overrides weren't enabled
        * for a manual save. */
-      runloop_state.overrides_active = false;
+      runloop_state.overrides_active    = false;
       overrides_active                  = true;
    }
 
@@ -10774,53 +10519,6 @@ static void command_event_save_current_config(
    }
 }
 #endif
-
-static void command_event_undo_save_state(char *s, size_t len)
-{
-   if (content_undo_save_buf_is_empty())
-   {
-      strlcpy(s,
-         msg_hash_to_str(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET), len);
-      return;
-   }
-
-   if (!content_undo_save_state())
-   {
-      strlcpy(s,
-         msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE), len);
-      return;
-   }
-
-   strlcpy(s,
-         msg_hash_to_str(MSG_UNDOING_SAVE_STATE), len);
-}
-
-static void command_event_undo_load_state(char *s, size_t len)
-{
-
-   if (content_undo_load_buf_is_empty())
-   {
-      strlcpy(s,
-         msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
-         len);
-      return;
-   }
-
-   if (!content_undo_load_state())
-   {
-      snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
-            "RAM");
-      return;
-   }
-
-#ifdef HAVE_NETWORKING
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
-#endif
-
-   strlcpy(s,
-         msg_hash_to_str(MSG_UNDID_LOAD_STATE), len);
-}
 
 static bool command_event_main_state(
       struct rarch_state *p_rarch,
@@ -10927,25 +10625,6 @@ static bool command_event_main_state(
       RARCH_LOG("%s\n", msg);
 
    return ret;
-}
-
-static bool command_event_resize_windowed_scale(settings_t *settings)
-{
-   unsigned                idx = 0;
-   unsigned      window_scale  = runloop_state.pending_windowed_scale;
-   bool      video_fullscreen  = settings->bools.video_fullscreen;
-
-   if (window_scale == 0)
-      return false;
-
-   configuration_set_float(settings, settings->floats.video_scale, (float)window_scale);
-
-   if (!video_fullscreen)
-      command_event(CMD_EVENT_REINIT, NULL);
-
-   rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
-
-   return true;
 }
 
 void input_remapping_cache_global_config(void)
@@ -11631,7 +11310,10 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
-         if (!command_event_resize_windowed_scale(p_rarch->configuration_settings))
+         if
+            (!command_event_resize_windowed_scale
+             (p_rarch->configuration_settings,
+              runloop_state.pending_windowed_scale))
             return false;
          break;
       case CMD_EVENT_MENU_TOGGLE:

@@ -280,12 +280,61 @@ command_t* command_uds_new(void);
 
 bool command_network_send(const char *cmd_);
 
-/* These forward declarations need to be declared before
- * the global state is declared */
+#ifdef HAVE_CONFIGFILE
+bool command_event_save_config(
+      const char *config_path,
+      char *s, size_t len);
+#endif
+
+void command_event_undo_save_state(char *s, size_t len);
+
+void command_event_undo_load_state(char *s, size_t len);
+
+void command_event_set_mixer_volume(
+      settings_t *settings,
+      float gain);
+
+bool command_event_resize_windowed_scale(settings_t *settings,
+      unsigned window_scale);
+
+bool command_event_save_auto_state(
+      bool savestate_auto_save,
+      global_t *global,
+      const enum rarch_core_type current_core_type);
+
+/**
+ * event_set_volume:
+ * @gain      : amount of gain to be applied to current volume level.
+ *
+ * Adjusts the current audio volume level.
+ *
+ **/
+void command_event_set_volume(
+      settings_t *settings,
+      float gain,
+      bool widgets_active,
+      bool audio_driver_mute_enable);
+
+/**
+ * command_event_init_controllers:
+ *
+ * Initialize libretro controllers.
+ **/
+void command_event_init_controllers(rarch_system_info_t *info,
+      settings_t *settings, unsigned num_active_users);
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg);
 #endif
+
 #if defined(HAVE_COMMAND)
+struct cmd_action_map
+{
+   const char *str;
+   bool (*action)(command_t* cmd, const char *arg);
+   const char *arg_desc;
+};
+
 bool command_version(command_t *cmd, const char* arg);
 bool command_get_status(command_t *cmd, const char* arg);
 bool command_get_config_param(command_t *cmd, const char* arg);
@@ -296,13 +345,13 @@ bool command_write_ram(command_t *cmd, const char *arg);
 #endif
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
-
-struct cmd_action_map
-{
-   const char *str;
-   bool (*action)(command_t* cmd, const char *arg);
-   const char *arg_desc;
-};
+uint8_t *command_memory_get_pointer(
+      const rarch_system_info_t* system,
+      unsigned address,
+      unsigned int* max_bytes,
+      int for_write,
+      char *reply_at,
+      size_t len);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -373,6 +422,7 @@ static const struct cmd_map map[] = {
    { "AI_SERVICE",             RARCH_AI_SERVICE },
 };
 #endif
+
 
 RETRO_END_DECLS
 
