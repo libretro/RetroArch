@@ -23,6 +23,7 @@
 #include <retro_timers.h>
 #include "menu_driver.h"
 #include "menu_cbs.h"
+#include "../list_special.h"
 #include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_LANGEXTRA
@@ -2363,3 +2364,98 @@ enum menu_driver_id_type menu_driver_set_id(
    return MENU_DRIVER_ID_UNKNOWN;
 }
 
+const char *config_get_menu_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
+}
+
+bool menu_entries_search_push(const char *search_term)
+{
+   size_t i;
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+   char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
+
+   search_term_clipped[0] = '\0';
+
+   /* Sanity check + verify whether we have reached
+    * the maximum number of allowed search terms */
+   if (!search ||
+       string_is_empty(search_term) ||
+       (search->size >= MENU_SEARCH_FILTER_MAX_TERMS))
+      return false;
+
+   /* Check whether search term already exists
+    * > Note that we clip the input search term
+    *   to MENU_SEARCH_FILTER_MAX_LENGTH characters
+    *   *before* comparing existing entries */
+   strlcpy(search_term_clipped, search_term,
+         sizeof(search_term_clipped));
+
+   for (i = 0; i < search->size; i++)
+   {
+      if (string_is_equal(search_term_clipped,
+            search->terms[i]))
+         return false;
+   }
+
+   /* Add search term */
+   strlcpy(search->terms[search->size], search_term_clipped,
+         sizeof(search->terms[search->size]));
+   search->size++;
+
+   return true;
+}
+
+bool menu_entries_search_pop(void)
+{
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+
+   /* Do nothing if list of search terms is empty */
+   if (!search ||
+       (search->size == 0))
+      return false;
+
+   /* Remove last item from the list */
+   search->size--;
+   search->terms[search->size][0] = '\0';
+
+   return true;
+}
+
+menu_search_terms_t *menu_entries_search_get_terms(void)
+{
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+
+   if (!search ||
+       (search->size == 0))
+      return NULL;
+
+   return search;
+}
+
+void menu_entries_search_append_terms_string(char *s, size_t len)
+{
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+
+   if (search &&
+       (search->size > 0) &&
+       s)
+   {
+      size_t current_len = strlen_size(s, len);
+      size_t i;
+
+      /* If buffer is already 'full', nothing
+       * further can be added */
+      if (current_len >= len)
+         return;
+
+      s   += current_len;
+      len -= current_len;
+
+      for (i = 0; i < search->size; i++)
+      {
+         strlcat(s, " > ", len);
+         strlcat(s, search->terms[i], len);
+      }
+   }
+}

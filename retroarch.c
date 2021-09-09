@@ -2349,7 +2349,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    return true;
 }
 
-static menu_search_terms_t *menu_entries_search_get_terms_internal(void)
+menu_search_terms_t *menu_entries_search_get_terms_internal(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
@@ -2368,99 +2368,6 @@ static menu_search_terms_t *menu_entries_search_get_terms_internal(void)
    return &cbs->search;
 }
 
-bool menu_entries_search_push(const char *search_term)
-{
-   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
-   char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
-   size_t i;
-
-   search_term_clipped[0] = '\0';
-
-   /* Sanity check + verify whether we have reached
-    * the maximum number of allowed search terms */
-   if (!search ||
-       string_is_empty(search_term) ||
-       (search->size >= MENU_SEARCH_FILTER_MAX_TERMS))
-      return false;
-
-   /* Check whether search term already exists
-    * > Note that we clip the input search term
-    *   to MENU_SEARCH_FILTER_MAX_LENGTH characters
-    *   *before* comparing existing entries */
-   strlcpy(search_term_clipped, search_term,
-         sizeof(search_term_clipped));
-
-   for (i = 0; i < search->size; i++)
-   {
-      if (string_is_equal(search_term_clipped,
-            search->terms[i]))
-         return false;
-   }
-
-   /* Add search term */
-   strlcpy(search->terms[search->size], search_term_clipped,
-         sizeof(search->terms[search->size]));
-   search->size++;
-
-   return true;
-}
-
-bool menu_entries_search_pop(void)
-{
-   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
-
-   /* Do nothing if list of search terms is empty */
-   if (!search ||
-       (search->size == 0))
-      return false;
-
-   /* Remove last item from the list */
-   search->size--;
-   search->terms[search->size][0] = '\0';
-
-   return true;
-}
-
-menu_search_terms_t *menu_entries_search_get_terms(void)
-{
-   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
-
-   if (!search ||
-       (search->size == 0))
-      return NULL;
-
-   return search;
-}
-
-/* Convenience function: Appends list of current
- * search terms to specified string */
-void menu_entries_search_append_terms_string(char *s, size_t len)
-{
-   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
-
-   if (search &&
-       (search->size > 0) &&
-       s)
-   {
-      size_t current_len = strlen_size(s, len);
-      size_t i;
-
-      /* If buffer is already 'full', nothing
-       * further can be added */
-      if (current_len >= len)
-         return;
-
-      s   += current_len;
-      len -= current_len;
-
-      for (i = 0; i < search->size; i++)
-      {
-         strlcat(s, " > ", len);
-         strlcat(s, search->terms[i], len);
-      }
-   }
-}
-
 /* Searches current menu list for specified 'needle'
  * string. If string is found, returns true and sets
  * 'idx' to the matching list entry index. */
@@ -2475,10 +2382,10 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
    char needle_char            = 0;
    size_t i;
 
-   if (!list ||
-       string_is_empty(needle) ||
-       !idx)
-      goto end;
+   if (   !list
+       || string_is_empty(needle)
+       || !idx)
+      return match_found;
 
    /* Check if we are searching for a single
     * Latin alphabet character */
@@ -2558,7 +2465,6 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
       }
    }
 
-end:
    return match_found;
 }
 
@@ -2624,20 +2530,6 @@ void menu_display_handle_wallpaper_upload(
          (struct texture_image*)task_data,
          user_data,
          MENU_IMAGE_WALLPAPER);
-}
-
-/**
- * config_get_menu_driver_options:
- *
- * Get an enumerated list of all menu driver names,
- * separated by '|'.
- *
- * Returns: string listing of all menu driver names,
- * separated by '|'.
- **/
-const char *config_get_menu_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
 }
 
 #ifdef HAVE_COMPRESSION

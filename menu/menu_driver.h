@@ -781,6 +781,17 @@ void menu_display_common_image_upload(
 enum menu_driver_id_type menu_driver_set_id(
       const char *driver_name);
 
+/**
+ * config_get_menu_driver_options:
+ *
+ * Get an enumerated list of all menu driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all menu driver names,
+ * separated by '|'.
+ **/
+const char *config_get_menu_driver_options(void);
+
 bool generic_menu_init_list(struct menu_state *menu_st,
       settings_t *settings);
 

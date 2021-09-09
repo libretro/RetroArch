@@ -195,11 +195,17 @@ bool menu_entries_append_enum(file_list_t *list,
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 
 bool menu_entries_search_push(const char *search_term);
+
 bool menu_entries_search_pop(void);
+
 menu_search_terms_t *menu_entries_search_get_terms(void);
+
 /* Convenience function: Appends list of current
  * search terms to specified string */
 void menu_entries_search_append_terms_string(char *s, size_t len);
+
+menu_search_terms_t *menu_entries_search_get_terms_internal(void);
+
 /* Searches current menu list for specified 'needle'
  * string. If string is found, returns true and sets
  * 'idx' to the matching list entry index. */
