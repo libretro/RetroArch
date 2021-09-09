@@ -11232,7 +11232,7 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
 #endif
 }
 
-static void retroarch_frame_time_free(struct rarch_state *p_rarch)
+static void retroarch_frame_time_free(void)
 {
    memset(&runloop_state.frame_time, 0,
          sizeof(struct retro_frame_time_callback));
@@ -11240,24 +11240,24 @@ static void retroarch_frame_time_free(struct rarch_state *p_rarch)
    runloop_state.max_frames       = 0;
 }
 
-static void retroarch_audio_buffer_status_free(struct rarch_state *p_rarch)
+static void retroarch_audio_buffer_status_free(void)
 {
    memset(&runloop_state.audio_buffer_status, 0,
          sizeof(struct retro_audio_buffer_status_callback));
    runloop_state.audio_latency = 0;
 }
 
-static void retroarch_game_focus_free(struct rarch_state *p_rarch)
+static void retroarch_game_focus_free(input_game_focus_state_t *game_focus_st)
 {
    /* Ensure that game focus mode is disabled */
-   if (p_rarch->game_focus_state.enabled)
+   if (game_focus_st->enabled)
    {
       enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
       command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
    }
 
-   p_rarch->game_focus_state.enabled        = false;
-   p_rarch->game_focus_state.core_requested = false;
+   game_focus_st->enabled        = false;
+   game_focus_st->core_requested = false;
 }
 
 static void retroarch_fastmotion_override_free(
@@ -11293,36 +11293,34 @@ static void retroarch_core_options_callback_free(runloop_state_t *p_runloop)
    p_runloop->core_options_callback.update_display = NULL;
 }
 
-static void retroarch_system_info_free(struct rarch_state *p_rarch)
+static void retroarch_system_info_free(runloop_state_t *runloop_st)
 {
-   rarch_system_info_t        *sys_info   = &runloop_state.system;
+   rarch_system_info_t *sys_info                      = &runloop_st->system;
 
    if (sys_info->subsystem.data)
       free(sys_info->subsystem.data);
+   if (sys_info->ports.data)
+      free(sys_info->ports.data);
+   if (sys_info->mmaps.descriptors)
+      free((void *)sys_info->mmaps.descriptors);
+
    sys_info->subsystem.data                           = NULL;
    sys_info->subsystem.size                           = 0;
 
-   if (sys_info->ports.data)
-      free(sys_info->ports.data);
    sys_info->ports.data                               = NULL;
    sys_info->ports.size                               = 0;
 
-   if (sys_info->mmaps.descriptors)
-      free((void *)sys_info->mmaps.descriptors);
    sys_info->mmaps.descriptors                        = NULL;
    sys_info->mmaps.num_descriptors                    = 0;
-
-   runloop_state.key_event                         = NULL;
-   runloop_state.frontend_key_event                = NULL;
-
-   p_rarch->audio_callback.callback                   = NULL;
-   p_rarch->audio_callback.set_state                  = NULL;
 
    sys_info->info.library_name                        = NULL;
    sys_info->info.library_version                     = NULL;
    sys_info->info.valid_extensions                    = NULL;
    sys_info->info.need_fullpath                       = false;
    sys_info->info.block_extract                       = false;
+
+   runloop_state.key_event                            = NULL;
+   runloop_state.frontend_key_event                   = NULL;
 
    memset(&runloop_state.system, 0, sizeof(rarch_system_info_t));
 }
@@ -11787,8 +11785,10 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
-            retroarch_system_info_free(p_rarch);
+            retroarch_system_info_free(&runloop_state);
 #endif
+	    p_rarch->audio_callback.callback                   = NULL;
+	    p_rarch->audio_callback.set_state                  = NULL;
             if (is_inited)
             {
                subsystem_current_count = 0;
@@ -16239,10 +16239,12 @@ static void uninit_libretro_symbols(
    if (runloop_state.core_options)
       retroarch_deinit_core_options(
             path_get(RARCH_PATH_CORE_OPTIONS));
-   retroarch_system_info_free(p_rarch);
-   retroarch_frame_time_free(p_rarch);
-   retroarch_audio_buffer_status_free(p_rarch);
-   retroarch_game_focus_free(p_rarch);
+   retroarch_system_info_free(&runloop_state);
+   p_rarch->audio_callback.callback                   = NULL;
+   p_rarch->audio_callback.set_state                  = NULL;
+   retroarch_frame_time_free();
+   retroarch_audio_buffer_status_free();
+   retroarch_game_focus_free(&p_rarch->game_focus_state);
    retroarch_fastmotion_override_free(p_rarch, &runloop_state);
    retroarch_core_options_callback_free(&runloop_state);
    p_rarch->camera_driver_active      = false;
@@ -31805,9 +31807,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_state.overrides_active = false;
 #endif
          runloop_state.autosave         = false;
-         retroarch_frame_time_free(p_rarch);
-         retroarch_audio_buffer_status_free(p_rarch);
-         retroarch_game_focus_free(p_rarch);
+         retroarch_frame_time_free();
+         retroarch_audio_buffer_status_free();
+         retroarch_game_focus_free(&p_rarch->game_focus_state);
          retroarch_fastmotion_override_free(p_rarch, &runloop_state);
          retroarch_core_options_callback_free(&runloop_state);
          memset(&p_rarch->input_driver_analog_requested, 0,
