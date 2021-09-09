@@ -9749,15 +9749,6 @@ static bool command_event_disk_control_append_image(
    return true;
 }
 
-#ifdef HAVE_CONFIGFILE
-static void command_event_disable_overrides(void)
-{
-   /* Reload the original config */
-   config_unload_override();
-   runloop_state.overrides_active = false;
-}
-#endif
-
 static void command_event_deinit_core(
       struct rarch_state *p_rarch,
       bool reinit)
@@ -9793,7 +9784,11 @@ static void command_event_deinit_core(
 
 #ifdef HAVE_CONFIGFILE
    if (runloop_state.overrides_active)
-      command_event_disable_overrides();
+   {
+      /* Reload the original config */
+      config_unload_override();
+      runloop_state.overrides_active = false;
+   }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    p_rarch->runtime_shader_preset[0] = '\0';
@@ -9809,216 +9804,6 @@ static void command_event_deinit_core(
    }
    else
       input_remapping_restore_global_config(true);
-}
-
-#ifdef HAVE_CHEATS
-static void command_event_init_cheats(
-      bool apply_cheats_after_load,
-      const char *path_cheat_db,
-      struct rarch_state *p_rarch)
-{
-#ifdef HAVE_NETWORKING
-   bool allow_cheats             = !netplay_driver_ctl(
-         RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
-#else
-   bool allow_cheats             = true;
-#endif
-#ifdef HAVE_BSV_MOVIE
-   allow_cheats                 &= !(p_rarch->bsv_movie_state_handle != NULL);
-#endif
-
-   if (!allow_cheats)
-      return;
-
-   cheat_manager_alloc_if_empty();
-   cheat_manager_load_game_specific_cheats(path_cheat_db);
-
-   if (apply_cheats_after_load)
-      cheat_manager_apply_cheats();
-}
-#endif
-
-static void command_event_load_auto_state(global_t *global)
-{
-   char savestate_name_auto[PATH_MAX_LENGTH];
-   bool ret                        = false;
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-      return;
-#endif
-#ifdef HAVE_NETWORKING
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      return;
-#endif
-
-   savestate_name_auto[0] = '\0';
-
-   fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         ".auto", sizeof(savestate_name_auto));
-
-   if (!path_is_valid(savestate_name_auto))
-      return;
-
-   ret = content_load_state(savestate_name_auto, false, true);
-
-   RARCH_LOG("%s: %s\n%s \"%s\" %s.\n",
-         msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
-         savestate_name_auto,
-         msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-         savestate_name_auto, ret ? "succeeded" : "failed"
-         );
-}
-
-static void command_event_set_savestate_auto_index(
-      settings_t *settings,
-      const global_t *global)
-{
-   size_t i;
-   char state_dir[PATH_MAX_LENGTH];
-   char state_base[PATH_MAX_LENGTH];
-
-   struct string_list *dir_list      = NULL;
-   unsigned max_idx                  = 0;
-   bool savestate_auto_index         = settings->bools.savestate_auto_index;
-   bool show_hidden_files            = settings->bools.show_hidden_files;
-
-   if (!global || !savestate_auto_index)
-      return;
-
-   state_dir[0] = state_base[0]      = '\0';
-
-   /* Find the file in the same directory as global->savestate_name
-    * with the largest numeral suffix.
-    *
-    * E.g. /foo/path/content.state, will try to find
-    * /foo/path/content.state%d, where %d is the largest number available.
-    */
-   fill_pathname_basedir(state_dir, global->name.savestate,
-         sizeof(state_dir));
-
-   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
-         show_hidden_files);
-
-   if (!dir_list)
-      return;
-
-   fill_pathname_base(state_base, global->name.savestate,
-         sizeof(state_base));
-
-   for (i = 0; i < dir_list->size; i++)
-   {
-      unsigned idx;
-      char elem_base[128]             = {0};
-      const char *end                 = NULL;
-      const char *dir_elem            = dir_list->elems[i].data;
-
-      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
-
-      if (strstr(elem_base, state_base) != elem_base)
-         continue;
-
-      end = dir_elem + strlen(dir_elem);
-      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
-         end--;
-
-      idx = (unsigned)strtoul(end, NULL, 0);
-      if (idx > max_idx)
-         max_idx = idx;
-   }
-
-   dir_list_free(dir_list);
-
-   configuration_set_int(settings, settings->ints.state_slot, max_idx);
-
-   RARCH_LOG("%s: #%d\n",
-         msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
-         max_idx);
-}
-
-static void command_event_set_savestate_garbage_collect(
-      const global_t *global,
-      unsigned max_to_keep,
-      bool show_hidden_files
-      )
-{
-   size_t i, cnt = 0;
-   char state_dir[PATH_MAX_LENGTH];
-   char state_base[PATH_MAX_LENGTH];
-
-   struct string_list *dir_list      = NULL;
-   unsigned min_idx                  = UINT_MAX;
-   const char *oldest_save           = NULL;
-
-   state_dir[0]                      = '\0';
-   state_base[0]                     = '\0';
-
-   /* Similar to command_event_set_savestate_auto_index(),
-    * this will find the lowest numbered save-state */
-   fill_pathname_basedir(state_dir, global->name.savestate,
-         sizeof(state_dir));
-
-   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
-         show_hidden_files);
-
-   if (!dir_list)
-      return;
-
-   fill_pathname_base(state_base, global->name.savestate,
-         sizeof(state_base));
-
-   for (i = 0; i < dir_list->size; i++)
-   {
-      unsigned idx;
-      char elem_base[128];
-      const char *ext                 = NULL;
-      const char *end                 = NULL;
-      const char *dir_elem            = dir_list->elems[i].data;
-
-      elem_base[0]                    = '\0';
-
-      if (string_is_empty(dir_elem))
-         continue;
-
-      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
-
-      /* Only consider files with a '.state' extension
-       * > i.e. Ignore '.state.auto', '.state.bak', etc. */
-      ext = path_get_extension(elem_base);
-      if (string_is_empty(ext) ||
-          !string_starts_with_size(ext, "state", STRLEN_CONST("state")))
-         continue;
-
-      /* Check whether this file is associated with
-       * the current content */
-      if (!string_starts_with(elem_base, state_base))
-         continue;
-
-      /* This looks like a valid save */
-      cnt++;
-
-      /* > Get index */
-      end = dir_elem + strlen(dir_elem);
-      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
-         end--;
-
-      idx = string_to_unsigned(end);
-
-      /* > Check if this is the lowest index so far */
-      if (idx < min_idx)
-      {
-         min_idx     = idx;
-         oldest_save = dir_elem;
-      }
-   }
-
-   /* Only delete one save state per save action
-    * > Conservative behaviour, designed to minimise
-    *   the risk of deleting multiple incorrect files
-    *   in case of accident */
-   if (!string_is_empty(oldest_save) && (cnt > max_to_keep))
-      filestream_delete(oldest_save);
-
-   dir_list_free(dir_list);
 }
 
 static bool event_init_content(
@@ -10213,18 +9998,18 @@ static INLINE float retroarch_set_frame_limit(
 {
    if (fastforward_ratio < 1.0f)
       return 0.0f;
-   return (retro_time_t)roundf(1000000.0f / (av_info->timing.fps * fastforward_ratio));
+   return (retro_time_t)roundf(1000000.0f / 
+         (av_info->timing.fps * fastforward_ratio));
 }
 
 static INLINE float retroarch_get_runloop_fastforward_ratio(
       settings_t *settings,
-      runloop_state_t *p_runloop)
+      struct retro_fastforwarding_override *fastmotion_override)
 {
-   struct retro_fastforwarding_override *fastmotion_override =
-         &p_runloop->fastmotion_override.current;
-
-   return (fastmotion_override->fastforward && (fastmotion_override->ratio >= 0.0f)) ?
-         fastmotion_override->ratio : settings->floats.fastforward_ratio;
+   if (      fastmotion_override->fastforward 
+         && (fastmotion_override->ratio >= 0.0f))
+      return fastmotion_override->ratio;
+   return settings->floats.fastforward_ratio;
 }
 
 static bool command_event_init_core(
@@ -10288,7 +10073,7 @@ static bool command_event_init_core(
    show_set_initial_disk_msg = settings->bools.notification_show_set_initial_disk;
    poll_type_behavior        = settings->uints.input_poll_type_behavior;
    fastforward_ratio         = retroarch_get_runloop_fastforward_ratio(
-         settings, &runloop_state);
+         settings, &runloop_state.fastmotion_override.current);
 
 #ifdef HAVE_CHEEVOS
    /* assume the core supports achievements unless it tells us otherwise */
@@ -11415,7 +11200,9 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CONFIGFILE
             if (runloop_state.overrides_active)
             {
-               command_event_disable_overrides();
+               /* Reload the original config */
+               config_unload_override();
+               runloop_state.overrides_active = false;
 
                if (!settings->bools.video_fullscreen)
                {
@@ -12695,7 +12482,8 @@ bool command_event(enum event_command cmd, void *data)
          p_rarch->frame_limit_minimum_time = 
             retroarch_set_frame_limit(&p_rarch->video_driver_av_info,
                   retroarch_get_runloop_fastforward_ratio(
-                     settings, &runloop_state));
+                     settings,
+                     &runloop_state.fastmotion_override.current));
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
@@ -14351,7 +14139,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
           * - Unload any active input remaps */
 #ifdef HAVE_CONFIGFILE
          if (runloop_state.overrides_active)
-            command_event_disable_overrides();
+         {
+            /* Reload the original config */
+            config_unload_override();
+            runloop_state.overrides_active = false;
+         }
 #endif
          if (     runloop_state.remaps_core_active
                || runloop_state.remaps_content_dir_active
@@ -30570,7 +30362,11 @@ bool retroarch_main_init(int argc, char *argv[])
           * - Unload any active input remaps */
 #ifdef HAVE_CONFIGFILE
          if (runloop_state.overrides_active)
-            command_event_disable_overrides();
+         {
+            /* Reload the original config */
+            config_unload_override();
+            runloop_state.overrides_active = false;
+         }
 #endif
          if (     runloop_state.remaps_core_active
                || runloop_state.remaps_content_dir_active
@@ -30598,7 +30394,7 @@ bool retroarch_main_init(int argc, char *argv[])
    cheat_manager_state_free();
    command_event_init_cheats(settings->bools.apply_cheats_after_load,
                              settings->paths.path_cheat_database,
-                             p_rarch);
+                             p_rarch->bsv_movie_state_handle);
 #endif
    drivers_init(p_rarch, settings, DRIVERS_CMD_ALL, verbosity_enabled);
 #ifdef HAVE_COMMAND
@@ -32057,7 +31853,11 @@ bool retroarch_main_quit(void)
 
 #ifdef HAVE_CONFIGFILE
       if (runloop_state.overrides_active)
-         command_event_disable_overrides();
+      {
+         /* Reload the original config */
+         config_unload_override();
+         runloop_state.overrides_active = false;
+      }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
       p_rarch->runtime_shader_preset[0] = '\0';
@@ -33047,7 +32847,8 @@ static enum runloop_state runloop_check_state(
    if (p_rarch->menu_driver_alive)
    {
       float fastforward_ratio = retroarch_get_runloop_fastforward_ratio(
-            settings, &runloop_state);
+            settings,
+            &runloop_state.fastmotion_override.current);
 
       if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
@@ -33861,7 +33662,8 @@ end:
          p_rarch->frame_limit_minimum_time = 
             retroarch_set_frame_limit(&p_rarch->video_driver_av_info,
                   retroarch_get_runloop_fastforward_ratio(
-                     settings, &runloop_state));
+                     settings,
+                     &runloop_state.fastmotion_override.current));
       else
          p_rarch->frame_limit_minimum_time = 
             retroarch_set_frame_limit(&p_rarch->video_driver_av_info,

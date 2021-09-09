@@ -23,12 +23,15 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "retroarch.h"
-#include "input/input_defines.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <streams/interface_stream.h>
+
+#include "retroarch.h"
+#include "input/input_defines.h"
+
 
 RETRO_BEGIN_DECLS
 
@@ -280,6 +283,42 @@ command_t* command_uds_new(void);
 
 bool command_network_send(const char *cmd_);
 
+#ifdef HAVE_BSV_MOVIE
+struct bsv_state
+{
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+
+   bool movie_start_recording;
+   bool movie_start_playback;
+   bool movie_playback;
+   bool eof_exit;
+   bool movie_end;
+
+};
+
+struct bsv_movie
+{
+   intfstream_t *file;
+   uint8_t *state;
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
+   size_t frame_mask;
+   size_t frame_ptr;
+   size_t min_file_pos;
+   size_t state_size;
+
+   bool playback;
+   bool first_rewind;
+   bool did_rewind;
+};
+
+typedef struct bsv_movie bsv_movie_t;
+#endif
+
 #ifdef HAVE_CONFIGFILE
 bool command_event_save_config(
       const char *config_path,
@@ -323,8 +362,27 @@ void command_event_set_volume(
 void command_event_init_controllers(rarch_system_info_t *info,
       settings_t *settings, unsigned num_active_users);
 
+void command_event_load_auto_state(global_t *global);
+
+void command_event_set_savestate_auto_index(
+      settings_t *settings,
+      const global_t *global);
+
+void command_event_set_savestate_garbage_collect(
+      const global_t *global,
+      unsigned max_to_keep,
+      bool show_hidden_files
+      );
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg);
+#endif
+
+#ifdef HAVE_CHEATS
+void command_event_init_cheats(
+      bool apply_cheats_after_load,
+      const char *path_cheat_db,
+      bsv_movie_t *bsv_movie_state_handle);
 #endif
 
 #if defined(HAVE_COMMAND)

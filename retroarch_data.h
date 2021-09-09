@@ -1029,40 +1029,6 @@ typedef struct
    bool set;
 } runloop_core_status_msg_t;
 
-#ifdef HAVE_BSV_MOVIE
-struct bsv_state
-{
-   /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
-   /* Immediate playback/recording. */
-   char movie_start_path[PATH_MAX_LENGTH];
-
-   bool movie_start_recording;
-   bool movie_start_playback;
-   bool movie_playback;
-   bool eof_exit;
-   bool movie_end;
-
-};
-
-struct bsv_movie
-{
-   intfstream_t *file;
-   uint8_t *state;
-   /* A ring buffer keeping track of positions
-    * in the file for each frame. */
-   size_t *frame_pos;
-   size_t frame_mask;
-   size_t frame_ptr;
-   size_t min_file_pos;
-   size_t state_size;
-
-   bool playback;
-   bool first_rewind;
-   bool did_rewind;
-};
-#endif
-
 typedef struct video_pixel_scaler
 {
    struct scaler_ctx *scaler;
@@ -1074,10 +1040,6 @@ typedef struct
    struct string_list *list;
    enum gfx_ctx_api api;
 } gfx_api_gpu_map;
-
-#ifdef HAVE_BSV_MOVIE
-typedef struct bsv_movie bsv_movie_t;
-#endif
 
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
