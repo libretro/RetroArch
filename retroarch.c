@@ -7439,67 +7439,6 @@ static void dir_free_shader(
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool dir_init_shader_internal(
-      bool shader_remember_last_dir,
-      struct rarch_dir_shader_list *dir_list,
-      const char *shader_dir,
-      const char *shader_file_name,
-      bool show_hidden_files)
-{
-   size_t i;
-   struct string_list *new_list           = dir_list_new_special(
-         shader_dir, DIR_LIST_SHADERS, NULL, show_hidden_files);
-   bool search_file_name                  = shader_remember_last_dir &&
-         !string_is_empty(shader_file_name);
-
-   if (!new_list)
-      return false;
-
-   if (new_list->size < 1)
-   {
-      dir_list_free(new_list);
-      return false;
-   }
-
-   dir_list_sort(new_list, false);
-
-   dir_list->shader_list              = new_list;
-   dir_list->directory                = strdup(shader_dir);
-   dir_list->selection                = 0;
-   dir_list->shader_loaded            = false;
-   dir_list->remember_last_preset_dir = shader_remember_last_dir;
-
-   if (search_file_name)
-   {
-      for (i = 0; i < new_list->size; i++)
-      {
-         const char *file_name = NULL;
-         const char *file_path = new_list->elems[i].data;
-
-         if (string_is_empty(file_path))
-            continue;
-
-         /* If a shader file name has been provided,
-          * search the list for a match and set 'selection'
-          * index if found */
-         file_name = path_basename(file_path);
-
-         if (!string_is_empty(file_name) &&
-               string_is_equal(file_name, shader_file_name))
-         {
-            RARCH_LOG("[Shaders]: %s \"%s\"\n",
-                  msg_hash_to_str(MSG_FOUND_SHADER),
-                  file_path);
-
-            dir_list->selection = i;
-            break;
-         }
-      }
-   }
-
-   return true;
-}
-
 static void dir_init_shader(
       struct rarch_state *p_rarch,
       settings_t *settings,
