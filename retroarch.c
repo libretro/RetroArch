@@ -9887,15 +9887,15 @@ static void command_event_set_mixer_volume(
 static void command_event_init_controllers(rarch_system_info_t *info,
       settings_t *settings, unsigned num_active_users)
 {
-   unsigned num_core_ports = info->ports.size;
    unsigned port;
+   unsigned num_core_ports = info->ports.size;
 
    for (port = 0; port < num_core_ports; port++)
    {
+      unsigned i;
+      retro_ctx_controller_info_t pad;
       unsigned device                                 = RETRO_DEVICE_NONE;
       const struct retro_controller_description *desc = NULL;
-      retro_ctx_controller_info_t pad;
-      unsigned i;
 
       /* Check whether current core port is mapped
        * to an input device
@@ -10129,7 +10129,6 @@ static void command_event_set_savestate_auto_index(
 
 static void command_event_set_savestate_garbage_collect(
       const global_t *global,
-      struct rarch_state *p_rarch,
       unsigned max_to_keep,
       bool show_hidden_files
       )
@@ -10863,7 +10862,6 @@ static bool command_event_main_state(
                /* Clean up excess savestates if necessary */
                if (savestate_auto_index && (savestate_max_keep > 0))
                   command_event_set_savestate_garbage_collect(global,
-                        p_rarch,
                         settings->uints.savestate_max_keep,
                         settings->bools.show_hidden_files
                         );
@@ -10931,10 +10929,9 @@ static bool command_event_main_state(
    return ret;
 }
 
-static bool command_event_resize_windowed_scale(struct rarch_state *p_rarch)
+static bool command_event_resize_windowed_scale(settings_t *settings)
 {
    unsigned                idx = 0;
-   settings_t      *settings   = p_rarch->configuration_settings;
    unsigned      window_scale  = runloop_state.pending_windowed_scale;
    bool      video_fullscreen  = settings->bools.video_fullscreen;
 
@@ -11634,7 +11631,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
-         if (!command_event_resize_windowed_scale(p_rarch))
+         if (!command_event_resize_windowed_scale(p_rarch->configuration_settings))
             return false;
          break;
       case CMD_EVENT_MENU_TOGGLE:
