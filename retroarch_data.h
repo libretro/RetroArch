@@ -1005,13 +1005,6 @@ enum poll_type_override_t
    POLL_TYPE_OVERRIDE_LATE
 };
 
-enum auto_shader_operation
-{
-   AUTO_SHADER_OP_SAVE = 0,
-   AUTO_SHADER_OP_REMOVE,
-   AUTO_SHADER_OP_EXISTS
-};
-
 enum input_game_focus_cmd_type
 {
    GAME_FOCUS_CMD_OFF = 0,
@@ -1035,15 +1028,6 @@ typedef struct
    char str[128];
    bool set;
 } runloop_core_status_msg_t;
-
-struct rarch_dir_shader_list
-{
-   struct string_list *shader_list;
-   char *directory;
-   size_t selection;
-   bool shader_loaded;
-   bool remember_last_preset_dir;
-};
 
 #ifdef HAVE_BSV_MOVIE
 struct bsv_state
