@@ -2758,4 +2758,51 @@ bool menu_shader_manager_operate_auto_preset(
 
    return false;
 }
+
+void menu_driver_set_last_shader_path_int(
+      const char *shader_path,
+      enum rarch_shader_type *type,
+      char *shader_dir, size_t dir_len,
+      char *shader_file, size_t file_len)
+{
+   const char *file_name = NULL;
+
+   if (!type ||
+       !shader_dir ||
+       (dir_len < 1) ||
+       !shader_file ||
+       (file_len < 1))
+      return;
+
+   /* Reset existing cache */
+   *type          = RARCH_SHADER_NONE;
+   shader_dir[0]  = '\0';
+   shader_file[0] = '\0';
+
+   /* If path is empty, do nothing */
+   if (string_is_empty(shader_path))
+      return;
+
+   /* Get shader type */
+   *type = video_shader_parse_type(shader_path);
+
+   /* If type is invalid, do nothing */
+   if (*type == RARCH_SHADER_NONE)
+      return;
+
+   /* Cache parent directory */
+   fill_pathname_parent_dir(shader_dir, shader_path, dir_len);
+
+   /* If parent directory is empty, then file name
+    * is only valid if 'shader_path' refers to an
+    * existing file in the root of the file system */
+   if (string_is_empty(shader_dir) &&
+       !path_is_valid(shader_path))
+      return;
+
+   /* Cache file name */
+   file_name = path_basename_nocompression(shader_path);
+   if (!string_is_empty(file_name))
+      strlcpy(shader_file, file_name, file_len);
+}
 #endif

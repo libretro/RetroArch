@@ -176,6 +176,12 @@ bool menu_shader_manager_operate_auto_preset(
       const char *dir_menu_config,
       enum auto_shader_type type, bool apply);
 
+void menu_driver_set_last_shader_path_int(
+      const char *shader_path,
+      enum rarch_shader_type *type,
+      char *shader_dir, size_t dir_len,
+      char *shader_file, size_t file_len);
+
 RETRO_END_DECLS
 
 #endif
