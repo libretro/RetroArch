@@ -359,9 +359,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_period,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_duty_cycle,              MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_mode,              MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_default_button,    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON)
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_dingux_rumble_gain,      MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN)
-#endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_rumble_gain,             MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vertical_sync,           MENU_ENUM_SUBLABEL_VIDEO_VSYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_allow_rotate,             MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE)
@@ -3599,11 +3597,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_turbo_default_button);
             break;
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-         case MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_dingux_rumble_gain);
+         case MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_rumble_gain);
             break;
-#endif
          case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_bind_timeout);
             break;

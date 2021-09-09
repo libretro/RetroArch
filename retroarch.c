@@ -19196,10 +19196,35 @@ bool input_set_rumble_state(unsigned port,
    input_driver_state_t *input_driver_st  = &(p_rarch->input_driver_state);
    settings_t *settings                   = p_rarch->configuration_settings;
    unsigned joy_idx                       = settings->uints.input_joypad_index[port];
+   unsigned rumble_gain                   = settings->uints.input_rumble_gain;
+   uint16_t scaled_strength               = strength;
+
+   /* If gain setting is not suported, do software gain control */ 
+   if (!input_driver_st->primary_joypad->set_rumble_gain)
+      scaled_strength = (rumble_gain * strength) / 100.0;
 
    return input_driver_set_rumble(
       input_driver_st,
-      port, joy_idx, effect, strength);
+      port, joy_idx, effect, scaled_strength);
+}
+
+/**
+ * Sets the rumble gain. Used by MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN.
+ *
+ * @param gain  Rumble gain, 0-100 [%]
+ *
+ * @return true if the rumble gain has been successfully set
+ **/
+bool input_set_rumble_gain(unsigned gain)
+{
+   struct rarch_state   *p_rarch          = &rarch_st;
+   input_driver_state_t *input_driver_st  = &(p_rarch->input_driver_state);
+   settings_t           *settings         = p_rarch->configuration_settings;
+   if (input_driver_set_rumble_gain(
+            input_driver_st, gain, settings->uints.input_max_users))
+      return true;
+   else
+      return false;
 }
 
 /**

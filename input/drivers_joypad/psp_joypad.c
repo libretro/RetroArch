@@ -432,6 +432,7 @@ input_device_driver_t psp_joypad = {
    psp_joypad_axis,
    psp_joypad_poll,
    psp_joypad_rumble,
+   NULL,
    psp_joypad_name,
 #ifdef VITA
    "vita",

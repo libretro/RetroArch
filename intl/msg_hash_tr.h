@@ -2286,16 +2286,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Cihaz Titreşimini Etkinleştir (Desteklenen Çekirdekler İçin)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "Titreşim Gücü (Yeniden Başlatılmalı)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "Dokunsal geri bildirim efektlerinin büyüklüğünü belirtir."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 

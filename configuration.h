@@ -190,7 +190,7 @@ typedef struct settings
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
-      unsigned input_dingux_rumble_gain;
+      unsigned input_rumble_gain;
       unsigned input_auto_game_focus;
       unsigned input_max_users;
 

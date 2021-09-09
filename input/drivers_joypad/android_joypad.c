@@ -253,6 +253,7 @@ input_device_driver_t android_joypad = {
    android_joypad_axis,
    android_joypad_poll,
    android_joypad_rumble,
+   NULL,
    android_joypad_name,
    "android",
 };

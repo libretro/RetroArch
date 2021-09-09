@@ -299,6 +299,7 @@ input_device_driver_t kpad_driver =
    kpad_axis,
    kpad_poll,
    NULL,
+   NULL,
    kpad_name,
    "wiimote",
 };

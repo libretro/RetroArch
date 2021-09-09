@@ -325,6 +325,7 @@ input_device_driver_t xdk_joypad = {
    xdk_joypad_axis,
    xdk_joypad_poll,
    NULL,
+   NULL,
    xdk_joypad_name,
    "xdk",
 };
