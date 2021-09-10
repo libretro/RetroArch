@@ -20,10 +20,14 @@
 #include "../config.h"
 #endif
 
+#include <locale.h>
+
 #include <retro_timers.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <encodings/utf.h>
+#include <time/rtime.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
@@ -2868,3 +2872,406 @@ bool dir_init_shader_internal(
    return true;
 }
 #endif
+
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+      const struct tm* timeptr)
+{
+   char *local = NULL;
+
+   /* Ensure correct locale is set
+    * > Required for localised AM/PM strings */
+   setlocale(LC_TIME, "");
+
+   strftime(ptr, maxsize, format, timeptr);
+#if !(defined(__linux__) && !defined(ANDROID))
+   local = local_to_utf8_string_alloc(ptr);
+
+   if (!string_is_empty(local))
+      strlcpy(ptr, local, maxsize);
+
+   if (local)
+   {
+      free(local);
+      local = NULL;
+   }
+#endif
+}
+
+/* Display the date and time - time_mode will influence how
+ * the time representation will look like.
+ * */
+void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+
+   if (!datetime)
+      return;
+
+   /* Trigger an update, if required */
+   if (menu_st->current_time_us - menu_st->datetime_last_time_us >=
+         DATETIME_CHECK_INTERVAL)
+   {
+      time_t time_;
+      struct tm tm_;
+      bool has_am_pm         = false;
+      const char *format_str = "";
+
+      menu_st->datetime_last_time_us = menu_st->current_time_us;
+
+      /* Get current time */
+      time(&time_);
+      rtime_localtime(&time_, &tm_);
+
+      /* Format string representation */
+      switch (datetime->time_mode)
+      {
+         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
+            /* Using switch statements to set the format
+             * string is verbose, but has far less performance
+             * impact than setting the date separator dynamically
+             * (i.e. no snprintf() or character replacement...) */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY-MM-DD HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %H:%M";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD: /* YYYY-MM-DD */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YM: /* YYYY-MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m";
+                  break;
+               default:
+                  format_str = "%Y-%m";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS: /* MM-DD-YYYY HH:MM:SS */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM: /* MM-DD-YYYY HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %H:%M";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM: /* MM-DD HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d %H:%M";
+                  break;
+               default:
+                  format_str = "%m-%d %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD: /* MM-DD */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d";
+                  break;
+               default:
+                  format_str = "%m-%d";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS: /* DD-MM-YYYY HH:MM:SS */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM: /* DD-MM-YYYY HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %H:%M";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM: /* DD-MM HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m %H:%M";
+                  break;
+               default:
+                  format_str = "%d-%m %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY: /* DD-MM-YYYY */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM: /* DD-MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m";
+                  break;
+               default:
+                  format_str = "%d-%m";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
+            format_str = "%H:%M:%S";
+            break;
+         case MENU_TIMEDATE_STYLE_HM: /* HH:MM */
+            format_str = "%H:%M";
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM: /* YYYY-MM-DD HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM_AMPM: /* YYYY-MM-DD HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %I:%M %p";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM: /* MM-DD-YYYY HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM: /* MM-DD-YYYY HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %I:%M %p";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AMPM: /* MM-DD HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d %I:%M %p";
+                  break;
+               default:
+                  format_str = "%m-%d %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM: /* DD-MM-YYYY HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM: /* DD-MM-YYYY HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %I:%M %p";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM: /* DD-MM HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m %I:%M %p";
+                  break;
+               default:
+                  format_str = "%d-%m %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_HMS_AMPM: /* HH:MM:SS (AM/PM) */
+            has_am_pm  = true;
+            format_str = "%I:%M:%S %p";
+            break;
+         case MENU_TIMEDATE_STYLE_HM_AMPM: /* HH:MM (AM/PM) */
+            has_am_pm  = true;
+            format_str = "%I:%M %p";
+            break;
+      }
+
+      if (has_am_pm)
+         strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+               format_str, &tm_);
+      else
+         strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+               format_str, &tm_);
+   }
+
+   /* Copy cached datetime string to input
+    * menu_display_ctx_datetime_t struct */
+   strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
+}

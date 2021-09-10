@@ -615,6 +615,7 @@ const char *menu_driver_get_pending_selection(void);
 void menu_driver_set_pending_selection(const char *pending_selection);
 
 menu_handle_t *menu_driver_get_ptr(void);
+struct menu_state *menu_state_get_ptr(void);
 
 enum action_iterate_type
 {
