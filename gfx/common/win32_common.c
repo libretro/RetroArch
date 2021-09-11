@@ -2351,6 +2351,11 @@ HWND win32_get_window(void)
 #endif
 }
 
+bool win32_get_client_rect(RECT* rect)
+{
+   return GetWindowRect(main_window.hwnd, rect);
+}
+
 void win32_window_reset(void)
 {
    win32_common_state_t 

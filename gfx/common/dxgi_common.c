@@ -20,7 +20,7 @@
 #include <assert.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include "dxgi_common.h"
@@ -35,6 +35,9 @@ const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIOutput6 = { 0x068346e8,0xaaec,
 0x4b84, {0xad,0xd7,0x13,0x7f,0x51,0x3f,0x77,0xa1 } };
 
 #ifdef HAVE_DXGI_HDR
+/* TODO/FIXME - globals */
+static DXGI_HDR_METADATA_HDR10 g_hdr10_meta_data = {0};
+
 typedef enum hdr_root_constants
 {
    HDR_ROOT_CONSTANTS_REFERENCE_WHITE_NITS = 0,
@@ -396,7 +399,25 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
    bool supported            = false;
    float best_intersect_area = -1;
 
+#ifdef __WINRT__
+   if (!DXGIIsCurrent2(factory))
+
+   {
+      if (FAILED(DXGICreateFactory2(&factory)))
+      {
+         RARCH_ERR("[DXGI]: Failed to create DXGI factory\n");
+         return false;
+      }
+   }
+
+   if (FAILED(DXGIEnumAdapters2(factory, 0, &dxgi_adapter)))
+   {
+      RARCH_ERR("[DXGI]: Failed to enumerate adapters\n");
+      return false;
+   }
+#else
    if (!DXGIIsCurrent(factory))
+
    {
       if (FAILED(DXGICreateFactory(&factory)))
       {
@@ -410,6 +431,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
       RARCH_ERR("[DXGI]: Failed to enumerate adapters\n");
       return false;
    }
+#endif
 
    while (  DXGIEnumOutputs(dxgi_adapter, i, &current_output) 
          != DXGI_ERROR_NOT_FOUND)
@@ -423,7 +445,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory factory, HWND hwnd)
       int ax2               = 0;
       int ay2               = 0;
 
-      if (GetWindowRect(hwnd, &rect)) /* TODO/FIXME - won't work for WinRT */
+      if (win32_get_client_rect(&rect))
       {
          ax1                = rect.left;
          ay1                = rect.top;
@@ -576,7 +598,6 @@ void dxgi_set_hdr_metadata(
       {
          RARCH_ERR("[DXGI]: Failed to set HDR meta data to none\n");
       }
-
       return;
    }
 
@@ -607,12 +628,24 @@ void dxgi_set_hdr_metadata(
       (UINT16)(max_cll);
    hdr10_meta_data.MaxFrameAverageLightLevel    = 
       (UINT16)(max_fall);
-   
-   if (FAILED(DXGISetHDRMetaData(handle,
-               DXGI_HDR_METADATA_TYPE_HDR10,
-               sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
+
+   if(g_hdr10_meta_data.RedPrimary                 != hdr10_meta_data.RedPrimary ||
+      g_hdr10_meta_data.GreenPrimary               != hdr10_meta_data.GreenPrimary ||
+      g_hdr10_meta_data.BluePrimary                != hdr10_meta_data.BluePrimary ||
+      g_hdr10_meta_data.WhitePoint                 != hdr10_meta_data.WhitePoint ||
+      g_hdr10_meta_data.MaxContentLightLevel       != hdr10_meta_data.MaxContentLightLevel ||
+      g_hdr10_meta_data.MaxMasteringLuminance      != hdr10_meta_data.MaxMasteringLuminance ||
+      g_hdr10_meta_data.MinMasteringLuminance      != hdr10_meta_data.MinMasteringLuminance ||
+      g_hdr10_meta_data.MaxFrameAverageLightLevel  != hdr10_meta_data.MaxFrameAverageLightLevel)
    {
-      RARCH_ERR("[DXGI]: Failed to set HDR meta data for HDR10\n");
+      if (FAILED(DXGISetHDRMetaData(handle,
+                  DXGI_HDR_METADATA_TYPE_HDR10,
+                  sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
+      {
+         RARCH_ERR("[DXGI]: Failed to set HDR meta data for HDR10\n");
+         return;
+      }
+      g_hdr10_meta_data = hdr10_meta_data;
    }
 }
 #endif

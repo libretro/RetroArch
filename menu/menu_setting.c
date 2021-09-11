@@ -8139,6 +8139,12 @@ static void general_write_handler(rarch_setting_t *setting)
                *setting->value.target.unsigned_integer);
          }
          break;
+      case MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN:
+         {
+            input_set_rumble_gain(
+               *setting->value.target.unsigned_integer);
+         }
+         break;
       case MENU_ENUM_LABEL_WIFI_ENABLED:
 #ifdef HAVE_NETWORKING
          if (*setting->value.target.boolean)
@@ -8192,6 +8198,31 @@ static void general_write_handler(rarch_setting_t *setting)
                            default_aspect;
          }
          break;
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+      case MENU_ENUM_LABEL_RUN_AHEAD_ENABLED:
+      case MENU_ENUM_LABEL_RUN_AHEAD_FRAMES:
+      case MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE:
+         {
+            settings_t *settings              = config_get_ptr();
+            bool run_ahead_enabled            = settings->bools.run_ahead_enabled;
+            unsigned run_ahead_frames         = settings->uints.run_ahead_frames;
+            bool run_ahead_secondary_instance = settings->bools.run_ahead_secondary_instance;
+
+            /* If any changes here will cause second
+             * instance runahead to be enabled, must
+             * re-apply cheats to ensure that they
+             * propagate to the newly-created secondary
+             * core */
+            if (run_ahead_enabled &&
+                (run_ahead_frames > 0) &&
+                run_ahead_secondary_instance &&
+                !rarch_ctl(RARCH_CTL_IS_SECOND_CORE_LOADED, NULL) &&
+                rarch_ctl(RARCH_CTL_IS_SECOND_CORE_AVAILABLE, NULL) &&
+                command_event(CMD_EVENT_LOAD_SECOND_CORE, NULL))
+               command_event(CMD_EVENT_CHEATS_APPLY, NULL);
+         }
+         break;
+#endif
       default:
          /* Special cases */
 
@@ -12893,13 +12924,12 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.input_dingux_rumble_gain,
-                  MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
-                  MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
-                  DEFAULT_DINGUX_RUMBLE_GAIN,
+                  &settings->uints.input_rumble_gain,
+                  MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,
+                  MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+                  DEFAULT_RUMBLE_GAIN,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -12907,8 +12937,9 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_percentage;
             menu_settings_list_current_add_range(list, list_info, 0, 100, 5, true, true);
-#endif
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.input_poll_type_behavior,
@@ -13312,17 +13343,13 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
-            if (string_is_equal(settings->arrays.input_driver, "android") ||
-                string_is_equal(settings->arrays.input_joypad_driver, "sdl_dingux"))
-            {
-               CONFIG_ACTION(
-                     list, list_info,
-                     MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-                     MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-                     &group_info,
-                     &subgroup_info,
-                     parent_group);
-            }
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
 
             CONFIG_ACTION(
                   list, list_info,
@@ -17357,7 +17384,9 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_CMD_APPLY_AUTO);
+#ifdef CONSOLE_LOG
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
+#endif
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -20390,6 +20419,24 @@ static bool setting_append_list(
                manual_content_scan_get_overwrite_playlist_ptr(),
                MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
                MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok    = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left  = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = setting_bool_action_right_with_refresh;
+
+         CONFIG_BOOL(
+               list, list_info,
+               manual_content_scan_get_validate_entries_ptr(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
                false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,

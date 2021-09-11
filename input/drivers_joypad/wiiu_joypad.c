@@ -153,6 +153,7 @@ input_device_driver_t wiiu_joypad =
   wiiu_joypad_axis,
   wiiu_joypad_poll,
   NULL,
+  NULL,
   wiiu_joypad_name,
   "wiiu",
 };

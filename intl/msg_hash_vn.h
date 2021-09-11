@@ -508,6 +508,9 @@ MSG_HASH(
 #if defined(DINGUX)
 #endif
 
+/* Settings > Video > HDR */
+
+
 /* Settings > Video > Synchronization */
 
 
@@ -631,8 +634,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 

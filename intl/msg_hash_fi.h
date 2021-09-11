@@ -1265,6 +1265,10 @@ MSG_HASH(
    "Muuta videon skaalausasetuksia."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Muuta videon HDR-asetuksia."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Synkronointi"
    )
@@ -1459,6 +1463,10 @@ MSG_HASH(
    "GPU-indeksi"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Valitse käytettävä näytönohjain."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Pystysuuntainen virkistystaajuus"
    )
@@ -1609,10 +1617,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Mukautettu kuvasuhde"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Liukulukuarvo videon kuvasuhteeseen (leveys / korkeus), käytetään jos Kuvasuhde on 'Mukautettu kuvasuhde'."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1662,6 +1666,25 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Leikkaa muutama pikseli kuvan reunojen ympäriltä, jotka kehittäjät tavallisesti jättäneet tyhjiksi, mutta joskus sisältävät myös roskapikseleitä."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "Käytä HDR:ää"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Ota HDR käyttöön, jos näyttö tukee sitä"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Kontrasti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Laajenna gamutia"
    )
 
 /* Settings > Video > Synchronization */
@@ -1764,6 +1787,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Valikon äänet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Muuta valikon ääniasetuksia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2219,16 +2246,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Ota laitteen värinä käyttöön (tuetuille ytimille)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "Tärinän voimakkuus (Uudelleenkäynnistys vaaditaan)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "Määritä haptisen palautteen voimakkuus."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 

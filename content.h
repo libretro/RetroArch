@@ -45,11 +45,23 @@ bool content_load_ram_file(unsigned slot);
 /* Save a RAM state from memory to disk. */
 bool content_save_ram_file(unsigned slot, bool compress);
 
+/* Load a state from memory. */
+bool content_load_state_from_ram(void);
+
+/* Save a state to memory. */
+bool content_save_state_to_ram(void);
+
+/* Save a ram state from memory to disk. */
+bool content_ram_state_to_file(const char *path);
+
 /* Load a state from disk to memory. */
 bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk, bool autosave);
+
+/* Check a ram state write to disk. */
+bool content_ram_state_pending(void);
 
 /* Gets the number of bytes required to serialize the state. */
 size_t content_get_serialized_size(void);

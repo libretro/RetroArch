@@ -243,6 +243,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_DELETE_PLAYLIST,
    MENU_SETTING_ACTION_PLAYLIST_MANAGER_RESET_CORES,
    MENU_SETTING_ACTION_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   MENU_SETTING_ACTION_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
 
    MENU_SETTING_MANUAL_CONTENT_SCAN_DIR,
    MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
@@ -764,10 +765,38 @@ void menu_driver_get_last_shader_path_int(
       const char **dir_out, const char **file_name_out);
 #endif
 
+int menu_entries_elem_get_first_char(
+      file_list_t *list, unsigned offset);
+
+void menu_entries_build_scroll_indices(
+      struct menu_state *menu_st,
+      file_list_t *list);
+
+void menu_display_common_image_upload(
+      const menu_ctx_driver_t *menu_driver_ctx,
+      void *menu_userdata,
+      struct texture_image *img,
+      void *user_data,
+      unsigned type);
+
+enum menu_driver_id_type menu_driver_set_id(
+      const char *driver_name);
+
+/**
+ * config_get_menu_driver_options:
+ *
+ * Get an enumerated list of all menu driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all menu driver names,
+ * separated by '|'.
+ **/
+const char *config_get_menu_driver_options(void);
+
 bool generic_menu_init_list(struct menu_state *menu_st,
       settings_t *settings);
 
-bool menu_init(
+bool rarch_menu_init(
       struct menu_state *menu_st,
       menu_dialog_t        *p_dialog,
       const menu_ctx_driver_t *menu_driver_ctx,

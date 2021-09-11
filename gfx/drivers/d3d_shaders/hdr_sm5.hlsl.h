@@ -73,7 +73,7 @@ SRC(
 
    float4 Hdr(float4 sdr)
    {
-      sdr.xyz = pow(abs(sdr.xyz), 2.2f / global.contrast);               /* Display Gamma - needs to be determined by calibration screen but should be in the 0.8 - 1.4 range */
+      sdr.xyz = pow(abs(sdr.xyz), 2.2f / global.contrast );               /* Display Gamma - needs to be determined by calibration screen */
 
       float luma = dot(sdr.xyz, float3(0.2126, 0.7152, 0.0722));  /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
 

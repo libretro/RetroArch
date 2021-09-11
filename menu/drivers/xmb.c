@@ -844,7 +844,6 @@ static void xmb_draw_icon(
       unsigned video_height,
       bool xmb_shadows_enable,
       int icon_size,
-      math_matrix_4x4 *mymat,
       uintptr_t texture,
       float x,
       float y,
@@ -854,7 +853,8 @@ static void xmb_draw_icon(
       float rotation,
       float scale_factor,
       float *color,
-      float shadow_offset)
+      float shadow_offset,
+      math_matrix_4x4 *mymat)
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
@@ -2601,6 +2601,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
       case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS:
       case MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST:
+      case MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_RENAME_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_RENAME];
@@ -3551,7 +3552,6 @@ static int xmb_draw_item(
             video_height,
             xmb_shadows_enable,
             xmb->icon_size,
-            &mymat_tmp,
             texture,
             x,
             y,
@@ -3561,7 +3561,8 @@ static int xmb_draw_item(
             rotation,
             scale_factor,
             &color[0],
-            xmb->shadow_offset);
+            xmb->shadow_offset,
+            &mymat_tmp);
    }
 
    gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
@@ -3575,7 +3576,6 @@ static int xmb_draw_item(
             video_height,
             xmb_shadows_enable,
             xmb->icon_size,
-            mymat,
             texture_switch,
             node->x + xmb->margins_screen_left
             + xmb->icon_spacing_horizontal
@@ -3586,7 +3586,8 @@ static int xmb_draw_item(
             0,
             1,
             &color[0],
-            xmb->shadow_offset);
+            xmb->shadow_offset,
+            mymat);
 
    return 0;
 }
@@ -5183,7 +5184,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   video_height,
                   xmb_shadows_enable,
                   xmb->icon_size,
-                  &mymat,
                   xmb->textures.list[
                   powerstate.charging? XMB_TEXTURE_BATTERY_CHARGING   :
                   (powerstate.percent > 80)? XMB_TEXTURE_BATTERY_FULL :
@@ -5200,7 +5200,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   0,
                   1,
                   &item_color[0],
-                  xmb->shadow_offset);
+                  xmb->shadow_offset,
+                  &mymat);
                   if (dispctx && dispctx->blend_end)
                      dispctx->blend_end(userdata);
          }
@@ -5239,7 +5240,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                video_height,
                xmb_shadows_enable,
                xmb->icon_size,
-               &mymat,
                xmb->textures.list[XMB_TEXTURE_CLOCK],
                video_width - xmb->icon_size - x_pos,
                xmb->icon_size,
@@ -5249,7 +5249,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                0,
                1,
                &item_color[0],
-               xmb->shadow_offset);
+               xmb->shadow_offset,
+               &mymat);
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);
       }
@@ -5288,7 +5289,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_height,
             xmb_shadows_enable,
             xmb->icon_size,
-            &mymat,
             xmb->textures.list[XMB_TEXTURE_ARROW],
             xmb->x + xmb->margins_screen_left +
             xmb->icon_spacing_horizontal -
@@ -5302,7 +5302,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             0,
             1,
             &item_color[0],
-            xmb->shadow_offset);
+            xmb->shadow_offset,
+            &mymat);
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
@@ -5375,7 +5376,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   video_height,
                   xmb_shadows_enable,
                   xmb->icon_size,
-                  &mymat,
                   texture,
                   x,
                   y,
@@ -5385,7 +5385,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   rotation,
                   scale_factor,
                   &item_color[0],
-                  xmb->shadow_offset);
+                  xmb->shadow_offset,
+                  &mymat);
          }
       }
 

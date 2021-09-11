@@ -19,10 +19,17 @@
 
 from urllib.request import urlopen, Request
 import json
+import sys
 
 ### SETTINGS ###
 # https://help.github.com/articles/creating-an-access-token-for-command-line-use/
-TOKEN = 'Your access token here'
+#TOKEN = 'Your access token here'
+if len(sys.argv) != 2:
+  print(f'Usage: {sys.argv[0]} [GitHub Access Token]')
+  exit()
+
+TOKEN = sys.argv[1];
+
 orgName = 'libretro'
 repoName = 'RetroArch'
 ### END SETTINGS ###
@@ -117,4 +124,9 @@ def doit(cont):
 
 doit(None)
 
-print('\n'.join(sorted(lines, key=str.lower)))
+### File output
+f = open('AUTHORS.h', 'w', encoding='utf-8', newline='')
+f.write('static const char *retroarch_contributors_list = R"(\nRetroArch and the libretro team would like to\nacknowledge the following contributors:\n\n');
+f.write('\n'.join(sorted(lines, key=str.lower)))
+f.write('\n)\";\n')
+f.close()
