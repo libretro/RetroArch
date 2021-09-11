@@ -12200,8 +12200,8 @@ bool command_event(enum event_command cmd, void *data)
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      "stopped.", 10);
-#endif
             else
+#endif
             {
                bool paused = runloop_state.paused;
                if (data)
