@@ -39,15 +39,6 @@ enum auto_shader_operation
    AUTO_SHADER_OP_EXISTS
 };
 
-struct rarch_dir_shader_list
-{
-   struct string_list *shader_list;
-   char *directory;
-   size_t selection;
-   bool shader_loaded;
-   bool remember_last_preset_dir;
-};
-
 struct video_shader *menu_shader_get(void);
 
 void menu_shader_manager_free(void *data);
