@@ -277,7 +277,7 @@ float x11_get_refresh_rate(void *data)
 
 static bool get_video_mode(
       Display *dpy, unsigned width, unsigned height,
-      XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
+      XF86VidModeModeInfo *mode, XF86VidModeModeInfo *x11_desktop_mode)
 {
    int i, num_modes            = 0;
    bool ret                    = false;
@@ -296,7 +296,7 @@ static bool get_video_mode(
       return false;
    }
 
-   *desktop_mode = *modes[0];
+   *x11_desktop_mode = *modes[0];
 
    /* If we use black frame insertion, we fake a 60 Hz monitor
     * for 120 Hz one, etc, so try to match that. */

@@ -631,10 +631,19 @@ extern "C" {
 	}
 
 	void win32_show_cursor(void *data, bool state)
-   {
-      CoreWindow::GetForCurrentThread()->PointerCursor = state ? ref new CoreCursor(CoreCursorType::Arrow, 0) : nullptr;
-   }
+	{
+		CoreWindow::GetForCurrentThread()->PointerCursor = state ? ref new CoreCursor(CoreCursorType::Arrow, 0) : nullptr;
+	}
 
+	bool win32_get_client_rect(RECT* rect)
+	{
+		rect->top	   = ApplicationView::GetForCurrentView()->VisibleBounds.Top;
+		rect->left	   = ApplicationView::GetForCurrentView()->VisibleBounds.Left;
+		rect->bottom	= ApplicationView::GetForCurrentView()->VisibleBounds.Bottom;
+		rect->right	   = ApplicationView::GetForCurrentView()->VisibleBounds.Right;
+
+	   return true;
+	}
 
 	bool win32_get_metrics(void* data,
 		enum display_metric_types type, float* value)
@@ -830,46 +839,51 @@ extern "C" {
 		return rarch_get_language_from_iso(lang_iso);
 	}
 
-	const char *uwp_get_cpu_model_name(void)
+	const char* uwp_get_cpu_model_name(void)
 	{
-		Platform::String^ cpu_id = nullptr;
-		Platform::String^ cpu_name = nullptr;
-		
-		/* GUID_DEVICE_PROCESSOR: {97FADB10-4E33-40AE-359C-8BEF029DBDD0} */
-		Platform::String^ if_filter = L"System.Devices.InterfaceClassGuid:=\"{97FADB10-4E33-40AE-359C-8BEF029DBDD0}\"";
+		if (!is_running_on_xbox())
+		{
+			Platform::String^ cpu_id = nullptr;
+			Platform::String^ cpu_name = nullptr;
 
-		/* Enumerate all CPU DeviceInterfaces, and get DeviceInstanceID of the first one. */
-		cpu_id = RunAsyncAndCatchErrors<Platform::String^>([&]() {
-			return create_task(DeviceInformation::FindAllAsync(if_filter)).then(
-				[&](DeviceInformationCollection^ collection)
+			/* GUID_DEVICE_PROCESSOR: {97FADB10-4E33-40AE-359C-8BEF029DBDD0} */
+			Platform::String^ if_filter = L"System.Devices.InterfaceClassGuid:=\"{97FADB10-4E33-40AE-359C-8BEF029DBDD0}\"";
+
+			/* Enumerate all CPU DeviceInterfaces, and get DeviceInstanceID of the first one. */
+			cpu_id = RunAsyncAndCatchErrors<Platform::String^>([&]() {
+				return create_task(DeviceInformation::FindAllAsync(if_filter)).then(
+					[&](DeviceInformationCollection^ collection)
 				{
 					return dynamic_cast<Platform::String^>(
 						collection->GetAt(0)->Properties->Lookup(L"System.Devices.DeviceInstanceID"));
 				});
 			}, nullptr);
 
-		if (cpu_id)
-		{
-			Platform::String^ dev_filter = L"System.Devices.DeviceInstanceID:=\"" + cpu_id + L"\"";
+			if (cpu_id)
+			{
+				Platform::String^ dev_filter = L"System.Devices.DeviceInstanceID:=\"" + cpu_id + L"\"";
 
-			/* Get the Device with the same ID as the DeviceInterface
-			 * Then get the name (description) of that Device
-			 * We have to do this because the DeviceInterface we get doesn't have a proper description. */
-			cpu_name = RunAsyncAndCatchErrors<Platform::String^>([&]() {
-				return create_task(
-					DeviceInformation::FindAllAsync(dev_filter, {}, DeviceInformationKind::Device)).then(
-						[&](DeviceInformationCollection^ collection)
-						{
-							return cpu_name = collection->GetAt(0)->Name;
-						});
+				/* Get the Device with the same ID as the DeviceInterface
+				 * Then get the name (description) of that Device
+				 * We have to do this because the DeviceInterface we get doesn't have a proper description. */
+				cpu_name = RunAsyncAndCatchErrors<Platform::String^>([&]() {
+					return create_task(
+						DeviceInformation::FindAllAsync(dev_filter, {}, DeviceInformationKind::Device)).then(
+							[&](DeviceInformationCollection^ collection)
+					{
+						return cpu_name = collection->GetAt(0)->Name;
+					});
 				}, nullptr);
-		}
-		
-		
-		if (!cpu_name)
-         return "Unknown";
+			}
 
-      wcstombs(win32_cpu_model_name, cpu_name->Data(), sizeof(win32_cpu_model_name));
-      return win32_cpu_model_name;
+
+			if (!cpu_name)
+				return "Unknown";
+
+			wcstombs(win32_cpu_model_name, cpu_name->Data(), sizeof(win32_cpu_model_name));
+			return win32_cpu_model_name;
+		}
+		else
+			return "Unknown";
 	}
 }

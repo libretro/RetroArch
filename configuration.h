@@ -25,6 +25,10 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gfx/video_defines.h"
 #include "input/input_defines.h"
 #include "led/led_defines.h"
@@ -32,6 +36,8 @@
 #ifdef HAVE_LAKKA
 #include "lakka.h"
 #endif
+
+#include "msg_hash.h"
 
 #define configuration_set_float(settings, var, newvar) \
 { \
@@ -63,6 +69,8 @@
    strlcpy(var, newvar, sizeof(var)); \
 }
 
+#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
+
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
@@ -81,6 +89,25 @@ enum override_type
 };
 
 RETRO_BEGIN_DECLS
+
+/* Input config. */
+struct input_bind_map
+{
+   const char *base;
+
+   enum msg_hash_enums desc;
+
+   /* Meta binds get input as prefix, not input_playerN".
+    * 0 = libretro related.
+    * 1 = Common hotkey.
+    * 2 = Uncommon/obscure hotkey.
+    */
+   uint8_t meta;
+
+   uint8_t retro_key;
+
+   bool valid;
+};
 
 typedef struct settings
 {
@@ -163,7 +190,7 @@ typedef struct settings
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
-      unsigned input_dingux_rumble_gain;
+      unsigned input_rumble_gain;
       unsigned input_auto_game_focus;
       unsigned input_max_users;
 
@@ -318,6 +345,9 @@ typedef struct settings
       float video_msg_color_g;
       float video_msg_color_b;
       float video_msg_bgcolor_opacity;
+      float video_hdr_max_nits;
+      float video_hdr_paper_white_nits;
+      float video_hdr_contrast;
 
       float menu_scale_factor;
       float menu_widget_scale_factor;
@@ -526,6 +556,8 @@ typedef struct settings
 #ifdef HAVE_VIDEO_LAYOUT
       bool video_layout_enable;
 #endif
+      bool video_hdr_enable;
+      bool video_hdr_expand_gamut;
 
       /* Accessibility */
       bool accessibility_enable;
@@ -693,6 +725,7 @@ typedef struct settings
       bool quick_menu_show_set_core_association;
       bool quick_menu_show_reset_core_association;
       bool quick_menu_show_options;
+      bool quick_menu_show_core_options_flush;
       bool quick_menu_show_controls;
       bool quick_menu_show_cheats;
       bool quick_menu_show_shaders;
@@ -1047,6 +1080,27 @@ settings_t *config_get_ptr(void);
 const char *config_get_all_timezones(void);
 void config_set_timezone(char *timezone);
 #endif
+
+bool input_config_bind_map_get_valid(unsigned bind_index);
+
+void input_config_parse_joy_button(
+      char *s,
+      void *data, const char *prefix,
+      const char *btn, void *bind_data);
+
+void input_config_parse_joy_axis(
+      char *s,
+      void *conf_data, const char *prefix,
+      const char *axis, void *bind_data);
+
+void input_config_parse_mouse_button(
+      char *s,
+      void *conf_data, const char *prefix,
+      const char *btn, void *bind_data);
+
+const char *input_config_get_prefix(unsigned user, bool meta);
+
+extern const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL];
 
 RETRO_END_DECLS
 

@@ -1073,6 +1073,10 @@ MSG_HASH(
    "deferred_video_scaling_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST,
+   "deferred_video_hdr_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST,
    "deferred_video_synchronization_settings_list"
    )
@@ -1321,6 +1325,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
    "core_options_reset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH,
+   "core_options_flush"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
@@ -2305,6 +2313,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    "playlist_manager_clean_playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "playlist_manager_refresh_playlist"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN,
@@ -3353,6 +3365,10 @@ MSG_HASH(
    "video_scaling_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,
+   "video_hdr_settings"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "video_synchronization_settings"
    )
@@ -4069,6 +4085,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
    "quick_menu_show_options"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "quick_menu_show_core_options_flush"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
@@ -4991,6 +5011,10 @@ MSG_HASH(
    "manual_content_scan_overwrite"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "manual_content_scan_validate_entries"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
    "manual_content_scan_start"
    )
@@ -5022,12 +5046,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "input_haptic_feedback_settings"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
-   "input_dingux_rumble_gain"
+   MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,
+   "input_rumble_gain"
    )
-#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TURBO_MODE,
    "input_turbo_mode"

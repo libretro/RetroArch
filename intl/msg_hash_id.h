@@ -1533,10 +1533,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Rasio Aspek Kustom"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Nilai floating point untuk rasio aspek video (lebar / tinggi), digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1587,6 +1583,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Potong beberapa piksel di sekitar tepi gambar yang biasanya dibiarkan kosong oleh pengembang yang terkadang juga berisi piksel sampah."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -2023,16 +2022,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Aktifkan Getaran Perangkat (Untuk Core yang Didukung)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "Kekuatan Getaran (Diperlukan Restart)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "Tentukan besarnya efek umpan balik haptic."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 

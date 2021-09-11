@@ -589,6 +589,7 @@ DEFAULT_TITLE_MACRO(action_get_core_settings_list,              MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_video_settings_list,                 MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_video_fullscreen_mode_settings_list, MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_video_windowed_mode_settings_list,   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_video_hdr_settings_list,             MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_video_scaling_settings_list,         MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_video_output_settings_list,          MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_video_synchronization_settings_list, MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS)
@@ -653,7 +654,6 @@ DEFAULT_TITLE_MACRO(action_get_audio_mixer_settings_list,           MENU_ENUM_LA
 #endif
 DEFAULT_TITLE_MACRO(action_get_input_settings_list,             MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_latency_settings_list,           MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_core_cheat_options_list,         MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_load_content_list,               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_load_content_special,            MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_SPECIAL)
 DEFAULT_TITLE_MACRO(action_get_cursor_manager_list,             MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER)
@@ -752,6 +752,7 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_music_list,     MENU
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_video_list,     MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_manager_list,             MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_cheat_options_list,       MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
 
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_video_shader_preset,    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load,        MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
@@ -1000,6 +1001,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_ONLINE_UPDATER,                                action_get_online_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST,              action_get_recording_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST,          action_get_video_scaling_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST,              action_get_video_hdr_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST,           action_get_video_output_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST,  action_get_video_synchronization_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST,             action_get_input_menu_settings_list},

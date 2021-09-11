@@ -1369,6 +1369,7 @@ MENU
 #endif
 
 #ifdef HAVE_MENU
+#include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 #include "../menu/menu_screensaver.c"
@@ -1406,16 +1407,7 @@ MENU
 #endif
 
 #ifdef HAVE_OZONE
-#include "../menu/drivers/ozone/ozone.c"
-#include "../menu/drivers/ozone/ozone_display.c"
-#include "../menu/drivers/ozone/ozone_entries.c"
-#include "../menu/drivers/ozone/ozone_sidebar.c"
-#include "../menu/drivers/ozone/ozone_texture.c"
-#include "../menu/drivers/ozone/ozone_theme.c"
-#endif
-
-#ifdef HAVE_STRIPES
-#include "../menu/drivers/stripes.c"
+#include "../menu/drivers/ozone.c"
 #endif
 
 #ifdef HAVE_MATERIALUI

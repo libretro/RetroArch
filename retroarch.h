@@ -94,6 +94,11 @@ enum rarch_ctl_state
    RARCH_CTL_IS_DUMMY_CORE,
    RARCH_CTL_IS_CORE_LOADED,
 
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   RARCH_CTL_IS_SECOND_CORE_AVAILABLE,
+   RARCH_CTL_IS_SECOND_CORE_LOADED,
+#endif
+
    RARCH_CTL_IS_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
 
@@ -799,6 +804,7 @@ void recording_driver_update_streaming_url(void);
 #define VIDEO_SHADER_MENU_4      (GFX_MAX_SHADERS - 5)
 #define VIDEO_SHADER_MENU_5      (GFX_MAX_SHADERS - 6)
 #define VIDEO_SHADER_MENU_6      (GFX_MAX_SHADERS - 7)
+#define VIDEO_SHADER_STOCK_HDR   (GFX_MAX_SHADERS - 8)
 
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
@@ -1233,6 +1239,7 @@ typedef struct video_frame_info
    bool fullscreen;
    bool font_enable;
    bool use_rgba;
+   bool hdr_support;
    bool libretro_running;
    bool xmb_shadows_enable;
    bool battery_level_enable;
@@ -1243,7 +1250,7 @@ typedef struct video_frame_info
    bool menu_screensaver_active;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
-
+   bool hdr_enable;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
@@ -1452,6 +1459,12 @@ typedef struct video_poke_interface
          struct retro_framebuffer *framebuffer);
    bool (*get_hw_render_interface)(void *data,
          const struct retro_hw_render_interface **iface);
+
+   /* hdr settings */ 
+   void (*set_hdr_max_nits)(void *data, float max_nits);
+   void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
+   void (*set_hdr_contrast)(void *data, float contrast);
+   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);         
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen
@@ -1579,6 +1592,12 @@ void video_driver_unset_rgba(void);
 
 bool video_driver_supports_rgba(void);
 
+void video_driver_set_hdr_support(void);
+
+void video_driver_unset_hdr_support(void);
+
+bool video_driver_supports_hdr(void);
+
 bool video_driver_get_next_video_out(void);
 
 bool video_driver_get_prev_video_out(void);
@@ -1654,6 +1673,11 @@ void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
 
 void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
+
+void video_driver_set_hdr_max_nits(float max_nits);
+void video_driver_set_hdr_paper_white_nits(float paper_white_nits);
+void video_driver_set_hdr_contrast(float contrast);
+void video_driver_set_hdr_expand_gamut(bool expand_gamut);
 
 const char *video_driver_get_ident(void);
 
@@ -2022,6 +2046,8 @@ void retroarch_init_task_queue(void);
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
+bool input_set_rumble_gain(unsigned gain);
+
 float input_get_sensor_state(unsigned port, unsigned id);
 
 bool input_set_sensor_state(unsigned port,
@@ -2079,6 +2105,7 @@ static const unsigned input_config_bind_order[] = {
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
 void core_options_reset(void);
+void core_options_flush(void);
 
 typedef enum apple_view_type
 {
@@ -2088,6 +2115,8 @@ typedef enum apple_view_type
    APPLE_VIEW_TYPE_VULKAN,
    APPLE_VIEW_TYPE_METAL
 } apple_view_type_t;
+
+bool retroarch_get_current_savestate_path(char *path, size_t len);
 
 RETRO_END_DECLS
 

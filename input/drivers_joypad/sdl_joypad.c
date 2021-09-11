@@ -535,6 +535,7 @@ input_device_driver_t sdl_joypad = {
 #else
    NULL,
 #endif
+   NULL,
    sdl_joypad_name,
 #ifdef HAVE_SDL2
    "sdl2",

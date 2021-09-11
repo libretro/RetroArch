@@ -24,7 +24,7 @@
 #include <sys/audioio.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include "../../retroarch.h"

@@ -44,24 +44,25 @@ static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
-static void retroarch_deinit_core_options(struct rarch_state *p_rarch,
+static void retroarch_deinit_core_options(
       const char *p);
 static void retroarch_init_core_variables(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       const struct retro_variable *vars);
 static void rarch_init_core_options(
-      struct rarch_state *p_rarch,
+      settings_t *settings,
       const struct retro_core_options_v2 *options_v2);
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch,
       settings_t *settings);
+static void secondary_core_destroy(struct rarch_state *p_rarch);
+static bool secondary_core_ensure_exists(struct rarch_state *p_rarch,
+      settings_t *settings);
 #endif
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 #endif
-static int16_t input_state_internal(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 static void video_driver_frame(const void *data, unsigned width,
@@ -100,15 +101,6 @@ static bool recording_deinit(struct rarch_state *p_rarch);
 #ifdef HAVE_OVERLAY
 static void retroarch_overlay_init(struct rarch_state *p_rarch);
 static void retroarch_overlay_deinit(struct rarch_state *p_rarch);
-static void input_overlay_set_alpha_mod(struct rarch_state *p_rarch,
-      input_overlay_t *ol, float mod);
-static void input_overlay_set_scale_factor(struct rarch_state *p_rarch,
-      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc);
-static void input_overlay_load_active(
-      struct rarch_state *p_rarch,
-      input_overlay_t *ol, float opacity);
-static void input_overlay_auto_rotate_(struct rarch_state *p_rarch,
-      bool input_overlay_enable, input_overlay_t *ol);
 #endif
 
 #ifdef HAVE_AUDIOMIXER
@@ -155,22 +147,6 @@ static void driver_location_stop(void);
 static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
-static int16_t input_joypad_analog_button(
-      float input_analog_deadzone,
-      float input_analog_sensitivity,
-      const input_device_driver_t *drv,
-      rarch_joypad_info_t *joypad_info,
-      unsigned ident,
-      const struct retro_keybind *binds);
-static int16_t input_joypad_analog_axis(
-      unsigned input_analog_dpad_mode,
-      float input_analog_deadzone,
-      float input_analog_sensitivity,
-      const input_device_driver_t *drv,
-      rarch_joypad_info_t *joypad_info,
-      unsigned idx,
-      unsigned ident,
-      const struct retro_keybind *binds);
 
 #ifdef HAVE_ACCESSIBILITY
 static bool is_accessibility_enabled(bool accessibility_enable,
@@ -183,22 +159,6 @@ static bool accessibility_speak_priority(
 #endif
 
 #ifdef HAVE_MENU
-static bool input_mouse_button_raw(
-      struct rarch_state *p_rarch,
-      input_driver_t *current_input,
-      unsigned joy_idx,
-      unsigned port, unsigned id);
-static bool input_keyboard_line_append(
-      struct input_keyboard_line *keyboard_line,
-      const char *word);
-static const char **input_keyboard_start_line(
-      void *userdata,
-      struct input_keyboard_line *keyboard_line,
-      input_keyboard_line_complete_t cb);
-
-static void menu_driver_list_free(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      menu_ctx_list_t *list);
 static int menu_input_post_iterate(
       struct rarch_state *p_rarch,
       gfx_display_t *p_disp,

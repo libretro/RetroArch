@@ -578,7 +578,6 @@
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
 					"-DHAVE_PATCH",
-					"-DHAVE_DISCORD",
 					"-DHAVE_DSP_FILTER",
 					"-DHAVE_VIDEO_FILTER",
 					"-DHAVE_REWIND",
@@ -621,7 +620,6 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
@@ -666,7 +664,6 @@
 					"-DHAVE_RGUI",
 					"-DHAVE_CONFIGFILE",
 					"-DHAVE_PATCH",
-					"-DHAVE_DISCORD",
 					"-DHAVE_DSP_FILTER",
 					"-DHAVE_VIDEO_FILTER",
 					"-DHAVE_REWIND",
@@ -709,7 +706,6 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;

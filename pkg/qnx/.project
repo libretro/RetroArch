@@ -32,29 +32,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>src/cc_resampler_neon.S</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/audio/drivers_resampler/cc_resampler_neon.S</locationURI>
-		</link>
-		<link>
-			<name>src/float_to_s16_neon.S</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/libretro-common/audio/conversion/float_to_s16_neon.S</locationURI>
-		</link>
-		<link>
 			<name>src/griffin.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/griffin/griffin.c</locationURI>
-		</link>
-		<link>
-			<name>src/s16_to_float_neon.S</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/libretro-common/audio/conversion/s16_to_float_neon.S</locationURI>
-		</link>
-		<link>
-			<name>src/sinc_resampler_neon.S</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/libretro-common/audio/resampler/drivers/sinc_resampler_neon.S</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

@@ -20,7 +20,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include "../common/gl_core_common.h"
@@ -2287,6 +2287,10 @@ static const video_poke_interface_t gl_core_poke_interface = {
    gl_core_get_current_shader,
    NULL,
    NULL,
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void gl_core_get_poke_interface(void *data,

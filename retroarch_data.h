@@ -56,7 +56,6 @@
 #endif
 
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
-#define HOLD_BTN_DELAY_SEC 2
 
 #define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
 
@@ -96,16 +95,6 @@
 
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
-
-#ifdef HAVE_OVERLAY
-#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-
-#define MAX_VISIBILITY 32
-#endif
-
-#define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
-#define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
 
 #ifdef HAVE_THREADS
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
@@ -187,8 +176,6 @@
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
-
-#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
 
 #define VIDEO_HAS_FOCUS(p_rarch) (p_rarch->current_video->focus ? (p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
 
@@ -272,18 +259,6 @@
 #define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 #define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
-
-
-#ifdef HAVE_MENU
-#define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
-
-#define MENU_LIST_GET_SELECTION(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
-
-#define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
-
-#define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
-#define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!(menu_st->entries_nonblocking_refresh || !menu_st->entries_need_refresh))
-#endif
 
 #define CDN_URL "https://cdn.discordapp.com/avatars"
 
@@ -391,18 +366,6 @@
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
 #else
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
-
-#ifdef HAVE_MENU
-#define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
-
-#define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
-#define DATETIME_CHECK_INTERVAL    1000000
-
-#define MENU_MAX_BUTTONS           219
-#define MENU_MAX_AXES              32
-#define MENU_MAX_HATS              4
-#define MENU_MAX_MBUTTONS          32 /* Enough to cover largest libretro constant*/
 #endif
 
 /* DRIVERS */
@@ -1042,13 +1005,6 @@ enum poll_type_override_t
    POLL_TYPE_OVERRIDE_LATE
 };
 
-enum auto_shader_operation
-{
-   AUTO_SHADER_OP_SAVE = 0,
-   AUTO_SHADER_OP_REMOVE,
-   AUTO_SHADER_OP_EXISTS
-};
-
 enum input_game_focus_cmd_type
 {
    GAME_FOCUS_CMD_OFF = 0,
@@ -1073,49 +1029,6 @@ typedef struct
    bool set;
 } runloop_core_status_msg_t;
 
-struct rarch_dir_shader_list
-{
-   struct string_list *shader_list;
-   char *directory;
-   size_t selection;
-   bool shader_loaded;
-   bool remember_last_preset_dir;
-};
-
-#ifdef HAVE_BSV_MOVIE
-struct bsv_state
-{
-   /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
-   /* Immediate playback/recording. */
-   char movie_start_path[PATH_MAX_LENGTH];
-
-   bool movie_start_recording;
-   bool movie_start_playback;
-   bool movie_playback;
-   bool eof_exit;
-   bool movie_end;
-
-};
-
-struct bsv_movie
-{
-   intfstream_t *file;
-   uint8_t *state;
-   /* A ring buffer keeping track of positions
-    * in the file for each frame. */
-   size_t *frame_pos;
-   size_t frame_mask;
-   size_t frame_ptr;
-   size_t min_file_pos;
-   size_t state_size;
-
-   bool playback;
-   bool first_rewind;
-   bool did_rewind;
-};
-#endif
-
 typedef struct video_pixel_scaler
 {
    struct scaler_ctx *scaler;
@@ -1127,46 +1040,6 @@ typedef struct
    struct string_list *list;
    enum gfx_ctx_api api;
 } gfx_api_gpu_map;
-
-struct remote_message
-{
-   int port;
-   int device;
-   int index;
-   int id;
-   uint16_t state;
-};
-
-struct input_remote
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   int net_fd[MAX_USERS];
-#endif
-   bool state[RARCH_BIND_LIST_END];
-};
-
-#ifdef HAVE_BSV_MOVIE
-typedef struct bsv_movie bsv_movie_t;
-#endif
-
-typedef struct input_remote input_remote_t;
-
-typedef struct input_remote_state
-{
-   /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons[MAX_USERS];
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4][MAX_USERS];
-} input_remote_state_t;
-
-typedef struct input_list_element_t
-{
-   int16_t *state;
-   unsigned port;
-   unsigned device;
-   unsigned index;
-   unsigned int state_size;
-} input_list_element;
 
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
@@ -1180,56 +1053,6 @@ typedef struct my_list_t
    int size;
 } my_list;
 
-#ifdef HAVE_OVERLAY
-typedef struct input_overlay_state
-{
-   uint32_t keys[RETROK_LAST / 32 + 1];
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4];
-   /* This is a bitmask of (1 << key_bind_id). */
-   input_bits_t buttons;
-} input_overlay_state_t;
-
-struct input_overlay
-{
-   struct overlay *overlays;
-   const struct overlay *active;
-   void *iface_data;
-   const video_overlay_interface_t *iface;
-   input_overlay_state_t overlay_state;
-
-   size_t index;
-   size_t size;
-
-   unsigned next_index;
-
-   enum overlay_status state;
-
-   bool enable;
-   bool blocked;
-   bool alive;
-};
-#endif
-
-/* Input config. */
-struct input_bind_map
-{
-   const char *base;
-
-   enum msg_hash_enums desc;
-
-   /* Meta binds get input as prefix, not input_playerN".
-    * 0 = libretro related.
-    * 1 = Common hotkey.
-    * 2 = Uncommon/obscure hotkey.
-    */
-   uint8_t meta;
-
-   uint8_t retro_key;
-
-   bool valid;
-};
-
 typedef struct turbo_buttons turbo_buttons_t;
 
 /* Turbo support. */
@@ -1242,21 +1065,6 @@ struct turbo_buttons
    bool mode1_enable[MAX_USERS];
 };
 
-struct input_keyboard_line
-{
-   char *buffer;
-   void *userdata;
-   /** Line complete callback.
-    * Calls back after return is
-    * pressed with the completed line.
-    * Line can be NULL.
-    **/
-   input_keyboard_line_complete_t cb;
-   size_t ptr;
-   size_t size;
-   bool enabled;
-};
-
 typedef struct input_game_focus_state
 {
    bool enabled;
@@ -1265,112 +1073,6 @@ typedef struct input_game_focus_state
 
 #ifdef HAVE_RUNAHEAD
 typedef bool(*runahead_load_state_function)(const void*, size_t);
-#endif
-
-#ifdef HAVE_MENU
-typedef struct menu_ctx_load_image
-{
-   void *data;
-   enum menu_image_type type;
-} menu_ctx_load_image_t;
-
-struct menu_list
-{
-   file_list_t **menu_stack;
-   size_t menu_stack_size;
-   file_list_t **selection_buf;
-   size_t selection_buf_size;
-};
-
-typedef struct menu_list menu_list_t;
-
-struct menu_state
-{
-   /* Timers */
-   retro_time_t current_time_us;
-   retro_time_t powerstate_last_time_us;
-   retro_time_t datetime_last_time_us;
-   retro_time_t input_last_time_us;
-
-   struct
-   {
-      rarch_setting_t *list_settings;
-      menu_list_t *list;
-      size_t begin;
-   } entries;
-   size_t   selection_ptr;
-
-   /* Quick jumping indices with L/R.
-    * Rebuilt when parsing directory. */
-   struct
-   {
-      size_t   index_list[SCROLL_INDEX_SIZE];
-      unsigned index_size;
-      unsigned acceleration;
-   } scroll;
-
-   /* Storage container for current menu datetime
-    * representation string */
-   char datetime_cache[255];
-
-   /* When generating a menu list in menu_displaylist_build_list(),
-    * the entry with a label matching 'pending_selection' will
-    * be selected automatically */
-   char pending_selection[PATH_MAX_LENGTH];
-
-   /* when enabled, on next iteration the 'Quick Menu' list will
-    * be pushed onto the stack */
-   bool pending_quick_menu;
-   bool prevent_populate;
-   /* The menu driver owns the userdata */
-   bool data_own;
-   /* Flagged when menu entries need to be refreshed */
-   bool entries_need_refresh;
-   bool entries_nonblocking_refresh;
-   /* 'Close Content'-hotkey menu resetting */
-   bool pending_close_content;
-   /* Screensaver status
-    * - Does menu driver support screensaver functionality?
-    * - Is screensaver currently active? */
-   bool screensaver_supported;
-   bool screensaver_active;
-};
-
-struct menu_bind_state_port
-{
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-   bool mouse_buttons[MENU_MAX_MBUTTONS];
-   bool buttons[MENU_MAX_BUTTONS];
-};
-
-struct menu_bind_axis_state
-{
-   /* Default axis state. */
-   int16_t rested_axes[MENU_MAX_AXES];
-   /* Locked axis state. If we configured an axis,
-    * avoid having the same axis state trigger something again right away. */
-   int16_t locked_axes[MENU_MAX_AXES];
-};
-
-struct menu_bind_state
-{
-   rarch_timer_t timer_timeout;
-   rarch_timer_t timer_hold;
-
-   struct retro_keybind *output;
-   struct retro_keybind buffer;
-
-   struct menu_bind_state_port state[MAX_USERS];
-   struct menu_bind_axis_state axis_state[MAX_USERS];
-
-   unsigned begin;
-   unsigned last;
-   unsigned user;
-   unsigned port;
-
-   bool skip;
-};
 #endif
 
 typedef struct input_mapper
@@ -1866,6 +1568,7 @@ struct rarch_state
 #ifdef HAVE_OVERLAY
    enum overlay_visibility *overlay_visibility;
 #endif
+   enum resampler_quality audio_driver_resampler_quality;
 
 #ifdef HAVE_MENU
    menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
@@ -1928,6 +1631,7 @@ struct rarch_state
    char current_savefile_dir[PATH_MAX_LENGTH];
    char current_savestate_dir[PATH_MAX_LENGTH];
    char dir_savestate[PATH_MAX_LENGTH];
+   char audio_driver_resampler_ident[64];
 
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active;
@@ -1994,6 +1698,11 @@ struct rarch_state
     * used for GLES.
     * TODO: Refactor this better. */
    bool video_driver_use_rgba;
+
+   /* Graphics driver supports HDR displays
+    * Currently only D3D11/D3D12 supports HDR displays and 
+    * whether we've enabled it */
+   bool video_driver_hdr_support;
 
    /* If set during context deinit, the driver should keep
     * graphics context alive to avoid having to reset all
@@ -2156,97 +1865,6 @@ static gfx_api_gpu_map gpu_map[] = {
    { NULL,                   GFX_CTX_DIRECT3D10_API },
    { NULL,                   GFX_CTX_DIRECT3D11_API },
    { NULL,                   GFX_CTX_DIRECT3D12_API }
-};
-
-static const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
-      DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
-      DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
-      DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT),
-      DECLARE_BIND(start,     RETRO_DEVICE_ID_JOYPAD_START,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START),
-      DECLARE_BIND(up,        RETRO_DEVICE_ID_JOYPAD_UP,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP),
-      DECLARE_BIND(down,      RETRO_DEVICE_ID_JOYPAD_DOWN,   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN),
-      DECLARE_BIND(left,      RETRO_DEVICE_ID_JOYPAD_LEFT,   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT),
-      DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT),
-      DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A),
-      DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X),
-      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L),
-      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R),
-      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2),
-      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2),
-      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3),
-      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3),
-      DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS),
-      DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS),
-      DECLARE_BIND(l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS),
-      DECLARE_BIND(l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS),
-      DECLARE_BIND(r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS),
-      DECLARE_BIND(r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS),
-      DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS),
-      DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS),
-
-      DECLARE_BIND( gun_trigger,			RARCH_LIGHTGUN_TRIGGER,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER ),
-      DECLARE_BIND( gun_offscreen_shot,RARCH_LIGHTGUN_RELOAD,	      MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD ),
-      DECLARE_BIND( gun_aux_a,			RARCH_LIGHTGUN_AUX_A,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A ),
-      DECLARE_BIND( gun_aux_b,			RARCH_LIGHTGUN_AUX_B,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B ),
-      DECLARE_BIND( gun_aux_c,			RARCH_LIGHTGUN_AUX_C,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C ),
-      DECLARE_BIND( gun_start,			RARCH_LIGHTGUN_START,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START ),
-      DECLARE_BIND( gun_select,			RARCH_LIGHTGUN_SELECT,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT ),
-      DECLARE_BIND( gun_dpad_up,			RARCH_LIGHTGUN_DPAD_UP,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP ),
-      DECLARE_BIND( gun_dpad_down,		RARCH_LIGHTGUN_DPAD_DOWN,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN ),
-      DECLARE_BIND( gun_dpad_left,		RARCH_LIGHTGUN_DPAD_LEFT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT ),
-      DECLARE_BIND( gun_dpad_right,		RARCH_LIGHTGUN_DPAD_RIGHT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT ),
-
-      DECLARE_BIND( turbo,             RARCH_TURBO_ENABLE,           MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
-
-      DECLARE_META_BIND(1, toggle_fast_forward,   RARCH_FAST_FORWARD_KEY,      MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY),
-      DECLARE_META_BIND(2, hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY),
-      DECLARE_META_BIND(1, toggle_slowmotion,     RARCH_SLOWMOTION_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY),
-      DECLARE_META_BIND(2, hold_slowmotion,       RARCH_SLOWMOTION_HOLD_KEY,   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY),
-      DECLARE_META_BIND(1, load_state,            RARCH_LOAD_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY),
-      DECLARE_META_BIND(1, save_state,            RARCH_SAVE_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY),
-      DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
-      DECLARE_META_BIND(2, close_content,         RARCH_CLOSE_CONTENT_KEY,     MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY),
-#ifdef HAVE_LAKKA
-      DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY),
-#else
-      DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY),
-#endif
-      DECLARE_META_BIND(2, state_slot_increase,   RARCH_STATE_SLOT_PLUS,       MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS),
-      DECLARE_META_BIND(2, state_slot_decrease,   RARCH_STATE_SLOT_MINUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS),
-      DECLARE_META_BIND(1, rewind,                RARCH_REWIND,                MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND),
-      DECLARE_META_BIND(2, movie_record_toggle,   RARCH_BSV_RECORD_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE),
-      DECLARE_META_BIND(2, pause_toggle,          RARCH_PAUSE_TOGGLE,          MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE),
-      DECLARE_META_BIND(2, frame_advance,         RARCH_FRAMEADVANCE,          MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE),
-      DECLARE_META_BIND(2, reset,                 RARCH_RESET,                 MENU_ENUM_LABEL_VALUE_INPUT_META_RESET),
-      DECLARE_META_BIND(2, shader_next,           RARCH_SHADER_NEXT,           MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT),
-      DECLARE_META_BIND(2, shader_prev,           RARCH_SHADER_PREV,           MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV),
-      DECLARE_META_BIND(2, cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS),
-      DECLARE_META_BIND(2, cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS),
-      DECLARE_META_BIND(2, cheat_toggle,          RARCH_CHEAT_TOGGLE,          MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE),
-      DECLARE_META_BIND(2, screenshot,            RARCH_SCREENSHOT,            MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT),
-      DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                  MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
-      DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
-      DECLARE_META_BIND(2, fps_toggle,            RARCH_FPS_TOGGLE,            MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE),
-      DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,       MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
-      DECLARE_META_BIND(2, netplay_host_toggle,   RARCH_NETPLAY_HOST_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE),
-      DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
-      DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
-      DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,             MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
-      DECLARE_META_BIND(2, volume_down,           RARCH_VOLUME_DOWN,           MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN),
-      DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT,          MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT),
-      DECLARE_META_BIND(2, disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE),
-      DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT),
-      DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_PREV,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV),
-      DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
-      DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
-      DECLARE_META_BIND(2, desktop_menu_toggle,   RARCH_UI_COMPANION_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE),
-#ifdef HAVE_MENU
-      DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
-#endif
-      DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
-      DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
-      DECLARE_META_BIND(2, runahead_toggle,       RARCH_RUNAHEAD_TOGGLE,       MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE),
-      DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
 
 /* TODO/FIXME - turn these into static global variable */
@@ -2475,9 +2093,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #endif
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
-#endif
-#if defined(HAVE_STRIPES)
-   &menu_ctx_stripes,
 #endif
 #if defined(HAVE_XMB)
    &menu_ctx_xmb,

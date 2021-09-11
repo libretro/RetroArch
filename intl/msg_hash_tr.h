@@ -1261,6 +1261,10 @@ MSG_HASH(
    "Video ölçeklendirme ayarlarını değiştirin."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "Video hdr ayarlarını değiştirin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Eşitleyici"
    )
@@ -1459,6 +1463,10 @@ MSG_HASH(
    "GPU İndeksi"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "Hangi grafik kartının kullanılacağını seçin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Dikey Yenileme Hızı"
    )
@@ -1639,7 +1647,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "En Boy Oranı 'Özel En Boy Oranı' olarak ayarlanmışsa, video en boy oranı (genişlik / yükseklik) için kayan nokta değeri kullanılır."
+   "Video en boy oranı (genişlik/yükseklik) için kayan nokta değeri, 'En Boy Oranı', 'Yapılandırma' olarak ayarlanmışsa kullanılır."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1690,6 +1698,33 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Görüntünün kenarları etrafındaki birkaç pikseli, bazen de çöp pikselleri de içeren geliştiriciler tarafından geleneksel olarak boş bırakılır."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "HDR'yi Etkinleştir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "Ekran destekliyorsa HDR'yi etkinleştirin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "Azami Işık"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Beyazlık Işığı"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "Kontrast"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Renk Sınırını Genişlet"
    )
 
 /* Settings > Video > Synchronization */
@@ -1792,6 +1827,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Menü Sesleri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Menü ses ayarlarını değiştirin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2247,16 +2286,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Cihaz Titreşimini Etkinleştir (Desteklenen Çekirdekler İçin)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "Titreşim Gücü (Yeniden Başlatılmalı)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "Dokunsal geri bildirim efektlerinin büyüklüğünü belirtir."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -4498,6 +4535,14 @@ MSG_HASH(
    "Seçenekler seçeneğini gösterin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "'Diske Yazma Seçeneklerini' Göster"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "'Diske Yazma Seçenekleri' menüsü girişi 'Seçenekler > Çekirdek Seçeneklerini Yönet' menüsü içinde."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    "'Kontrolcüleri' Göster"
    )
@@ -6405,6 +6450,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "Tüm temel seçenekleri varsayılan değerlere ayarlayın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "Diske Yazma Seçenekleri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "Mevcut ayarları aktif seçenekler dosyasına yazılmaya zorlayın. Bir çekirdek hatanın ön ucun hatalı kapanmasına neden olması durumunda seçeneklerin korunmasını sağlar."
    )
 
 /* - Legacy (unused) */
@@ -10329,6 +10382,14 @@ MSG_HASH(
    "Tüm temel seçenekler varsayılana sıfırlandı."
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Çekirdek seçenekleri şuraya kaydedildi:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Çekirdek seçenekleri şuraya kaydedilemedi:"
+   )
+MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "Bir sonraki sürücü bulunamadı"
    )
@@ -10555,6 +10616,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SAVE_SRAM,
    "SRAM kaydedilemedi"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "SRAM yüklenemedi"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
@@ -11515,6 +11580,10 @@ MSG_HASH(
    "Ekran Çözünürlüğü"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Görüntüleme kipini seçin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "Kapat"
    )
@@ -11934,6 +12003,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2B (Yüksek Çözünürlük)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Retroarch menüsüne\ngitmek için Dokunmatik Ekran'a dokunun"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "bottom_menu.png bulunamadı\nassets/ctr klasörü"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Hayır\nVeri"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "Hayır\nEkran Görüntüsü"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Oyuna Devam Et"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Oluştur\nGeri Yükleme Noktası"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Geri Yükleme Noktasından\nYükle"
    )
 #endif
 #ifdef HAVE_QT

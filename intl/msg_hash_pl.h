@@ -1609,10 +1609,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Niestandardowy współczynnik proporcji"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Wartość zmiennoprzecinkowa współczynnika proporcji wideo (szerokość / wysokość), używana, jeśli współczynnik proporcji jest ustawiony na „Niestandardowy współczynnik proporcji”."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1663,6 +1659,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Wycinaj kilka pikseli wokół krawędzi obrazu, pozostawiając zwykle puste przez deweloperów, które czasami zawierają również piksele śmieci."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1760,6 +1759,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "Dźwięki menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Zmień ustawienia dźwięku menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2211,16 +2214,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Włącz wibracje urządzenia (dla obsługiwanych rdzeni)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "Siła wibracji (wymagany restart)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "Określ skalę efektów wibracji."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -10421,6 +10422,10 @@ MSG_HASH(
    "Nie udało się zapisać SRAM"
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Nie udało się załadować SRAM"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
    "Nie udało się zapisać stanu do"
    )
@@ -11794,6 +11799,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (wysoka rozdzielczość)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Dotknij ekranu dotykowego, aby przejść\ndo menu"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Wznów grę"
    )
 #endif
 #ifdef HAVE_QT

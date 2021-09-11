@@ -66,7 +66,7 @@
 #elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID)
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #else
-#define DEFAULT_ASPECT_RATIO -1.0f
+#define DEFAULT_ASPECT_RATIO 1.3333f
 #endif
 
 #if defined(GEKKO)
@@ -412,6 +412,21 @@
 #define DEFAULT_SHADER_ENABLE false
 #endif
 
+/* Should we enable hdr when its supported*/
+#define DEFAULT_VIDEO_HDR_ENABLE false
+
+/* The maximum nunmber of nits the actual display can show - needs to be calibrated */
+#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+
+/* The number of nits that paper white is at */
+#define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
+
+/* The contrast setting for hdr used to calculate the display gamma by dividing gamma 2.2 by this value */
+#define DEFAULT_VIDEO_HDR_CONTRAST 1.0f
+
+/* Should we expand the colour gamut when using hdr */
+#define DEFAULT_VIDEO_HDR_EXPAND_GAMUT true
+
 /* When presets are saved they will be saved using the #reference 
  * directive by default */
 #define DEFAULT_VIDEO_SHADER_PRESET_SAVE_REFERENCE_ENABLE true
@@ -596,6 +611,9 @@ static const bool quick_menu_show_start_streaming             = true;
 static const bool quick_menu_show_set_core_association        = true;
 static const bool quick_menu_show_reset_core_association      = true;
 static const bool quick_menu_show_options                     = true;
+
+#define DEFAULT_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH false
+
 static const bool quick_menu_show_controls                    = true;
 static const bool quick_menu_show_cheats                      = true;
 static const bool quick_menu_show_shaders                     = true;
@@ -1446,7 +1464,9 @@ static const bool enable_device_vibration    = false;
 /* Defines the strength of rumble effects
  * on OpenDingux devices */
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#define DEFAULT_DINGUX_RUMBLE_GAIN 50
+#define DEFAULT_RUMBLE_GAIN 50
+#else
+#define DEFAULT_RUMBLE_GAIN 100
 #endif
 
 #ifdef HAVE_VULKAN

@@ -1,5 +1,44 @@
 # Future
 
+# 1.9.9
+- 3DS: Add bottom touchscreen menu
+- 3DS/SAVESTATES: Save and load save states to and from RAM
+- AUDIO/MIXER: Ensure than menu sounds are re-enabled when calling CMD_EVENT_AUDIO_REINIT
+- AUDIO/RESAMPLER/MIXER: Fix menu sounds (audio mixing) when using the 'sinc' resampler with quality lower than 'normal'
+- AUDIO/CONVERSION/ARM NEON: Add intrinsic NEON versions for float_to_s16/s16_to_float - should lead to optimized codepaths for AArch64/ARMv7 architectures without being dependent on ASM codepaths.
+- AUDIO/RESAMPLER/ARM NEON: Add intrinsic NEON version for lanczos sinc function - should lead to optimized codepaths for AArch64/ARMv7 architectures without being dependent on ASM codepaths.
+- CHEEVOS: Upgrade to rcheevos 10.2
+- CHEATS: Add enhanced search functionality to the 'Cheats' menu
+- CHEATS/RUNAHEAD: Fix cheats when using second instance runahead
+- CONFIG: Add option to (force-)write current core options to disk (Quick Menu)
+- CORE INFO CACHE: Remove core path from core info cache. Should make core info caches portable now (for example: you can move RetroArch to a separate dir and they would still work).
+- D3D11: Use Shader Model 5.0 for frontend shaders if D3D11 Feature level is at least 11.0 or higher. Should fix some new shaders that require SM 5.0 (like AMD FSR)
+- D3D11: Add HDR support (disabled for UWP for now)
+- D3D12: Add HDR support (disabled for UWP for now)
+- EMSCRIPTEN: Fixed web player bug with filesystem and runtime
+- INPUT/OVERLAY: Fix overlay input when analog to digital mapping is enabled
+- INPUT/UDEV: Look for "ID_INPUT_KEY", not "ID_INPUT_KEYBOARD"
+- INPUT/WINRAW: Fix crash when overlay is enabled
+- MAC/METAL: Add Discord RPC support
+- MENU: Allow 'Custom Aspect Ratio (X Position)/(Y Position)/(Width)/(Height)' to be entered manually via keyboard
+- MENU: Allow 'Vertical Refresh Rate' to be entered manually via keyboard
+- MENU/SHADERS: Highlight currently selected value in Shader Parameter drop-down lists
+- STABILITY: Safer way of avoiding the race condition in
+audio_driver_sample/audio_driver_sample_batch - we can check
+audio-suspended to see if we're doing a fs/windowed toggle - enhances stability when fullscreen toggling/tearing down context
+- STABILITY: When audio driver write callback function fails, don't
+turn audio off completely - look if audio_driver_output_samples_conv_buf
+is non-NULL first before we attempt to write audio - enhances stability when fullscreen toggling/tearing down context
+- STABILITY: Input robustness for cores that use internal threading
+(full teardown/setup), no audio should be processed at this point in
+time
+- VIDEO: Screen resolution list sanitizing
+- VULKAN: Fix some Vulkan validation layer errors
+- UWP: Updated icons courtesy of Danp142
+- UWP/XBOX: Disable CPU model check on Xbox as it doesn't work and can even crash
+- UWP/VFS/XBOX: Code cleanup and simplification of UWP VFS driver
+
+
 # 1.9.8
 - AUDIO/WINDOWS/WASAPI: Stop deactivating audio on fast forward
 - CHEEVOS: Hide challenge indicators when resetting

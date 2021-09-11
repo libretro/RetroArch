@@ -29,12 +29,6 @@
 
 #include <audio/audio_resampler.h>
 
-#if (defined(__ARM_NEON__) && !defined(DONT_WANT_ARM_ASM_OPTIMIZATIONS)) || defined(HAVE_NEON)
-#ifndef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
-#define HAVE_ARM_NEON_ASM_OPTIMIZATIONS
-#endif
-#endif
-
 /* Since SSE and NEON don't provide support for trigonometric functions
  * we approximate those with polynoms
  *

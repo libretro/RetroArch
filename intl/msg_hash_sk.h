@@ -1513,10 +1513,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Vlastný pomer strán"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Desatinná hodnota zlomku pomeru strán (šírka / výška), použije sa ak je zvolená možnosť 'Vlastný pomer strán'."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1543,6 +1539,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Vlastný pomer strán (výška)"
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1775,8 +1774,6 @@ MSG_HASH(
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 

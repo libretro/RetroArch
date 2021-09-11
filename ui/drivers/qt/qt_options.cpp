@@ -1235,6 +1235,9 @@ QWidget *VideoPage::widget()
    CheckableSettingsGroup *savePosGroup    = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE);
 #endif
 
+   SettingsGroup *hdrGroup             = new SettingsGroup("HDR");
+   QHBoxLayout *hdrLayout              = new QHBoxLayout;
+
    SettingsGroup *syncGroup            = new SettingsGroup("Synchronization");
    CheckableSettingsGroup *vSyncGroup  = new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
 
@@ -1307,6 +1310,12 @@ QWidget *VideoPage::widget()
 
    windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
 
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
+   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
+
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
@@ -1333,6 +1342,8 @@ QWidget *VideoPage::widget()
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
+   hdrLayout->addWidget(hdrGroup);
+
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);
 
@@ -1348,6 +1359,7 @@ QWidget *VideoPage::widget()
 
    layout->addLayout(outputScalingLayout);
    layout->addLayout(modeLayout);
+   layout->addLayout(hdrLayout);
    layout->addLayout(syncMiscLayout);
    layout->addWidget(filterGroup);
 

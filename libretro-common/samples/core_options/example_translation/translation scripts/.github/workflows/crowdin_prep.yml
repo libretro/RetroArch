@@ -1,0 +1,41 @@
+# Prepare source for Crowdin sync
+
+name: Crowdin Upload Preparation
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '<path/to/libretro_core_options.h file>'
+
+jobs:
+  prepare_source_file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+
+      - name: Crowdin Prep
+        shell: bash
+        run: |
+          python3 intl/crowdin_prep.py '<path/to/libretro_core_options.h directory>'
+          
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add intl/*
+          git commit -m "Recreate translation source text files" -a
+
+      - name: GitHub Push
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}

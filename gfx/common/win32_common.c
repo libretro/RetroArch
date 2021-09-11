@@ -932,6 +932,12 @@ static LRESULT CALLBACK wnd_proc_common(
          /* fall-through */
       case WM_MOVE:
          win32_save_position();
+#if 0
+#if !defined(_XBOX)
+         if(d3d12)
+            d3d12_check_display_hdr_support(d3d12, hwnd);
+#endif
+#endif
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
@@ -2343,6 +2349,11 @@ HWND win32_get_window(void)
 #else
    return main_window.hwnd;
 #endif
+}
+
+bool win32_get_client_rect(RECT* rect)
+{
+   return GetWindowRect(main_window.hwnd, rect);
 }
 
 void win32_window_reset(void)

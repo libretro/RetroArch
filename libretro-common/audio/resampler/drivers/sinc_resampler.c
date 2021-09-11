@@ -86,95 +86,24 @@ typedef struct rarch_sinc_resampler
 } rarch_sinc_resampler_t;
 
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
-#ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
-#include <arm_neon.h>
 
-/* Assumes that taps >= 8, and that taps is a multiple of 8. */
-static void resampler_sinc_process_neon_intrin(void *re_, struct resampler_data *data)
-{
-   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
-   unsigned phases                = 1 << (resamp->phase_bits + resamp->subphase_bits);
-
-   uint32_t ratio                 = phases / data->ratio;
-   const float *input             = data->data_in;
-   float *output                  = data->data_out;
-   size_t frames                  = data->input_frames;
-   size_t out_frames              = 0;
-
-   while (frames)
-   {
-      while (resamp->time >= phases)
-      {
-         /* Push in reverse to make filter more obvious. */
-         if (!resamp->ptr)
-            resamp->ptr = resamp->taps;
-         resamp->ptr--;
-
-         resamp->buffer_l[resamp->ptr + resamp->taps] =
-         resamp->buffer_l[resamp->ptr]                = *input++;
-
-         resamp->buffer_r[resamp->ptr + resamp->taps] =
-         resamp->buffer_r[resamp->ptr]                = *input++;
-
-         resamp->time                                -= phases;
-         frames--;
-      }
-
-      {
-         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
-         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
-         unsigned taps            = resamp->taps;
-         while (resamp->time < phases)
-         {
-            int i;
-            unsigned phase           = resamp->time >> resamp->subphase_bits;
-            const float *phase_table = resamp->phase_table + phase * taps;
-
-             float32x4_t p1 = {0, 0, 0, 0}, p2 = {0, 0, 0, 0};
-             float32x2_t p3, p4;
-             
-             for (i = 0; i < taps; i += 8)
-             {
-                 float32x4x2_t coeff8 = vld2q_f32(&phase_table[i]);
-                 float32x4x2_t left8 = vld2q_f32(&buffer_l[i]);
-                 float32x4x2_t right8 = vld2q_f32(&buffer_r[i]);
-
-                 p1 = vmlaq_f32(p1,  left8.val[0], coeff8.val[0]);
-                 p2 = vmlaq_f32(p2, right8.val[0], coeff8.val[0]);
-                 p1 = vmlaq_f32(p1,  left8.val[1], coeff8.val[1]);
-                 p2 = vmlaq_f32(p2, right8.val[1], coeff8.val[1]);
-             }
-
-             p3 = vadd_f32(vget_low_f32(p1), vget_high_f32(p1));
-             p4 = vadd_f32(vget_low_f32(p2), vget_high_f32(p2));
-             vst1_f32(output, vpadd_f32(p3, p4));
-
-
-            output       += 2;
-            out_frames++;
-            resamp->time += ratio;
-         }
-      }
-   }
-
-   data->output_frames = out_frames;
-}
-#else
-/* Assumes that taps >= 8, and that taps is a multiple of 8. */
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
 void process_sinc_neon_asm(float *out, const float *left,
       const float *right, const float *coeff, unsigned taps);
+#else
+#include <arm_neon.h>
+#endif
 
+/* Assumes that taps >= 8, and that taps is a multiple of 8. */
 static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
 {
    rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
    unsigned phases                = 1 << (resamp->phase_bits + resamp->subphase_bits);
-
    uint32_t ratio                 = phases / data->ratio;
    const float *input             = data->data_in;
    float *output                  = data->data_out;
    size_t frames                  = data->input_frames;
    size_t out_frames              = 0;
-
    while (frames)
    {
       while (frames && resamp->time >= phases)
@@ -185,10 +114,10 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
          resamp->ptr--;
 
          resamp->buffer_l[resamp->ptr + resamp->taps] =
-         resamp->buffer_l[resamp->ptr]                = *input++;
+            resamp->buffer_l[resamp->ptr]                = *input++;
 
          resamp->buffer_r[resamp->ptr + resamp->taps] =
-         resamp->buffer_r[resamp->ptr]                = *input++;
+            resamp->buffer_r[resamp->ptr]                = *input++;
 
          resamp->time                                -= phases;
          frames--;
@@ -202,19 +131,38 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
          {
             unsigned phase           = resamp->time >> resamp->subphase_bits;
             const float *phase_table = resamp->phase_table + phase * taps;
-
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
             process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
+#else
+            unsigned i;
+            float32x4_t p1 = {0, 0, 0, 0}, p2 = {0, 0, 0, 0};
+            float32x2_t p3, p4;
 
-            output += 2;
+            for (i = 0; i < taps; i += 8)
+            {
+               float32x4x2_t coeff8  = vld2q_f32(&phase_table[i]);
+               float32x4x2_t left8   = vld2q_f32(&buffer_l[i]);
+               float32x4x2_t right8  = vld2q_f32(&buffer_r[i]);
+
+               p1 = vmlaq_f32(p1,  left8.val[0], coeff8.val[0]);
+               p2 = vmlaq_f32(p2, right8.val[0], coeff8.val[0]);
+               p1 = vmlaq_f32(p1,  left8.val[1], coeff8.val[1]);
+               p2 = vmlaq_f32(p2, right8.val[1], coeff8.val[1]);
+            }
+
+            p3 = vadd_f32(vget_low_f32(p1), vget_high_f32(p1));
+            p4 = vadd_f32(vget_low_f32(p2), vget_high_f32(p2));
+            vst1_f32(output, vpadd_f32(p3, p4));
+#endif
+            output                 += 2;
             out_frames++;
-            resamp->time += ratio;
+            resamp->time           += ratio;
          }
       }
    }
 
    data->output_frames = out_frames;
 }
-#endif
 #endif
 
 #if defined(__AVX__)
@@ -969,11 +917,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    else if (mask & RESAMPLER_SIMD_NEON && window_type != SINC_WINDOW_KAISER)
    {
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
-#ifdef DONT_WANT_ARM_ASM_OPTIMIZATIONS
-      sinc_resampler.process = resampler_sinc_process_neon_intrin;
-#else
       sinc_resampler.process = resampler_sinc_process_neon;
-#endif
 #endif
    }
 
