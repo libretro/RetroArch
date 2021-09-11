@@ -32,6 +32,8 @@ GCW0_MK_SQUASH_FS    ?= $(TOOLCHAIN_DIR)/usr/bin/mksquashfs
 GCW0_INC_DIR         ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/include
 GCW0_LIB_DIR         ?= $(TOOLCHAIN_DIR)/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/lib
 
+HUGEEDIT	     ?= $(TOOLCHAIN_DIR)/bin/hugeedit
+
 #########################
 #########################
 
@@ -126,7 +128,7 @@ LIBS := -ldl -lz -lrt -ludev -pthread
 CFLAGS :=
 CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS :=
-LDFLAGS := -Wl,--gc-sections
+LDFLAGS := -Wl,--gc-sections -Wl,-zcommon-page-size=2097152 -Wl,-zmax-page-size=2097152 -lhugetlbfs
 INCLUDE_DIRS = -I$(GCW0_INC_DIR)
 LIBRARY_DIRS = -L$(GCW0_LIB_DIR)
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
@@ -223,6 +225,7 @@ opk: $(TARGET)
 ifeq ($(STRIP_BIN),1)
 	$(STRIP) --strip-unneeded retroarch
 endif
+	$(HUGEEDIT) --text --data retroarch
 	$(GCW0_MK_SQUASH_FS) retroarch default.gcw0.desktop retroarch.png $(OPK_NAME) -all-root -no-xattrs -noappend -no-exports
 	rm -f default.gcw0.desktop retroarch.png
 
