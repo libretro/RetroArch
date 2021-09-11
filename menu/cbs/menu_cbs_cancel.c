@@ -35,7 +35,7 @@ int action_cancel_pop_default(const char *path,
    size_t new_selection_ptr;
    const char *menu_label                = NULL;
    unsigned menu_type                    = MENU_SETTINGS_NONE;
-   menu_serch_terms_t *menu_search_terms = menu_entries_search_get_terms();
+   menu_search_terms_t *menu_search_terms= menu_entries_search_get_terms();
 #ifdef HAVE_AUDIOMIXER
    settings_t *settings                  = config_get_ptr();
    bool audio_enable_menu                = settings->bools.audio_enable_menu;
@@ -109,7 +109,8 @@ static int action_cancel_core_content(const char *path,
 
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
    {
-      menu_serch_terms_t *menu_search_terms = menu_entries_search_get_terms();
+      menu_search_terms_t *menu_search_terms = 
+         menu_entries_search_get_terms();
 
       /* Check whether search terms have been set
        * > If so, remove the last search term */

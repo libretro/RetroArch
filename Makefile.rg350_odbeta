@@ -117,6 +117,7 @@ OBJ :=
 LINK := $(CXX)
 DEF_FLAGS := -mplt -mno-shared
 DEF_FLAGS += -ffunction-sections -fdata-sections
+DEF_FLAGS += -ffast-math
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DDINGUX=1 -DDINGUX_BETA=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
 DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE -flto

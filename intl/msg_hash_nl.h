@@ -1361,10 +1361,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Aangepaste beeldverhoudingen"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Waarde drijvende komma voor video-beeldverhouding (breedte / hoogte), gebruikt als de Beeldverhouding is ingesteld op 'Aangepaste Beeldverhouding'."
-   )
 #if defined(DINGUX)
 #endif
 MSG_HASH(
@@ -1391,6 +1387,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Aangepaste viewport-hoogte die wordt gebruikt als de Beeldverhouding is ingesteld op 'Aangepaste Beeldverhouding'."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -1799,8 +1798,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Toestel trillen inschakelen (voor ondersteunde Cores)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -4414,6 +4411,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
    "3DS weergavemodus"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Raak aan voor\nRetroArch-menu"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Spel\nhervatten"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Bewaarpunt\ncreëren"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Bewaarpunt\nladen"
    )
 #endif
 #ifdef HAVE_QT

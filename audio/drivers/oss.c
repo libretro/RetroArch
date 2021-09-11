@@ -30,7 +30,7 @@
 #include <retro_endianness.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include "../../retroarch.h"

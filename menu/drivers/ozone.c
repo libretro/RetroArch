@@ -1743,6 +1743,7 @@ static uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
       case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS:
       case MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST:
+      case MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_SHUTDOWN:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHUTDOWN];
@@ -2393,23 +2394,14 @@ static void ozone_draw_icon(
       float x, float y,
       unsigned width, unsigned height,
       float rotation, float scale_factor,
-      float *color)
+      float *color,
+      math_matrix_4x4 *mymat)
 {
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   math_matrix_4x4 mymat;
    gfx_display_ctx_driver_t 
       *dispctx              = p_disp->dispctx;
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = rotation;
-   rotate_draw.scale_x      = scale_factor;
-   rotate_draw.scale_y      = scale_factor;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -2424,7 +2416,7 @@ static void ozone_draw_icon(
    draw.scale_factor    = scale_factor;
    draw.rotation        = rotation;
    draw.coords          = &coords;
-   draw.matrix_data     = &mymat;
+   draw.matrix_data     = mymat;
    draw.texture         = texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
@@ -2700,6 +2692,7 @@ static void ozone_draw_sidebar(
    int entry_width;
    char console_title[255];
    unsigned i, sidebar_height;
+   math_matrix_4x4 mymat;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const
@@ -2852,6 +2845,18 @@ static void ozone_draw_sidebar(
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
+   {
+      gfx_display_ctx_rotate_draw_t rotate_draw;
+      rotate_draw.matrix       = &mymat;
+      rotate_draw.rotation     = 0.0f;
+      rotate_draw.scale_x      = 1.0f;
+      rotate_draw.scale_y      = 1.0f;
+      rotate_draw.scale_z      = 1.0f;
+      rotate_draw.scale_enable = true;
+
+      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   }
+
    for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
    {
       enum msg_hash_enums value_idx;
@@ -2878,9 +2883,10 @@ static void ozone_draw_sidebar(
             y + ozone->dimensions.sidebar_entry_height / 2 - ozone->dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar,
             video_width,
             video_height,
-            0,
-            1,
-            col);
+            0.0f,
+            1.0f,
+            col,
+            &mymat);
 
       value_idx = ozone_system_tabs_value[ozone->tabs[i]];
       title     = msg_hash_to_str(value_idx);
@@ -2962,9 +2968,10 @@ static void ozone_draw_sidebar(
                y + ozone->dimensions.sidebar_entry_height / 2 - ozone->dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar,
                video_width,
                video_height,
-               0,
-               1,
-               col);
+               0.0f,
+               1.0f,
+               col,
+               &mymat);
 
          /* Text */
          if (ozone->sidebar_collapsed)
@@ -4011,7 +4018,8 @@ static void ozone_draw_entry_value(
       char *value,
       unsigned x, unsigned y,
       uint32_t alpha_uint32,
-      menu_entry_t *entry)
+      menu_entry_t *entry,
+      math_matrix_4x4 *mymat)
 {
    bool switch_is_on                 = true;
    bool do_draw_text                 = false;
@@ -4036,9 +4044,10 @@ static void ozone_draw_entry_value(
             y - 22 * scale_factor,
             video_width,
             video_height,
-            0,
-            1,
-            col);
+            0.0f,
+            1.0f,
+            col,
+            mymat);
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
       return;
@@ -4124,7 +4133,8 @@ static void ozone_draw_no_thumbnail_available(
       unsigned video_height,
       unsigned x_position,
       unsigned sidebar_width,
-      unsigned y_offset)
+      unsigned y_offset,
+      math_matrix_4x4 *mymat)
 {
    unsigned icon                     = OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
    unsigned icon_size                = (unsigned)((float)
@@ -4149,7 +4159,10 @@ static void ozone_draw_no_thumbnail_available(
                video_height/2 - icon_size/2 - y_offset,
                video_width,
                video_height,
-               0, 1, col);
+               0.0f,
+               1.0f,
+               col,
+               mymat);
       if (dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
@@ -4393,7 +4406,8 @@ static void ozone_draw_entries(
       file_list_t *selection_buf,
       float alpha,
       float scroll_y,
-      bool is_playlist)
+      bool is_playlist,
+      math_matrix_4x4 *mymat)
 {
    uint32_t alpha_uint32;
    size_t i;
@@ -4727,9 +4741,10 @@ border_iterate:
                      / 2 - ozone->dimensions.entry_icon_size / 2,
                      video_width,
                      video_height,
-                     0,
-                     1,
-                     icon_color);
+                     0.0f,
+                     1.0f,
+                     icon_color,
+                     mymat);
             if (dispctx->blend_end)
                dispctx->blend_end(userdata);
          }
@@ -4817,7 +4832,8 @@ border_iterate:
             + entry_width - ozone->dimensions.entry_icon_padding,
             y + ozone->dimensions.entry_height / 2 + ozone->fonts.entries_label.line_centre_offset + scroll_y,
             alpha_uint32,
-            &entry);
+            &entry,
+            mymat);
 
       y += node->height;
    }
@@ -4838,7 +4854,8 @@ static void ozone_draw_thumbnail_bar(
       unsigned video_width,
       unsigned video_height,
       bool libretro_running,
-      float menu_framebuffer_opacity)
+      float menu_framebuffer_opacity,
+      math_matrix_4x4 *mymat)
 {
    enum gfx_thumbnail_alignment right_thumbnail_alignment;
    enum gfx_thumbnail_alignment left_thumbnail_alignment;
@@ -4920,7 +4937,8 @@ static void ozone_draw_thumbnail_bar(
             userdata,
             video_width,
             video_height,
-            x_position, sidebar_width, 0);
+            x_position, sidebar_width, 0,
+            mymat);
       return;
    }
 
@@ -4977,7 +4995,8 @@ static void ozone_draw_thumbnail_bar(
             video_height,
             x_position,
             sidebar_width,
-            thumbnail_height / 2);
+            thumbnail_height / 2,
+            mymat);
 
    /* Bottom row
     * > Displays one item, with the following order
@@ -5316,7 +5335,10 @@ static void ozone_draw_thumbnail_bar(
                      video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_entry_icon_padding - icon_size,
                      video_width,
                      video_height,
-                     0, 1, col);
+                     0.0f,
+                     1.0f,
+                     col,
+                     mymat);
             if (dispctx->blend_end)
                dispctx->blend_end(userdata);
          }
@@ -8274,7 +8296,8 @@ static void ozone_draw_header(
       unsigned video_width,
       unsigned video_height,
       bool battery_level_enable,
-      bool timedate_enable)
+      bool timedate_enable,
+      math_matrix_4x4 *mymat)
 {
    char title[255];
    gfx_animation_ctx_ticker_t ticker;
@@ -8382,7 +8405,10 @@ static void ozone_draw_header(
                   14 * scale_factor, /* Where does this come from...? */
                   video_width,
                   video_height,
-                  0, 1, col);
+                  0.0f,
+                  1.0f,
+                  col,
+                  &mymat);
          else
 #endif
             ozone_draw_icon(
@@ -8397,7 +8423,10 @@ static void ozone_draw_header(
                   (ozone->dimensions.header_height - logo_icon_size) / 2,
                   video_width,
                   video_height,
-                  0, 1, col);
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
       }
       if (dispctx->blend_end)
          dispctx->blend_end(userdata);
@@ -8452,7 +8481,10 @@ static void ozone_draw_header(
                      0,
                      video_width,
                      video_height,
-                     0, 1, col);
+                     0.0f,
+                     1.0f,
+                     col,
+                     mymat);
             if (dispctx->blend_end)
                dispctx->blend_end(userdata);
          }
@@ -8506,7 +8538,10 @@ static void ozone_draw_header(
                   0,
                   video_width,
                   video_height,
-                  0, 1, col);
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
          if (dispctx->blend_end)
             dispctx->blend_end(userdata);
       }
@@ -8521,7 +8556,8 @@ static void ozone_draw_footer(
       unsigned video_width,
       unsigned video_height,
       bool input_menu_swap_ok_cancel_buttons,
-      settings_t *settings)
+      settings_t *settings,
+      math_matrix_4x4 *mymat)
 {
    bool menu_core_enable                  = settings->bools.menu_core_enable;
    float scale_factor                     = ozone->last_scale_factor;
@@ -8614,7 +8650,10 @@ static void ozone_draw_footer(
                icon_y,
                video_width,
                video_height,
-               0, 1, col);
+               0.0f,
+               1.0f,
+               col,
+               mymat);
 
          /* > back */
          ozone_draw_icon(
@@ -8630,7 +8669,10 @@ static void ozone_draw_footer(
                back_x,
                icon_y,
                video_width,video_height,
-               0, 1, col);
+               0.0f,
+               1.0f,
+               col,
+               mymat);
 
          /* > search */
          ozone_draw_icon(
@@ -8644,7 +8686,10 @@ static void ozone_draw_footer(
                search_x,
                icon_y,
                video_width,video_height,
-               0, 1, col);
+               0.0f,
+               1.0f,
+               col,
+               mymat);
 
          /* > fullscreen_thumbs */
          if (fullscreen_thumbnails_available)
@@ -8659,7 +8704,10 @@ static void ozone_draw_footer(
                   fullscreen_thumbs_x,
                   icon_y,
                   video_width,video_height,
-                  0, 1, col);
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
 
          /* > metadata_toggle */
          if (metadata_override_available)
@@ -8674,7 +8722,10 @@ static void ozone_draw_footer(
                   metadata_toggle_x,
                   icon_y,
                   video_width,video_height,
-                  0, 1, col);
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
       }
 
       if (dispctx->blend_end)
@@ -8861,9 +8912,10 @@ static void ozone_draw_footer(
                   video_height - ozone->dimensions.footer_height / 2 - 15 * scale_factor,
                   video_width,
                   video_height,
-                  0,
-                  1,
-                  ozone->pure_white);
+                  0.0f,
+                  1.0f,
+                  ozone->pure_white,
+                  &mymat);
          if (dispctx->blend_end)
             dispctx->blend_end(userdata);
       }
@@ -9047,6 +9099,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    gfx_display_t            *p_disp       = (gfx_display_t*)video_info->disp_userdata;
    gfx_animation_t *p_anim                = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
+   math_matrix_4x4 mymat;
 
 #if 0
    static bool reset                      = false;
@@ -9142,6 +9195,18 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          background_color,
          NULL);
 
+   {
+      gfx_display_ctx_rotate_draw_t rotate_draw;
+      rotate_draw.matrix       = &mymat;
+      rotate_draw.rotation     = 0.0f;
+      rotate_draw.scale_x      = 1.0f;
+      rotate_draw.scale_y      = 1.0f;
+      rotate_draw.scale_z      = 1.0f;
+      rotate_draw.scale_enable = true;
+
+      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
+   }
+
    /* Header, footer */
    ozone_draw_header(
          ozone,
@@ -9152,14 +9217,15 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          video_width,
          video_height,
          battery_level_enable,
-         timedate_enable);
+         timedate_enable,
+         &mymat);
    ozone_draw_footer(ozone,
          p_disp, p_anim,
          userdata,
          video_width,
          video_height,
          input_menu_swap_ok_cancel_buttons,
-         settings);
+         settings, &mymat);
 
    /* Sidebar */
    if (ozone->draw_sidebar)
@@ -9199,7 +9265,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          menu_entries_get_selection_buf_ptr(0),
          ozone->animations.list_alpha,
          ozone->animations.scroll_y,
-         ozone->is_playlist
+         ozone->is_playlist,
+         &mymat
          );
 
    /* Old list */
@@ -9217,7 +9284,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             &ozone->selection_buf_old,
             ozone->animations.list_alpha,
             ozone->scroll_old,
-            ozone->is_playlist_old
+            ozone->is_playlist_old,
+            &mymat
       );
 
    /* Thumbnail bar */
@@ -9230,7 +9298,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_width,
             video_height,
             libretro_running,
-            menu_framebuffer_opacity);
+            menu_framebuffer_opacity,
+            &mymat);
 
    if (dispctx && dispctx->scissor_end)
       dispctx->scissor_end(userdata,
@@ -9473,7 +9542,7 @@ static void ozone_populate_entries(void *data,
        * (Ozone is a fickle beast...) */
       if (ozone->is_playlist)
       {
-         menu_serch_terms_t *menu_search_terms =
+         menu_search_terms_t *menu_search_terms=
                menu_entries_search_get_terms();
          size_t num_search_terms               =
                menu_search_terms ? menu_search_terms->size : 0;

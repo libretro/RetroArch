@@ -32,9 +32,6 @@
 static uint32_t pad_state;
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-
 static const char *ctr_joypad_name(unsigned pad)
 {
    return "3DS Controller";
@@ -193,11 +190,6 @@ static void ctr_joypad_poll(void)
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  ctr_joypad_fix_range(state_tmp_right_analog.dx);
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -ctr_joypad_fix_range(state_tmp_right_analog.dy);
 
-   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
-
-   if((state_tmp & KEY_TOUCH) && (state_tmp_touch.py > 120))
-      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
-
    /* panic button */
    if((state_tmp & KEY_START) &&
          (state_tmp & KEY_SELECT) &&
@@ -226,6 +218,7 @@ input_device_driver_t ctr_joypad = {
    ctr_joypad_get_buttons,
    ctr_joypad_axis,
    ctr_joypad_poll,
+   NULL,
    NULL,
    ctr_joypad_name,
    "ctr",

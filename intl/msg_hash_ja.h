@@ -1585,10 +1585,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "'Config'のアスペクト比"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "ビデオのアスペクト比(幅/高さ)の浮動小数点値です. 'アスペクト比'に'Config'を設定しているときに使用されます."
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -1639,6 +1635,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "画面端の数ピクセルを切り取ります. この部分はゴミが含まれていることもあり, 開発者が慣例的に空白にしています."
    )
+
+/* Settings > Video > HDR */
+
 
 /* Settings > Video > Synchronization */
 
@@ -2183,16 +2182,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "(対応コアで)デバイスの振動を有効"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "振動の強さ (再起動が必要)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "触覚フィードバック効果の大きさを指定します."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 

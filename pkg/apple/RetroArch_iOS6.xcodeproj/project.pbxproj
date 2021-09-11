@@ -24,10 +24,7 @@
 		04193A3322A0F51200684552 /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 04193A2222A0F51200684552 /* GCDWebUploader.bundle */; };
 		04193A3422A0F51200684552 /* GCDWebUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 04193A2422A0F51200684552 /* GCDWebUploader.m */; };
 		04306A8324A2C521002CAEFE /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 04306A8224A2C521002CAEFE /* libz.tbd */; };
-		503700881ACA18E400A51A37 /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
 		503700891ACA18E400A51A37 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
-		5037008A1ACA18E400A51A37 /* s16_to_float_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* s16_to_float_neon.S */; };
-		5037008B1ACA18E400A51A37 /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
 		5037008C1ACA18E400A51A37 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		5037008E1ACA18E400A51A37 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
 		503700901ACA18E400A51A37 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
@@ -44,7 +41,6 @@
 		5037009B1ACA18E400A51A37 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		503700A01ACA18E400A51A37 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		503700A11ACA18E400A51A37 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
-		507E056C1CE9C69300E023D3 /* float_to_s16_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */; };
 		50EDFC742610544800569B76 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 50EDFC732610544800569B76 /* assets.zip */; };
 		50EDFC782610549B00569B76 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 50EDFC762610549B00569B76 /* .gitignore */; };
 		50EDFC792610549B00569B76 /* .empty in Resources */ = {isa = PBXBuildFile; fileRef = 50EDFC772610549B00569B76 /* .empty */; };
@@ -88,17 +84,13 @@
 		04193A2422A0F51200684552 /* GCDWebUploader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebUploader.m; sourceTree = "<group>"; };
 		04306A8224A2C521002CAEFE /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
-		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = "../../libretro-common/audio/resampler/drivers/sinc_resampler_neon.S"; sourceTree = SOURCE_ROOT; };
-		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		503700AD1ACA18E400A51A37 /* RetroArch iOS6.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch iOS6.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		503700AE1ACA18E400A51A37 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = iOS/Info.plist; sourceTree = SOURCE_ROOT; };
 		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
-		507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = float_to_s16_neon.S; path = "../../libretro-common/audio/conversion/float_to_s16_neon.S"; sourceTree = SOURCE_ROOT; };
 		50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
-		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/drivers_resampler/cc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		50EDFC732610544800569B76 /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = "<group>"; };
 		50EDFC762610549B00569B76 /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
@@ -228,14 +220,6 @@
 			path = GCDWebUploader;
 			sourceTree = "<group>";
 		};
-		500B12CD20185CAB0047A788 /* Recovered References */ = {
-			isa = PBXGroup;
-			children = (
-				501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */,
-			);
-			name = "Recovered References";
-			sourceTree = "<group>";
-		};
 		50EDFC752610549B00569B76 /* modules */ = {
 			isa = PBXGroup;
 			children = (
@@ -259,10 +243,8 @@
 			isa = PBXGroup;
 			children = (
 				50EDFC732610544800569B76 /* assets.zip */,
-				507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */,
 				50EDFC752610549B00569B76 /* modules */,
 				83D632D719ECFCC4009E3161 /* Assets */,
-				50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */,
 				96AFAE9C16C1D976009DE44C /* core */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
 				96AFAE2616C1D4EA009DE44C /* Products */,
@@ -325,15 +307,6 @@
 				96AFAF3116C1E00A009DE44C /* gfx */,
 			);
 			name = core;
-			sourceTree = "<group>";
-		};
-		96AFAEE516C1DC73009DE44C /* audio */ = {
-			isa = PBXGroup;
-			children = (
-				501232CD192E5FE30063A359 /* s16_to_float_neon.S */,
-			);
-			name = audio;
-			path = ../audio;
 			sourceTree = "<group>";
 		};
 		96AFAF3116C1E00A009DE44C /* gfx */ = {
@@ -437,13 +410,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				507E056C1CE9C69300E023D3 /* float_to_s16_neon.S in Sources */,
-				503700881ACA18E400A51A37 /* cc_resampler_neon.S in Sources */,
 				503700891ACA18E400A51A37 /* griffin_objc.m in Sources */,
 				04193A3222A0F51200684552 /* WebServer.m in Sources */,
 				04193A2D22A0F51200684552 /* GCDWebServerStreamedResponse.m in Sources */,
 				04193A2C22A0F51200684552 /* GCDWebServerDataResponse.m in Sources */,
-				5037008A1ACA18E400A51A37 /* s16_to_float_neon.S in Sources */,
 				04193A2622A0F51200684552 /* GCDWebServerRequest.m in Sources */,
 				04193A2F22A0F51200684552 /* GCDWebServerMultiPartFormRequest.m in Sources */,
 				04193A3022A0F51200684552 /* GCDWebServerDataRequest.m in Sources */,
@@ -452,7 +422,6 @@
 				04193A3122A0F51200684552 /* GCDWebServerFileRequest.m in Sources */,
 				04193A2A22A0F51200684552 /* GCDWebServerErrorResponse.m in Sources */,
 				04193A2522A0F51200684552 /* GCDWebServerResponse.m in Sources */,
-				5037008B1ACA18E400A51A37 /* sinc_resampler_neon.S in Sources */,
 				04193A2E22A0F51200684552 /* GCDWebServerURLEncodedFormRequest.m in Sources */,
 				04193A2B22A0F51200684552 /* GCDWebServerFileResponse.m in Sources */,
 				04193A2822A0F51200684552 /* GCDWebServer.m in Sources */,
@@ -486,7 +455,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.9.8;
+				CURRENT_PROJECT_VERSION = 1.9.9;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -504,7 +473,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				MARKETING_VERSION = 1.9.8;
+				MARKETING_VERSION = 1.9.9;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETWORKGAMEPAD",
@@ -538,6 +507,7 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DIOS",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
@@ -586,7 +556,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.9.8;
+				CURRENT_PROJECT_VERSION = 1.9.9;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
@@ -604,7 +574,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
-				MARKETING_VERSION = 1.9.8;
+				MARKETING_VERSION = 1.9.9;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
@@ -639,6 +609,7 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DIOS",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
@@ -703,6 +674,7 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DIOS",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
@@ -802,6 +774,7 @@
 					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
@@ -885,6 +858,7 @@
 					"-DHAVE_RWAV",
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
+					"-DDONT_WANT_ARM_OPTIMIZATIONS",
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",

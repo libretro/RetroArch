@@ -21,9 +21,16 @@
 #endif
 
 #include <retro_timers.h>
+#include <lists/dir_list.h>
+#include <string/stdstring.h>
+#include <streams/file_stream.h>
+
 #include "menu_driver.h"
 #include "menu_cbs.h"
+#include "../list_special.h"
+#include "../paths.h"
 #include "../tasks/tasks_internal.h"
+#include "../verbosity.h"
 
 #ifdef HAVE_LANGEXTRA
 /* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA
@@ -1779,6 +1786,8 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                        /* > Cheat files */
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
+                       /* > Cheats */
+                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)) ||
                        /* > Overlays */
                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY)) ||
                        /* > Manage Cores */
@@ -2138,15 +2147,7 @@ bool generic_menu_init_list(struct menu_state *menu_st,
    return true;
 }
 
-/**
- * menu_init:
- * @data                     : Menu context handle.
- *
- * Create and initialize menu handle.
- *
- * Returns: menu handle on success, otherwise NULL.
- **/
-bool menu_init(
+bool rarch_menu_init(
       struct menu_state *menu_st,
       menu_dialog_t        *p_dialog,
       const menu_ctx_driver_t *menu_driver_ctx,
@@ -2218,3 +2219,652 @@ bool menu_init(
 
    return true;
 }
+
+void menu_input_set_pointer_visibility(
+      menu_input_pointer_hw_state_t *pointer_hw_state,
+      menu_input_t *menu_input,
+      retro_time_t current_time)
+{
+   static bool cursor_shown                        = false;
+   static bool cursor_hidden                       = false;
+   static retro_time_t end_time                    = 0;
+
+   /* Ensure that mouse cursor is hidden when not in use */
+   if ((menu_input->pointer.type == MENU_POINTER_MOUSE)
+         && pointer_hw_state->active)
+   {
+      /* Show cursor */
+      if ((current_time > end_time) && !cursor_shown)
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type = MENU_ENVIRON_ENABLE_MOUSE_CURSOR;
+         menu_environ.data = NULL;
+
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+         cursor_shown  = true;
+         cursor_hidden = false;
+      }
+
+      end_time = current_time + MENU_INPUT_HIDE_CURSOR_DELAY;
+   }
+   else
+   {
+      /* Hide cursor */
+      if ((current_time > end_time) && !cursor_hidden)
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type = MENU_ENVIRON_DISABLE_MOUSE_CURSOR;
+         menu_environ.data = NULL;
+
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+         cursor_shown  = false;
+         cursor_hidden = true;
+      }
+   }
+}
+
+/**
+ * menu_entries_elem_get_first_char:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Gets the first character of an element in the
+ * file list.
+ *
+ * Returns: first character of element in file list.
+ **/
+int menu_entries_elem_get_first_char(
+      file_list_t *list, unsigned offset)
+{
+   const char *path =   list->list[offset].alt
+                      ? list->list[offset].alt
+                      : list->list[offset].path;
+   int ret          = path ? TOLOWER((int)*path) : 0;
+
+   /* "Normalize" non-alphabetical entries so they
+    * are lumped together for purposes of jumping. */
+   if (ret < 'a')
+      return ('a' - 1);
+   else if (ret > 'z')
+      return ('z' + 1);
+   return ret;
+}
+
+void menu_entries_build_scroll_indices(
+      struct menu_state *menu_st,
+      file_list_t *list)
+{
+   bool current_is_dir             = false;
+   size_t i                        = 0;
+   int current                     = menu_entries_elem_get_first_char(list, 0);
+   unsigned type                   = list->list[0].type;
+
+   menu_st->scroll.index_list[0]   = 0;
+   menu_st->scroll.index_size      = 1;
+
+   if (type == FILE_TYPE_DIRECTORY)
+      current_is_dir               = true;
+
+   for (i = 1; i < list->size; i++)
+   {
+      int first    = menu_entries_elem_get_first_char(list, (unsigned)i);
+      bool is_dir  = false;
+      unsigned idx = (unsigned)i;
+
+      type         = list->list[idx].type;
+
+      if (type == FILE_TYPE_DIRECTORY)
+         is_dir = true;
+
+      if ((current_is_dir && !is_dir) || (first > current))
+      {
+         /* Add scroll index */
+         menu_st->scroll.index_list[menu_st->scroll.index_size]   = i;
+         if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
+            menu_st->scroll.index_size++;
+      }
+
+      current        = first;
+      current_is_dir = is_dir;
+   }
+
+   /* Add scroll index */
+   menu_st->scroll.index_list[menu_st->scroll.index_size]   = list->size - 1;
+   if (!((menu_st->scroll.index_size + 1) >= SCROLL_INDEX_SIZE))
+      menu_st->scroll.index_size++;
+}
+
+void menu_display_common_image_upload(
+      const menu_ctx_driver_t *menu_driver_ctx,
+      void *menu_userdata,
+      struct texture_image *img,
+      void *user_data,
+      unsigned type)
+{
+   if (     menu_driver_ctx
+         && menu_driver_ctx->load_image)
+      menu_driver_ctx->load_image(menu_userdata,
+            img, (enum menu_image_type)type);
+
+   image_texture_free(img);
+   free(img);
+   free(user_data);
+}
+
+enum menu_driver_id_type menu_driver_set_id(
+      const char *driver_name)
+{
+   if (!string_is_empty(driver_name))
+   {
+      if (string_is_equal(driver_name, "rgui"))
+         return MENU_DRIVER_ID_RGUI;
+      else if (string_is_equal(driver_name, "ozone"))
+         return MENU_DRIVER_ID_OZONE;
+      else if (string_is_equal(driver_name, "glui"))
+         return MENU_DRIVER_ID_GLUI;
+      else if (string_is_equal(driver_name, "xmb"))
+         return MENU_DRIVER_ID_XMB;
+      else if (string_is_equal(driver_name, "stripes"))
+         return MENU_DRIVER_ID_STRIPES;
+   }
+   return MENU_DRIVER_ID_UNKNOWN;
+}
+
+const char *config_get_menu_driver_options(void)
+{
+   return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
+}
+
+bool menu_entries_search_push(const char *search_term)
+{
+   size_t i;
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+   char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
+
+   search_term_clipped[0] = '\0';
+
+   /* Sanity check + verify whether we have reached
+    * the maximum number of allowed search terms */
+   if (!search ||
+       string_is_empty(search_term) ||
+       (search->size >= MENU_SEARCH_FILTER_MAX_TERMS))
+      return false;
+
+   /* Check whether search term already exists
+    * > Note that we clip the input search term
+    *   to MENU_SEARCH_FILTER_MAX_LENGTH characters
+    *   *before* comparing existing entries */
+   strlcpy(search_term_clipped, search_term,
+         sizeof(search_term_clipped));
+
+   for (i = 0; i < search->size; i++)
+   {
+      if (string_is_equal(search_term_clipped,
+            search->terms[i]))
+         return false;
+   }
+
+   /* Add search term */
+   strlcpy(search->terms[search->size], search_term_clipped,
+         sizeof(search->terms[search->size]));
+   search->size++;
+
+   return true;
+}
+
+bool menu_entries_search_pop(void)
+{
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+
+   /* Do nothing if list of search terms is empty */
+   if (!search ||
+       (search->size == 0))
+      return false;
+
+   /* Remove last item from the list */
+   search->size--;
+   search->terms[search->size][0] = '\0';
+
+   return true;
+}
+
+menu_search_terms_t *menu_entries_search_get_terms(void)
+{
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+
+   if (!search ||
+       (search->size == 0))
+      return NULL;
+
+   return search;
+}
+
+void menu_entries_search_append_terms_string(char *s, size_t len)
+{
+   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+
+   if (search &&
+       (search->size > 0) &&
+       s)
+   {
+      size_t current_len = strlen_size(s, len);
+      size_t i;
+
+      /* If buffer is already 'full', nothing
+       * further can be added */
+      if (current_len >= len)
+         return;
+
+      s   += current_len;
+      len -= current_len;
+
+      for (i = 0; i < search->size; i++)
+      {
+         strlcat(s, " > ", len);
+         strlcat(s, search->terms[i], len);
+      }
+   }
+}
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+bool menu_shader_manager_save_preset_internal(
+      bool save_reference,
+      const struct video_shader *shader,
+      const char *basename,
+      const char *dir_video_shader,
+      bool apply,
+      const char **target_dirs,
+      size_t num_target_dirs)
+{
+   char fullname[PATH_MAX_LENGTH];
+   char buffer[PATH_MAX_LENGTH];
+   bool ret                       = false;
+   enum rarch_shader_type type    = RARCH_SHADER_NONE;
+   char *preset_path              = NULL;
+   size_t i                       = 0;
+
+   fullname[0] = buffer[0]        = '\0';
+
+   if (!shader || !shader->passes)
+      return false;
+
+   type = menu_shader_manager_get_type(shader);
+
+   if (type == RARCH_SHADER_NONE)
+      return false;
+
+   if (!string_is_empty(basename))
+   {
+      /* We are comparing against a fixed list of file
+       * extensions, the longest (slangp) being 6 characters
+       * in length. We therefore only need to extract the first
+       * 7 characters from the extension of the input path
+       * to correctly validate a match */
+      char ext_lower[8];
+      const char *ext = NULL;
+
+      ext_lower[0]    = '\0';
+
+      strlcpy(fullname, basename, sizeof(fullname));
+
+      /* Get file extension */
+      ext = strrchr(basename, '.');
+
+      /* Copy and convert to lower case */
+      if (ext && (*(++ext) != '\0'))
+      {
+         strlcpy(ext_lower, ext, sizeof(ext_lower));
+         string_to_lower(ext_lower);
+      }
+
+      /* Append extension automatically as appropriate. */
+      if (     !string_is_equal(ext_lower, "cgp")
+            && !string_is_equal(ext_lower, "glslp")
+            && !string_is_equal(ext_lower, "slangp"))
+      {
+         const char *preset_ext = video_shader_get_preset_extension(type);
+         strlcat(fullname, preset_ext, sizeof(fullname));
+      }
+   }
+   else
+      snprintf(fullname, sizeof(fullname), "retroarch%s",
+            video_shader_get_preset_extension(type));
+
+   if (path_is_absolute(fullname))
+   {
+      preset_path = fullname;
+      ret         = video_shader_write_preset(preset_path,
+            dir_video_shader,
+            shader, save_reference);
+
+      if (ret)
+         RARCH_LOG("[Shaders - Save Preset]: Saved shader preset to %s.\n", preset_path);
+      else
+         RARCH_ERR("[Shaders - Save Preset]: Failed writing shader preset to %s.\n", preset_path);
+   }
+   else
+   {
+      char basedir[PATH_MAX_LENGTH];
+
+      for (i = 0; i < num_target_dirs; i++)
+      {
+         if (string_is_empty(target_dirs[i]))
+            continue;
+
+         fill_pathname_join(buffer, target_dirs[i],
+               fullname, sizeof(buffer));
+
+         strlcpy(basedir, buffer, sizeof(basedir));
+         path_basedir(basedir);
+
+         if (!path_is_directory(basedir))
+         {
+            ret = path_mkdir(basedir);
+
+            if (!ret)
+            {
+               RARCH_WARN("[Shaders - Save Preset]: Failed to create preset directory %s.\n", basedir);
+               continue;
+            }
+         }
+
+         preset_path = buffer;
+
+         ret = video_shader_write_preset(preset_path,
+               dir_video_shader,
+               shader, save_reference);
+
+         if (ret)
+         {
+            RARCH_LOG("[Shaders - Save Preset]: Saved shader preset to %s.\n", preset_path);
+            break;
+         }
+         else
+            RARCH_WARN("[Shaders - Save Preset]: Failed writing shader preset to %s.\n", preset_path);
+      }
+
+      if (!ret)
+         RARCH_ERR("[Shaders - Save Preset]: Failed to write shader preset. Make sure shader directory"
+               " and/or config directory are writable.\n");
+   }
+
+   if (ret && apply)
+      menu_shader_manager_set_preset(NULL, type, preset_path, true);
+
+   return ret;
+}
+
+bool menu_shader_manager_operate_auto_preset(
+      struct retro_system_info *system,
+      settings_t *settings,
+      enum auto_shader_operation op,
+      const struct video_shader *shader,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      enum auto_shader_type type, bool apply)
+{
+   char old_presets_directory[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH];
+   char file[PATH_MAX_LENGTH];
+   static enum rarch_shader_type shader_types[] =
+   {
+      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
+   };
+   const char *core_name            = system ? system->library_name : NULL;
+   const char *auto_preset_dirs[3]  = {0};
+
+   old_presets_directory[0] = config_directory[0] = tmp[0] = file[0] = '\0';
+
+   if (type != SHADER_PRESET_GLOBAL && string_is_empty(core_name))
+      return false;
+
+   if (!path_is_empty(RARCH_PATH_CONFIG))
+      fill_pathname_basedir(
+            config_directory,
+            path_get(RARCH_PATH_CONFIG),
+            sizeof(config_directory));
+
+   /* We are only including this directory for compatibility purposes with
+    * versions 1.8.7 and older. */
+   if (op != AUTO_SHADER_OP_SAVE && !string_is_empty(dir_video_shader))
+      fill_pathname_join(
+            old_presets_directory,
+            dir_video_shader,
+            "presets",
+            sizeof(old_presets_directory));
+
+   auto_preset_dirs[0] = dir_menu_config;
+   auto_preset_dirs[1] = config_directory;
+   auto_preset_dirs[2] = old_presets_directory;
+
+   switch (type)
+   {
+      case SHADER_PRESET_GLOBAL:
+         strcpy_literal(file, "global");
+         break;
+      case SHADER_PRESET_CORE:
+         fill_pathname_join(file, core_name, core_name, sizeof(file));
+         break;
+      case SHADER_PRESET_PARENT:
+         fill_pathname_parent_dir_name(tmp,
+               path_get(RARCH_PATH_BASENAME), sizeof(tmp));
+         fill_pathname_join(file, core_name, tmp, sizeof(file));
+         break;
+      case SHADER_PRESET_GAME:
+         {
+            const char *game_name =
+               path_basename(path_get(RARCH_PATH_BASENAME));
+            if (string_is_empty(game_name))
+               return false;
+            fill_pathname_join(file, core_name, game_name, sizeof(file));
+            break;
+         }
+      default:
+         return false;
+   }
+
+   switch (op)
+   {
+      case AUTO_SHADER_OP_SAVE:
+         return menu_shader_manager_save_preset_internal(
+               settings->bools.video_shader_preset_save_reference_enable,
+               shader, file,
+               dir_video_shader,
+               apply,
+               auto_preset_dirs,
+               ARRAY_SIZE(auto_preset_dirs));
+      case AUTO_SHADER_OP_REMOVE:
+         {
+            /* remove all supported auto-shaders of given type */
+            char *end;
+            size_t i, j, m;
+
+            char preset_path[PATH_MAX_LENGTH];
+
+            /* n = amount of relevant shader presets found
+             * m = amount of successfully deleted shader presets */
+            size_t n = m = 0;
+
+            for (i = 0; i < ARRAY_SIZE(auto_preset_dirs); i++)
+            {
+               if (string_is_empty(auto_preset_dirs[i]))
+                  continue;
+
+               fill_pathname_join(preset_path,
+                     auto_preset_dirs[i], file, sizeof(preset_path));
+               end = preset_path + strlen(preset_path);
+
+               for (j = 0; j < ARRAY_SIZE(shader_types); j++)
+               {
+                  const char *preset_ext;
+
+                  if (!video_shader_is_supported(shader_types[j]))
+                     continue;
+
+                  preset_ext = video_shader_get_preset_extension(shader_types[j]);
+                  strlcpy(end, preset_ext, sizeof(preset_path) - (end - preset_path));
+
+                  if (path_is_valid(preset_path))
+                  {
+                     n++;
+
+                     if (!filestream_delete(preset_path))
+                     {
+                        m++;
+                        RARCH_LOG("[Shaders]: Deleted shader preset from \"%s\".\n", preset_path);
+                     }
+                     else
+                        RARCH_WARN("[Shaders]: Failed to remove shader preset at \"%s\".\n", preset_path);
+                  }
+               }
+            }
+
+            return n == m;
+         }
+      case AUTO_SHADER_OP_EXISTS:
+         {
+            /* test if any supported auto-shaders of given type exists */
+            char *end;
+            size_t i, j;
+
+            char preset_path[PATH_MAX_LENGTH];
+
+            for (i = 0; i < ARRAY_SIZE(auto_preset_dirs); i++)
+            {
+               if (string_is_empty(auto_preset_dirs[i]))
+                  continue;
+
+               fill_pathname_join(preset_path,
+                     auto_preset_dirs[i], file, sizeof(preset_path));
+               end = preset_path + strlen(preset_path);
+
+               for (j = 0; j < ARRAY_SIZE(shader_types); j++)
+               {
+                  const char *preset_ext;
+
+                  if (!video_shader_is_supported(shader_types[j]))
+                     continue;
+
+                  preset_ext = video_shader_get_preset_extension(shader_types[j]);
+                  strlcpy(end, preset_ext, sizeof(preset_path) - (end - preset_path));
+
+                  if (path_is_valid(preset_path))
+                     return true;
+               }
+            }
+         }
+         break;
+   }
+
+   return false;
+}
+
+void menu_driver_set_last_shader_path_int(
+      const char *shader_path,
+      enum rarch_shader_type *type,
+      char *shader_dir, size_t dir_len,
+      char *shader_file, size_t file_len)
+{
+   const char *file_name = NULL;
+
+   if (!type ||
+       !shader_dir ||
+       (dir_len < 1) ||
+       !shader_file ||
+       (file_len < 1))
+      return;
+
+   /* Reset existing cache */
+   *type          = RARCH_SHADER_NONE;
+   shader_dir[0]  = '\0';
+   shader_file[0] = '\0';
+
+   /* If path is empty, do nothing */
+   if (string_is_empty(shader_path))
+      return;
+
+   /* Get shader type */
+   *type = video_shader_parse_type(shader_path);
+
+   /* If type is invalid, do nothing */
+   if (*type == RARCH_SHADER_NONE)
+      return;
+
+   /* Cache parent directory */
+   fill_pathname_parent_dir(shader_dir, shader_path, dir_len);
+
+   /* If parent directory is empty, then file name
+    * is only valid if 'shader_path' refers to an
+    * existing file in the root of the file system */
+   if (string_is_empty(shader_dir) &&
+       !path_is_valid(shader_path))
+      return;
+
+   /* Cache file name */
+   file_name = path_basename_nocompression(shader_path);
+   if (!string_is_empty(file_name))
+      strlcpy(shader_file, file_name, file_len);
+}
+
+bool dir_init_shader_internal(
+      bool shader_remember_last_dir,
+      struct rarch_dir_shader_list *dir_list,
+      const char *shader_dir,
+      const char *shader_file_name,
+      bool show_hidden_files)
+{
+   size_t i;
+   struct string_list *new_list           = dir_list_new_special(
+         shader_dir, DIR_LIST_SHADERS, NULL, show_hidden_files);
+   bool search_file_name                  = shader_remember_last_dir &&
+         !string_is_empty(shader_file_name);
+
+   if (!new_list)
+      return false;
+
+   if (new_list->size < 1)
+   {
+      dir_list_free(new_list);
+      return false;
+   }
+
+   dir_list_sort(new_list, false);
+
+   dir_list->shader_list              = new_list;
+   dir_list->directory                = strdup(shader_dir);
+   dir_list->selection                = 0;
+   dir_list->shader_loaded            = false;
+   dir_list->remember_last_preset_dir = shader_remember_last_dir;
+
+   if (search_file_name)
+   {
+      for (i = 0; i < new_list->size; i++)
+      {
+         const char *file_name = NULL;
+         const char *file_path = new_list->elems[i].data;
+
+         if (string_is_empty(file_path))
+            continue;
+
+         /* If a shader file name has been provided,
+          * search the list for a match and set 'selection'
+          * index if found */
+         file_name = path_basename(file_path);
+
+         if (!string_is_empty(file_name) &&
+               string_is_equal(file_name, shader_file_name))
+         {
+            RARCH_LOG("[Shaders]: %s \"%s\"\n",
+                  msg_hash_to_str(MSG_FOUND_SHADER),
+                  file_path);
+
+            dir_list->selection = i;
+            break;
+         }
+      }
+   }
+
+   return true;
+}
+#endif

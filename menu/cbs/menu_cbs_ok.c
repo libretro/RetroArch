@@ -7023,7 +7023,9 @@ static int action_ok_manual_content_scan_start(const char *path,
    playlist_config.old_format          = settings->bools.playlist_use_old_format;
    playlist_config.compress            = settings->bools.playlist_compression;
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
+   playlist_config_set_base_content_directory(&playlist_config,
+         settings->bools.playlist_portable_paths ?
+               settings->paths.directory_menu_content : NULL);
 
    task_push_manual_content_scan(&playlist_config, directory_playlist);
    return 0;
@@ -7460,6 +7462,120 @@ static int action_ok_playlist_clean(const char *path,
    return 0;
 }
 
+static int action_ok_playlist_refresh(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   playlist_config_t *playlist_config = NULL;
+   playlist_t *playlist               = playlist_get_cached();
+   settings_t *settings               = config_get_ptr();
+   bool scan_record_valid             = false;
+   const char *msg_prefix             = NULL;
+   const char *msg_subject            = NULL;
+   const char *log_text               = NULL;
+   char system_name[256];
+
+   system_name[0] = '\0';
+
+   if (!playlist || !settings)
+      return -1;
+
+   playlist_config = playlist_get_config(playlist);
+
+   if (!playlist_config || string_is_empty(playlist_config->path))
+      return -1;
+
+   /* Configure manual scan using playlist record */
+   switch (manual_content_scan_set_menu_from_playlist(playlist,
+         settings->paths.path_content_database,
+         settings->bools.show_hidden_files))
+   {
+      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK:
+         scan_record_valid = true;
+         break;
+      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR:
+         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR);
+         msg_subject = playlist_get_scan_content_dir(playlist);
+         log_text    = "[Playlist Refresh]: Invalid content directory: %s\n";
+         break;
+      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME:
+         {
+            const char *playlist_file = NULL;
+
+            if ((playlist_file = path_basename(playlist_config->path)))
+            {
+               strlcpy(system_name, playlist_file, sizeof(system_name));
+               path_remove_extension(system_name);
+            }
+
+            msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME);
+            msg_subject = system_name;
+            log_text    = "[Playlist Refresh]: Invalid system name: %s\n";
+         }
+         break;
+      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CORE:
+         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE);
+         msg_subject = playlist_get_default_core_name(playlist);
+         log_text    = "[Playlist Refresh]: Invalid core name: %s\n";
+         break;
+      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_DAT_FILE:
+         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE);
+         msg_subject = playlist_get_scan_dat_file_path(playlist);
+         log_text    = "[Playlist Refresh]: Invalid arcade dat file: %s\n";
+         break;
+      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_DAT_FILE_TOO_LARGE:
+         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE);
+         msg_subject = playlist_get_scan_dat_file_path(playlist);
+         log_text    = "[Playlist Refresh]: Arcade dat file too large: %s\n";
+         break;
+      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_MISSING_CONFIG:
+      default:
+         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG);
+         msg_subject = path_basename(playlist_config->path);
+         log_text    = "[Playlist Refresh]: No scan record found: %s\n";
+         break;
+   }
+
+   /* Log errors in the event of an invalid
+    * scan record */
+   if (!scan_record_valid)
+   {
+      char msg[PATH_MAX_LENGTH];
+      msg[0] = '\0';
+
+      if (string_is_empty(msg_subject))
+         msg_subject = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+
+      snprintf(msg, sizeof(msg), "%s%s", msg_prefix, msg_subject);
+
+      RARCH_ERR(log_text, msg_subject);
+      runloop_msg_queue_push(msg, 1, 150, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      /* Even though this is a failure condition, we
+       * return 0 here to suppress any refreshing of
+       * the menu (this can appear ugly, depending
+       * on the active menu driver...) */
+      return 0;
+   }
+
+   /* Perform manual scan
+    * > Since we are refreshing the playlist,
+    *   additionally ensure that all pertinent
+    *   'playlist_config' parameters are synchronised
+    *   with the current settings struct */
+   playlist_config->capacity            = COLLECTION_SIZE;
+   playlist_config->old_format          = settings->bools.playlist_use_old_format;
+   playlist_config->compress            = settings->bools.playlist_compression;
+   playlist_config->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(playlist_config,
+         settings->bools.playlist_portable_paths ?
+               settings->paths.directory_menu_content : NULL);
+
+   task_push_manual_content_scan(playlist_config,
+         settings->paths.directory_playlist);
+   return 0;
+}
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -7740,6 +7856,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,           action_ok_push_playlist_manager_settings},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,        action_ok_playlist_reset_cores},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,   action_ok_playlist_refresh},
          {MENU_ENUM_LABEL_RECORDING_SETTINGS,                  action_ok_push_recording_settings_list},
          {MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,                  action_ok_push_input_hotkey_binds_list},
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},

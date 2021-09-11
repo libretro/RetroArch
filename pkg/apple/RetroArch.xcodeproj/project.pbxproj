@@ -620,7 +620,6 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
@@ -707,7 +706,6 @@
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_RWAV",
 					"-DHAVE_GETOPT_LONG",
-					"-DDONT_WANT_ARM_ASM_OPTIMIZATIONS",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;

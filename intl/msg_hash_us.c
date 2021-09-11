@@ -1324,15 +1324,15 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
             snprintf(s, len,
-                     "Max Nits\n"
+                     "Peak Luminance\n"
                              " \n"
-                             "Set the maximum no. nits the display can reproduce\n");
+                             "Set the peak luminance (in cd/m2) your display can reproduce - see RTings for your models peak luminance\n");
             break;
         case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
             snprintf(s, len,
-                     "Paper White Nits\n"
+                     "Paper White Luminance\n"
                              " \n"
-                             "Set the no. nits at which paper white should be\n");
+                             "Set the luminance at which paper white should be ie readable text or luminance at the top of the SDR range\n");
             break;
         case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
             snprintf(s, len,
@@ -1344,7 +1344,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Expand Gamut\n"
                              " \n"
-                             "Once converted to linear space should we use an expanded gamut to get to HDR10\n");
+                             "Once converted to linear space should we use an expanded colour gamut to get to HDR10\n");
             break;
         case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
             snprintf(s, len,

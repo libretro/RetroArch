@@ -29,6 +29,7 @@
 #if defined(HAVE_LIBSHAKE)
 #include <shake.h>
 #include "../../configuration.h"
+#include "../../config.def.h"
 #endif
 
 #if defined(RS90) || defined (RETROFW)
@@ -100,14 +101,10 @@ static dingux_joypad_t dingux_joypad;
 static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
 {
    settings_t *settings = config_get_ptr();
-   unsigned rumble_gain = settings ? settings->uints.input_dingux_rumble_gain : 0;
+   unsigned rumble_gain = settings ? settings->uints.input_rumble_gain
+                                   : DEFAULT_RUMBLE_GAIN;
    bool weak_uploaded   = false;
    bool strong_uploaded = false;
-
-   /* If gain is zero, rumble is disabled
-    * > No need to initialise device */
-   if (rumble_gain == 0)
-      goto error;
 
    if (Shake_NumOfDevices() < 1)
       goto error;
@@ -163,8 +160,7 @@ static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
    return true;
 
 error:
-   if (rumble_gain != 0)
-      RARCH_WARN("[libShake]: Input device does not support rumble effects.\n");
+   RARCH_WARN("[libShake]: Input device does not support rumble effects.\n");
 
    if (rumble->device)
    {
@@ -238,7 +234,8 @@ static bool sdl_dingux_joypad_set_rumble(unsigned pad,
 {
    dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
 
-   if (!joypad->rumble.device)
+   if ((pad != 0) ||
+       !joypad->rumble.device)
       return false;
 
    switch (effect)
@@ -254,6 +251,27 @@ static bool sdl_dingux_joypad_set_rumble(unsigned pad,
       default:
          break;
    }
+
+   return false;
+}
+
+static bool sdl_dingux_joypad_set_rumble_gain(unsigned pad, unsigned gain)
+{
+   dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
+
+   if ((pad != 0) ||
+       !joypad->rumble.device)
+      return false;
+
+   /* Gain is automatically capped by Shake_SetGain(),
+    * but do it explicitly here for clarity */
+   if (gain > 100)
+      gain = 100;
+
+   /* Set gain */
+   if (Shake_QueryGainSupport(joypad->rumble.device))
+      if (Shake_SetGain(joypad->rumble.device, (int)gain) == SHAKE_OK)
+         return true;
 
    return false;
 }
@@ -727,7 +745,9 @@ input_device_driver_t sdl_dingux_joypad = {
    sdl_dingux_joypad_poll,
 #if defined(HAVE_LIBSHAKE)
    sdl_dingux_joypad_set_rumble,
+   sdl_dingux_joypad_set_rumble_gain,
 #else
+   NULL,
    NULL,
 #endif
    sdl_dingux_joypad_name,

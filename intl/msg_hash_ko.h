@@ -1020,7 +1020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "코어설정을 변경합니다."
+   "코어 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -1044,7 +1044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "로그파일 설정을 변경합니다."
+   "로그 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1289,6 +1289,10 @@ MSG_HASH(
    "비디오 크기 설정을 변경합니다."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   "비디오 HDR 설정을 변경합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "동기화"
    )
@@ -1487,6 +1491,10 @@ MSG_HASH(
    "GPU 인덱스"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   "사용할 그래픽 카드를 선택합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "주사율"
    )
@@ -1667,7 +1675,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "비디오 화면비를 나타내는 부동소수점 값입니다(너비/높이). 화면비가 '설정'으로 되어있을 때 사용됩니다."
+   "사용될 비디오 화면비를 나타내는 부동소수점 값(너비/높이)입니다. 화면비가 'Config'로 설정되어 있을 때 사용됩니다."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1718,6 +1726,33 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "개발자가 의도적으로 비워두는 화면 가장자리 픽셀을 잘라냅니다."
+   )
+
+/* Settings > Video > HDR */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
+   "HDR 활성화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   "지원되는 디스플레이에서 HDR을 활성화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "최대 니트"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "페이퍼 화이트 니트"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "명암"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "색 영역 확장"
    )
 
 /* Settings > Video > Synchronization */
@@ -1824,6 +1859,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    "메뉴 사운드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "메뉴 소리 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -2279,16 +2318,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "장치 진동 사용 (지원 코어 한정)"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "진동 세기 (재시작 필요)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DINGUX_RUMBLE_GAIN,
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    "햅틱 피드백으로 사용될 진동의 세기를 설정합니다."
    )
-#endif
 
 /* Settings > Input > Menu Controls */
 
@@ -4538,6 +4575,14 @@ MSG_HASH(
    "'설정' 항목을 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "'옵션 디스크에 저장' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "'옵션 디스크에 저장' 항목을 '옵션 > 코어 옵션 관리'에 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    "'컨트롤' 표시"
    )
@@ -6445,6 +6490,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "모든 코어 옵션을 기본값으로 초기화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "옵션 디스크에 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   "현재 설정을 활성 옵션 파일에 강제로 작성합니다. 코어의 버그로 프론트엔드가 비정상 종료되는 등의 상황이 발생하더라도 변경한 옵션이 제대로 보존되게 합니다."
    )
 
 /* - Legacy (unused) */
@@ -10337,6 +10390,14 @@ MSG_HASH(
    "모든 코어 옵션이 기본값으로 초기화되었습니다."
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "코어 옵션 저장됨:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "코어 옵션을 저장할 수 없음:"
+   )
+MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "다음 드라이버를 찾을 수 없음"
    )
@@ -11529,6 +11590,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "화면 해상도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "디스플레이 모드를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

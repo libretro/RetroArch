@@ -654,7 +654,6 @@ DEFAULT_TITLE_MACRO(action_get_audio_mixer_settings_list,           MENU_ENUM_LA
 #endif
 DEFAULT_TITLE_MACRO(action_get_input_settings_list,             MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_latency_settings_list,           MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_core_cheat_options_list,         MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
 DEFAULT_TITLE_MACRO(action_get_load_content_list,               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_load_content_special,            MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_SPECIAL)
 DEFAULT_TITLE_MACRO(action_get_cursor_manager_list,             MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER)
@@ -753,6 +752,7 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_music_list,     MENU
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_title_deferred_video_list,     MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_updater_list,             MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_manager_list,             MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST)
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_cheat_options_list,       MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS)
 
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_video_shader_preset,    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load,        MENU_ENUM_LABEL_VALUE_CHEAT_FILE)

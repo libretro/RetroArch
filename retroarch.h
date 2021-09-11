@@ -94,6 +94,11 @@ enum rarch_ctl_state
    RARCH_CTL_IS_DUMMY_CORE,
    RARCH_CTL_IS_CORE_LOADED,
 
+#if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   RARCH_CTL_IS_SECOND_CORE_AVAILABLE,
+   RARCH_CTL_IS_SECOND_CORE_LOADED,
+#endif
+
    RARCH_CTL_IS_BPS_PREF,
    RARCH_CTL_UNSET_BPS_PREF,
 
@@ -2041,6 +2046,8 @@ void retroarch_init_task_queue(void);
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
+bool input_set_rumble_gain(unsigned gain);
+
 float input_get_sensor_state(unsigned port, unsigned id);
 
 bool input_set_sensor_state(unsigned port,
@@ -2108,6 +2115,8 @@ typedef enum apple_view_type
    APPLE_VIEW_TYPE_VULKAN,
    APPLE_VIEW_TYPE_METAL
 } apple_view_type_t;
+
+bool retroarch_get_current_savestate_path(char *path, size_t len);
 
 RETRO_END_DECLS
 

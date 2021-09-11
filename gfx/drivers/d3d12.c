@@ -1984,12 +1984,7 @@ static bool d3d12_gfx_frame(
 #if defined(_WIN32) && !defined(__WINRT__)
    win32_update_title();
 #endif
-#if 1
    DXGIPresent(d3d12->chain.handle, sync_interval, present_flags);
-#else
-   DXGI_PRESENT_PARAMETERS pp = { 0 };
-   DXGIPresent1(d3d12->swapchain, 0, 0, &pp);
-#endif
 
    /* Sync after Present for minimal delay */
    d3d12_gfx_sync(d3d12);

@@ -2,6 +2,7 @@ TARGET := retroarch_3ds_salamander
 LIBRETRO =
 
 DEBUG                   = 0
+CONSOLE_LOG             = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
@@ -93,6 +94,10 @@ ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g
 else
    CFLAGS	+= -O3
+endif
+
+ifeq ($(CONSOLE_LOG), 1)
+   CFLAGS	+= -DCONSOLE_LOG
 endif
 
 CFLAGS += -I. -Ideps/7zip -Ideps/stb -Ilibretro-common/include -Ilibretro-common/include/compat/zlib
