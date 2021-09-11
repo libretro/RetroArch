@@ -120,11 +120,15 @@ static void set_aspect(videocrt_switch_t *p_switch, unsigned int width,
       patched_width = width;
       patched_height = height;
    }
-   if (srm_isstretched && srm_width > 0)
+   if (srm_width >= 1920)
    {
       srm_xscale = srm_width/width;
+      RARCH_LOG("[CRT]: Super resolution detected. Fractal scaling check X:%f Y:%d \n", srm_xscale, (int)srm_yscale);
+   }
+   if (srm_isstretched && srm_width > 0 ){
+      srm_xscale = srm_width/width;
       srm_yscale = srm_height/height;
-      RARCH_LOG("[CRT]: Fractal scaling detected. Scaling X:%f Y:%f \n", srm_xscale, srm_yscale);
+      RARCH_LOG("[CRT]: Resolution is stretched. Fratcal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
    }
 
    scaled_width = roundf(patched_width*srm_xscale);
