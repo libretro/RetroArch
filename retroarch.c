@@ -12173,12 +12173,11 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             unsigned ai_service_mode  = settings->uints.ai_service_mode;
 
+#ifdef HAVE_AUDIOMIXER
             if (ai_service_mode == 1 && is_ai_service_speech_running())
             {
-#ifdef HAVE_AUDIOMIXER
                audio_driver_mixer_stop_stream(10);
                audio_driver_mixer_remove_stream(10);
-#endif
 #ifdef HAVE_ACCESSIBILITY
                if (is_accessibility_enabled(
                         accessibility_enable,
@@ -12189,8 +12188,10 @@ bool command_event(enum event_command cmd, void *data)
                         "stopped.", 10);
 #endif
             }
+            else
+#endif
 #ifdef HAVE_ACCESSIBILITY
-            else if (is_accessibility_enabled(
+            if (is_accessibility_enabled(
                      accessibility_enable,
                      p_rarch->accessibility_enabled) &&
                   ai_service_mode == 2 &&
@@ -24345,10 +24346,11 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    dir_free_shader(
          (struct rarch_dir_shader_list*)&p_rarch->dir_shader_list,
          p_rarch->configuration_settings->bools.video_shader_remember_last_dir);
-
+#endif
 #ifdef HAVE_THREADS
    if (is_threaded)
       return;
