@@ -7586,6 +7586,13 @@ static void osk_update_last_codepoint(
    const char *letter         = word;
    const char    *pos         = letter;
 
+   if (word[0] == 0)
+   {
+      *last_codepoint         = 0;
+      *last_codepoint_len     = 0;
+      return;
+   }
+
    for (;;)
    {
       unsigned codepoint      = utf8_walk(&letter);
@@ -7859,16 +7866,10 @@ bool menu_input_dialog_get_display_kb(void)
 
             input_keyboard_line_append(&p_rarch->keyboard_line, word);
 
-            if (word[0] == 0)
-            {
-               p_rarch->osk_last_codepoint       = 0;
-               p_rarch->osk_last_codepoint_len   = 0;
-            }
-            else
-               osk_update_last_codepoint(
-                     &p_rarch->osk_last_codepoint,
-                     &p_rarch->osk_last_codepoint_len,
-                     word);
+            osk_update_last_codepoint(
+                  &p_rarch->osk_last_codepoint,
+                  &p_rarch->osk_last_codepoint_len,
+                  word);
             buf[i+1]     = oldchar;
          }
       }
@@ -19134,16 +19135,10 @@ static void input_event_osk_append(
    else
    {
       input_keyboard_line_append(&p_rarch->keyboard_line, word);
-      if (word[0] == 0)
-      {
-         p_rarch->osk_last_codepoint       = 0;
-         p_rarch->osk_last_codepoint_len   = 0;
-      }
-      else
-         osk_update_last_codepoint(
-               &p_rarch->osk_last_codepoint,
-               &p_rarch->osk_last_codepoint_len,
-               word);
+      osk_update_last_codepoint(
+            &p_rarch->osk_last_codepoint,
+            &p_rarch->osk_last_codepoint_len,
+            word);
    }
 }
 
@@ -20692,20 +20687,12 @@ static bool input_keyboard_line_event(
       word     = array;
    }
 
+   /* OSK - update last character */
    if (word)
-   {
-      /* OSK - update last character */
-      if (word[0] == 0)
-      {
-         p_rarch->osk_last_codepoint     = 0;
-         p_rarch->osk_last_codepoint_len = 0;
-      }
-      else
-         osk_update_last_codepoint(
-               &p_rarch->osk_last_codepoint,
-               &p_rarch->osk_last_codepoint_len,
-               word);
-   }
+      osk_update_last_codepoint(
+            &p_rarch->osk_last_codepoint,
+            &p_rarch->osk_last_codepoint_len,
+            word);
 
    return ret;
 }
