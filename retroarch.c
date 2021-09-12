@@ -14432,6 +14432,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_system_av_info *av_info     = &p_rarch->video_driver_av_info;
          if (data)
          {
+            int reinit_flags                      = DRIVERS_CMD_ALL;
             settings_t *settings                  = p_rarch->configuration_settings;
             float refresh_rate                    = (*info)->timing.fps;
             unsigned crt_switch_resolution        = settings->uints.crt_switch_resolution;
@@ -14497,9 +14498,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             /* When not doing video reinit, we also must not do input and menu
              * reinit, otherwise the input driver crashes and the menu gets
              * corrupted. */
-            int reinit_flags = no_video_reinit ?
-                    DRIVERS_CMD_ALL & ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK | DRIVER_MENU_MASK)
-                  : DRIVERS_CMD_ALL;
+            if (no_video_reinit)
+               reinit_flags = 
+                  DRIVERS_CMD_ALL & 
+                  ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK |
+                                        DRIVER_MENU_MASK);
 
             RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO: %ux%u, aspect: %.3f, fps: %.3f, sample rate: %.2f Hz.\n",
                   (*info)->geometry.base_width, (*info)->geometry.base_height,
