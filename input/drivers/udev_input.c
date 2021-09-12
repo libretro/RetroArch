@@ -550,12 +550,14 @@ static int udev_input_add_device(udev_input_t *udev,
           struct input_absinfo absinfo;
           if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) != -1)
           {
+             /* This shouldnt happen log if it does */
              if (absinfo.minimum >= absinfo.maximum )   RARCH_LOG("[udev]: ABS_X MIN>=MAX min=%d , max=%d =%d\n", absinfo.minimum, absinfo.maximum );
              device->mouse.x_min = absinfo.minimum;
              device->mouse.x_max = absinfo.maximum;
           }
           if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) != -1)
           {
+             /* This shouldnt happen log if it does */
              if (absinfo.minimum >= absinfo.maximum )   RARCH_LOG("[udev]: ABS_Y MIN>=MAX min=%d , max=%d =%d\n",  absinfo.minimum, absinfo.maximum );
              device->mouse.y_min = absinfo.minimum;
              device->mouse.y_max = absinfo.maximum;
