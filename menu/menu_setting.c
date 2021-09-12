@@ -1303,6 +1303,7 @@ static void setting_get_string_representation_st_bind(rarch_setting_t *setting,
    unsigned index_offset                 = 0;
    const struct retro_keybind* keybind   = NULL;
    const struct retro_keybind* auto_bind = NULL;
+   settings_t *settings                  = config_get_ptr();
 
    if (!setting)
       return;
@@ -1312,7 +1313,7 @@ static void setting_get_string_representation_st_bind(rarch_setting_t *setting,
    auto_bind    = (const struct retro_keybind*)
       input_config_get_bind_auto(index_offset, keybind->id);
 
-   input_config_get_bind_string(s, keybind, auto_bind, len);
+   input_config_get_bind_string(settings, s, keybind, auto_bind, len);
 }
 
 static int setting_action_action_ok(

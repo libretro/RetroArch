@@ -144,7 +144,8 @@ uint8_t input_config_bind_map_get_retro_key(unsigned index);
  * @param auto_bind  A default binding which will be used after `bind`. Can be NULL.
  * @param size       The maximum length that will be written to `buf`
  */
-void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
+void input_config_get_bind_string(void *settings_data,
+      char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size);
 
 /**

@@ -9969,7 +9969,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(port, retro_id);
 
-                     input_config_get_bind_string(descriptor,
+                     input_config_get_bind_string(settings, descriptor,
                            keybind, auto_bind, sizeof(descriptor));
 
                      if (!strstr(descriptor, "Auto"))
@@ -10020,7 +10020,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(port, retro_id);
 
-                     input_config_get_bind_string(descriptor,
+                     input_config_get_bind_string(settings, descriptor,
                            keybind, auto_bind, sizeof(descriptor));
 
                      if (!strstr(descriptor, "Auto"))
