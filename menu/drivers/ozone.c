@@ -2685,14 +2685,14 @@ static void ozone_draw_sidebar(
       unsigned video_width,
       unsigned video_height,
       bool libretro_running,
-      float menu_framebuffer_opacity
+      float menu_framebuffer_opacity,
+      math_matrix_4x4 *mymat
       )
 {
    size_t y;
    int entry_width;
    char console_title[255];
    unsigned i, sidebar_height;
-   math_matrix_4x4 mymat;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const
@@ -2845,18 +2845,6 @@ static void ozone_draw_sidebar(
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
-   {
-      gfx_display_ctx_rotate_draw_t rotate_draw;
-      rotate_draw.matrix       = &mymat;
-      rotate_draw.rotation     = 0.0f;
-      rotate_draw.scale_x      = 1.0f;
-      rotate_draw.scale_y      = 1.0f;
-      rotate_draw.scale_z      = 1.0f;
-      rotate_draw.scale_enable = true;
-
-      gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
-   }
-
    for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
    {
       enum msg_hash_enums value_idx;
@@ -2886,7 +2874,7 @@ static void ozone_draw_sidebar(
             0.0f,
             1.0f,
             col,
-            &mymat);
+            mymat);
 
       value_idx = ozone_system_tabs_value[ozone->tabs[i]];
       title     = msg_hash_to_str(value_idx);
@@ -2971,7 +2959,7 @@ static void ozone_draw_sidebar(
                0.0f,
                1.0f,
                col,
-               &mymat);
+               mymat);
 
          /* Text */
          if (ozone->sidebar_collapsed)
@@ -8408,7 +8396,7 @@ static void ozone_draw_header(
                   0.0f,
                   1.0f,
                   col,
-                  &mymat);
+                  mymat);
          else
 #endif
             ozone_draw_icon(
@@ -9238,7 +9226,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_width,
             video_height,
             libretro_running,
-            menu_framebuffer_opacity);
+            menu_framebuffer_opacity,
+            &mymat);
 
    /* Menu entries */
    gfx_display_scissor_begin(p_disp,
