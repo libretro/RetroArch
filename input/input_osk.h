@@ -49,6 +49,20 @@ enum osk_type
 
 int input_event_get_osk_ptr(void);
 
+void input_event_osk_append(
+      input_keyboard_line_t *keyboard_line,
+      enum osk_type *osk_idx,
+      unsigned *osk_last_codepoint,
+      unsigned *osk_last_codepoint_len,
+      int ptr,
+      bool show_symbol_pages,
+      const char *word);
+
+void osk_update_last_codepoint(
+      unsigned *last_codepoint,
+      unsigned *last_codepoint_len,
+      const char *word);
+
 char **input_event_get_osk_grid(void);
 
 RETRO_END_DECLS

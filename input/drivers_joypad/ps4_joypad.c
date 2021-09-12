@@ -242,6 +242,7 @@ input_device_driver_t ps4_joypad = {
    ps4_joypad_axis,
    ps4_joypad_poll,
    ps4_joypad_rumble,
+   NULL,
    ps4_joypad_name,
    "ps4",
 };

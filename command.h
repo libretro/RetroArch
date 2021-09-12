@@ -23,12 +23,15 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "retroarch.h"
-#include "input/input_defines.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <streams/interface_stream.h>
+
+#include "retroarch.h"
+#include "input/input_defines.h"
+
 
 RETRO_BEGIN_DECLS
 
@@ -280,12 +283,116 @@ command_t* command_uds_new(void);
 
 bool command_network_send(const char *cmd_);
 
-/* These forward declarations need to be declared before
- * the global state is declared */
+#ifdef HAVE_BSV_MOVIE
+struct bsv_state
+{
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+
+   bool movie_start_recording;
+   bool movie_start_playback;
+   bool movie_playback;
+   bool eof_exit;
+   bool movie_end;
+
+};
+
+struct bsv_movie
+{
+   intfstream_t *file;
+   uint8_t *state;
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
+   size_t frame_mask;
+   size_t frame_ptr;
+   size_t min_file_pos;
+   size_t state_size;
+
+   bool playback;
+   bool first_rewind;
+   bool did_rewind;
+};
+
+typedef struct bsv_movie bsv_movie_t;
+#endif
+
+#ifdef HAVE_CONFIGFILE
+bool command_event_save_config(
+      const char *config_path,
+      char *s, size_t len);
+#endif
+
+void command_event_undo_save_state(char *s, size_t len);
+
+void command_event_undo_load_state(char *s, size_t len);
+
+void command_event_set_mixer_volume(
+      settings_t *settings,
+      float gain);
+
+bool command_event_resize_windowed_scale(settings_t *settings,
+      unsigned window_scale);
+
+bool command_event_save_auto_state(
+      bool savestate_auto_save,
+      global_t *global,
+      const enum rarch_core_type current_core_type);
+
+/**
+ * event_set_volume:
+ * @gain      : amount of gain to be applied to current volume level.
+ *
+ * Adjusts the current audio volume level.
+ *
+ **/
+void command_event_set_volume(
+      settings_t *settings,
+      float gain,
+      bool widgets_active,
+      bool audio_driver_mute_enable);
+
+/**
+ * command_event_init_controllers:
+ *
+ * Initialize libretro controllers.
+ **/
+void command_event_init_controllers(rarch_system_info_t *info,
+      settings_t *settings, unsigned num_active_users);
+
+void command_event_load_auto_state(global_t *global);
+
+void command_event_set_savestate_auto_index(
+      settings_t *settings,
+      const global_t *global);
+
+void command_event_set_savestate_garbage_collect(
+      const global_t *global,
+      unsigned max_to_keep,
+      bool show_hidden_files
+      );
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg);
 #endif
+
+#ifdef HAVE_CHEATS
+void command_event_init_cheats(
+      bool apply_cheats_after_load,
+      const char *path_cheat_db,
+      void *bsv_movie_data);
+#endif
+
 #if defined(HAVE_COMMAND)
+struct cmd_action_map
+{
+   const char *str;
+   bool (*action)(command_t* cmd, const char *arg);
+   const char *arg_desc;
+};
+
 bool command_version(command_t *cmd, const char* arg);
 bool command_get_status(command_t *cmd, const char* arg);
 bool command_get_config_param(command_t *cmd, const char* arg);
@@ -296,13 +403,13 @@ bool command_write_ram(command_t *cmd, const char *arg);
 #endif
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
-
-struct cmd_action_map
-{
-   const char *str;
-   bool (*action)(command_t* cmd, const char *arg);
-   const char *arg_desc;
-};
+uint8_t *command_memory_get_pointer(
+      const rarch_system_info_t* system,
+      unsigned address,
+      unsigned int* max_bytes,
+      int for_write,
+      char *reply_at,
+      size_t len);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -373,6 +480,7 @@ static const struct cmd_map map[] = {
    { "AI_SERVICE",             RARCH_AI_SERVICE },
 };
 #endif
+
 
 RETRO_END_DECLS
 

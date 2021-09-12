@@ -219,6 +219,7 @@ input_device_driver_t ctr_joypad = {
    ctr_joypad_axis,
    ctr_joypad_poll,
    NULL,
+   NULL,
    ctr_joypad_name,
    "ctr",
 };

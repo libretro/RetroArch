@@ -287,7 +287,7 @@ QWidget *UserBindsPage::widget()
             (const struct retro_keybind*)
             input_config_get_bind_auto(p, retro_id);
 
-         input_config_get_bind_string(descriptor,
+         input_config_get_bind_string(settings, descriptor,
             keybind, auto_bind, sizeof(descriptor));
 
          const struct retro_keybind *keyptr =

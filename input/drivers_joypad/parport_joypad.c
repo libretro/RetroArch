@@ -412,6 +412,7 @@ input_device_driver_t parport_joypad = {
    parport_joypad_axis,
    parport_joypad_poll,
    NULL,
+   NULL,
    parport_joypad_name,
    "parport",
 };

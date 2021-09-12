@@ -456,6 +456,7 @@ input_device_driver_t switch_joypad = {
 #else
    NULL, /* set_rumble */
 #endif
+   NULL,
    switch_joypad_name,
    "switch"
 };

@@ -2055,6 +2055,8 @@ void retroarch_init_task_queue(void);
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
+bool input_set_rumble_gain(unsigned gain);
+
 float input_get_sensor_state(unsigned port, unsigned id);
 
 bool input_set_sensor_state(unsigned port,

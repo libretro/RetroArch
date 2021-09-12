@@ -481,6 +481,7 @@ input_device_driver_t mfi_joypad = {
     apple_gamecontroller_joypad_axis,
     apple_gamecontroller_joypad_poll,
     NULL,
+    NULL,
     apple_gamecontroller_joypad_name,
     "mfi",
 };
