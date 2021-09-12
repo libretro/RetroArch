@@ -501,7 +501,7 @@ static int udev_input_add_device(udev_input_t *udev,
    udev_input_device_t *device = NULL;
 
    memset(keycaps, '\0', sizeof (keycaps));
-   memset(keycaps, '\0', sizeof (abscaps));
+   memset(abscaps, '\0', sizeof (abscaps));
     
    st.st_dev                   = 0;
 
@@ -543,20 +543,23 @@ static int udev_input_add_device(udev_input_t *udev,
               } 
           } 
       } 
-      device->mouse.x_min = device->mouse.y_min = device->mouse.x_max = device->mouse.y_max = 0;
+      device->mouse.x_min = device->mouse.y_min = device->mouse.x_max = device->mouse.y_max = -1;
 
       if (has_absolutes)
       {
           struct input_absinfo absinfo;
-          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
-              return 0;
-          device->mouse.x_min = absinfo.minimum;
-          device->mouse.x_max = absinfo.maximum;
-
-          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
-              return 0;
-          device->mouse.y_min = absinfo.minimum;
-          device->mouse.y_max = absinfo.maximum;
+          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) != -1)
+          {
+             if (absinfo.minimum >= absinfo.maximum )   RARCH_LOG("[udev]: ABS_X MIN>=MAX min=%d , max=%d =%d\n", absinfo.minimum, absinfo.maximum );
+             device->mouse.x_min = absinfo.minimum;
+             device->mouse.x_max = absinfo.maximum;
+          }
+          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) != -1)
+          {
+             if (absinfo.minimum >= absinfo.maximum )   RARCH_LOG("[udev]: ABS_Y MIN>=MAX min=%d , max=%d =%d\n",  absinfo.minimum, absinfo.maximum );
+             device->mouse.y_min = absinfo.minimum;
+             device->mouse.y_max = absinfo.maximum;
+          }
       } 
 
    }
