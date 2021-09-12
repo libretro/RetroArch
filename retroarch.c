@@ -27782,7 +27782,7 @@ void video_driver_set_hdr_contrast(float contrast)
    struct rarch_state            *p_rarch = &rarch_st;
    if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_contrast)
       p_rarch->video_driver_poke->set_hdr_contrast(p_rarch->video_driver_data,
-            contrast);
+            VIDEO_HDR_MAX_CONTRAST - contrast);
 }
 
 void video_driver_set_hdr_expand_gamut(bool expand_gamut)
@@ -27791,6 +27791,89 @@ void video_driver_set_hdr_expand_gamut(bool expand_gamut)
    if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_expand_gamut)
       p_rarch->video_driver_poke->set_hdr_expand_gamut(p_rarch->video_driver_data,
             expand_gamut);
+}
+
+// Use this value as a replacement for anywhere where a pure white colour value is used in the UI.  
+// When HDR is turned on 1,1,1,1 should never really be used as this is peak brightness and could cause damage to displays over long periods of time 
+// and be quite hard to look at on really bright displays.  
+//Use paper white instead which is always defined as 0.5,0.5,0.5,1.0 or in other words is the top of the old sdr range
+unsigned video_driver_get_hdr_paper_white()
+{
+   settings_t *settings                = config_get_ptr();
+   
+   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
+   {
+      // 0.5, 0.5, 0.5, 1
+      return 0x7f7f7fff;
+   }
+   else
+   {
+      return 0xffffffff;
+   }
+}
+
+// Same as above but returns the white value in floats 
+float* video_driver_get_hdr_paper_white_float()
+{
+   settings_t *settings                = config_get_ptr();
+   
+   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
+   {
+      static float g_paper_white[4] = { 0.5f, 0.5f, 0.5f, 1.0f};
+      return g_paper_white;
+   }
+   else
+   {
+      static float g_sdr_white[4] = { 1.0f, 1.0f, 1.0f, 1.0f};
+      return g_sdr_white;
+   }
+}
+
+// This is useful to create a hdr white based off of some passed in nit level - say you want a slightly brighter than paper white value for some parts of the UI 
+float video_driver_get_hdr_luminace(float nits)
+{
+   settings_t *settings                = config_get_ptr();
+   
+   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
+   {
+      float luminance = nits / settings->floats.video_hdr_paper_white_nits;
+
+      return luminance / (1.0f + luminance);
+   }
+   else
+   {
+      return nits;
+   }
+}
+
+// Get reinhard tone mapped colour value for UI elements when using HDR and its inverse tonemapper - normally dont use 
+// but useful if you want a specific colour to look the same after inverse tonemapping has been applied
+unsigned video_driver_get_hdr_color(unsigned color)
+{
+   settings_t *settings                = config_get_ptr();
+   
+   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
+   {
+      float rgb[3];
+      float Yxy[3];
+
+      rgb[0] = (float)((color >> 24) & 0xFF) / 255.0f;
+      rgb[1] = (float)((color >> 16) & 0xFF) / 255.0f;
+      rgb[2] = (float)((color >> 8 ) & 0xFF) / 255.0f;
+
+      RGBToYxy(rgb, Yxy);
+
+      float luminance = Yxy[0];                 //TODO: We should probably scale this by average luminance
+      Yxy[0] = luminance / (1.0f + luminance);
+      
+      YxyToRGB(rgb, Yxy);
+
+      return ((unsigned)(saturate(rgb[0]) * 255.0f) << 24) | ((unsigned)(saturate(rgb[1]) * 255.0f) << 16) | ((unsigned)(saturate(rgb[2]) * 255.0f) << 8) | (color & 0xFF);
+   }
+   else
+   {
+      return color;
+   }
 }
 
 void video_driver_cached_frame_set(const void *data, unsigned width,

@@ -238,14 +238,6 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-#if 0
-   d3d12->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
-   d3d12->hdr.ubo_values.maxNits          = settings->floats.video_hdr_max_nits;
-   d3d12->hdr.ubo_values.paperWhiteNits   = settings->floats.video_hdr_paper_white_nits;
-   d3d12->hdr.ubo_values.contrast         = settings->floats.video_hdr_contrast;
-   d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
-#endif
-
 #ifdef HAVE_DXGI_HDR
 static void d3d12_set_hdr_max_nits(void* data, float max_nits)
 {
@@ -1155,8 +1147,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->hdr.ubo_values.mvp              = d3d12->mvp_no_rot; 
    d3d12->hdr.ubo_values.maxNits          = settings->floats.video_hdr_max_nits;
    d3d12->hdr.ubo_values.paperWhiteNits   = settings->floats.video_hdr_paper_white_nits;
-   d3d12->hdr.ubo_values.contrast         = settings->floats.video_hdr_contrast;
+   d3d12->hdr.ubo_values.contrast         = VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast;
    d3d12->hdr.ubo_values.expandGamut      = settings->bools.video_hdr_expand_gamut;
+   d3d12->hdr.ubo_values.inverse_tonemap  = 1.0f;     // Use this to turn on/off the inverse tonemap   
 
    {
       dxgi_hdr_uniform_t* mapped_ubo;
@@ -1443,11 +1436,17 @@ static bool d3d12_gfx_frame(
          dxgi_swapchain_color_space(d3d12->chain.handle,
                &d3d12->chain.color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+
+         d3d12->chain.bit_depth  = DXGI_SWAPCHAIN_BIT_DEPTH_10;
       }
       else
+      {
          dxgi_swapchain_color_space(d3d12->chain.handle,
                &d3d12->chain.color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
+               
+         d3d12->chain.bit_depth  = DXGI_SWAPCHAIN_BIT_DEPTH_8;
+      }
 
       dxgi_set_hdr_metadata(
             d3d12->chain.handle,

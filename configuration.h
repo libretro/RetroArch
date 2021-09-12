@@ -347,7 +347,7 @@ typedef struct settings
       float video_msg_bgcolor_opacity;
       float video_hdr_max_nits;
       float video_hdr_paper_white_nits;
-      float video_hdr_contrast;
+      float video_hdr_display_contrast;
 
       float menu_scale_factor;
       float menu_widget_scale_factor;

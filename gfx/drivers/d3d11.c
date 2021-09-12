@@ -1151,9 +1151,10 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->hdr.ubo_values.paperWhiteNits = 
          settings->floats.video_hdr_paper_white_nits;
       d3d11->hdr.ubo_values.contrast       = 
-         settings->floats.video_hdr_contrast;
+         VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast;
       d3d11->hdr.ubo_values.expandGamut    = 
          settings->bools.video_hdr_expand_gamut;
+      d3d11->hdr.ubo_values.inverse_tonemap = 1.0f;  // Use this to turn on/off the inverse tonemap   
 
       desc.ByteWidth                       = sizeof(dxgi_hdr_uniform_t);
       desc.Usage                           = D3D11_USAGE_DYNAMIC;
@@ -1743,12 +1744,18 @@ static bool d3d11_gfx_frame(
                d3d11->swapChain,
                &d3d11->chain_color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+
+         d3d11->chain_bit_depth  = DXGI_SWAPCHAIN_BIT_DEPTH_10;
       }
       else
+      {
          dxgi_swapchain_color_space(
                d3d11->swapChain,
                &d3d11->chain_color_space,
                DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
+
+         d3d11->chain_bit_depth  = DXGI_SWAPCHAIN_BIT_DEPTH_8;
+      }
 
       dxgi_set_hdr_metadata(
             d3d11->swapChain,
@@ -2103,6 +2110,9 @@ static bool d3d11_gfx_frame(
       D3D11Draw(context, 4, 0);
 
       D3D11SetPShaderResources(context, 0, 1, nullSRV);
+      D3D11SetRasterizerState(context, d3d11->scissor_enabled);
+      D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+      D3D11SetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
    }
 #endif
 

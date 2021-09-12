@@ -4,10 +4,11 @@ SRC(
    struct UBO
    {
       float4x4 modelViewProj;
-      float contrast;       /* 2.0f;      */ 
-      float paperWhiteNits; /* 200.0f;    */
-      float maxNits;        /* 1000.0f;   */
-      float expandGamut;    /* 1.0f;      */ 
+      float contrast;         /* 2.0f;      */ 
+      float paperWhiteNits;   /* 200.0f;    */
+      float maxNits;          /* 1000.0f;   */
+      float expandGamut;      /* 1.0f;      */ 
+      float inverse_tonemap;
    };
    uniform UBO global;
 
@@ -73,29 +74,38 @@ SRC(
 
    float4 Hdr(float4 sdr)
    {
-      sdr.xyz = pow(abs(sdr.xyz), 2.2f / global.contrast );               /* Display Gamma - needs to be determined by calibration screen */
-
-      float luma = dot(sdr.xyz, float3(0.2126, 0.7152, 0.0722));  /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
-
-      /* Inverse reinhard tonemap */
-      float maxValue             = (global.maxNits / global.paperWhiteNits) + kEpsilon;
-      float elbow                = maxValue / (maxValue - 1.0f);                          /* Convert (1.0 + epsilon) to infinite to range 1001 -> 1.0 */ 
-      float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));              /* Convert 1001 to 1.0 to range 0.5 -> 1.0 */
+      float3 hdr;
       
-      float hdrLumaInvTonemap    = offset + ((luma * elbow) / (elbow - luma));
-      float sdrLumaInvTonemap    = luma / ((1.0f + kEpsilon) - luma);                     /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
+      if(global.inverse_tonemap)
+      {
+         sdr.xyz = pow(abs(sdr.xyz), global.contrast / 2.2f );               /* Display Gamma - needs to be determined by calibration screen */
 
-      float lumaInvTonemap       = (luma > 0.5f) ? hdrLumaInvTonemap : sdrLumaInvTonemap;
-      float3 perLuma             = sdr.xyz / (luma + kEpsilon) * lumaInvTonemap;
+         float luma = dot(sdr.xyz, float3(0.2126, 0.7152, 0.0722));  /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
 
-      float3 hdrInvTonemap       = offset + ((sdr.xyz * elbow) / (elbow - sdr.xyz));         
-      float3 sdrInvTonemap       = sdr.xyz / ((1.0f + kEpsilon) - sdr.xyz);               /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
+         /* Inverse reinhard tonemap */
+         float maxValue             = (global.maxNits / global.paperWhiteNits) + kEpsilon;
+         float elbow                = maxValue / (maxValue - 1.0f);                          /* Convert (1.0 + epsilon) to infinite to range 1001 -> 1.0 */ 
+         float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));              /* Convert 1001 to 1.0 to range 0.5 -> 1.0 */
+         
+         float hdrLumaInvTonemap    = offset + ((luma * elbow) / (elbow - luma));
+         float sdrLumaInvTonemap    = luma / ((1.0f + kEpsilon) - luma);                     /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
 
-      float3 perChannel          = float3(sdr.x > 0.5f ? hdrInvTonemap.x : sdrInvTonemap.x,
-                                          sdr.y > 0.5f ? hdrInvTonemap.y : sdrInvTonemap.y,
-                                          sdr.z > 0.5f ? hdrInvTonemap.z : sdrInvTonemap.z);
+         float lumaInvTonemap       = (luma > 0.5f) ? hdrLumaInvTonemap : sdrLumaInvTonemap;
+         float3 perLuma             = sdr.xyz / (luma + kEpsilon) * lumaInvTonemap;
 
-      float3 hdr = lerp(perLuma, perChannel, kLumaChannelRatio);
+         float3 hdrInvTonemap       = offset + ((sdr.xyz * elbow) / (elbow - sdr.xyz));         
+         float3 sdrInvTonemap       = sdr.xyz / ((1.0f + kEpsilon) - sdr.xyz);               /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
+
+         float3 perChannel          = float3(sdr.x > 0.5f ? hdrInvTonemap.x : sdrInvTonemap.x,
+                                             sdr.y > 0.5f ? hdrInvTonemap.y : sdrInvTonemap.y,
+                                             sdr.z > 0.5f ? hdrInvTonemap.z : sdrInvTonemap.z);
+
+         hdr = lerp(perLuma, perChannel, kLumaChannelRatio);
+      }
+      else
+      {
+         hdr = SRGBToLinear(sdr.xyz);
+      }
 
       /* Now convert into HDR10 */
       float3 rec2020 = mul(k709to2020, hdr);
