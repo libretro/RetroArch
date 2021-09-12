@@ -1542,6 +1542,7 @@ struct rarch_state
    float *audio_driver_input_data;
    float video_driver_core_hz;
    float video_driver_aspect_ratio;
+   float video_refresh_rate_original;
 
 #ifdef HAVE_AUDIOMIXER
    float audio_driver_mixer_volume_gain;
