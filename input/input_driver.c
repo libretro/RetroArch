@@ -19,10 +19,12 @@
 
 #include <math.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 #include <clamping.h>
 
 #include "input_driver.h"
 #include "input_keymaps.h"
+#include "input_osk.h"
 
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
@@ -2012,5 +2014,79 @@ void input_config_get_bind_string_joyaxis(
       }
       snprintf(buf, size, "%s%c%u (%s)", prefix, dir, axis,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   }
+}
+
+void osk_update_last_codepoint(
+      unsigned *last_codepoint,
+      unsigned *last_codepoint_len,
+      const char *word)
+{
+   const char *letter         = word;
+   const char    *pos         = letter;
+
+   if (word[0] == 0)
+   {
+      *last_codepoint         = 0;
+      *last_codepoint_len     = 0;
+      return;
+   }
+
+   for (;;)
+   {
+      unsigned codepoint      = utf8_walk(&letter);
+      if (letter[0] == 0)
+      {
+         *last_codepoint      = codepoint;
+         *last_codepoint_len  = (unsigned)(letter - pos);
+         break;
+      }
+      pos                     = letter;
+   }
+}
+
+void input_event_osk_append(
+      input_keyboard_line_t *keyboard_line,
+      enum osk_type *osk_idx,
+      unsigned *osk_last_codepoint,
+      unsigned *osk_last_codepoint_len,
+      int ptr,
+      bool show_symbol_pages,
+      const char *word)
+{
+#ifdef HAVE_LANGEXTRA
+   if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
+      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+   else if (string_is_equal(word, "\xe2\x8f\x8e")) /* return character */
+      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+   else
+   if (string_is_equal(word, "\xe2\x87\xa7")) /* up arrow */
+      *osk_idx = OSK_UPPERCASE_LATIN;
+   else if (string_is_equal(word, "\xe2\x87\xa9")) /* down arrow */
+      *osk_idx = OSK_LOWERCASE_LATIN;
+   else if (string_is_equal(word,"\xe2\x8a\x95")) /* plus sign (next button) */
+#else
+   if (string_is_equal(word, "Bksp"))
+      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+   else if (string_is_equal(word, "Enter"))
+      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+   else
+   if (string_is_equal(word, "Upper"))
+      *osk_idx = OSK_UPPERCASE_LATIN;
+   else if (string_is_equal(word, "Lower"))
+      *osk_idx = OSK_LOWERCASE_LATIN;
+   else if (string_is_equal(word, "Next"))
+#endif
+      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
+         *osk_idx = (enum osk_type)(*osk_idx + 1);
+      else
+         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+   else
+   {
+      input_keyboard_line_append(keyboard_line, word);
+      osk_update_last_codepoint(
+            osk_last_codepoint,
+            osk_last_codepoint_len,
+            word);
    }
 }

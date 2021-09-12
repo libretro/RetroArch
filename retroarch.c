@@ -7578,33 +7578,6 @@ bool gfx_widgets_ready(void)
 #endif
 }
 
-static void osk_update_last_codepoint(
-      unsigned *last_codepoint,
-      unsigned *last_codepoint_len,
-      const char *word)
-{
-   const char *letter         = word;
-   const char    *pos         = letter;
-
-   if (word[0] == 0)
-   {
-      *last_codepoint         = 0;
-      *last_codepoint_len     = 0;
-      return;
-   }
-
-   for (;;)
-   {
-      unsigned codepoint      = utf8_walk(&letter);
-      if (letter[0] == 0)
-      {
-         *last_codepoint      = codepoint;
-         *last_codepoint_len  = (unsigned)(letter - pos);
-         break;
-      }
-      pos                     = letter;
-   }
-}
 
 #ifdef HAVE_MENU
 static void menu_input_search_cb(void *userdata, const char *str)
@@ -19099,49 +19072,6 @@ static int16_t input_state(unsigned port, unsigned device,
 
 /* MENU INPUT */
 #ifdef HAVE_MENU
-static void input_event_osk_append(
-      struct rarch_state *p_rarch,
-      enum osk_type *osk_idx, int ptr,
-      bool show_symbol_pages,
-      const char *word)
-{
-#ifdef HAVE_LANGEXTRA
-   if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
-      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(word, "\xe2\x8f\x8e")) /* return character */
-      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else
-   if (string_is_equal(word, "\xe2\x87\xa7")) /* up arrow */
-      *osk_idx = OSK_UPPERCASE_LATIN;
-   else if (string_is_equal(word, "\xe2\x87\xa9")) /* down arrow */
-      *osk_idx = OSK_LOWERCASE_LATIN;
-   else if (string_is_equal(word,"\xe2\x8a\x95")) /* plus sign (next button) */
-#else
-   if (string_is_equal(word, "Bksp"))
-      input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(word, "Enter"))
-      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else
-   if (string_is_equal(word, "Upper"))
-      *osk_idx = OSK_UPPERCASE_LATIN;
-   else if (string_is_equal(word, "Lower"))
-      *osk_idx = OSK_LOWERCASE_LATIN;
-   else if (string_is_equal(word, "Next"))
-#endif
-      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
-         *osk_idx = (enum osk_type)(*osk_idx + 1);
-      else
-         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
-   else
-   {
-      input_keyboard_line_append(&p_rarch->keyboard_line, word);
-      osk_update_last_codepoint(
-            &p_rarch->osk_last_codepoint,
-            &p_rarch->osk_last_codepoint_len,
-            word);
-   }
-}
-
 /*
  * This function gets called in order to process all input events
  * for the current frame.
@@ -19467,8 +19397,10 @@ static unsigned menu_event(
       {
          if (p_rarch->osk_ptr >= 0)
             input_event_osk_append(
-                  p_rarch,
+                  &p_rarch->keyboard_line,
                   &p_rarch->osk_idx,
+                  &p_rarch->osk_last_codepoint,
+                  &p_rarch->osk_last_codepoint_len,
                   p_rarch->osk_ptr,
                   show_osk_symbols,
                   p_rarch->osk_grid[p_rarch->osk_ptr]);
@@ -19923,8 +19855,10 @@ static int menu_input_pointer_post_iterate(
 
                   p_rarch->osk_ptr = point.retcode;
                   input_event_osk_append(
-                        p_rarch,
+                        &p_rarch->keyboard_line,
                         &p_rarch->osk_idx,
+                        &p_rarch->osk_last_codepoint,
+                        &p_rarch->osk_last_codepoint_len,
                         point.retcode,
                         show_osk_symbols,
                         p_rarch->osk_grid[p_rarch->osk_ptr]);
