@@ -3532,11 +3532,10 @@ static int xmb_draw_item(
             entry.enum_idx, entry_type, (i == current), entry.checked);
       float x                  = icon_x;
       float y                  = icon_y;
-      float rotation           = 0;
       float scale_factor       = node->zoom;
 
       rotate_draw.matrix       = &mymat_tmp;
-      rotate_draw.rotation     = rotation;
+      rotate_draw.rotation     = 0;
       rotate_draw.scale_x      = scale_factor;
       rotate_draw.scale_y      = scale_factor;
       rotate_draw.scale_z      = 1;
@@ -3558,7 +3557,7 @@ static int xmb_draw_item(
             width,
             height,
             1.0,
-            rotation,
+            0, /* rotation */
             scale_factor,
             &color[0],
             xmb->shadow_offset,
@@ -3603,12 +3602,11 @@ static void xmb_draw_items(
       xmb_handle_t *xmb,
       file_list_t *list,
       size_t current, size_t cat_selection_ptr, float *color,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height,
+      math_matrix_4x4 *mymat)
 {
    size_t i;
    unsigned first, last;
-   math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node             = NULL;
    size_t end                        = 0;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
@@ -3621,15 +3619,6 @@ static void xmb_draw_items(
             xmb, (unsigned)(cat_selection_ptr - (xmb->system_tab_end + 1)));
 
    end                      = list ? list->size : 0;
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0;
-   rotate_draw.scale_x      = 1;
-   rotate_draw.scale_y      = 1;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -3649,9 +3638,6 @@ static void xmb_draw_items(
    xmb_calculate_visible_range(xmb, height,
          end, (unsigned)current, &first, &last);
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-
    for (i = first; i <= last; i++)
    {
       if (xmb_draw_item(
@@ -3663,16 +3649,13 @@ static void xmb_draw_items(
             video_width,
             video_height,
             xmb_shadows_enable,
-            &mymat,
+            mymat,
             xmb, core_node,
             list, color,
             i, current,
             width, height) == -1)
          break;
    }
-
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
 }
 
 static INLINE bool xmb_use_ps3_layout(
@@ -5308,11 +5291,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          dispctx->blend_end(userdata);
    }
 
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
+
    /* Horizontal tab icons */
    if (!xmb->assets_missing)
    {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
 
       for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
             + xmb->system_tab_end; i++)
@@ -5327,7 +5311,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (item_color[3] != 0)
          {
             gfx_display_ctx_rotate_draw_t rotate_draw;
-            math_matrix_4x4 mymat;
+            math_matrix_4x4 mymat_tmp;
             uintptr_t texture        = node->icon;
             float x                  = xmb->x + xmb->categories_x_pos +
                xmb->margins_screen_left +
@@ -5335,7 +5319,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                * (i + 1) - xmb->icon_size / 2.0;
             float y                  = xmb->margins_screen_top
                + xmb->icon_size / 2.0;
-            float rotation           = 0;
             float scale_factor       = node->zoom;
 
             /* Check whether we need to fade out icons
@@ -5359,8 +5342,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                }
             }
 
-            rotate_draw.matrix       = &mymat;
-            rotate_draw.rotation     = rotation;
+            rotate_draw.matrix       = &mymat_tmp;
+            rotate_draw.rotation     = 0;
             rotate_draw.scale_x      = scale_factor;
             rotate_draw.scale_y      = scale_factor;
             rotate_draw.scale_z      = 1;
@@ -5382,16 +5365,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   video_width,
                   video_height,
                   1.0,
-                  rotation,
+                  0, /* rotation */
                   scale_factor,
                   &item_color[0],
                   xmb->shadow_offset,
-                  &mymat);
+                  &mymat_tmp);
          }
       }
 
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
    }
 
    /* Vertical icons */
@@ -5411,7 +5392,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb->categories_selection_ptr_old,
          &item_color[0],
          video_width,
-         video_height);
+         video_height,
+         &mymat);
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
@@ -5429,7 +5411,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb->categories_selection_ptr,
          &item_color[0],
          video_width,
-         video_height);
+         video_height,
+         &mymat);
+
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(userdata);
 
    font_driver_flush(video_width, video_height, xmb->font);
    font_driver_flush(video_width, video_height, xmb->font2);
