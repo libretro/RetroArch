@@ -403,7 +403,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 ?
           OPEN_ALWAYS : CREATE_ALWAYS;
    }
-
+   path_str = "\\\\?\\" + path_str;
    file_handle = CreateFile2FromAppW(path_str->Data(), desireAccess, FILE_SHARE_READ, creationDisposition, NULL);
 
    if (file_handle != INVALID_HANDLE_VALUE)
