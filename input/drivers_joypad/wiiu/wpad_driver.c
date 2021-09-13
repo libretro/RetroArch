@@ -370,6 +370,7 @@ input_device_driver_t wpad_driver =
   wpad_axis,
   wpad_poll,
   NULL,
+  NULL,
   wpad_name,
   "gamepad",
 };

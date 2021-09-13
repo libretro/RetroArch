@@ -130,6 +130,7 @@ input_device_driver_t hidpad_driver =
   hidpad_axis,
   hidpad_poll,
   NULL,
+  NULL,
   hidpad_name,
   "hid"
 };

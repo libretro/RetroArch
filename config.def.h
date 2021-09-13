@@ -1464,7 +1464,9 @@ static const bool enable_device_vibration    = false;
 /* Defines the strength of rumble effects
  * on OpenDingux devices */
 #if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-#define DEFAULT_DINGUX_RUMBLE_GAIN 50
+#define DEFAULT_RUMBLE_GAIN 50
+#else
+#define DEFAULT_RUMBLE_GAIN 100
 #endif
 
 #ifdef HAVE_VULKAN

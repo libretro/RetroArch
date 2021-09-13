@@ -87,6 +87,12 @@ bool video_display_server_can_set_screen_orientation(void);
 
 bool video_display_server_has_resolution_list(void);
 
+bool video_display_server_set_refresh_rate(float hz);
+
+bool video_display_server_has_refresh_rate(float hz);
+
+void video_display_server_restore_refresh_rate(void);
+
 enum rotation video_display_server_get_screen_orientation(void);
 
 extern const video_display_server_t dispserv_win32;

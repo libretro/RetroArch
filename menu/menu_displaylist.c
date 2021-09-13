@@ -182,7 +182,7 @@ static void filebrowser_parse(
    const char *path                             = info->path;
    bool path_is_compressed                      = !string_is_empty(path) ?
          path_is_compressed_file(path) : false;
-   menu_serch_terms_t *search_terms             = menu_entries_search_get_terms();
+   menu_search_terms_t *search_terms            = menu_entries_search_get_terms();
 
    if (path_is_compressed)
    {
@@ -864,7 +864,7 @@ static unsigned menu_displaylist_parse_core_manager_list(
 
    if (core_info_list)
    {
-      menu_serch_terms_t *search_terms = menu_entries_search_get_terms();
+      menu_search_terms_t *search_terms= menu_entries_search_get_terms();
       core_info_t *core_info           = NULL;
       size_t menu_index                = 0;
       size_t i;
@@ -1809,7 +1809,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    size_t           list_size        = playlist_size(playlist);
    bool show_inline_core_name        = false;
    const char *menu_driver           = menu_driver_ident();
-   menu_serch_terms_t *search_terms  = menu_entries_search_get_terms();
+   menu_search_terms_t *search_terms = menu_entries_search_get_terms();
    unsigned pl_show_inline_core_name = settings->uints.playlist_show_inline_core_name;
    bool pl_show_sublabels            = settings->bools.playlist_show_sublabels;
    void (*sanitization)(char*);
@@ -4035,6 +4035,14 @@ static bool menu_displaylist_parse_playlist_manager_settings(
             MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE,
             MENU_SETTING_PLAYLIST_MANAGER_SORT_MODE, 0, 0);
 
+   /* Refresh playlist */
+   if (playlist_scan_refresh_enabled(playlist))
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+            MENU_SETTING_ACTION_PLAYLIST_MANAGER_REFRESH_PLAYLIST, 0, 0);
+
    /* Clean playlist */
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST),
@@ -5240,6 +5248,13 @@ static bool menu_displaylist_parse_manual_content_scan_list(
          false) == 0)
       count++;
 
+   /* Validate existing entries */
+   if (!(*manual_content_scan_get_overwrite_playlist_ptr()) &&
+       MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES, PARSE_ONLY_BOOL,
+         false) == 0)
+      count++;
+
    /* Start scan */
    if (menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START),
@@ -5593,14 +5608,10 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
             }
-
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
-            if (string_is_equal(joypad_driver_id, "sdl_dingux"))
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
-                        PARSE_ONLY_UINT, false) == 0)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,
+                     PARSE_ONLY_UINT, false) == 0)
                   count++;
-#endif
          }
          break;
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
@@ -6651,7 +6662,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_CHEATS
          if (cheat_manager_alloc_if_empty())
          {
-            menu_serch_terms_t *search_terms = menu_entries_search_get_terms();
+            menu_search_terms_t *search_terms= menu_entries_search_get_terms();
             bool search_active               = search_terms && (search_terms->size > 0);
             unsigned num_cheats              = cheat_manager_get_size();
             unsigned num_cheats_shown        = 0;
@@ -9958,7 +9969,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(port, retro_id);
 
-                     input_config_get_bind_string(descriptor,
+                     input_config_get_bind_string(settings, descriptor,
                            keybind, auto_bind, sizeof(descriptor));
 
                      if (!strstr(descriptor, "Auto"))
@@ -10009,7 +10020,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         (const struct retro_keybind*)
                         input_config_get_bind_auto(port, retro_id);
 
-                     input_config_get_bind_string(descriptor,
+                     input_config_get_bind_string(settings, descriptor,
                            keybind, auto_bind, sizeof(descriptor));
 
                      if (!strstr(descriptor, "Auto"))
@@ -10986,7 +10997,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_NETWORKING
          {
             core_updater_list_t *core_list   = core_updater_list_get_cached();
-            menu_serch_terms_t *search_terms = menu_entries_search_get_terms();
+            menu_search_terms_t *search_terms= menu_entries_search_get_terms();
             bool show_experimental_cores     = settings->bools.network_buildbot_show_experimental_cores;
             size_t selection                 = menu_navigation_get_selection();
 

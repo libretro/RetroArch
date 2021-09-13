@@ -22,6 +22,9 @@
 #include <retro_miscellaneous.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
+
+#include "../configuration.h"
 
 RETRO_BEGIN_DECLS
 
@@ -100,6 +103,15 @@ struct video_shader_parameter
    float step;
    char id[64];
    char desc[64];
+};
+
+struct rarch_dir_shader_list
+{
+   struct string_list *shader_list;
+   char *directory;
+   size_t selection;
+   bool shader_loaded;
+   bool remember_last_preset_dir;
 };
 
 struct video_shader_pass
@@ -235,6 +247,33 @@ bool video_shader_any_supported(void);
 bool video_shader_check_for_changes(void);
 
 const char *video_shader_type_to_str(enum rarch_shader_type type);
+
+void dir_free_shader(
+      struct rarch_dir_shader_list *dir_list,
+      bool shader_remember_last_dir);
+
+void dir_init_shader(
+      void *menu_driver_data_,
+      settings_t *settings,
+      struct rarch_dir_shader_list *dir_list);
+
+/**
+ * dir_check_shader:
+ * @pressed_next         : Was next shader key pressed?
+ * @pressed_prev         : Was previous shader key pressed?
+ *
+ * Checks if any one of the shader keys has been pressed for this frame:
+ * a) Next shader index.
+ * b) Previous shader index.
+ *
+ * Will also immediately apply the shader.
+ **/
+void dir_check_shader(
+      void *menu_driver_data_,
+      settings_t *settings,
+      struct rarch_dir_shader_list *dir_list,
+      bool pressed_next,
+      bool pressed_prev);
 
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
 

@@ -45,6 +45,7 @@
 enum manual_scan_status
 {
    MANUAL_SCAN_BEGIN = 0,
+   MANUAL_SCAN_ITERATE_CLEAN,
    MANUAL_SCAN_ITERATE_CONTENT,
    MANUAL_SCAN_ITERATE_M3U,
    MANUAL_SCAN_END
@@ -54,12 +55,15 @@ typedef struct manual_scan_handle
 {
    manual_content_scan_task_config_t *task_config;
    playlist_t *playlist;
+   struct string_list *file_exts_list;
    struct string_list *content_list;
    logiqx_dat_t *dat_file;
    struct string_list *m3u_list;
    playlist_config_t playlist_config; /* size_t alignment */
-   size_t list_size;
-   size_t list_index;
+   size_t playlist_size;
+   size_t playlist_index;
+   size_t content_list_size;
+   size_t content_list_index;
    size_t m3u_index;
    enum manual_scan_status status;
 } manual_scan_handle_t;
@@ -80,6 +84,12 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    {
       playlist_free(manual_scan->playlist);
       manual_scan->playlist = NULL;
+   }
+
+   if (manual_scan->file_exts_list)
+   {
+      string_list_free(manual_scan->file_exts_list);
+      manual_scan->file_exts_list = NULL;
    }
 
    if (manual_scan->content_list)
@@ -199,6 +209,11 @@ static void task_manual_content_scan_handler(retro_task_t *task)
    {
       case MANUAL_SCAN_BEGIN:
          {
+            /* Get allowed file extensions list */
+            if (!string_is_empty(manual_scan->task_config->file_exts))
+               manual_scan->file_exts_list = string_split(
+                     manual_scan->task_config->file_exts, "|");
+
             /* Get content list */
             manual_scan->content_list = manual_content_scan_get_content_list(
                   manual_scan->task_config);
@@ -212,7 +227,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                goto task_finished;
             }
 
-            manual_scan->list_size = manual_scan->content_list->size;
+            manual_scan->content_list_size = manual_scan->content_list->size;
 
             /* Load DAT file, if required */
             if (!string_is_empty(manual_scan->task_config->dat_file_path))
@@ -240,25 +255,118 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             if (manual_scan->task_config->overwrite_playlist)
                playlist_clear(manual_scan->playlist);
 
+            /* Get initial playlist size */
+            manual_scan->playlist_size = playlist_size(manual_scan->playlist);
+
             /* Set default core, if required */
             if (manual_scan->task_config->core_set)
             {
-               playlist_set_default_core_path(
-                     manual_scan->playlist, manual_scan->task_config->core_path);
-               playlist_set_default_core_name(
-                     manual_scan->playlist, manual_scan->task_config->core_name);
+               playlist_set_default_core_path(manual_scan->playlist,
+                     manual_scan->task_config->core_path);
+               playlist_set_default_core_name(manual_scan->playlist,
+                     manual_scan->task_config->core_name);
             }
 
-            /* All good - can start iterating */
-            manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
+            /* Record remaining scan parameters to enable
+             * subsequent 'refresh playlist' operations */
+            playlist_set_scan_content_dir(manual_scan->playlist,
+                  manual_scan->task_config->content_dir);
+            playlist_set_scan_file_exts(manual_scan->playlist,
+                  manual_scan->task_config->file_exts_custom_set ?
+                        manual_scan->task_config->file_exts : NULL);
+            playlist_set_scan_dat_file_path(manual_scan->playlist,
+                  manual_scan->task_config->dat_file_path);
+            playlist_set_scan_search_recursively(manual_scan->playlist,
+                  manual_scan->task_config->search_recursively);
+            playlist_set_scan_search_archives(manual_scan->playlist,
+                  manual_scan->task_config->search_archives);
+            playlist_set_scan_filter_dat_content(manual_scan->playlist,
+                  manual_scan->task_config->filter_dat_content);
+
+            /* All good - can start iterating
+             * > If playlist has content and 'validate
+             *   entries' is enabled, go to clean-up phase
+             * > Otherwise go straight to content scan phase */
+            if (manual_scan->task_config->validate_entries &&
+                (manual_scan->playlist_size > 0))
+               manual_scan->status = MANUAL_SCAN_ITERATE_CLEAN;
+            else
+               manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
+         }
+         break;
+      case MANUAL_SCAN_ITERATE_CLEAN:
+         {
+            const struct playlist_entry *entry = NULL;
+            bool delete_entry                  = false;
+
+            /* Get current entry */
+            playlist_get_index(manual_scan->playlist,
+                  manual_scan->playlist_index, &entry);
+
+            if (entry)
+            {
+               const char *entry_file     = NULL;
+               const char *entry_file_ext = NULL;
+               char task_title[PATH_MAX_LENGTH];
+
+               task_title[0] = '\0';
+
+               /* Update progress display */
+               task_free_title(task);
+
+               strlcpy(task_title,
+                     msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP),
+                     sizeof(task_title));
+
+               if (!string_is_empty(entry->path) &&
+                   (entry_file = path_basename(entry->path)))
+                  strlcat(task_title, entry_file, sizeof(task_title));
+
+               task_set_title(task, strdup(task_title));
+               task_set_progress(task, (manual_scan->playlist_index * 100) /
+                     manual_scan->playlist_size);
+
+               /* Check whether playlist content exists on
+                * the filesystem */
+               if (!playlist_content_path_is_valid(entry->path))
+                  delete_entry = true;
+               /* If file exists, check whether it has a
+                * permitted file extension */
+               else if (manual_scan->file_exts_list &&
+                        (entry_file_ext = path_get_extension(entry->path)) &&
+                        !string_list_find_elem_prefix(
+                              manual_scan->file_exts_list,
+                              ".", entry_file_ext))
+                  delete_entry = true;
+
+               if (delete_entry)
+               {
+                  /* Invalid content - delete entry */
+                  playlist_delete_index(manual_scan->playlist,
+                        manual_scan->playlist_index);
+
+                  /* Update playlist_size */
+                  manual_scan->playlist_size = playlist_size(manual_scan->playlist);
+               }
+            }
+
+            /* Increment entry index *if* current entry still
+             * exists (i.e. if entry was deleted, current index
+             * will already point to the *next* entry) */
+            if (!delete_entry)
+               manual_scan->playlist_index++;
+
+            if (manual_scan->playlist_index >=
+                  manual_scan->playlist_size)
+               manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
          }
          break;
       case MANUAL_SCAN_ITERATE_CONTENT:
          {
-            const char *content_path =
-                  manual_scan->content_list->elems[manual_scan->list_index].data;
-            int content_type         =
-                  manual_scan->content_list->elems[manual_scan->list_index].attr.i;
+            const char *content_path = manual_scan->content_list->elems[
+                  manual_scan->content_list_index].data;
+            int content_type         = manual_scan->content_list->elems[
+                  manual_scan->content_list_index].attr.i;
 
             if (!string_is_empty(content_path))
             {
@@ -270,15 +378,16 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                /* Update progress display */
                task_free_title(task);
 
-               strlcpy(
-                     task_title, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS),
+               strlcpy(task_title,
+                     msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS),
                      sizeof(task_title));
 
                if (!string_is_empty(content_file))
                   strlcat(task_title, content_file, sizeof(task_title));
 
                task_set_title(task, strdup(task_title));
-               task_set_progress(task, (manual_scan->list_index * 100) / manual_scan->list_size);
+               task_set_progress(task, (manual_scan->content_list_index * 100) /
+                     manual_scan->content_list_size);
 
                /* Add content to playlist */
                manual_content_scan_add_content_to_playlist(
@@ -300,8 +409,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             }
 
             /* Increment content index */
-            manual_scan->list_index++;
-            if (manual_scan->list_index >= manual_scan->list_size)
+            manual_scan->content_list_index++;
+            if (manual_scan->content_list_index >=
+                  manual_scan->content_list_size)
             {
                /* Check whether we have any M3U files
                 * to process */
@@ -314,8 +424,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          break;
       case MANUAL_SCAN_ITERATE_M3U:
          {
-            const char *m3u_path =
-                  manual_scan->m3u_list->elems[manual_scan->m3u_index].data;
+            const char *m3u_path = manual_scan->m3u_list->elems[
+                  manual_scan->m3u_index].data;
 
             if (!string_is_empty(m3u_path))
             {
@@ -328,15 +438,16 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                /* Update progress display */
                task_free_title(task);
 
-               strlcpy(
-                     task_title, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP),
+               strlcpy(task_title,
+                     msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP),
                      sizeof(task_title));
 
                if (!string_is_empty(m3u_name))
                   strlcat(task_title, m3u_name, sizeof(task_title));
 
                task_set_title(task, strdup(task_title));
-               task_set_progress(task, (manual_scan->m3u_index * 100) / manual_scan->m3u_list->size);
+               task_set_progress(task, (manual_scan->m3u_index * 100) /
+                     manual_scan->m3u_list->size);
 
                /* Load M3U file */
                m3u_file = m3u_file_init(m3u_path);
@@ -445,10 +556,13 @@ bool task_push_manual_content_scan(
    /* Configure handle */
    manual_scan->task_config         = NULL;
    manual_scan->playlist            = NULL;
+   manual_scan->file_exts_list      = NULL;
    manual_scan->content_list        = NULL;
    manual_scan->dat_file            = NULL;
-   manual_scan->list_size           = 0;
-   manual_scan->list_index          = 0;
+   manual_scan->playlist_size       = 0;
+   manual_scan->playlist_index      = 0;
+   manual_scan->content_list_size   = 0;
+   manual_scan->content_list_index  = 0;
    manual_scan->m3u_list            = string_list_new();
    manual_scan->m3u_index           = 0;
    manual_scan->status              = MANUAL_SCAN_BEGIN;

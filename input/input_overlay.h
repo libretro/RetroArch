@@ -27,6 +27,11 @@
 
 #include "input_driver.h"
 
+#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+
+#define MAX_VISIBILITY 32
+
 RETRO_BEGIN_DECLS
 
 /* Overlay driver acts as a medium between input drivers
@@ -111,6 +116,46 @@ enum overlay_show_input_type
    OVERLAY_SHOW_INPUT_LAST
 };
 
+struct overlay_desc
+{
+   struct texture_image image;
+
+   enum overlay_hitbox hitbox;
+   enum overlay_type type;
+
+   bool updated;
+   bool movable;
+
+   unsigned next_index;
+   unsigned image_index;
+
+   float alpha_mod;
+   float range_mod;
+   float analog_saturate_pct;
+   float range_x, range_y;
+   float range_x_mod, range_y_mod;
+   float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
+   float x;
+   float y;
+   /* These are 'raw' x/y values shifted
+    * by a user-configured offset (c.f.
+    * OVERLAY_X/Y_SEPARATION). Used to determine
+    * correct hitbox locations. By default,
+    * will be equal to x/y */
+   float x_shift;
+   float y_shift;
+
+   /* This is a retro_key value for keyboards */
+   unsigned retro_key_idx;
+
+   /* This is a bit mask of all input binds to set with this overlay control */
+   input_bits_t button_mask;
+
+   char next_index_name[64];
+};
+
+
 struct overlay
 {
    struct overlay_desc *descs;
@@ -169,43 +214,33 @@ struct overlay
    char name[64];
 };
 
-struct overlay_desc
+typedef struct input_overlay_state
 {
-   struct texture_image image;
+   uint32_t keys[RETROK_LAST / 32 + 1];
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4];
+   /* This is a bitmask of (1 << key_bind_id). */
+   input_bits_t buttons;
+} input_overlay_state_t;
 
-   enum overlay_hitbox hitbox;
-   enum overlay_type type;
+struct input_overlay
+{
+   struct overlay *overlays;
+   const struct overlay *active;
+   void *iface_data;
+   const video_overlay_interface_t *iface;
+   input_overlay_state_t overlay_state;
 
-   bool updated;
-   bool movable;
+   size_t index;
+   size_t size;
 
    unsigned next_index;
-   unsigned image_index;
 
-   float alpha_mod;
-   float range_mod;
-   float analog_saturate_pct;
-   float range_x, range_y;
-   float range_x_mod, range_y_mod;
-   float mod_x, mod_y, mod_w, mod_h;
-   float delta_x, delta_y;
-   float x;
-   float y;
-   /* These are 'raw' x/y values shifted
-    * by a user-configured offset (c.f.
-    * OVERLAY_X/Y_SEPARATION). Used to determine
-    * correct hitbox locations. By default,
-    * will be equal to x/y */
-   float x_shift;
-   float y_shift;
+   enum overlay_status state;
 
-   /* This is a retro_key value for keyboards */
-   unsigned retro_key_idx;
-
-   /* This is a bit mask of all input binds to set with this overlay control */
-   input_bits_t button_mask;
-
-   char next_index_name[64];
+   bool enable;
+   bool blocked;
+   bool alive;
 };
 
 /* Holds general layout information for an
@@ -260,6 +295,125 @@ typedef struct
 void input_overlay_free_overlay(struct overlay *overlay);
 
 void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
+
+/**
+ * input_overlay_add_inputs:
+ * @desc : pointer to overlay description
+ * @ol_state : pointer to overlay state. If valid, inputs
+ *             that are actually 'touched' on the overlay
+ *             itself will displayed. If NULL, inputs from
+ *             the device connected to 'port' will be displayed.
+ * @port : when ol_state is NULL, specifies the port of
+ *         the input device from which input will be
+ *         displayed.
+ *
+ * Adds inputs from current_input to the overlay, so it's displayed
+ * returns true if an input that is pressed will change the overlay
+ */
+bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
+      input_overlay_state_t *ol_state, unsigned port);
+
+bool input_overlay_add_inputs(input_overlay_t *ol,
+      bool show_touched, unsigned port);
+
+/* Attempts to automatically rotate the specified overlay.
+ * Depends upon proper naming conventions in overlay
+ * config file. */
+void input_overlay_auto_rotate_(
+      unsigned video_driver_width,
+      unsigned video_driver_height,
+      bool input_overlay_enable,
+      input_overlay_t *ol);
+
+void input_overlay_poll(
+      input_overlay_t *ol,
+      input_overlay_state_t *out,
+      int16_t norm_x, int16_t norm_y, float touch_scale);
+
+/**
+ * input_overlay_poll_clear:
+ * @ol                    : overlay handle
+ *
+ * Call when there is nothing to poll. Allows overlay to
+ * clear certain state.
+ **/
+void input_overlay_poll_clear(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol, float opacity);
+
+/**
+ * input_overlay_post_poll:
+ *
+ * Called after all the input_overlay_poll() calls to
+ * update the range modifiers for pressed/unpressed regions
+ * and alpha mods.
+ **/
+void input_overlay_post_poll(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol,
+      bool show_input, float opacity);
+
+void input_overlay_load_active(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol, float opacity);
+
+void input_overlay_parse_layout(
+      const struct overlay *ol,
+      const overlay_layout_desc_t *layout_desc,
+      float display_aspect_ratio,
+      overlay_layout_t *overlay_layout);
+
+void input_overlay_set_vertex_geom(input_overlay_t *ol);
+
+void input_overlay_free_overlays(input_overlay_t *ol);
+
+/**
+ * input_overlay_scale:
+ * @ol                    : Overlay handle.
+ * @layout                : Scale + offset factors.
+ *
+ * Scales the overlay and all its associated descriptors
+ * and applies any aspect ratio/offset factors.
+ **/
+void input_overlay_scale(struct overlay *ol,
+      const overlay_layout_t *layout);
+
+/**
+ * input_overlay_set_scale_factor:
+ * @ol                    : Overlay handle.
+ * @layout_desc           : Scale + offset factors.
+ *
+ * Scales the overlay and applies any aspect ratio/
+ * offset factors.
+ **/
+void input_overlay_set_scale_factor(
+      input_overlay_t *ol, const overlay_layout_desc_t *layout_desc,
+      unsigned video_driver_width,
+      unsigned video_driver_height);
+
+/**
+ * input_overlay_set_alpha_mod:
+ * @ol                    : Overlay handle.
+ * @mod                   : New modulating factor to apply.
+ *
+ * Sets a modulating factor for alpha channel. Default is 1.0.
+ * The alpha factor is applied for all overlays.
+ **/
+void input_overlay_set_alpha_mod(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol, float mod);
+
+enum overlay_visibility input_overlay_get_visibility(
+      enum overlay_visibility *visibility,
+      int overlay_idx);
+
+/**
+ * input_overlay_free:
+ * @ol                    : Overlay handle.
+ *
+ * Frees overlay handle.
+ **/
+void input_overlay_free(input_overlay_t *ol);
 
 RETRO_END_DECLS
 

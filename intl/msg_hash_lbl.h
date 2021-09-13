@@ -2315,6 +2315,10 @@ MSG_HASH(
    "playlist_manager_clean_playlist"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "playlist_manager_refresh_playlist"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN,
    "playlist_settings_begin"
    )
@@ -5007,6 +5011,10 @@ MSG_HASH(
    "manual_content_scan_overwrite"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "manual_content_scan_validate_entries"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
    "manual_content_scan_start"
    )
@@ -5038,12 +5046,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "input_haptic_feedback_settings"
    )
-#if defined(DINGUX) && defined(HAVE_LIBSHAKE)
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_DINGUX_RUMBLE_GAIN,
-   "input_dingux_rumble_gain"
+   MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN,
+   "input_rumble_gain"
    )
-#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TURBO_MODE,
    "input_turbo_mode"

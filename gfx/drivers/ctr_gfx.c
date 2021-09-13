@@ -65,6 +65,9 @@ extern uint64_t lifecycle_state;
  * externally, otherwise cannot detect current state
  * when reinitialising... */
 bool ctr_bottom_screen_enabled = true;
+int fadeCount = 256;
+
+static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
 
 static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum video_mode)
 {
@@ -430,17 +433,7 @@ static void save_state_to_file(void *data)
    ctr_video_t *ctr = (ctr_video_t*)data;
 
    char state_path[PATH_MAX_LENGTH];
-   global_t *global = global_get_ptr();
-   const char *name_savestate = global->name.savestate;
-
-   if (ctr->state_slot > 0)
-      snprintf(state_path, sizeof(state_path), "%s%d", name_savestate,
-            ctr->state_slot);
-   else if (ctr->state_slot < 0)
-      fill_pathname_join_delim(state_path,
-            name_savestate, "auto", '.', sizeof(state_path));
-   else
-      strlcpy(state_path, name_savestate, sizeof(state_path));
+   retroarch_get_current_savestate_path(state_path, sizeof(state_path));
 
    command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
@@ -466,23 +459,52 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
+   if (!rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+   {
+      if (!ctr->bottom_is_idle)
+      {
+         ctr->bottom_is_idle = true;
+         ctr_set_bottom_screen_enable(false, ctr->bottom_is_idle);
+      }
+      return;
+   }
+
    state_tmp = hidKeysDown();
    hidTouchRead(&state_tmp_touch);
-
+   if (!state_tmp)
+   {
+      if (!ctr->bottom_check_idle && !ctr->bottom_is_idle)
+      {
+         ctr->idle_timestamp = svcGetSystemTick();
+         ctr->bottom_check_idle = true;
+      }
+   }
    if (state_tmp & KEY_TOUCH)
    {
 #ifdef CONSOLE_LOG
       BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
       return;
 #endif
-      if (!rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
-         return;
 
       if (!lcd_bottom ||
          ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
       {
          BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
          return;
+      }
+
+      if (ctr->bottom_is_idle)
+      {
+         ctr->bottom_is_idle   = false;
+         ctr->bottom_is_fading = false;
+         fadeCount = 256;
+         ctr_set_bottom_screen_enable(true,true);
+      }
+      else if (ctr->bottom_check_idle)
+      {
+         ctr->bottom_check_idle = false;
+         ctr->bottom_is_fading  = false;
+         fadeCount = 256;
       }
 
       switch (ctr->bottom_menu)
@@ -534,7 +556,6 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                ctr_state_thumbnail_geom(ctr);
 
                ctr->state_data_exist = true;
-               ctr->state_data_on_ram = true;
                ctr->render_state_from_png_file = false;
 
                ctr_update_state_date(ctr);
@@ -560,15 +581,13 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                   state_tmp_touch.py < 230 &&
                   ctr->state_data_exist) 
             {
-               if (ctr->state_data_on_ram)
-                  command_event(CMD_EVENT_LOAD_STATE_FROM_RAM, NULL);
-               else
+               if (!command_event(CMD_EVENT_LOAD_STATE_FROM_RAM, NULL))
                   command_event(CMD_EVENT_LOAD_STATE, NULL);
                BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             }
             break;
       }
-
+      ctr->bottom_check_idle   = false;
       ctr->refresh_bottom_menu = true;
    }
 
@@ -576,13 +595,10 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
          !rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
       return;
 
+
    if (ctr->state_slot != config_slot)
    {
-      if (ctr->state_data_on_ram)
-      {
-         save_state_to_file(ctr);
-         ctr->state_data_on_ram = false;
-      }
+      save_state_to_file(ctr);
 
       ctr->state_slot = config_slot;
 
@@ -781,7 +797,58 @@ static void ctr_render_bottom_screen(void *data)
    }
 }
 
-static void ctr_set_bottom_screen_enable(bool enabled)
+// graphic function originates from here:
+// https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
+void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
+{
+   u16 fbWidth, fbHeight;
+   u8* fbAdr=gfxGetFramebuffer(screen, side, &fbWidth, &fbHeight);
+
+   int i; for(i=0; i<fbWidth*fbHeight/2; i++)
+   {
+      *fbAdr=(*fbAdr*f)>>8;fbAdr++;
+      *fbAdr=(*fbAdr*f)>>8;fbAdr++;
+      *fbAdr=(*fbAdr*f)>>8;fbAdr++;
+      *fbAdr=(*fbAdr*f)>>8;fbAdr++;
+      *fbAdr=(*fbAdr*f)>>8;fbAdr++;
+      *fbAdr=(*fbAdr*f)>>8;fbAdr++;
+   }
+}
+
+static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
+{
+   if (ctr->bottom_menu == CTR_BOTTOM_MENU_SELECT)
+      return;
+
+   u64 elapsed_tick = ( svcGetSystemTick() - ctr->idle_timestamp );
+   if ( elapsed_tick > 2000000000 )
+   {
+      if (!ctr->bottom_is_fading)
+	  {
+         ctr->bottom_is_fading    = true;
+         ctr->refresh_bottom_menu = true;
+         return;
+      }
+
+      if ( fadeCount > 0 )
+      {
+         fadeCount--;
+         ctr_fade_bottom_screen(GFX_BOTTOM, GFX_LEFT, fadeCount);
+
+         if ( fadeCount <= 128 )
+         {
+            ctr->bottom_is_idle    = true;
+            ctr->bottom_is_fading  = false;
+            ctr->bottom_check_idle = false;
+            fadeCount = 256;
+            ctr_set_bottom_screen_enable(false,true);
+            return;
+         }
+      }
+   }
+}
+
+static void ctr_set_bottom_screen_enable(bool enabled, bool idle)
 {
    Handle lcd_handle;
    u8 not_2DS;
@@ -796,7 +863,8 @@ static void ctr_set_bottom_screen_enable(bool enabled)
       svcCloseHandle(lcd_handle);
    }
 
-   ctr_bottom_screen_enabled = enabled;
+   if (!idle)
+      ctr_bottom_screen_enabled = enabled;
 }
 
 static void ctr_lcd_aptHook(APT_HookType hook, void* param)
@@ -858,13 +926,9 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
 
    if ((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
    {
-      ctr_set_bottom_screen_enable(hook == APTHOOK_ONSUSPEND);
+      ctr_set_bottom_screen_enable(hook == APTHOOK_ONSUSPEND, ctr->bottom_is_idle);
 
-      if (ctr->state_data_on_ram)
-      {
-         save_state_to_file(ctr);
-         ctr->state_data_on_ram = false;
-      }
+      save_state_to_file(ctr);
    }
    
    if (menu_driver_is_alive())
@@ -935,12 +999,15 @@ static void* ctr_init(const video_info_t* video,
 
    ctr->init_bottom_menu = false;
    ctr->state_data_exist = false;
-   ctr->state_data_on_ram = false;
    ctr->render_font_bottom = false;
    ctr->refresh_bottom_menu = true;
    ctr->render_state_from_png_file = false;
    ctr->bottom_menu = CTR_BOTTOM_MENU_NOT_AVAILABLE;
    ctr->prev_bottom_menu = CTR_BOTTOM_MENU_NOT_AVAILABLE;
+   ctr->bottom_check_idle = false;
+   ctr->bottom_is_idle = false;
+   ctr->bottom_is_fading = false;
+   ctr->idle_timestamp = 0;
    ctr->state_slot = settings->ints.state_slot;
 
    snprintf(ctr->state_date, sizeof(ctr->state_date), "%s", "00/00/0000");
@@ -1082,7 +1149,7 @@ static void* ctr_init(const video_info_t* video,
 
    /* Set bottom screen enable state, if required */
    if (lcd_bottom != ctr_bottom_screen_enabled)
-      ctr_set_bottom_screen_enable(lcd_bottom);
+      ctr_set_bottom_screen_enable(lcd_bottom, false);
 
    gspSetEventCallback(GSPGPU_EVENT_VBlank0,
          (ThreadFunc)ctr_vsync_hook, ctr, false);
@@ -1135,7 +1202,16 @@ static bool ctr_frame(void* data, const void* frame,
 
    lcd_bottom = settings->bools.video_3ds_lcd_bottom;
    if (lcd_bottom != ctr_bottom_screen_enabled)
-      ctr_set_bottom_screen_enable(lcd_bottom);
+   {
+      if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+      {
+         ctr_set_bottom_screen_enable(lcd_bottom, false);
+         if (lcd_bottom)
+            ctr->refresh_bottom_menu = true;
+      }
+      else
+         ctr_bottom_screen_enabled = lcd_bottom;
+   }
    bottom_menu_control(data, lcd_bottom);
 
    if (ctr->p3d_event_pending)
@@ -1478,7 +1554,15 @@ static bool ctr_frame(void* data, const void* frame,
 #ifndef CONSOLE_LOG
    if (ctr_bottom_screen_enabled && 
          rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
-      ctr_render_bottom_screen(ctr);
+   {
+      if ( !ctr->bottom_is_idle )
+      {
+         ctr_render_bottom_screen(ctr);
+
+         if ( ctr->bottom_check_idle )
+            ctr_set_bottom_screen_idle(ctr);
+      }
+   }
 #endif
 
    if (msg)
@@ -1502,15 +1586,13 @@ static bool ctr_frame(void* data, const void* frame,
                            gfxTopRightFramebuffers[ctr->current_buffer_top], 240, CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
 #ifndef CONSOLE_LOG
-   ctrGuDisplayTransfer(true,
-                        ctr->drawbuffers.bottom,
-                        240,
-                        320,
-                        CTRGU_RGBA8,
-                        gfxBottomFramebuffers[ctr->current_buffer_bottom],
-      						240,
-		      				CTRGU_RGB8,
-      					CTRGU_MULTISAMPLE_NONE);
+   if (ctr->refresh_bottom_menu)
+      ctrGuDisplayTransfer(true,
+                           ctr->drawbuffers.bottom,
+                           240,
+                           320,
+                           CTRGU_RGBA8,
+                           gfxBottomFramebuffers[ctr->current_buffer_bottom], 240, CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 #endif
    /* Swap buffers : */
 
@@ -1547,6 +1629,10 @@ static bool ctr_frame(void* data, const void* frame,
       stride = 240 * 3;
       gspPresentBuffer(GFX_BOTTOM, ctr->current_buffer_bottom, bottom, bottom,
             stride, GSP_BGR8_OES);
+   }
+   else if (ctr->bottom_is_fading)
+   {
+      gfxScreenSwapBuffers(GFX_BOTTOM,false);
    }
 #endif 
 #else
@@ -1618,9 +1704,10 @@ static bool ctr_frame(void* data, const void* frame,
    }
 #endif
 #endif
-
    ctr->current_buffer_top     ^= 1;
-   ctr->current_buffer_bottom  ^= 1;
+   if (ctr->refresh_bottom_menu || ctr->bottom_is_fading)
+      ctr->current_buffer_bottom  ^= 1;
+
    ctr->p3d_event_pending       = true;
    ctr->ppf_event_pending       = true;
    ctr->refresh_bottom_menu     = false;
@@ -1663,9 +1750,6 @@ static void ctr_free(void* data)
 
    if (!ctr)
       return;
-
-   if (ctr->state_data_on_ram)
-      save_state_to_file(ctr);
 
    aptUnhook(&ctr->lcd_aptHook);
    gspSetEventCallback(GSPGPU_EVENT_VBlank0, NULL, NULL, true);
