@@ -4310,37 +4310,35 @@ static void xmb_draw_dark_layer(
       unsigned height)
 {
    gfx_display_ctx_draw_t draw;
-   struct video_coords coords;
-   float black[16]               = {
+   float black[16]      = {
       0, 0, 0, 1,
       0, 0, 0, 1,
       0, 0, 0, 1,
       0, 0, 0, 1,
    };
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_display_ctx_driver_t 
+      *dispctx          = p_disp->dispctx;
 
-   gfx_display_set_alpha(black, MIN(xmb->alpha, 0.75));
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = &black[0];
-
-   draw.x           = 0;
-   draw.y           = 0;
-   draw.width       = width;
-   draw.height      = height;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = gfx_display_white_texture;
-   draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline_id = 0;
+   draw.x               = 0;
+   draw.y               = 0;
+   draw.width           = width;
+   draw.height          = height;
+   draw.color           = &black[0];
+   draw.vertex          = NULL;
+   draw.matrix_data     = NULL;
+   draw.tex_coord       = NULL;
+   draw.vertex_count    = 4;
+   draw.texture         = 0;
+   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline_id     = 0;
+   draw.pipeline_active = false;
 
    if (dispctx)
    {
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
+      gfx_display_draw_bg(p_disp, &draw, userdata,
+            true, MIN(xmb->alpha, 0.75));
       if (draw.height > 0 && draw.width > 0)
          if (dispctx && dispctx->draw)
             dispctx->draw(&draw, userdata, width, height);
