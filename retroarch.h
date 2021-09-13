@@ -1602,7 +1602,7 @@ bool video_driver_supports_hdr(void);
 
 unsigned video_driver_get_hdr_color(unsigned color);
 
-float video_driver_get_hdr_luminace(float nits);
+float video_driver_get_hdr_luminance(float nits);
 
 unsigned video_driver_get_hdr_paper_white(void);
 

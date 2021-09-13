@@ -132,7 +132,7 @@ static INLINE float dot_product(const float* a, const float* b)
 }
 
 /**
- * retro_rgb_to_yxy:
+ * convert_rgb_to_yxy:
  * @rgb         : in RGB colour space value
  * @Yxy         : out Yxy colour space value
  *
@@ -162,7 +162,7 @@ static INLINE void convert_rgb_to_yxy(const float* rgb, float* Yxy)
 }
  
 /**
- * yxy_to_rgb:
+ * convert_yxy_to_rgb:
  * @rgb         : in Yxy colour space value
  * @Yxy         : out rgb colour space value
  *

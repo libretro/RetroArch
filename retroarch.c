@@ -24964,7 +24964,7 @@ float *video_driver_get_hdr_paper_white_float(void)
  * slightly brighter than paper white value for some parts 
  * of the UI 
  */
-float video_driver_get_hdr_luminace(float nits)
+float video_driver_get_hdr_luminance(float nits)
 {
    settings_t *settings                = config_get_ptr();
    if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
