@@ -342,7 +342,9 @@ float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height);
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,
-      unsigned width, unsigned height);
+      unsigned width, unsigned height,
+      bool fullscreen,
+      bool is_widget);
 
 void gfx_display_deinit_white_texture(void);
 

@@ -362,7 +362,10 @@ float gfx_display_get_dpi_scale_internal(
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height,
+      bool fullscreen,
+      bool is_widget
+)
 {
    static unsigned last_width                          = 0;
    static unsigned last_height                         = 0;
@@ -373,7 +376,45 @@ float gfx_display_get_dpi_scale(
    static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
    static float adjusted_scale                         = 1.0f;
    settings_t *settings                                = (settings_t*)settings_data;
+#ifdef HAVE_GFX_WIDGETS
+   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
+#else
+   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
+   float menu_widget_scale_factor                      = fullscreen ?
+         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+#endif
+   float menu_scale_factor                             = is_widget 
+      ? menu_widget_scale_factor
+      : settings->floats.menu_scale_factor;
+#else
    float menu_scale_factor                             = settings->floats.menu_scale_factor;
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+   if (is_widget)
+   {
+      if (gfx_widget_scale_auto)
+      {
+#ifdef HAVE_RGUI
+         /* When using RGUI, _menu_scale_factor
+          * is ignored
+          * > If we are not using a widget scale factor override,
+          *   just set menu_scale_factor to 1.0 */
+         if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
+            menu_scale_factor                             = 1.0f;
+         else
+#endif
+         {
+            float _menu_scale_factor                      = 
+               settings->floats.menu_scale_factor;
+            menu_scale_factor                             = _menu_scale_factor;
+         }
+      }
+   }
+#endif
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads

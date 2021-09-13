@@ -6792,7 +6792,7 @@ static void ozone_menu_animation_update_time(
     *   default scroll speed equal to that of the
     *   non-smooth ticker */
    *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(p_disp,
-         settings, video_width, video_height) * 0.5f;
+         settings, video_width, video_height, false, false) * 0.5f;
 }
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
@@ -6825,7 +6825,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->last_width        = width;
    ozone->last_height       = height;
    ozone->last_scale_factor = gfx_display_get_dpi_scale(p_disp,
-         settings, width, height);
+         settings, width, height, false, false);
 
    file_list_initialize(&ozone->selection_buf_old);
 
@@ -7889,7 +7889,8 @@ static void ozone_render(void *data,
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   scale_factor = gfx_display_get_dpi_scale(p_disp, settings, width, height);
+   scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
+         width, height, false, false);
 
    if ((scale_factor != ozone->last_scale_factor) ||
        (width != ozone->last_width) ||
