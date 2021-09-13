@@ -7738,9 +7738,9 @@ static void general_write_handler(rarch_setting_t *setting)
          {
             settings_t *settings                = config_get_ptr();
             settings->modified                  = true;
-            settings->floats.video_hdr_contrast = *setting->value.target.fraction;
+            settings->floats.video_hdr_display_contrast = *setting->value.target.fraction;
 
-            video_driver_set_hdr_contrast(settings->floats.video_hdr_contrast);
+            video_driver_set_hdr_contrast(settings->floats.video_hdr_display_contrast);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
@@ -11924,7 +11924,7 @@ static bool setting_append_list(
 
                   CONFIG_FLOAT(
                         list, list_info,
-                        &settings->floats.video_hdr_contrast,
+                        &settings->floats.video_hdr_display_contrast,
                         MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST,
                         MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
                         DEFAULT_VIDEO_HDR_CONTRAST,
@@ -11935,7 +11935,7 @@ static bool setting_append_list(
                         general_write_handler,
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  menu_settings_list_current_add_range(list, list_info, 0.1, 3.0, 0.01, true, true);
+                  menu_settings_list_current_add_range(list, list_info, 0.0, VIDEO_HDR_MAX_CONTRAST, 0.1, true, true);
 
                   CONFIG_BOOL(
                         list, list_info,

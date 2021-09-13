@@ -20,10 +20,11 @@
 typedef struct ALIGN(16)
 {
    math_matrix_4x4   mvp;
-   float             contrast;       /* 2.0f    */
-   float             paperWhiteNits; /* 200.0f  */
-   float             maxNits;        /* 1000.0f */
-   float             expandGamut;    /* 1.0f    */
+   float             contrast;         /* 2.0f    */
+   float             paper_white_nits; /* 200.0f  */
+   float             max_nits;         /* 1000.0f */
+   float             expand_gamut;     /* 1.0f    */
+   float             inverse_tonemap; /* 1.0f    */
 } dxgi_hdr_uniform_t;
 
 enum dxgi_swapchain_bit_depth

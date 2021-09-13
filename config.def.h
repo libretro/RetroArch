@@ -421,8 +421,8 @@
 /* The number of nits that paper white is at */
 #define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
 
-/* The contrast setting for hdr used to calculate the display gamma by dividing gamma 2.2 by this value */
-#define DEFAULT_VIDEO_HDR_CONTRAST 1.0f
+/* The contrast setting for hdr used to calculate the display gamma by dividing this value by gamma 2.2  */
+#define DEFAULT_VIDEO_HDR_CONTRAST 5.0f
 
 /* Should we expand the colour gamut when using hdr */
 #define DEFAULT_VIDEO_HDR_EXPAND_GAMUT true

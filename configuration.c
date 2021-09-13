@@ -2043,7 +2043,7 @@ static struct config_float_setting *populate_settings_float(
 
    SETTING_FLOAT("video_hdr_max_nits",          &settings->floats.video_hdr_max_nits, true, DEFAULT_VIDEO_HDR_MAX_NITS, false);
    SETTING_FLOAT("video_hdr_paper_white_nits",  &settings->floats.video_hdr_paper_white_nits, true, DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS, false);
-   SETTING_FLOAT("video_hdr_contrast",          &settings->floats.video_hdr_contrast, true, DEFAULT_VIDEO_HDR_CONTRAST, false);
+   SETTING_FLOAT("video_hdr_display_contrast",  &settings->floats.video_hdr_display_contrast, true, DEFAULT_VIDEO_HDR_CONTRAST, false);
 
    *size = count;
 
