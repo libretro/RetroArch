@@ -1307,6 +1307,7 @@ void gfx_display_deinit_white_texture(void)
 {
    if (gfx_white_texture)
       video_driver_texture_unload(&gfx_white_texture);
+   gfx_white_texture = 0;
 }
 
 void gfx_display_init_white_texture(void)
