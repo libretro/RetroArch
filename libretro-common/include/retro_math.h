@@ -99,26 +99,26 @@ static INLINE uint32_t prev_pow2(uint32_t v)
  *
  * Returns: clamped value (derived from @v).
  **/
-static INLINE float clamp(float v, float min, float max)
+static INLINE float clamp_value(float v, float min, float max)
 {
    return v <= min ? min : v >= max ? max : v;
 }
 
 /**
- * saturate:
+ * saturate_value:
  * @v         : initial value
  *
  * Get the clamped 0.0-1.0 value based on initial value.
  *
  * Returns: clamped 0.0-1.0 value (derived from @v).
  **/
-static INLINE float saturate(float v)
+static INLINE float saturate_value(float v)
 {
-   return clamp(v, 0.0f, 1.0f);
+   return clamp_value(v, 0.0f, 1.0f);
 }
 
 /**
- * dot:
+ * dot_product:
  * @a         : left hand vector value
  * @b         : right hand vector value
  *
@@ -126,40 +126,43 @@ static INLINE float saturate(float v)
  *
  * Returns: dot product value (derived from @a and @b).
  **/
-static INLINE float dot(const float* a, const float* b) 
+static INLINE float dot_product(const float* a, const float* b) 
 {
    return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]);
 }
 
 /**
- * RGBToYxy:
- * @rgb         : in rgb colour space value
+ * retro_rgb_to_yxy:
+ * @rgb         : in RGB colour space value
  * @Yxy         : out Yxy colour space value
  *
- * Convert from rgb colour space to Yxy colour space.
+ * Convert from RGB colour space to Yxy colour space.
  *
  * Returns: Yxy colour space value (derived from @rgb).
  **/
-static INLINE void RGBToYxy(const float* rgb, float* Yxy) 
+static INLINE void convert_rgb_to_yxy(const float* rgb, float* Yxy) 
 {
-      float xyz[3];
-      
-      float rgb_xyz[3][3] = {{0.4124564, 0.3575761, 0.1804375}, {0.2126729, 0.7151522, 0.0721750}, {0.0193339, 0.1191920, 0.9503041}};
+   float inv;
+   float xyz[3];
+   float one[3]        = {1.0, 1.0, 1.0};
+   float rgb_xyz[3][3] = {
+      {0.4124564, 0.3575761, 0.1804375},
+      {0.2126729, 0.7151522, 0.0721750},
+      {0.0193339, 0.1191920, 0.9503041}
+   };
 
-      xyz[0] = dot(rgb_xyz[0], rgb);
-      xyz[1] = dot(rgb_xyz[1], rgb);
-      xyz[2] = dot(rgb_xyz[2], rgb);
- 
-      float one[3] = {1.0, 1.0, 1.0};
+   xyz[0]              = dot_product(rgb_xyz[0], rgb);
+   xyz[1]              = dot_product(rgb_xyz[1], rgb);
+   xyz[2]              = dot_product(rgb_xyz[2], rgb);
 
-      float inv = 1.0f / dot(xyz, one);
-      Yxy[0] = xyz[1]; 
-      Yxy[1] = xyz[0] * inv;
-      Yxy[2] = xyz[1] * inv;
- }
+   inv                 = 1.0f / dot_product(xyz, one);
+   Yxy[0]              = xyz[1]; 
+   Yxy[1]              = xyz[0] * inv;
+   Yxy[2]              = xyz[1] * inv;
+}
  
- /**
- * YxyToRGB:
+/**
+ * yxy_to_rgb:
  * @rgb         : in Yxy colour space value
  * @Yxy         : out rgb colour space value
  *
@@ -167,18 +170,21 @@ static INLINE void RGBToYxy(const float* rgb, float* Yxy)
  *
  * Returns: rgb colour space value (derived from @Yxy).
  **/
- static INLINE void YxyToRGB(const float* Yxy, float* rgb)
- {
-      float xyz[3];
-      xyz[0] = Yxy[0] * Yxy[1] / Yxy[2];
-      xyz[1] = Yxy[0];
-      xyz[2] = Yxy[0] * (1.0 - Yxy[1] - Yxy[2]) / Yxy[2];
- 
-      float xyz_rgb[3][3] = {{3.2404542, -1.5371385, -0.4985314}, {-0.9692660, 1.8760108, 0.0415560}, {0.0556434, -0.2040259, 1.0572252}};
+static INLINE void convert_yxy_to_rgb(const float* Yxy, float* rgb)
+{
+   float xyz[3];
+   float xyz_rgb[3][3] = {
+      {3.2404542, -1.5371385, -0.4985314},
+      {-0.9692660, 1.8760108,  0.0415560},
+      {0.0556434, -0.2040259, 1.0572252}
+   };
+   xyz[0]              = Yxy[0] * Yxy[1] / Yxy[2];
+   xyz[1]              = Yxy[0];
+   xyz[2]              = Yxy[0] * (1.0 - Yxy[1] - Yxy[2]) / Yxy[2];
 
-      rgb[0] = dot(xyz_rgb[0], xyz);
-      rgb[1] = dot(xyz_rgb[1], xyz);
-      rgb[2] = dot(xyz_rgb[2], xyz);
- }
+   rgb[0]              = dot_product(xyz_rgb[0], xyz);
+   rgb[1]              = dot_product(xyz_rgb[1], xyz);
+   rgb[2]              = dot_product(xyz_rgb[2], xyz);
+}
 
 #endif

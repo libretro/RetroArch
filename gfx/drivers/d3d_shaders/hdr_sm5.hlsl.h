@@ -5,9 +5,9 @@ SRC(
    {
       float4x4 modelViewProj;
       float contrast;         /* 2.0f;      */ 
-      float paperWhiteNits;   /* 200.0f;    */
-      float maxNits;          /* 1000.0f;   */
-      float expandGamut;      /* 1.0f;      */ 
+      float paper_white_nits; /* 200.0f;    */
+      float max_nits;         /* 1000.0f;   */
+      float expand_gamut;     /* 1.0f;      */ 
       float inverse_tonemap;
    };
    uniform UBO global;
@@ -83,7 +83,7 @@ SRC(
          float luma = dot(sdr.xyz, float3(0.2126, 0.7152, 0.0722));  /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
 
          /* Inverse reinhard tonemap */
-         float maxValue             = (global.maxNits / global.paperWhiteNits) + kEpsilon;
+         float maxValue             = (global.max_nits / global.paper_white_nits) + kEpsilon;
          float elbow                = maxValue / (maxValue - 1.0f);                          /* Convert (1.0 + epsilon) to infinite to range 1001 -> 1.0 */ 
          float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));              /* Convert 1001 to 1.0 to range 0.5 -> 1.0 */
          
@@ -110,12 +110,12 @@ SRC(
       /* Now convert into HDR10 */
       float3 rec2020 = mul(k709to2020, hdr);
 
-      if(global.expandGamut > 0.0f)
+      if(global.expand_gamut > 0.0f)
       {
          rec2020 = mul( kExpanded709to2020, hdr);
       }
 
-      float3 linearColour  = rec2020 * (global.paperWhiteNits / kMaxNitsFor2084);
+      float3 linearColour  = rec2020 * (global.paper_white_nits / kMaxNitsFor2084);
       float3 hdr10         = LinearToST2084(linearColour);
 
       return float4(hdr10, sdr.w);

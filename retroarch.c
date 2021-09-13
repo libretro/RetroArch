@@ -27746,134 +27746,145 @@ void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (!p_rarch->current_video || !p_rarch->current_video->read_frame_raw)
-      return NULL;
-   return p_rarch->current_video->read_frame_raw(
-         p_rarch->video_driver_data, width,
-         height, pitch);
+   if (      p_rarch->current_video 
+         &&  p_rarch->current_video->read_frame_raw)
+      return p_rarch->current_video->read_frame_raw(
+            p_rarch->video_driver_data, width,
+            height, pitch);
+   return NULL;
 }
 
-void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling)
+void video_driver_set_filtering(unsigned index,
+      bool smooth, bool ctx_scaling)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_filtering)
-      p_rarch->video_driver_poke->set_filtering(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_filtering)
+      p_rarch->video_driver_poke->set_filtering(
+            p_rarch->video_driver_data,
             index, smooth, ctx_scaling);
 }
 
 void video_driver_set_hdr_max_nits(float max_nits)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_max_nits)
-      p_rarch->video_driver_poke->set_hdr_max_nits(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_hdr_max_nits)
+      p_rarch->video_driver_poke->set_hdr_max_nits(
+            p_rarch->video_driver_data,
             max_nits);
 }
 
 void video_driver_set_hdr_paper_white_nits(float paper_white_nits)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_paper_white_nits)
-      p_rarch->video_driver_poke->set_hdr_paper_white_nits(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_hdr_paper_white_nits)
+      p_rarch->video_driver_poke->set_hdr_paper_white_nits(
+            p_rarch->video_driver_data,
             paper_white_nits);
 }
 
 void video_driver_set_hdr_contrast(float contrast)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_contrast)
-      p_rarch->video_driver_poke->set_hdr_contrast(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_hdr_contrast)
+      p_rarch->video_driver_poke->set_hdr_contrast(
+            p_rarch->video_driver_data,
             VIDEO_HDR_MAX_CONTRAST - contrast);
 }
 
 void video_driver_set_hdr_expand_gamut(bool expand_gamut)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_expand_gamut)
-      p_rarch->video_driver_poke->set_hdr_expand_gamut(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_hdr_expand_gamut)
+      p_rarch->video_driver_poke->set_hdr_expand_gamut(
+            p_rarch->video_driver_data,
             expand_gamut);
 }
 
-// Use this value as a replacement for anywhere where a pure white colour value is used in the UI.  
-// When HDR is turned on 1,1,1,1 should never really be used as this is peak brightness and could cause damage to displays over long periods of time 
-// and be quite hard to look at on really bright displays.  
-//Use paper white instead which is always defined as 0.5,0.5,0.5,1.0 or in other words is the top of the old sdr range
-unsigned video_driver_get_hdr_paper_white()
+/* Use this value as a replacement for anywhere 
+ * where a pure white colour value is used in the UI.  
+ *
+ * When HDR is turned on 1,1,1,1 should never really 
+ * be used as this is peak brightness and could cause 
+ * damage to displays over long periods of time 
+ * and be quite hard to look at on really bright displays.  
+ *
+ * Use paper white instead which is always defined as 
+ * 0.5, 0.5, 0.5, 1.0 or in other words is the top of 
+ * the old SDR (Standard Dynamic Range) range
+ */
+unsigned video_driver_get_hdr_paper_white(void)
 {
-   settings_t *settings                = config_get_ptr();
-   
-   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
-   {
-      // 0.5, 0.5, 0.5, 1
+   /* 0.5, 0.5, 0.5, 1 */
+   if (     video_driver_supports_hdr() 
+         && config_get_ptr()->bools.video_hdr_enable)
       return 0x7f7f7fff;
-   }
-   else
-   {
-      return 0xffffffff;
-   }
+   return 0xffffffff;
 }
 
-// Same as above but returns the white value in floats 
-float* video_driver_get_hdr_paper_white_float()
+/* Same as above but returns the white value in floats  */
+float *video_driver_get_hdr_paper_white_float(void)
 {
-   settings_t *settings                = config_get_ptr();
-   
-   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
-   {
-      static float g_paper_white[4] = { 0.5f, 0.5f, 0.5f, 1.0f};
-      return g_paper_white;
-   }
-   else
-   {
-      static float g_sdr_white[4] = { 1.0f, 1.0f, 1.0f, 1.0f};
-      return g_sdr_white;
-   }
+   static float paper_white[4] = { 0.5f, 0.5f, 0.5f, 1.0f};
+   static float sdr_white  [4] = { 1.0f, 1.0f, 1.0f, 1.0f};
+   if(      video_driver_supports_hdr() 
+         && config_get_ptr()->bools.video_hdr_enable)
+      return paper_white;
+   return sdr_white;
 }
 
-// This is useful to create a hdr white based off of some passed in nit level - say you want a slightly brighter than paper white value for some parts of the UI 
+/* This is useful to create a HDR (High Dynamic Range) white 
+ * based off of some passed in nit level - say you want a 
+ * slightly brighter than paper white value for some parts 
+ * of the UI 
+ */
 float video_driver_get_hdr_luminace(float nits)
 {
    settings_t *settings                = config_get_ptr();
-   
    if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
    {
-      float luminance = nits / settings->floats.video_hdr_paper_white_nits;
-
+      float luminance = nits / 
+         settings->floats.video_hdr_paper_white_nits;
       return luminance / (1.0f + luminance);
    }
-   else
-   {
-      return nits;
-   }
+   return nits;
 }
 
-// Get reinhard tone mapped colour value for UI elements when using HDR and its inverse tonemapper - normally dont use 
-// but useful if you want a specific colour to look the same after inverse tonemapping has been applied
+/* Get reinhard tone mapped colour value for UI elements 
+ * when using HDR and its inverse tonemapper - normally don't use 
+ * but useful if you want a specific colour to look the same 
+ * after inverse tonemapping has been applied */
 unsigned video_driver_get_hdr_color(unsigned color)
 {
-   settings_t *settings                = config_get_ptr();
-   
-   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
+   if(   video_driver_supports_hdr() 
+      && config_get_ptr()->bools.video_hdr_enable)
    {
+      float luminance;
       float rgb[3];
-      float Yxy[3];
+      float yxy[3];
 
       rgb[0] = (float)((color >> 24) & 0xFF) / 255.0f;
       rgb[1] = (float)((color >> 16) & 0xFF) / 255.0f;
       rgb[2] = (float)((color >> 8 ) & 0xFF) / 255.0f;
 
-      RGBToYxy(rgb, Yxy);
+      convert_rgb_to_yxy(rgb, yxy);
 
-      float luminance = Yxy[0];                 //TODO: We should probably scale this by average luminance
-      Yxy[0] = luminance / (1.0f + luminance);
-      
-      YxyToRGB(rgb, Yxy);
+      /* TODO: We should probably scale this by average luminance */
+      luminance = yxy[0];
+      yxy[0]    = luminance / (1.0f + luminance);
 
-      return ((unsigned)(saturate(rgb[0]) * 255.0f) << 24) | ((unsigned)(saturate(rgb[1]) * 255.0f) << 16) | ((unsigned)(saturate(rgb[2]) * 255.0f) << 8) | (color & 0xFF);
+      convert_yxy_to_rgb(rgb, yxy);
+
+      return (    (unsigned)(saturate_value(rgb[0]) * 255.0f) << 24) 
+              |  ((unsigned)(saturate_value(rgb[1]) * 255.0f) << 16) 
+              |  ((unsigned)(saturate_value(rgb[2]) * 255.0f) << 8) 
+              |   (color & 0xFF);
    }
-   else
-   {
-      return color;
-   }
+   return color;
 }
 
 void video_driver_cached_frame_set(const void *data, unsigned width,

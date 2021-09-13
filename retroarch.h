@@ -1604,8 +1604,9 @@ unsigned video_driver_get_hdr_color(unsigned color);
 
 float video_driver_get_hdr_luminace(float nits);
 
-unsigned video_driver_get_hdr_paper_white();
-float* video_driver_get_hdr_paper_white_float();
+unsigned video_driver_get_hdr_paper_white(void);
+
+float* video_driver_get_hdr_paper_white_float(void);
 
 bool video_driver_get_next_video_out(void);
 

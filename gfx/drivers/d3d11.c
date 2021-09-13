@@ -262,7 +262,7 @@ static void d3d11_set_hdr_max_nits(void *data, float max_nits)
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
    d3d11->hdr.max_output_nits             = max_nits;
-   d3d11->hdr.ubo_values.maxNits          = max_nits;
+   d3d11->hdr.ubo_values.max_nits         = max_nits;
 
    D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo,
          0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_ubo);
@@ -289,7 +289,7 @@ static void d3d11_set_hdr_paper_white_nits(void* data, float paper_white_nits)
    dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t      *d3d11              = (d3d11_video_t*)data;
 
-   d3d11->hdr.ubo_values.paperWhiteNits   = paper_white_nits;
+   d3d11->hdr.ubo_values.paper_white_nits = paper_white_nits;
 
    D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo,
          0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
@@ -319,7 +319,7 @@ static void d3d11_set_hdr_expand_gamut(void* data, bool expand_gamut)
    dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
-   d3d11->hdr.ubo_values.expandGamut      = expand_gamut;
+   d3d11->hdr.ubo_values.expand_gamut     = expand_gamut;
 
    D3D11MapBuffer(d3d11->context, d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
    ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
@@ -1144,17 +1144,17 @@ static void *d3d11_gfx_init(const video_info_t* video,
       D3D11_SUBRESOURCE_DATA ubo_data;
       matrix_4x4_ortho(d3d11->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
-      d3d11->hdr.ubo_values.mvp            = 
+      d3d11->hdr.ubo_values.mvp              = 
          d3d11->mvp_no_rot; 
-      d3d11->hdr.ubo_values.maxNits        = 
+      d3d11->hdr.ubo_values.max_nits         = 
          settings->floats.video_hdr_max_nits;
-      d3d11->hdr.ubo_values.paperWhiteNits = 
+      d3d11->hdr.ubo_values.paper_white_nits =
          settings->floats.video_hdr_paper_white_nits;
-      d3d11->hdr.ubo_values.contrast       = 
+      d3d11->hdr.ubo_values.contrast         = 
          VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast;
-      d3d11->hdr.ubo_values.expandGamut    = 
+      d3d11->hdr.ubo_values.expand_gamut    =
          settings->bools.video_hdr_expand_gamut;
-      d3d11->hdr.ubo_values.inverse_tonemap = 1.0f;  // Use this to turn on/off the inverse tonemap   
+      d3d11->hdr.ubo_values.inverse_tonemap = 1.0f;  /* Use this to turn on/off the inverse tonemap */
 
       desc.ByteWidth                       = sizeof(dxgi_hdr_uniform_t);
       desc.Usage                           = D3D11_USAGE_DYNAMIC;
