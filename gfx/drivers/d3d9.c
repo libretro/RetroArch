@@ -1578,7 +1578,7 @@ static bool d3d9_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d9_set_mvp(d3d->dev, &d3d->mvp);
+      d3d9_set_mvp(d3d->dev, &d3d->mvp_transposed);
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
