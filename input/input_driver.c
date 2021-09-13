@@ -2090,3 +2090,55 @@ void input_event_osk_append(
             word);
    }
 }
+
+void *input_driver_init_wrap(input_driver_t *input, const char *name)
+{
+   void *ret                   = NULL;
+   if (!input)
+      return NULL;
+   if ((ret = input->init(name)))
+   {
+      input_driver_init_joypads();
+      return ret;
+   }
+   return NULL;
+}
+
+bool input_driver_find_driver(
+      input_driver_state_t *input_driver_state,
+      settings_t *settings,
+      const char *prefix,
+      bool verbosity_enabled)
+{
+   int i                = (int)driver_find_index(
+         "input_driver",
+         settings->arrays.input_driver);
+
+   if (i >= 0)
+   {
+      input_driver_state->current_driver = (input_driver_t*)input_drivers[i];
+      RARCH_LOG("[Input]: Found %s: \"%s\".\n", prefix,
+            input_driver_state->current_driver->ident);
+   }
+   else
+   {
+      input_driver_t *tmp = NULL;
+      if (verbosity_enabled)
+      {
+         unsigned d;
+         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
+               settings->arrays.input_driver);
+         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+         for (d = 0; input_drivers[d]; d++)
+            RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
+         RARCH_WARN("Going to default to first %s...\n", prefix);
+      }
+
+      tmp = (input_driver_t*)input_drivers[0];
+      if (!tmp)
+         return false;
+      input_driver_state->current_driver = tmp;
+   }
+
+   return true;
+}

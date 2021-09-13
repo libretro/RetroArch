@@ -723,6 +723,12 @@ bool input_driver_toggle_button_combo(
       retro_time_t current_time,
       input_bits_t* p_input);
 
+bool input_driver_find_driver(
+      input_driver_state_t *input_driver_state,
+      settings_t *settings,
+      const char *prefix,
+      bool verbosity_enabled);
+
 int16_t input_state_wrap(
       input_driver_t *current_input,
       void *data,
