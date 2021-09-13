@@ -85,7 +85,7 @@ void convert_float_to_s16(int16_t *out,
 
 void convert_float_to_s16_init_simd(void)
 {
-   unsigned cpu = cpu_features_get();
+   uint64_t cpu = cpu_features_get();
 
    if (cpu & RETRO_SIMD_NEON)
       float_to_s16_neon_enabled = true;

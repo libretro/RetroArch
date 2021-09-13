@@ -32,6 +32,7 @@
 #endif
 
 #include "../command.h"
+#include "../driver.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../configuration.h"
