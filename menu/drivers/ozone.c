@@ -6914,7 +6914,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    gfx_display_set_width(width);
    gfx_display_set_height(height);
 
-   gfx_display_init_white_texture(gfx_display_white_texture);
+   gfx_display_init_white_texture();
 
    file_list_initialize(&ozone->horizontal_list);
 
@@ -7037,8 +7037,7 @@ static void ozone_free(void *data)
       menu_screensaver_free(ozone->screensaver);
    }
 
-   if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 
    font_driver_bind_block(NULL, NULL);
 }
@@ -7431,9 +7430,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          }
       }
 
-      if (gfx_display_white_texture)
-         video_driver_texture_unload(&gfx_display_white_texture);
-      gfx_display_init_white_texture(gfx_display_white_texture);
+      gfx_display_deinit_white_texture();
+      gfx_display_init_white_texture();
 
       /* Horizontal list */
       ozone_context_reset_horizontal_list(ozone);
@@ -7522,7 +7520,7 @@ static void ozone_context_destroy(void *data)
    /* Thumbnails */
    ozone_unload_thumbnail_textures(ozone);
 
-   video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 
    /* Fonts */
    ozone_font_free(&ozone->fonts.footer);

@@ -8056,8 +8056,7 @@ static void materialui_free(void *data)
    video_coord_array_free(&mui->font_data.list.raster_block.carr);
    video_coord_array_free(&mui->font_data.hint.raster_block.carr);
 
-   if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 
    font_driver_bind_block(NULL, NULL);
 
@@ -8077,7 +8076,7 @@ static void materialui_context_bg_destroy(materialui_handle_t *mui)
       return;
 
    video_driver_texture_unload(&mui->textures.bg);
-   video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 }
 
 static void materialui_reset_thumbnails(void)
@@ -8151,9 +8150,8 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
       materialui_context_bg_destroy(mui);
       video_driver_texture_load(data,
             TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
-      if (gfx_display_white_texture)
-         video_driver_texture_unload(&gfx_display_white_texture);
-      gfx_display_init_white_texture(gfx_display_white_texture);
+      gfx_display_deinit_white_texture();
+      gfx_display_init_white_texture();
    }
 
    return true;
@@ -8602,9 +8600,8 @@ static void materialui_context_reset(void *data, bool is_threaded)
 
    materialui_layout(mui, p_disp, settings, is_threaded);
    materialui_context_bg_destroy(mui);
-   if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
-   gfx_display_init_white_texture(gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
+   gfx_display_init_white_texture();
    materialui_context_reset_textures(mui);
    materialui_context_reset_playlist_icons(mui);
    menu_screensaver_context_destroy(mui->screensaver);

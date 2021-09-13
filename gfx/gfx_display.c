@@ -28,9 +28,8 @@
  * with Ozone driver metrics */
 #define OZONE_SIDEBAR_WIDTH 408
 
-/* TODO/FIXME - global that gets referenced outside,
- * needs to be refactored */
-uintptr_t gfx_display_white_texture;
+/* Small 1x1 white texture used for blending purposes */
+static uintptr_t gfx_white_texture;
 
 static bool gfx_display_null_font_init_first(
       void **font_handle, void *video_data,
@@ -516,7 +515,7 @@ void gfx_display_draw_bg(
    if (draw->texture)
       add_opacity_to_wallpaper       = true;
    else
-      draw->texture                  = gfx_display_white_texture;
+      draw->texture                  = gfx_white_texture;
 
    if (add_opacity_to_wallpaper)
       gfx_display_set_alpha(draw->color, override_opacity);
@@ -558,7 +557,9 @@ void gfx_display_draw_quad(
    draw.height          = h;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = (texture != 0) ? *texture : gfx_display_white_texture;
+   draw.texture         = (texture != 0) 
+      ? *texture 
+      : gfx_white_texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
@@ -615,7 +616,7 @@ void gfx_display_draw_polygon(
    draw.height           = height;
    draw.coords           = &coords;
    draw.matrix_data      = NULL;
-   draw.texture          = gfx_display_white_texture;
+   draw.texture          = gfx_white_texture;
    draw.prim_type        = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id      = 0;
    draw.scale_factor     = 1.0f;
@@ -1261,7 +1262,13 @@ void gfx_display_font_free(font_data_t *font)
    font_driver_free(font);
 }
 
-void gfx_display_init_white_texture(uintptr_t white_texture)
+void gfx_display_deinit_white_texture(void)
+{
+   if (gfx_white_texture)
+      video_driver_texture_unload(&gfx_white_texture);
+}
+
+void gfx_display_init_white_texture(void)
 {
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
@@ -1271,7 +1278,7 @@ void gfx_display_init_white_texture(uintptr_t white_texture)
    ti.pixels = (uint32_t*)&white_data;
 
    video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, &gfx_display_white_texture);
+         TEXTURE_FILTER_NEAREST, &gfx_white_texture);
 }
 
 void gfx_display_free(void)
