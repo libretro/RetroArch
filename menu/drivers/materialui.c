@@ -5244,6 +5244,7 @@ static void materialui_render_background(
    draw.pipeline_active       = false;
    draw.backend_data          = NULL;
    draw.color                 = draw_color;
+   draw.texture               = 0;
 
    if (mui->textures.bg && !libretro_running)
    {
@@ -5256,8 +5257,6 @@ static void materialui_render_background(
    }
    else
    {
-      draw.texture = gfx_display_white_texture;
-
       /* Copy 'list_background' colour to draw colour */
       memcpy(draw_color, mui->colors.list_background, sizeof(draw_color));
 
