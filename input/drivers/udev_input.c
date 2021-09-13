@@ -1228,8 +1228,8 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
-   static int device_keyboard                 = 0;
-   static int device_mouse                    = 0;
+   int device_keyboard                 = 0;
+   int device_mouse                    = 0;
    if (!enumerate)
       return false;
 
