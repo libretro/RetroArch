@@ -5058,6 +5058,102 @@ static unsigned menu_displaylist_parse_disk_options(
    return count;
 }
 
+static int menu_displaylist_parse_audio_device_list(
+      menu_displaylist_info_t *info, settings_t *settings)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   size_t menu_index            = 0;
+   unsigned count               = 0;
+   int i                        = -1;
+   int audio_device_index       = -1;
+   struct string_list *ptr      = NULL;
+
+   if (!settings || !setting)
+      goto end;
+
+   if (!audio_driver_get_devices_list((void**)&ptr))
+      goto end;
+
+   if (!ptr)
+      goto end;
+
+   /* Get index in the string list */
+   audio_device_index = string_list_find_elem(ptr, setting->value.target.string) - 1;
+
+   /* Add "Default" */
+   if (i == -1)
+   {
+      bool add = false;
+
+      if (menu_entries_append(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
+            "",
+            MENU_ENUM_LABEL_AUDIO_DEVICE_LIST,
+            MENU_SETTING_DROPDOWN_ITEM_AUDIO_DEVICE,
+            0, i, NULL))
+         add = true;
+
+      if (add)
+      {
+         /* Add checkmark if input is currently
+          * mapped to this entry */
+         if (audio_device_index == i)
+         {
+            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+            if (cbs)
+               cbs->checked = true;
+            menu_navigation_set_selection(menu_index);
+         }
+
+         count++;
+         menu_index++;
+      }
+   }
+
+   for (i = 0; i < ptr->size; i++)
+   {
+      bool add = false;
+
+      /* Add menu entry */
+      if (menu_entries_append(info->list,
+            ptr->elems[i].data,
+            ptr->elems[i].data,
+            MENU_ENUM_LABEL_AUDIO_DEVICE_LIST,
+            MENU_SETTING_DROPDOWN_ITEM_AUDIO_DEVICE,
+            0, i, NULL))
+         add = true;
+
+      if (add)
+      {
+         /* Add checkmark if input is currently
+          * mapped to this entry */
+         if (audio_device_index == i)
+         {
+            menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+            if (cbs)
+               cbs->checked = true;
+            menu_navigation_set_selection(menu_index);
+         }
+
+         count++;
+         menu_index++;
+      }
+   }
+
+end:
+   /* Fallback */
+   if (count == 0)
+      if (menu_entries_append(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0, NULL))
+         count++;
+
+   return count;
+}
+
 static int menu_displaylist_parse_input_device_type_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
@@ -13165,6 +13261,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count              = menu_displaylist_parse_input_description_kbd_list(info, settings);
+         info->flags       |= MD_FLAG_NEED_REFRESH
+                            | MD_FLAG_NEED_PUSH;
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count              = menu_displaylist_parse_audio_device_list(info, settings);
          info->flags       |= MD_FLAG_NEED_REFRESH
                             | MD_FLAG_NEED_PUSH;
          break;

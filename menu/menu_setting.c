@@ -2908,6 +2908,35 @@ static int setting_action_ok_select_physical_keyboard(
 }
 #endif
 
+#if !defined(RARCH_CONSOLE)
+static int setting_string_action_ok_audio_device(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char enum_idx[16];
+   if (!setting)
+      return -1;
+
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_AUDIO_DEVICE);
+   return 0;
+}
+
+static int setting_string_action_start_audio_device(rarch_setting_t *setting)
+{
+   if (!setting)
+      return -1;
+
+   strlcpy(setting->value.target.string, "", setting->size);
+
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   return 0;
+}
+#endif
+
 static int setting_string_action_left_string_options(
    rarch_setting_t* setting, size_t idx, bool wraparound)
 {
@@ -5093,6 +5122,18 @@ static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(
 }
 #endif
 
+static void setting_get_string_representation_string_audio_device(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   if (string_is_empty(setting->value.target.string))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+   else
+      strlcpy(s, setting->value.target.string, len);
+}
+
 static void setting_get_string_representation_crt_switch_resolution_super(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -5850,11 +5891,17 @@ static int setting_string_action_left_audio_device(
    audio_device_index--;
 
    /* Reset index if needed */
-   if (audio_device_index < 0)
+   if (audio_device_index < -1)
       audio_device_index = (int)(ptr->size - 1);
 
-   strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
+   if (audio_device_index < 0)
+      strlcpy(setting->value.target.string,
+            "", setting->size);
+   else
+      strlcpy(setting->value.target.string,
+            ptr->elems[audio_device_index].data, setting->size);
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return 0;
 }
 #endif
@@ -6128,16 +6175,21 @@ static int setting_string_action_right_audio_device(
       return -1;
 
    /* Get index in the string list */
-   audio_device_index = string_list_find_elem(ptr,setting->value.target.string) -1;
+   audio_device_index = string_list_find_elem(ptr,setting->value.target.string) - 1;
    audio_device_index++;
 
    /* Reset index if needed */
    if (audio_device_index == (signed)ptr->size)
-      audio_device_index = 0;
+      audio_device_index = -1;
 
-   strlcpy(setting->value.target.string,
-         ptr->elems[audio_device_index].data, setting->size);
+   if (audio_device_index < 0)
+      strlcpy(setting->value.target.string,
+            "", setting->size);
+   else
+      strlcpy(setting->value.target.string,
+            ptr->elems[audio_device_index].data, setting->size);
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return 0;
 }
 #endif
@@ -13691,11 +13743,12 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+         (*list)[list_info->index - 1].action_start  = &setting_string_action_start_audio_device;
          (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
          (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
+         (*list)[list_info->index - 1].action_ok     = &setting_string_action_ok_audio_device;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_string_audio_device;
 #endif
 
          CONFIG_UINT(
