@@ -1792,7 +1792,10 @@ static void frontend_unix_get_env(int *argc,
    }
 #else
    char base_path[PATH_MAX] = {0};
-#if defined(DINGUX)
+#if defined(RARCH_UNIX_CWD_ENV)
+   /* The entire path is zero initialized. */
+   base_path[0] = '.';
+#elif defined(DINGUX)
    dingux_get_base_path(base_path, sizeof(base_path));
 #else
    const char *xdg          = getenv("XDG_CONFIG_HOME");
