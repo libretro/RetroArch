@@ -2363,7 +2363,8 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/dot_matrix_3x.o \
           gfx/video_filters/dot_matrix_4x.o \
           gfx/video_filters/upscale_1_5x.o \
-          gfx/video_filters/upscale_256x_320x240.o
+          gfx/video_filters/upscale_256x_320x240.o \
+          gfx/video_filters/picoscale_256x_320x240.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
