@@ -37,7 +37,7 @@ else ifeq ($(LIBRETRO), bluemsx)
 else ifeq ($(LIBRETRO), cap32)
 	APP_TITLE            = Caprice32
 	APP_AUTHOR           = various
-	APP_PRODUCT_CODE     = CAP32-DOSBOX
+	APP_PRODUCT_CODE     = RARCH-CAP32
 	APP_UNIQUE_ID        = 0xBAC3E
 	APP_ICON             = pkg/ctr/assets/Caprice32.png
 	APP_BANNER           = pkg/ctr/assets/Caprice32_banner.png
@@ -189,6 +189,27 @@ else ifeq ($(LIBRETRO), gambatte)
 	APP_UNIQUE_ID        = 0xBAC01
 	APP_ICON             = pkg/ctr/assets/gambatte.png
 	APP_BANNER           = pkg/ctr/assets/gambatte_banner.png
+
+else ifeq ($(LIBRETRO), gearboy)
+	APP_TITLE            = Gearboy
+	APP_PRODUCT_CODE     = RARCH-GEARBOY
+	APP_UNIQUE_ID        = 0xBACD4
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), gearcoleco)
+	APP_TITLE            = Gearcoleco
+	APP_PRODUCT_CODE     = RARCH-GEARCOLECO
+	APP_UNIQUE_ID        = 0xBACD5
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), gearsystem)
+	APP_TITLE            = gearsystem
+	APP_PRODUCT_CODE     = RARCH-GEARSYSTEM
+	APP_UNIQUE_ID        = 0xBACD6
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), genesis_plus_gx)
 	APP_TITLE            = Genesis Plus GX Libretro
