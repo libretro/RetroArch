@@ -188,6 +188,10 @@ endif
 
 ifeq ($(HAVE_UNIX), 1)
    OBJ += frontend/drivers/platform_unix.o
+
+	ifeq ($(UNIX_CWD_ENV), 1)
+		DEF_FLAGS += -DRARCH_UNIX_CWD_ENV
+	endif
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
