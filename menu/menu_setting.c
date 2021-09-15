@@ -7414,7 +7414,7 @@ static void get_string_representation_mouse_index(rarch_setting_t *setting, char
       else
          snprintf(s, len,
                "%s",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE));
    }
    else
       snprintf(s, len,
