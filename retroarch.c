@@ -453,17 +453,7 @@ void *video_driver_get_data(void)
 
 /* DRIVERS */
 
-/**
- * driver_find_index:
- * @label              : string of driver type to be found.
- * @drv                : identifier of driver to be found.
- *
- * Find index of the driver, based on @label.
- *
- * Returns: -1 if no driver based on @label and @drv found, otherwise
- * index number of the driver found in the array.
- **/
-static int driver_find_index(const char *label, const char *drv)
+int driver_find_index(const char *label, const char *drv)
 {
    unsigned i;
    char str[256];
@@ -20304,60 +20294,6 @@ void input_driver_init_joypads(void)
 #endif
 }
 
-void *input_driver_init_wrap(input_driver_t *input, const char *name)
-{
-   void *ret                   = NULL;
-   if (!input)
-      return NULL;
-   if ((ret = input->init(name)))
-   {
-      input_driver_init_joypads();
-      return ret;
-   }
-   return NULL;
-}
-
-static bool input_driver_find_driver(
-      struct rarch_state *p_rarch,
-      settings_t *settings,
-      const char *prefix,
-      bool verbosity_enabled)
-{
-   int i                = (int)driver_find_index(
-         "input_driver",
-         settings->arrays.input_driver);
-
-   if (i >= 0)
-   {
-      p_rarch->input_driver_state.current_driver = (input_driver_t*)input_drivers[i];
-      RARCH_LOG("[Input]: Found %s: \"%s\".\n", prefix,
-            p_rarch->input_driver_state.current_driver->ident);
-   }
-   else
-   {
-      if (verbosity_enabled)
-      {
-         unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.input_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; input_drivers[d]; d++)
-            RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
-         RARCH_WARN("Going to default to first %s...\n", prefix);
-      }
-
-      p_rarch->input_driver_state.current_driver = (input_driver_t*)input_drivers[0];
-
-      if (!p_rarch->input_driver_state.current_driver)
-      {
-         retroarch_fail(p_rarch, 1, "find_input_driver()");
-         return false;
-      }
-   }
-
-   return true;
-}
-
 #ifdef HAVE_COMMAND
 static void input_driver_init_command(struct rarch_state *p_rarch,
       settings_t *settings)
@@ -22138,6 +22074,7 @@ static bool audio_driver_find_driver(struct rarch_state *p_rarch,
          audio_drivers[i];
    else
    {
+      const audio_driver_t *tmp = NULL;
       if (verbosity_enabled)
       {
          unsigned d;
@@ -22152,11 +22089,11 @@ static bool audio_driver_find_driver(struct rarch_state *p_rarch,
          RARCH_WARN("Going to default to first %s...\n", prefix);
       }
 
-      p_rarch->current_audio = (const audio_driver_t*)
-         audio_drivers[0];
+      tmp = (const audio_driver_t*)audio_drivers[0];
 
-      if (!p_rarch->current_audio)
-         retroarch_fail(p_rarch, 1, "audio_driver_find()");
+      if (!tmp)
+         return false;
+      p_rarch->current_audio = tmp;
    }
 
    return true;
@@ -22222,8 +22159,9 @@ static bool audio_driver_init_internal(
       return false;
    }
 
-   audio_driver_find_driver(p_rarch, settings,
-         "audio driver", verbosity_enabled);
+   if (!(audio_driver_find_driver(p_rarch, settings,
+         "audio driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "audio_driver_find()");
 
    if (!p_rarch->current_audio || !p_rarch->current_audio->init)
    {
@@ -24143,8 +24081,12 @@ static void video_driver_init_input(
    if (tmp)
       *input = tmp;
    else
-      input_driver_find_driver(p_rarch, settings, "input driver",
-            verbosity_enabled);
+   {
+      if (!(input_driver_find_driver(
+            &p_rarch->input_driver_state, settings, "input driver",
+            verbosity_enabled)))
+         retroarch_fail(p_rarch, 1, "find_input_driver()");
+   }
 
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
@@ -24868,51 +24810,145 @@ void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (!p_rarch->current_video || !p_rarch->current_video->read_frame_raw)
-      return NULL;
-   return p_rarch->current_video->read_frame_raw(
-         p_rarch->video_driver_data, width,
-         height, pitch);
+   if (      p_rarch->current_video 
+         &&  p_rarch->current_video->read_frame_raw)
+      return p_rarch->current_video->read_frame_raw(
+            p_rarch->video_driver_data, width,
+            height, pitch);
+   return NULL;
 }
 
-void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling)
+void video_driver_set_filtering(unsigned index,
+      bool smooth, bool ctx_scaling)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_filtering)
-      p_rarch->video_driver_poke->set_filtering(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_filtering)
+      p_rarch->video_driver_poke->set_filtering(
+            p_rarch->video_driver_data,
             index, smooth, ctx_scaling);
 }
 
 void video_driver_set_hdr_max_nits(float max_nits)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_max_nits)
-      p_rarch->video_driver_poke->set_hdr_max_nits(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_hdr_max_nits)
+      p_rarch->video_driver_poke->set_hdr_max_nits(
+            p_rarch->video_driver_data,
             max_nits);
 }
 
 void video_driver_set_hdr_paper_white_nits(float paper_white_nits)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_paper_white_nits)
-      p_rarch->video_driver_poke->set_hdr_paper_white_nits(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_hdr_paper_white_nits)
+      p_rarch->video_driver_poke->set_hdr_paper_white_nits(
+            p_rarch->video_driver_data,
             paper_white_nits);
 }
 
 void video_driver_set_hdr_contrast(float contrast)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_contrast)
-      p_rarch->video_driver_poke->set_hdr_contrast(p_rarch->video_driver_data,
-            contrast);
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_hdr_contrast)
+      p_rarch->video_driver_poke->set_hdr_contrast(
+            p_rarch->video_driver_data,
+            VIDEO_HDR_MAX_CONTRAST - contrast);
 }
 
 void video_driver_set_hdr_expand_gamut(bool expand_gamut)
 {
    struct rarch_state            *p_rarch = &rarch_st;
-   if (p_rarch->video_driver_poke && p_rarch->video_driver_poke->set_hdr_expand_gamut)
-      p_rarch->video_driver_poke->set_hdr_expand_gamut(p_rarch->video_driver_data,
+   if (     p_rarch->video_driver_poke 
+         && p_rarch->video_driver_poke->set_hdr_expand_gamut)
+      p_rarch->video_driver_poke->set_hdr_expand_gamut(
+            p_rarch->video_driver_data,
             expand_gamut);
+}
+
+/* Use this value as a replacement for anywhere 
+ * where a pure white colour value is used in the UI.  
+ *
+ * When HDR is turned on 1,1,1,1 should never really 
+ * be used as this is peak brightness and could cause 
+ * damage to displays over long periods of time 
+ * and be quite hard to look at on really bright displays.  
+ *
+ * Use paper white instead which is always defined as 
+ * 0.5, 0.5, 0.5, 1.0 or in other words is the top of 
+ * the old SDR (Standard Dynamic Range) range
+ */
+unsigned video_driver_get_hdr_paper_white(void)
+{
+   /* 0.5, 0.5, 0.5, 1 */
+   if (     video_driver_supports_hdr() 
+         && config_get_ptr()->bools.video_hdr_enable)
+      return 0x7f7f7fff;
+   return 0xffffffff;
+}
+
+/* Same as above but returns the white value in floats  */
+float *video_driver_get_hdr_paper_white_float(void)
+{
+   static float paper_white[4] = { 0.5f, 0.5f, 0.5f, 1.0f};
+   static float sdr_white  [4] = { 1.0f, 1.0f, 1.0f, 1.0f};
+   if(      video_driver_supports_hdr() 
+         && config_get_ptr()->bools.video_hdr_enable)
+      return paper_white;
+   return sdr_white;
+}
+
+/* This is useful to create a HDR (High Dynamic Range) white 
+ * based off of some passed in nit level - say you want a 
+ * slightly brighter than paper white value for some parts 
+ * of the UI 
+ */
+float video_driver_get_hdr_luminance(float nits)
+{
+   settings_t *settings                = config_get_ptr();
+   if(video_driver_supports_hdr() && settings->bools.video_hdr_enable)
+   {
+      float luminance = nits / 
+         settings->floats.video_hdr_paper_white_nits;
+      return luminance / (1.0f + luminance);
+   }
+   return nits;
+}
+
+/* Get reinhard tone mapped colour value for UI elements 
+ * when using HDR and its inverse tonemapper - normally don't use 
+ * but useful if you want a specific colour to look the same 
+ * after inverse tonemapping has been applied */
+unsigned video_driver_get_hdr_color(unsigned color)
+{
+   if(   video_driver_supports_hdr() 
+      && config_get_ptr()->bools.video_hdr_enable)
+   {
+      float luminance;
+      float rgb[3];
+      float yxy[3];
+
+      rgb[0] = (float)((color >> 24) & 0xFF) / 255.0f;
+      rgb[1] = (float)((color >> 16) & 0xFF) / 255.0f;
+      rgb[2] = (float)((color >> 8 ) & 0xFF) / 255.0f;
+
+      convert_rgb_to_yxy(rgb, yxy);
+
+      /* TODO: We should probably scale this by average luminance */
+      luminance = yxy[0];
+      yxy[0]    = luminance / (1.0f + luminance);
+
+      convert_yxy_to_rgb(rgb, yxy);
+
+      return (    (unsigned)(saturate_value(rgb[0]) * 255.0f) << 24) 
+              |  ((unsigned)(saturate_value(rgb[1]) * 255.0f) << 16) 
+              |  ((unsigned)(saturate_value(rgb[2]) * 255.0f) << 8) 
+              |   (color & 0xFF);
+   }
+   return color;
 }
 
 void video_driver_cached_frame_set(const void *data, unsigned width,
@@ -29888,12 +29924,16 @@ bool retroarch_main_init(int argc, char *argv[])
     * Attempts to find a default driver for
     * all driver types.
     */
-   audio_driver_find_driver(p_rarch, settings,
-         "audio driver", verbosity_enabled);
+   if (!(audio_driver_find_driver(p_rarch, settings,
+         "audio driver", verbosity_enabled)))
+      retroarch_fail(p_rarch, 1, "audio_driver_find()");
    video_driver_find_driver(p_rarch, settings,
          "video driver", verbosity_enabled);
-   input_driver_find_driver(p_rarch, settings,
-         "input driver", verbosity_enabled);
+   if (!input_driver_find_driver(
+         &p_rarch->input_driver_state, settings,
+         "input driver", verbosity_enabled))
+      retroarch_fail(p_rarch, 1, "find_input_driver()");
+
    camera_driver_find_driver(p_rarch, settings,
          "camera driver", verbosity_enabled);
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);

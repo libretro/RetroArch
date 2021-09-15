@@ -4310,37 +4310,35 @@ static void xmb_draw_dark_layer(
       unsigned height)
 {
    gfx_display_ctx_draw_t draw;
-   struct video_coords coords;
-   float black[16]               = {
+   float black[16]      = {
       0, 0, 0, 1,
       0, 0, 0, 1,
       0, 0, 0, 1,
       0, 0, 0, 1,
    };
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   gfx_display_ctx_driver_t 
+      *dispctx          = p_disp->dispctx;
 
-   gfx_display_set_alpha(black, MIN(xmb->alpha, 0.75));
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = &black[0];
-
-   draw.x           = 0;
-   draw.y           = 0;
-   draw.width       = width;
-   draw.height      = height;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = gfx_display_white_texture;
-   draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline_id = 0;
+   draw.x               = 0;
+   draw.y               = 0;
+   draw.width           = width;
+   draw.height          = height;
+   draw.color           = &black[0];
+   draw.vertex          = NULL;
+   draw.matrix_data     = NULL;
+   draw.tex_coord       = NULL;
+   draw.vertex_count    = 4;
+   draw.texture         = 0;
+   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline_id     = 0;
+   draw.pipeline_active = false;
 
    if (dispctx)
    {
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
+      gfx_display_draw_bg(p_disp, &draw, userdata,
+            true, MIN(xmb->alpha, 0.75));
       if (draw.height > 0 && draw.width > 0)
          if (dispctx && dispctx->draw)
             dispctx->draw(&draw, userdata, width, height);
@@ -5827,7 +5825,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    gfx_display_set_width(width);
    gfx_display_set_height(height);
 
-   gfx_display_init_white_texture(gfx_display_white_texture);
+   gfx_display_init_white_texture();
 
    file_list_initialize(&xmb->horizontal_list);
 
@@ -5903,9 +5901,7 @@ static void xmb_free(void *data)
       menu_screensaver_free(xmb->screensaver);
    }
 
-   if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
-
+   gfx_display_deinit_white_texture();
    font_driver_bind_block(NULL, NULL);
 }
 
@@ -5914,7 +5910,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
    if (!xmb)
       return;
    video_driver_texture_unload(&xmb->textures.bg);
-   video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 }
 
 static bool xmb_load_image(void *userdata, void *data,
@@ -5930,12 +5926,11 @@ static bool xmb_load_image(void *userdata, void *data,
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
          video_driver_texture_unload(&xmb->textures.bg);
-         if (gfx_display_white_texture)
-            video_driver_texture_unload(&gfx_display_white_texture);
+         gfx_display_deinit_white_texture();
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &xmb->textures.bg);
-         gfx_display_init_white_texture(gfx_display_white_texture);
+         gfx_display_init_white_texture();
          break;
       case MENU_IMAGE_NONE:
       default:
@@ -6209,9 +6204,8 @@ static void xmb_context_reset_textures(
 
    xmb->assets_missing = false;
 
-   if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
-   gfx_display_init_white_texture(gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
+   gfx_display_init_white_texture();
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {

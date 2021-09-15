@@ -342,16 +342,18 @@ float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height);
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,
-      unsigned width, unsigned height);
+      unsigned width, unsigned height,
+      bool fullscreen,
+      bool is_widget);
 
-void gfx_display_init_white_texture(uintptr_t white_texture);
+void gfx_display_deinit_white_texture(void);
+
+void gfx_display_init_white_texture(void);
 
 bool gfx_display_driver_exists(const char *s);
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
-
-extern uintptr_t gfx_display_white_texture;
 
 extern gfx_display_ctx_driver_t gfx_display_ctx_gl;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gl_core;

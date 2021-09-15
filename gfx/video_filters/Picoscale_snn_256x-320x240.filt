@@ -1,0 +1,7 @@
+filter = picoscale_256x_320x240
+
+# Filter Type:
+# - snn: "smoothed" nearest neighbour
+# - bl2: 2-level-bilinear with 2 quantized weights
+# - bl4: 4-level-bilinear with 4 quantized weights
+picoscale_256x_320x240_filter_type = "snn"

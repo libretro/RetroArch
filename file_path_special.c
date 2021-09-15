@@ -107,6 +107,9 @@ bool fill_pathname_application_data(char *s, size_t len)
             "Library/Application Support/RetroArch", len);
       return true;
    }
+#elif defined(RARCH_UNIX_CWD_ENV)
+   getcwd(s, len);
+   return true;
 #elif defined(DINGUX)
    dingux_get_base_path(s, len);
    return true;

@@ -86,79 +86,6 @@ const static gfx_widget_t* const widgets[] = {
    &gfx_widget_load_content_animation
 };
 
-static float gfx_display_get_widget_dpi_scale(
-      gfx_display_t *p_disp,
-      settings_t *settings,
-      unsigned width, unsigned height, bool fullscreen)
-{
-   static unsigned last_width                          = 0;
-   static unsigned last_height                         = 0;
-   static float scale                                  = 0.0f;
-   static bool scale_cached                            = false;
-   bool scale_updated                                  = false;
-   static float last_menu_scale_factor                 = 0.0f;
-   static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
-   static float adjusted_scale                         = 1.0f;
-   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
-#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
-   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
-#else
-   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
-   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
-   float menu_widget_scale_factor                      = fullscreen ?
-         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
-#endif
-   float menu_scale_factor                             = menu_widget_scale_factor;
-
-   if (gfx_widget_scale_auto)
-   {
-#ifdef HAVE_RGUI
-      /* When using RGUI, _menu_scale_factor
-       * is ignored
-       * > If we are not using a widget scale factor override,
-       *   just set menu_scale_factor to 1.0 */
-      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
-         menu_scale_factor                             = 1.0f;
-      else
-#endif
-      {
-         float _menu_scale_factor                      = 
-            settings->floats.menu_scale_factor;
-         menu_scale_factor                             = _menu_scale_factor;
-      }
-   }
-
-   /* Scale is based on display metrics - these are a fixed
-    * hardware property. To minimise performance overheads
-    * we therefore only call video_context_driver_get_metrics()
-    * on first run, or when the current video resolution changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
-   {
-      scale         = gfx_display_get_dpi_scale_internal(width, height);
-      scale_cached  = true;
-      scale_updated = true;
-      last_width    = width;
-      last_height   = height;
-   }
-
-   /* Adjusted scale calculation may also be slow, so
-    * only update if something changes */
-   if (scale_updated ||
-       (menu_scale_factor != last_menu_scale_factor) ||
-       (p_disp->menu_driver_id != last_menu_driver_id))
-   {
-      adjusted_scale         = gfx_display_get_adjusted_scale(
-            p_disp,
-            scale, menu_scale_factor, width);
-      last_menu_scale_factor = menu_scale_factor;
-      last_menu_driver_id    = p_disp->menu_driver_id;
-   }
-
-   return adjusted_scale;
-}
-
 #if defined(HAVE_MENU) && defined(HAVE_XMB)
 static float gfx_display_get_widget_pixel_scale(
       gfx_display_t *p_disp,
@@ -995,8 +922,9 @@ void gfx_widgets_iterate(
       scale_factor                  = gfx_display_get_widget_pixel_scale(p_disp, settings, width, height, fullscreen);
    else
 #endif
-      scale_factor                  = gfx_display_get_widget_dpi_scale(p_disp,
-            settings, width, height, fullscreen);
+      scale_factor                  = gfx_display_get_dpi_scale(
+            p_disp,
+            settings, width, height, fullscreen, true);
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
@@ -2079,11 +2007,11 @@ static void gfx_widgets_context_reset(
             p_dispwidget->last_video_height, fullscreen);
    else
 #endif
-      p_dispwidget->last_scale_factor = gfx_display_get_widget_dpi_scale(
+      p_dispwidget->last_scale_factor = gfx_display_get_dpi_scale(
                      p_disp, settings,
                      p_dispwidget->last_video_width,
                      p_dispwidget->last_video_height,
-                     fullscreen);
+                     fullscreen, true);
 
    gfx_widgets_layout(p_disp, p_dispwidget,
          is_threaded, dir_assets, font_path);

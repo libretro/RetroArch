@@ -5820,7 +5820,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->widgets_supported = gfx_widgets_ready();
 
    if (rgui->widgets_supported)
-      gfx_display_init_white_texture(gfx_display_white_texture);
+      gfx_display_init_white_texture();
 #endif
 
    rgui->menu_title[0]    = '\0';
@@ -5927,10 +5927,7 @@ static void rgui_free(void *data)
    {
 #ifdef HAVE_GFX_WIDGETS
       if (rgui->widgets_supported)
-      {
-         if (gfx_display_white_texture)
-            video_driver_texture_unload(&gfx_display_white_texture);
-      }
+         gfx_display_deinit_white_texture();
 #endif
       if (rgui->thumbnail_path_data)
          free(rgui->thumbnail_path_data);
@@ -6882,9 +6879,8 @@ static void rgui_context_reset(void *data, bool is_threaded)
 #ifdef HAVE_GFX_WIDGETS
    if (rgui->widgets_supported)
    {
-      if (gfx_display_white_texture)
-         video_driver_texture_unload(&gfx_display_white_texture);
-      gfx_display_init_white_texture(gfx_display_white_texture);
+      gfx_display_deinit_white_texture();
+      gfx_display_init_white_texture();
    }
 #endif
    video_driver_monitor_reset();
@@ -6899,7 +6895,7 @@ static void rgui_context_destroy(void *data)
 
 #ifdef HAVE_GFX_WIDGETS
    if (rgui->widgets_supported)
-      video_driver_texture_unload(&gfx_display_white_texture);
+      gfx_display_deinit_white_texture();
 #endif
 }
 

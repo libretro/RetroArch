@@ -806,6 +806,8 @@ void recording_driver_update_streaming_url(void);
 #define VIDEO_SHADER_MENU_6      (GFX_MAX_SHADERS - 7)
 #define VIDEO_SHADER_STOCK_HDR   (GFX_MAX_SHADERS - 8)
 
+#define VIDEO_HDR_MAX_CONTRAST 10.0f
+
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
 #elif defined(__PSL1GHT__) || defined(HAVE_OPENGLES2) || defined(HAVE_GLSL)
@@ -1597,6 +1599,14 @@ void video_driver_set_hdr_support(void);
 void video_driver_unset_hdr_support(void);
 
 bool video_driver_supports_hdr(void);
+
+unsigned video_driver_get_hdr_color(unsigned color);
+
+float video_driver_get_hdr_luminance(float nits);
+
+unsigned video_driver_get_hdr_paper_white(void);
+
+float* video_driver_get_hdr_paper_white_float(void);
 
 bool video_driver_get_next_video_out(void);
 

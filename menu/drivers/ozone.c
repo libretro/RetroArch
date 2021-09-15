@@ -6792,7 +6792,7 @@ static void ozone_menu_animation_update_time(
     *   default scroll speed equal to that of the
     *   non-smooth ticker */
    *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(p_disp,
-         settings, video_width, video_height) * 0.5f;
+         settings, video_width, video_height, false, false) * 0.5f;
 }
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
@@ -6825,7 +6825,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->last_width        = width;
    ozone->last_height       = height;
    ozone->last_scale_factor = gfx_display_get_dpi_scale(p_disp,
-         settings, width, height);
+         settings, width, height, false, false);
 
    file_list_initialize(&ozone->selection_buf_old);
 
@@ -6914,7 +6914,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    gfx_display_set_width(width);
    gfx_display_set_height(height);
 
-   gfx_display_init_white_texture(gfx_display_white_texture);
+   gfx_display_init_white_texture();
 
    file_list_initialize(&ozone->horizontal_list);
 
@@ -7037,8 +7037,7 @@ static void ozone_free(void *data)
       menu_screensaver_free(ozone->screensaver);
    }
 
-   if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 
    font_driver_bind_block(NULL, NULL);
 }
@@ -7431,9 +7430,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          }
       }
 
-      if (gfx_display_white_texture)
-         video_driver_texture_unload(&gfx_display_white_texture);
-      gfx_display_init_white_texture(gfx_display_white_texture);
+      gfx_display_deinit_white_texture();
+      gfx_display_init_white_texture();
 
       /* Horizontal list */
       ozone_context_reset_horizontal_list(ozone);
@@ -7522,7 +7520,7 @@ static void ozone_context_destroy(void *data)
    /* Thumbnails */
    ozone_unload_thumbnail_textures(ozone);
 
-   video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 
    /* Fonts */
    ozone_font_free(&ozone->fonts.footer);
@@ -7891,7 +7889,8 @@ static void ozone_render(void *data,
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   scale_factor = gfx_display_get_dpi_scale(p_disp, settings, width, height);
+   scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
+         width, height, false, false);
 
    if ((scale_factor != ozone->last_scale_factor) ||
        (width != ozone->last_width) ||

@@ -196,14 +196,41 @@ static void udev_handle_keyboard(void *data,
          else
             BIT_CLEAR(udev->state, keysym);
 
-#ifdef UDEV_XKB_HANDLING
-         if (udev->xkb_handling && handle_xkb(keysym, event->value) == 0)
-            return;
-#endif
+         /* TODO/FIXME: The udev driver is incomplete.
+          * When calling input_keyboard_event() the
+          * following parameters are omitted:
+          * - character: the localised Unicode/UTF-8
+          *   value of the pressed key
+          * - mod: the current keyboard modifier
+          *   bitmask
+          * Without these values, input_keyboard_event()
+          * does not function correctly (e.g. it is
+          * impossible to use text entry in the menu).
+          * I cannot find any usable reference for
+          * converting a udev-returned key code into a
+          * localised Unicode/UTF-8 value, so for the
+          * time being we must rely on other sources:
+          * - If we are using an X11-based context driver,
+          *   input_keyboard_event() is handled correctly
+          *   in x11_common:x11_check_window()
+          * - If we are using KMS, input_keyboard_event()
+          *   is handled correctly in
+          *   keyboard_event_xkb:handle_xkb()
+          * If neither are available, then just call
+          * input_keyboard_event() without character and
+          * mod, and hope for the best... */
 
-         input_keyboard_event(event->value,
-               input_keymaps_translate_keysym_to_rk(keysym),
-               0, 0, RETRO_DEVICE_KEYBOARD);
+         if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+         {
+#ifdef UDEV_XKB_HANDLING
+            if (udev->xkb_handling && handle_xkb(keysym, event->value) == 0)
+               return;
+#endif
+            input_keyboard_event(event->value,
+                  input_keymaps_translate_keysym_to_rk(keysym),
+                  0, 0, RETRO_DEVICE_KEYBOARD);
+         }
+
          break;
 
       default:
@@ -486,35 +513,32 @@ static void udev_handle_mouse(void *data,
 static int udev_input_add_device(udev_input_t *udev,
       enum udev_input_dev_type type, const char *devnode, device_handle_cb cb)
 {
-   unsigned char keycaps[(KEY_MAX / 8) + 1];
-   unsigned char abscaps[(ABS_MAX / 8) + 1];
-   int has_absolutes = 0;
-   int fd;
+   unsigned char keycaps[(KEY_MAX / 8) + 1] = {'\0'};
+   unsigned char abscaps[(ABS_MAX / 8) + 1] = {'\0'};
+   udev_input_device_t **tmp                = NULL;
+   udev_input_device_t *device              = NULL;
+   int has_absolutes                        = 0;
+   int fd                                   = -1;
+   int ret                                  = 0;
    struct stat st;
 #if defined(HAVE_EPOLL)
    struct epoll_event event;
 #elif defined(HAVE_KQUEUE)
    struct kevent event;
 #endif
-   struct input_absinfo absinfo;
-   udev_input_device_t **tmp;
-   udev_input_device_t *device = NULL;
 
-   memset(keycaps, '\0', sizeof (keycaps));
-   memset(keycaps, '\0', sizeof (abscaps));
-    
-   st.st_dev                   = 0;
+   st.st_dev = 0;
 
    if (stat(devnode, &st) < 0)
-      return false;
+      goto end;
 
    fd = open(devnode, O_RDONLY | O_NONBLOCK);
    if (fd < 0)
-      return false;
+      goto end;
 
    device = (udev_input_device_t*)calloc(1, sizeof(*device));
    if (!device)
-      goto error;
+      goto end;
 
    device->fd        = fd;
    device->dev       = st.st_dev;
@@ -526,46 +550,51 @@ static int udev_input_add_device(udev_input_t *udev,
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
    if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD )
    {
+      /* gotta have some buttons!  return -1 to skip error logging for this:)  */
       if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof (keycaps)), keycaps) == -1)
-        return -1;  /* gotta have some buttons!  return -1 to skip error logging for this:)  */
-
-
+      {
+         ret = -1;
+         goto end;
+      }
 
       if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof (abscaps)), abscaps) != -1)
       {
-          if ( (test_bit(abscaps, ABS_X)) && (test_bit(abscaps, ABS_Y)) )
-          {
-              /* might be a touchpad... */
-              if (test_bit(keycaps, BTN_TOUCH))
-              {
-                  /* touchpad, touchscreen, or tablet. */
-                  has_absolutes = 1;
-              } 
-          } 
-      } 
-      device->mouse.x_min = device->mouse.y_min = device->mouse.x_max = device->mouse.y_max = 0;
+         if ( (test_bit(abscaps, ABS_X)) && (test_bit(abscaps, ABS_Y)) )
+         {
+            /* might be a touchpad... */
+            if (test_bit(keycaps, BTN_TOUCH))
+            {
+               /* touchpad, touchscreen, or tablet. */
+               has_absolutes = 1;
+            }
+         }
+      }
+
+      device->mouse.x_min = 0;
+      device->mouse.y_min = 0;
+      device->mouse.x_max = 0;
+      device->mouse.y_max = 0;
 
       if (has_absolutes)
       {
-          struct input_absinfo absinfo;
-          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
-              return 0;
-          device->mouse.x_min = absinfo.minimum;
-          device->mouse.x_max = absinfo.maximum;
+         struct input_absinfo absinfo;
+         if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
+            goto end;
+         device->mouse.x_min = absinfo.minimum;
+         device->mouse.x_max = absinfo.maximum;
 
-          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
-              return 0;
-          device->mouse.y_min = absinfo.minimum;
-          device->mouse.y_max = absinfo.maximum;
+         if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
+            goto end;
+         device->mouse.y_min = absinfo.minimum;
+         device->mouse.y_max = absinfo.maximum;
       } 
-
    }
 
-   tmp = ( udev_input_device_t**)realloc(udev->devices,
+   tmp = (udev_input_device_t**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
 
    if (!tmp)
-      goto error;
+      goto end;
 
    tmp[udev->num_devices++] = device;
    udev->devices            = tmp;
@@ -589,14 +618,20 @@ static int udev_input_add_device(udev_input_t *udev,
    }
 #endif
 
-   return true;
+   ret = 1;
 
-error:
-   close(fd);
-   if (device)
-      free(device);
+end:
+   /* Free resources in the event of
+    * an error */
+   if (ret != 1)
+   {
+      if (fd >= 0)
+         close(fd);
+      if (device)
+         free(device);
+   }
 
-   return false;
+   return ret;
 }
 
 static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
@@ -1228,8 +1263,8 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
-   static int device_keyboard                 = 0;
-   static int device_mouse                    = 0;
+   int device_keyboard                 = 0;
+   int device_mouse                    = 0;
    if (!enumerate)
       return false;
 

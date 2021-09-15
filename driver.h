@@ -83,6 +83,18 @@ typedef struct driver_ctx_info
 
 bool driver_ctl(enum driver_ctl_state state, void *data);
 
+/**
+ * driver_find_index:
+ * @label              : string of driver type to be found.
+ * @drv                : identifier of driver to be found.
+ *
+ * Find index of the driver, based on @label.
+ *
+ * Returns: -1 if no driver based on @label and @drv found, otherwise
+ * index number of the driver found in the array.
+ **/
+int driver_find_index(const char *label, const char *drv);
+
 /* Sets audio and video drivers to nonblock state.
  *
  * If nonblock state is false, sets blocking state for both

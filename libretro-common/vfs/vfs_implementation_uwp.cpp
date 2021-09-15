@@ -365,6 +365,13 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 
    path_wide             = utf8_to_utf16_string_alloc(path);
    windowsize_path(path_wide);
+   std::wstring temp_path = path_wide;
+   while (true) {
+       size_t p = temp_path.find(L"\\\\");
+       if (p == std::wstring::npos) break;
+       temp_path.replace(p, 2, L"\\");
+   }
+   path_wide = _wcsdup(temp_path.c_str());
    path_str              = ref new Platform::String(path_wide);
    free(path_wide);
 

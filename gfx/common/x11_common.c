@@ -79,6 +79,10 @@ static Atom g_x11_quit_atom;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
 
+static enum retro_key x11_keysym_lut[RETROK_LAST];
+static unsigned *x11_keysym_rlut            = NULL;
+static unsigned x11_keysym_rlut_size        = 0;
+
 static void x11_hide_mouse(Display *dpy, Window win)
 {
    Cursor no_ptr;
@@ -352,9 +356,39 @@ void x11_exit_fullscreen(Display *dpy)
    XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
 }
 
+static void x11_init_keyboard_lut(void)
+{
+   const struct rarch_key_map *map       = rarch_key_map_x11;
+   const struct rarch_key_map *map_start = rarch_key_map_x11;
+
+   memset(x11_keysym_lut, 0, sizeof(x11_keysym_lut));
+   x11_keysym_rlut_size = 0;
+
+   for (; map->rk != RETROK_UNKNOWN; map++)
+   {
+      x11_keysym_lut[map->rk] = (enum retro_key)map->sym;
+      if (map->sym > x11_keysym_rlut_size)
+         x11_keysym_rlut_size = map->sym;
+   }
+
+   if (x11_keysym_rlut_size < 65536)
+   {
+      if (x11_keysym_rlut)
+         free(x11_keysym_rlut);
+
+      x11_keysym_rlut = (unsigned*)calloc(++x11_keysym_rlut_size, sizeof(unsigned));
+
+      for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
+         x11_keysym_rlut[map->sym] = (enum retro_key)map->rk;
+   }
+   else
+      x11_keysym_rlut_size = 0;
+}
+
 bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
 {
    x11_destroy_input_context(xim, xic);
+   x11_init_keyboard_lut();
 
    g_x11_has_focus = true;
    *xim            = XOpenIM(dpy, NULL, NULL, NULL);
@@ -391,6 +425,14 @@ void x11_destroy_input_context(XIM *xim, XIC *xic)
       XCloseIM(*xim);
       *xim = NULL;
    }
+
+   memset(x11_keysym_lut, 0, sizeof(x11_keysym_lut));
+   if (x11_keysym_rlut)
+   {
+      free(x11_keysym_rlut);
+      x11_keysym_rlut = NULL;
+   }
+   x11_keysym_rlut_size = 0;
 }
 
 bool x11_get_metrics(void *data,
@@ -431,6 +473,26 @@ bool x11_get_metrics(void *data,
    }
 
    return true;
+}
+
+static enum retro_key x11_translate_keysym_to_rk(unsigned sym)
+{
+   size_t i;
+
+   /* Fast path */
+   if (x11_keysym_rlut && sym < x11_keysym_rlut_size)
+      return (enum retro_key)x11_keysym_rlut[sym];
+
+   /* Slow path */
+   for (i = 0; i < ARRAY_SIZE(x11_keysym_lut); i++)
+   {
+      if (x11_keysym_lut[i] != sym)
+         continue;
+
+      return (enum retro_key)i;
+   }
+
+   return RETROK_UNKNOWN;
 }
 
 static void x11_handle_key_event(unsigned keycode, XEvent *event, XIC ic, bool filter)
@@ -486,7 +548,7 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event, XIC ic, bool f
 
    /* Get the real keycode,
       that correctly ignores international layouts as windows code does. */
-   key     = input_keymaps_translate_keysym_to_rk(keycode);
+   key     = x11_translate_keysym_to_rk(keycode);
 
    if (state & ShiftMask)
       mod |= RETROKMOD_SHIFT;

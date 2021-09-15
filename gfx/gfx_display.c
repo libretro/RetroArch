@@ -28,9 +28,8 @@
  * with Ozone driver metrics */
 #define OZONE_SIDEBAR_WIDTH 408
 
-/* TODO/FIXME - global that gets referenced outside,
- * needs to be refactored */
-uintptr_t gfx_display_white_texture;
+/* Small 1x1 white texture used for blending purposes */
+static uintptr_t gfx_white_texture;
 
 static bool gfx_display_null_font_init_first(
       void **font_handle, void *video_data,
@@ -363,7 +362,10 @@ float gfx_display_get_dpi_scale_internal(
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height,
+      bool fullscreen,
+      bool is_widget
+)
 {
    static unsigned last_width                          = 0;
    static unsigned last_height                         = 0;
@@ -374,7 +376,45 @@ float gfx_display_get_dpi_scale(
    static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
    static float adjusted_scale                         = 1.0f;
    settings_t *settings                                = (settings_t*)settings_data;
+#ifdef HAVE_GFX_WIDGETS
+   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
+   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
+#else
+   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
+   float menu_widget_scale_factor                      = fullscreen ?
+         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+#endif
+   float menu_scale_factor                             = is_widget 
+      ? menu_widget_scale_factor
+      : settings->floats.menu_scale_factor;
+#else
    float menu_scale_factor                             = settings->floats.menu_scale_factor;
+#endif
+
+#ifdef HAVE_GFX_WIDGETS
+   if (is_widget)
+   {
+      if (gfx_widget_scale_auto)
+      {
+#ifdef HAVE_RGUI
+         /* When using RGUI, _menu_scale_factor
+          * is ignored
+          * > If we are not using a widget scale factor override,
+          *   just set menu_scale_factor to 1.0 */
+         if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
+            menu_scale_factor                             = 1.0f;
+         else
+#endif
+         {
+            float _menu_scale_factor                      = 
+               settings->floats.menu_scale_factor;
+            menu_scale_factor                             = _menu_scale_factor;
+         }
+      }
+   }
+#endif
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
@@ -516,7 +556,7 @@ void gfx_display_draw_bg(
    if (draw->texture)
       add_opacity_to_wallpaper       = true;
    else
-      draw->texture                  = gfx_display_white_texture;
+      draw->texture                  = gfx_white_texture;
 
    if (add_opacity_to_wallpaper)
       gfx_display_set_alpha(draw->color, override_opacity);
@@ -558,7 +598,9 @@ void gfx_display_draw_quad(
    draw.height          = h;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = (texture != NULL) ? *texture : gfx_display_white_texture;
+   draw.texture         = (texture != 0) 
+      ? *texture 
+      : gfx_white_texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
@@ -615,7 +657,7 @@ void gfx_display_draw_polygon(
    draw.height           = height;
    draw.coords           = &coords;
    draw.matrix_data      = NULL;
-   draw.texture          = gfx_display_white_texture;
+   draw.texture          = gfx_white_texture;
    draw.prim_type        = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id      = 0;
    draw.scale_factor     = 1.0f;
@@ -1261,7 +1303,14 @@ void gfx_display_font_free(font_data_t *font)
    font_driver_free(font);
 }
 
-void gfx_display_init_white_texture(uintptr_t white_texture)
+void gfx_display_deinit_white_texture(void)
+{
+   if (gfx_white_texture)
+      video_driver_texture_unload(&gfx_white_texture);
+   gfx_white_texture = 0;
+}
+
+void gfx_display_init_white_texture(void)
 {
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
@@ -1271,7 +1320,7 @@ void gfx_display_init_white_texture(uintptr_t white_texture)
    ti.pixels = (uint32_t*)&white_data;
 
    video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, &gfx_display_white_texture);
+         TEXTURE_FILTER_NEAREST, &gfx_white_texture);
 }
 
 void gfx_display_free(void)

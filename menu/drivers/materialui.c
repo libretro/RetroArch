@@ -3539,7 +3539,8 @@ static void materialui_render(void *data,
 
    /* Check whether screen dimensions, menu scale
     * factor or layout optimisation settings have changed */
-   scale_factor = gfx_display_get_dpi_scale(p_disp, settings, width, height);
+   scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
+         width, height, false, false);
 
    if ((scale_factor != mui->last_scale_factor) ||
        (width != mui->last_width) ||
@@ -5244,6 +5245,7 @@ static void materialui_render_background(
    draw.pipeline_active       = false;
    draw.backend_data          = NULL;
    draw.color                 = draw_color;
+   draw.texture               = 0;
 
    if (mui->textures.bg && !libretro_running)
    {
@@ -5256,8 +5258,6 @@ static void materialui_render_background(
    }
    else
    {
-      draw.texture = gfx_display_white_texture;
-
       /* Copy 'list_background' colour to draw colour */
       memcpy(draw_color, mui->colors.list_background, sizeof(draw_color));
 
@@ -7901,8 +7901,9 @@ static void materialui_menu_animation_update_time(
     *   a small correction factor to achieve a
     *   default scroll speed equal to that of the
     *   non-smooth ticker */
-   *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(p_disp, settings,
-         video_width, video_height) * 0.8f;
+   *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(
+         p_disp, settings,
+         video_width, video_height, false, false) * 0.8f;
 }
 
 static void *materialui_init(void **userdata, bool video_is_threaded)
@@ -7945,7 +7946,8 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->last_width                        = width;
    mui->last_height                       = height;
    mui->last_scale_factor                 = gfx_display_get_dpi_scale(
-                                            p_disp, settings, width, height);
+         p_disp, settings, width, height,
+         false, false);
    mui->dip_base_unit_size                = mui->last_scale_factor 
       * MUI_DIP_BASE_UNIT_SIZE;
 
@@ -8057,8 +8059,7 @@ static void materialui_free(void *data)
    video_coord_array_free(&mui->font_data.list.raster_block.carr);
    video_coord_array_free(&mui->font_data.hint.raster_block.carr);
 
-   if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 
    font_driver_bind_block(NULL, NULL);
 
@@ -8078,7 +8079,7 @@ static void materialui_context_bg_destroy(materialui_handle_t *mui)
       return;
 
    video_driver_texture_unload(&mui->textures.bg);
-   video_driver_texture_unload(&gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
 }
 
 static void materialui_reset_thumbnails(void)
@@ -8152,9 +8153,8 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
       materialui_context_bg_destroy(mui);
       video_driver_texture_load(data,
             TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
-      if (gfx_display_white_texture)
-         video_driver_texture_unload(&gfx_display_white_texture);
-      gfx_display_init_white_texture(gfx_display_white_texture);
+      gfx_display_deinit_white_texture();
+      gfx_display_init_white_texture();
    }
 
    return true;
@@ -8603,9 +8603,8 @@ static void materialui_context_reset(void *data, bool is_threaded)
 
    materialui_layout(mui, p_disp, settings, is_threaded);
    materialui_context_bg_destroy(mui);
-   if (gfx_display_white_texture)
-      video_driver_texture_unload(&gfx_display_white_texture);
-   gfx_display_init_white_texture(gfx_display_white_texture);
+   gfx_display_deinit_white_texture();
+   gfx_display_init_white_texture();
    materialui_context_reset_textures(mui);
    materialui_context_reset_playlist_icons(mui);
    menu_screensaver_context_destroy(mui->screensaver);

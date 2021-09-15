@@ -52,12 +52,16 @@ int16_t gamepad_get_axis_value(int16_t state[3][2], axis_data *data)
    switch (data->axis)
    {
       case AXIS_LEFT_ANALOG_X:
+         value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][1];
+         break;
       case AXIS_LEFT_ANALOG_Y:
-         value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][data->axis];
+         value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][0];
          break;
       case AXIS_RIGHT_ANALOG_X:
+         value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][1];
+         break;
       case AXIS_RIGHT_ANALOG_Y:
-         value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][data->axis];
+         value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][0];
          break;
    }
 
