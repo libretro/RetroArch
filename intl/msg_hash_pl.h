@@ -454,22 +454,6 @@ MSG_HASH(
    "Oprogramowanie układowe"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Brakujący"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Obecny"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opcjonalny"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Wymagany"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Zablokuj zainstalowany rdzeń"
    )
@@ -10678,10 +10662,6 @@ MSG_HASH(
    "Czytanie pierwszej ścieżki danych..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "Odebrane"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Nagrywanie zakończyło się z powodu zmiany rozmiaru."
    )
@@ -10926,24 +10906,12 @@ MSG_HASH(
    "Obliczenie rozmiaru obszaru widoku nie powiodło się! Nadal używane będą surowe dane. To prawdopodobnie nie zadziała dobrze..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "wirtualna taca dysku."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "wysuń"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "zamknij"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "nie udało się"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "udało się"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11362,10 +11330,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Podziel Joy-Con"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Status pamięci wewnętrznej"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

@@ -446,22 +446,6 @@ MSG_HASH(
    "Firmware(s) "
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Manquant"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Présent"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Optionnel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Requis"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Verrouiller le cœur installé"
    )
@@ -10766,10 +10750,6 @@ MSG_HASH(
    "Lecture de la première piste de données..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "reçu"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Enregistrement interrompu à cause du redimensionnement."
    )
@@ -11018,24 +10998,12 @@ MSG_HASH(
    "Le calcul de la taille de la fenêtre d'affichage a échoué ! Continuera à utiliser les données brutes. Cela ne fonctionnera probablement pas correctement..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "lecteur de disque virtuel."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "éjecter"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "fermer"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "échoué"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "réussi"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11458,10 +11426,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Joy-Con détachés"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "État du stockage interne"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

@@ -454,22 +454,6 @@ MSG_HASH(
    "펌웨어"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "누락"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "사용 중"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "선택"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "필수"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "설치된 코어 잠금"
    )
@@ -10878,10 +10862,6 @@ MSG_HASH(
    "첫 데이터 트랙 읽는 중..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "받음"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "리사이즈 때문에 기록 중지됨."
    )
@@ -11134,24 +11114,12 @@ MSG_HASH(
    "뷰포트 크기 계산 실패! 원시 데이터를 계속 사용합니다. 정상 적인 동작을 보장할 수 없습니다..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "가상 디스크 트레이."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "꺼내기"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "닫기"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "실패"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "성공"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11574,10 +11542,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Joy-Con 분할하기"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "내부 저장공간 상태"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

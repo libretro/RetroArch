@@ -414,22 +414,6 @@ MSG_HASH(
    "韌體"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "遺失內容"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "目前"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "選用"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "必要項目"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "鎖定已安裝的核心"
    )
@@ -5182,10 +5166,6 @@ MSG_HASH(
    "讀取第一條數據軌..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "接收完畢"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "錄製因改變大小而停止。"
    )
@@ -5380,14 +5360,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "關閉"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "已失敗"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "已成功"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

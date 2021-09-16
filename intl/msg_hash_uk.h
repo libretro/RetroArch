@@ -6650,10 +6650,6 @@ MSG_HASH(
    "Призупинено."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "отримано"
-   )
-MSG_HASH(
    MSG_RECORDING_TO,
    "Запис до"
    )
@@ -6752,14 +6748,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "закрити"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "помилка"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "успішно"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

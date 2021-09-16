@@ -454,22 +454,6 @@ MSG_HASH(
    "固件"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "缺失"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "具备"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "可选"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "必需"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "锁定已安装核心"
    )
@@ -10702,10 +10686,6 @@ MSG_HASH(
    "读取第一条数据轨..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "接收完毕"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "录制因改变大小而停止。"
    )
@@ -10958,24 +10938,12 @@ MSG_HASH(
    "可视区域尺寸计算失败！将继续使用原始数据，这很可能不会正常工作。"
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "虚拟光驱托盘。"
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
    "弹出"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "关闭"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "已失败"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "已成功"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11394,10 +11362,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "分开 Joy-Con 手柄"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "内部存储状态"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,

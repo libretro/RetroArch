@@ -450,22 +450,6 @@ MSG_HASH(
    "API Gráficos Necessária"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Em falta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Atual"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opcional"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Obrigatório"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Bloqueio de núcleo instalado"
    )
@@ -4666,10 +4650,6 @@ MSG_HASH(
    "Lendo a primeira pista de dados..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "Recebido"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "A gravação terminou devido ao redimensionamento."
    )
@@ -4880,18 +4860,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Falha no cálculo do tamanho da janela de visualização! Continuarão a serem utilizados dados em bruto. Provavelmente, irão surgir erros ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "Ícone do disco virtual na área de notificações."
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "Falha"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "Sucesso"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
