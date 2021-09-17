@@ -4270,14 +4270,6 @@ MSG_HASH(
    "Dispositivo desconectado de uma porta válida."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Fechado"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Ejetado"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "Transferindo"
    )
@@ -4328,10 +4320,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "Falha ao guardar a configuração em"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "Falha ao"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -4824,10 +4812,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNPAUSED,
    "Sem interrupções."
-   )
-MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "Comando não reconhecido"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,

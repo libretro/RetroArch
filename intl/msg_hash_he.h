@@ -169,6 +169,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "קושחה"
    )
+
 /* Main Menu > Information > System Information */
 
 MSG_HASH(

@@ -1660,7 +1660,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Ota HDR käyttöön, jos näyttö tukee sitä"
+   "Ota HDR käyttöön, jos näyttö tukee sitä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "Luminanssin huippu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Aseta näytön luminanssin (cd/m2) huippu. Tarkista näytön RT -lukemat suurimmalle kirkkaudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Valkoisen paperin luminanssi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Aseta luminanssi, jolla valkoisella paperiarkilla olisi luettavaa tekstiä, tai SDR -alueen (normaali dynaaminen alue) suurimman kirkkauden. Hyödyllinen ympäristön erilaisiin valaistusolosuhteisiin sopeutumiseen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
@@ -2232,7 +2248,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   "Tärinän voimakkuus (Uudelleenkäynnistys vaaditaan)"
+   "Värinän voimakkuus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -4483,6 +4499,14 @@ MSG_HASH(
    "Näytä \"Asetukset\"-valinta."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Näytä 'Vie asetukset levylle'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Näytä 'Vie asetukset levylle' valinta 'Asetukset > Hallitse ydinten asetuksia' valikossa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    "Näytä \"ohjaimet\""
    )
@@ -5416,6 +5440,10 @@ MSG_HASH(
    "Vahvista ydinliitokset ja poista kaksoiskappaleet sekä virheelliset kohteet."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Päivitä soittolista"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Poista soittolista"
    )
@@ -5996,6 +6024,10 @@ MSG_HASH(
    "Kun käytössä, mikä tahansa olemassa oleva soittolista poistetaan ennen sisällön skannausta. Kun tämä ei ole käytössä, olemassa oleva soittolistan sisältö säilytetään ja vain soittolistalta puuttuva sisältö lisätään."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Vahvista omassa olevat tietueet"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "Käynnistä skannaus"
    )
@@ -6394,6 +6426,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
    "Aseta kaikki ydinasetukset oletusarvoihin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   "Vie asetukset levylle"
    )
 
 /* - Legacy (unused) */
@@ -10158,6 +10194,26 @@ MSG_HASH(
    "Soittolista siivottu: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Päivitys epäonnistui - virheellinen/puuttuva sisältöhakemisto: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Päivitys epäonnistui - virheellinen/puuttuva järjestelmänimi: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Päivitys epäonnistui - virheellinen ydin: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Päivitys epäonnistui - virheellinen/puuttuva arcade DAT -tiedosto: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Päivitys epäonnistui - arcade DAT -tiedosto on liian suuri (muisti ei riitä): "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Lisätty suosikkeihin"
    )
@@ -10282,6 +10338,14 @@ MSG_HASH(
    "Kaikki ydinasetukset palautetaan oletusarvoisiksi."
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Ydin asetukset tallennettu:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Ei voitu tallentaa ydinasetuksia:"
+   )
+MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "Seuraavaa ajuria ei löytynyt"
    )
@@ -10336,14 +10400,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "Irrota laite kelvollisesta portista."
-   )
-MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Suljettiin"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Avattiin"
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -10412,10 +10468,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "Virhe tallennettaessa asetustiedostoa"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "Epäonnistuttiin "
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -10508,6 +10560,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SAVE_SRAM,
    "SRAM:in tallennus epäonnistui"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "SRAM:in lataaminen epäonnistui"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
@@ -10978,10 +11034,6 @@ MSG_HASH(
    "Jatkuu."
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "Tunnistamaton komento"
-   )
-MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "Käytetään ytimen nimeä uudelle kokoonpanolle."
    )
@@ -11012,14 +11064,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Ikkunan koon laskenta epäonnistui! jatketaan raakadatan käyttöä. Tämä ei varmaan toimi oikein..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "poistamaan "
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "sulkemaan "
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11318,6 +11362,10 @@ MSG_HASH(
    "Skannataan sisältöä: "
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Tarkistetaan nykyisiä kohteita: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Skannataan: "
    )
@@ -11454,6 +11502,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "Näytön resoluutio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Valitse näytön tila."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -11700,14 +11752,6 @@ MSG_HASH(
    "Paikallinen"
    )
 MSG_HASH(
-   MSG_READ_WRITE,
-   "Luku/kirjoitus"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "Vain luku"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    "Näytön kirkkaus"
    )
@@ -11871,6 +11915,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (Korkea resoluutio)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Napauta kosketusnäyttöä\nsiirtyäksesi RetroArch-\nvalikkoon"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "bottom_menu.png ei löydy\nassets/ctr kansiosta"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Ei\ndataa"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "Ei\nkuvakaappausta"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Jatka peliä"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Luo\npalautuspiste"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Lataa\npalautuspiste"
    )
 #endif
 #ifdef HAVE_QT

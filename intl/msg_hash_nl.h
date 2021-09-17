@@ -4090,14 +4090,6 @@ MSG_HASH(
    "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Gesloten"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Uitgeworpen"
-   )
-MSG_HASH(
    MSG_DOWNLOAD_FAILED,
    "Download mislukt"
    )
