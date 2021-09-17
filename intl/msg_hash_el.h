@@ -455,7 +455,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Κλείδωμα Εγκατεστημένο Πυρήνα"
+   "Κλείδωμα Εγκατεστημένου Πυρήνα"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
@@ -5194,14 +5194,6 @@ MSG_HASH(
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "εξάγει"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "κλείσει"
-   )
-MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "δεν έχει ρυθμιστεί"
    )
@@ -5482,14 +5474,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "Τοπικό"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "Ανάγνωση/Εγγραφή"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "Μόνο για Ανάγνωση"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

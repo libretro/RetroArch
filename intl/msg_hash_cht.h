@@ -4782,14 +4782,6 @@ MSG_HASH(
    "從連接埠離開."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "已關閉"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "已彈出"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "正在下載"
    )
@@ -4844,10 +4836,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "無法儲存設定到"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "執行失敗"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -5322,10 +5310,6 @@ MSG_HASH(
    "取消暫停。"
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "無法識別的指令"
-   )
-MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "使用核心模擬器名稱當新的設定檔名稱"
    )
@@ -5352,14 +5336,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "退出"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "關閉"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -5602,14 +5578,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "本地端"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "讀取/寫入"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "唯讀"
    )
 
 #ifdef HAVE_LAKKA_SWITCH
