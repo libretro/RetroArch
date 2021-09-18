@@ -4071,7 +4071,7 @@ bool menu_shader_manager_save_auto_preset(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         system, settings,
+         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_SAVE, shader,
          dir_video_shader,
          dir_menu_config,
@@ -4134,7 +4134,7 @@ bool menu_shader_manager_remove_auto_preset(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         system, settings,
+         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_REMOVE, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -4156,7 +4156,7 @@ bool menu_shader_manager_auto_preset_exists(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         system, settings,
+         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_EXISTS, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -25268,10 +25268,9 @@ void video_driver_set_viewport_full(void)
    aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
 }
 
-void video_driver_reset_custom_viewport(void)
+void video_driver_reset_custom_viewport(void *settings_data)
 {
-   struct rarch_state *p_rarch      = &rarch_st;
-   settings_t             *settings = p_rarch->configuration_settings;
+   settings_t             *settings = (settings_t*)settings_data;
    struct video_viewport *custom_vp = &settings->video_viewport_custom;
 
    custom_vp->width  = 0;

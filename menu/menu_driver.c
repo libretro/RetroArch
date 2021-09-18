@@ -2596,7 +2596,7 @@ bool menu_shader_manager_save_preset_internal(
 
 bool menu_shader_manager_operate_auto_preset(
       struct retro_system_info *system,
-      settings_t *settings,
+      bool video_shader_preset_save_reference_enable,
       enum auto_shader_operation op,
       const struct video_shader *shader,
       const char *dir_video_shader,
@@ -2668,7 +2668,7 @@ bool menu_shader_manager_operate_auto_preset(
    {
       case AUTO_SHADER_OP_SAVE:
          return menu_shader_manager_save_preset_internal(
-               settings->bools.video_shader_preset_save_reference_enable,
+               video_shader_preset_save_reference_enable,
                shader, file,
                dir_video_shader,
                apply,

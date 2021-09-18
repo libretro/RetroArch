@@ -2603,7 +2603,7 @@ void config_set_defaults(void *data)
       settings->uints.input_mouse_index[i] = i;
    }
 
-   video_driver_reset_custom_viewport();
+   video_driver_reset_custom_viewport(settings);
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
