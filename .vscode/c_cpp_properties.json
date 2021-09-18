@@ -150,6 +150,23 @@
             "cStandard": "c11",
             "cppStandard": "c++11",
             "intelliSenseMode": "gcc-x64"
+        },
+        {
+            "name": "WiiU",
+            "includePath": [
+                "/opt/devkitpro/devkitPPC/powerpc-eabi/include",
+                "/opt/devkitpro/devkitPPC/lib/gcc/powerpc-eabi/6.3.0/include",
+                "/opt/devkitpro/portlibs/ppc/include",
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "WIIU"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "/opt/devkitpro/devkitPPC/bin/powerpc-eabi-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4
