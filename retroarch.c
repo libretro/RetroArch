@@ -885,60 +885,6 @@ static bool menu_input_key_bind_iterate(
    return false;
 }
 
-#ifdef HAVE_ACCESSIBILITY
-static void get_current_menu_value(struct menu_state *menu_st,
-      char *s, size_t len)
-{
-   menu_entry_t     entry;
-   const char*      entry_label;
-
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled          = false;
-   entry.label_enabled         = false;
-   entry.rich_label_enabled    = false;
-   entry.sublabel_enabled      = false;
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
-   if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
-      entry_label              = entry.password_value;
-   else
-      entry_label              = entry.value;
-
-   strlcpy(s, entry_label, len);
-}
-
-static void get_current_menu_label(struct menu_state *menu_st,
-      char *s, size_t len)
-{
-   menu_entry_t     entry;
-   const char*      entry_label;
-
-   MENU_ENTRY_INIT(entry);
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
-   if (!string_is_empty(entry.rich_label))
-      entry_label              = entry.rich_label;
-   else
-      entry_label              = entry.path;
-
-   strlcpy(s, entry_label, len);
-}
-
-static void get_current_menu_sublabel(struct menu_state *menu_st,
-      char *s, size_t len)
-{
-   menu_entry_t     entry;
-
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled          = false;
-   entry.label_enabled         = false;
-   entry.rich_label_enabled    = false;
-   entry.value_enabled         = false;
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   strlcpy(s, entry.sublabel, len);
-}
-#endif
-
 /**
  * menu_iterate:
  * @input                    : input sample for this frame
