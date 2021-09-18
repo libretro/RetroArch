@@ -3301,9 +3301,9 @@ void menu_driver_get_last_shader_preset_path(
 
    if (menu)
    {
-      type             = menu->last_shader_selection.preset_type;
-      shader_dir       = menu->last_shader_selection.preset_dir;
-      shader_file_name = menu->last_shader_selection.preset_file_name;
+      type                      = menu->last_shader_selection.preset_type;
+      shader_dir                = menu->last_shader_selection.preset_dir;
+      shader_file_name          = menu->last_shader_selection.preset_file_name;
    }
 
    menu_driver_get_last_shader_path_int(settings, type,
@@ -3323,9 +3323,9 @@ void menu_driver_get_last_shader_pass_path(
 
    if (menu)
    {
-      type             = menu->last_shader_selection.pass_type;
-      shader_dir       = menu->last_shader_selection.pass_dir;
-      shader_file_name = menu->last_shader_selection.pass_file_name;
+      type                      = menu->last_shader_selection.pass_type;
+      shader_dir                = menu->last_shader_selection.pass_dir;
+      shader_file_name          = menu->last_shader_selection.pass_file_name;
    }
 
    menu_driver_get_last_shader_path_int(settings, type,
@@ -4003,7 +4003,7 @@ clear:
  *    SHADER_PRESET_CORE:   <target dir>/<core name>/<core name>
  *    SHADER_PRESET_PARENT: <target dir>/<core name>/<parent>
  *    SHADER_PRESET_GAME:   <target dir>/<core name>/<game name>
- * Needs to be consistent with retroarch_load_shader_preset()
+ * Needs to be consistent with load_shader_preset()
  * Auto-shaders will be saved as a reference if possible
  **/
 bool menu_shader_manager_save_auto_preset(
@@ -5038,37 +5038,6 @@ static bool netplay_pre_frame(
    return true;
 }
 
-/**
- * netplay_post_frame:
- * @netplay              : pointer to netplay object
- *
- * Post-frame for Netplay.
- * We check if we have new input and replay from recorded input.
- * Call this after running retro_run().
- **/
-static void netplay_post_frame(
-      struct rarch_state *p_rarch,
-      netplay_t *netplay)
-{
-   size_t i;
-   retro_assert(netplay);
-   netplay_update_unread_ptr(netplay);
-   netplay_sync_post_frame(netplay, false);
-
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->active &&
-          !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
-            false))
-         netplay_hangup(netplay, connection);
-   }
-
-   /* If we're disconnected, deinitialize */
-   if (!netplay->is_server && !netplay->connections[0].active)
-      netplay_disconnect(p_rarch, netplay);
-}
-
 static void deinit_netplay(struct rarch_state *p_rarch)
 {
    if (p_rarch->netplay_data)
@@ -5275,7 +5244,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = netplay->is_connected;
          goto done;
       case RARCH_NETPLAY_CTL_POST_FRAME:
-         netplay_post_frame(p_rarch, netplay);
+         netplay_post_frame(netplay);
+	 /* If we're disconnected, deinitialize */
+	 if (!netplay->is_server && !netplay->connections[0].active)
+		 netplay_disconnect(p_rarch, netplay);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
          ret = netplay_pre_frame(p_rarch,
@@ -12603,12 +12575,23 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
-         if (runloop_state.core_options)
-            retroarch_deinit_core_options(
-                  path_get(RARCH_PATH_CORE_OPTIONS));
-
-         retroarch_init_core_variables(settings,
-               (const struct retro_variable *)data);
+         {
+            core_option_manager_t *new_vars = NULL;
+            if (runloop_state.core_options)
+            {
+               retroarch_deinit_core_options(
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
+            if ((new_vars = retroarch_init_core_variables(
+                  settings,
+                  (const struct retro_variable *)data)))
+               runloop_state.core_options = new_vars;
+         }
 
          break;
 
@@ -12623,14 +12606,22 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                         (const struct retro_core_option_definition*)data);
 
             if (runloop_state.core_options)
+            {
                retroarch_deinit_core_options(
-                     path_get(RARCH_PATH_CORE_OPTIONS));
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
 
             if (options_v2)
             {
                /* Initialise core options */
-               rarch_init_core_options(settings, options_v2);
-
+               core_option_manager_t *new_vars = rarch_init_core_options(settings, options_v2);
+               if (new_vars)
+                  runloop_state.core_options = new_vars;
                /* Clean up */
                core_option_manager_free_converted(options_v2);
             }
@@ -12648,13 +12639,23 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                         (const struct retro_core_options_intl*)data);
 
             if (runloop_state.core_options)
+            {
                retroarch_deinit_core_options(
-                     path_get(RARCH_PATH_CORE_OPTIONS));
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
 
             if (options_v2)
             {
                /* Initialise core options */
-               rarch_init_core_options(settings, options_v2);
+               core_option_manager_t *new_vars = rarch_init_core_options(settings, options_v2);
+
+               if (new_vars)
+                  runloop_state.core_options = new_vars;
 
                /* Clean up */
                core_option_manager_free_converted(options_v2);
@@ -12666,17 +12667,29 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2.\n");
 
          {
+            core_option_manager_t *new_vars                = NULL;
             const struct retro_core_options_v2 *options_v2 =
                   (const struct retro_core_options_v2 *)data;
             bool categories_enabled                        =
                   settings->bools.core_option_category_enable;
 
             if (runloop_state.core_options)
+            {
                retroarch_deinit_core_options(
-                     path_get(RARCH_PATH_CORE_OPTIONS));
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
 
             if (options_v2)
-               rarch_init_core_options(settings, options_v2);
+            {
+               new_vars = rarch_init_core_options(settings, options_v2);
+               if (new_vars)
+                  runloop_state.core_options = new_vars;
+            }
 
             /* Return value does not indicate success.
              * Callback returns 'true' if core option
@@ -12692,6 +12705,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          {
             /* Parse retro_core_options_v2_intl to create
              * retro_core_options_v2 struct */
+            core_option_manager_t *new_vars          = NULL;
             struct retro_core_options_v2 *options_v2 =
                   core_option_manager_convert_v2_intl(
                         (const struct retro_core_options_v2_intl*)data);
@@ -12699,13 +12713,22 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                   settings->bools.core_option_category_enable;
 
             if (runloop_state.core_options)
+            {
                retroarch_deinit_core_options(
-                     path_get(RARCH_PATH_CORE_OPTIONS));
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
 
             if (options_v2)
             {
                /* Initialise core options */
-               rarch_init_core_options(settings, options_v2);
+               new_vars = rarch_init_core_options(settings, options_v2);
+               if (new_vars)
+                  runloop_state.core_options = new_vars;
 
                /* Clean up */
                core_option_manager_free_converted(options_v2);
@@ -14554,8 +14577,15 @@ static void uninit_libretro_symbols(
    p_rarch->core_set_shared_context   = false;
 
    if (runloop_state.core_options)
+   {
       retroarch_deinit_core_options(
-            path_get(RARCH_PATH_CORE_OPTIONS));
+            runloop_state.game_options_active,
+            path_get(RARCH_PATH_CORE_OPTIONS),
+            runloop_state.core_options);
+      runloop_state.game_options_active               = false;
+      runloop_state.folder_options_active             = false;
+      runloop_state.core_options                      = NULL;
+   }
    retroarch_system_info_free(&runloop_state);
    p_rarch->audio_callback.callback                   = NULL;
    p_rarch->audio_callback.set_state                  = NULL;
@@ -29231,10 +29261,10 @@ error:
 }
 
 #if 0
-static bool retroarch_is_on_main_thread(struct rarch_state *p_rarch)
+static bool retroarch_is_on_main_thread(shtread_tls_t *tls)
 {
 #ifdef HAVE_THREAD_STORAGE
-   return sthread_tls_get(&p_rarch->rarch_tls) == MAGIC_POINTER;
+   return sthread_tls_get(tls) == MAGIC_POINTER;
 #else
    return true;
 #endif
@@ -29801,7 +29831,7 @@ static void rarch_init_core_options_path(
    }
 }
 
-static void rarch_init_core_options(
+static core_option_manager_t *rarch_init_core_options(
       settings_t *settings,
       const struct retro_core_options_v2 *options_v2)
 {
@@ -29819,10 +29849,10 @@ static void rarch_init_core_options(
          src_options_path, sizeof(src_options_path));
 
    if (!string_is_empty(options_path))
-      runloop_state.core_options =
-            core_option_manager_new(options_path,
-                  src_options_path, options_v2,
-                  categories_enabled);
+      return core_option_manager_new(options_path,
+            src_options_path, options_v2,
+            categories_enabled);
+   return NULL;
 }
 
 void retroarch_init_task_queue(void)
@@ -30128,7 +30158,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 }
 
 static void retroarch_deinit_core_options(
-      const char *path_core_options)
+      bool game_options_active,
+      const char *path_core_options,
+      core_option_manager_t *core_options)
 {
    /* Check whether game-specific options file is being used */
    if (!string_is_empty(path_core_options))
@@ -30151,10 +30183,10 @@ static void retroarch_deinit_core_options(
       if (conf_tmp)
       {
          core_option_manager_flush(
-               runloop_state.core_options,
+               core_options,
                conf_tmp);
          RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
-               runloop_state.game_options_active ? "game" : "folder", path_core_options);
+               game_options_active ? "game" : "folder", path_core_options);
          config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
          conf_tmp = NULL;
@@ -30163,23 +30195,19 @@ static void retroarch_deinit_core_options(
    }
    else
    {
-      const char *path = runloop_state.core_options->conf_path;
+      const char *path = core_options->conf_path;
       core_option_manager_flush(
-            runloop_state.core_options,
-            runloop_state.core_options->conf);
+            core_options,
+            core_options->conf);
       RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
-      config_file_write(runloop_state.core_options->conf, path, true);
+      config_file_write(core_options->conf, path, true);
    }
 
-   runloop_state.game_options_active   = false;
-   runloop_state.folder_options_active = false;
-
-   if (runloop_state.core_options)
-      core_option_manager_free(runloop_state.core_options);
-   runloop_state.core_options          = NULL;
+   if (core_options)
+      core_option_manager_free(core_options);
 }
 
-static void retroarch_init_core_variables(
+static core_option_manager_t *retroarch_init_core_variables(
       settings_t *settings,
       const struct retro_variable *vars)
 {
@@ -30197,8 +30225,8 @@ static void retroarch_init_core_variables(
          src_options_path, sizeof(src_options_path));
 
    if (!string_is_empty(options_path))
-      runloop_state.core_options =
-         core_option_manager_new_vars(options_path, src_options_path, vars);
+      return core_option_manager_new_vars(options_path, src_options_path, vars);
+   return NULL;
 }
 
 bool retroarch_is_forced_fullscreen(void)
@@ -30212,163 +30240,6 @@ bool retroarch_is_switching_display_mode(void)
    struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->rarch_is_switching_display_mode;
 }
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool retroarch_load_shader_preset_internal(
-      char *s,
-      size_t len,
-      const char *shader_directory,
-      const char *core_name,
-      const char *special_name)
-{
-   unsigned i;
-
-   static enum rarch_shader_type types[] =
-   {
-      /* Shader preset priority, highest to lowest
-       * only important for video drivers with multiple shader backends */
-      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
-   };
-
-   for (i = 0; i < ARRAY_SIZE(types); i++)
-   {
-      if (!video_shader_is_supported(types[i]))
-         continue;
-
-      /* Concatenate strings into full paths */
-      if (!string_is_empty(core_name))
-         fill_pathname_join_special_ext(s,
-               shader_directory, core_name,
-               special_name,
-               video_shader_get_preset_extension(types[i]),
-               len);
-      else
-      {
-         if (string_is_empty(special_name))
-            break;
-
-         fill_pathname_join(s, shader_directory, special_name, len);
-         strlcat(s, video_shader_get_preset_extension(types[i]), len);
-      }
-
-      if (path_is_valid(s))
-         return true;
-   }
-
-   return false;
-}
-
-/**
- * retroarch_load_shader_preset:
- *
- * Tries to load a supported core-, game-, folder-specific or global
- * shader preset from its respective location:
- *
- * global:          $CONFIG_DIR/global.$PRESET_EXT
- * core-specific:   $CONFIG_DIR/$CORE_NAME/$CORE_NAME.$PRESET_EXT
- * folder-specific: $CONFIG_DIR/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
- * game-specific:   $CONFIG_DIR/$CORE_NAME/$GAME_NAME.$PRESET_EXT
- *
- * $CONFIG_DIR is expected to be Menu Config directory, or failing that, the
- * directory where retroarch.cfg is stored.
- *
- * For compatibility purposes with versions 1.8.7 and older, the presets
- * subdirectory on the Video Shader path is used as a fallback directory.
- *
- * Note: Uses video_shader_is_supported() which only works after
- *       context driver initialization.
- *
- * Returns: false if there was an error or no action was performed.
- */
-static bool retroarch_load_shader_preset(struct rarch_state *p_rarch,
-      settings_t *settings)
-{
-   const char *video_shader_directory = settings->paths.directory_video_shader;
-   const char *menu_config_directory  = settings->paths.directory_menu_config;
-   const char *core_name              =
-      runloop_state.system.info.library_name;
-   const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
-
-   const char *game_name              = path_basename(rarch_path_basename);
-   const char *dirs[3]                = {0};
-   size_t i                           = 0;
-
-   char shader_path[PATH_MAX_LENGTH];
-   char content_dir_name[PATH_MAX_LENGTH];
-   char config_file_directory[PATH_MAX_LENGTH];
-   char old_presets_directory[PATH_MAX_LENGTH];
-
-   shader_path[0]                     = '\0';
-   content_dir_name[0]                = '\0';
-   config_file_directory[0]           = '\0';
-   old_presets_directory[0]           = '\0';
-
-   if (!string_is_empty(rarch_path_basename))
-      fill_pathname_parent_dir_name(content_dir_name,
-            rarch_path_basename, sizeof(content_dir_name));
-
-   config_file_directory[0]           = '\0';
-
-   if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(config_file_directory,
-            path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
-
-   old_presets_directory[0]           = '\0';
-
-   if (!string_is_empty(video_shader_directory))
-      fill_pathname_join(old_presets_directory,
-         video_shader_directory, "presets", sizeof(old_presets_directory));
-
-   dirs[0]                            = menu_config_directory;
-   dirs[1]                            = config_file_directory;
-   dirs[2]                            = old_presets_directory;
-
-   for (i = 0; i < ARRAY_SIZE(dirs); i++)
-   {
-      if (string_is_empty(dirs[i]))
-         continue;
-      /* Game-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               game_name))
-         goto success;
-      /* Folder-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               content_dir_name))
-         goto success;
-      /* Core-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               core_name))
-         goto success;
-      /* Global shader preset found? */
-      if (retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], NULL,
-               "global"))
-         goto success;
-   }
-   return false;
-
-success:
-   /* Shader preset exists, load it. */
-   RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
-         shader_path);
-   strlcpy(
-         p_rarch->runtime_shader_preset,
-         shader_path,
-         sizeof(p_rarch->runtime_shader_preset));
-   return true;
-}
-#endif
 
 /* get the name of the current shader preset */
 const char *retroarch_get_shader_preset(void)
@@ -30388,7 +30259,7 @@ const char *retroarch_get_shader_preset(void)
    if (video_shader_delay && !p_rarch->shader_delay_timer.timer_end)
       return NULL;
 
-   /* disallow loading auto-shaders when no core is loaded */
+   /* Disallow loading auto-shaders when no core is loaded */
    if (string_is_empty(core_name))
       return NULL;
 
@@ -30404,8 +30275,20 @@ const char *retroarch_get_shader_preset(void)
                p_rarch->cli_shader,
                sizeof(p_rarch->runtime_shader_preset));
       else
+      {
          if (auto_shaders_enable) /* sets runtime_shader_preset */
-            retroarch_load_shader_preset(p_rarch, settings);
+         {
+            if (load_shader_preset(
+                     settings,
+                     runloop_state.system.info.library_name,
+                     p_rarch->runtime_shader_preset,
+                     sizeof(p_rarch->runtime_shader_preset)))
+            {
+               RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
+                     p_rarch->runtime_shader_preset);
+            }
+         }
+      }
       return p_rarch->runtime_shader_preset;
    }
 #endif

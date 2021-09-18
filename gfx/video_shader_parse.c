@@ -2211,3 +2211,129 @@ void dir_check_shader(
    command_set_shader(NULL, set_shader_path);
    dir_list->shader_loaded = true;
 }
+
+static bool retroarch_load_shader_preset_internal(
+      char *s,
+      size_t len,
+      const char *shader_directory,
+      const char *core_name,
+      const char *special_name)
+{
+   unsigned i;
+
+   static enum rarch_shader_type types[] =
+   {
+      /* Shader preset priority, highest to lowest
+       * only important for video drivers with multiple shader backends */
+      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
+   };
+
+   for (i = 0; i < ARRAY_SIZE(types); i++)
+   {
+      if (!video_shader_is_supported(types[i]))
+         continue;
+
+      /* Concatenate strings into full paths */
+      if (!string_is_empty(core_name))
+         fill_pathname_join_special_ext(s,
+               shader_directory, core_name,
+               special_name,
+               video_shader_get_preset_extension(types[i]),
+               len);
+      else
+      {
+         if (string_is_empty(special_name))
+            break;
+
+         fill_pathname_join(s, shader_directory, special_name, len);
+         strlcat(s, video_shader_get_preset_extension(types[i]), len);
+      }
+
+      if (path_is_valid(s))
+         return true;
+   }
+
+   return false;
+}
+
+bool load_shader_preset(settings_t *settings, const char *core_name,
+      char *s, size_t len)
+{
+   const char *video_shader_directory = settings->paths.directory_video_shader;
+   const char *menu_config_directory  = settings->paths.directory_menu_config;
+   const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
+
+   const char *game_name              = path_basename(rarch_path_basename);
+   const char *dirs[3]                = {0};
+   size_t i                           = 0;
+
+   char shader_path[PATH_MAX_LENGTH];
+   char content_dir_name[PATH_MAX_LENGTH];
+   char config_file_directory[PATH_MAX_LENGTH];
+   char old_presets_directory[PATH_MAX_LENGTH];
+
+   shader_path[0]                     = '\0';
+   content_dir_name[0]                = '\0';
+   config_file_directory[0]           = '\0';
+   old_presets_directory[0]           = '\0';
+
+   if (!string_is_empty(rarch_path_basename))
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
+
+   config_file_directory[0]           = '\0';
+
+   if (!path_is_empty(RARCH_PATH_CONFIG))
+      fill_pathname_basedir(config_file_directory,
+            path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
+
+   old_presets_directory[0]           = '\0';
+
+   if (!string_is_empty(video_shader_directory))
+      fill_pathname_join(old_presets_directory,
+         video_shader_directory, "presets", sizeof(old_presets_directory));
+
+   dirs[0]                            = menu_config_directory;
+   dirs[1]                            = config_file_directory;
+   dirs[2]                            = old_presets_directory;
+
+   for (i = 0; i < ARRAY_SIZE(dirs); i++)
+   {
+      if (string_is_empty(dirs[i]))
+         continue;
+      /* Game-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               game_name))
+         goto success;
+      /* Folder-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               content_dir_name))
+         goto success;
+      /* Core-specific shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], core_name,
+               core_name))
+         goto success;
+      /* Global shader preset found? */
+      if (retroarch_load_shader_preset_internal(
+               shader_path,
+               sizeof(shader_path),
+               dirs[i], NULL,
+               "global"))
+         goto success;
+   }
+   return false;
+
+success:
+   /* Shader preset exists, load it. */
+   strlcpy(s, shader_path, len);
+   return true;
+}

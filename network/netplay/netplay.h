@@ -174,4 +174,14 @@ bool netplay_is_alive(netplay_t *netplay);
  **/
 bool netplay_should_skip(netplay_t *netplay);
 
+/**
+ * netplay_post_frame:
+ * @netplay              : pointer to netplay object
+ *
+ * Post-frame for Netplay.
+ * We check if we have new input and replay from recorded input.
+ * Call this after running retro_run().
+ **/
+void netplay_post_frame(netplay_t *netplay);
+
 #endif

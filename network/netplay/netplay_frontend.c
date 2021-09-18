@@ -6686,3 +6686,21 @@ bool netplay_should_skip(netplay_t *netplay)
    return netplay->is_replay
       && (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
 }
+
+void netplay_post_frame(netplay_t *netplay)
+{
+   size_t i;
+
+   netplay_update_unread_ptr(netplay);
+   netplay_sync_post_frame(netplay, false);
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+      if (connection->active &&
+          !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
+            false))
+         netplay_hangup(netplay, connection);
+   }
+
+}
