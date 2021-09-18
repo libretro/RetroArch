@@ -3,7 +3,7 @@ DEBUG               ?= 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
 
-HAVE_STATIC_DUMMY ?= 0
+HAVE_STATIC_DUMMY ?= 1
 HAVE_GLES3 ?= 0
 HAVE_MOUSE ?= 0
 HAVE_KEYBOARD ?= 0
@@ -11,7 +11,7 @@ HAVE_KEYBOARD ?= 0
 PS4_TITLE_ID	:= RETROARCH
 PS4_TITLE_NAME	:= RetroArch
 
-PC_DEVELOPMENT_IP_ADDRESS  = 192.168.1.12
+PC_DEVELOPMENT_IP_ADDRESS  = 192.168.1.137
 PC_DEVELOPMENT_UDP_PORT	   = 18194
 DEBUG=1
 AUTH_INFO = 000000000000000000000000001C004000FF000000000080000000000000000000000000000000000000008000400040000000000000008000000000000000080040FFFF000000F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -161,13 +161,16 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
   WHOLE_END := --no-whole-archive
 endif
 
-PS4_LIBS += -lkernel_stub -lSceLibcInternal_stub  -lSceSysmodule_stub -lSceSystemService_stub \
-						-lSceUserService_stub -lSceAudioOut_stub -lScePad_stub -lSceNet_stub -lSceNetCtl_stub -lScePigletv2VSH_stub -lSceOrbisCompat_stub -lorbis -lSceIme_stub  
 
-LIBS	:= $(WHOLE_START) -lretro_ps4 $(WHOLE_END) $(PS4_LIBS)
+PS4_LIBS += -lkernel_stub  -lSceLibcInternal_stub  -lSceSysmodule_stub -lSceSystemService_stub -lSceNet_stub -lSceUserService_stub \
+				-lScePigletv2VSH_stub -lSceVideoOut_stub -lSceGnmDriver_stub -lorbisGl2 -lorbis -lScePad_stub -lSceAudioOut_stub \
+				-lSceIme_stub -lSceNetCtl_stub 
+
+# LIBS	:= $(WHOLE_START) -lretro_ps4 $(WHOLE_END) $(PS4_LIBS)
+LIBS	:= $(WHOLE_START) $(WHOLE_END) $(PS4_LIBS)
 
 CFLAGS   := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj  -std=c11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
-CXXFLAGS := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -Wall -pedantic -m64 -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj -std=c++11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
+CXXFLAGS := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -Wall -pedantic -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj -std=c++11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
 LDFLAGS  :=    -isysroot $(ORBISDEV)/usr -L. -Llib -Wl,--gc-sections -Wl,-z -Wl,max-page-size=0x4000 -Wl,--dynamic-linker="/libexec/ld-elf.so.1" -Wl,-pie -Wl,--eh-frame-hdr -L$(ORBISDEV)/usr/lib -target x86_64-scei-ps4-elf -T $(ORBISDEV)/linker.x
 ARFLAGS  := rcs
 
@@ -203,7 +206,7 @@ $(TARGET).a: $(OBJ)
 	#$(OO_PS4_TOOLCHAIN)/bin/$(CDIR)/create-eboot -in=$(TARGET).elf -out=$(TARGET).oelf --paid 0x3800000000000011
 
 install:
-	@cp homebrew.self /usr/local/orbisdev/git/ps4sh/bin/hostapp
+	@cp homebrew.self $(SELF_PATH_INSTALL)
 	@echo "Installed!"
 oelf:
 	@orbis-elf-create $(TARGET).elf homebrew.oelf
