@@ -23,6 +23,18 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+typedef struct input_mapper
+{
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog_value[MAX_USERS][8];
+   /* The whole keyboard state */
+   uint32_t keys[RETROK_LAST / 32 + 1];
+   /* RetroPad button state of remapped keyboard keys */
+   unsigned key_button[RETROK_LAST];
+   /* This is a bitmask of (1 << key_bind_id). */
+   input_bits_t buttons[MAX_USERS];
+} input_mapper_t;
+
 RETRO_BEGIN_DECLS
 
 /**
@@ -182,6 +194,8 @@ void config_read_keybinds_conf(void *data);
  *              void pointer like this to avoid including config_file.h.
  */
 void input_config_set_autoconfig_binds(unsigned port, void *data);
+
+void input_mapper_reset(void *data);
 
 RETRO_END_DECLS
 

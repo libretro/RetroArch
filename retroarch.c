@@ -28911,27 +28911,6 @@ static const menu_ctx_driver_t *menu_driver_find_driver(
 }
 #endif
 
-static void input_mapper_reset(input_mapper_t *handle)
-{
-   unsigned i;
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      unsigned j;
-      for (j = 0; j < 8; j++)
-      {
-         handle->analog_value[i][j]           = 0;
-         handle->buttons[i].data[j]           = 0;
-         handle->buttons[i].analogs[j]        = 0;
-         handle->buttons[i].analog_buttons[j] = 0;
-      }
-   }
-   for (i = 0; i < RETROK_LAST; i++)
-      handle->key_button[i]         = 0;
-   for (i = 0; i < (RETROK_LAST / 32 + 1); i++)
-      handle->keys[i]               = 0;
-}
-
-
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
