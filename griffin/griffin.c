@@ -1290,9 +1290,7 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay_handshake.c"
-#include "../network/netplay/netplay_io.c"
-#include "../network/netplay/netplay_discovery.c"
+#include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
