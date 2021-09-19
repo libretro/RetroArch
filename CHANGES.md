@@ -23,6 +23,7 @@
 - LOCALIZATION: Fetch translations from Crowdin
 - OPENDINGUX/BETA: Disable OpenAL
 - PLAYLISTS: Add 'Refresh Playlist' option
+- STEAM: Initial release on Steam
 - UWP/VFS/XBOX: Improvements and bugfixes to UWP VFS driver
 - VIDEO/REFRESH RATE: Automatic PAL/NTSC refresh rate switch where available - as long as the platform display server allows changing refresh rates and the display has the desired refresh rate
 - VIDEO FILTERS: Add 'Picoscale_256x-320x240' video filter
