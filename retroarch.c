@@ -344,12 +344,6 @@ char **input_event_get_osk_grid(void)
    return p_rarch->osk_grid;
 }
 
-core_info_state_t *coreinfo_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->core_info_st;
-}
-
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -9787,7 +9781,7 @@ bool command_event(enum event_command cmd, void *data)
                      &system_info->load_no_content))
                return false;
 
-            if (!core_info_load(core_path, &p_rarch->core_info_st))
+            if (!core_info_load(core_path))
             {
 #ifdef HAVE_DYNAMIC
                return false;
@@ -10321,7 +10315,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_INFO_DEINIT:
          core_info_deinit_list();
-         core_info_free_current_core(&p_rarch->core_info_st);
+         core_info_free_current_core();
          break;
       case CMD_EVENT_CORE_INFO_INIT:
          {
@@ -26879,7 +26873,7 @@ static void drivers_init(struct rarch_state *p_rarch,
 static void driver_uninit(struct rarch_state *p_rarch, int flags)
 {
    core_info_deinit_list();
-   core_info_free_current_core(&p_rarch->core_info_st);
+   core_info_free_current_core();
 
 #if defined(HAVE_GFX_WIDGETS)
    /* This absolutely has to be done before video_driver_free_internal()

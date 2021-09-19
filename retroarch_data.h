@@ -1387,7 +1387,6 @@ struct rarch_state
    content_state_t            content_st;                /* ptr alignment */
    midi_event_t midi_drv_input_event;                    /* ptr alignment */
    midi_event_t midi_drv_output_event;                   /* ptr alignment */
-   core_info_state_t core_info_st;                       /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
