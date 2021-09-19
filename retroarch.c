@@ -27951,6 +27951,7 @@ static enum runloop_state runloop_check_state(
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
+   unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
    bool menu_driver_binding_state      = p_rarch->menu_driver_is_binding;
    bool menu_is_alive                  = p_rarch->menu_driver_alive;
    bool display_kb                     = menu_input_dialog_get_display_kb();
@@ -28326,6 +28327,15 @@ static enum runloop_state runloop_check_state(
       quit_key                 = BIT256_GET(
             current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
+      /* Check for quit gamepad combo */
+      if (!trig_quit_key &&
+          ((quit_gamepad_combo != INPUT_COMBO_NONE) &&
+          input_driver_button_combo(
+             &(p_rarch->input_driver_state),
+             quit_gamepad_combo,
+             current_time,
+             &current_bits)))
+        trig_quit_key = true;
       old_quit_key             = quit_key;
       quit_press_twice         = settings->bools.quit_press_twice;
 

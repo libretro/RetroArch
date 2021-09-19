@@ -816,6 +816,8 @@ static const bool default_screenshots_in_content_dir = false;
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_NONE
 #endif
 
+#define DEFAULT_QUIT_GAMEPAD_COMBO INPUT_COMBO_NONE
+
 #if defined(VITA)
 static const unsigned input_backtouch_enable       = false;
 static const unsigned input_backtouch_toggle       = false;
