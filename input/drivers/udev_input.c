@@ -515,6 +515,7 @@ static int udev_input_add_device(udev_input_t *udev,
 {
    unsigned char keycaps[(KEY_MAX / 8) + 1] = {'\0'};
    unsigned char abscaps[(ABS_MAX / 8) + 1] = {'\0'};
+   unsigned char relcaps[(REL_MAX / 8) + 1] = {'\0'};
    udev_input_device_t **tmp                = NULL;
    udev_input_device_t *device              = NULL;
    int has_absolutes                        = 0;
@@ -550,11 +551,21 @@ static int udev_input_add_device(udev_input_t *udev,
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
    if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD )
    {
+      bool mouse = 0;
       /* gotta have some buttons!  return -1 to skip error logging for this:)  */
       if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof (keycaps)), keycaps) == -1)
       {
          ret = -1;
          goto end;
+      }
+    
+      if (ioctl(fd, EVIOCGBIT(EV_REL, sizeof (relcaps)), relcaps) != -1)
+      {
+         if ( (test_bit(relcaps, REL_X)) && (test_bit(relcaps, REL_Y)) )
+         {
+            if (test_bit(keycaps, BTN_MOUSE))
+            mouse = 1;
+         }
       }
 
       if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof (abscaps)), abscaps) != -1)
@@ -564,8 +575,9 @@ static int udev_input_add_device(udev_input_t *udev,
             /* might be a touchpad... */
             if (test_bit(keycaps, BTN_TOUCH))
             {
-               /* touchpad, touchscreen, or tablet. */
+               /* abs device. */
                has_absolutes = 1;
+               mouse =1;
             }
          }
       }
@@ -588,6 +600,9 @@ static int udev_input_add_device(udev_input_t *udev,
          device->mouse.y_min = absinfo.minimum;
          device->mouse.y_max = absinfo.maximum;
       } 
+
+      if (!mouse)
+         goto  end;
    }
 
    tmp = (udev_input_device_t**)realloc(udev->devices,
