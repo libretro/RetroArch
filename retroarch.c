@@ -28155,9 +28155,11 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    last_input                       = current_bits;
    if (
-         ((menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
-          input_driver_toggle_button_combo(
-             menu_toggle_gamepad_combo, current_time,
+         ((menu_toggle_gamepad_combo != INPUT_COMBO_NONE) &&
+          input_driver_button_combo(
+             &(p_rarch->input_driver_state),
+             menu_toggle_gamepad_combo,
+             current_time,
              &last_input)))
       BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
 
