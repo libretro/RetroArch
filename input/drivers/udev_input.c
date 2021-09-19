@@ -602,7 +602,15 @@ static int udev_input_add_device(udev_input_t *udev,
       } 
 
       if (!mouse)
-         goto  end;
+         goto end;
+
+      if (mouse)
+      {
+          if (has_absolutes) 
+            RARCH_LOG("[udev] ABS MOUSE\n");
+          else
+             RARCH_LOG("[udev] REL MOUSE\n");
+      }
    }
 
    tmp = (udev_input_device_t**)realloc(udev->devices,
