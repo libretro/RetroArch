@@ -1286,8 +1286,9 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
-   int device_keyboard                 = 0;
-   int device_mouse                    = 0;
+   int dev_count= 0;
+   static int device_mouse                    = 0;
+
    if (!enumerate)
       return false;
 
@@ -1323,28 +1324,39 @@ static bool open_devices(udev_input_t *udev,
                if (type == UDEV_INPUT_KEYBOARD)
                {
                   RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
-                     device_keyboard,
+                     dev_count,
                      ident,
                      devnode);
-                   device_keyboard++;
+                     dev_count++;
                }                     
-               else if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD)
+               else if (type == UDEV_INPUT_MOUSE)
+               {
+                  device_mouse = dev_count;
+                  input_config_set_mouse_display_name(dev_count, ident);
+
+                  RARCH_LOG("[udev]: Mouse(REL) #%u: \"%s\" (%s).\n",
+                     dev_count,
+                     ident,
+                     devnode);
+                     dev_count++;
+               }                     
+               else if (type == UDEV_INPUT_TOUCHPAD)
                {
                   input_config_set_mouse_display_name(device_mouse, ident);
 
-                  RARCH_LOG("[udev]: Mouse #%u: \"%s\" (%s).\n",
+                  RARCH_LOG("[udev]: Mouse(ABS) #%u: \"%s\" (%s).\n",
                      device_mouse,
                      ident,
                      devnode);
                      device_mouse++;
-               }                     
+               }
             }
 
             (void)check;
             close(fd);
          }
       }
-
+      if (type == UDEV_INPUT_MOUSE) device_mouse = dev_count;
       udev_device_unref(dev);
    }
 
