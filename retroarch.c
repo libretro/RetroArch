@@ -4036,6 +4036,10 @@ static void command_event_deinit_core(
    if (video_st->video_refresh_rate_original)
       video_display_server_restore_refresh_rate();
 
+   /* Recalibrate frame delay target */
+   if (settings->bools.video_frame_delay_auto)
+      video_st->frame_delay_target = 0;
+
    if (reinit)
       driver_uninit(p_rarch, DRIVERS_CMD_ALL);
 
@@ -9084,6 +9088,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
              * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
             if (video_fullscreen)
                video_driver_hide_mouse();
+
+            /* Recalibrate frame delay target */
+            if (settings->bools.video_frame_delay_auto)
+               video_st->frame_delay_target = 0;
 
             return true;
          }
@@ -16674,6 +16682,7 @@ int runloop_iterate(void)
    settings_t *settings                         = config_get_ptr();
    runloop_state_t *runloop_st                  = &runloop_state;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
+   unsigned video_frame_delay_effective         = video_st->frame_delay_effective;
    bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
    unsigned max_users                           = settings->uints.input_max_users;
    retro_time_t current_time                    = cpu_features_get_time_usec();
@@ -16897,8 +16906,84 @@ int runloop_iterate(void)
       }
    }
 
-   if ((video_frame_delay > 0) && input_st && !input_st->nonblocking_flag)
-      retro_sleep(video_frame_delay);
+   if (input_st && !input_st->nonblocking_flag)
+   {
+      if (settings->bools.video_frame_delay_auto)
+      {
+         float refresh_rate           = settings->floats.video_refresh_rate;
+         unsigned frame_time_interval = 8;
+         bool frame_time_update       =
+               /* Skip some starting frames for stabilization */
+               video_st->frame_count > 10 &&
+               video_st->frame_count % frame_time_interval == 0;
+
+         /* Set target moderately as half frame time with 0 delay */
+         if (video_frame_delay == 0)
+            video_frame_delay = 1 / refresh_rate * 1000 / 2;
+
+         if (video_st->frame_delay_target != video_frame_delay)
+         {
+            video_st->frame_delay_target = video_frame_delay_effective = video_frame_delay;
+            RARCH_LOG("[Video]: Frame delay reset to %d.\n", video_frame_delay);
+         }
+
+         if (video_frame_delay_effective > 0 && frame_time_update)
+         {
+            unsigned i                    = 0;
+            unsigned frame_time           = 0;
+            unsigned frame_time_frames    = frame_time_interval - 1;
+            unsigned frame_time_target    = 1000000.0f / refresh_rate;
+            unsigned frame_time_limit_min = frame_time_target * 1.25;
+            unsigned frame_time_limit_med = frame_time_target * 1.50;
+            unsigned frame_time_limit_max = frame_time_target * 1.90;
+            unsigned frame_time_limit_cap = frame_time_target * 2.25;
+            unsigned frame_time_limit_ign = frame_time_target * 2.50;
+            unsigned frame_time_index     =
+                  (video_st->frame_time_count &
+                  (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
+
+            /* Calculate average frame time to balance spikes */
+            for (i = 1; i < frame_time_frames + 1; i++)
+            {
+               unsigned frame_time_i = video_st->frame_time_samples[frame_time_index - i];
+
+               /* Ignore values when core is doing internal frame skipping */
+               if (frame_time_i > frame_time_limit_ign)
+                  frame_time_i = 0;
+               /* Limit maximum to prevent false positives */
+               else if (frame_time_i > frame_time_limit_cap)
+                  frame_time_i = frame_time_limit_cap;
+
+               frame_time += frame_time_i;
+            }
+            frame_time /= frame_time_frames;
+
+            if (frame_time > frame_time_limit_min)
+            {
+               unsigned delay_decrease = 1;
+
+               /* Increase decrease the more frame time is off target */
+               if (frame_time > frame_time_limit_med && video_frame_delay_effective > delay_decrease)
+               {
+                  delay_decrease++;
+                  if (frame_time > frame_time_limit_max && video_frame_delay_effective > delay_decrease)
+                     delay_decrease++;
+               }
+
+               video_frame_delay_effective -= delay_decrease;
+               RARCH_LOG("[Video]: Frame delay decrease by %d to %d due to frame time: %d > %d.\n",
+                     delay_decrease, video_frame_delay_effective, frame_time, frame_time_target);
+            }
+         }
+      }
+      else
+         video_st->frame_delay_target = video_frame_delay_effective = video_frame_delay;
+
+      video_st->frame_delay_effective = video_frame_delay_effective;
+
+      if (video_frame_delay_effective > 0)
+         retro_sleep(video_frame_delay_effective);
+   }
 
    {
 #ifdef HAVE_RUNAHEAD

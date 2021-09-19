@@ -533,6 +533,7 @@ typedef struct settings
       bool video_smooth;
       bool video_ctx_scaling;
       bool video_force_aspect;
+      bool video_frame_delay_auto;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;

@@ -3838,12 +3838,14 @@ void video_driver_frame(const void *data, unsigned width,
       snprintf(video_info.stat_text,
             sizeof(video_info.stat_text),
             "Video Statistics:\n -Frame rate: %6.2f fps\n -Frame time: %6.2f ms\n -Frame time deviation: %.3f %%\n"
-            " -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
+            " -Frame delay (target/effective): %u/%u ms\n -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
             "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n -Sample count: %d\n"
             "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n",
             last_fps,
             frame_time / 1000.0f,
             100.0f * stddev,
+            video_st->frame_delay_target,
+            video_st->frame_delay_effective,
             video_st->frame_count,
             video_info.width,
             video_info.height,
