@@ -1586,7 +1586,7 @@ void video_driver_set_viewport_core(void);
 
 void video_driver_set_viewport_full(void);
 
-void video_driver_reset_custom_viewport(void);
+void video_driver_reset_custom_viewport(void *settings_data);
 
 void video_driver_set_rgba(void);
 

@@ -885,60 +885,6 @@ static bool menu_input_key_bind_iterate(
    return false;
 }
 
-#ifdef HAVE_ACCESSIBILITY
-static void get_current_menu_value(struct menu_state *menu_st,
-      char *s, size_t len)
-{
-   menu_entry_t     entry;
-   const char*      entry_label;
-
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled          = false;
-   entry.label_enabled         = false;
-   entry.rich_label_enabled    = false;
-   entry.sublabel_enabled      = false;
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
-   if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
-      entry_label              = entry.password_value;
-   else
-      entry_label              = entry.value;
-
-   strlcpy(s, entry_label, len);
-}
-
-static void get_current_menu_label(struct menu_state *menu_st,
-      char *s, size_t len)
-{
-   menu_entry_t     entry;
-   const char*      entry_label;
-
-   MENU_ENTRY_INIT(entry);
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
-   if (!string_is_empty(entry.rich_label))
-      entry_label              = entry.rich_label;
-   else
-      entry_label              = entry.path;
-
-   strlcpy(s, entry_label, len);
-}
-
-static void get_current_menu_sublabel(struct menu_state *menu_st,
-      char *s, size_t len)
-{
-   menu_entry_t     entry;
-
-   MENU_ENTRY_INIT(entry);
-   entry.path_enabled          = false;
-   entry.label_enabled         = false;
-   entry.rich_label_enabled    = false;
-   entry.value_enabled         = false;
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   strlcpy(s, entry.sublabel, len);
-}
-#endif
-
 /**
  * menu_iterate:
  * @input                    : input sample for this frame
@@ -3355,9 +3301,9 @@ void menu_driver_get_last_shader_preset_path(
 
    if (menu)
    {
-      type             = menu->last_shader_selection.preset_type;
-      shader_dir       = menu->last_shader_selection.preset_dir;
-      shader_file_name = menu->last_shader_selection.preset_file_name;
+      type                      = menu->last_shader_selection.preset_type;
+      shader_dir                = menu->last_shader_selection.preset_dir;
+      shader_file_name          = menu->last_shader_selection.preset_file_name;
    }
 
    menu_driver_get_last_shader_path_int(settings, type,
@@ -3377,9 +3323,9 @@ void menu_driver_get_last_shader_pass_path(
 
    if (menu)
    {
-      type             = menu->last_shader_selection.pass_type;
-      shader_dir       = menu->last_shader_selection.pass_dir;
-      shader_file_name = menu->last_shader_selection.pass_file_name;
+      type                      = menu->last_shader_selection.pass_type;
+      shader_dir                = menu->last_shader_selection.pass_dir;
+      shader_file_name          = menu->last_shader_selection.pass_file_name;
    }
 
    menu_driver_get_last_shader_path_int(settings, type,
@@ -4057,7 +4003,7 @@ clear:
  *    SHADER_PRESET_CORE:   <target dir>/<core name>/<core name>
  *    SHADER_PRESET_PARENT: <target dir>/<core name>/<parent>
  *    SHADER_PRESET_GAME:   <target dir>/<core name>/<game name>
- * Needs to be consistent with retroarch_load_shader_preset()
+ * Needs to be consistent with load_shader_preset()
  * Auto-shaders will be saved as a reference if possible
  **/
 bool menu_shader_manager_save_auto_preset(
@@ -4071,7 +4017,7 @@ bool menu_shader_manager_save_auto_preset(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         system, settings,
+         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_SAVE, shader,
          dir_video_shader,
          dir_menu_config,
@@ -4134,7 +4080,7 @@ bool menu_shader_manager_remove_auto_preset(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         system, settings,
+         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_REMOVE, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -4156,7 +4102,7 @@ bool menu_shader_manager_auto_preset_exists(
    struct retro_system_info *system = &runloop_state.system.info;
    settings_t *settings             = p_rarch->configuration_settings;
    return menu_shader_manager_operate_auto_preset(
-         system, settings,
+         system, settings->bools.video_shader_preset_save_reference_enable,
          AUTO_SHADER_OP_EXISTS, NULL,
          dir_video_shader,
          dir_menu_config,
@@ -4641,192 +4587,6 @@ static void discord_init(
 #endif
 
 #ifdef HAVE_NETWORKING
-/**
- * netplay_is_alive:
- * @netplay              : pointer to netplay object
- *
- * Checks if input port/index is controlled by netplay or not.
- *
- * Returns: true (1) if alive, otherwise false (0).
- **/
-static bool netplay_is_alive(netplay_t *netplay)
-{
-   return (netplay->is_server) ||
-          (!netplay->is_server &&
-           netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
-}
-
-/**
- * netplay_should_skip:
- * @netplay              : pointer to netplay object
- *
- * If we're fast-forward replaying to resync, check if we
- * should actually show frame.
- *
- * Returns: bool (1) if we should skip this frame, otherwise
- * false (0).
- **/
-static bool netplay_should_skip(netplay_t *netplay)
-{
-   if (!netplay)
-      return false;
-   return netplay->is_replay
-      && (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
-}
-
-/**
- * get_self_input_state:
- * @netplay              : pointer to netplay object
- *
- * Grab our own input state and send this frame's input state (self and remote)
- * over the network
- *
- * Returns: true (1) if successful, otherwise false (0).
- */
-static bool get_self_input_state(
-      bool block_libretro_input,
-      netplay_t *netplay)
-{
-   unsigned i;
-   struct delta_frame *ptr        = &netplay->buffer[netplay->self_ptr];
-   netplay_input_state_t istate   = NULL;
-   uint32_t devices, used_devices = 0, devi, dev_type, local_device;
-
-   if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
-      return false;
-
-   /* We've already read this frame! */
-   if (ptr->have_local)
-      return true;
-
-   devices      = netplay->self_devices;
-   used_devices = 0;
-
-   for (devi = 0; devi < MAX_INPUT_DEVICES; devi++)
-   {
-      if (!(devices & (1 << devi)))
-         continue;
-
-      /* Find an appropriate local device */
-      dev_type = netplay->config_devices[devi]&RETRO_DEVICE_MASK;
-
-      for (local_device = 0; local_device < MAX_INPUT_DEVICES; local_device++)
-      {
-         if (used_devices & (1 << local_device))
-            continue;
-         if ((netplay->config_devices[local_device]&RETRO_DEVICE_MASK) == dev_type)
-            break;
-      }
-
-      if (local_device == MAX_INPUT_DEVICES)
-         local_device = 0;
-      used_devices |= (1 << local_device);
-
-      istate = netplay_input_state_for(&ptr->real_input[devi],
-            /* If we're a slave, we write our own input to MAX_CLIENTS to keep it separate */
-            (netplay->self_mode==NETPLAY_CONNECTION_SLAVE)?MAX_CLIENTS:netplay->self_client_num,
-            netplay_expected_input_size(netplay, 1 << devi),
-            true, false);
-      if (!istate)
-         continue; /* FIXME: More severe? */
-
-      /* First frame we always give zero input since relying on
-       * input from first frame screws up when we use -F 0. */
-      if (     !block_libretro_input
-            &&  netplay->self_frame_count > 0)
-      {
-         uint32_t *state        = istate->data;
-         retro_input_state_t cb = netplay->cbs.state_cb;
-         unsigned dtype         = netplay->config_devices[devi]&RETRO_DEVICE_MASK;
-
-         switch (dtype)
-         {
-            case RETRO_DEVICE_ANALOG:
-               for (i = 0; i < 2; i++)
-               {
-                  int16_t tmp_x = cb(local_device,
-                        RETRO_DEVICE_ANALOG, (unsigned)i, 0);
-                  int16_t tmp_y = cb(local_device,
-                        RETRO_DEVICE_ANALOG, (unsigned)i, 1);
-                  state[1 + i] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
-               }
-               /* no break */
-
-            case RETRO_DEVICE_JOYPAD:
-               for (i = 0; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++)
-               {
-                  int16_t tmp = cb(local_device,
-                        RETRO_DEVICE_JOYPAD, 0, (unsigned)i);
-                  state[0] |= tmp ? 1 << i : 0;
-               }
-               break;
-
-            case RETRO_DEVICE_MOUSE:
-            case RETRO_DEVICE_LIGHTGUN:
-            {
-               int16_t tmp_x = cb(local_device, dtype, 0, 0);
-               int16_t tmp_y = cb(local_device, dtype, 0, 1);
-               state[1] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
-               for (i = 2;
-                     i <= (unsigned)((dtype == RETRO_DEVICE_MOUSE) ?
-                           RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN :
-                           RETRO_DEVICE_ID_LIGHTGUN_START);
-                     i++)
-               {
-                  int16_t tmp = cb(local_device, dtype, 0,
-                        (unsigned) i);
-                  state[0] |= tmp ? 1 << i : 0;
-               }
-               break;
-            }
-
-            case RETRO_DEVICE_KEYBOARD:
-            {
-               unsigned key, word = 0, bit = 1;
-               for (key = 1; key < NETPLAY_KEY_LAST; key++)
-               {
-                  state[word] |=
-                        cb(local_device, RETRO_DEVICE_KEYBOARD, 0,
-                              NETPLAY_KEY_NTOH(key)) ?
-                              (UINT32_C(1) << bit) : 0;
-                  bit++;
-                  if (bit >= 32)
-                  {
-                     bit = 0;
-                     word++;
-                     if (word >= istate->size)
-                        break;
-                  }
-               }
-               break;
-            }
-         }
-      }
-   }
-
-   ptr->have_local = true;
-   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
-   {
-      ptr->have_real[netplay->self_client_num] = true;
-      netplay->read_ptr[netplay->self_client_num] = NEXT_PTR(netplay->self_ptr);
-      netplay->read_frame_count[netplay->self_client_num] = netplay->self_frame_count + 1;
-   }
-
-   /* And send this input to our peers */
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
-         netplay_send_cur_input(netplay, &netplay->connections[i]);
-   }
-
-   /* Handle any delayed state changes */
-   if (netplay->is_server)
-      netplay_delayed_state_change(netplay);
-
-   return true;
-}
-
 static bool init_netplay_deferred(
       struct rarch_state *p_rarch,
       const char* server, unsigned port)
@@ -4842,252 +4602,6 @@ static bool init_netplay_deferred(
       p_rarch->netplay_client_deferred = false;
 
    return p_rarch->netplay_client_deferred;
-}
-
-/**
- * netplay_poll:
- * @netplay              : pointer to netplay object
- *
- * Polls network to see if we have anything new. If our
- * network buffer is full, we simply have to block
- * for new input data.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static bool netplay_poll(
-      bool block_libretro_input,
-      settings_t *settings,
-      netplay_t *netplay)
-{
-   int res;
-   uint32_t client;
-   size_t i;
-
-   if (!get_self_input_state(block_libretro_input, netplay))
-      goto catastrophe;
-
-   /* If we're not connected, we're done */
-   if (netplay->self_mode == NETPLAY_CONNECTION_NONE)
-      return true;
-
-   /* Read Netplay input, block if we're configured to stall for input every
-    * frame */
-   netplay_update_unread_ptr(netplay);
-   if (netplay->stateless_mode &&
-       (netplay->connected_players>1) &&
-       netplay->unread_frame_count <= netplay->run_frame_count)
-      res = netplay_poll_net_input(netplay, true);
-   else
-      res = netplay_poll_net_input(netplay, false);
-   if (res == -1)
-      goto catastrophe;
-
-   /* Resolve and/or simulate the input if we don't have real input */
-   netplay_resolve_input(netplay, netplay->run_ptr, false);
-
-   /* Handle any slaves */
-   if (netplay->is_server && netplay->connected_slaves)
-      netplay_handle_slaves(netplay);
-
-   netplay_update_unread_ptr(netplay);
-
-   /* Figure out how many frames of input latency we should be using to hide
-    * network latency */
-   if (netplay->frame_run_time_avg || netplay->stateless_mode)
-   {
-      /* FIXME: Using fixed 60fps for this calculation */
-      unsigned frames_per_frame    = netplay->frame_run_time_avg ?
-         (16666 / netplay->frame_run_time_avg) :
-         0;
-      unsigned frames_ahead        = (netplay->run_frame_count > netplay->unread_frame_count) ?
-         (netplay->run_frame_count - netplay->unread_frame_count) :
-         0;
-      int input_latency_frames_min = settings->uints.netplay_input_latency_frames_min -
-            (settings->bools.run_ahead_enabled ? settings->uints.run_ahead_frames : 0);
-      int input_latency_frames_max = input_latency_frames_min + settings->uints.netplay_input_latency_frames_range;
-
-      /* Assume we need a couple frames worth of time to actually run the
-       * current frame */
-      if (frames_per_frame > 2)
-         frames_per_frame -= 2;
-      else
-         frames_per_frame = 0;
-
-      /* Shall we adjust our latency? */
-      if (netplay->stateless_mode)
-      {
-         /* In stateless mode, we adjust up if we're "close" and down if we
-          * have a lot of slack */
-         if (netplay->input_latency_frames < input_latency_frames_min ||
-               (netplay->unread_frame_count == netplay->run_frame_count + 1 &&
-                netplay->input_latency_frames < input_latency_frames_max))
-            netplay->input_latency_frames++;
-         else if (netplay->input_latency_frames > input_latency_frames_max ||
-               (netplay->unread_frame_count > netplay->run_frame_count + 2 &&
-                netplay->input_latency_frames > input_latency_frames_min))
-            netplay->input_latency_frames--;
-      }
-      else if (netplay->input_latency_frames < input_latency_frames_min ||
-               (frames_per_frame < frames_ahead &&
-                netplay->input_latency_frames < input_latency_frames_max))
-      {
-         /* We can't hide this much network latency with replay, so hide some
-          * with input latency */
-         netplay->input_latency_frames++;
-      }
-      else if (netplay->input_latency_frames > input_latency_frames_max ||
-               (frames_per_frame > frames_ahead + 2 &&
-                netplay->input_latency_frames > input_latency_frames_min))
-      {
-         /* We don't need this much latency (any more) */
-         netplay->input_latency_frames--;
-      }
-   }
-
-   /* If we're stalled, consider unstalling */
-   switch (netplay->stall)
-   {
-      case NETPLAY_STALL_RUNNING_FAST:
-         if (netplay->unread_frame_count + NETPLAY_MAX_STALL_FRAMES - 2
-               > netplay->self_frame_count)
-         {
-            netplay->stall = NETPLAY_STALL_NONE;
-            for (i = 0; i < netplay->connections_size; i++)
-            {
-               struct netplay_connection *connection = &netplay->connections[i];
-               if (connection->active && connection->stall)
-                  connection->stall = NETPLAY_STALL_NONE;
-            }
-         }
-         break;
-
-      case NETPLAY_STALL_SPECTATOR_WAIT:
-         if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING || netplay->unread_frame_count > netplay->self_frame_count)
-            netplay->stall = NETPLAY_STALL_NONE;
-         break;
-
-      case NETPLAY_STALL_INPUT_LATENCY:
-         /* Just let it recalculate momentarily */
-         netplay->stall = NETPLAY_STALL_NONE;
-         break;
-
-      case NETPLAY_STALL_SERVER_REQUESTED:
-         /* See if the stall is done */
-         if (netplay->connections[0].stall_frame == 0)
-         {
-            /* Stop stalling! */
-            netplay->connections[0].stall = NETPLAY_STALL_NONE;
-            netplay->stall = NETPLAY_STALL_NONE;
-         }
-         else
-            netplay->connections[0].stall_frame--;
-         break;
-      case NETPLAY_STALL_NO_CONNECTION:
-         /* We certainly haven't fixed this */
-         break;
-      default: /* not stalling */
-         break;
-   }
-
-   /* If we're not stalled, consider stalling */
-   if (!netplay->stall)
-   {
-      /* Have we not read enough latency frames? */
-      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING &&
-          netplay->connected_players &&
-          netplay->run_frame_count + netplay->input_latency_frames > netplay->self_frame_count)
-      {
-         netplay->stall = NETPLAY_STALL_INPUT_LATENCY;
-         netplay->stall_time = 0;
-      }
-
-      /* Are we too far ahead? */
-      if (netplay->unread_frame_count + NETPLAY_MAX_STALL_FRAMES
-            <= netplay->self_frame_count)
-      {
-         netplay->stall      = NETPLAY_STALL_RUNNING_FAST;
-         netplay->stall_time = cpu_features_get_time_usec();
-
-         /* Figure out who to blame */
-         if (netplay->is_server)
-         {
-            for (client = 1; client < MAX_CLIENTS; client++)
-            {
-               struct netplay_connection *connection;
-               if (!(netplay->connected_players & (1 << client)))
-                  continue;
-               if (netplay->read_frame_count[client] > netplay->unread_frame_count)
-                  continue;
-               connection = &netplay->connections[client-1];
-               if (connection->active &&
-                   connection->mode == NETPLAY_CONNECTION_PLAYING)
-               {
-                  connection->stall = NETPLAY_STALL_RUNNING_FAST;
-                  connection->stall_time = netplay->stall_time;
-               }
-            }
-         }
-
-      }
-
-      /* If we're a spectator, are we ahead at all? */
-      if (!netplay->is_server &&
-          (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING ||
-           netplay->self_mode == NETPLAY_CONNECTION_SLAVE) &&
-          netplay->unread_frame_count <= netplay->self_frame_count)
-      {
-         netplay->stall = NETPLAY_STALL_SPECTATOR_WAIT;
-         netplay->stall_time = cpu_features_get_time_usec();
-      }
-   }
-
-   /* If we're stalling, consider disconnection */
-   if (netplay->stall && netplay->stall_time)
-   {
-      retro_time_t now = cpu_features_get_time_usec();
-
-      /* Don't stall out while they're paused */
-      if (netplay->remote_paused)
-         netplay->stall_time = now;
-      else if (now - netplay->stall_time >=
-               (netplay->is_server ? MAX_SERVER_STALL_TIME_USEC :
-                                          MAX_CLIENT_STALL_TIME_USEC))
-      {
-         /* Stalled out! */
-         if (netplay->is_server)
-         {
-            bool fixed = false;
-            for (i = 0; i < netplay->connections_size; i++)
-            {
-               struct netplay_connection *connection = &netplay->connections[i];
-               if (connection->active &&
-                   connection->mode == NETPLAY_CONNECTION_PLAYING &&
-                   connection->stall)
-               {
-                  netplay_hangup(netplay, connection);
-                  fixed = true;
-               }
-            }
-
-            if (fixed)
-            {
-               /* Not stalled now :) */
-               netplay->stall = NETPLAY_STALL_NONE;
-               return true;
-            }
-         }
-         else
-            goto catastrophe;
-         return false;
-      }
-   }
-
-   return true;
-
-catastrophe:
-   for (i = 0; i < netplay->connections_size; i++)
-      netplay_hangup(netplay, &netplay->connections[i]);
-   return false;
 }
 
 /**
@@ -5134,85 +4648,6 @@ static size_t audio_sample_batch_net(const int16_t *data, size_t frames)
    if (!netplay_should_skip(netplay) && !netplay->stall)
       return netplay->cbs.sample_batch_cb(data, frames);
    return frames;
-}
-
-static int16_t netplay_input_state(netplay_t *netplay,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   struct delta_frame *delta;
-   netplay_input_state_t istate;
-   const uint32_t *curr_input_state = NULL;
-   size_t ptr                       =
-      netplay->is_replay
-      ? netplay->replay_ptr
-      : netplay->run_ptr;
-
-   if (port >= MAX_INPUT_DEVICES)
-      return 0;
-
-   /* If the port doesn't seem to correspond to the device, "correct" it. This
-    * is common with devices that typically only have one instance, such as
-    * keyboards, mice and lightguns. */
-   if (device != RETRO_DEVICE_JOYPAD &&
-       (netplay->config_devices[port]&RETRO_DEVICE_MASK) != device)
-   {
-      for (port = 0; port < MAX_INPUT_DEVICES; port++)
-      {
-         if ((netplay->config_devices[port]&RETRO_DEVICE_MASK) == device)
-            break;
-      }
-      if (port == MAX_INPUT_DEVICES)
-         return 0;
-   }
-
-   delta  = &netplay->buffer[ptr];
-   istate = delta->resolved_input[port];
-   if (!istate || !istate->used || istate->size == 0)
-      return 0;
-
-   curr_input_state = istate->data;
-
-   switch (device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            return curr_input_state[0];
-         return ((1 << id) & curr_input_state[0]) ? 1 : 0;
-
-      case RETRO_DEVICE_ANALOG:
-         if (istate->size == 3)
-         {
-            uint32_t state = curr_input_state[1 + idx];
-            return (int16_t)(uint16_t)(state >> (id * 16));
-         }
-         break;
-      case RETRO_DEVICE_MOUSE:
-      case RETRO_DEVICE_LIGHTGUN:
-         if (istate->size == 2)
-         {
-            if (id <= RETRO_DEVICE_ID_MOUSE_Y)
-               return (int16_t)(uint16_t)(curr_input_state[1] >> (id * 16));
-            return ((1 << id) & curr_input_state[0]) ? 1 : 0;
-         }
-         break;
-      case RETRO_DEVICE_KEYBOARD:
-         {
-            unsigned key = netplay_key_hton(id);
-            if (key != NETPLAY_KEY_UNKNOWN)
-            {
-               unsigned word = key / 32;
-               unsigned bit  = key % 32;
-               if (word <= istate->size)
-                  return ((UINT32_C(1) << bit) & curr_input_state[word]) ? 1 : 0;
-            }
-         }
-         break;
-      default:
-         break;
-   }
-
-   return 0;
 }
 
 static void netplay_announce_cb(retro_task_t *task,
@@ -5487,57 +4922,6 @@ static int16_t input_state_net(unsigned port, unsigned device,
 /* ^^^ Netplay polling callbacks */
 
 /**
-* netplay_frontend_paused
- * @netplay              : pointer to netplay object
- * @paused               : true if frontend is paused
- *
- * Inform Netplay of the frontend's pause state (paused or otherwise)
- */
-static void netplay_frontend_paused(netplay_t *netplay, bool paused)
-{
-   size_t i;
-   uint32_t paused_ct    = 0;
-
-   netplay->local_paused = paused;
-
-   /* Communicating this is a bit odd: If exactly one other connection is
-    * paused, then we must tell them that we're unpaused, as from their
-    * perspective we are. If more than one other connection is paused, then our
-    * status as proxy means we are NOT unpaused to either of them. */
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->active && connection->paused)
-         paused_ct++;
-   }
-
-   if (paused_ct > 1)
-      return;
-
-   /* Send our unpaused status. Must send manually because we must immediately
-    * flush the buffer: If we're paused, we won't be polled. */
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (     connection->active
-            && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
-      {
-         if (paused)
-            netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_PAUSE,
-               netplay->nick, NETPLAY_NICK_LEN);
-         else
-            netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_RESUME,
-               NULL, 0);
-
-         /* We're not going to be polled, so we need to
-          * flush this command now */
-         netplay_send_flush(&connection->send_packet_buffer,
-               connection->fd, true);
-      }
-   }
-}
-
-/**
  * netplay_disconnect
  * @netplay              : pointer to netplay object
  *
@@ -5652,250 +5036,6 @@ static bool netplay_pre_frame(
       return false;
    }
    return true;
-}
-
-/**
- * netplay_post_frame:
- * @netplay              : pointer to netplay object
- *
- * Post-frame for Netplay.
- * We check if we have new input and replay from recorded input.
- * Call this after running retro_run().
- **/
-static void netplay_post_frame(
-      struct rarch_state *p_rarch,
-      netplay_t *netplay)
-{
-   size_t i;
-   retro_assert(netplay);
-   netplay_update_unread_ptr(netplay);
-   netplay_sync_post_frame(netplay, false);
-
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->active &&
-          !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
-            false))
-         netplay_hangup(netplay, connection);
-   }
-
-   /* If we're disconnected, deinitialize */
-   if (!netplay->is_server && !netplay->connections[0].active)
-      netplay_disconnect(p_rarch, netplay);
-}
-
-/**
- * netplay_force_future
- * @netplay              : pointer to netplay object
- *
- * Force netplay to ignore all past input, typically because we've just loaded
- * a state or reset.
- */
-static void netplay_force_future(netplay_t *netplay)
-{
-   /* Wherever we're inputting, that's where we consider our state to be loaded */
-   netplay->run_ptr         = netplay->self_ptr;
-   netplay->run_frame_count = netplay->self_frame_count;
-
-   /* We need to ignore any intervening data from the other side,
-    * and never rewind past this */
-   netplay_update_unread_ptr(netplay);
-
-   if (netplay->unread_frame_count < netplay->run_frame_count)
-   {
-      uint32_t client;
-      for (client = 0; client < MAX_CLIENTS; client++)
-      {
-         if (!(netplay->connected_players & (1 << client)))
-            continue;
-
-         if (netplay->read_frame_count[client] < netplay->run_frame_count)
-         {
-            netplay->read_ptr[client] = netplay->run_ptr;
-            netplay->read_frame_count[client] = netplay->run_frame_count;
-         }
-      }
-      if (netplay->server_frame_count < netplay->run_frame_count)
-      {
-         netplay->server_ptr = netplay->run_ptr;
-         netplay->server_frame_count = netplay->run_frame_count;
-      }
-      netplay_update_unread_ptr(netplay);
-   }
-   if (netplay->other_frame_count < netplay->run_frame_count)
-   {
-      netplay->other_ptr = netplay->run_ptr;
-      netplay->other_frame_count = netplay->run_frame_count;
-   }
-}
-
-/**
- * netplay_send_savestate
- * @netplay              : pointer to netplay object
- * @serial_info          : the savestate being loaded
- * @cx                   : compression type
- * @z                    : compression backend to use
- *
- * Send a loaded savestate to those connected peers using the given compression
- * scheme.
- */
-static void netplay_send_savestate(netplay_t *netplay,
-   retro_ctx_serialize_info_t *serial_info, uint32_t cx,
-   struct compression_transcoder *z)
-{
-   uint32_t header[4];
-   uint32_t rd, wn;
-   size_t i;
-
-   /* Compress it */
-   z->compression_backend->set_in(z->compression_stream,
-      (const uint8_t*)serial_info->data_const, (uint32_t)serial_info->size);
-   z->compression_backend->set_out(z->compression_stream,
-      netplay->zbuffer, (uint32_t)netplay->zbuffer_size);
-   if (!z->compression_backend->trans(z->compression_stream, true, &rd,
-         &wn, NULL))
-   {
-      /* Catastrophe! */
-      for (i = 0; i < netplay->connections_size; i++)
-         netplay_hangup(netplay, &netplay->connections[i]);
-      return;
-   }
-
-   /* Send it to relevant peers */
-   header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
-   header[1] = htonl(wn + 2*sizeof(uint32_t));
-   header[2] = htonl(netplay->run_frame_count);
-   header[3] = htonl(serial_info->size);
-
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (!connection->active ||
-          connection->mode < NETPLAY_CONNECTION_CONNECTED ||
-          connection->compression_supported != cx) continue;
-
-      if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
-            sizeof(header)) ||
-          !netplay_send(&connection->send_packet_buffer, connection->fd,
-            netplay->zbuffer, wn))
-         netplay_hangup(netplay, connection);
-   }
-}
-
-/**
- * netplay_load_savestate
- * @netplay              : pointer to netplay object
- * @serial_info          : the savestate being loaded, NULL means
- *                         "load it yourself"
- * @save                 : Whether to save the provided serial_info
- *                         into the frame buffer
- *
- * Inform Netplay of a savestate load and send it to the other side
- **/
-void netplay_load_savestate(netplay_t *netplay,
-      retro_ctx_serialize_info_t *serial_info, bool save)
-{
-   retro_ctx_serialize_info_t tmp_serial_info;
-
-   netplay_force_future(netplay);
-
-   /* Record it in our own buffer */
-   if (save || !serial_info)
-   {
-      /* TODO/FIXME: This is a critical failure! */
-      if (!netplay_delta_frame_ready(netplay,
-               &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
-         return;
-
-      if (!serial_info)
-      {
-         tmp_serial_info.size = netplay->state_size;
-         tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
-         if (!core_serialize(&tmp_serial_info))
-            return;
-         tmp_serial_info.data_const = tmp_serial_info.data;
-         serial_info = &tmp_serial_info;
-      }
-      else
-      {
-         if (serial_info->size <= netplay->state_size)
-            memcpy(netplay->buffer[netplay->run_ptr].state,
-                  serial_info->data_const, serial_info->size);
-      }
-   }
-
-   /* Don't send it if we're expected to be desynced */
-   if (netplay->desync)
-      return;
-
-   /* If we can't send it to the peer, loading a state was a bad idea */
-   if (netplay->quirks & (
-              NETPLAY_QUIRK_NO_SAVESTATES
-            | NETPLAY_QUIRK_NO_TRANSMISSION))
-      return;
-
-   /* Send this to every peer */
-   if (netplay->compress_nil.compression_backend)
-      netplay_send_savestate(netplay, serial_info, 0, &netplay->compress_nil);
-   if (netplay->compress_zlib.compression_backend)
-      netplay_send_savestate(netplay, serial_info, NETPLAY_COMPRESSION_ZLIB,
-         &netplay->compress_zlib);
-}
-
-/**
- * netplay_core_reset
- * @netplay              : pointer to netplay object
- *
- * Indicate that the core has been reset to netplay peers
- **/
-static void netplay_core_reset(netplay_t *netplay)
-{
-   size_t i;
-   uint32_t cmd[3];
-
-   /* Ignore past input */
-   netplay_force_future(netplay);
-
-   /* Request that our peers reset */
-   cmd[0] = htonl(NETPLAY_CMD_RESET);
-   cmd[1] = htonl(sizeof(uint32_t));
-   cmd[2] = htonl(netplay->self_frame_count);
-
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (!connection->active ||
-            connection->mode < NETPLAY_CONNECTION_CONNECTED) continue;
-
-      if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
-               sizeof(cmd)))
-         netplay_hangup(netplay, connection);
-   }
-}
-
-/**
- * netplay_toggle_play_spectate
- *
- * Toggle between play mode and spectate mode
- */
-static void netplay_toggle_play_spectate(netplay_t *netplay)
-{
-   switch (netplay->self_mode)
-   {
-      case NETPLAY_CONNECTION_PLAYING:
-      case NETPLAY_CONNECTION_SLAVE:
-         /* Switch to spectator mode immediately */
-         netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-         netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
-         break;
-      case NETPLAY_CONNECTION_SPECTATING:
-         /* Switch only after getting permission */
-         netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
-         break;
-      default:
-         break;
-   }
 }
 
 static void deinit_netplay(struct rarch_state *p_rarch)
@@ -6104,7 +5244,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          ret = netplay->is_connected;
          goto done;
       case RARCH_NETPLAY_CTL_POST_FRAME:
-         netplay_post_frame(p_rarch, netplay);
+         netplay_post_frame(netplay);
+	 /* If we're disconnected, deinitialize */
+	 if (!netplay->is_server && !netplay->connections[0].active)
+		 netplay_disconnect(p_rarch, netplay);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
          ret = netplay_pre_frame(p_rarch,
@@ -13432,12 +12575,23 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
-         if (runloop_state.core_options)
-            retroarch_deinit_core_options(
-                  path_get(RARCH_PATH_CORE_OPTIONS));
-
-         retroarch_init_core_variables(settings,
-               (const struct retro_variable *)data);
+         {
+            core_option_manager_t *new_vars = NULL;
+            if (runloop_state.core_options)
+            {
+               retroarch_deinit_core_options(
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
+            if ((new_vars = retroarch_init_core_variables(
+                  settings,
+                  (const struct retro_variable *)data)))
+               runloop_state.core_options = new_vars;
+         }
 
          break;
 
@@ -13452,14 +12606,22 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                         (const struct retro_core_option_definition*)data);
 
             if (runloop_state.core_options)
+            {
                retroarch_deinit_core_options(
-                     path_get(RARCH_PATH_CORE_OPTIONS));
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
 
             if (options_v2)
             {
                /* Initialise core options */
-               rarch_init_core_options(settings, options_v2);
-
+               core_option_manager_t *new_vars = rarch_init_core_options(settings, options_v2);
+               if (new_vars)
+                  runloop_state.core_options = new_vars;
                /* Clean up */
                core_option_manager_free_converted(options_v2);
             }
@@ -13477,13 +12639,23 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                         (const struct retro_core_options_intl*)data);
 
             if (runloop_state.core_options)
+            {
                retroarch_deinit_core_options(
-                     path_get(RARCH_PATH_CORE_OPTIONS));
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
 
             if (options_v2)
             {
                /* Initialise core options */
-               rarch_init_core_options(settings, options_v2);
+               core_option_manager_t *new_vars = rarch_init_core_options(settings, options_v2);
+
+               if (new_vars)
+                  runloop_state.core_options = new_vars;
 
                /* Clean up */
                core_option_manager_free_converted(options_v2);
@@ -13495,17 +12667,29 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2.\n");
 
          {
+            core_option_manager_t *new_vars                = NULL;
             const struct retro_core_options_v2 *options_v2 =
                   (const struct retro_core_options_v2 *)data;
             bool categories_enabled                        =
                   settings->bools.core_option_category_enable;
 
             if (runloop_state.core_options)
+            {
                retroarch_deinit_core_options(
-                     path_get(RARCH_PATH_CORE_OPTIONS));
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
 
             if (options_v2)
-               rarch_init_core_options(settings, options_v2);
+            {
+               new_vars = rarch_init_core_options(settings, options_v2);
+               if (new_vars)
+                  runloop_state.core_options = new_vars;
+            }
 
             /* Return value does not indicate success.
              * Callback returns 'true' if core option
@@ -13521,6 +12705,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          {
             /* Parse retro_core_options_v2_intl to create
              * retro_core_options_v2 struct */
+            core_option_manager_t *new_vars          = NULL;
             struct retro_core_options_v2 *options_v2 =
                   core_option_manager_convert_v2_intl(
                         (const struct retro_core_options_v2_intl*)data);
@@ -13528,13 +12713,22 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                   settings->bools.core_option_category_enable;
 
             if (runloop_state.core_options)
+            {
                retroarch_deinit_core_options(
-                     path_get(RARCH_PATH_CORE_OPTIONS));
+                     runloop_state.game_options_active,
+                     path_get(RARCH_PATH_CORE_OPTIONS),
+                     runloop_state.core_options);
+               runloop_state.game_options_active   = false;
+               runloop_state.folder_options_active = false;
+               runloop_state.core_options          = NULL;
+            }
 
             if (options_v2)
             {
                /* Initialise core options */
-               rarch_init_core_options(settings, options_v2);
+               new_vars = rarch_init_core_options(settings, options_v2);
+               if (new_vars)
+                  runloop_state.core_options = new_vars;
 
                /* Clean up */
                core_option_manager_free_converted(options_v2);
@@ -15383,8 +14577,15 @@ static void uninit_libretro_symbols(
    p_rarch->core_set_shared_context   = false;
 
    if (runloop_state.core_options)
+   {
       retroarch_deinit_core_options(
-            path_get(RARCH_PATH_CORE_OPTIONS));
+            runloop_state.game_options_active,
+            path_get(RARCH_PATH_CORE_OPTIONS),
+            runloop_state.core_options);
+      runloop_state.game_options_active               = false;
+      runloop_state.folder_options_active             = false;
+      runloop_state.core_options                      = NULL;
+   }
    retroarch_system_info_free(&runloop_state);
    p_rarch->audio_callback.callback                   = NULL;
    p_rarch->audio_callback.set_state                  = NULL;
@@ -17877,12 +17078,17 @@ bool input_set_rumble_state(unsigned port,
    input_driver_state_t *input_driver_st  = &(p_rarch->input_driver_state);
    settings_t *settings                   = p_rarch->configuration_settings;
    unsigned joy_idx                       = settings->uints.input_joypad_index[port];
-   unsigned rumble_gain                   = settings->uints.input_rumble_gain;
    uint16_t scaled_strength               = strength;
 
    /* If gain setting is not suported, do software gain control */ 
-   if (!input_driver_st->primary_joypad->set_rumble_gain)
-      scaled_strength = (rumble_gain * strength) / 100.0;
+   if (input_driver_st && input_driver_st->primary_joypad)
+   {
+      if (!input_driver_st->primary_joypad->set_rumble_gain)
+      {
+         unsigned rumble_gain = settings->uints.input_rumble_gain;
+         scaled_strength      = (rumble_gain * strength) / 100.0;
+      }
+   }
 
    return input_driver_set_rumble(
       input_driver_st,
@@ -25263,10 +24469,9 @@ void video_driver_set_viewport_full(void)
    aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
 }
 
-void video_driver_reset_custom_viewport(void)
+void video_driver_reset_custom_viewport(void *settings_data)
 {
-   struct rarch_state *p_rarch      = &rarch_st;
-   settings_t             *settings = p_rarch->configuration_settings;
+   settings_t             *settings = (settings_t*)settings_data;
    struct video_viewport *custom_vp = &settings->video_viewport_custom;
 
    custom_vp->width  = 0;
@@ -29736,27 +28941,6 @@ static const menu_ctx_driver_t *menu_driver_find_driver(
 }
 #endif
 
-static void input_mapper_reset(input_mapper_t *handle)
-{
-   unsigned i;
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      unsigned j;
-      for (j = 0; j < 8; j++)
-      {
-         handle->analog_value[i][j]           = 0;
-         handle->buttons[i].data[j]           = 0;
-         handle->buttons[i].analogs[j]        = 0;
-         handle->buttons[i].analog_buttons[j] = 0;
-      }
-   }
-   for (i = 0; i < RETROK_LAST; i++)
-      handle->key_button[i]         = 0;
-   for (i = 0; i < (RETROK_LAST / 32 + 1); i++)
-      handle->keys[i]               = 0;
-}
-
-
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
@@ -30077,10 +29261,10 @@ error:
 }
 
 #if 0
-static bool retroarch_is_on_main_thread(struct rarch_state *p_rarch)
+static bool retroarch_is_on_main_thread(shtread_tls_t *tls)
 {
 #ifdef HAVE_THREAD_STORAGE
-   return sthread_tls_get(&p_rarch->rarch_tls) == MAGIC_POINTER;
+   return sthread_tls_get(tls) == MAGIC_POINTER;
 #else
    return true;
 #endif
@@ -30647,7 +29831,7 @@ static void rarch_init_core_options_path(
    }
 }
 
-static void rarch_init_core_options(
+static core_option_manager_t *rarch_init_core_options(
       settings_t *settings,
       const struct retro_core_options_v2 *options_v2)
 {
@@ -30665,10 +29849,10 @@ static void rarch_init_core_options(
          src_options_path, sizeof(src_options_path));
 
    if (!string_is_empty(options_path))
-      runloop_state.core_options =
-            core_option_manager_new(options_path,
-                  src_options_path, options_v2,
-                  categories_enabled);
+      return core_option_manager_new(options_path,
+            src_options_path, options_v2,
+            categories_enabled);
+   return NULL;
 }
 
 void retroarch_init_task_queue(void)
@@ -30974,7 +30158,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 }
 
 static void retroarch_deinit_core_options(
-      const char *path_core_options)
+      bool game_options_active,
+      const char *path_core_options,
+      core_option_manager_t *core_options)
 {
    /* Check whether game-specific options file is being used */
    if (!string_is_empty(path_core_options))
@@ -30997,10 +30183,10 @@ static void retroarch_deinit_core_options(
       if (conf_tmp)
       {
          core_option_manager_flush(
-               runloop_state.core_options,
+               core_options,
                conf_tmp);
          RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
-               runloop_state.game_options_active ? "game" : "folder", path_core_options);
+               game_options_active ? "game" : "folder", path_core_options);
          config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
          conf_tmp = NULL;
@@ -31009,23 +30195,19 @@ static void retroarch_deinit_core_options(
    }
    else
    {
-      const char *path = runloop_state.core_options->conf_path;
+      const char *path = core_options->conf_path;
       core_option_manager_flush(
-            runloop_state.core_options,
-            runloop_state.core_options->conf);
+            core_options,
+            core_options->conf);
       RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
-      config_file_write(runloop_state.core_options->conf, path, true);
+      config_file_write(core_options->conf, path, true);
    }
 
-   runloop_state.game_options_active   = false;
-   runloop_state.folder_options_active = false;
-
-   if (runloop_state.core_options)
-      core_option_manager_free(runloop_state.core_options);
-   runloop_state.core_options          = NULL;
+   if (core_options)
+      core_option_manager_free(core_options);
 }
 
-static void retroarch_init_core_variables(
+static core_option_manager_t *retroarch_init_core_variables(
       settings_t *settings,
       const struct retro_variable *vars)
 {
@@ -31043,8 +30225,8 @@ static void retroarch_init_core_variables(
          src_options_path, sizeof(src_options_path));
 
    if (!string_is_empty(options_path))
-      runloop_state.core_options =
-         core_option_manager_new_vars(options_path, src_options_path, vars);
+      return core_option_manager_new_vars(options_path, src_options_path, vars);
+   return NULL;
 }
 
 bool retroarch_is_forced_fullscreen(void)
@@ -31058,163 +30240,6 @@ bool retroarch_is_switching_display_mode(void)
    struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->rarch_is_switching_display_mode;
 }
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool retroarch_load_shader_preset_internal(
-      char *s,
-      size_t len,
-      const char *shader_directory,
-      const char *core_name,
-      const char *special_name)
-{
-   unsigned i;
-
-   static enum rarch_shader_type types[] =
-   {
-      /* Shader preset priority, highest to lowest
-       * only important for video drivers with multiple shader backends */
-      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
-   };
-
-   for (i = 0; i < ARRAY_SIZE(types); i++)
-   {
-      if (!video_shader_is_supported(types[i]))
-         continue;
-
-      /* Concatenate strings into full paths */
-      if (!string_is_empty(core_name))
-         fill_pathname_join_special_ext(s,
-               shader_directory, core_name,
-               special_name,
-               video_shader_get_preset_extension(types[i]),
-               len);
-      else
-      {
-         if (string_is_empty(special_name))
-            break;
-
-         fill_pathname_join(s, shader_directory, special_name, len);
-         strlcat(s, video_shader_get_preset_extension(types[i]), len);
-      }
-
-      if (path_is_valid(s))
-         return true;
-   }
-
-   return false;
-}
-
-/**
- * retroarch_load_shader_preset:
- *
- * Tries to load a supported core-, game-, folder-specific or global
- * shader preset from its respective location:
- *
- * global:          $CONFIG_DIR/global.$PRESET_EXT
- * core-specific:   $CONFIG_DIR/$CORE_NAME/$CORE_NAME.$PRESET_EXT
- * folder-specific: $CONFIG_DIR/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
- * game-specific:   $CONFIG_DIR/$CORE_NAME/$GAME_NAME.$PRESET_EXT
- *
- * $CONFIG_DIR is expected to be Menu Config directory, or failing that, the
- * directory where retroarch.cfg is stored.
- *
- * For compatibility purposes with versions 1.8.7 and older, the presets
- * subdirectory on the Video Shader path is used as a fallback directory.
- *
- * Note: Uses video_shader_is_supported() which only works after
- *       context driver initialization.
- *
- * Returns: false if there was an error or no action was performed.
- */
-static bool retroarch_load_shader_preset(struct rarch_state *p_rarch,
-      settings_t *settings)
-{
-   const char *video_shader_directory = settings->paths.directory_video_shader;
-   const char *menu_config_directory  = settings->paths.directory_menu_config;
-   const char *core_name              =
-      runloop_state.system.info.library_name;
-   const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
-
-   const char *game_name              = path_basename(rarch_path_basename);
-   const char *dirs[3]                = {0};
-   size_t i                           = 0;
-
-   char shader_path[PATH_MAX_LENGTH];
-   char content_dir_name[PATH_MAX_LENGTH];
-   char config_file_directory[PATH_MAX_LENGTH];
-   char old_presets_directory[PATH_MAX_LENGTH];
-
-   shader_path[0]                     = '\0';
-   content_dir_name[0]                = '\0';
-   config_file_directory[0]           = '\0';
-   old_presets_directory[0]           = '\0';
-
-   if (!string_is_empty(rarch_path_basename))
-      fill_pathname_parent_dir_name(content_dir_name,
-            rarch_path_basename, sizeof(content_dir_name));
-
-   config_file_directory[0]           = '\0';
-
-   if (!path_is_empty(RARCH_PATH_CONFIG))
-      fill_pathname_basedir(config_file_directory,
-            path_get(RARCH_PATH_CONFIG), sizeof(config_file_directory));
-
-   old_presets_directory[0]           = '\0';
-
-   if (!string_is_empty(video_shader_directory))
-      fill_pathname_join(old_presets_directory,
-         video_shader_directory, "presets", sizeof(old_presets_directory));
-
-   dirs[0]                            = menu_config_directory;
-   dirs[1]                            = config_file_directory;
-   dirs[2]                            = old_presets_directory;
-
-   for (i = 0; i < ARRAY_SIZE(dirs); i++)
-   {
-      if (string_is_empty(dirs[i]))
-         continue;
-      /* Game-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               game_name))
-         goto success;
-      /* Folder-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               content_dir_name))
-         goto success;
-      /* Core-specific shader preset found? */
-      if (retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], core_name,
-               core_name))
-         goto success;
-      /* Global shader preset found? */
-      if (retroarch_load_shader_preset_internal(
-               shader_path,
-               sizeof(shader_path),
-               dirs[i], NULL,
-               "global"))
-         goto success;
-   }
-   return false;
-
-success:
-   /* Shader preset exists, load it. */
-   RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
-         shader_path);
-   strlcpy(
-         p_rarch->runtime_shader_preset,
-         shader_path,
-         sizeof(p_rarch->runtime_shader_preset));
-   return true;
-}
-#endif
 
 /* get the name of the current shader preset */
 const char *retroarch_get_shader_preset(void)
@@ -31234,7 +30259,7 @@ const char *retroarch_get_shader_preset(void)
    if (video_shader_delay && !p_rarch->shader_delay_timer.timer_end)
       return NULL;
 
-   /* disallow loading auto-shaders when no core is loaded */
+   /* Disallow loading auto-shaders when no core is loaded */
    if (string_is_empty(core_name))
       return NULL;
 
@@ -31250,8 +30275,20 @@ const char *retroarch_get_shader_preset(void)
                p_rarch->cli_shader,
                sizeof(p_rarch->runtime_shader_preset));
       else
+      {
          if (auto_shaders_enable) /* sets runtime_shader_preset */
-            retroarch_load_shader_preset(p_rarch, settings);
+         {
+            if (load_shader_preset(
+                     settings,
+                     runloop_state.system.info.library_name,
+                     p_rarch->runtime_shader_preset,
+                     sizeof(p_rarch->runtime_shader_preset)))
+            {
+               RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
+                     p_rarch->runtime_shader_preset);
+            }
+         }
+      }
       return p_rarch->runtime_shader_preset;
    }
 #endif

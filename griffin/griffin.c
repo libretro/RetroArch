@@ -1036,6 +1036,7 @@ FILTERS
 #include "../gfx/video_filters/dot_matrix_4x.c"
 #include "../gfx/video_filters/upscale_1_5x.c"
 #include "../gfx/video_filters/upscale_256x_320x240.c"
+#include "../gfx/video_filters/picoscale_256x_320x240.c"
 #endif
 
 #ifdef HAVE_DSP_FILTER
@@ -1289,9 +1290,7 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay_handshake.c"
-#include "../network/netplay/netplay_io.c"
-#include "../network/netplay/netplay_discovery.c"
+#include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_room_parse.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"

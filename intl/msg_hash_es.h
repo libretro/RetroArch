@@ -450,20 +450,20 @@ MSG_HASH(
    "API gráficas necesarias"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Faltante"
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "No encontrado, necesario:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Presente"
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "No encontrado, necesario:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opcional"
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Presente, necesario:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Necesario"
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Presente, opcional:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -1720,19 +1720,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Máximo de nits"
+   "Luminancia máxima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Establece la luminancia máxima (en cd/m²) que puede reproducir tu monitor. Para averiguar cuál es la luminancia máxima de tu monitor, visita la web RTings."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Nits según «blanco papel»"
+   "Luminosidad de blanco «papel»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar). Sirve para ajustarse a la variación en la iluminación de tu entorno."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
    "Contraste"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Controla el gama/contraste del HDR. Aumenta el rango general de colores de la imagen entre las áreas más brillantes y las más oscuras. A mayor contraste de HDR, mayor diferencia, mientras que con un contraste menor, la imagen se hará más pálida. Este ajuste ayuda a calibrar la imagen a gusto del usuario."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Ampliar gama"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Cuando el espacio de color es convertido a espacio lineal, esta opción decide si se debería utilizar una gama de colores expandida y compatible el formato HDR10."
    )
 
 /* Settings > Video > Synchronization */
@@ -2292,7 +2308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   "Intensidad de vibración (es necesario reiniciar)"
+   "Intensidad de vibración"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -5480,6 +5496,14 @@ MSG_HASH(
    "Confirma las asociaciones a núcleos y elimina los elementos no válidos y duplicados."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Actualizar lista de reproducción"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Añade contenidos nuevos y elimina los elementos no válidos repitiendo la última operación de búsqueda manual con la que se creó o modificó la lista de reproducción."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Eliminar lista de reproducción"
    )
@@ -6050,6 +6074,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
    "Si se activa esta opción, se eliminará cualquier lista de reproducción existente antes de buscar contenidos. Al desactivarla, se preservarán los elementos ya existentes en las listas de reproducción y solo se añadirán aquellos contenidos que no se encuentren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Validar elementos ya existentes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Al activar esta opción, se comprobarán los elementos de todas las listas de reproducción existentes antes de buscar contenidos nuevos. Todo elemento que apunte a un contenido desaparecido o a archivos con extensiones no válidas será eliminado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
@@ -9378,6 +9410,10 @@ MSG_HASH(
    "Puerto"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Nombre del dispositivo del puerto %d: %s (n.º %d)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Ajustes de trucos"
    )
@@ -10162,6 +10198,30 @@ MSG_HASH(
    "Se ha limpiado la lista de reproducción: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Error al actualizar, la lista de reproducción no contiene un historial de búsqueda válido: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Error al actualizar, el directorio de contenidos no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Error al actualizar, el nombre del sistema no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Error al actualizar, el núcleo no es válido: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Error al actualizar, el archivo DAT de arcade no es válido o no existe: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Error al actualizar, el archivo DAT de arcade es demasiado grande (no hay suficiente memoria): "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Favorito agregado"
    )
@@ -10287,7 +10347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSH_FAILED,
-   "Error al guardar las opciones del núcleo a:"
+   "Error al guardar las opciones del núcleo en:"
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -10347,11 +10407,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISK_CLOSED,
-   "Cerrando"
+   "Se ha cerrado la bandeja de disco virtual."
    )
 MSG_HASH(
    MSG_DISK_EJECTED,
-   "Expulsando"
+   "Se ha abierto la bandeja de disco virtual."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -10416,10 +10476,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "Error al guardar configuración en"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "Error:"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -10770,10 +10826,6 @@ MSG_HASH(
    "Leyendo la primera pista de datos..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "recibido"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "Grabación terminada debido al cambio de tamaño."
    )
@@ -10987,7 +11039,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Comando no reconocido"
+   "Se ha recibido un comando no reconocido: «%s».\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -11022,24 +11074,20 @@ MSG_HASH(
    "¡Error al calcular el tamaño del área de visualización! Se continuará utilizando datos en bruto. Probablemente no funcionará bien..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "la bandeja de discos virtual."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "expulsar"
+   "Error al abrir la bandeja de discos virtual."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "cerrar"
+   "Error al cerrar la bandeja de discos virtual."
    )
 MSG_HASH(
-   MSG_FAILED,
-   "fallida"
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Error al cargar automáticamente el guardado rápido «%s»."
    )
 MSG_HASH(
-   MSG_SUCCEEDED,
-   "completada"
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Se ha cargado automáticamente el guardado rápido «%s»."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11334,6 +11382,10 @@ MSG_HASH(
    "Buscando contenido: "
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Comprobando los elementos actuales: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Buscando: "
    )
@@ -11458,10 +11510,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Joy-Con separados"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Estado del almacenamiento interno"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
@@ -11717,11 +11765,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_READ_WRITE,
-   "Lectura/escritura"
+   "Estado del almacenamiento interno: lectura/escritura"
    )
 MSG_HASH(
    MSG_READ_ONLY,
-   "Solo lectura"
+   "Estado del almacenamiento interno: solo lectura"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
@@ -11914,11 +11962,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Crear\npunto de\nrestauración"
+   "Crear guardado\nrápido"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Cargar\npunto de\nrestauración"
+   "Cargar\nguardado\nrápido"
    )
 #endif
 #ifdef HAVE_QT

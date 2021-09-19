@@ -326,22 +326,6 @@ MSG_HASH(
    "APIs gráfiques riquíes"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Falta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Presente"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opcional"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Ríquese"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Bloquiar el nucléu instaláu"
    )
@@ -2392,11 +2376,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   "Nun pudo desaniciase'l ficheru."
+   "Nun se pudo desaniciar el ficheru."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
-   "Nun pudo renomase'l ficheru."
+   "Nun se pudo renomar el ficheru."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -2666,6 +2650,18 @@ MSG_HASH(
    "El nucleu nun sofita puntos de guardáu."
    )
 MSG_HASH(
+   MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+   "Nun se pudo atopar nengún sistema compatible."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+   "Nun se pudo atopar nenguna pista de datos válida"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "nun se pudo abrir la pista de datos"
+   )
+MSG_HASH(
    MSG_DOWNLOADING,
    "Baxando"
    )
@@ -2738,6 +2734,14 @@ MSG_HASH(
    "Apagando…"
    )
 MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Hebo un fallu al espulsar la bandexa de discos virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Hebo un fallu al zarrar la bandexa de discos virtual."
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "nun se configuró"
    )
@@ -2788,8 +2792,12 @@ MSG_HASH(
    "Llocal"
    )
 MSG_HASH(
+   MSG_READ_WRITE,
+   "Estáu del almacenamientu internu: Llectura/Escritura"
+   )
+MSG_HASH(
    MSG_READ_ONLY,
-   "Namás llectura"
+   "Estáu del almacenamientu internu: Namás llectura"
    )
 
 #ifdef HAVE_LAKKA_SWITCH
@@ -2819,7 +2827,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOCALAP_ERROR_CONFIG_CREATE,
-   "Nun pudo crease'l ficheru de configuración del puntu d'accesu Wi-Fi."
+   "Nun se pudo crear el ficheru de configuración del puntu d'accesu Wi-Fi."
    )
 #endif
 #ifdef GEKKO

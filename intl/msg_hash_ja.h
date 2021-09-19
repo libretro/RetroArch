@@ -454,22 +454,6 @@ MSG_HASH(
    "ファームウェア"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "欠損"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "存在"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "任意"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "必須"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "インストール済みコアをロック"
    )
@@ -2181,14 +2165,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "(対応コアで)デバイスの振動を有効"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   "振動の強さ (再起動が必要)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   "触覚フィードバック効果の大きさを指定します."
    )
 
 /* Settings > Input > Menu Controls */
@@ -9682,14 +9658,6 @@ MSG_HASH(
    "デバイスを有効なポートから切断してください"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "ディスクを挿入しました"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "ディスクを排出しました"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "ダウンロード中"
    )
@@ -9756,10 +9724,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "コンフィグの保存に失敗しました to"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "失敗しました to"
    )
 MSG_HASH(
    MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
@@ -10302,10 +10266,6 @@ MSG_HASH(
    "一時停止解除"
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "認識できないコマンド"
-   )
-MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    "Libretroダミーコアを使用します. 録画をスキップします."
    )
@@ -10332,26 +10292,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "仮想ディスクトレイ."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "取り出し"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "閉じる"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "失敗しました"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "成功しました"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -10752,10 +10692,6 @@ MSG_HASH(
 /* Environment Specific Settings */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "内蔵ストレージ状態"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "スクリーン解像度"
    )
@@ -10986,14 +10922,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "ローカル"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "読み込み/書き込み"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "読み込みのみ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

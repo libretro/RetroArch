@@ -7377,8 +7377,7 @@ static void get_string_representation_bind_device(rarch_setting_t *setting, char
             strlcpy(s, device_name, len);
       }
       else
-         snprintf(s, len,
-               "%s (%s #%u)",
+         snprintf(s, len, "%s (%s %u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
                map);
@@ -7406,11 +7405,15 @@ static void get_string_representation_mouse_index(rarch_setting_t *setting, char
 
       if (!string_is_empty(device_name))
          strlcpy(s, device_name, len);
-      else
+      else if (map > 0)
          snprintf(s, len,
                "%s (#%u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                map);
+      else
+         snprintf(s, len,
+               "%s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE));
    }
    else
       snprintf(s, len,

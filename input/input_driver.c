@@ -24,6 +24,7 @@
 
 #include "input_driver.h"
 #include "input_keymaps.h"
+#include "input_remapping.h"
 #include "input_osk.h"
 
 #ifdef HAVE_NETWORKING
@@ -2142,4 +2143,26 @@ bool input_driver_find_driver(
    }
 
    return true;
+}
+
+void input_mapper_reset(void *data)
+{
+   unsigned i;
+   input_mapper_t *handle = (input_mapper_t*)data;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned j;
+      for (j = 0; j < 8; j++)
+      {
+         handle->analog_value[i][j]           = 0;
+         handle->buttons[i].data[j]           = 0;
+         handle->buttons[i].analogs[j]        = 0;
+         handle->buttons[i].analog_buttons[j] = 0;
+      }
+   }
+   for (i = 0; i < RETROK_LAST; i++)
+      handle->key_button[i]         = 0;
+   for (i = 0; i < (RETROK_LAST / 32 + 1); i++)
+      handle->keys[i]               = 0;
 }

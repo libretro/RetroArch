@@ -418,22 +418,6 @@ MSG_HASH(
    "Vereiste Graphics API"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Ontbrekend"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Aanwezig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Optioneel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Vereist"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "De Geïnstalleerde Core Vergrendelen"
    )
@@ -4106,14 +4090,6 @@ MSG_HASH(
    "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback."
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Gesloten"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Uitgeworpen"
-   )
-MSG_HASH(
    MSG_DOWNLOAD_FAILED,
    "Download mislukt"
    )
@@ -4214,10 +4190,6 @@ MSG_HASH(
    "Gepauzeerd."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "ontvangen"
-   )
-MSG_HASH(
    MSG_REWINDING,
    "Terugspoelen."
    )
@@ -4264,10 +4236,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "gefaald"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,

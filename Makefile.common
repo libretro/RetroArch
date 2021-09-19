@@ -188,6 +188,10 @@ endif
 
 ifeq ($(HAVE_UNIX), 1)
    OBJ += frontend/drivers/platform_unix.o
+
+	ifeq ($(UNIX_CWD_ENV), 1)
+		DEF_FLAGS += -DRARCH_UNIX_CWD_ENV
+	endif
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
@@ -2095,10 +2099,9 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
-   OBJ += network/netplay/netplay_handshake.o \
-			 network/netplay/netplay_io.o \
-			 network/netplay/netplay_discovery.o \
-			 network/netplay/netplay_room_parse.o
+   OBJ += \
+	  network/netplay/netplay_frontend.o \
+	  network/netplay/netplay_room_parse.o
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
@@ -2363,7 +2366,8 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/dot_matrix_3x.o \
           gfx/video_filters/dot_matrix_4x.o \
           gfx/video_filters/upscale_1_5x.o \
-          gfx/video_filters/upscale_256x_320x240.o
+          gfx/video_filters/upscale_256x_320x240.o \
+          gfx/video_filters/picoscale_256x_320x240.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)

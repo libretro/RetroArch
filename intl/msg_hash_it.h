@@ -442,20 +442,20 @@ MSG_HASH(
    "Grafica API richiesta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "Mancante"
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "Mancante, Richiesto:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "Presente"
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "Mancante, Facoltativo:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "Opzionale"
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Presente, Richiesto:"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "Richiesto"
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Presente, Facoltativo:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -1696,23 +1696,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Abilita HDR se il display lo supporta"
+   "Abilita HDR se il display lo supporta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Nits massimi"
+   "Picco di luminanza"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Imposta il picco di luminanza(in cd/m2) che il display può riprodurre. Vedi RTings per il picco di luminanza del display"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Nits di bianco carta"
+   "Luminanza Bianco libro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Impostare la luminanza alla quale la carta bianca dovrebbe essere cioè testo o luminanza leggibile nella parte superiore dell'intervallo SDR (Standard Dynamic Range). Utile per la regolazione in diverse condizioni di illuminazione nel vostro ambiente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
    "Contrasto"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Controllo gamma/contrasto per HDR. Prende i colori e aumenta la gamma complessiva tra le parti più luminose e le parti più scure dell'immagine. Il più alto contrasto HDR è, più grande è questa differenza, mentre più basso è il contrasto, più lavato l'immagine diventa. Aiuta gli utenti a sintonizzare l'immagine a loro piacimento e ciò che sentono sembra meglio sul loro display."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Espandere il Gamut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Una volta convertito lo spazio di colore in spazio lineare, decidere se utilizzare una gamma di colori espansa per arrivare a HDR10."
    )
 
 /* Settings > Video > Synchronization */
@@ -2268,7 +2284,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   "Forza Vibrazione (Richiesta)"
+   "Intensità di vibrazione"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -5444,6 +5460,14 @@ MSG_HASH(
    "Convalida le associazioni cnuclei e rimuovi le voci non valide e duplicate."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Aggiorna Scaletta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Aggiungi un nuovo contenuto e rimuovi voci non valide ripetendo l'operazione 'Scansione manuale' usata da ultimo per creare o modificare la scaletta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Elimina scaletta"
    )
@@ -6006,6 +6030,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
    "Se abilitata, qualsiasi playlist esistente verrà eliminata prima di scansionare il contenuto. Quando disabilitato, le voci della scaletta esistenti sono conservate e solo i contenuti attualmente mancanti dalla scaletta saranno aggiunti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Convalida Voci Esistenti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   "Se abilitata, le voci in qualsiasi scaletta esistente saranno verificate prima di scansionare i nuovi contenuti. Verranno rimosse le voci relative a contenuti e/o file mancanti con estensioni non valide."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
@@ -9278,6 +9310,10 @@ MSG_HASH(
    "Porta"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Nome dispositivo porta %d: %s (#%d)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Impostazioni Trucchi"
    )
@@ -10054,6 +10090,30 @@ MSG_HASH(
    "Playlist pulita: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Aggiornamento non riuscito - playlist non contiene alcun record di scansione valido: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Aggiornamento fallito - directory di contenuto non valida/mancante: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Aggiornamento fallito - nome di sistema non valido/mancante: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Aggiornamento fallito - nucleo non valido: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Aggiornamento fallito - file arcade DAT non valido/mancante: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Aggiornamento fallito - file arcade DAT troppo grande (memoria insufficiente): "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Aggiunto ai Preferiti"
    )
@@ -10243,11 +10303,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DISK_CLOSED,
-   "Chiuso"
+   "Vassoio disco virtuale chiuso."
    )
 MSG_HASH(
    MSG_DISK_EJECTED,
-   "Espulso"
+   "Vassoio disco virtuale espulso."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -10316,10 +10376,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "Impossibile salvare la configurazione in"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "Non è riuscito a"
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -10670,10 +10726,6 @@ MSG_HASH(
    "Lettura in corso della prima traccia di dati..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "ricevuto"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "La registrazione è terminata a causa del ridimensionamento."
    )
@@ -10887,7 +10939,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
-   "Comando non riconosciuto"
+   "Comando \"%s\" non riconosciuto ricevuto.\n"
    )
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
@@ -10922,24 +10974,20 @@ MSG_HASH(
    "Il calcolo della dimensione di visualizzazione è fallito! Continuerà ad utilizzare dati grezzi. Questo probabilmente non funzionerà correttamente..."
    )
 MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "vassoio del disco virtuale."
-   )
-MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "espelli"
+   "Impossibile espellere il vassoio del disco virtuale."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "chiudi"
+   "Chiusura del vassoio del disco virtuale non riuscita."
    )
 MSG_HASH(
-   MSG_FAILED,
-   "fallito"
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Caricamento automatico dello stato di salvataggio da \"%s\" non riuscito."
    )
 MSG_HASH(
-   MSG_SUCCEEDED,
-   "ha avuto successo"
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Auto-caricamento salvataggio stato da \"%s\" riuscito."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11238,6 +11286,10 @@ MSG_HASH(
    "Scansione contenuto: "
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Controllo voci correnti: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Scansione in corso: "
    )
@@ -11362,10 +11414,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    "Splitta i Joy-Con"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "Stato Memoria Interna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
@@ -11617,11 +11665,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_READ_WRITE,
-   "Lettura/Scrittura"
+   "Stato Della Memoria Interna: Lettura/Scrittura"
    )
 MSG_HASH(
    MSG_READ_ONLY,
-   "Sola Lettura"
+   "Stato Della Memoria Interna: Sola Lettura"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

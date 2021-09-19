@@ -454,22 +454,6 @@ MSG_HASH(
    "固件"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING,
-   "缺失"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT,
-   "具备"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPTIONAL,
-   "可选"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REQUIRED,
-   "必需"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "锁定已安装核心"
    )
@@ -1283,10 +1267,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    "更改视频缩放设置。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   "更改视频 hdr 设置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -2229,14 +2209,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "启用设备振动 (对支持的核心)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   "振动强度 (需要重启)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   "指定触觉反馈效果的强弱。"
    )
 
 /* Settings > Input > Menu Controls */
@@ -10274,14 +10246,6 @@ MSG_HASH(
    "从有效端口断开设备。"
    )
 MSG_HASH(
-   MSG_DISK_CLOSED,
-   "已关闭"
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "已弹出"
-   )
-MSG_HASH(
    MSG_DOWNLOADING,
    "正在下载"
    )
@@ -10348,10 +10312,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "无法将配置文件保存到"
-   )
-MSG_HASH(
-   MSG_FAILED_TO,
-   "失败："
    )
 MSG_HASH(
    MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
@@ -10702,10 +10662,6 @@ MSG_HASH(
    "读取第一条数据轨..."
    )
 MSG_HASH(
-   MSG_RECEIVED,
-   "接收完毕"
-   )
-MSG_HASH(
    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    "录制因改变大小而停止。"
    )
@@ -10922,10 +10878,6 @@ MSG_HASH(
    "取消暂停。"
    )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "无法识别的指令"
-   )
-MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "使用核心名称作为新配置。"
    )
@@ -10956,26 +10908,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "可视区域尺寸计算失败！将继续使用原始数据，这很可能不会正常工作。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "虚拟光驱托盘。"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "弹出"
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "关闭"
-   )
-MSG_HASH(
-   MSG_FAILED,
-   "已失败"
-   )
-MSG_HASH(
-   MSG_SUCCEEDED,
-   "已成功"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -11396,10 +11328,6 @@ MSG_HASH(
    "分开 Joy-Con 手柄"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
-   "内部存储状态"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    "图形部件缩放倍数"
    )
@@ -11658,14 +11586,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "本地"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "读写"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "只读"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

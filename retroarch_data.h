@@ -1075,18 +1075,6 @@ typedef struct input_game_focus_state
 typedef bool(*runahead_load_state_function)(const void*, size_t);
 #endif
 
-typedef struct input_mapper
-{
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog_value[MAX_USERS][8];
-   /* The whole keyboard state */
-   uint32_t keys[RETROK_LAST / 32 + 1];
-   /* RetroPad button state of remapped keyboard keys */
-   unsigned key_button[RETROK_LAST];
-   /* This is a bitmask of (1 << key_bind_id). */
-   input_bits_t buttons[MAX_USERS];
-} input_mapper_t;
-
 #ifdef HAVE_DISCORD
 /* The Discord API specifies these variables:
 - userId --------- char[24]   - the userId of the player asking to join

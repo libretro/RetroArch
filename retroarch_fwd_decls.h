@@ -45,11 +45,13 @@ static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
 static void retroarch_deinit_core_options(
-      const char *p);
-static void retroarch_init_core_variables(
+      bool game_options_active,
+      const char *path_core_options,
+      core_option_manager_t *core_options);
+static core_option_manager_t *retroarch_init_core_variables(
       settings_t *settings,
       const struct retro_variable *vars);
-static void rarch_init_core_options(
+static core_option_manager_t *rarch_init_core_options(
       settings_t *settings,
       const struct retro_core_options_v2 *options_v2);
 #ifdef HAVE_RUNAHEAD
