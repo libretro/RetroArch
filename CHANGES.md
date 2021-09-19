@@ -5,6 +5,7 @@
 - 3DS: Add unique IDs for Gearboy/Gearcoleco/Gearsystem, correct CAP32 code
 - 3DS/SAVESTATES: Fix RAM states to file when core deinits
 - AUDIO/MIXER: Pad sample buffers to prevent potential heap-buffer-overflows when resampling (fixes crash when using 30 kHz menu audio files)
+- AUDIO/LINUX/SNAP: Add JACK support
 - CHEEVOS: Don't write achievement credentials to overrides
 - CHEEVOS: Disable slowmotion when enabling hardcore mode
 - D3D9: Fixed MVP matrix issue for RGUI texture (main game frame still won't show up though)
