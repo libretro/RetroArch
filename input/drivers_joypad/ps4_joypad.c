@@ -30,6 +30,10 @@
 #define LERP(p, f, t) ((((p * 10) * (t * 10)) / (f * 10)) / 10)
 
 #if defined(HAVE_LIBORBIS) || defined(ORBIS)
+#include <orbis/orbisPad.h>
+
+OrbisPadConfig *confPad;
+
 typedef struct SceUserServiceLoginUserIdList
 {
    int32_t userId[SCE_USER_SERVICE_MAX_LOGIN_USERS];
@@ -75,7 +79,7 @@ static void *ps4_joypad_init(void *data)
    num_players = 0;
 
    scePadInit();
-
+   confPad=orbisPadGetConf();
 	 result = sceUserServiceGetLoginUserIdList(&userIdList);
 
    if (result == 0)
@@ -98,14 +102,14 @@ static void *ps4_joypad_init(void *data)
             if (index == num_players)
             {
                ds_joypad_states[num_players].handle[0] = scePadOpen(userId, SCE_PAD_PORT_TYPE_STANDARD, 0, NULL);
-               // if (ds_joypad_states[num_players].handle[0] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
-               //    ds_joypad_states[num_players].handle[0] = scePadGetHandle(userId, SCE_PAD_PORT_TYPE_STANDARD, 0);
+               if (ds_joypad_states[num_players].handle[0] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
+                   ds_joypad_states[num_players].handle[0] = confPad->padHandle;//scePadGetHandle(userId, SCE_PAD_PORT_TYPE_STANDARD, 0);
 
-               ds_joypad_states[num_players].handle[1] = scePadOpen(userId, SCE_PAD_PORT_TYPE_SPECIAL, 0, NULL);
+               //ds_joypad_states[num_players].handle[1] = scePadOpen(userId, SCE_PAD_PORT_TYPE_SPECIAL, 0, NULL);
                // if (ds_joypad_states[num_players].handle[1] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
                //    ds_joypad_states[num_players].handle[1] = scePadGetHandle(userId, SCE_PAD_PORT_TYPE_SPECIAL, 0);
 
-               ds_joypad_states[num_players].handle[2] = scePadOpen(userId, SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0, NULL);
+               //ds_joypad_states[num_players].handle[2] = scePadOpen(userId, SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0, NULL);
                // if (ds_joypad_states[num_players].handle[2] == SCE_ORBISPAD_ERROR_ALREADY_OPENED)
                //    ds_joypad_states[num_players].handle[2] = scePadGetHandle(userId, SCE_PAD_PORT_TYPE_REMOTE_CONTROL, 0);
 
