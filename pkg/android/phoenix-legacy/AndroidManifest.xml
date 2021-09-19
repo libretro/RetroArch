@@ -1,8 +1,8 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch.legacy"
-    android:versionCode="1556806360"
-    android:versionName="1.9.9"
+    android:versionCode="1556806361"
+    android:versionName="1.9.10"
     android:installLocation="internalOnly">
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
