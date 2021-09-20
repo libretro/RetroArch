@@ -81,14 +81,22 @@ typedef struct
 static void core_info_free(core_info_t* info);
 static uint32_t core_info_hash_string(const char *str);
 static core_info_cache_list_t *core_info_cache_list_new(void);
-static void core_info_cache_add(core_info_cache_list_t *list, core_info_t *info,
-      bool transfer);
+static void core_info_cache_add(core_info_cache_list_t *list,
+      core_info_t *info, bool transfer);
 
-static core_info_state_t core_info_st;
+static core_info_state_t core_info_st = {
+#ifdef HAVE_COMPRESSION
+   NULL,
+#endif
+   NULL,
+   NULL,
+   NULL
+}
 
 /* JSON Handlers START */
 
-static bool CCJSONObjectMemberHandler(void *context, const char *pValue, size_t length)
+static bool CCJSONObjectMemberHandler(void *context,
+      const char *pValue, size_t length)
 {
    CCJSONContext *pCtx = (CCJSONContext *)context;
 
@@ -225,7 +233,8 @@ static bool CCJSONObjectMemberHandler(void *context, const char *pValue, size_t 
    return true;
 }
 
-static bool CCJSONStringHandler(void *context, const char *pValue, size_t length)
+static bool CCJSONStringHandler(void *context,
+      const char *pValue, size_t length)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
@@ -249,7 +258,8 @@ static bool CCJSONStringHandler(void *context, const char *pValue, size_t length
    return true;
 }
 
-static bool CCJSONNumberHandler(void *context, const char *pValue, size_t length)
+static bool CCJSONNumberHandler(void *context,
+      const char *pValue, size_t length)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
@@ -2111,8 +2121,8 @@ bool core_info_init_list(const char *path_info, const char *dir_cores,
    if (!(p_coreinfo->curr_list            = core_info_list_new(
                dir_cores,
                !string_is_empty(path_info) 
-	       ? path_info 
-          : dir_cores,
+               ? path_info 
+               : dir_cores,
                exts,
                dir_show_hidden_files,
                enable_cache,
