@@ -81,8 +81,6 @@
 
 #define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac|wav"
 
-#define MIDI_DRIVER_BUF_SIZE 4096
-
 /**
  * db_to_gain:
  * @db          : Decibels.
@@ -880,42 +878,6 @@ static const record_driver_t *record_drivers[] = {
    NULL,
 };
 
-extern midi_driver_t midi_winmm;
-extern midi_driver_t midi_alsa;
-
-static void null_midi_free(void *p) { }
-static void *null_midi_init(const char *input, const char *output) { return (void*)-1; }
-static bool null_midi_get_avail_inputs(struct string_list *inputs) { union string_list_elem_attr attr = {0}; return string_list_append(inputs, "Null", attr); }
-static bool null_midi_get_avail_outputs(struct string_list *outputs) { union string_list_elem_attr attr = {0}; return string_list_append(outputs, "Null", attr); }
-static bool null_midi_set_input(void *p, const char *input) { return input == NULL || string_is_equal(input, "Null"); }
-static bool null_midi_set_output(void *p, const char *output) { return output == NULL || string_is_equal(output, "Null"); }
-static bool null_midi_read(void *p, midi_event_t *event) { return false; }
-static bool null_midi_write(void *p, const midi_event_t *event) { return true; }
-static bool null_midi_flush(void *p) { return true; }
-
-static midi_driver_t midi_null = {
-   "null",
-   null_midi_get_avail_inputs,
-   null_midi_get_avail_outputs,
-   null_midi_init,
-   null_midi_free,
-   null_midi_set_input,
-   null_midi_set_output,
-   null_midi_read,
-   null_midi_write,
-   null_midi_flush
-};
-
-static midi_driver_t *midi_drivers[] = {
-#if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM) && !defined(DINGUX)
-   &midi_alsa,
-#endif
-#ifdef HAVE_WINMM
-   &midi_winmm,
-#endif
-   &midi_null
-};
-
 static void *nullcamera_init(const char *device, uint64_t caps,
       unsigned width, unsigned height) { return (void*)-1; }
 static void nullcamera_free(void *data) { }
@@ -1246,13 +1208,9 @@ struct rarch_state
 #endif
 
    struct string_list *subsystem_fullpaths;
-   struct string_list *midi_drv_inputs;
-   struct string_list *midi_drv_outputs;
    struct string_list *audio_driver_devices_list;
 
    uint8_t *video_driver_record_gpu_buffer;
-   uint8_t *midi_drv_input_buffer;
-   uint8_t *midi_drv_output_buffer;
    bool    *load_no_content_hook;
    float   *audio_driver_output_samples_buf;
    char    *osk_grid[45];
@@ -1276,8 +1234,6 @@ struct rarch_state
 
    const camera_driver_t *camera_driver;
    void *camera_data;
-
-   void *midi_drv_data;
 
    const ui_companion_driver_t *ui_companion;
    void *ui_companion_data;
@@ -1385,8 +1341,6 @@ struct rarch_state
 
    gfx_ctx_driver_t current_video_context;               /* ptr alignment */
    content_state_t            content_st;                /* ptr alignment */
-   midi_event_t midi_drv_input_event;                    /* ptr alignment */
-   midi_event_t midi_drv_output_event;                   /* ptr alignment */
    core_info_state_t core_info_st;                       /* ptr alignment */
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
 #ifdef HAVE_BSV_MOVIE
@@ -1774,10 +1728,6 @@ struct rarch_state
    bool recording_enable;
    bool streaming_enable;
 
-   bool midi_drv_input_enabled;
-   bool midi_drv_output_enabled;
-
-   bool midi_drv_output_pending;
 
    bool main_ui_companion_is_on_foreground;
    bool keyboard_mapping_blocked;
@@ -1818,7 +1768,6 @@ static runloop_core_status_msg_t runloop_core_status_msg         =
 extern u32 __nx_applet_type;
 #endif
 
-static midi_driver_t *midi_drv                                   = &midi_null;
 static const video_display_server_t *current_display_server      = &dispserv_null;
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {

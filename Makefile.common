@@ -236,6 +236,7 @@ OBJ += frontend/frontend_driver.o \
        retroarch.o \
        command.o \
        msg_hash.o \
+       midi_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o

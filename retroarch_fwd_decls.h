@@ -36,14 +36,6 @@ static void deinit_netplay(struct rarch_state *p_rarch);
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
       struct retro_callbacks *cbs);
 
-static bool midi_driver_read(uint8_t *byte);
-static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
-static bool midi_driver_output_enabled(void);
-static bool midi_driver_input_enabled(void);
-static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
-static const void *midi_driver_find_handle(int index);
-static bool midi_driver_flush(void);
-
 static void retroarch_deinit_core_options(
       bool game_options_active,
       const char *path_core_options,
