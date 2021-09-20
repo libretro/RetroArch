@@ -343,10 +343,15 @@ menu_handle_t *menu_driver_get_ptr(void)
    return p_rarch->menu_driver_data;
 }
 
+struct menu_state *menu_state_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->menu_driver_state;
+}
+
 size_t menu_navigation_get_selection(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    return menu_st->selection_ptr;
 }
 #endif
@@ -703,7 +708,7 @@ static bool menu_input_key_bind_iterate(
    bool               timed_out   = false;
    struct menu_bind_state *_binds = &p_rarch->menu_input_binds;
    menu_input_t *menu_input       = &p_rarch->menu_input_state;
-   struct menu_state *menu_st     = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st     = menu_state_get_ptr();
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
@@ -1261,7 +1266,7 @@ int generic_menu_entry_action(
    settings_t   *settings         = p_rarch->configuration_settings;
    void *menu_userdata            = p_rarch->menu_userdata;
    bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st     = menu_state_get_ptr();
    size_t scroll_accel            = menu_st->scroll.acceleration;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
@@ -1530,8 +1535,7 @@ int generic_menu_entry_action(
 
 void menu_navigation_set_selection(size_t val)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    menu_st->selection_ptr      = val;
 }
 
@@ -1542,8 +1546,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    const char *path            = NULL;
    const char *entry_label     = NULL;
    menu_file_list_cbs_t *cbs   = NULL;
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, stack_idx);
    file_list_t *list           = (userdata) ? (file_list_t*)userdata : selection_buf;
    bool path_enabled           = entry->path_enabled;
@@ -1665,8 +1668,7 @@ int menu_entry_action(
 
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state  *menu_st = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    if (menu_st->entries.list)
    {
       const file_list_t *list  = MENU_LIST_GET(menu_st->entries.list, 0);
@@ -1681,8 +1683,7 @@ int menu_entries_get_title(char *s, size_t len)
    unsigned menu_type            = 0;
    const char *path              = NULL;
    const char *label             = NULL;
-   struct rarch_state   *p_rarch = &rarch_st;
-   struct menu_state    *menu_st = &p_rarch->menu_driver_state;
+   struct menu_state   *menu_st  = menu_state_get_ptr();
    const file_list_t *list       = menu_st->entries.list ?
       MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
    menu_file_list_cbs_t *cbs     = list
@@ -1776,8 +1777,7 @@ int menu_entries_get_core_title(char *s, size_t len)
 
 file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state   *menu_st   = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return NULL;
@@ -1786,8 +1786,7 @@ file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state   *menu_st   = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return NULL;
@@ -1808,7 +1807,7 @@ void menu_entries_append(
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    struct rarch_state   *p_rarch   = &rarch_st;
-   struct menu_state    *menu_st   = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st   = menu_state_get_ptr();
    if (!list || !label)
       return;
 
@@ -1896,7 +1895,7 @@ bool menu_entries_append_enum(
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    struct rarch_state   *p_rarch   = &rarch_st;
-   struct menu_state    *menu_st   = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st   = menu_state_get_ptr();
 
    if (!list || !label)
       return false;
@@ -1988,7 +1987,7 @@ void menu_entries_prepend(file_list_t *list,
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    struct rarch_state   *p_rarch   = &rarch_st;
-   struct menu_state    *menu_st   = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st   = menu_state_get_ptr();
    if (!list || !label)
       return;
 
@@ -2062,8 +2061,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
 {
    file_list_t *list              = NULL;
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
    if (!menu_st->entries.list)
       return;
 
@@ -2085,7 +2083,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
    if (menu_list)
       menu_list_flush_stack(
@@ -2099,7 +2097,7 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 {
    struct rarch_state   *p_rarch            = &rarch_st;
    const menu_ctx_driver_t *menu_driver_ctx = p_rarch->menu_driver_ctx;
-   struct menu_state    *menu_st            = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st            = menu_state_get_ptr();
    menu_list_t *menu_list                   = menu_st->entries.list;
    if (!menu_list)
       return;
@@ -2123,8 +2121,7 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 
 size_t menu_entries_get_stack_size(size_t idx)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return 0;
@@ -2133,8 +2130,7 @@ size_t menu_entries_get_stack_size(size_t idx)
 
 size_t menu_entries_get_size(void)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return 0;
@@ -2143,8 +2139,7 @@ size_t menu_entries_get_size(void)
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
 
    switch (state)
    {
@@ -2231,7 +2226,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
       case MENU_ENTRIES_CTL_CLEAR:
          {
             unsigned i;
-            file_list_t *list = (file_list_t*)data;
+            file_list_t              *list = (file_list_t*)data;
+            struct rarch_state   *p_rarch  = &rarch_st;
 
             if (!list)
                return false;
@@ -2267,8 +2263,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 
 menu_search_terms_t *menu_entries_search_get_terms_internal(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    file_list_t *list           = MENU_LIST_GET(menu_st->entries.list, 0);
    menu_file_list_cbs_t *cbs   = NULL;
 
@@ -2289,8 +2284,7 @@ menu_search_terms_t *menu_entries_search_get_terms_internal(void)
  * 'idx' to the matching list entry index. */
 bool menu_entries_list_search(const char *needle, size_t *idx)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    menu_list_t *menu_list      = menu_st->entries.list;
    file_list_t *list           = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
    bool match_found            = false;
@@ -2531,8 +2525,7 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
  * */
 void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    if (!datetime)
       return;
 
@@ -2907,8 +2900,7 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
 {
    int percent                    = 0;
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
    enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
 
    if (!powerstate)
@@ -2965,9 +2957,8 @@ static bool menu_driver_iterate(
 
 int menu_driver_deferred_push_content_list(file_list_t *list)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   settings_t *settings           = p_rarch->configuration_settings;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   settings_t *settings           = config_get_ptr();
+   struct menu_state    *menu_st  = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
 
@@ -2999,7 +2990,7 @@ static bool menu_driver_init_internal(
       settings_t *settings,
       bool video_is_threaded)
 {
-   struct menu_state *menu_st = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    menu_ctx_environment_t menu_environ;
 
    if (p_rarch->menu_driver_ctx)
@@ -3200,15 +3191,13 @@ bool menu_driver_list_get_size(menu_ctx_list_t *list)
 
 bool menu_driver_screensaver_supported(void)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
    return menu_st->screensaver_supported;
 }
 
 retro_time_t menu_driver_get_current_time(void)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
    return menu_st->current_time_us;
 }
 
@@ -3404,15 +3393,13 @@ void menu_driver_set_last_start_content(const char *start_content_path)
 
 const char *menu_driver_get_pending_selection(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    return menu_st->pending_selection;
 }
 
 void menu_driver_set_pending_selection(const char *pending_selection)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    char *selection             = menu_st->pending_selection;
 
    /* Reset existing cache */
@@ -3430,7 +3417,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
    gfx_display_t         *p_disp  = &p_rarch->dispgfx;
-   struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
 
    switch (state)
    {
@@ -6696,8 +6683,7 @@ static void menu_input_search_cb(void *userdata, const char *str)
 {
    const char *label           = NULL;
    unsigned type               = MENU_SETTINGS_NONE;
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
 
    if (string_is_empty(str))
       goto end;
@@ -11560,7 +11546,7 @@ void main_exit(void *args)
 {
    struct rarch_state *p_rarch  = &rarch_st;
 #ifdef HAVE_MENU
-   struct menu_state  *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state  *menu_st  = menu_state_get_ptr();
 #endif
    settings_t     *settings     = p_rarch->configuration_settings;
    bool     config_save_on_exit = settings->bools.config_save_on_exit;
@@ -18282,7 +18268,7 @@ static unsigned menu_event(
    unsigned ret                                    = MENU_ACTION_NOOP;
    bool set_scroll                                 = false;
    size_t new_scroll_accel                         = 0;
-   struct menu_state                     *menu_st  = &p_rarch->menu_driver_state;
+   struct menu_state                     *menu_st  = menu_state_get_ptr();
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    input_driver_state_t *input_driver_st           =
       &p_rarch->input_driver_state;
@@ -18707,7 +18693,7 @@ static int menu_input_pointer_post_iterate(
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    menu_handle_t *menu                             = p_rarch->menu_driver_data;
-   struct menu_state *menu_st                      = &p_rarch->menu_driver_state;
+   struct menu_state                     *menu_st  = menu_state_get_ptr();
 
    /* Check whether a message box is currently
     * being shown
@@ -19854,7 +19840,7 @@ void input_keyboard_event(bool down, unsigned code,
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
 #ifdef HAVE_MENU
-   struct menu_state *menu_st    = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st    = menu_state_get_ptr();
 
    /* If screensaver is active, then it should be
     * disabled if:
@@ -25898,7 +25884,7 @@ static void drivers_init(struct rarch_state *p_rarch,
 {
    input_driver_state_t *input_driver_st = &p_rarch->input_driver_state;
 #ifdef HAVE_MENU
-   struct menu_state  *menu_st = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL();
    gfx_display_t *p_disp       = &p_rarch->dispgfx;
@@ -28704,7 +28690,7 @@ void retroarch_menu_running(void)
 
 #ifdef HAVE_MENU
    menu_handle_t *menu             = p_rarch->menu_driver_data;
-   struct menu_state *menu_st      = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st      = menu_state_get_ptr();
    menu_input_t *menu_input        = &p_rarch->menu_input_state;
    if (menu)
    {
@@ -28775,7 +28761,7 @@ void retroarch_menu_running_finished(bool quit)
 #endif
 #ifdef HAVE_MENU
    menu_handle_t *menu             = p_rarch->menu_driver_data;
-   struct menu_state *menu_st      = &p_rarch->menu_driver_state;
+   struct menu_state *menu_st      = menu_state_get_ptr();
    menu_input_t *menu_input        = &p_rarch->menu_input_state;
    if (menu)
    {
@@ -30501,7 +30487,7 @@ static enum runloop_state runloop_check_state(
       static input_bits_t old_input = {{0}};
       static enum menu_action
          old_action                 = MENU_ACTION_CANCEL;
-      struct menu_state    *menu_st = &p_rarch->menu_driver_state;
+      struct menu_state *menu_st    = menu_state_get_ptr();
       bool focused                  = false;
       input_bits_t trigger_input    = current_bits;
       global_t *global              = &p_rarch->g_extern;
