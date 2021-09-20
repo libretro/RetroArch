@@ -305,12 +305,6 @@ bool state_manager_frame_is_reversed(void)
 }
 #endif
 
-gfx_animation_t *anim_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->anim;
-}
-
 content_state_t *content_state_get_ptr(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -3497,7 +3491,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (     p_rarch->menu_driver_ctx
                   && p_rarch->menu_driver_ctx->free)
                p_rarch->menu_driver_ctx->free(p_rarch->menu_userdata);
-            p_rarch->anim.updatetime_cb = NULL;
 
             if (p_rarch->menu_userdata)
                free(p_rarch->menu_userdata);
@@ -3513,7 +3506,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                memset(&system->info, 0, sizeof(struct retro_system_info));
             }
 
-            gfx_animation_deinit(&p_rarch->anim);
+            gfx_animation_deinit();
             gfx_display_free();
 
             menu_entries_settings_deinit(menu_st);
@@ -18524,7 +18517,7 @@ static unsigned menu_event(
    if (set_scroll)
       menu_st->scroll.acceleration  = (unsigned)(new_scroll_accel);
 
-   delay_count                     += p_rarch->anim.delta_time;
+   delay_count                     += anim_get_ptr()->delta_time;
 
    if (display_kb)
    {
@@ -24620,7 +24613,7 @@ static void video_driver_frame(const void *data, unsigned width,
       RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
 
       /* Check whether duration timer has elapsed */
-      runloop_core_status_msg.duration -= p_rarch->anim.delta_time;
+      runloop_core_status_msg.duration -= anim_get_ptr()->delta_time;
 
       if (runloop_core_status_msg.duration < 0.0f)
       {
@@ -26046,7 +26039,7 @@ static void drivers_init(struct rarch_state *p_rarch,
       p_rarch->widgets_active     = gfx_widgets_init(
             &p_rarch->dispwidget_st,
             &p_rarch->dispgfx,
-            &p_rarch->anim,
+            anim_get_ptr(),
             settings,
             (uintptr_t)&p_rarch->widgets_active,
             video_is_threaded,
@@ -30482,7 +30475,6 @@ static enum runloop_state runloop_check_state(
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
    gfx_animation_update(
-         &p_rarch->anim,
          current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
@@ -30613,7 +30605,7 @@ static enum runloop_state runloop_check_state(
       else if (!menu_driver_iterate(p_rarch,
                menu_st,
                &p_rarch->dispgfx,
-               &p_rarch->anim,
+               anim_get_ptr(),
                settings,
                action, current_time))
       {
