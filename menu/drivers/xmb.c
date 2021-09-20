@@ -3713,7 +3713,6 @@ static void xmb_hide_fullscreen_thumbnails(
       xmb_handle_t *xmb, bool animate)
 {
    uintptr_t alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -3726,7 +3725,7 @@ static void xmb_hide_fullscreen_thumbnails(
       /* Configure fade out animation */
       animation_entry.easing_enum  = EASING_OUT_QUAD;
       animation_entry.tag          = alpha_tag;
-      animation_entry.duration     = p_gfx_thumb->fade_duration;
+      animation_entry.duration     = gfx_thumb_get_ptr()->fade_duration;
       animation_entry.target_value = 0.0f;
       animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
       animation_entry.cb           = NULL;
@@ -3754,7 +3753,6 @@ static void xmb_show_fullscreen_thumbnails(
    const char *thumbnail_label        = NULL;
    uintptr_t              alpha_tag   = (uintptr_t)
       &xmb->fullscreen_thumbnail_alpha;
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -3834,7 +3832,7 @@ static void xmb_show_fullscreen_thumbnails(
    /* Configure fade in animation */
    animation_entry.easing_enum  = EASING_OUT_QUAD;
    animation_entry.tag          = alpha_tag;
-   animation_entry.duration     = p_gfx_thumb->fade_duration;
+   animation_entry.duration     = gfx_thumb_get_ptr()->fade_duration;
    animation_entry.target_value = 1.0f;
    animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
    animation_entry.cb           = NULL;
