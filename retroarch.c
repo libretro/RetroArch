@@ -632,7 +632,7 @@ bool menu_input_key_bind_set_mode(
 
    if (!setting || !menu)
       return false;
-   if (menu_input_key_bind_set_mode_common(&p_rarch->menu_driver_state,
+   if (menu_input_key_bind_set_mode_common(menu_state_get_ptr(),
             binds, state, setting, settings) == -1)
       return false;
 
@@ -1047,7 +1047,7 @@ static int generic_menu_iterate(
                   {
                      char current_sublabel[255];
                      get_current_menu_sublabel(
-                           &p_rarch->menu_driver_state,
+                           menu_st,
                            current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
                         accessibility_speak_priority(p_rarch,
@@ -1684,7 +1684,7 @@ void menu_entries_append(
 
    list->list[idx].actiondata      = cbs;
 
-   menu_cbs_init(&p_rarch->menu_driver_state,
+   menu_cbs_init(menu_st,
          p_rarch->menu_driver_ctx,
          list, cbs, path, label, type, idx);
 }
@@ -1778,7 +1778,7 @@ bool menu_entries_append_enum(
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
       cbs->setting                 = menu_setting_find_enum(enum_idx);
 
-   menu_cbs_init(&p_rarch->menu_driver_state,
+   menu_cbs_init(menu_st,
          p_rarch->menu_driver_ctx,
          list, cbs, path, label, type, idx);
 
@@ -1861,7 +1861,7 @@ void menu_entries_prepend(file_list_t *list,
 
    list->list[idx].actiondata      = cbs;
 
-   menu_cbs_init(&p_rarch->menu_driver_state,
+   menu_cbs_init(menu_st,
          p_rarch->menu_driver_ctx,
          list, cbs, path, label, type, idx);
 }
@@ -18139,7 +18139,7 @@ static int menu_input_pointer_post_iterate(
           *   gesture should close it */
          else if (messagebox_active)
             menu_input_pointer_close_messagebox(
-                  &p_rarch->menu_driver_state);
+                  menu_st);
          /* Normal menu input */
          else
          {
@@ -18266,7 +18266,7 @@ static int menu_input_pointer_post_iterate(
    {
       /* If currently showing a message box, close it */
       if (messagebox_active)
-         menu_input_pointer_close_messagebox(&p_rarch->menu_driver_state);
+         menu_input_pointer_close_messagebox(menu_st);
       /* If onscreen keyboard is shown, send a 'backspace' */
       else if (osk_active)
          input_keyboard_event(true, '\x7f', '\x7f',
@@ -25349,7 +25349,7 @@ static void retroarch_deinit_drivers(
 
 #ifdef HAVE_MENU
    menu_driver_destroy(p_rarch,
-         &p_rarch->menu_driver_state);
+         menu_state_get_ptr());
    p_rarch->menu_driver_alive                       = false;
 #endif
    p_rarch->location_driver_active                  = false;
