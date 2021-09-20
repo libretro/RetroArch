@@ -91,7 +91,7 @@ static core_info_state_t core_info_st = {
    NULL,
    NULL,
    NULL
-}
+};
 
 /* JSON Handlers START */
 
