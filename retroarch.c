@@ -9073,6 +9073,16 @@ static bool command_event_main_state(
       switch (cmd)
       {
          case CMD_EVENT_SAVE_STATE:
+         case CMD_EVENT_SAVE_STATE_SLOT0:
+         case CMD_EVENT_SAVE_STATE_SLOT1:
+         case CMD_EVENT_SAVE_STATE_SLOT2:
+         case CMD_EVENT_SAVE_STATE_SLOT3:
+         case CMD_EVENT_SAVE_STATE_SLOT4:
+         case CMD_EVENT_SAVE_STATE_SLOT5:
+         case CMD_EVENT_SAVE_STATE_SLOT6:
+         case CMD_EVENT_SAVE_STATE_SLOT7:
+         case CMD_EVENT_SAVE_STATE_SLOT8:
+         case CMD_EVENT_SAVE_STATE_SLOT9:
          case CMD_EVENT_SAVE_STATE_TO_RAM:
             {
                bool savestate_auto_index                      =
@@ -9082,10 +9092,10 @@ static bool command_event_main_state(
                bool frame_time_counter_reset_after_save_state =
                      settings->bools.frame_time_counter_reset_after_save_state;
 
-               if (cmd == CMD_EVENT_SAVE_STATE)
-                  content_save_state(state_path, true, false);
-               else
+               if (cmd == CMD_EVENT_SAVE_STATE_TO_RAM)
                   content_save_state_to_ram();
+               else
+                  content_save_state(state_path, true, false);
 
                /* Clean up excess savestates if necessary */
                if (savestate_auto_index && (savestate_max_keep > 0))
@@ -9102,13 +9112,23 @@ static bool command_event_main_state(
             }
             break;
          case CMD_EVENT_LOAD_STATE:
+         case CMD_EVENT_LOAD_STATE_SLOT0:
+         case CMD_EVENT_LOAD_STATE_SLOT1:
+         case CMD_EVENT_LOAD_STATE_SLOT2:
+         case CMD_EVENT_LOAD_STATE_SLOT3:
+         case CMD_EVENT_LOAD_STATE_SLOT4:
+         case CMD_EVENT_LOAD_STATE_SLOT5:
+         case CMD_EVENT_LOAD_STATE_SLOT6:
+         case CMD_EVENT_LOAD_STATE_SLOT7:
+         case CMD_EVENT_LOAD_STATE_SLOT8:
+         case CMD_EVENT_LOAD_STATE_SLOT9:
          case CMD_EVENT_LOAD_STATE_FROM_RAM:
             {
                bool res = false;
-               if (cmd == CMD_EVENT_LOAD_STATE)
-                  res = content_load_state(state_path, false, false);
-               else
+               if (cmd == CMD_EVENT_LOAD_STATE_FROM_RAM)
                   res = content_load_state_from_ram();
+               else
+                  res = content_load_state(state_path, false, false);
 
                if (res)
                {
@@ -9815,6 +9835,8 @@ bool command_event(enum event_command cmd, void *data)
          return true;
 #endif
       case CMD_EVENT_LOAD_STATE:
+         LOADSTATE_EVT: ;
+
 #ifdef HAVE_BSV_MOVIE
          /* Immutable - disallow savestate load when
           * we absolutely cannot change game state. */
@@ -9829,6 +9851,76 @@ bool command_event(enum event_command cmd, void *data)
          if (!command_event_main_state(p_rarch, cmd))
             return false;
          break;
+      case CMD_EVENT_LOAD_STATE_SLOT0:
+         {
+            int new_state_slot = 0;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT1:
+         {
+            int new_state_slot = 1;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT2:
+         {
+            int new_state_slot = 2;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT3:
+         {
+            int new_state_slot = 3;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT4:
+         {
+            int new_state_slot = 4;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT5:
+         {
+            int new_state_slot = 5;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT6:
+         {
+            int new_state_slot = 6;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT7:
+         {
+            int new_state_slot = 7;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT8:
+         {
+            int new_state_slot = 8;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
+      case CMD_EVENT_LOAD_STATE_SLOT9:
+         {
+            int new_state_slot = 9;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto LOADSTATE_EVT;
+         }
       case CMD_EVENT_UNDO_LOAD_STATE:
       case CMD_EVENT_UNDO_SAVE_STATE:
       case CMD_EVENT_LOAD_STATE_FROM_RAM:
@@ -9873,6 +9965,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
          {
+            SAVESTATE_EVT: ;
+
             bool savestate_auto_index = settings->bools.savestate_auto_index;
             int state_slot            = settings->ints.state_slot;
 
@@ -9884,6 +9978,86 @@ bool command_event(enum event_command cmd, void *data)
          }
          if (!command_event_main_state(p_rarch, cmd))
             return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT0:
+         {
+            int new_state_slot = 0;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT1:
+         {
+            int new_state_slot = 1;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT2:
+         {
+            int new_state_slot = 2;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT3:
+         {
+            int new_state_slot = 3;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT4:
+         {
+            int new_state_slot = 4;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT5:
+         {
+            int new_state_slot = 5;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT6:
+         {
+            int new_state_slot = 6;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT7:
+         {
+            int new_state_slot = 7;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT8:
+         {
+            int new_state_slot = 8;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT9:
+         {
+            int new_state_slot = 9;
+            configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+
+            goto SAVESTATE_EVT;
+         }
          break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
          {
@@ -31033,7 +31207,29 @@ static enum runloop_state runloop_check_state(
 
    /* Check if we have pressed any of the savestate buttons */
    HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT0_KEY, CMD_EVENT_SAVE_STATE_SLOT0, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT1_KEY, CMD_EVENT_SAVE_STATE_SLOT1, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT2_KEY, CMD_EVENT_SAVE_STATE_SLOT2, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT3_KEY, CMD_EVENT_SAVE_STATE_SLOT3, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT4_KEY, CMD_EVENT_SAVE_STATE_SLOT4, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT5_KEY, CMD_EVENT_SAVE_STATE_SLOT5, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT6_KEY, CMD_EVENT_SAVE_STATE_SLOT6, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT7_KEY, CMD_EVENT_SAVE_STATE_SLOT7, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT8_KEY, CMD_EVENT_SAVE_STATE_SLOT8, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT9_KEY, CMD_EVENT_SAVE_STATE_SLOT9, true, NULL);
+
    HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT0_KEY, CMD_EVENT_LOAD_STATE_SLOT0, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT1_KEY, CMD_EVENT_LOAD_STATE_SLOT1, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT2_KEY, CMD_EVENT_LOAD_STATE_SLOT2, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT3_KEY, CMD_EVENT_LOAD_STATE_SLOT3, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT4_KEY, CMD_EVENT_LOAD_STATE_SLOT4, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT5_KEY, CMD_EVENT_LOAD_STATE_SLOT5, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT6_KEY, CMD_EVENT_LOAD_STATE_SLOT6, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT7_KEY, CMD_EVENT_LOAD_STATE_SLOT7, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT8_KEY, CMD_EVENT_LOAD_STATE_SLOT8, true, NULL);
+   HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT9_KEY, CMD_EVENT_LOAD_STATE_SLOT9, true, NULL);
+
 
 #ifdef HAVE_CHEEVOS
    if (!cheevos_hardcore_active)
