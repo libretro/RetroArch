@@ -20,17 +20,25 @@
 #include "../config.h"
 #endif
 
+#include <locale.h>
+
 #include <retro_timers.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
+#include <compat/strcasestr.h>
+#include <encodings/utf.h>
 #include <streams/file_stream.h>
+#include <time/rtime.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "../list_special.h"
 #include "../paths.h"
+#include "../tasks/task_powerstate.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
+
+#include "frontend/frontend_driver.h"
 
 #ifdef HAVE_LANGEXTRA
 /* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA
@@ -68,6 +76,773 @@ static bool menu_should_pop_stack(const char *label)
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
       return true;
    return false;
+}
+
+size_t menu_navigation_get_selection(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   return menu_st->selection_ptr;
+}
+
+void menu_navigation_set_selection(size_t val)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   menu_st->selection_ptr      = val;
+}
+
+void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
+      size_t i, void *userdata, bool use_representation)
+{
+   char newpath[255];
+   const char *path            = NULL;
+   const char *entry_label     = NULL;
+   menu_file_list_cbs_t *cbs   = NULL;
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, stack_idx);
+   file_list_t *list           = (userdata) ? (file_list_t*)userdata : selection_buf;
+   bool path_enabled           = entry->path_enabled;
+
+   newpath[0]                  = '\0';
+
+   if (!list)
+      return;
+
+   path                       = list->list[i].path;
+   entry_label                = list->list[i].label;
+   entry->type                = list->list[i].type;
+   entry->entry_idx           = list->list[i].entry_idx;
+
+   cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
+   entry->idx                 = (unsigned)i;
+
+   if (entry->label_enabled && !string_is_empty(entry_label))
+      strlcpy(entry->label, entry_label, sizeof(entry->label));
+
+   if (cbs)
+   {
+      const char *label             = NULL;
+
+      entry->enum_idx               = cbs->enum_idx;
+      entry->checked                = cbs->checked;
+
+      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+            NULL, &label, NULL, NULL);
+
+      if (entry->rich_label_enabled && cbs->action_label)
+      {
+         cbs->action_label(list,
+               entry->type, (unsigned)i,
+               label, path,
+               entry->rich_label,
+               sizeof(entry->rich_label));
+
+         if (string_is_empty(entry->rich_label))
+            path_enabled = true;
+      }
+
+      if ((path_enabled || entry->value_enabled) &&
+          cbs->action_get_value &&
+          use_representation)
+      {
+         cbs->action_get_value(list,
+               &entry->spacing, entry->type,
+               (unsigned)i, label,
+               entry->value,
+               entry->value_enabled ? sizeof(entry->value) : 0,
+               path,
+               newpath,
+               path_enabled ? sizeof(newpath) : 0);
+
+         if (!string_is_empty(entry->value))
+         {
+            if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+            {
+               size_t j;
+               size_t size = strlcpy(entry->password_value, entry->value,
+                     sizeof(entry->password_value));
+               for (j = 0; j < size; j++)
+                  entry->password_value[j] = '*';
+            }
+         }
+      }
+
+      if (entry->sublabel_enabled)
+      {
+         if (!string_is_empty(cbs->action_sublabel_cache))
+            strlcpy(entry->sublabel,
+                     cbs->action_sublabel_cache, sizeof(entry->sublabel));
+         else if (cbs->action_sublabel)
+         {
+            /* If this function callback returns true,
+             * we know that the value won't change - so we
+             * can cache it instead. */
+            if (cbs->action_sublabel(list,
+                     entry->type, (unsigned)i,
+                     label, path,
+                     entry->sublabel,
+                     sizeof(entry->sublabel)) > 0)
+               strlcpy(cbs->action_sublabel_cache,
+                     entry->sublabel,
+                     sizeof(cbs->action_sublabel_cache));
+         }
+      }
+   }
+
+   if (path_enabled)
+   {
+      if (!string_is_empty(path) && !use_representation)
+         strlcpy(entry->path, path, sizeof(entry->path));
+      else if (
+                cbs
+            &&  cbs->setting
+            &&  cbs->setting->enum_value_idx != MSG_UNKNOWN
+            && !cbs->setting->dont_use_enum_idx_representation)
+         strlcpy(entry->path,
+               msg_hash_to_str(cbs->setting->enum_value_idx),
+               sizeof(entry->path));
+      else
+         if (!string_is_empty(newpath))
+            strlcpy(entry->path, newpath, sizeof(entry->path));
+   }
+}
+
+menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   if (menu_st->entries.list)
+   {
+      const file_list_t *list  = MENU_LIST_GET(menu_st->entries.list, 0);
+      return (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+   }
+   return NULL;
+}
+
+file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
+{
+   struct menu_state   *menu_st   = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (!menu_list)
+      return NULL;
+   return MENU_LIST_GET(menu_list, (unsigned)idx);
+}
+
+file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
+{
+   struct menu_state   *menu_st   = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (!menu_list)
+      return NULL;
+   return MENU_LIST_GET_SELECTION(menu_list, (unsigned)idx);
+}
+
+size_t menu_entries_get_stack_size(size_t idx)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (!menu_list)
+      return 0;
+   return MENU_LIST_GET_STACK_SIZE(menu_list, idx);
+}
+
+size_t menu_entries_get_size(void)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (!menu_list)
+      return 0;
+   return MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+}
+
+menu_search_terms_t *menu_entries_search_get_terms_internal(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   file_list_t *list           = MENU_LIST_GET(menu_st->entries.list, 0);
+   menu_file_list_cbs_t *cbs   = NULL;
+
+   if (!list ||
+       (list->size < 1))
+      return NULL;
+
+   cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+
+   if (!cbs)
+      return NULL;
+
+   return &cbs->search;
+}
+
+/* Searches current menu list for specified 'needle'
+ * string. If string is found, returns true and sets
+ * 'idx' to the matching list entry index. */
+bool menu_entries_list_search(const char *needle, size_t *idx)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list      = menu_st->entries.list;
+   file_list_t *list           = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
+   bool match_found            = false;
+   bool char_search            = false;
+   char needle_char            = 0;
+   size_t i;
+
+   if (   !list
+       || string_is_empty(needle)
+       || !idx)
+      return match_found;
+
+   /* Check if we are searching for a single
+    * Latin alphabet character */
+   char_search    = ((needle[1] == '\0') && (ISALPHA(needle[0])));
+   if (char_search)
+      needle_char = TOLOWER(needle[0]);
+
+   for (i = 0; i < list->size; i++)
+   {
+      const char *entry_label = NULL;
+      menu_entry_t entry;
+
+      /* Note the we have to get the actual menu
+       * entry here, since we need the exact label
+       * that is currently displayed by the menu
+       * driver */
+      MENU_ENTRY_INIT(entry);
+      entry.value_enabled    = false;
+      entry.sublabel_enabled = false;
+      menu_entry_get(&entry, 0, i, NULL, true);
+
+      /* When using the file browser, one or more
+       * 'utility' entries will be added to the top
+       * of the list (e.g. 'Parent Directory'). These
+       * have no bearing on the actual content of the
+       * list, and should be excluded from the search */
+      if ((entry.type == FILE_TYPE_SCAN_DIRECTORY) ||
+          (entry.type == FILE_TYPE_MANUAL_SCAN_DIRECTORY) ||
+          (entry.type == FILE_TYPE_USE_DIRECTORY) ||
+          (entry.type == FILE_TYPE_PARENT_DIRECTORY))
+         continue;
+
+      /* Get displayed entry label */
+      if (!string_is_empty(entry.rich_label))
+         entry_label = entry.rich_label;
+      else
+         entry_label = entry.path;
+
+      if (string_is_empty(entry_label))
+         continue;
+
+      /* If we are performing a single character
+       * search, jump to the first entry whose
+       * first character matches */
+      if (char_search)
+      {
+         if (needle_char == TOLOWER(entry_label[0]))
+         {
+            *idx        = i;
+            match_found = true;
+            break;
+         }
+      }
+      /* Otherwise perform an exhaustive string
+       * comparison */
+      else
+      {
+         const char *found_str = (const char *)strcasestr(entry_label, needle);
+
+         /* Found a match with the first characters
+          * of the label -> best possible match,
+          * so quit immediately */
+         if (found_str == entry_label)
+         {
+            *idx        = i;
+            match_found = true;
+            break;
+         }
+         /* Found a mid-string match; this is a valid
+          * result, but keep searching for the best
+          * possible match */
+         else if (found_str)
+         {
+            *idx        = i;
+            match_found = true;
+         }
+      }
+   }
+
+   return match_found;
+}
+
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+      const struct tm* timeptr)
+{
+   char *local = NULL;
+
+   /* Ensure correct locale is set
+    * > Required for localised AM/PM strings */
+   setlocale(LC_TIME, "");
+
+   strftime(ptr, maxsize, format, timeptr);
+#if !(defined(__linux__) && !defined(ANDROID))
+   local = local_to_utf8_string_alloc(ptr);
+
+   if (!string_is_empty(local))
+      strlcpy(ptr, local, maxsize);
+
+   if (local)
+   {
+      free(local);
+      local = NULL;
+   }
+#endif
+}
+
+
+/* Display the date and time - time_mode will influence how
+ * the time representation will look like.
+ * */
+void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   if (!datetime)
+      return;
+
+   /* Trigger an update, if required */
+   if (menu_st->current_time_us - menu_st->datetime_last_time_us >=
+         DATETIME_CHECK_INTERVAL)
+   {
+      time_t time_;
+      struct tm tm_;
+      bool has_am_pm         = false;
+      const char *format_str = "";
+
+      menu_st->datetime_last_time_us = menu_st->current_time_us;
+
+      /* Get current time */
+      time(&time_);
+      rtime_localtime(&time_, &tm_);
+
+      /* Format string representation */
+      switch (datetime->time_mode)
+      {
+         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
+            /* Using switch statements to set the format
+             * string is verbose, but has far less performance
+             * impact than setting the date separator dynamically
+             * (i.e. no snprintf() or character replacement...) */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY-MM-DD HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %H:%M";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD: /* YYYY-MM-DD */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YM: /* YYYY-MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m";
+                  break;
+               default:
+                  format_str = "%Y-%m";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS: /* MM-DD-YYYY HH:MM:SS */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM: /* MM-DD-YYYY HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %H:%M";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM: /* MM-DD HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d %H:%M";
+                  break;
+               default:
+                  format_str = "%m-%d %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD: /* MM-DD */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d";
+                  break;
+               default:
+                  format_str = "%m-%d";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS: /* DD-MM-YYYY HH:MM:SS */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %H:%M:%S";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %H:%M:%S";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %H:%M:%S";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM: /* DD-MM-YYYY HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %H:%M";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM: /* DD-MM HH:MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m %H:%M";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m %H:%M";
+                  break;
+               default:
+                  format_str = "%d-%m %H:%M";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY: /* DD-MM-YYYY */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM: /* DD-MM */
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m";
+                  break;
+               default:
+                  format_str = "%d-%m";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
+            format_str = "%H:%M:%S";
+            break;
+         case MENU_TIMEDATE_STYLE_HM: /* HH:MM */
+            format_str = "%H:%M";
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM: /* YYYY-MM-DD HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM_AMPM: /* YYYY-MM-DD HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%Y/%m/%d %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%Y.%m.%d %I:%M %p";
+                  break;
+               default:
+                  format_str = "%Y-%m-%d %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM: /* MM-DD-YYYY HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM: /* MM-DD-YYYY HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d/%Y %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d.%Y %I:%M %p";
+                  break;
+               default:
+                  format_str = "%m-%d-%Y %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AMPM: /* MM-DD HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%m/%d %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%m.%d %I:%M %p";
+                  break;
+               default:
+                  format_str = "%m-%d %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM: /* DD-MM-YYYY HH:MM:SS (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %I:%M:%S %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %I:%M:%S %p";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %I:%M:%S %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM: /* DD-MM-YYYY HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m/%Y %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m.%Y %I:%M %p";
+                  break;
+               default:
+                  format_str = "%d-%m-%Y %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM: /* DD-MM HH:MM (AM/PM) */
+            has_am_pm = true;
+            switch (datetime->date_separator)
+            {
+               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+                  format_str = "%d/%m %I:%M %p";
+                  break;
+               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+                  format_str = "%d.%m %I:%M %p";
+                  break;
+               default:
+                  format_str = "%d-%m %I:%M %p";
+                  break;
+            }
+            break;
+         case MENU_TIMEDATE_STYLE_HMS_AMPM: /* HH:MM:SS (AM/PM) */
+            has_am_pm  = true;
+            format_str = "%I:%M:%S %p";
+            break;
+         case MENU_TIMEDATE_STYLE_HM_AMPM: /* HH:MM (AM/PM) */
+            has_am_pm  = true;
+            format_str = "%I:%M %p";
+            break;
+      }
+
+      if (has_am_pm)
+         strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+               format_str, &tm_);
+      else
+         strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+               format_str, &tm_);
+   }
+
+   /* Copy cached datetime string to input
+    * menu_display_ctx_datetime_t struct */
+   strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
+}
+
+/* Display current (battery) power state */
+void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
+{
+   int percent                    = 0;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
+
+   if (!powerstate)
+      return;
+
+   /* Trigger an update, if required */
+   if (menu_st->current_time_us - menu_st->powerstate_last_time_us >=
+         POWERSTATE_CHECK_INTERVAL)
+   {
+      menu_st->powerstate_last_time_us = menu_st->current_time_us;
+      task_push_get_powerstate();
+   }
+
+   /* Get last recorded state */
+   state                       = get_last_powerstate(&percent);
+
+   /* Populate gfx_display_ctx_powerstate_t */
+   powerstate->battery_enabled = (state != FRONTEND_POWERSTATE_NONE) &&
+                                 (state != FRONTEND_POWERSTATE_NO_SOURCE);
+   powerstate->percent         = 0;
+   powerstate->charging        = false;
+
+   if (powerstate->battery_enabled)
+   {
+      if (state == FRONTEND_POWERSTATE_CHARGING)
+         powerstate->charging  = true;
+      if (percent > 0)
+         powerstate->percent   = (unsigned)percent;
+      snprintf(powerstate->s, powerstate->len, "%u%%", powerstate->percent);
+   }
+}
+
+
+/* Sets title to what the name of the current menu should be. */
+int menu_entries_get_title(char *s, size_t len)
+{
+   unsigned menu_type            = 0;
+   const char *path              = NULL;
+   const char *label             = NULL;
+   struct menu_state   *menu_st  = menu_state_get_ptr();
+   const file_list_t *list       = menu_st->entries.list ?
+      MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
+   menu_file_list_cbs_t *cbs     = list
+      ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
+      : NULL;
+
+   if (!cbs)
+      return -1;
+
+   if (cbs && cbs->action_get_title)
+   {
+      int ret;
+      if (!string_is_empty(cbs->action_title_cache))
+      {
+         strlcpy(s, cbs->action_title_cache, len);
+         return 0;
+      }
+      file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+            &path, &label, &menu_type, NULL);
+      ret = cbs->action_get_title(path, label, menu_type, s, len);
+      if (ret == 1)
+         strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
+      return ret;
+   }
+   return 0;
 }
 
 /* Used to close an active message box (help or info)
@@ -2919,4 +3694,131 @@ void get_current_menu_sublabel(struct menu_state *menu_st,
    entry.value_enabled         = false;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
    strlcpy(s, entry.sublabel, len);
+}
+
+void menu_entries_get_last_stack(const char **path, const char **label,
+      unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
+{
+   file_list_t *list              = NULL;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   if (!menu_st->entries.list)
+      return;
+
+   list                           = MENU_LIST_GET(menu_st->entries.list, 0);
+
+   if (list && list->size)
+      file_list_get_at_offset(list, list->size - 1, path, label, file_type, entry_idx);
+
+   if (enum_idx)
+   {
+      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
+         list->list[list->size - 1].actiondata;
+
+      if (cbs)
+         *enum_idx = cbs->enum_idx;
+   }
+}
+
+int menu_driver_deferred_push_content_list(file_list_t *list)
+{
+   settings_t *settings           = config_get_ptr();
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
+
+   menu_st->selection_ptr         = 0;
+
+   if (!menu_driver_displaylist_push(
+            menu_st,
+            settings,
+            list,
+            selection_buf))
+      return -1;
+   return 0;
+}
+
+bool menu_driver_screensaver_supported(void)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   return menu_st->screensaver_supported;
+}
+
+retro_time_t menu_driver_get_current_time(void)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   return menu_st->current_time_us;
+}
+
+const char *menu_driver_get_pending_selection(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   return menu_st->pending_selection;
+}
+
+void menu_driver_set_pending_selection(const char *pending_selection)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   char *selection             = menu_st->pending_selection;
+
+   /* Reset existing cache */
+   selection[0] = '\0';
+
+   /* If path is empty, do nothing */
+   if (string_is_empty(pending_selection))
+      return;
+
+   strlcpy(selection, pending_selection,
+         sizeof(menu_st->pending_selection));
+}
+
+void menu_input_search_cb(void *userdata, const char *str)
+{
+   const char *label           = NULL;
+   unsigned type               = MENU_SETTINGS_NONE;
+   struct menu_state *menu_st  = menu_state_get_ptr();
+
+   if (string_is_empty(str))
+      goto end;
+
+   /* Determine whether we are currently
+    * viewing a menu list with 'search
+    * filter' support */
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         NULL, &label, &type, NULL);
+
+   /* Do not apply search filter if string
+    * consists of a single Latin alphabet
+    * character */
+   if (((str[1] != '\0') || (!ISALPHA(str[0]))) &&
+       menu_driver_search_filter_enabled(label, type))
+   {
+      /* Add search term */
+      if (menu_entries_search_push(str))
+      {
+         bool refresh = false;
+
+         /* Reset navigation pointer */
+         menu_st->selection_ptr = 0;
+         menu_driver_navigation_set(false);
+
+         /* Refresh menu */
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+      }
+   }
+   /* Perform a regular search: jump to the
+    * first matching entry */
+   else
+   {
+      size_t idx = 0;
+
+      if (menu_entries_list_search(str, &idx))
+      {
+         menu_st->selection_ptr = idx;
+         menu_driver_navigation_set(true);
+      }
+   }
+
+end:
+   menu_input_dialog_end();
 }
