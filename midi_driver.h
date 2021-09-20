@@ -207,7 +207,7 @@ struct string_list *midi_driver_get_avail_outputs(void);
 bool midi_driver_set_volume(unsigned volume);
 
 bool midi_driver_set_input(const char *input);
-bool midi_driver_set_output(const char *output);
+bool midi_driver_set_output(void *data, const char *output);
 
 /**
  * midi_driver_get_event_size:
@@ -221,6 +221,29 @@ bool midi_driver_set_output(const char *output);
  *          this function will return 0.
  **/
 size_t midi_driver_get_event_size(uint8_t status);
+
+bool midi_driver_input_enabled(void);
+
+bool midi_driver_output_enabled(void);
+
+bool midi_driver_flush(void);
+
+bool midi_driver_read(uint8_t *byte);
+
+bool midi_driver_write(uint8_t byte, uint32_t delta_time);
+
+bool midi_driver_init(void *data);
+
+void midi_driver_free(void);
+
+bool midi_driver_set_all_sounds_off(void);
+
+const void *midi_driver_find_handle(int index);
+
+extern midi_driver_t midi_winmm;
+extern midi_driver_t midi_alsa;
+
+extern midi_driver_t *midi_drivers[];
 
 RETRO_END_DECLS
 

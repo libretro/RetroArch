@@ -36,14 +36,6 @@ static void deinit_netplay(struct rarch_state *p_rarch);
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
       struct retro_callbacks *cbs);
 
-static bool midi_driver_read(uint8_t *byte);
-static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
-static bool midi_driver_output_enabled(void);
-static bool midi_driver_input_enabled(void);
-static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
-static const void *midi_driver_find_handle(int index);
-static bool midi_driver_flush(void);
-
 static void retroarch_deinit_core_options(
       bool game_options_active,
       const char *path_core_options,
@@ -141,12 +133,6 @@ static bool core_unload_game(struct rarch_state *p_rarch);
 
 static bool rarch_environment_cb(unsigned cmd, void *data);
 
-static bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy);
-static void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance);
-static void driver_location_stop(void);
-static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 

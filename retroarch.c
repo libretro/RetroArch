@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2011-2021 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2014-2017 - Jean-Andr� Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
@@ -236,7 +236,8 @@
 #include "wifi/wifi_driver.h"
 #include "misc/cpufreq/cpufreq.h"
 #include "led/led_driver.h"
-#include "midi/midi_driver.h"
+#include "midi_driver.h"
+#include "location_driver.h"
 #include "core.h"
 #include "configuration.h"
 #include "list_special.h"
@@ -10120,7 +10121,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_STOP:
-         midi_driver_set_all_sounds_off(p_rarch);
+         midi_driver_set_all_sounds_off();
          if (!audio_driver_stop(p_rarch))
             return false;
          break;
@@ -20460,567 +20461,6 @@ void config_read_keybinds_conf(void *data)
    }
 }
 
-/* MIDI */
-
-static midi_driver_t *midi_driver_find_driver(const char *ident)
-{
-   unsigned i;
-
-   for (i = 0; i < ARRAY_SIZE(midi_drivers); ++i)
-   {
-      if (string_is_equal(midi_drivers[i]->ident, ident))
-         return midi_drivers[i];
-   }
-
-   RARCH_ERR("[MIDI]: Unknown driver \"%s\", falling back to \"null\" driver.\n", ident);
-
-   return &midi_null;
-}
-
-static const void *midi_driver_find_handle(int index)
-{
-   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
-      return NULL;
-
-   return midi_drivers[index];
-}
-
-struct string_list *midi_driver_get_avail_inputs(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->midi_drv_inputs;
-}
-
-struct string_list *midi_driver_get_avail_outputs(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->midi_drv_outputs;
-}
-
-static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch)
-{
-   midi_event_t event;
-   uint8_t i;
-   uint8_t data[3]     = { 0xB0, 120, 0 };
-   bool result         = true;
-
-   if (!p_rarch->midi_drv_data || !p_rarch->midi_drv_output_enabled)
-      return false;
-
-   event.data       = data;
-   event.data_size  = sizeof(data);
-   event.delta_time = 0;
-
-   for (i = 0; i < 16; ++i)
-   {
-      data[0] = 0xB0 | i;
-
-      if (!midi_drv->write(p_rarch->midi_drv_data, &event))
-         result = false;
-   }
-
-   if (!midi_drv->flush(p_rarch->midi_drv_data))
-      result = false;
-
-   if (!result)
-      RARCH_ERR("[MIDI]: All sounds off failed.\n");
-
-   return result;
-}
-
-bool midi_driver_set_volume(unsigned volume)
-{
-   midi_event_t event;
-   struct rarch_state *p_rarch = &rarch_st;
-   uint8_t         data[8]     = {
-      0xF0, 0x7F, 0x7F, 0x04, 0x01, 0, 0, 0xF7};
-
-   if (!p_rarch->midi_drv_data || !p_rarch->midi_drv_output_enabled)
-      return false;
-
-   volume           = (unsigned)(163.83 * volume + 0.5);
-   if (volume > 16383)
-      volume        = 16383;
-
-   data[5]          = (uint8_t)(volume & 0x7F);
-   data[6]          = (uint8_t)(volume >> 7);
-
-   event.data       = data;
-   event.data_size  = sizeof(data);
-   event.delta_time = 0;
-
-   if (!midi_drv->write(p_rarch->midi_drv_data, &event))
-   {
-      RARCH_ERR("[MIDI]: Volume change failed.\n");
-      return false;
-   }
-
-   return true;
-}
-
-static bool midi_driver_init_io_buffers(struct rarch_state *p_rarch)
-{
-   uint8_t *midi_drv_input_buffer  = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
-   uint8_t *midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
-
-   if (!midi_drv_input_buffer || !midi_drv_output_buffer)
-   {
-      if (midi_drv_input_buffer)
-         free(midi_drv_input_buffer);
-      if (midi_drv_output_buffer)
-         free(midi_drv_output_buffer);
-      return false;
-   }
-
-   p_rarch->midi_drv_input_buffer           = midi_drv_input_buffer;
-   p_rarch->midi_drv_output_buffer          = midi_drv_output_buffer;
-
-   p_rarch->midi_drv_input_event.data       = midi_drv_input_buffer;
-   p_rarch->midi_drv_input_event.data_size  = 0;
-
-   p_rarch->midi_drv_output_event.data      = midi_drv_output_buffer;
-   p_rarch->midi_drv_output_event.data_size = 0;
-
-   return true;
-}
-
-static void midi_driver_free(struct rarch_state *p_rarch)
-{
-   if (p_rarch->midi_drv_data)
-   {
-      midi_drv->free(p_rarch->midi_drv_data);
-      p_rarch->midi_drv_data = NULL;
-   }
-
-   if (p_rarch->midi_drv_inputs)
-   {
-      string_list_free(p_rarch->midi_drv_inputs);
-      p_rarch->midi_drv_inputs = NULL;
-   }
-
-   if (p_rarch->midi_drv_outputs)
-   {
-      string_list_free(p_rarch->midi_drv_outputs);
-      p_rarch->midi_drv_outputs = NULL;
-   }
-
-   if (p_rarch->midi_drv_input_buffer)
-   {
-      free(p_rarch->midi_drv_input_buffer);
-      p_rarch->midi_drv_input_buffer = NULL;
-   }
-
-   if (p_rarch->midi_drv_output_buffer)
-   {
-      free(p_rarch->midi_drv_output_buffer);
-      p_rarch->midi_drv_output_buffer = NULL;
-   }
-
-   p_rarch->midi_drv_input_enabled  = false;
-   p_rarch->midi_drv_output_enabled = false;
-}
-
-static bool midi_driver_init(struct rarch_state *p_rarch,
-      settings_t *settings)
-{
-   union string_list_elem_attr attr  = {0};
-   bool ret                          = true;
-
-   p_rarch->midi_drv_inputs          = string_list_new();
-   p_rarch->midi_drv_outputs         = string_list_new();
-
-   if (!p_rarch->midi_drv_inputs || !p_rarch->midi_drv_outputs)
-      ret = false;
-   else if (!string_list_append(p_rarch->midi_drv_inputs, "Off", attr) ||
-            !string_list_append(p_rarch->midi_drv_outputs, "Off", attr))
-      ret = false;
-   else
-   {
-      char * input  = NULL;
-      char * output = NULL;
-
-      midi_drv      = midi_driver_find_driver(
-            settings->arrays.midi_driver);
-
-      if (strcmp(midi_drv->ident, settings->arrays.midi_driver))
-      {
-         configuration_set_string(settings,
-               settings->arrays.midi_driver, midi_drv->ident);
-      }
-
-      if (!midi_drv->get_avail_inputs(p_rarch->midi_drv_inputs))
-         ret = false;
-      else if (!midi_drv->get_avail_outputs(p_rarch->midi_drv_outputs))
-         ret = false;
-      else
-      {
-         if (string_is_not_equal(settings->arrays.midi_input, "Off"))
-         {
-            if (string_list_find_elem(p_rarch->midi_drv_inputs, settings->arrays.midi_input))
-               input = settings->arrays.midi_input;
-            else
-            {
-               RARCH_WARN("[MIDI]: Input device \"%s\" unavailable.\n",
-                     settings->arrays.midi_input);
-               configuration_set_string(settings,
-                     settings->arrays.midi_input, "Off");
-            }
-         }
-
-         if (string_is_not_equal(settings->arrays.midi_output, "Off"))
-         {
-            if (string_list_find_elem(p_rarch->midi_drv_outputs, settings->arrays.midi_output))
-               output = settings->arrays.midi_output;
-            else
-            {
-               RARCH_WARN("[MIDI]: Output device \"%s\" unavailable.\n",
-                     settings->arrays.midi_output);
-               configuration_set_string(settings,
-                     settings->arrays.midi_output, "Off");
-            }
-         }
-
-         p_rarch->midi_drv_data = midi_drv->init(input, output);
-         if (!p_rarch->midi_drv_data)
-            ret = false;
-         else
-         {
-            p_rarch->midi_drv_input_enabled  = (input  != NULL);
-            p_rarch->midi_drv_output_enabled = (output != NULL);
-
-            if (!midi_driver_init_io_buffers(p_rarch))
-               ret = false;
-            else
-            {
-               if (input)
-                  RARCH_LOG("[MIDI]: Input device \"%s\".\n", input);
-
-               if (output)
-               {
-                  RARCH_LOG("[MIDI]: Output device \"%s\".\n", output);
-                  midi_driver_set_volume(settings->uints.midi_volume);
-               }
-            }
-         }
-      }
-   }
-
-   if (!ret)
-   {
-      midi_driver_free(p_rarch);
-      RARCH_ERR("[MIDI]: Initialization failed.\n");
-      return false;
-   }
-   return true;
-}
-
-bool midi_driver_set_input(const char *input)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-
-   if (!p_rarch->midi_drv_data)
-   {
-#ifdef DEBUG
-      RARCH_ERR("[MIDI]: midi_driver_set_input called on uninitialized driver.\n");
-#endif
-      return false;
-   }
-
-   if (string_is_equal(input, "Off"))
-      input = NULL;
-
-   if (!midi_drv->set_input(p_rarch->midi_drv_data, input))
-   {
-      if (input)
-         RARCH_ERR("[MIDI]: Failed to change input device to \"%s\".\n", input);
-      else
-         RARCH_ERR("[MIDI]: Failed to disable input.\n");
-      return false;
-   }
-
-   if (input)
-      RARCH_LOG("[MIDI]: Input device changed to \"%s\".\n", input);
-   else
-      RARCH_LOG("[MIDI]: Input disabled.\n");
-
-   p_rarch->midi_drv_input_enabled = input != NULL;
-
-   return true;
-}
-
-bool midi_driver_set_output(const char *output)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-
-   if (!p_rarch->midi_drv_data)
-   {
-#ifdef DEBUG
-      RARCH_ERR("[MIDI]: midi_driver_set_output called on uninitialized driver.\n");
-#endif
-      return false;
-   }
-
-   if (string_is_equal(output, "Off"))
-      output = NULL;
-
-   if (!midi_drv->set_output(p_rarch->midi_drv_data, output))
-   {
-      if (output)
-         RARCH_ERR("[MIDI]: Failed to change output device to \"%s\".\n", output);
-      else
-         RARCH_ERR("[MIDI]: Failed to disable output.\n");
-      return false;
-   }
-
-   if (output)
-   {
-      settings_t *settings             = p_rarch->configuration_settings;
-
-      p_rarch->midi_drv_output_enabled = true;
-      RARCH_LOG("[MIDI]: Output device changed to \"%s\".\n", output);
-
-      if (settings)
-         midi_driver_set_volume(settings->uints.midi_volume);
-      else
-         RARCH_ERR("[MIDI]: Volume change failed (settings unavailable).\n");
-   }
-   else
-   {
-      p_rarch->midi_drv_output_enabled = false;
-      RARCH_LOG("[MIDI]: Output disabled.\n");
-   }
-
-   return true;
-}
-
-static bool midi_driver_input_enabled(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->midi_drv_input_enabled;
-}
-
-static bool midi_driver_output_enabled(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->midi_drv_output_enabled;
-}
-
-static bool midi_driver_read(uint8_t *byte)
-{
-   static int i;
-   struct rarch_state *p_rarch = &rarch_st;
-
-   if (!p_rarch->midi_drv_data || !p_rarch->midi_drv_input_enabled || !byte)
-   {
-#ifdef DEBUG
-      if (!p_rarch->midi_drv_data)
-         RARCH_ERR("[MIDI]: midi_driver_read called on uninitialized driver.\n");
-      else if (!p_rarch->midi_drv_input_enabled)
-         RARCH_ERR("[MIDI]: midi_driver_read called when input is disabled.\n");
-      else
-         RARCH_ERR("[MIDI]: midi_driver_read called with null pointer.\n");
-#endif
-      return false;
-   }
-
-   if (i == p_rarch->midi_drv_input_event.data_size)
-   {
-      p_rarch->midi_drv_input_event.data_size = MIDI_DRIVER_BUF_SIZE;
-      if (!midi_drv->read(p_rarch->midi_drv_data,
-               &p_rarch->midi_drv_input_event))
-      {
-         p_rarch->midi_drv_input_event.data_size = i;
-         return false;
-      }
-
-      i = 0;
-
-#ifdef DEBUG
-      if (p_rarch->midi_drv_input_event.data_size == 1)
-         RARCH_LOG("[MIDI]: In [0x%02X].\n",
-               p_rarch->midi_drv_input_event.data[0]);
-      else if (p_rarch->midi_drv_input_event.data_size == 2)
-         RARCH_LOG("[MIDI]: In [0x%02X, 0x%02X].\n",
-               p_rarch->midi_drv_input_event.data[0],
-               p_rarch->midi_drv_input_event.data[1]);
-      else if (p_rarch->midi_drv_input_event.data_size == 3)
-         RARCH_LOG("[MIDI]: In [0x%02X, 0x%02X, 0x%02X].\n",
-               p_rarch->midi_drv_input_event.data[0],
-               p_rarch->midi_drv_input_event.data[1],
-               p_rarch->midi_drv_input_event.data[2]);
-      else
-         RARCH_LOG("[MIDI]: In [0x%02X, ...], size %u.\n",
-               p_rarch->midi_drv_input_event.data[0],
-               p_rarch->midi_drv_input_event.data_size);
-#endif
-   }
-
-   *byte = p_rarch->midi_drv_input_event.data[i++];
-
-   return true;
-}
-
-static bool midi_driver_write(uint8_t byte, uint32_t delta_time)
-{
-   static int event_size;
-   struct rarch_state *p_rarch = &rarch_st;
-
-   if (!p_rarch->midi_drv_data || !p_rarch->midi_drv_output_enabled)
-   {
-#ifdef DEBUG
-      if (!p_rarch->midi_drv_data)
-         RARCH_ERR("[MIDI]: midi_driver_write called on uninitialized driver.\n");
-      else
-         RARCH_ERR("[MIDI]: midi_driver_write called when output is disabled.\n");
-#endif
-      return false;
-   }
-
-   if (byte >= 0x80)
-   {
-      if (p_rarch->midi_drv_output_event.data_size &&
-            p_rarch->midi_drv_output_event.data[0] == 0xF0)
-      {
-         if (byte == 0xF7)
-            event_size = (int)p_rarch->midi_drv_output_event.data_size + 1;
-         else
-         {
-            if (!midi_drv->write(p_rarch->midi_drv_data,
-                     &p_rarch->midi_drv_output_event))
-               return false;
-
-#ifdef DEBUG
-            switch (p_rarch->midi_drv_output_event.data_size)
-            {
-               case 1:
-                  RARCH_LOG("[MIDI]: Out [0x%02X].\n",
-                        p_rarch->midi_drv_output_event.data[0]);
-                  break;
-               case 2:
-                  RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X].\n",
-                        p_rarch->midi_drv_output_event.data[0],
-                        p_rarch->midi_drv_output_event.data[1]);
-                  break;
-               case 3:
-                  RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X, 0x%02X].\n",
-                        p_rarch->midi_drv_output_event.data[0],
-                        p_rarch->midi_drv_output_event.data[1],
-                        p_rarch->midi_drv_output_event.data[2]);
-                  break;
-               default:
-                  RARCH_LOG("[MIDI]: Out [0x%02X, ...], size %u.\n",
-                        p_rarch->midi_drv_output_event.data[0],
-                        p_rarch->midi_drv_output_event.data_size);
-                  break;
-            }
-#endif
-
-            p_rarch->midi_drv_output_pending          = true;
-            event_size                                = (int)midi_driver_get_event_size(byte);
-            p_rarch->midi_drv_output_event.data_size  = 0;
-            p_rarch->midi_drv_output_event.delta_time = 0;
-         }
-      }
-      else
-      {
-         event_size                                   = (int)midi_driver_get_event_size(byte);
-         p_rarch->midi_drv_output_event.data_size     = 0;
-         p_rarch->midi_drv_output_event.delta_time    = 0;
-      }
-   }
-
-   if (p_rarch->midi_drv_output_event.data_size < MIDI_DRIVER_BUF_SIZE)
-   {
-      p_rarch->midi_drv_output_event.data[p_rarch->midi_drv_output_event.data_size] = byte;
-      ++p_rarch->midi_drv_output_event.data_size;
-      p_rarch->midi_drv_output_event.delta_time += delta_time;
-   }
-   else
-   {
-#ifdef DEBUG
-      RARCH_ERR("[MIDI]: Output event dropped.\n");
-#endif
-      return false;
-   }
-
-   if (p_rarch->midi_drv_output_event.data_size == event_size)
-   {
-      if (!midi_drv->write(p_rarch->midi_drv_data,
-               &p_rarch->midi_drv_output_event))
-         return false;
-
-#ifdef DEBUG
-      switch (p_rarch->midi_drv_output_event.data_size)
-      {
-         case 1:
-            RARCH_LOG("[MIDI]: Out [0x%02X].\n",
-                  p_rarch->midi_drv_output_event.data[0]);
-            break;
-         case 2:
-            RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X].\n",
-                  p_rarch->midi_drv_output_event.data[0],
-                  p_rarch->midi_drv_output_event.data[1]);
-            break;
-         case 3:
-            RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X, 0x%02X].\n",
-                  p_rarch->midi_drv_output_event.data[0],
-                  p_rarch->midi_drv_output_event.data[1],
-                  p_rarch->midi_drv_output_event.data[2]);
-            break;
-         default:
-            RARCH_LOG("[MIDI]: Out [0x%02X, ...], size %u.\n",
-                  p_rarch->midi_drv_output_event.data[0],
-                  p_rarch->midi_drv_output_event.data_size);
-            break;
-      }
-#endif
-
-      p_rarch->midi_drv_output_pending             = true;
-      p_rarch->midi_drv_output_event.data_size     = 0;
-      p_rarch->midi_drv_output_event.delta_time    = 0;
-   }
-
-   return true;
-}
-
-static bool midi_driver_flush(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!p_rarch->midi_drv_data)
-      return false;
-
-   if (p_rarch->midi_drv_output_pending)
-      p_rarch->midi_drv_output_pending =
-         !midi_drv->flush(p_rarch->midi_drv_data);
-
-   return !p_rarch->midi_drv_output_pending;
-}
-
-size_t midi_driver_get_event_size(uint8_t status)
-{
-   static const uint8_t midi_drv_ev_sizes[128]                     =
-   {
-      3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-      3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-      3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-      3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-      3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-      0, 2, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-   };
-
-   if (status < 0x80)
-   {
-#ifdef DEBUG
-      RARCH_ERR("[MIDI]: midi_driver_get_event_size called with invalid status.\n");
-#endif
-      return 0;
-   }
-
-   return midi_drv_ev_sizes[status - 0x80];
-}
-
 /* AUDIO */
 
 static enum resampler_quality audio_driver_get_resampler_quality(
@@ -26259,190 +25699,6 @@ struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
    return NULL;
 }
 
-
-/* LOCATION */
-
-/**
- * config_get_location_driver_options:
- *
- * Get an enumerated list of all location driver names,
- * separated by '|'.
- *
- * Returns: string listing of all location driver names,
- * separated by '|'.
- **/
-const char *config_get_location_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
-}
-
-static void location_driver_find_driver(struct rarch_state *p_rarch,
-      settings_t *settings,
-      const char *prefix,
-      bool verbosity_enabled)
-{
-   int i                        = (int)driver_find_index(
-         "location_driver",
-         settings->arrays.location_driver);
-
-   if (i >= 0)
-      p_rarch->location_driver  = (const location_driver_t*)location_drivers[i];
-   else
-   {
-      if (verbosity_enabled)
-      {
-         unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.location_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; location_drivers[d]; d++)
-            RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
-
-         RARCH_WARN("Going to default to first %s...\n", prefix);
-      }
-
-      p_rarch->location_driver = (const location_driver_t*)location_drivers[0];
-
-      if (!p_rarch->location_driver)
-         retroarch_fail(p_rarch, 1, "find_location_driver()");
-   }
-}
-
-/**
- * driver_location_start:
- *
- * Starts location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static bool driver_location_start(void)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->location_driver
-         && p_rarch->location_data
-         && p_rarch->location_driver->start)
-   {
-      settings_t *settings = p_rarch->configuration_settings;
-      bool location_allow  = settings->bools.location_allow;
-      if (location_allow)
-         return p_rarch->location_driver->start(p_rarch->location_data);
-
-      runloop_msg_queue_push("Location is explicitly disabled.\n",
-            1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-   return false;
-}
-
-/**
- * driver_location_stop:
- *
- * Stops location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static void driver_location_stop(void)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->location_driver
-         && p_rarch->location_driver->stop
-         && p_rarch->location_data)
-      p_rarch->location_driver->stop(p_rarch->location_data);
-}
-
-/**
- * driver_location_set_interval:
- * @interval_msecs     : Interval time in milliseconds.
- * @interval_distance  : Distance at which to update.
- *
- * Sets interval update time for location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- **/
-static void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->location_driver
-         && p_rarch->location_driver->set_interval
-         && p_rarch->location_data)
-      p_rarch->location_driver->set_interval(p_rarch->location_data,
-            interval_msecs, interval_distance);
-}
-
-/**
- * driver_location_get_position:
- * @lat                : Latitude of current position.
- * @lon                : Longitude of current position.
- * @horiz_accuracy     : Horizontal accuracy.
- * @vert_accuracy      : Vertical accuracy.
- *
- * Gets current positioning information from
- * location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: bool (1) if successful, otherwise false (0).
- **/
-static bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->location_driver
-         && p_rarch->location_driver->get_position
-         && p_rarch->location_data)
-      return p_rarch->location_driver->get_position(p_rarch->location_data,
-            lat, lon, horiz_accuracy, vert_accuracy);
-
-   *lat            = 0.0;
-   *lon            = 0.0;
-   *horiz_accuracy = 0.0;
-   *vert_accuracy  = 0.0;
-   return false;
-}
-
-static void init_location(
-      struct rarch_state *p_rarch,
-      rarch_system_info_t *system,
-      settings_t *settings,
-      bool verbosity_enabled)
-{
-   /* Resource leaks will follow if location interface is initialized twice. */
-   if (p_rarch->location_data)
-      return;
-
-   location_driver_find_driver(p_rarch, settings,
-         "location driver", verbosity_enabled);
-
-   p_rarch->location_data = p_rarch->location_driver->init();
-
-   if (!p_rarch->location_data)
-   {
-      RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      p_rarch->location_driver_active = false;
-   }
-
-   if (system->location_cb.initialized)
-      system->location_cb.initialized();
-}
-
-static void uninit_location(
-      struct rarch_state *p_rarch,
-      rarch_system_info_t  *system
-      )
-{
-   if (p_rarch->location_data && p_rarch->location_driver)
-   {
-      if (system->location_cb.deinitialized)
-         system->location_cb.deinitialized();
-
-      if (p_rarch->location_driver->free)
-         p_rarch->location_driver->free(p_rarch->location_data);
-   }
-
-   p_rarch->location_data = NULL;
-}
-
 /* CAMERA */
 
 /**
@@ -26767,7 +26023,9 @@ static void drivers_init(struct rarch_state *p_rarch,
    {
       /* Only initialize location driver if we're ever going to use it. */
       if (p_rarch->location_driver_active)
-         init_location(p_rarch, &runloop_state.system, settings, verbosity_is_enabled());
+         if (!init_location(&runloop_state.system,
+                  settings, verbosity_is_enabled()))
+            p_rarch->location_driver_active = false;
    }
 
    core_info_init_current_core();
@@ -26848,7 +26106,7 @@ static void drivers_init(struct rarch_state *p_rarch,
 
    /* Initialize MIDI  driver */
    if (flags & DRIVER_MIDI_MASK)
-      midi_driver_init(p_rarch, settings);
+      midi_driver_init(settings);
 
 #ifdef HAVE_LAKKA
    cpu_scaling_driver_init();
@@ -26898,7 +26156,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
 #endif
 
    if ((flags & DRIVER_LOCATION_MASK))
-      uninit_location(p_rarch, &runloop_state.system);
+      uninit_location(&runloop_state.system);
 
    if ((flags & DRIVER_CAMERA_MASK))
    {
@@ -26944,7 +26202,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
       p_rarch->audio_driver_context_audio_data = NULL;
 
    if (flags & DRIVER_MIDI_MASK)
-      midi_driver_free(p_rarch);
+      midi_driver_free();
 
 #ifdef HAVE_LAKKA
    cpu_scaling_driver_free();
@@ -27017,7 +26275,7 @@ static void retroarch_deinit_drivers(
    p_rarch->menu_driver_alive                       = false;
 #endif
    p_rarch->location_driver_active                  = false;
-   p_rarch->location_driver                         = NULL;
+   destroy_location();
 
    /* Camera */
    p_rarch->camera_driver_active                    = false;
@@ -29116,7 +28374,7 @@ bool retroarch_main_init(int argc, char *argv[])
          "camera driver", verbosity_enabled);
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
-   location_driver_find_driver(p_rarch, settings,
+   location_driver_find_driver(settings,
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
    if (!(p_rarch->menu_driver_ctx = menu_driver_find_driver(settings,

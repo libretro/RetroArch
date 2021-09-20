@@ -1966,37 +1966,6 @@ extern const shader_backend_t gl_cg_backend;
 
 void bsv_movie_frame_rewind(void);
 
-/* Location */
-
-typedef struct location_driver
-{
-   void *(*init)(void);
-   void (*free)(void *data);
-
-   bool (*start)(void *data);
-   void (*stop)(void *data);
-
-   bool (*get_position)(void *data, double *lat, double *lon,
-         double *horiz_accuracy, double *vert_accuracy);
-   void (*set_interval)(void *data, unsigned interval_msecs,
-         unsigned interval_distance);
-   const char *ident;
-} location_driver_t;
-
-extern location_driver_t location_corelocation;
-extern location_driver_t location_android;
-
-/**
- * config_get_location_driver_options:
- *
- * Get an enumerated list of all location driver names,
- * separated by '|'.
- *
- * Returns: string listing of all location driver names,
- * separated by '|'.
- **/
-const char* config_get_location_driver_options(void);
-
 /* Camera */
 
 typedef struct camera_driver

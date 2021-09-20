@@ -1319,12 +1319,10 @@ static void gfx_widgets_draw_regular_msg(
    unsigned bar_width;
    unsigned bar_margin;
    unsigned text_color;
-   uintptr_t icon = p_dispwidget->gfx_widgets_icons_textures[
-      MENU_WIDGETS_ICON_INFO]; /* TODO: Real icon logic here */
    static float last_alpha = 0.0f;
 
-   msg->unfolding = false;
-   msg->unfolded  = true;
+   msg->unfolding          = false;
+   msg->unfolded           = true;
 
    if (last_alpha != msg->alpha)
    {
@@ -1352,30 +1350,6 @@ static void gfx_widgets_draw_regular_msg(
              p_dispwidget->simple_widget_padding * 2) 
             * msg->unfold, video_height);
    }
-
-#if 0
-   if (p_dispwidget->msg_queue_has_icons)
-   {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      /* (int) cast is to be consistent with the rect drawing 
-       * and prevent alignment issues, don't remove it */
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon_rect,
-            p_dispwidget->msg_queue_spacing,
-            (int)(video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y),
-            0, 1, p_dispwidget->msg_queue_bg);
-
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
-   }
-#endif
 
    /* Background */
    bar_width  = p_dispwidget->simple_widget_padding + msg->width + p_dispwidget->msg_queue_icon_size_x;
@@ -1416,11 +1390,7 @@ static void gfx_widgets_draw_regular_msg(
 
    gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
       msg->msg,
-#if 1
       p_dispwidget->msg_queue_regular_text_start,
-#else
-      p_dispwidget->msg_queue_regular_text_start- ((1.0f-msg->unfold) * msg->width/2),
-#endif
       video_height - msg->offset_y + (p_dispwidget->msg_queue_height - msg->text_height)/2.0f + p_dispwidget->gfx_widget_fonts.msg_queue.line_ascender,
       video_width, video_height,
       text_color,
@@ -1443,7 +1413,6 @@ static void gfx_widgets_draw_regular_msg(
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
 
-#if 1
       gfx_widgets_draw_icon(
             userdata,
             p_disp,
@@ -1457,45 +1426,6 @@ static void gfx_widgets_draw_regular_msg(
             0,
             1,
             msg_queue_info);
-#else
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon,
-            p_dispwidget->msg_queue_spacing, video_height 
-            - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y, 
-            0, 1, msg_queue_info);
-
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_icon_size_x,
-            p_dispwidget->msg_queue_icon_size_y,
-            p_dispwidget->msg_queue_icon_outline,
-            p_dispwidget->msg_queue_spacing,
-            video_height 
-            - msg->offset_y 
-            - p_dispwidget->msg_queue_icon_offset_y, 
-            0, 1,
-            p_dispwidget->pure_white);
-
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            p_dispwidget->msg_queue_internal_icon_size, p_dispwidget->msg_queue_internal_icon_size,
-            icon, p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_internal_icon_offset,
-            video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y + p_dispwidget->msg_queue_internal_icon_offset, 
-            0, 1,
-            p_dispwidget->pure_white);
-#endif
 
       if (dispctx && dispctx->blend_end)
          dispctx->blend_end(userdata);
