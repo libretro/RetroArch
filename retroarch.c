@@ -32773,15 +32773,6 @@ void frontend_driver_free(void)
       p_rarch->current_frontend_ctx = NULL;
 }
 
-environment_get_t frontend_driver_environment_get_ptr(void)
-{
-   struct rarch_state     *p_rarch = &rarch_st;
-   frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-   if (frontend)
-      return frontend->environment_get;
-   return NULL;
-}
-
 bool frontend_driver_has_get_video_driver_func(void)
 {
    struct rarch_state     *p_rarch = &rarch_st;

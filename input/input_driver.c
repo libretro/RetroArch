@@ -346,8 +346,7 @@ bool input_driver_set_rumble_gain(
          driver_state->primary_joypad->set_rumble_gain(i, gain);
       return true;
    }
-   else
-      return false;
+   return false;
 }
 
 /**************************************/
@@ -510,83 +509,82 @@ bool input_driver_toggle_button_combo(
             return true;
          break;
       case INPUT_TOGGLE_HOLD_START:
-      {
-         static rarch_timer_t timer = {0};
-
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
          {
-            /* timer only runs while start is held down */
-            timer.timer_end   = true;
-            timer.timer_begin = false;
-            timer.timeout_end = 0;
-            return false;
+            static rarch_timer_t timer = {0};
+
+            if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
+            {
+               /* timer only runs while start is held down */
+               timer.timer_end   = true;
+               timer.timer_begin = false;
+               timer.timeout_end = 0;
+               return false;
+            }
+
+            /* User started holding down the start button, start the timer */
+            if (!timer.timer_begin)
+            {
+               uint64_t current_usec = cpu_features_get_time_usec();
+               timer.timeout_us      = HOLD_BTN_DELAY_SEC * 1000000;
+               timer.current         = current_usec;
+               timer.timeout_end     = timer.current + timer.timeout_us;
+               timer.timer_begin     = true;
+               timer.timer_end       = false;
+            }
+
+            timer.current            = current_time;
+            timer.timeout_us         = (timer.timeout_end - timer.current);
+
+            if (!timer.timer_end && (timer.timeout_us <= 0))
+            {
+               /* start has been held down long enough,
+                * stop timer and enter menu */
+               timer.timer_end   = true;
+               timer.timer_begin = false;
+               timer.timeout_end = 0;
+               return true;
+            }
+
          }
-
-         /* User started holding down the start button, start the timer */
-         if (!timer.timer_begin)
-         {
-            uint64_t current_usec = cpu_features_get_time_usec();
-            timer.timeout_us      = HOLD_BTN_DELAY_SEC * 1000000;
-            timer.current         = current_usec;
-            timer.timeout_end     = timer.current + timer.timeout_us;
-            timer.timer_begin     = true;
-            timer.timer_end       = false;
-         }
-
-         timer.current            = current_time;
-         timer.timeout_us         = (timer.timeout_end - timer.current);
-
-         if (!timer.timer_end && (timer.timeout_us <= 0))
-         {
-            /* start has been held down long enough,
-             * stop timer and enter menu */
-            timer.timer_end   = true;
-            timer.timer_begin = false;
-            timer.timeout_end = 0;
-            return true;
-         }
-
-         return false;
-      }
+         break;
       case INPUT_TOGGLE_HOLD_SELECT:
-      {
-         static rarch_timer_t timer = {0};
-
-         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
          {
-            /* timer only runs while select is held down */
-            timer.timer_end   = true;
-            timer.timer_begin = false;
-            timer.timeout_end = 0;
-            return false;
+            static rarch_timer_t timer = {0};
+
+            if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+            {
+               /* timer only runs while select is held down */
+               timer.timer_end   = true;
+               timer.timer_begin = false;
+               timer.timeout_end = 0;
+               return false;
+            }
+
+            /* user started holding down the select button, start the timer */
+            if (!timer.timer_begin)
+            {
+               uint64_t current_usec = cpu_features_get_time_usec();
+               timer.timeout_us      = HOLD_BTN_DELAY_SEC * 1000000;
+               timer.current         = current_usec;
+               timer.timeout_end     = timer.current + timer.timeout_us;
+               timer.timer_begin     = true;
+               timer.timer_end       = false;
+            }
+
+            timer.current            = current_time;
+            timer.timeout_us         = (timer.timeout_end - timer.current);
+
+            if (!timer.timer_end && (timer.timeout_us <= 0))
+            {
+               /* select has been held down long enough,
+                * stop timer and enter menu */
+               timer.timer_end   = true;
+               timer.timer_begin = false;
+               timer.timeout_end = 0;
+               return true;
+            }
          }
-
-         /* user started holding down the select button, start the timer */
-         if (!timer.timer_begin)
-         {
-            uint64_t current_usec = cpu_features_get_time_usec();
-            timer.timeout_us      = HOLD_BTN_DELAY_SEC * 1000000;
-            timer.current         = current_usec;
-            timer.timeout_end     = timer.current + timer.timeout_us;
-            timer.timer_begin     = true;
-            timer.timer_end       = false;
-         }
-
-         timer.current            = current_time;
-         timer.timeout_us         = (timer.timeout_end - timer.current);
-
-         if (!timer.timer_end && (timer.timeout_us <= 0))
-         {
-            /* select has been held down long enough,
-             * stop timer and enter menu */
-            timer.timer_end   = true;
-            timer.timer_begin = false;
-            timer.timeout_end = 0;
-            return true;
-         }
-
-         return false;
-      }
+         break;
       default:
       case INPUT_TOGGLE_NONE:
          break;
