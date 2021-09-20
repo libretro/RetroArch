@@ -286,15 +286,6 @@
 static runloop_state_t runloop_state;
 
 /* GLOBAL POINTER GETTERS */
-
-#ifdef HAVE_NETWORKING
-struct netplay_room* netplay_get_host_room(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->netplay_host_room;
-}
-#endif
-
 #ifdef HAVE_REWIND
 bool state_manager_frame_is_reversed(void)
 {
