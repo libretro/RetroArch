@@ -1722,6 +1722,12 @@ enum retro_mod
                                             * Must be called in retro_set_environment().
                                             */
 
+#define RETRO_ENVIRONMENT_GET_THROTTLE_STATE (70 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_throttle_state * --
+                                            * Allows an implementation to get details on the actual rate
+                                            * the frontend is attempting to call retro_run().
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -3665,6 +3671,42 @@ struct retro_fastforwarding_override
     * 'inhibit_toggle' is set to false, or the core
     * is unloaded */
    bool inhibit_toggle;
+};
+
+enum retro_throttle_mode
+{
+   /* During normal operation, rate will be equal to the core's FPS. */
+   RETRO_THROTTLE_NONE              = 0,
+
+   /* While paused or stepping single frames, rate will be 0. */
+   RETRO_THROTTLE_FRAME_STEPPING    = 1,
+
+   /* During fast forwarding.
+    * Rate will be 0 if not specifically limited to a maximum speed. */
+   RETRO_THROTTLE_FAST_FORWARD      = 2,
+
+   /* During slow motion. Rate will be less than the core's internal FPS. */
+   RETRO_THROTTLE_SLOW_MOTION       = 3,
+
+   /* Rewinding recorded save states. Rate can vary depending on the rewind
+    * speed or be 0 if the frontend is not aiming for a specific rate. */
+   RETRO_THROTTLE_REWINDING         = 4,
+
+   /* While vsync is active in the video driver and the target refresh rate is
+    * lower than the core's internal FPS. Rate is the target refresh rate. */
+   RETRO_THROTTLE_VSYNC             = 5,
+};
+
+struct retro_throttle_state
+{
+   /* The current throttling mode. */
+   enum retro_throttle_mode mode;
+
+   /* How many times per second the frontend tries calls retro_run.
+    * Depending on the mode, it can be 0 if there is no known fixed rate.
+    * This won't be accurate if the total processing time of the core and
+    * the frontend is longer than what is available for one frame. */
+   float rate;
 };
 
 /* Callbacks */

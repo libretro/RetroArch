@@ -14084,6 +14084,70 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_THROTTLE_STATE:
+      {
+         struct retro_throttle_state *throttle_state =
+               (struct retro_throttle_state *)data;
+
+         float core_fps   = (float)p_rarch->video_driver_av_info.timing.fps;
+#ifdef HAVE_MENU
+         bool menu_opened = p_rarch->menu_driver_alive;
+         bool core_paused = runloop_state.paused || (settings->bools.menu_pause_libretro && menu_opened);
+#else
+         bool menu_opened = false;
+         bool core_paused = runloop_state.paused;
+#endif
+
+#ifdef HAVE_REWIND
+         if (p_rarch->rewind_st.frame_is_reversed)
+         {
+            throttle_state->mode = RETRO_THROTTLE_REWINDING;
+            throttle_state->rate = 0.0f;
+            break; /* ignore vsync */
+         }
+#endif
+
+         if (core_paused)
+         {
+            throttle_state->mode = RETRO_THROTTLE_FRAME_STEPPING;
+            throttle_state->rate = 0.0f;
+            break; /* ignore vsync */
+         }
+
+         /* Base mode and rate. */
+         throttle_state->mode = RETRO_THROTTLE_NONE;
+         throttle_state->rate = core_fps;
+
+         if (runloop_state.fastmotion)
+         {
+            throttle_state->mode = RETRO_THROTTLE_FAST_FORWARD;
+            throttle_state->rate *= retroarch_get_runloop_fastforward_ratio(
+                  settings, &runloop_state.fastmotion_override.current);
+         }
+         else if (runloop_state.slowmotion && settings->floats.slowmotion_ratio > 1.0f)
+         {
+            throttle_state->mode = RETRO_THROTTLE_SLOW_MOTION;
+            throttle_state->rate /= settings->floats.slowmotion_ratio;
+         }
+
+         /* VSync overrides the mode if the estimated rate is lower than the display rate. */
+         if (menu_opened || /* Menu currently always runs with vsync on. */
+               (settings->bools.video_vsync && !runloop_state.force_nonblock))
+         {
+            float refresh_rate = video_driver_get_refresh_rate();
+            if (refresh_rate == 0.0f)
+               refresh_rate = settings->floats.video_refresh_rate;
+            if (refresh_rate < throttle_state->rate)
+            {
+               /* Keep the mode as fast forward even if vsync limits it. */
+               if (refresh_rate < core_fps)
+                  throttle_state->mode = RETRO_THROTTLE_VSYNC;
+               throttle_state->rate = refresh_rate;
+            }
+         }
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
          /* Just falldown, the function will return true */
          break;
