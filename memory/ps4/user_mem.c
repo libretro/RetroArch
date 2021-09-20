@@ -1,12 +1,7 @@
 ﻿#include <stdlib.h>
-#if defined(HAVE_OOSDK)
-#include <orbis/libkernel.h>
-#include <orbis/LibcInternal.h>
-#else
 #include <kernel.h>
 #include <mspace.h>
-#endif
-#include "../../defines/ps4_defines.h"
+#include <defines/ps4_defines.h>
 #include "user_mem.h"
 
 static OrbisMspace s_mspace = 0;

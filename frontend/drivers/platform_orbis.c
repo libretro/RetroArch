@@ -25,15 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if defined(HAVE_OOSDK)
-#include <unistd.h>
-#include <sys/stat.h>
-#include <signal.h>
-#include <orbis/libkernel.h>
-#include <orbis/SystemService.h>
-#include <orbis/UserService.h>
-#include <orbis/Sysmodule.h>
-#elif defined(HAVE_LIBORBIS)
+#if defined(HAVE_LIBORBIS)
 #include <kernel.h>
 #include <systemservice.h>
 #include <orbis2d.h>
@@ -52,6 +44,7 @@
 #include <libSceUserService.h>
 #include <libSceSystemService.h>
 #include <libSceSysmodule.h>
+#include <libSceLibcInternal.h>
 #include <defines/ps4_defines.h>
 
 // #include "user_mem.h"
@@ -76,14 +69,6 @@
 #include "../../paths.h"
 #include "../../verbosity.h"
 
-#if defined(HAVE_LIBORBIS)
-#define CONTENT_PATH_ARG_INDEX 2
-#define EBOOT_PATH "host0:app"
-#define USER_PATH "host0:app/data/retroarch/"
-#define CORE_PATH EBOOT_PATH
-#define CORE_DIR ""
-#define CORE_INFO_PATH EBOOT_PATH
-#else
 #define CONTENT_PATH_ARG_INDEX 1
 #define EBOOT_PATH "/app0/"
 #define USER_PATH "/data/retroarch/"
@@ -94,27 +79,9 @@
 #else
 #define CORE_PATH "/data/self/retroarch/"
 #endif
-#endif
 #define MODULE_PATH "/data/self/system/common/lib/"
 #define MODULE_PATH_EXT "/app0/sce_module/"
 
-#if defined(HAVE_LIBORBIS)
-typedef struct OrbisGlobalConf
-{
-	Orbis2dConfig *conf;
-	OrbisPadConfig *confPad;
-	OrbisAudioConfig *confAudio;
-	OrbisKeyboardConfig *confKeyboard;
-	ps4LinkConfiguration *confLink;
-	int orbisLinkFlag;
-}OrbisGlobalConf;
-
-OrbisGlobalConf *myConf;
-#endif
-
-#if defined(HAVE_OOSDK)
-FILE _Stdin, _Stderr, _Stdout;
-#endif
 char eboot_path[512];
 char user_path[512];
 SceKernelModule s_piglet_module;
@@ -125,14 +92,8 @@ static enum frontend_fork orbis_fork_mode = FRONTEND_FORK_NONE;
 #define MEM_SIZE (3UL * 1024 * 1024 * 1024) /* 2600 MiB */
 #define MEM_ALIGN (16UL * 1024)
 
-const char *sceKernelGetFsSandboxRandomWord();
-int sceKernelReserveVirtualRange(void **, size_t, int, size_t);
-int sceKernelMapNamedSystemFlexibleMemory(void** addrInOut, size_t len, int prot, int flags, const char* name);
-typedef void* OrbisMspace;
-
-OrbisMspace sceLibcMspaceCreate(char *, void *, size_t, void *);
-void * sceLibcMspaceMalloc(OrbisMspace, size_t size);
-void sceLibcMspaceFree(OrbisMspace, void *);
+/* TODO: INCLUDING <orbislink.h> produces duplication errors */
+int initOrbisLinkAppVanillaGl(void);
 
 
 static OrbisMspace s_mspace = 0;
@@ -149,7 +110,7 @@ static int max_malloc(size_t initial_value, int increment, const char *desc)
         sceLibcMspaceFree(s_mspace,p_block);
     }
     chunk--;
-    printf("Maximum possible %s we can allocate is %i\n", desc, chunk);
+    printf("Maximum possible %s we can allocate is %zu\n", desc, chunk);
 
     return chunk;
 }
@@ -172,39 +133,12 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
    logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-#if defined(HAVE_LIBORBIS)
-   retro_main_log_file_init("host0:app/temp/retroarch-log.txt");
-#else
-   retro_main_log_file_init("/data/retroarch/temp/retroarch-log.txt");
-#endif
 #endif
 #endif
 
    int ret;
 
    sceSystemServiceHideSplashScreen();
-
-#if defined(HAVE_LIBORBIS)
-	uintptr_t intptr=0;
-	sscanf(argv[1],"%p",&intptr);
-   argv[1] = NULL;
-	myConf=(OrbisGlobalConf *)intptr;
-	ret=ps4LinkInitWithConf(myConf->confLink);
-	if(!ret)
-	{
-		ps4LinkFinish();
-		return;
-	}
-   orbisFileInit();
-   orbisPadInitWithConf(myConf->confPad);
-   scePadClose(myConf->confPad->padHandle);
-#else
-   // SceUserServiceInitializeParams param;
-   // memset(&param, 0, sizeof(param));
-   // param.priority = SCE_KERNEL_PRIO_FIFO_DEFAULT;
-   // sceUserServiceInitialize(&param);
-#endif
 
    strlcpy(eboot_path, EBOOT_PATH, sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
@@ -299,9 +233,6 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 static void frontend_orbis_deinit(void *data)
 {
    (void)data;
-#if defined(HAVE_LIBORBIS)
-	ps4LinkFinish();
-#endif
 }
 
 static void frontend_orbis_shutdown(bool unused)
@@ -464,13 +395,6 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
-#if defined(HAVE_LIBORBIS)
-   menu_entries_append_enum(list,
-         "host0:app",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-#else
    menu_entries_append_enum(list,
          "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
@@ -488,7 +412,6 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
-#endif
 #endif
    return 0;
 }

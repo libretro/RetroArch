@@ -26,12 +26,6 @@
 #include <ctype.h>
 #include <errno.h>
 
-#ifdef ORBIS
-#include <sys/fcntl.h>
-#if defined(HAVE_LIBORBIS)
-#include <orbisFile.h>
-#endif
-#endif
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>

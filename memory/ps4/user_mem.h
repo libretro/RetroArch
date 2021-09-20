@@ -4,20 +4,6 @@
 #define MEM_SIZE (0xA0000000) /* 2600 MiB */
 #define MEM_ALIGN (16UL * 1024)
 
-#if defined(HAVE_OOSDK)
-typedef void* OrbisMspace;
-
-typedef struct OrbisMallocManagedSize {
-  unsigned short sz;
-  unsigned short ver;
-  unsigned int reserv;
-  size_t maxSysSz;
-  size_t curSysSz;
-  size_t maxUseSz;
-  size_t curUseSz;
-} OrbisMallocManagedSize;
-#endif
-
 #if defined(__cplusplus)
 extern "C" {
 #endif

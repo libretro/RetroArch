@@ -34,11 +34,14 @@ typedef struct ps4_input
 {
    const input_device_driver_t *joypad;
 } ps4_input_t;
-static int16_t ps4_input_state(void *data,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id)
+
+int16_t ps4_input_state(void *data,
+         const input_device_driver_t *joypad_data,
+         const input_device_driver_t *sec_joypad_data,
+         rarch_joypad_info_t *joypad_info,
+         const retro_keybind_set *retro_keybinds,
+         bool keyboard_mapping_blocked,
+         unsigned port, unsigned device, unsigned index, unsigned id)
 {
    ps4_input_t *ps4           = (ps4_input_t*)data;
 
@@ -52,10 +55,10 @@ static int16_t ps4_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                /* Auto-binds are per joypad, not per user. */
-               const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
-               const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+               const uint64_t joykey  = (retro_keybinds[port][i].joykey != NO_BTN)
+                  ? retro_keybinds[port][i].joykey : joypad_info->auto_binds[i].joykey;
+               const uint32_t joyaxis = (retro_keybinds[port][i].joyaxis != AXIS_NONE)
+                  ? retro_keybinds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
 
                if ((uint16_t)joykey != NO_BTN && ps4->joypad->button(
                         joypad_info->joy_idx, (uint16_t)joykey))
@@ -75,10 +78,10 @@ static int16_t ps4_input_state(void *data,
          else
          {
             /* Auto-binds are per joypad, not per user. */
-            const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
-            const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
+            const uint64_t joykey  = (retro_keybinds[port][id].joykey != NO_BTN)
+               ? retro_keybinds[port][id].joykey : joypad_info->auto_binds[id].joykey;
+            const uint32_t joyaxis = (retro_keybinds[port][id].joyaxis != AXIS_NONE)
+               ? retro_keybinds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
             if ((uint16_t)joykey != NO_BTN && ps4->joypad->button(
                      joypad_info->joy_idx, (uint16_t)joykey))
@@ -88,8 +91,8 @@ static int16_t ps4_input_state(void *data,
          }
          break;
       case RETRO_DEVICE_ANALOG:
-      //   if (binds[port])
-        //    return input_joypad_analog(ps4->joypad, joypad_info, port, idx, id, binds[port]);
+      //   if (retro_keybinds[port])
+        //    return input_joypad_analog(ps4->joypad, joypad_info, port, idx, id, retro_keybinds[port]);
          break;
    }
 

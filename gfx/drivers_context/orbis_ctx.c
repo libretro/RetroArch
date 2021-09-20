@@ -19,6 +19,7 @@
 #include <compat/strl.h>
 #include <piglet.h>
 #include <orbis/libkernel.h>
+#include <EGL/egl.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

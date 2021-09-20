@@ -29,7 +29,7 @@
 
 #define LERP(p, f, t) ((((p * 10) * (t * 10)) / (f * 10)) / 10)
 
-#if defined(HAVE_LIBORBIS) || defined(ORBIS)
+#if defined(ORBIS)
 #include <orbis/orbisPad.h>
 
 OrbisPadConfig *confPad;

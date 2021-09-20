@@ -6,7 +6,7 @@
 #include <memory>
 #include <algorithm>
 #include <sstream>
-#include "../../defines/ps4_defines.h"
+#include <defines/ps4_defines.h>
 #include "user_mem.h"
 
 void *user_new(std::size_t size) throw(std::bad_alloc)

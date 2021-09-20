@@ -16,9 +16,6 @@ PC_DEVELOPMENT_UDP_PORT	   = 18194
 DEBUG=1
 AUTH_INFO = 000000000000000000000000001C004000FF000000000080000000000000000000000000000000000000008000400040000000000000008000000000000000080040FFFF000000F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
-OBJ :=
-DEFINES :=
-
 # OBJ += memory/ps4/user_mem.o \
 # 	memory/ps4/user_new.o \
 # 	input/drivers/ps4_input.o \
@@ -102,7 +99,6 @@ else
 
 	include Makefile.common
 	CFLAGS += $(DEF_FLAGS)
-	BLACKLIST := libretro-common/file/nbio/nbio_orbis.o
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 endif
 
@@ -133,10 +129,13 @@ LIBDIRS += -L. -Lcores -Lmemory/ps4 -Lbuild
 INCDIRS += -I. -Idefines -Imemory/ps4 -Ideps -Ideps/7zip -Ideps/libz -Ilibretro-common/include -Ideps/stb \
 					 -Ilibretro-common/include/compat/zlib -Ideps/rcheevos/include -I$(ORBISDEV)/usr/include -I$(ORBISDEV)/usr/include/c++/v1 -I$(ORBISDEV)/usr/include/orbis
 
-ARCHFLAGS += -DORBIS -D__ORBIS__
+ARCHFLAGS += -DORBIS -D__PS4__ -D_BSD_SOURCE
 DEFINES += -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_FILTERS_BUILTIN \
 					 -DHAVE_XMB -DHAVE_RGUI -DHAVE_OZONE \
-					 -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_ASSETS -D__PS4__ -D_BSD_SOURCE
+					 -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_ASSETS \
+
+# Compiling with -Werror and disabling some warnings
+DEFINES += -Werror -Wno-macro-redefined -Wno-non-literal-null-conversion -Wno-void-pointer-to-int-cast -Wno-format
 
 ifeq ($(HAVE_KEYBOARD), 1)
   DEFINES += -DHAVE_KEYBOARD
@@ -166,8 +165,12 @@ PS4_LIBS += -lkernel_stub  -lSceLibcInternal_stub  -lSceSysmodule_stub -lSceSyst
 				-lScePigletv2VSH_stub -lSceVideoOut_stub -lSceGnmDriver_stub -lorbisGl2 -lorbis -lScePad_stub -lSceAudioOut_stub \
 				-lSceIme_stub -lSceNetCtl_stub 
 
-# LIBS	:= $(WHOLE_START) -lretro_ps4 $(WHOLE_END) $(PS4_LIBS)
-LIBS	:= $(WHOLE_START) $(WHOLE_END) $(PS4_LIBS)
+ifeq ($(HAVE_STATIC_DUMMY),1)
+  LIBS	:= $(PS4_LIBS)
+else
+  LIBS	:= $(WHOLE_START) -lretro_ps4 $(WHOLE_END) $(PS4_LIBS)
+endif
+
 
 CFLAGS   := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj  -std=c11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
 CXXFLAGS := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -Wall -pedantic -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj -std=c++11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)

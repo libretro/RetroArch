@@ -77,7 +77,6 @@
 
 #if defined(ORBIS)
 #include <orbis/libkernel.h>
-// #include <orbis/Rtc.h>
 #endif
 
 #if defined(PS2)
