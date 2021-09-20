@@ -612,7 +612,7 @@ bool menu_input_key_bind_set_mode(
    struct rarch_state *p_rarch         = &rarch_st;
    input_driver_state_t 
       *input_driver_st                 = &p_rarch->input_driver_state;
-   menu_handle_t       *menu           = p_rarch->menu_driver_data;
+   menu_handle_t       *menu           = menu_driver_get_ptr();
    const input_device_driver_t 
       *joypad                          = input_driver_st->primary_joypad;
 #ifdef HAVE_MFI
@@ -1256,7 +1256,7 @@ int generic_menu_entry_action(
    struct rarch_state *p_rarch    = &rarch_st;
    const menu_ctx_driver_t
       *menu_driver_ctx            = p_rarch->menu_driver_ctx;
-   menu_handle_t *menu            = p_rarch->menu_driver_data;
+   menu_handle_t *menu            = menu_driver_get_ptr();
    settings_t   *settings         = p_rarch->configuration_settings;
    void *menu_userdata            = p_rarch->menu_userdata;
    bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;
@@ -2381,196 +2381,6 @@ bool menu_driver_list_get_size(menu_ctx_list_t *list)
    list->size = p_rarch->menu_driver_ctx->list_get_size(
          p_rarch->menu_userdata, list->type);
    return true;
-}
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-void menu_driver_set_last_shader_preset_path(const char *path)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-
-   if (!menu)
-      return;
-
-   menu_driver_set_last_shader_path_int(
-         path,
-         &menu->last_shader_selection.preset_type,
-         menu->last_shader_selection.preset_dir,
-         sizeof(menu->last_shader_selection.preset_dir),
-         menu->last_shader_selection.preset_file_name,
-         sizeof(menu->last_shader_selection.preset_file_name));
-}
-
-void menu_driver_set_last_shader_pass_path(const char *path)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-
-   if (!menu)
-      return;
-
-   menu_driver_set_last_shader_path_int(
-         path,
-         &menu->last_shader_selection.pass_type,
-         menu->last_shader_selection.pass_dir,
-         sizeof(menu->last_shader_selection.pass_dir),
-         menu->last_shader_selection.pass_file_name,
-         sizeof(menu->last_shader_selection.pass_file_name));
-}
-
-enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-
-   if (!menu)
-      return RARCH_SHADER_NONE;
-
-   return menu->last_shader_selection.preset_type;
-}
-
-enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-
-   if (!menu)
-      return RARCH_SHADER_NONE;
-
-   return menu->last_shader_selection.pass_type;
-}
-
-void menu_driver_get_last_shader_preset_path(
-      const char **directory, const char **file_name)
-{
-   struct rarch_state *p_rarch  = &rarch_st;
-   settings_t *settings         = p_rarch->configuration_settings;
-   menu_handle_t *menu          = p_rarch->menu_driver_data;
-   enum rarch_shader_type type  = RARCH_SHADER_NONE;
-   const char *shader_dir       = NULL;
-   const char *shader_file_name = NULL;
-
-   if (menu)
-   {
-      type                      = menu->last_shader_selection.preset_type;
-      shader_dir                = menu->last_shader_selection.preset_dir;
-      shader_file_name          = menu->last_shader_selection.preset_file_name;
-   }
-
-   menu_driver_get_last_shader_path_int(settings, type,
-         shader_dir, shader_file_name,
-         directory, file_name);
-}
-
-void menu_driver_get_last_shader_pass_path(
-      const char **directory, const char **file_name)
-{
-   struct rarch_state *p_rarch  = &rarch_st;
-   menu_handle_t *menu          = p_rarch->menu_driver_data;
-   settings_t *settings         = p_rarch->configuration_settings;
-   enum rarch_shader_type type  = RARCH_SHADER_NONE;
-   const char *shader_dir       = NULL;
-   const char *shader_file_name = NULL;
-
-   if (menu)
-   {
-      type                      = menu->last_shader_selection.pass_type;
-      shader_dir                = menu->last_shader_selection.pass_dir;
-      shader_file_name          = menu->last_shader_selection.pass_file_name;
-   }
-
-   menu_driver_get_last_shader_path_int(settings, type,
-         shader_dir, shader_file_name,
-         directory, file_name);
-}
-#endif
-
-const char *menu_driver_get_last_start_directory(void)
-{
-   struct rarch_state *p_rarch   = &rarch_st;
-   menu_handle_t *menu           = p_rarch->menu_driver_data;
-   settings_t *settings          = p_rarch->configuration_settings;
-   bool use_last                 = settings->bools.use_last_start_directory;
-   const char *default_directory = settings->paths.directory_menu_content;
-
-   /* Return default directory if there is no
-    * last directory or it's invalid */
-   if (!menu ||
-       !use_last ||
-       string_is_empty(menu->last_start_content.directory) ||
-       !path_is_directory(menu->last_start_content.directory))
-      return default_directory;
-
-   return menu->last_start_content.directory;
-}
-
-const char *menu_driver_get_last_start_file_name(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-   settings_t *settings        = p_rarch->configuration_settings;
-   bool use_last               = settings->bools.use_last_start_directory;
-
-   /* Return NULL if there is no last 'file name' */
-   if (!menu ||
-       !use_last ||
-       string_is_empty(menu->last_start_content.file_name))
-      return NULL;
-
-   return menu->last_start_content.file_name;
-}
-
-void menu_driver_set_last_start_content(const char *start_content_path)
-{
-   char archive_path[PATH_MAX_LENGTH];
-   struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t *menu         = p_rarch->menu_driver_data;
-   settings_t *settings        = p_rarch->configuration_settings;
-   bool use_last               = settings->bools.use_last_start_directory;
-   const char *archive_delim   = NULL;
-   const char *file_name       = NULL;
-
-   if (!menu)
-      return;
-
-   /* Reset existing cache */
-   menu->last_start_content.directory[0] = '\0';
-   menu->last_start_content.file_name[0] = '\0';
-
-   /* If 'use_last_start_directory' is disabled or
-    * path is empty, do nothing */
-   if (!use_last ||
-       string_is_empty(start_content_path))
-      return;
-
-   /* Cache directory */
-   fill_pathname_parent_dir(menu->last_start_content.directory,
-         start_content_path, sizeof(menu->last_start_content.directory));
-
-   /* Cache file name */
-   archive_delim      = path_get_archive_delim(start_content_path);
-   if (archive_delim)
-   {
-      /* If path references a file inside an
-       * archive, must extract the string segment
-       * before the archive delimiter (i.e. path of
-       * 'parent' archive file) */
-      size_t len;
-
-      archive_path[0] = '\0';
-      len             = (size_t)(1 + archive_delim - start_content_path);
-      len             = (len < PATH_MAX_LENGTH) ? len : PATH_MAX_LENGTH;
-
-      strlcpy(archive_path, start_content_path, len * sizeof(char));
-
-      file_name       = path_basename(archive_path);
-   }
-   else
-      file_name       = path_basename_nocompression(start_content_path);
-
-   if (!string_is_empty(file_name))
-      strlcpy(menu->last_start_content.file_name, file_name,
-            sizeof(menu->last_start_content.file_name));
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
