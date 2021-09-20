@@ -47,8 +47,6 @@
 #include <libSceLibcInternal.h>
 #include <defines/ps4_defines.h>
 
-// #include "user_mem.h"
-
 #include <pthread.h>
 
 #include <string/stdstring.h>
@@ -100,21 +98,6 @@ static OrbisMspace s_mspace = 0;
 static void *address = 0;
 static size_t s_mem_size = MEM_SIZE;
 
-static int max_malloc(size_t initial_value, int increment, const char *desc)
-{
-    char *p_block;
-    size_t chunk = initial_value;
-
-    printf("Check maximum contigous block we can allocate (%s accurate)\n", desc);
-    while ((p_block = sceLibcMspaceMalloc(s_mspace, ++chunk * increment)) != NULL) {
-        sceLibcMspaceFree(s_mspace,p_block);
-    }
-    chunk--;
-    printf("Maximum possible %s we can allocate is %zu\n", desc, chunk);
-
-    return chunk;
-}
-
 #if defined(HAVE_TAUON_SDK)
 void catchReturnFromMain(int exit_code)
 {
@@ -137,8 +120,6 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 #endif
 
    int ret;
-
-   sceSystemServiceHideSplashScreen();
 
    strlcpy(eboot_path, EBOOT_PATH, sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
@@ -241,25 +222,13 @@ static void frontend_orbis_shutdown(bool unused)
    return;
 }
 
-static void prepareMemoryAllocation()
-{
-   int res = sceKernelReserveVirtualRange(&address, MEM_SIZE, 0, MEM_ALIGN);
-	printf("sceKernelReserveVirtualRange %x %x\n", res, address);
-	res = sceKernelMapNamedSystemFlexibleMemory(&address, MEM_SIZE, 0x2, 0x0010, "TEST");
-	printf("sceKernelMapNamedSystemFlexibleMemory %x %x\n", res, address);
-	s_mspace = sceLibcMspaceCreate("User Mspace", address, MEM_SIZE, 0);
-	printf("sceLibcMspaceCreate %p \n", s_mspace);
-
-   printf("TOTAL MEMORY %d %s\n", max_malloc(0, 1024 * 1024, "MB"), "MB");
-}
-
 static bool initApp()
 {
 	int ret=initOrbisLinkAppVanillaGl();
 	if(ret==0)
 	{
 		debugNetInit(PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT,3);
-		debugNetPrintf(DEBUGNET_INFO,"[TEMPLATE3] Ready to have a lot of fun\n");
+		debugNetPrintf(DEBUGNET_INFO,"Ready to have a lot of fun\n");
 
 		sceSystemServiceHideSplashScreen();
 		return true;
@@ -271,8 +240,6 @@ static void frontend_orbis_init(void *data)
 {
    printf("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
    int ret=initApp();
-   printf("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
-   prepareMemoryAllocation();
    printf("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
 
    logger_init();
@@ -288,7 +255,6 @@ static void frontend_orbis_init(void *data)
 
     }
    
-
    verbosity_enable();
 
    printf("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);

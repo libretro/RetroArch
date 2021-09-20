@@ -1,8 +1,12 @@
-﻿#include <stdlib.h>
-#include <kernel.h>
-#include <mspace.h>
+﻿#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
 #include <defines/ps4_defines.h>
 #include "user_mem.h"
+
+#include <orbis/libSceLibcInternal.h>
+#include <orbis/libkernel.h>
 
 static OrbisMspace s_mspace = 0;
 static OrbisMallocManagedSize s_mmsize;

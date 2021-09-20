@@ -22,7 +22,6 @@
 #define	ORBISPAD_TOUCH_PAD	  0x00100000
 #define	ORBISPAD_INTERCEPTED	0x80000000
 
-#if defined(HAVE_OOSDK) || defined(HAVE_LIBORBIS) || defined(ORBIS)
 #define SceUID uint32_t
 #define SceKernelStat OrbisKernelStat
 #define SCE_KERNEL_PRIO_FIFO_DEFAULT 700
@@ -43,6 +42,5 @@
 #define SCE_PAD_PORT_TYPE_REMOTE_CONTROL 16
 #define SCE_KERNEL_PROT_CPU_RW 0x02
 #define SCE_KERNEL_MAP_FIXED 0x10
-#endif
 
 #endif
