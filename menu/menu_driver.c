@@ -38,7 +38,7 @@
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
-#include "frontend/frontend_driver.h"
+#include "../frontend/frontend_driver.h"
 
 #ifdef HAVE_LANGEXTRA
 /* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA
