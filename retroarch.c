@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2011-2021 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2014-2017 - Jean-Andr� Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
@@ -237,6 +237,7 @@
 #include "misc/cpufreq/cpufreq.h"
 #include "led/led_driver.h"
 #include "midi_driver.h"
+#include "location_driver.h"
 #include "core.h"
 #include "configuration.h"
 #include "list_special.h"
@@ -25704,190 +25705,6 @@ struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
    return NULL;
 }
 
-
-/* LOCATION */
-
-/**
- * config_get_location_driver_options:
- *
- * Get an enumerated list of all location driver names,
- * separated by '|'.
- *
- * Returns: string listing of all location driver names,
- * separated by '|'.
- **/
-const char *config_get_location_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
-}
-
-static void location_driver_find_driver(struct rarch_state *p_rarch,
-      settings_t *settings,
-      const char *prefix,
-      bool verbosity_enabled)
-{
-   int i                        = (int)driver_find_index(
-         "location_driver",
-         settings->arrays.location_driver);
-
-   if (i >= 0)
-      p_rarch->location_driver  = (const location_driver_t*)location_drivers[i];
-   else
-   {
-      if (verbosity_enabled)
-      {
-         unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.location_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-         for (d = 0; location_drivers[d]; d++)
-            RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
-
-         RARCH_WARN("Going to default to first %s...\n", prefix);
-      }
-
-      p_rarch->location_driver = (const location_driver_t*)location_drivers[0];
-
-      if (!p_rarch->location_driver)
-         retroarch_fail(p_rarch, 1, "find_location_driver()");
-   }
-}
-
-/**
- * driver_location_start:
- *
- * Starts location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static bool driver_location_start(void)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->location_driver
-         && p_rarch->location_data
-         && p_rarch->location_driver->start)
-   {
-      settings_t *settings = p_rarch->configuration_settings;
-      bool location_allow  = settings->bools.location_allow;
-      if (location_allow)
-         return p_rarch->location_driver->start(p_rarch->location_data);
-
-      runloop_msg_queue_push("Location is explicitly disabled.\n",
-            1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-   return false;
-}
-
-/**
- * driver_location_stop:
- *
- * Stops location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static void driver_location_stop(void)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->location_driver
-         && p_rarch->location_driver->stop
-         && p_rarch->location_data)
-      p_rarch->location_driver->stop(p_rarch->location_data);
-}
-
-/**
- * driver_location_set_interval:
- * @interval_msecs     : Interval time in milliseconds.
- * @interval_distance  : Distance at which to update.
- *
- * Sets interval update time for location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- **/
-static void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->location_driver
-         && p_rarch->location_driver->set_interval
-         && p_rarch->location_data)
-      p_rarch->location_driver->set_interval(p_rarch->location_data,
-            interval_msecs, interval_distance);
-}
-
-/**
- * driver_location_get_position:
- * @lat                : Latitude of current position.
- * @lon                : Longitude of current position.
- * @horiz_accuracy     : Horizontal accuracy.
- * @vert_accuracy      : Vertical accuracy.
- *
- * Gets current positioning information from
- * location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: bool (1) if successful, otherwise false (0).
- **/
-static bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy)
-{
-   struct rarch_state  *p_rarch = &rarch_st;
-   if (     p_rarch->location_driver
-         && p_rarch->location_driver->get_position
-         && p_rarch->location_data)
-      return p_rarch->location_driver->get_position(p_rarch->location_data,
-            lat, lon, horiz_accuracy, vert_accuracy);
-
-   *lat            = 0.0;
-   *lon            = 0.0;
-   *horiz_accuracy = 0.0;
-   *vert_accuracy  = 0.0;
-   return false;
-}
-
-static void init_location(
-      struct rarch_state *p_rarch,
-      rarch_system_info_t *system,
-      settings_t *settings,
-      bool verbosity_enabled)
-{
-   /* Resource leaks will follow if location interface is initialized twice. */
-   if (p_rarch->location_data)
-      return;
-
-   location_driver_find_driver(p_rarch, settings,
-         "location driver", verbosity_enabled);
-
-   p_rarch->location_data = p_rarch->location_driver->init();
-
-   if (!p_rarch->location_data)
-   {
-      RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      p_rarch->location_driver_active = false;
-   }
-
-   if (system->location_cb.initialized)
-      system->location_cb.initialized();
-}
-
-static void uninit_location(
-      struct rarch_state *p_rarch,
-      rarch_system_info_t  *system
-      )
-{
-   if (p_rarch->location_data && p_rarch->location_driver)
-   {
-      if (system->location_cb.deinitialized)
-         system->location_cb.deinitialized();
-
-      if (p_rarch->location_driver->free)
-         p_rarch->location_driver->free(p_rarch->location_data);
-   }
-
-   p_rarch->location_data = NULL;
-}
-
 /* CAMERA */
 
 /**
@@ -26212,7 +26029,9 @@ static void drivers_init(struct rarch_state *p_rarch,
    {
       /* Only initialize location driver if we're ever going to use it. */
       if (p_rarch->location_driver_active)
-         init_location(p_rarch, &runloop_state.system, settings, verbosity_is_enabled());
+         if (!init_location(&runloop_state.system,
+                  settings, verbosity_is_enabled()))
+            p_rarch->location_driver_active = false;
    }
 
    core_info_init_current_core();
@@ -26343,7 +26162,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
 #endif
 
    if ((flags & DRIVER_LOCATION_MASK))
-      uninit_location(p_rarch, &runloop_state.system);
+      uninit_location(&runloop_state.system);
 
    if ((flags & DRIVER_CAMERA_MASK))
    {
@@ -26462,7 +26281,7 @@ static void retroarch_deinit_drivers(
    p_rarch->menu_driver_alive                       = false;
 #endif
    p_rarch->location_driver_active                  = false;
-   p_rarch->location_driver                         = NULL;
+   destroy_location();
 
    /* Camera */
    p_rarch->camera_driver_active                    = false;
@@ -28561,7 +28380,7 @@ bool retroarch_main_init(int argc, char *argv[])
          "camera driver", verbosity_enabled);
    bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
-   location_driver_find_driver(p_rarch, settings,
+   location_driver_find_driver(settings,
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
    if (!(p_rarch->menu_driver_ctx = menu_driver_find_driver(settings,

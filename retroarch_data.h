@@ -812,24 +812,6 @@ static const wifi_driver_t *wifi_drivers[] = {
    NULL,
 };
 
-static location_driver_t location_null = {
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   "null",
-};
-
-static const location_driver_t *location_drivers[] = {
-#ifdef ANDROID
-   &location_android,
-#endif
-   &location_null,
-   NULL,
-};
-
 static ui_companion_driver_t ui_companion_null = {
    NULL, /* init */
    NULL, /* deinit */
@@ -1242,8 +1224,6 @@ struct rarch_state
    void *ui_companion_qt_data;
 #endif
 
-   const location_driver_t *location_driver;
-   void *location_data;
 
    const bluetooth_driver_t *bluetooth_driver;
    void *bluetooth_data;

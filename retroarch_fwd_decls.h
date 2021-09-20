@@ -133,12 +133,6 @@ static bool core_unload_game(struct rarch_state *p_rarch);
 
 static bool rarch_environment_cb(unsigned cmd, void *data);
 
-static bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy);
-static void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance);
-static void driver_location_stop(void);
-static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 
