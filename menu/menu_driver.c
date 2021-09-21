@@ -4901,3 +4901,30 @@ bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
 
    return true;
 }
+
+const char *menu_input_dialog_get_buffer(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   if (!(*menu_st->input_dialog_keyboard_buffer))
+      return "";
+   return *menu_st->input_dialog_keyboard_buffer;
+}
+
+void menu_input_key_event(bool down, unsigned keycode,
+      uint32_t character, uint16_t mod)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   enum retro_key          key = (enum retro_key)keycode;
+
+   if (key == RETROK_UNKNOWN)
+   {
+      unsigned i;
+
+      for (i = 0; i < RETROK_LAST; i++)
+         menu_st->kb_key_state[i] =
+            (menu_st->kb_key_state[(enum retro_key)i] & 1) << 1;
+   }
+   else
+      menu_st->kb_key_state[key]  =
+         ((menu_st->kb_key_state[key] & 1) << 1) | down;
+}

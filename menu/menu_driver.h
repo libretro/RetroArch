@@ -437,6 +437,7 @@ struct menu_state
    menu_handle_t *driver_data;
    void *userdata;
    const menu_ctx_driver_t *driver_ctx;
+   const char **input_dialog_keyboard_buffer;
 
    struct
    {
@@ -455,6 +456,10 @@ struct menu_state
       unsigned acceleration;
    } scroll;
 
+   /* int16_t alignment */
+   menu_input_pointer_hw_state_t input_pointer_hw_state;
+
+   unsigned char kb_key_state[RETROK_LAST];
    /* Storage container for current menu datetime
     * representation string */
    char datetime_cache[255];
@@ -834,6 +839,13 @@ extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_stripes;
 
 void menu_input_search_cb(void *userdata, const char *str);
+/* This callback gets triggered by the keyboard whenever
+ * we press or release a keyboard key. When a keyboard
+ * key is being pressed down, 'down' will be true. If it
+ * is being released, 'down' will be false.
+ */
+void menu_input_key_event(bool down, unsigned keycode,
+      uint32_t character, uint16_t mod);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

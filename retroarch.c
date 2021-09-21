@@ -1216,7 +1216,8 @@ static int generic_menu_iterate(
          ret = menu_input_post_iterate(p_rarch, p_disp, menu_st, action,
                current_time);
       menu_input_set_pointer_visibility(
-            &p_rarch->menu_input_pointer_hw_state, menu_input, current_time);
+            &menu_st->input_pointer_hw_state,
+             menu_input, current_time);
    }
 
    if (ret)
@@ -1670,7 +1671,7 @@ static bool menu_driver_init_internal(
             &p_rarch->dialog_st,
             menu_st->driver_ctx,
             &menu_st->input_state,
-            &p_rarch->menu_input_pointer_hw_state,
+            &menu_st->input_pointer_hw_state,
             settings))
       return false;
 
@@ -1780,7 +1781,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                menu_st->scroll.index_list[i] = 0;
 
             memset(&menu_st->input_state, 0, sizeof(menu_input_t));
-            memset(&p_rarch->menu_input_pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
+            memset(&menu_st->input_pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 
             if (     menu_st->driver_ctx
                   && menu_st->driver_ctx->free)
@@ -5023,14 +5024,6 @@ void menu_input_dialog_end(void)
    p_rarch->input_driver_flushing_input                  = 2;
 }
 
-const char *menu_input_dialog_get_buffer(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!(*p_rarch->menu_input_dialog_keyboard_buffer))
-      return "";
-   return *p_rarch->menu_input_dialog_keyboard_buffer;
-}
-
 unsigned menu_input_dialog_get_kb_idx(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -5075,7 +5068,7 @@ bool menu_input_dialog_start_search(void)
             (char*)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
 #endif
 
-   p_rarch->menu_input_dialog_keyboard_buffer   =
+   menu_st->input_dialog_keyboard_buffer   =
       input_keyboard_start_line(menu,
             &p_rarch->keyboard_line,
             menu_input_search_cb);
@@ -5132,7 +5125,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
             "Keyboard input:", 10);
 #endif
 
-   p_rarch->menu_input_dialog_keyboard_buffer =
+   menu_st->input_dialog_keyboard_buffer =
       input_keyboard_start_line(menu,
             &p_rarch->keyboard_line,
             line->cb);
@@ -16552,7 +16545,7 @@ static unsigned menu_event(
    const input_device_driver_t *sec_joypad         = NULL;
 #endif
    gfx_display_t *p_disp                           = &p_rarch->dispgfx;
-   menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_handle_t             *menu                 = menu_st->driver_data;
    bool keyboard_mapping_blocked                   = p_rarch->keyboard_mapping_blocked;
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
@@ -16922,8 +16915,8 @@ static int menu_input_pointer_post_iterate(
    bool osk_active                                 = menu_input_dialog_get_display_kb();
    bool messagebox_active                          = false;
    int ret                                         = 0;
-   menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
    struct menu_state                     *menu_st  = menu_state_get_ptr();
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
    menu_handle_t *menu                             = menu_st->driver_data;
 
@@ -26729,30 +26722,6 @@ static bool retroarch_is_on_main_thread(shtread_tls_t *tls)
 #endif
 
 #ifdef HAVE_MENU
-/* This callback gets triggered by the keyboard whenever
- * we press or release a keyboard key. When a keyboard
- * key is being pressed down, 'down' will be true. If it
- * is being released, 'down' will be false.
- */
-static void menu_input_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   enum retro_key          key = (enum retro_key)keycode;
-
-   if (key == RETROK_UNKNOWN)
-   {
-      unsigned i;
-
-      for (i = 0; i < RETROK_LAST; i++)
-         p_rarch->menu_keyboard_key_state[i] =
-            (p_rarch->menu_keyboard_key_state[(enum retro_key)i] & 1) << 1;
-   }
-   else
-      p_rarch->menu_keyboard_key_state[key]  =
-         ((p_rarch->menu_keyboard_key_state[key] & 1) << 1) | down;
-}
-
 /* Gets called when we want to toggle the menu.
  * If the menu is already running, it will be turned off.
  * If the menu is off, then the menu will be started.
@@ -28928,19 +28897,19 @@ static enum runloop_state runloop_check_state(
          !string_is_equal(menu_driver, "null");
       bool core_type_is_dummy = p_rarch->current_core_type == CORE_TYPE_DUMMY;
 
-      if (p_rarch->menu_keyboard_key_state[RETROK_F1] == 1)
+      if (menu_st->kb_key_state[RETROK_F1] == 1)
       {
          if (p_rarch->menu_driver_alive)
          {
             if (rarch_is_initialized && !core_type_is_dummy)
             {
                retroarch_menu_running_finished(false);
-               p_rarch->menu_keyboard_key_state[RETROK_F1] =
-                  ((p_rarch->menu_keyboard_key_state[RETROK_F1] & 1) << 1) | false;
+               menu_st->kb_key_state[RETROK_F1] =
+                  ((menu_st->kb_key_state[RETROK_F1] & 1) << 1) | false;
             }
          }
       }
-      else if ((!p_rarch->menu_keyboard_key_state[RETROK_F1] &&
+      else if ((!menu_st->kb_key_state[RETROK_F1] &&
                (pressed && !old_pressed)) ||
             core_type_is_dummy)
       {
@@ -28955,8 +28924,8 @@ static enum runloop_state runloop_check_state(
          }
       }
       else
-         p_rarch->menu_keyboard_key_state[RETROK_F1] =
-            ((p_rarch->menu_keyboard_key_state[RETROK_F1] & 1) << 1) | false;
+         menu_st->kb_key_state[RETROK_F1] =
+            ((menu_st->kb_key_state[RETROK_F1] & 1) << 1) | false;
 
       old_pressed             = pressed;
    }

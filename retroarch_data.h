@@ -1189,9 +1189,6 @@ struct rarch_state
 #endif
    retro_ctx_load_content_info_t *load_content_info;
 #endif
-#ifdef HAVE_MENU
-   const char **menu_input_dialog_keyboard_buffer;
-#endif
 
    const record_driver_t *recording_driver;
    void *recording_data;
@@ -1474,14 +1471,6 @@ struct rarch_state
 #endif
    enum resampler_quality audio_driver_resampler_quality;
 
-#ifdef HAVE_MENU
-   menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
-                                                /* int16_t alignment */
-#endif
-
-#ifdef HAVE_MENU
-   unsigned char menu_keyboard_key_state[RETROK_LAST];
-#endif
    /**
     * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
     * is in the middle of being rebuilt; in these cases we will save flag
