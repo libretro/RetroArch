@@ -81,7 +81,7 @@ char* filestream_gets(RFILE *stream, char *s, size_t len);
 
 int filestream_getc(RFILE *stream);
 
-int filestream_scanf(RFILE *stream, const char* format, ...);
+int filestream_vscanf(RFILE *stream, const char* format, va_list *args);
 
 int filestream_eof(RFILE *stream);
 
