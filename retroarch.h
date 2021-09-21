@@ -430,8 +430,6 @@ void retroarch_menu_running_finished(bool quit);
 
 rarch_system_info_t *runloop_get_system_info(void);
 
-struct retro_system_info *runloop_get_libretro_system_info(void);
-
 void retroarch_force_video_driver_fallback(const char *driver);
 
 enum retro_language rarch_get_language_from_iso(const char *lang);

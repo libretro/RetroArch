@@ -569,7 +569,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                if (strstr(interfaces.entries[k].host, sub) &&
                   !strstr(interfaces.entries[k].host, "127.0.0.1"))
                {
-                  struct retro_system_info *info = runloop_get_libretro_system_info();
+                  struct retro_system_info *info = &runloop_get_system_info()->info;
 
                   RARCH_LOG ("[Discovery] Query received on common interface: %s/%s (theirs / ours) \n",
                      reply_addr, interfaces.entries[k].host);
@@ -1077,7 +1077,7 @@ static bool netplay_handshake_info(netplay_t *netplay,
 {
    struct info_buf_s info_buf;
    uint32_t      content_crc        = 0;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_get_system_info()->info;
 
    memset(&info_buf, 0, sizeof(info_buf));
    info_buf.cmd[0] = htonl(NETPLAY_CMD_INFO);
@@ -1417,7 +1417,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    ssize_t recvd;
    uint32_t content_crc             = 0;
    const char *dmsg                 = NULL;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_get_system_info()->info;
 
    RECV(&info_buf, sizeof(info_buf.cmd)) {}
 

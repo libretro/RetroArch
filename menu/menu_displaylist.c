@@ -1255,7 +1255,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
           string_is_empty(exts))
 #endif
       {
-         struct retro_system_info *system = runloop_get_libretro_system_info();
+         struct retro_system_info *system = &runloop_get_system_info()->info;
          const char *core_path            = core_path_current;
          const char *core_name            = system ? system->library_name : NULL;
 
@@ -3395,7 +3395,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 {
    unsigned count                   = 0;
    core_info_t   *core_info         = NULL;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_get_system_info()->info;
 
    core_info_get_current_core(&core_info);
 

@@ -1543,7 +1543,7 @@ static void task_push_to_history_list(
    {
       char tmp[PATH_MAX_LENGTH];
       const char *path_content       = path_get(RARCH_PATH_CONTENT);
-      struct retro_system_info *info = runloop_get_libretro_system_info();
+      struct retro_system_info *info = &runloop_get_system_info()->info;
 
       tmp[0] = '\0';
 
@@ -2292,7 +2292,7 @@ static bool task_load_content_internal(
 
    if (sys_info)
    {
-      struct retro_system_info *system        = runloop_get_libretro_system_info();
+      struct retro_system_info *system        = &runloop_get_system_info()->info;
 
       content_ctx.set_supports_no_game_enable = set_supports_no_game_enable;
 
@@ -2784,7 +2784,7 @@ bool content_init(void)
 
    if (sys_info)
    {
-      struct retro_system_info *system        = runloop_get_libretro_system_info();
+      struct retro_system_info *system        = &runloop_get_system_info()->info;
 
       content_ctx.set_supports_no_game_enable = set_supports_no_game_enable;
 

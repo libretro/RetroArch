@@ -29563,11 +29563,6 @@ rarch_system_info_t *runloop_get_system_info(void)
    return &runloop_state.system;
 }
 
-struct retro_system_info *runloop_get_libretro_system_info(void)
-{
-   return &runloop_state.system.info;
-}
-
 void retroarch_force_video_driver_fallback(const char *driver)
 {
    struct rarch_state *p_rarch = &rarch_st;
