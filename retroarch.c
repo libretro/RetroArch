@@ -1479,70 +1479,6 @@ int generic_menu_entry_action(
    return ret;
 }
 
-#if defined(_MSC_VER)
-static const char * msvc_vercode_to_str(const unsigned vercode)
-{
-   switch (vercode)
-   {
-      case 1200:
-         return " msvc6";
-      case 1300:
-         return " msvc2002";
-      case 1310:
-         return " msvc2003";
-      case 1400:
-         return " msvc2005";
-      case 1500:
-         return " msvc2008";
-      case 1600:
-         return " msvc2010";
-      case 1700:
-         return " msvc2012";
-      case 1800:
-         return " msvc2013";
-      case 1900:
-         return " msvc2015";
-      default:
-         if (vercode >= 1910 && vercode < 1920)
-            return " msvc2017";
-         else if (vercode >= 1920 && vercode < 2000)
-            return " msvc2019";
-         break;
-   }
-
-   return "";
-}
-#endif
-
-/* Sets 's' to the name of the current core
- * (shown at the top of the UI). */
-int menu_entries_get_core_title(char *s, size_t len)
-{
-   struct retro_system_info    *system = &runloop_state.system.info;
-   const char *core_name               = (system && !string_is_empty(system->library_name))
-      ? system->library_name
-      : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-   const char *core_version            = (system && system->library_version) ? system->library_version : "";
-   if (!string_is_empty(core_version))
-   {
-#if defined(_MSC_VER)
-      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s (%s)", msvc_vercode_to_str(_MSC_VER), core_name, core_version);
-#else
-      snprintf(s, len, PACKAGE_VERSION             " - %s (%s)",                                core_name, core_version);
-#endif
-   }
-   else
-   {
-#if defined(_MSC_VER)
-      snprintf(s, len, PACKAGE_VERSION "%s"        " - %s", msvc_vercode_to_str(_MSC_VER), core_name);
-#else
-      snprintf(s, len, PACKAGE_VERSION             " - %s",                                core_name);
-#endif
-   }
-
-   return 0;
-}
-
 #ifdef HAVE_COMPRESSION
 /* This function gets called at first startup on Android/iOS
  * when we need to extract the APK contents/zip file. This
@@ -1552,8 +1488,7 @@ void bundle_decompressed(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t        *settings = p_rarch->configuration_settings;
+   settings_t        *settings = config_get_ptr();
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
    if (err)
