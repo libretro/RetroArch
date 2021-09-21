@@ -142,6 +142,8 @@ typedef struct settings
       int d3d12_gpu_index;
 #endif
       int content_favorites_size;
+
+      int savestate_max_direct_slot;
    } ints;
 
    struct

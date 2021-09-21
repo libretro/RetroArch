@@ -1167,6 +1167,12 @@ static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFE
  * This could potentially lead to buggy games. */
 #define DEFAULT_BLOCK_SRAM_OVERWRITE false
 
+static const int savestate_max_direct_slot = 0;
+
+/* Specifies the maximum savestate slot that can be directly saved or loaded into.
+ * Setting this value to -1 disables the feature entirely. */
+#define DEFAULT_SAVESTATE_MAX_DIRECT_SLOT -1
+
 /* When saving savestates, state index is automatically
  * incremented before saving.
  * When the content is loaded, state index will be set

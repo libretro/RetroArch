@@ -3322,6 +3322,14 @@ MSG_HASH(
    "Block SaveRAM from being overwritten when loading save states. Might potentially lead to buggy games."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_DIRECT_SLOT,
+   "Maximum Direct Save State Slot Available"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_DIRECT_SLOT,
+   "The maximum save state slot that can be directly saved into and loaded from. A value of '-1' means no direct save state slots will be available."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    "SaveRAM Autosave Interval"
    )

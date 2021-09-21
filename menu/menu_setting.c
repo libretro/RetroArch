@@ -6394,6 +6394,19 @@ static void setting_get_string_representation_uint_input_remap_port(
       snprintf(s, len, "%u", *setting->value.target.unsigned_integer + 1);
 }
 
+static void setting_get_string_representation_int_savestate_direct_max_slot(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   if (*setting->value.target.integer >= 0)
+      snprintf(s, len, "%d", *setting->value.target.integer);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+}
+
 #ifdef HAVE_THREADS
 static void setting_get_string_representation_uint_autosave_interval(
       rarch_setting_t *setting,
@@ -10307,6 +10320,20 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 999, 1, true, true);
+
+            CONFIG_INT(list, list_info,
+                  &settings->ints.savestate_max_direct_slot,
+                  MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT,
+                  MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_DIRECT_SLOT,
+                  savestate_max_direct_slot,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, -1, 9, 1, true, true);
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_int_savestate_direct_max_slot;
 
             CONFIG_BOOL(
                   list, list_info,

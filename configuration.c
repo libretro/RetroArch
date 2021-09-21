@@ -2348,6 +2348,7 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("d3d12_gpu_index",              &settings->ints.d3d12_gpu_index, true, DEFAULT_D3D12_GPU_INDEX, false);
 #endif
    SETTING_INT("content_favorites_size",       &settings->ints.content_favorites_size, true, default_content_favorites_size, false);
+   SETTING_INT("savestate_max_direct_slot",    &settings->ints.savestate_max_direct_slot, true, savestate_max_direct_slot, false);
 
    *size = count;
 

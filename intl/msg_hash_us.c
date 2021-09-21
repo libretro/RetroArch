@@ -631,6 +631,11 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Font size for on-screen messages.");
             break;
+        case MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT:
+            snprintf(s, len,
+                     "Sets the highest save state slot that \n"
+                             "can be directly saved or loaded.");
+            break;
         case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
             snprintf(s, len,
                      "Automatically increment slot index on each save, \n"
