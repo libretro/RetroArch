@@ -969,7 +969,8 @@ static void xmb_render_messagebox_internal(
       gfx_display_t *p_disp,
       unsigned video_width,
       unsigned video_height,
-      xmb_handle_t *xmb, const char *message)
+      xmb_handle_t *xmb, const char *message,
+      math_matrix_4x4 *mymat)
 {
    unsigned i, y_position;
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
@@ -1051,7 +1052,8 @@ static void xmb_render_messagebox_internal(
          video_width, video_height,
          NULL,
          xmb->margins_slice, xmb->last_scale_factor,
-         xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
+         xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE],
+         mymat);
 
    for (i = 0; i < list.size; i++)
    {
@@ -5454,7 +5456,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             userdata, video_width, video_height);
       xmb_render_messagebox_internal(userdata, p_disp,
             video_width, video_height,
-            xmb, msg);
+            xmb, msg, &mymat);
    }
 
    /* Cursor image */

@@ -622,12 +622,12 @@ void gfx_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h,
       unsigned width, unsigned height,
-      float *color, unsigned offset, float scale_factor, uintptr_t texture)
+      float *color, unsigned offset, float scale_factor, uintptr_t texture,
+      math_matrix_4x4 *mymat
+)
 {
    gfx_display_ctx_draw_t draw;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    struct video_coords coords;
-   math_matrix_4x4 mymat;
    gfx_display_ctx_driver_t 
       *dispctx              = p_disp->dispctx;
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
@@ -725,12 +725,6 @@ void gfx_display_draw_texture_slice(
    T_TR[0] = tex_woff;
    T_TR[1] = 0.0f;
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0;
-   rotate_draw.scale_x      = 1.0;
-   rotate_draw.scale_y      = 1.0;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
    coords.vertices          = 4;
    coords.vertex            = vert_coord;
    coords.tex_coord         = tex_coord;
@@ -738,12 +732,10 @@ void gfx_display_draw_texture_slice(
    draw.width               = width;
    draw.height              = height;
    draw.coords              = &coords;
-   draw.matrix_data         = &mymat;
+   draw.matrix_data         = mymat;
    draw.prim_type           = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    draw.texture             = texture;
    draw.x                   = 0;
