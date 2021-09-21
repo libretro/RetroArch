@@ -3695,6 +3695,10 @@ enum retro_throttle_mode
    /* While vsync is active in the video driver and the target refresh rate is
     * lower than the core's internal FPS. Rate is the target refresh rate. */
    RETRO_THROTTLE_VSYNC             = 5,
+
+   /* When the frontend does not throttle in any way. Rate will be 0.
+    * An example could be if no vsync or audio output is active. */
+   RETRO_THROTTLE_UNBLOCKED         = 6,
 };
 
 struct retro_throttle_state
