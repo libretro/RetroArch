@@ -198,7 +198,7 @@ static int rcheevos_init_memory(rcheevos_locals_t* locals)
    unsigned i;
    int result;
    struct retro_memory_map mmap;
-   rarch_system_info_t* system                 = runloop_get_system_info();
+   rarch_system_info_t* system                 = &runloop_state_get_ptr()->system;
    rarch_memory_map_t* mmaps                   = &system->mmaps;
    struct retro_memory_descriptor *descriptors = (struct retro_memory_descriptor*)malloc(mmaps->num_descriptors * sizeof(*descriptors));
    if (!descriptors)
@@ -1012,7 +1012,7 @@ void rcheevos_validate_config_settings(void)
       *disallowed_settings          = NULL;
    core_option_manager_t* coreopts  = NULL;
    struct retro_system_info *system = 
-      &runloop_get_system_info()->info;
+      &runloop_state_get_ptr()->system.info;
 
    if (!system->library_name || !rcheevos_locals.hardcore_active)
       return;

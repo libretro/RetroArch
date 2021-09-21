@@ -1048,7 +1048,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_REMAP_FILE:
          {
-            struct retro_system_info *system = &runloop_get_system_info()->info;
+            struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
             const char *core_name            = system ? system->library_name : NULL;
 
             if (!string_is_empty(core_name) && !string_is_empty(settings->paths.directory_input_remapping))
@@ -2669,7 +2669,7 @@ static int action_ok_load_cdrom(const char *path,
       return -1;
    }
 
-   system = &runloop_get_system_info()->info;
+   system = &runloop_state_get_ptr()->system.info;
 
    if (system && !string_is_empty(system->library_name))
    {
@@ -3352,7 +3352,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char content_dir[PATH_MAX_LENGTH];
-   struct retro_system_info *system     = &runloop_get_system_info()->info;
+   struct retro_system_info *system     = &runloop_state_get_ptr()->system.info;
    const char *core_name                = system ? system->library_name : NULL;
    settings_t *settings                 = config_get_ptr();
    const char *path_dir_input_remapping = settings->paths.directory_input_remapping;
@@ -5182,7 +5182,7 @@ static int action_ok_add_to_favorites(const char *path,
    if (!string_is_empty(content_path))
    {
       global_t *global                 = global_get_ptr();
-      struct retro_system_info *system = &runloop_get_system_info()->info;
+      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
       struct string_list *str_list     = NULL;
       const char *crc32                = NULL;
       const char *db_name              = NULL;
@@ -6907,7 +6907,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 {
    bool disk_ejected              = false;
    bool print_log                 = false;
-   rarch_system_info_t *sys_info  = runloop_get_system_info();
+   rarch_system_info_t *sys_info  = &runloop_state_get_ptr()->system;
    settings_t *settings           = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
    bool audio_enable_menu         = settings->bools.audio_enable_menu;
@@ -6959,7 +6959,7 @@ static int action_ok_disk_image_append(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char image_path[PATH_MAX_LENGTH];
-   rarch_system_info_t *sys_info = runloop_get_system_info();
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    menu_handle_t *menu           = menu_state_get_ptr()->driver_data;
    const char *menu_path         = NULL;
    settings_t *settings          = config_get_ptr();

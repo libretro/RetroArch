@@ -115,7 +115,7 @@ void rcheevos_get_user_agent(rcheevos_locals_t *locals,
       char *buffer, size_t len)
 {
    char* ptr;
-   struct retro_system_info *system = &runloop_get_system_info()->info;
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
    /* if we haven't calculated the non-changing portion yet, do so now
     * [retroarch version + os version] */

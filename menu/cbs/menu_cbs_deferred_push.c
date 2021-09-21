@@ -451,7 +451,7 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN:
          {
             struct retro_system_info *system = 
-               &runloop_get_system_info()->info;
+               &runloop_state_get_ptr()->system.info;
             if (system)
                if (!string_is_empty(system->valid_extensions))
                   strlcpy(newstring2, system->valid_extensions,
@@ -468,7 +468,7 @@ static int general_push(menu_displaylist_info_t *info,
             else
             {
                struct retro_system_info *system = 
-                  &runloop_get_system_info()->info;
+                  &runloop_state_get_ptr()->system.info;
                if (system && !string_is_empty(system->valid_extensions))
                {
                   new_exts           = strdup(system->valid_extensions);
@@ -515,7 +515,7 @@ static int general_push(menu_displaylist_info_t *info,
             char newstring[PATH_MAX_LENGTH];
             struct string_list str_list2     = {0};
             struct retro_system_info *system = 
-               &runloop_get_system_info()->info;
+               &runloop_state_get_ptr()->system.info;
 
             newstring[0]                     = '\0';
             attr.i                           = 0;

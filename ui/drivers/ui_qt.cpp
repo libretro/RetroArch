@@ -2946,7 +2946,7 @@ void MainWindow::onRunClicked()
 
 bool MainWindow::isContentLessCore()
 {
-   rarch_system_info_t *system = runloop_get_system_info();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
    return system->load_no_content;
 }
@@ -3671,7 +3671,7 @@ void MainWindow::onStopClicked()
 void MainWindow::setCurrentCoreLabel()
 {
    bool update                      = false;
-   struct retro_system_info *system = &runloop_get_system_info()->info;
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    QString libraryName              = system->library_name;
    const char *no_core_str          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
 

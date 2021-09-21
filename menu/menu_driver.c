@@ -2864,7 +2864,7 @@ bool menu_shader_manager_remove_auto_preset(
       const char *dir_video_shader,
       const char *dir_menu_config)
 {
-   struct retro_system_info *system = &runloop_get_system_info()->info;
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    settings_t *settings             = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
          system, settings->bools.video_shader_preset_save_reference_enable,
@@ -2885,7 +2885,7 @@ bool menu_shader_manager_auto_preset_exists(
       const char *dir_video_shader,
       const char *dir_menu_config)
 {
-   struct retro_system_info *system = &runloop_get_system_info()->info;
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    settings_t *settings             = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
          system, settings->bools.video_shader_preset_save_reference_enable,
@@ -2916,7 +2916,7 @@ bool menu_shader_manager_save_auto_preset(
       const char *dir_menu_config,
       bool apply)
 {
-   struct retro_system_info *system = &runloop_get_system_info()->info;
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
    settings_t *settings             = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
          system, settings->bools.video_shader_preset_save_reference_enable,
@@ -5133,7 +5133,7 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
 {
-   struct retro_system_info  *system = &runloop_get_system_info()->info;
+   struct retro_system_info *system  = &runloop_state_get_ptr()->system.info;
    const char *core_name             = 
        (system && !string_is_empty(system->library_name))
       ? system->library_name

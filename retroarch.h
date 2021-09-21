@@ -51,6 +51,8 @@
 #include "menu/menu_defines.h"
 #endif
 
+#include "runloop.h"
+
 RETRO_BEGIN_DECLS
 
 #define RETRO_ENVIRONMENT_RETROARCH_START_BLOCK 0x800000
@@ -421,14 +423,9 @@ void runloop_msg_queue_push(const char *msg,
       char *title,
       enum message_queue_icon icon, enum message_queue_category category);
 
-void runloop_get_status(bool *is_paused, bool *is_idle, bool *is_slowmotion,
-      bool *is_perfcnt_enable);
-
 void retroarch_menu_running(void);
 
 void retroarch_menu_running_finished(bool quit);
-
-rarch_system_info_t *runloop_get_system_info(void);
 
 void retroarch_force_video_driver_fallback(const char *driver);
 
@@ -2094,6 +2091,8 @@ typedef enum apple_view_type
 } apple_view_type_t;
 
 bool retroarch_get_current_savestate_path(char *path, size_t len);
+
+runloop_state_t *runloop_state_get_ptr(void);
 
 RETRO_END_DECLS
 
