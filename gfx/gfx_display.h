@@ -295,18 +295,6 @@ void gfx_display_draw_quad(
       float *color,
       uintptr_t *texture);
 
-void gfx_display_draw_polygon(
-      gfx_display_t *p_disp,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x1, int y1,
-      int x2, int y2,
-      int x3, int y3,
-      int x4, int y4,
-      unsigned width, unsigned height,
-      float *color);
-
 void gfx_display_draw_texture_slice(
       gfx_display_t *p_disp,
       void *userdata,

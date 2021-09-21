@@ -611,63 +611,6 @@ void gfx_display_draw_quad(
       dispctx->blend_end(data);
 }
 
-void gfx_display_draw_polygon(
-      gfx_display_t *p_disp,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x1, int y1,
-      int x2, int y2,
-      int x3, int y3,
-      int x4, int y4,
-      unsigned width, unsigned height,
-      float *color)
-{
-   float vertex[8];
-   gfx_display_ctx_draw_t draw;
-   struct video_coords coords;
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-
-   if (width == 0 || height == 0)
-      return;
-   if (!dispctx)
-      return;
-
-   vertex[0]             = x1 / (float)width;
-   vertex[1]             = y1 / (float)height;
-   vertex[2]             = x2 / (float)width;
-   vertex[3]             = y2 / (float)height;
-   vertex[4]             = x3 / (float)width;
-   vertex[5]             = y3 / (float)height;
-   vertex[6]             = x4 / (float)width;
-   vertex[7]             = y4 / (float)height;
-
-   coords.vertices       = 4;
-   coords.vertex         = &vertex[0];
-   coords.tex_coord      = NULL;
-   coords.lut_tex_coord  = NULL;
-   coords.color          = color;
-
-   draw.x                = 0;
-   draw.y                = 0;
-   draw.width            = width;
-   draw.height           = height;
-   draw.coords           = &coords;
-   draw.matrix_data      = NULL;
-   draw.texture          = gfx_white_texture;
-   draw.prim_type        = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline_id      = 0;
-   draw.scale_factor     = 1.0f;
-   draw.rotation         = 0.0f;
-
-   if (dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   if (dispctx->draw)
-      dispctx->draw(&draw, userdata, video_width, video_height);
-   if (dispctx->blend_end)
-      dispctx->blend_end(userdata);
-}
-
 /* Draw the texture split into 9 sections, without scaling the corners.
  * The middle sections will only scale in the X axis, and the side
  * sections will only scale in the Y axis. */
