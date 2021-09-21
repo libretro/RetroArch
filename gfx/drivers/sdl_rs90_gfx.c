@@ -51,8 +51,13 @@
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
+#if defined(MIYOO)
+#define SDL_RS90_WIDTH  320
+#define SDL_RS90_HEIGHT 240
+#else
 #define SDL_RS90_WIDTH  240
 #define SDL_RS90_HEIGHT 160
+#endif
 
 #define SDL_RS90_NUM_FONT_GLYPHS 256
 
@@ -794,7 +799,11 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
    const char *input_driver_name                 = settings->arrays.input_driver;
    const char *joypad_driver_name                = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync) ?
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
+   #if defined(MIYOO)
+         (SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN) :
+   #else
+         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :         
+   #endif
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
    /* Initialise graphics subsystem, if required */
@@ -918,7 +927,11 @@ static void sdl_rs90_set_output(
       unsigned width, unsigned height, bool rgb32)
 {
    uint32_t surface_flags = (vid->vsync) ?
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
+   #if defined(MIYOO)
+         (SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN) :
+   #else
+         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :         
+   #endif
          (SDL_HWSURFACE | SDL_FULLSCREEN);
 
    vid->content_width  = width;

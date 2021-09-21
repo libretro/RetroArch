@@ -425,7 +425,7 @@
  * in Dingux devices */
 #define DEFAULT_DINGUX_REFRESH_RATE DINGUX_REFRESH_RATE_60HZ
 #endif
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 /* Sets image filtering method on the RS90
  * when integer scaling is disabled */
 #define DEFAULT_DINGUX_RS90_SOFTFILTER_TYPE DINGUX_RS90_SOFTFILTER_POINT
@@ -1343,7 +1343,7 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned gfx_thumbnail_upscale_threshold = 0;
 
 #ifdef HAVE_MENU
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
 /* The RS-90 has a hardware clock that is neither
  * configurable nor persistent, rendering it useless.
  * We therefore hide it in the menu by default. */

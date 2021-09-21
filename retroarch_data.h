@@ -645,7 +645,7 @@ static const video_driver_t *video_drivers[] = {
    &video_sdl2,
 #endif
 #ifdef HAVE_SDL_DINGUX
-#if defined(RS90)
+#if defined(RS90) || defined(MIYOO)
    &video_sdl_rs90,
 #else
    &video_sdl_dingux,

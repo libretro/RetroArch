@@ -34,7 +34,7 @@
 #if defined(MIYOO)
 #define SDL_DINGUX_HAS_ANALOG      0
 #define SDL_DINGUX_HAS_MENU_TOGGLE 1
-#elif defined(RS90) || defined(RETROFW)
+#elif defined(RS90) || defined(RETROFW) || defined(MIYOO)
 #define SDL_DINGUX_HAS_ANALOG      0
 #define SDL_DINGUX_HAS_MENU_TOGGLE 0
 #else
