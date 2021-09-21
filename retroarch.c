@@ -137,6 +137,7 @@
 #include "config.def.keybinds.h"
 
 #include "runtime_file.h"
+#include "runloop.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -282,6 +283,14 @@
 #ifdef HAVE_LAKKA
 #include "lakka.h"
 #endif
+
+static runloop_core_status_msg_t runloop_core_status_msg         =
+{
+   0,
+   0.0f,
+   "",
+   false
+};
 
 static runloop_state_t runloop_state;
 
@@ -28349,7 +28358,7 @@ static enum runloop_state runloop_check_state(
          }
       }
 
-      if (TIME_TO_EXIT(trig_quit_key))
+      if (RUNLOOP_TIME_TO_EXIT(trig_quit_key))
       {
          bool quit_runloop           = false;
 #ifdef HAVE_SCREENSHOTS

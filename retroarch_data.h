@@ -148,29 +148,11 @@
 
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(p_rarch) (&p_rarch->hw_render)
 
-#ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK(runloop) slock_lock(runloop.msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop) slock_unlock(runloop.msg_queue_lock)
-#else
-#define RUNLOOP_MSG_QUEUE_LOCK(p_runloop)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(p_runloop)
-#endif
-
 #ifdef HAVE_BSV_MOVIE
 #define BSV_MOVIE_IS_EOF(p_rarch) || (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
 #else
 #define BSV_MOVIE_IS_EOF(p_rarch)
 #endif
-
-/* Time to exit out of the main loop?
- * Reasons for exiting:
- * a) Shutdown environment callback was invoked.
- * b) Quit key was pressed.
- * c) Frame count exceeds or equals maximum amount of frames to run.
- * d) Video driver no longer alive.
- * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
- */
-#define TIME_TO_EXIT(quit_key_pressed) (runloop_state.shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF(p_rarch) || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
@@ -926,15 +908,6 @@ enum
    RA_OPT_LOAD_MENU_ON_ERROR
 };
 
-enum  runloop_state
-{
-   RUNLOOP_STATE_ITERATE = 0,
-   RUNLOOP_STATE_POLLED_AND_SLEEP,
-   RUNLOOP_STATE_MENU_ITERATE,
-   RUNLOOP_STATE_END,
-   RUNLOOP_STATE_QUIT
-};
-
 enum rarch_movie_type
 {
    RARCH_MOVIE_PLAYBACK = 0,
@@ -956,22 +929,6 @@ enum input_game_focus_cmd_type
    GAME_FOCUS_CMD_TOGGLE,
    GAME_FOCUS_CMD_REAPPLY
 };
-
-typedef struct runloop_ctx_msg_info
-{
-   const char *msg;
-   unsigned prio;
-   unsigned duration;
-   bool flush;
-} runloop_ctx_msg_info_t;
-
-typedef struct
-{
-   unsigned priority;
-   float duration;
-   char str[128];
-   bool set;
-} runloop_core_status_msg_t;
 
 typedef struct video_pixel_scaler
 {
@@ -1051,83 +1008,6 @@ struct discord_state
 
 typedef struct discord_state discord_state_t;
 #endif
-
-/* Contains all callbacks associated with
- * core options.
- * > At present there is only a single
- *   callback, 'update_display' - but we
- *   may wish to add more in the future
- *   (e.g. for directly informing a core of
- *   core option value changes, or getting/
- *   setting extended/non-standard option
- *   value data types) */
-typedef struct core_options_callbacks
-{
-   retro_core_options_update_display_callback_t update_display;
-} core_options_callbacks_t;
-
-/* Contains the current retro_fastforwarding_override
- * parameters along with any pending updates triggered
- * by RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE */
-typedef struct fastmotion_overrides
-{
-   struct retro_fastforwarding_override current;
-   struct retro_fastforwarding_override next;
-   bool pending;
-} fastmotion_overrides_t;
-
-struct runloop
-{
-   retro_usec_t frame_time_last;        /* int64_t alignment */
-
-   msg_queue_t msg_queue;                        /* ptr alignment */
-#ifdef HAVE_THREADS
-   slock_t *msg_queue_lock;
-#endif
-   size_t msg_queue_size;
-
-   core_option_manager_t *core_options;
-   core_options_callbacks_t core_options_callback; /* ptr alignment */
-
-   retro_keyboard_event_t key_event;             /* ptr alignment */
-   retro_keyboard_event_t frontend_key_event;    /* ptr alignment */
-
-   rarch_system_info_t system;                   /* ptr alignment */
-   struct retro_frame_time_callback frame_time;  /* ptr alignment */
-   struct retro_audio_buffer_status_callback audio_buffer_status; /* ptr alignment */
-   unsigned pending_windowed_scale;
-   unsigned max_frames;
-   unsigned audio_latency;
-
-   fastmotion_overrides_t fastmotion_override; /* float alignment */
-
-   bool missing_bios;
-   bool force_nonblock;
-   bool paused;
-   bool idle;
-   bool focused;
-   bool slowmotion;
-   bool fastmotion;
-   bool shutdown_initiated;
-   bool core_shutdown_initiated;
-   bool core_running;
-   bool perfcnt_enable;
-   bool game_options_active;
-   bool folder_options_active;
-   bool autosave;
-#ifdef HAVE_CONFIGFILE
-   bool overrides_active;
-#endif
-   bool remaps_core_active;
-   bool remaps_game_active;
-   bool remaps_content_dir_active;
-#ifdef HAVE_SCREENSHOTS
-   bool max_frames_screenshot;
-   char max_frames_screenshot_path[PATH_MAX_LENGTH];
-#endif
-};
-
-typedef struct runloop runloop_state_t;
 
 struct rarch_state
 {
@@ -1690,14 +1570,6 @@ static struct rarch_state         rarch_st;
 #ifdef HAVE_THREAD_STORAGE
 static const void *MAGIC_POINTER                                 = (void*)(uintptr_t)0x0DEFACED;
 #endif
-
-static runloop_core_status_msg_t runloop_core_status_msg         =
-{
-   0,
-   0.0f,
-   "",
-   false
-};
 
 #ifdef HAVE_LIBNX
 /* TODO/FIXME - public global variable */
