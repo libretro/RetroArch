@@ -276,6 +276,21 @@ const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
+static struct menu_state menu_driver_state = { 0 };
+
+struct menu_state *menu_state_get_ptr(void)
+{
+   return &menu_driver_state;
+}
+
+menu_handle_t *menu_driver_get_ptr(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   if (!menu_st)
+      return NULL;
+   return menu_st->driver_data;
+}
+
 static bool menu_should_pop_stack(const char *label)
 {
    /* > Info box */
@@ -302,13 +317,13 @@ static bool menu_should_pop_stack(const char *label)
 
 size_t menu_navigation_get_selection(void)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    return menu_st->selection_ptr;
 }
 
 void menu_navigation_set_selection(size_t val)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    menu_st->selection_ptr      = val;
 }
 
@@ -319,7 +334,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    const char *path            = NULL;
    const char *entry_label     = NULL;
    menu_file_list_cbs_t *cbs   = NULL;
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, stack_idx);
    file_list_t *list           = (userdata) ? (file_list_t*)userdata : selection_buf;
    bool path_enabled           = entry->path_enabled;
@@ -430,7 +445,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    if (menu_st->entries.list)
    {
       const file_list_t *list  = MENU_LIST_GET(menu_st->entries.list, 0);
@@ -441,7 +456,7 @@ menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 
 file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 {
-   struct menu_state   *menu_st   = menu_state_get_ptr();
+   struct menu_state   *menu_st   = &menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return NULL;
@@ -450,7 +465,7 @@ file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 {
-   struct menu_state   *menu_st   = menu_state_get_ptr();
+   struct menu_state   *menu_st   = &menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return NULL;
@@ -459,7 +474,7 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 
 size_t menu_entries_get_stack_size(size_t idx)
 {
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state   *menu_st   = &menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return 0;
@@ -468,7 +483,7 @@ size_t menu_entries_get_stack_size(size_t idx)
 
 size_t menu_entries_get_size(void)
 {
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state   *menu_st   = &menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return 0;
@@ -477,7 +492,7 @@ size_t menu_entries_get_size(void)
 
 menu_search_terms_t *menu_entries_search_get_terms_internal(void)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    file_list_t *list           = MENU_LIST_GET(menu_st->entries.list, 0);
    menu_file_list_cbs_t *cbs   = NULL;
 
@@ -498,7 +513,7 @@ menu_search_terms_t *menu_entries_search_get_terms_internal(void)
  * 'idx' to the matching list entry index. */
 bool menu_entries_list_search(const char *needle, size_t *idx)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    menu_list_t *menu_list      = menu_st->entries.list;
    file_list_t *list           = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
    bool match_found            = false;
@@ -624,7 +639,7 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
  * */
 void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    if (!datetime)
       return;
 
@@ -999,7 +1014,7 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
 {
    int percent                    = 0;
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
 
    if (!powerstate)
@@ -1039,7 +1054,7 @@ int menu_entries_get_title(char *s, size_t len)
    unsigned menu_type            = 0;
    const char *path              = NULL;
    const char *label             = NULL;
-   struct menu_state   *menu_st  = menu_state_get_ptr();
+   struct menu_state   *menu_st  = &menu_driver_state;
    const file_list_t *list       = menu_st->entries.list ?
       MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
    menu_file_list_cbs_t *cbs     = list
@@ -4005,7 +4020,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
 {
    file_list_t *list              = NULL;
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    if (!menu_st->entries.list)
       return;
 
@@ -4027,7 +4042,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 int menu_driver_deferred_push_content_list(file_list_t *list)
 {
    settings_t *settings           = config_get_ptr();
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
 
@@ -4044,25 +4059,25 @@ int menu_driver_deferred_push_content_list(file_list_t *list)
 
 bool menu_driver_screensaver_supported(void)
 {
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    return menu_st->screensaver_supported;
 }
 
 retro_time_t menu_driver_get_current_time(void)
 {
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    return menu_st->current_time_us;
 }
 
 const char *menu_driver_get_pending_selection(void)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state   *menu_st  = &menu_driver_state;
    return menu_st->pending_selection;
 }
 
 void menu_driver_set_pending_selection(const char *pending_selection)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
    char *selection             = menu_st->pending_selection;
 
    /* Reset existing cache */
@@ -4080,7 +4095,7 @@ void menu_input_search_cb(void *userdata, const char *str)
 {
    const char *label           = NULL;
    unsigned type               = MENU_SETTINGS_NONE;
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st  = &menu_driver_state;
 
    if (string_is_empty(str))
       goto end;
@@ -4213,18 +4228,10 @@ void menu_driver_set_last_start_content(const char *start_content_path)
             sizeof(menu->last_start_content.file_name));
 }
 
-menu_handle_t *menu_driver_get_ptr(void)
-{
-   struct menu_state    *menu_st  = menu_state_get_ptr();
-   if (!menu_st)
-      return NULL;
-   return menu_st->driver_data;
-}
-
 int menu_entry_action(
       menu_entry_t *entry, size_t i, enum menu_action action)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
+   struct menu_state *menu_st     = &menu_driver_state;
    if (     menu_st->driver_ctx
          && menu_st->driver_ctx->entry_action)
       return menu_st->driver_ctx->entry_action(
@@ -4245,7 +4252,7 @@ void menu_entries_append(
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state    *menu_st   = menu_state_get_ptr();
+   struct menu_state  *menu_st     = &menu_driver_state;
    if (!list || !label)
       return;
 
@@ -4332,7 +4339,7 @@ bool menu_entries_append_enum(
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state    *menu_st   = menu_state_get_ptr();
+   struct menu_state  *menu_st     = &menu_driver_state;
 
    if (!list || !label)
       return false;
@@ -4423,7 +4430,7 @@ void menu_entries_prepend(file_list_t *list,
    size_t idx                      = 0;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
-   struct menu_state    *menu_st   = menu_state_get_ptr();
+   struct menu_state  *menu_st     = &menu_driver_state;
    if (!list || !label)
       return;
 
@@ -4495,7 +4502,7 @@ void menu_entries_prepend(file_list_t *list,
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
 {
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state  *menu_st    = &menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (menu_list)
       menu_list_flush_stack(
@@ -4507,7 +4514,7 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type)
 
 void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 {
-   struct menu_state    *menu_st            = menu_state_get_ptr();
+   struct menu_state    *menu_st            = &menu_driver_state;
    const menu_ctx_driver_t *menu_driver_ctx = menu_st->driver_ctx;
    menu_list_t *menu_list                   = menu_st->entries.list;
    if (!menu_list)
@@ -4532,7 +4539,7 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
 
    switch (state)
    {
@@ -4662,7 +4669,7 @@ void menu_display_handle_thumbnail_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   struct menu_state    *menu_st = menu_state_get_ptr();
+   struct menu_state    *menu_st = &menu_driver_state;
    menu_display_common_image_upload(
          menu_st->driver_ctx,
          menu_st->userdata,
@@ -4676,7 +4683,7 @@ void menu_display_handle_left_thumbnail_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   struct menu_state    *menu_st = menu_state_get_ptr();
+   struct menu_state    *menu_st = &menu_driver_state;
    menu_display_common_image_upload(
          menu_st->driver_ctx,
          menu_st->userdata,
@@ -4691,7 +4698,7 @@ void menu_display_handle_savestate_thumbnail_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   struct menu_state    *menu_st = menu_state_get_ptr();
+   struct menu_state    *menu_st = &menu_driver_state;
    menu_display_common_image_upload(
          menu_st->driver_ctx,
          menu_st->userdata,
@@ -4708,7 +4715,7 @@ void menu_display_handle_wallpaper_upload(
       void *task_data,
       void *user_data, const char *err)
 {
-   struct menu_state    *menu_st = menu_state_get_ptr();
+   struct menu_state    *menu_st = &menu_driver_state;
    menu_display_common_image_upload(
          menu_st->driver_ctx,
          menu_st->userdata,
@@ -4719,14 +4726,14 @@ void menu_display_handle_wallpaper_upload(
 
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
 {
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st = &menu_driver_state;
    if (menu_is_alive && menu_st->driver_ctx->frame)
       menu_st->driver_ctx->frame(menu_st->userdata, video_info);
 }
 
 bool menu_driver_list_cache(menu_ctx_list_t *list)
 {
-   struct menu_state    *menu_st  = menu_state_get_ptr();
+   struct menu_state    *menu_st = &menu_driver_state;
    if (!list || !menu_st->driver_ctx || !menu_st->driver_ctx->list_cache)
       return false;
 
@@ -4737,14 +4744,14 @@ bool menu_driver_list_cache(menu_ctx_list_t *list)
 
 void menu_driver_navigation_set(bool scroll)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (menu_st->driver_ctx->navigation_set)
       menu_st->driver_ctx->navigation_set(menu_st->userdata, scroll);
 }
 
 void menu_driver_populate_entries(menu_displaylist_info_t *info)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (menu_st->driver_ctx && menu_st->driver_ctx->populate_entries)
       menu_st->driver_ctx->populate_entries(
             menu_st->userdata, info->path,
@@ -4753,7 +4760,7 @@ void menu_driver_populate_entries(menu_displaylist_info_t *info)
 
 bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (menu_st->driver_ctx->list_push)
       if (menu_st->driver_ctx->list_push(
                menu_st->driver_data,
@@ -4765,7 +4772,7 @@ bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)
 
 void menu_driver_set_thumbnail_system(char *s, size_t len)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (     menu_st->driver_ctx
          && menu_st->driver_ctx->set_thumbnail_system)
       menu_st->driver_ctx->set_thumbnail_system(
@@ -4774,7 +4781,7 @@ void menu_driver_set_thumbnail_system(char *s, size_t len)
 
 void menu_driver_get_thumbnail_system(char *s, size_t len)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (     menu_st->driver_ctx
          && menu_st->driver_ctx->get_thumbnail_system)
       menu_st->driver_ctx->get_thumbnail_system(
@@ -4783,7 +4790,7 @@ void menu_driver_get_thumbnail_system(char *s, size_t len)
 
 void menu_driver_set_thumbnail_content(char *s, size_t len)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (     menu_st->driver_ctx
          && menu_st->driver_ctx->set_thumbnail_content)
       menu_st->driver_ctx->set_thumbnail_content(
@@ -4803,7 +4810,7 @@ void menu_driver_destroy(
 
 bool menu_driver_list_get_entry(menu_ctx_list_t *list)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (  !menu_st->driver_ctx ||
          !menu_st->driver_ctx->list_get_entry)
    {
@@ -4818,7 +4825,7 @@ bool menu_driver_list_get_entry(menu_ctx_list_t *list)
 
 bool menu_driver_list_get_selection(menu_ctx_list_t *list)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (  !menu_st->driver_ctx ||
          !menu_st->driver_ctx->list_get_selection)
    {
@@ -4833,7 +4840,7 @@ bool menu_driver_list_get_selection(menu_ctx_list_t *list)
 
 bool menu_driver_list_get_size(menu_ctx_list_t *list)
 {
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
    if (  !menu_st->driver_ctx ||
          !menu_st->driver_ctx->list_get_size)
    {
@@ -4847,7 +4854,7 @@ bool menu_driver_list_get_size(menu_ctx_list_t *list)
 
 void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    menu_input_t       *menu_input = &menu_st->input_state;
 
    if (!copy_target)
@@ -4861,14 +4868,14 @@ void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
 
 unsigned menu_input_get_pointer_selection(void)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    menu_input_t       *menu_input = &menu_st->input_state;
    return menu_input->ptr;
 }
 
 void menu_input_set_pointer_selection(unsigned selection)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    menu_input_t       *menu_input = &menu_st->input_state;
 
    menu_input->ptr                = selection;
@@ -4876,7 +4883,7 @@ void menu_input_set_pointer_selection(unsigned selection)
 
 void menu_input_set_pointer_y_accel(float y_accel)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    menu_input_t    *menu_input    = &menu_st->input_state;
 
    menu_input->pointer.y_accel    = y_accel;
@@ -4884,7 +4891,7 @@ void menu_input_set_pointer_y_accel(float y_accel)
 
 bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
+   struct menu_state    *menu_st  = &menu_driver_state;
    struct menu_bind_state *binds  = &menu_st->input_binds;
    if (!lim)
       return false;

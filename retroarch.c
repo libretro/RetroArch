@@ -336,14 +336,6 @@ gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
    return &p_rarch->gfx_thumb_state;
 }
 
-#ifdef HAVE_MENU
-struct menu_state *menu_state_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->menu_driver_state;
-}
-#endif
-
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -8268,7 +8260,7 @@ bool command_event(enum event_command cmd, void *data)
           * going to empty Quick Menu */
          if (!p_rarch->menu_driver_alive)
          {
-            p_rarch->menu_driver_state.pending_close_content = true;
+            menu_state_get_ptr()->pending_close_content = true;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
 #else
@@ -23271,7 +23263,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
 #ifdef HAVE_MENU
    video_info->menu_is_alive               = p_rarch->menu_driver_alive;
-   video_info->menu_screensaver_active     = p_rarch->menu_driver_state.screensaver_active;
+   video_info->menu_screensaver_active     = menu_state_get_ptr()->screensaver_active;
    video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme      = settings->uints.menu_materialui_color_theme;
