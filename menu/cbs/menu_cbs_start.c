@@ -283,7 +283,7 @@ static int action_start_shader_pass(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
 
    if (!menu)
       return menu_cbs_exit();

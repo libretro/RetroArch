@@ -575,7 +575,8 @@ bool menu_input_key_bind_set_mode(
    struct rarch_state *p_rarch         = &rarch_st;
    input_driver_state_t 
       *input_driver_st                 = &p_rarch->input_driver_state;
-   menu_handle_t       *menu           = menu_driver_get_ptr();
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_handle_t       *menu           = menu_st->driver_data;
    const input_device_driver_t 
       *joypad                          = input_driver_st->primary_joypad;
 #ifdef HAVE_MFI
@@ -585,7 +586,6 @@ bool menu_input_key_bind_set_mode(
    const input_device_driver_t
       *sec_joypad                      = NULL;
 #endif
-   struct menu_state *menu_st          = menu_state_get_ptr();
    menu_input_t *menu_input            = &menu_st->input_state;
    settings_t     *settings            = p_rarch->configuration_settings;
    struct menu_bind_state *binds       = &menu_st->input_binds;
@@ -1209,7 +1209,7 @@ int generic_menu_entry_action(
    struct menu_state *menu_st     = menu_state_get_ptr();
    const menu_ctx_driver_t
       *menu_driver_ctx            = menu_st->driver_ctx;
-   menu_handle_t *menu            = menu_driver_get_ptr();
+   menu_handle_t  *menu           = menu_st->driver_data;
    settings_t   *settings         = p_rarch->configuration_settings;
    void *menu_userdata            = menu_st->userdata;
    bool wraparound_enable         = settings->bools.menu_navigation_wraparound_enable;

@@ -283,14 +283,6 @@ struct menu_state *menu_state_get_ptr(void)
    return &menu_driver_state;
 }
 
-menu_handle_t *menu_driver_get_ptr(void)
-{
-   struct menu_state    *menu_st  = &menu_driver_state;
-   if (!menu_st)
-      return NULL;
-   return menu_st->driver_data;
-}
-
 static bool menu_should_pop_stack(const char *label)
 {
    /* > Info box */
@@ -2537,7 +2529,7 @@ int menu_cbs_exit(void)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 void menu_driver_set_last_shader_preset_path(const char *path)
 {
-   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_state.driver_data;
    if (menu)
       menu_driver_set_last_shader_path_int(
             path,
@@ -2550,7 +2542,7 @@ void menu_driver_set_last_shader_preset_path(const char *path)
 
 void menu_driver_set_last_shader_pass_path(const char *path)
 {
-   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_state.driver_data;
    if (menu)
       menu_driver_set_last_shader_path_int(
             path,
@@ -2563,7 +2555,7 @@ void menu_driver_set_last_shader_pass_path(const char *path)
 
 enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
 {
-   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_state.driver_data;
    if (!menu)
       return RARCH_SHADER_NONE;
    return menu->last_shader_selection.preset_type;
@@ -2571,7 +2563,7 @@ enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
 
 enum rarch_shader_type menu_driver_get_last_shader_pass_type(void)
 {
-   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_state.driver_data;
    if (!menu)
       return RARCH_SHADER_NONE;
    return menu->last_shader_selection.pass_type;
@@ -2581,7 +2573,7 @@ void menu_driver_get_last_shader_preset_path(
       const char **directory, const char **file_name)
 {
    settings_t *settings         = config_get_ptr();
-   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_handle_t *menu          = menu_driver_state.driver_data;
    enum rarch_shader_type type  = RARCH_SHADER_NONE;
    const char *shader_dir       = NULL;
    const char *shader_file_name = NULL;
@@ -2601,7 +2593,7 @@ void menu_driver_get_last_shader_preset_path(
 void menu_driver_get_last_shader_pass_path(
       const char **directory, const char **file_name)
 {
-   menu_handle_t *menu          = menu_driver_get_ptr();
+   menu_handle_t *menu          = menu_driver_state.driver_data;
    settings_t *settings         = config_get_ptr();
    enum rarch_shader_type type  = RARCH_SHADER_NONE;
    const char *shader_dir       = NULL;
@@ -4145,7 +4137,7 @@ end:
 
 const char *menu_driver_get_last_start_directory(void)
 {
-   menu_handle_t *menu           = menu_driver_get_ptr();
+   menu_handle_t *menu           = menu_driver_state.driver_data;
    settings_t *settings          = config_get_ptr();
    bool use_last                 = settings->bools.use_last_start_directory;
    const char *default_directory = settings->paths.directory_menu_content;
@@ -4163,7 +4155,7 @@ const char *menu_driver_get_last_start_directory(void)
 
 const char *menu_driver_get_last_start_file_name(void)
 {
-   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_state.driver_data;
    settings_t *settings        = config_get_ptr();
    bool use_last               = settings->bools.use_last_start_directory;
 
@@ -4179,7 +4171,7 @@ const char *menu_driver_get_last_start_file_name(void)
 void menu_driver_set_last_start_content(const char *start_content_path)
 {
    char archive_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_handle_t *menu         = menu_driver_state.driver_data;
    settings_t *settings        = config_get_ptr();
    bool use_last               = settings->bools.use_last_start_directory;
    const char *archive_delim   = NULL;

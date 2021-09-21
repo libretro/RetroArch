@@ -1623,7 +1623,7 @@ static void task_push_to_history_list(
 #ifdef HAVE_MENU
                else
                {
-                  menu_handle_t *menu = menu_driver_get_ptr();
+                  menu_handle_t *menu = menu_state_get_ptr()->driver_data;
                   /* Set database name + checksum */
                   if (menu)
                   {

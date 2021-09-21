@@ -9827,7 +9827,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    static bool core_selected     = false;
    unsigned count                = 0;
    int ret                       = 0;
-   menu_handle_t *menu           = menu_driver_get_ptr();
+   menu_handle_t *menu           = menu_state_get_ptr()->driver_data;
 
    disp_list.info                = info;
    disp_list.type                = type;

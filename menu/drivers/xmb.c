@@ -5703,7 +5703,7 @@ static void xmb_menu_animation_update_time(
       float *ticker_pixel_increment,
       unsigned video_width, unsigned video_height)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu = menu_state_get_ptr()->driver_data;
    xmb_handle_t *xmb   = NULL;
 
    if (!menu)
