@@ -3990,3 +3990,672 @@ void menu_driver_set_last_start_content(const char *start_content_path)
       strlcpy(menu->last_start_content.file_name, file_name,
             sizeof(menu->last_start_content.file_name));
 }
+
+menu_handle_t *menu_driver_get_ptr(void)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   if (!menu_st)
+      return NULL;
+   return menu_st->driver_data;
+}
+
+int menu_entry_action(
+      menu_entry_t *entry, size_t i, enum menu_action action)
+{
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->entry_action)
+      return menu_st->driver_ctx->entry_action(
+            menu_st->userdata, entry, i, action);
+   return -1;
+}
+
+void menu_entries_append(
+      file_list_t *list,
+      const char *path,
+      const char *label,
+      unsigned type,
+      size_t directory_ptr,
+      size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t i;
+   size_t idx;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   struct menu_state    *menu_st   = menu_state_get_ptr();
+   if (!list || !label)
+      return;
+
+   file_list_append(list, path, label, type, directory_ptr, entry_idx);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
+
+   idx                = list->size - 1;
+
+   list_info.list     = list;
+   list_info.path     = path;
+   list_info.fullpath = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   if (  menu_st->driver_ctx &&
+         menu_st->driver_ctx->list_insert)
+      menu_st->driver_ctx->list_insert(
+            menu_st->userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs                             = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = MSG_UNKNOWN;
+   cbs->checked                    = false;
+   cbs->setting                    = menu_setting_find(label);
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_get_value           = NULL;
+
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
+
+   list->list[idx].actiondata      = cbs;
+
+   menu_cbs_init(menu_st,
+         menu_st->driver_ctx,
+         list, cbs, path, label, type, idx);
+}
+
+bool menu_entries_append_enum(
+      file_list_t *list,
+      const char *path,
+      const char *label,
+      enum msg_hash_enums enum_idx,
+      unsigned type,
+      size_t directory_ptr,
+      size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t i;
+   size_t idx;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   struct menu_state    *menu_st   = menu_state_get_ptr();
+
+   if (!list || !label)
+      return false;
+
+   file_list_append(list, path, label, type, directory_ptr, entry_idx);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
+
+   idx                   = list->size - 1;
+
+   list_info.fullpath    = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+   list_info.list        = list;
+   list_info.path        = path;
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   if (  menu_st->driver_ctx &&
+         menu_st->driver_ctx->list_insert)
+      menu_st->driver_ctx->list_insert(
+            menu_st->userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs                             = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return false;
+
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = enum_idx;
+   cbs->checked                    = false;
+   cbs->setting                    = NULL;
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_get_value           = NULL;
+
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
+
+   list->list[idx].actiondata      = cbs;
+
+   if (   enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM
+       && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
+      cbs->setting                 = menu_setting_find_enum(enum_idx);
+
+   menu_cbs_init(menu_st,
+         menu_st->driver_ctx,
+         list, cbs, path, label, type, idx);
+
+   return true;
+}
+
+void menu_entries_prepend(file_list_t *list,
+      const char *path, const char *label,
+      enum msg_hash_enums enum_idx,
+      unsigned type, size_t directory_ptr, size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t i;
+   size_t idx                      = 0;
+   const char *menu_path           = NULL;
+   menu_file_list_cbs_t *cbs       = NULL;
+   struct menu_state    *menu_st   = menu_state_get_ptr();
+   if (!list || !label)
+      return;
+
+   file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
+   file_list_get_last(MENU_LIST_GET(menu_st->entries.list, 0),
+         &menu_path, NULL, NULL, NULL);
+
+   list_info.fullpath    = NULL;
+
+   if (!string_is_empty(menu_path))
+      list_info.fullpath = strdup(menu_path);
+   list_info.list        = list;
+   list_info.path        = path;
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
+
+   if (  menu_st->driver_ctx &&
+         menu_st->driver_ctx->list_insert)
+      menu_st->driver_ctx->list_insert(
+            menu_st->userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
+
+   if (list_info.fullpath)
+      free(list_info.fullpath);
+
+   file_list_free_actiondata(list, idx);
+   cbs                             = (menu_file_list_cbs_t*)
+      malloc(sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   cbs->action_sublabel_cache[0]   = '\0';
+   cbs->action_title_cache[0]      = '\0';
+   cbs->enum_idx                   = enum_idx;
+   cbs->checked                    = false;
+   cbs->setting                    = menu_setting_find_enum(cbs->enum_idx);
+   cbs->action_iterate             = NULL;
+   cbs->action_deferred_push       = NULL;
+   cbs->action_select              = NULL;
+   cbs->action_get_title           = NULL;
+   cbs->action_ok                  = NULL;
+   cbs->action_cancel              = NULL;
+   cbs->action_scan                = NULL;
+   cbs->action_start               = NULL;
+   cbs->action_info                = NULL;
+   cbs->action_left                = NULL;
+   cbs->action_right               = NULL;
+   cbs->action_label               = NULL;
+   cbs->action_sublabel            = NULL;
+   cbs->action_get_value           = NULL;
+
+   cbs->search.size                = 0;
+   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
+      cbs->search.terms[i][0]      = '\0';
+
+   list->list[idx].actiondata      = cbs;
+
+   menu_cbs_init(menu_st,
+         menu_st->driver_ctx,
+         list, cbs, path, label, type, idx);
+}
+
+void menu_entries_flush_stack(const char *needle, unsigned final_type)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   if (menu_list)
+      menu_list_flush_stack(
+            menu_st->driver_ctx,
+            menu_st->userdata,
+            menu_st,
+            menu_list, 0, needle, final_type);
+}
+
+void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
+{
+   struct menu_state    *menu_st            = menu_state_get_ptr();
+   const menu_ctx_driver_t *menu_driver_ctx = menu_st->driver_ctx;
+   menu_list_t *menu_list                   = menu_st->entries.list;
+   if (!menu_list)
+      return;
+
+   if (MENU_LIST_GET_STACK_SIZE(menu_list, idx) > 1)
+   {
+      bool refresh             = false;
+      if (animate)
+      {
+         if (menu_driver_ctx->list_cache)
+            menu_driver_ctx->list_cache(menu_st->userdata,
+                  MENU_LIST_PLAIN, 0);
+      }
+      menu_list_pop_stack(menu_driver_ctx,
+            menu_st->userdata, menu_list, idx, ptr);
+
+      if (animate)
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   }
+}
+
+bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+
+   switch (state)
+   {
+      case MENU_ENTRIES_CTL_NEEDS_REFRESH:
+         return MENU_ENTRIES_NEEDS_REFRESH(menu_st);
+      case MENU_ENTRIES_CTL_SETTINGS_GET:
+         {
+            rarch_setting_t **settings  = (rarch_setting_t**)data;
+            if (!settings)
+               return false;
+            *settings = menu_st->entries.list_settings;
+         }
+         break;
+      case MENU_ENTRIES_CTL_SET_REFRESH:
+         {
+            bool *nonblocking = (bool*)data;
+
+            if (*nonblocking)
+               menu_st->entries_nonblocking_refresh = true;
+            else
+               menu_st->entries_need_refresh        = true;
+         }
+         break;
+      case MENU_ENTRIES_CTL_UNSET_REFRESH:
+         {
+            bool *nonblocking = (bool*)data;
+
+            if (*nonblocking)
+               menu_st->entries_nonblocking_refresh = false;
+            else
+               menu_st->entries_need_refresh        = false;
+         }
+         break;
+      case MENU_ENTRIES_CTL_SET_START:
+         {
+            size_t *idx = (size_t*)data;
+            if (idx)
+               menu_st->entries.begin = *idx;
+         }
+      case MENU_ENTRIES_CTL_START_GET:
+         {
+            size_t *idx = (size_t*)data;
+            if (!idx)
+               return 0;
+
+            *idx = menu_st->entries.begin;
+         }
+         break;
+      case MENU_ENTRIES_CTL_REFRESH:
+         /**
+          * Before a refresh, we could have deleted a
+          * file on disk, causing selection_ptr to
+          * suddendly be out of range.
+          *
+          * Ensure it doesn't overflow.
+          **/
+         {
+            size_t list_size;
+            file_list_t *list               = (file_list_t*)data;
+            if (!list)
+               return false;
+            if (list->size)
+               menu_entries_build_scroll_indices(menu_st, list);
+            list_size                       = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+
+            if (list_size)
+            {
+               size_t          selection    = menu_st->selection_ptr;
+               if (selection >= list_size)
+               {
+                  size_t idx                = list_size - 1;
+                  menu_st->selection_ptr    = idx;
+
+                  menu_driver_navigation_set(true);
+               }
+            }
+            else
+            {
+               bool pending_push = true;
+               menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+            }
+         }
+         break;
+      case MENU_ENTRIES_CTL_CLEAR:
+         {
+            unsigned i;
+            file_list_t              *list = (file_list_t*)data;
+
+            if (!list)
+               return false;
+
+            /* Clear all the menu lists. */
+            if (menu_st->driver_ctx->list_clear)
+               menu_st->driver_ctx->list_clear(list);
+
+            for (i = 0; i < list->size; i++)
+            {
+               if (list->list[i].actiondata)
+                  free(list->list[i].actiondata);
+               list->list[i].actiondata = NULL;
+            }
+
+            file_list_clear(list);
+         }
+         break;
+      case MENU_ENTRIES_CTL_SHOW_BACK:
+         /* Returns true if a Back button should be shown
+          * (i.e. we are at least
+          * one level deep in the menu hierarchy). */
+         if (!menu_st->entries.list)
+            return false;
+         return (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1);
+      case MENU_ENTRIES_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
+
+/* TODO/FIXME - seems only RGUI uses this - can this be
+ * refactored away or we can have one common function used
+ * across all menu drivers? */
+#ifdef HAVE_RGUI
+void menu_display_handle_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   struct menu_state    *menu_st = menu_state_get_ptr();
+   menu_display_common_image_upload(
+         menu_st->driver_ctx,
+         menu_st->userdata,
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_THUMBNAIL);
+}
+
+void menu_display_handle_left_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   struct menu_state    *menu_st = menu_state_get_ptr();
+   menu_display_common_image_upload(
+         menu_st->driver_ctx,
+         menu_st->userdata,
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_LEFT_THUMBNAIL);
+}
+#endif
+
+void menu_display_handle_savestate_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   struct menu_state    *menu_st = menu_state_get_ptr();
+   menu_display_common_image_upload(
+         menu_st->driver_ctx,
+         menu_st->userdata,
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_SAVESTATE_THUMBNAIL);
+}
+
+/* Function that gets called when we want to load in a
+ * new menu wallpaper.
+ */
+void menu_display_handle_wallpaper_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   struct menu_state    *menu_st = menu_state_get_ptr();
+   menu_display_common_image_upload(
+         menu_st->driver_ctx,
+         menu_st->userdata,
+         (struct texture_image*)task_data,
+         user_data,
+         MENU_IMAGE_WALLPAPER);
+}
+
+void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   if (menu_is_alive && menu_st->driver_ctx->frame)
+      menu_st->driver_ctx->frame(menu_st->userdata, video_info);
+}
+
+bool menu_driver_list_cache(menu_ctx_list_t *list)
+{
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   if (!list || !menu_st->driver_ctx || !menu_st->driver_ctx->list_cache)
+      return false;
+
+   menu_st->driver_ctx->list_cache(menu_st->userdata,
+         list->type, list->action);
+   return true;
+}
+
+void menu_driver_navigation_set(bool scroll)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (menu_st->driver_ctx->navigation_set)
+      menu_st->driver_ctx->navigation_set(menu_st->userdata, scroll);
+}
+
+void menu_driver_populate_entries(menu_displaylist_info_t *info)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (menu_st->driver_ctx && menu_st->driver_ctx->populate_entries)
+      menu_st->driver_ctx->populate_entries(
+            menu_st->userdata, info->path,
+            info->label, info->type);
+}
+
+bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (menu_st->driver_ctx->list_push)
+      if (menu_st->driver_ctx->list_push(
+               menu_st->driver_data,
+               menu_st->userdata,
+               disp_list->info, disp_list->type) == 0)
+         return true;
+   return false;
+}
+
+void menu_driver_set_thumbnail_system(char *s, size_t len)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->set_thumbnail_system)
+      menu_st->driver_ctx->set_thumbnail_system(
+            menu_st->userdata, s, len);
+}
+
+void menu_driver_get_thumbnail_system(char *s, size_t len)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->get_thumbnail_system)
+      menu_st->driver_ctx->get_thumbnail_system(
+            menu_st->userdata, s, len);
+}
+
+void menu_driver_set_thumbnail_content(char *s, size_t len)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->set_thumbnail_content)
+      menu_st->driver_ctx->set_thumbnail_content(
+            menu_st->userdata, s);
+}
+
+/* Teardown function for the menu driver. */
+void menu_driver_destroy(
+      struct menu_state *menu_st)
+{
+   menu_st->pending_quick_menu    = false;
+   menu_st->prevent_populate      = false;
+   menu_st->data_own              = false;
+   menu_st->driver_ctx            = NULL;
+   menu_st->userdata              = NULL;
+}
+
+bool menu_driver_list_get_entry(menu_ctx_list_t *list)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (  !menu_st->driver_ctx ||
+         !menu_st->driver_ctx->list_get_entry)
+   {
+      list->entry = NULL;
+      return false;
+   }
+   list->entry = menu_st->driver_ctx->list_get_entry(
+         menu_st->userdata,
+         list->type, (unsigned int)list->idx);
+   return true;
+}
+
+bool menu_driver_list_get_selection(menu_ctx_list_t *list)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (  !menu_st->driver_ctx ||
+         !menu_st->driver_ctx->list_get_selection)
+   {
+      list->selection = 0;
+      return false;
+   }
+   list->selection    = menu_st->driver_ctx->list_get_selection(
+         menu_st->userdata);
+
+   return true;
+}
+
+bool menu_driver_list_get_size(menu_ctx_list_t *list)
+{
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+   if (  !menu_st->driver_ctx ||
+         !menu_st->driver_ctx->list_get_size)
+   {
+      list->size = 0;
+      return false;
+   }
+   list->size = menu_st->driver_ctx->list_get_size(
+         menu_st->userdata, list->type);
+   return true;
+}
+
+void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
+{
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t       *menu_input = &menu_st->input_state;
+
+   if (!copy_target)
+      return;
+
+   /* Copy parameters from global menu_input_state
+    * (i.e. don't pass by reference)
+    * This is a fast operation */
+   memcpy(copy_target, &menu_input->pointer, sizeof(menu_input_pointer_t));
+}
+
+unsigned menu_input_get_pointer_selection(void)
+{
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t       *menu_input = &menu_st->input_state;
+   return menu_input->ptr;
+}
+
+void menu_input_set_pointer_selection(unsigned selection)
+{
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t       *menu_input = &menu_st->input_state;
+
+   menu_input->ptr                = selection;
+}
+
+void menu_input_set_pointer_y_accel(float y_accel)
+{
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t    *menu_input    = &menu_st->input_state;
+
+   menu_input->pointer.y_accel    = y_accel;
+}

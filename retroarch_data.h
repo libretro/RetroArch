@@ -1281,11 +1281,6 @@ struct rarch_state
    const void *hid_data;
 #endif
    settings_t *configuration_settings;
-#ifdef HAVE_MENU
-   menu_handle_t *menu_driver_data;
-   void *menu_userdata;
-   const menu_ctx_driver_t *menu_driver_ctx;
-#endif
 #ifdef HAVE_NETWORKING
    /* Used while Netplay is running */
    netplay_t *netplay_data;

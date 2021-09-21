@@ -279,59 +279,6 @@ struct menu_list
 
 typedef struct menu_list menu_list_t;
 
-struct menu_state
-{
-   /* Timers */
-   retro_time_t current_time_us;
-   retro_time_t powerstate_last_time_us;
-   retro_time_t datetime_last_time_us;
-   retro_time_t input_last_time_us;
-   menu_input_t input_state;               /* retro_time_t alignment */
-
-   struct
-   {
-      rarch_setting_t *list_settings;
-      menu_list_t *list;
-      size_t begin;
-   } entries;
-   size_t   selection_ptr;
-
-   /* Quick jumping indices with L/R.
-    * Rebuilt when parsing directory. */
-   struct
-   {
-      size_t   index_list[SCROLL_INDEX_SIZE];
-      unsigned index_size;
-      unsigned acceleration;
-   } scroll;
-
-   /* Storage container for current menu datetime
-    * representation string */
-   char datetime_cache[255];
-
-   /* When generating a menu list in menu_displaylist_build_list(),
-    * the entry with a label matching 'pending_selection' will
-    * be selected automatically */
-   char pending_selection[PATH_MAX_LENGTH];
-
-   /* when enabled, on next iteration the 'Quick Menu' list will
-    * be pushed onto the stack */
-   bool pending_quick_menu;
-   bool prevent_populate;
-   /* The menu driver owns the userdata */
-   bool data_own;
-   /* Flagged when menu entries need to be refreshed */
-   bool entries_need_refresh;
-   bool entries_nonblocking_refresh;
-   /* 'Close Content'-hotkey menu resetting */
-   bool pending_close_content;
-   /* Screensaver status
-    * - Does menu driver support screensaver functionality?
-    * - Is screensaver currently active? */
-   bool screensaver_supported;
-   bool screensaver_active;
-};
-
 typedef struct menu_ctx_load_image
 {
    void *data;
@@ -475,6 +422,64 @@ typedef struct
    char filebrowser_label[PATH_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
 } menu_handle_t;
+
+struct menu_state
+{
+   /* Timers */
+   retro_time_t current_time_us;
+   retro_time_t powerstate_last_time_us;
+   retro_time_t datetime_last_time_us;
+   retro_time_t input_last_time_us;
+   menu_input_t input_state;               /* retro_time_t alignment */
+
+   menu_handle_t *driver_data;
+   void *userdata;
+   const menu_ctx_driver_t *driver_ctx;
+
+   struct
+   {
+      rarch_setting_t *list_settings;
+      menu_list_t *list;
+      size_t begin;
+   } entries;
+   size_t   selection_ptr;
+
+   /* Quick jumping indices with L/R.
+    * Rebuilt when parsing directory. */
+   struct
+   {
+      size_t   index_list[SCROLL_INDEX_SIZE];
+      unsigned index_size;
+      unsigned acceleration;
+   } scroll;
+
+   /* Storage container for current menu datetime
+    * representation string */
+   char datetime_cache[255];
+
+   /* When generating a menu list in menu_displaylist_build_list(),
+    * the entry with a label matching 'pending_selection' will
+    * be selected automatically */
+   char pending_selection[PATH_MAX_LENGTH];
+
+   /* when enabled, on next iteration the 'Quick Menu' list will
+    * be pushed onto the stack */
+   bool pending_quick_menu;
+   bool prevent_populate;
+   /* The menu driver owns the userdata */
+   bool data_own;
+   /* Flagged when menu entries need to be refreshed */
+   bool entries_need_refresh;
+   bool entries_nonblocking_refresh;
+   /* 'Close Content'-hotkey menu resetting */
+   bool pending_close_content;
+   /* Screensaver status
+    * - Does menu driver support screensaver functionality?
+    * - Is screensaver currently active? */
+   bool screensaver_supported;
+   bool screensaver_active;
+};
+
 
 typedef struct menu_content_ctx_defer_info
 {
@@ -805,6 +810,10 @@ const char *config_get_menu_driver_options(void);
 
 bool generic_menu_init_list(struct menu_state *menu_st,
       settings_t *settings);
+
+/* Teardown function for the menu driver. */
+void menu_driver_destroy(
+      struct menu_state *menu_st);
 
 bool rarch_menu_init(
       struct menu_state *menu_st,
