@@ -622,7 +622,8 @@ bool menu_input_key_bind_set_mode(
    const input_device_driver_t
       *sec_joypad                      = NULL;
 #endif
-   menu_input_t *menu_input            = &p_rarch->menu_input_state;
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   menu_input_t *menu_input            = &menu_st->input_state;
    settings_t     *settings            = p_rarch->configuration_settings;
    struct menu_bind_state *binds       = &p_rarch->menu_input_binds;
    uint64_t input_bind_hold_us         = settings->uints.input_bind_hold
@@ -632,7 +633,7 @@ bool menu_input_key_bind_set_mode(
 
    if (!setting || !menu)
       return false;
-   if (menu_input_key_bind_set_mode_common(menu_state_get_ptr(),
+   if (menu_input_key_bind_set_mode_common(menu_st,
             binds, state, setting, settings) == -1)
       return false;
 
@@ -701,8 +702,8 @@ static bool menu_input_key_bind_iterate(
 {
    bool               timed_out   = false;
    struct menu_bind_state *_binds = &p_rarch->menu_input_binds;
-   menu_input_t *menu_input       = &p_rarch->menu_input_state;
    struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t *menu_input       = &menu_st->input_state;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
@@ -1232,7 +1233,7 @@ static int generic_menu_iterate(
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
    {
-      menu_input_t     *menu_input  = &p_rarch->menu_input_state;
+      menu_input_t     *menu_input  = &menu_st->input_state;
       /* If pointer devices are disabled, just ensure mouse
        * cursor is hidden */
       if (menu_input->pointer.type == MENU_POINTER_DISABLED)
@@ -2213,7 +2214,7 @@ static bool menu_driver_init_internal(
             menu_st,
             &p_rarch->dialog_st,
             p_rarch->menu_driver_ctx,
-            &p_rarch->menu_input_state,
+            &menu_st->input_state,
             &p_rarch->menu_input_pointer_hw_state,
             settings))
       return false;
@@ -2433,7 +2434,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                menu_st->scroll.index_list[i] = 0;
 
-            memset(&p_rarch->menu_input_state, 0, sizeof(menu_input_t));
+            memset(&menu_st->input_state, 0, sizeof(menu_input_t));
             memset(&p_rarch->menu_input_pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 
             if (     p_rarch->menu_driver_ctx
@@ -17187,7 +17188,7 @@ static unsigned menu_event(
    bool set_scroll                                 = false;
    size_t new_scroll_accel                         = 0;
    struct menu_state                     *menu_st  = menu_state_get_ptr();
-   menu_input_t *menu_input                        = &p_rarch->menu_input_state;
+   menu_input_t *menu_input                        = &menu_st->input_state;
    input_driver_state_t *input_driver_st           =
       &p_rarch->input_driver_state;
    input_driver_t *current_input                   =
@@ -17546,8 +17547,8 @@ static unsigned menu_event(
 
 void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
 {
-   struct rarch_state  *p_rarch   = &rarch_st;
-   menu_input_t       *menu_input = &p_rarch->menu_input_state;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t       *menu_input = &menu_st->input_state;
 
    if (!copy_target)
       return;
@@ -17560,23 +17561,23 @@ void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
 
 unsigned menu_input_get_pointer_selection(void)
 {
-   struct rarch_state  *p_rarch   = &rarch_st;
-   menu_input_t       *menu_input = &p_rarch->menu_input_state;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t       *menu_input = &menu_st->input_state;
    return menu_input->ptr;
 }
 
 void menu_input_set_pointer_selection(unsigned selection)
 {
-   struct rarch_state  *p_rarch   = &rarch_st;
-   menu_input_t       *menu_input = &p_rarch->menu_input_state;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t       *menu_input = &menu_st->input_state;
 
    menu_input->ptr                = selection;
 }
 
 void menu_input_set_pointer_y_accel(float y_accel)
 {
-   struct rarch_state  *p_rarch   = &rarch_st;
-   menu_input_t    *menu_input    = &p_rarch->menu_input_state;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_input_t    *menu_input    = &menu_st->input_state;
 
    menu_input->pointer.y_accel    = y_accel;
 }
@@ -17609,9 +17610,9 @@ static int menu_input_pointer_post_iterate(
    bool messagebox_active                          = false;
    int ret                                         = 0;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
-   menu_input_t *menu_input                        = &p_rarch->menu_input_state;
-   menu_handle_t *menu                             = p_rarch->menu_driver_data;
    struct menu_state                     *menu_st  = menu_state_get_ptr();
+   menu_input_t *menu_input                        = &menu_st->input_state;
+   menu_handle_t *menu                             = p_rarch->menu_driver_data;
 
    /* Check whether a message box is currently
     * being shown
@@ -27609,7 +27610,7 @@ void retroarch_menu_running(void)
 #ifdef HAVE_MENU
    menu_handle_t *menu             = p_rarch->menu_driver_data;
    struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_input_t *menu_input        = &p_rarch->menu_input_state;
+   menu_input_t *menu_input        = &menu_st->input_state;
    if (menu)
    {
       if (menu->driver_ctx && menu->driver_ctx->toggle)
@@ -27680,7 +27681,7 @@ void retroarch_menu_running_finished(bool quit)
 #ifdef HAVE_MENU
    menu_handle_t *menu             = p_rarch->menu_driver_data;
    struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_input_t *menu_input        = &p_rarch->menu_input_state;
+   menu_input_t *menu_input        = &menu_st->input_state;
    if (menu)
    {
       if (menu->driver_ctx && menu->driver_ctx->toggle)

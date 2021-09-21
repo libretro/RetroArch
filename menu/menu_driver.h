@@ -286,6 +286,7 @@ struct menu_state
    retro_time_t powerstate_last_time_us;
    retro_time_t datetime_last_time_us;
    retro_time_t input_last_time_us;
+   menu_input_t input_state;               /* retro_time_t alignment */
 
    struct
    {

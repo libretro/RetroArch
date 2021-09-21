@@ -1146,12 +1146,6 @@ struct rarch_state
    retro_time_t video_driver_frame_time_samples[
       MEASURE_FRAME_TIME_SAMPLES_COUNT];
    struct global              g_extern;         /* retro_time_t alignment */
-#ifdef HAVE_MENU
-   menu_input_t menu_input_state;               /* retro_time_t alignment */
-#endif
-
-
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
 #endif
