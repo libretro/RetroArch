@@ -13,7 +13,7 @@ PS4_TITLE_NAME	:= RetroArch
 
 PC_DEVELOPMENT_IP_ADDRESS  = 192.168.1.137
 PC_DEVELOPMENT_UDP_PORT	   = 18194
-DEBUG=1
+
 AUTH_INFO = 000000000000000000000000001C004000FF000000000080000000000000000000000000000000000000008000400040000000000000008000000000000000080040FFFF000000F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 OBJ += memory/ps4/user_mem.o \
@@ -106,36 +106,27 @@ ifeq ($(strip $(ORBISDEV)),)
 $(error "Please set ORBISDEV in your environment. export ORBISDEV=<path to>orbisdev")
 endif
 
-PREFIX :=
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-  CDIR	:= linux
-endif
-ifeq ($(UNAME_S),Darwin)
-  #PREFIX := /usr/local/opt/llvm/bin/
-  CDIR	:= macos
-endif
-
-CC      := $(PREFIX)clang++
-CXX     := $(PREFIX)clang++
+PREFIX := orbis-
+CC      := clang
+CXX     := clang++
 AS      := $(PREFIX)as
-AR      := $(PREFIX)orbis-ar
+AR      := $(PREFIX)ar
 OBJCOPY := $(PREFIX)objcopy
 STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
-LD      := $(PREFIX)clang
+LD      := clang
 
-LIBDIRS += -L. -Lcores -Lmemory/ps4 -Lbuild
+LIBDIRS += -L. -Lcores -Lmemory/ps4 -Lbuild -L$(ORBISDEV)/usr/lib
 INCDIRS += -I. -Idefines -Imemory/ps4 -Ideps -Ideps/7zip -Ideps/libz -Ilibretro-common/include -Ideps/stb \
 					 -Ilibretro-common/include/compat/zlib -Ideps/rcheevos/include -I$(ORBISDEV)/usr/include -I$(ORBISDEV)/usr/include/c++/v1 -I$(ORBISDEV)/usr/include/orbis
 
-ARCHFLAGS += -DORBIS -D__PS4__ -D_BSD_SOURCE
+ARCHFLAGS += --target=x86_64-scei-ps4 -DORBIS -D__PS4__ -D_BSD_SOURCE
 DEFINES += -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_FILTERS_BUILTIN \
 					 -DHAVE_XMB -DHAVE_RGUI -DHAVE_OZONE \
 					 -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_ASSETS \
 
 # Compiling with -Werror and disabling some warnings
-DEFINES += -Werror -Wno-macro-redefined -Wno-non-literal-null-conversion -Wno-void-pointer-to-int-cast -Wno-format
+DEFINES += -Werror -Wno-macro-redefined -Wno-typedef-redefinition -Wno-non-literal-null-conversion -Wno-void-pointer-to-int-cast -Wno-format
 
 ifeq ($(HAVE_KEYBOARD), 1)
   DEFINES += -DHAVE_KEYBOARD
@@ -172,14 +163,13 @@ else
 endif
 
 
-CFLAGS   := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj  -std=c11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
-CXXFLAGS := -cc1 -triple x86_64-scei-ps4-elf -munwind-tables -Wall -pedantic -mcmodel=large -Wno-zero-length-array -Wno-format-pedantic -emit-obj -std=c++11 $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
-LDFLAGS  :=    -isysroot $(ORBISDEV)/usr -L. -Llib -Wl,--gc-sections -Wl,-z -Wl,max-page-size=0x4000 -Wl,--dynamic-linker="/libexec/ld-elf.so.1" -Wl,-pie -Wl,--eh-frame-hdr -L$(ORBISDEV)/usr/lib -target x86_64-scei-ps4-elf -T $(ORBISDEV)/linker.x
-ARFLAGS  := rcs
+CFLAGS   := $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
+CXXFLAGS := $(ARCHFLAGS) $(INCDIRS) $(DEFINES)
+LDFLAGS  := $(LIBDIRS) -Wl,--gc-sections -Wl,-z -Wl,max-page-size=0x4000 -Wl,--dynamic-linker="/libexec/ld-elf.so.1" -Wl,-pie -Wl,--eh-frame-hdr -target x86_64-scei-ps4-elf -T $(ORBISDEV)/linker.x
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -fdebugger-support -fno-inline
-   CXXFLAGS += -O0 -fdebugger-support -fno-inline
+   CFLAGS += -O0 -fno-inline
+   CXXFLAGS += -O0 -fno-inline
 else
    CFLAGS += -O3
    CXXFLAGS += -O3
@@ -189,24 +179,22 @@ TARGETS := $(TARGET).elf
 
 all: $(TARGETS)
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
+OBJOUT   = -o
 
 %.o: %.c
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.S
-	$(AS) $(ASFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.s
-	$(AS) -o $@ $<
+	$(CC) -c $(OBJOUT)$@ $<
 
 $(TARGET).elf: $(OBJ)
 	$(LD) $(ORBISDEV)/crt0.s $(OBJ)  $(LDFLAGS) $(LIBS) -o $(TARGET).elf
-
-$(TARGET).a: $(OBJ)
-	$(AR) $(ARFLAGS)  $(TARGET).a  $(OBJ)
-	#$(OO_PS4_TOOLCHAIN)/bin/$(CDIR)/create-eboot -in=$(TARGET).elf -out=$(TARGET).oelf --paid 0x3800000000000011
 
 install:
 	@cp homebrew.self $(SELF_PATH_INSTALL)

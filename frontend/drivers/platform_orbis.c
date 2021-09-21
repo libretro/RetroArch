@@ -46,6 +46,7 @@
 #include <libSceSysmodule.h>
 #include <libSceLibcInternal.h>
 #include <defines/ps4_defines.h>
+#include <user_mem.h>
 
 #include <pthread.h>
 
@@ -112,12 +113,6 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
    struct rarch_main_wrap *params = NULL;
 
    (void)args;
-
-#ifndef IS_SALAMANDER
-#if defined(HAVE_LOGGER)
-   logger_init();
-#endif
-#endif
 
    int ret;
 
@@ -242,7 +237,6 @@ static void frontend_orbis_init(void *data)
    int ret=initApp();
    printf("[%s][%s][%d]\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
 
-   logger_init();
    RARCH_LOG("[%s][%s][%d] Hello from retroarch level info\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
    RARCH_ERR("[%s][%s][%d] Hello from retroarch level error\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
    RARCH_WARN("[%s][%s][%d] Hello from retroarch level warning no warning level on debugnet yet\n",__FILE__,__PRETTY_FUNCTION__,__LINE__);
@@ -382,19 +376,19 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-// static size_t frontend_orbis_get_mem_total(void)
-// {
-//   size_t max_mem = 0, cur_mem = 0;
-//   get_user_mem_size(&max_mem, &cur_mem);
-//   return max_mem;
-// }
+static size_t frontend_orbis_get_mem_total(void)
+{
+  size_t max_mem = 0, cur_mem = 0;
+  get_user_mem_size(&max_mem, &cur_mem);
+  return max_mem;
+}
 
-// static size_t frontend_orbis_get_mem_used(void)
-// {
-//   size_t max_mem = 0, cur_mem = 0;
-//   get_user_mem_size(&max_mem, &cur_mem);
-//   return cur_mem;
-// }
+static size_t frontend_orbis_get_mem_used(void)
+{
+  size_t max_mem = 0, cur_mem = 0;
+  get_user_mem_size(&max_mem, &cur_mem);
+  return cur_mem;
+}
 
 frontend_ctx_driver_t frontend_ctx_orbis = {
    frontend_orbis_get_env,
@@ -416,8 +410,8 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    frontend_orbis_get_arch,
    NULL,
    frontend_orbis_parse_drive_list,
-   NULL, /* TODO: frontend_orbis_get_mem_total,*/
-   NULL, /* TODO: frontend_orbis_get_mem_used,*/
+   frontend_orbis_get_mem_total,
+   frontend_orbis_get_mem_used,
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
