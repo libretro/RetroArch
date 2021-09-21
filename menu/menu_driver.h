@@ -432,6 +432,8 @@ struct menu_state
    retro_time_t input_last_time_us;
    menu_input_t input_state;               /* retro_time_t alignment */
 
+   struct menu_bind_state input_binds;     /* uint64_t alignment */
+
    menu_handle_t *driver_data;
    void *userdata;
    const menu_ctx_driver_t *driver_ctx;
@@ -832,6 +834,8 @@ extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_stripes;
 
 void menu_input_search_cb(void *userdata, const char *str);
+
+extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 RETRO_END_DECLS
 

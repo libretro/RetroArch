@@ -225,6 +225,18 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
+typedef struct key_desc
+{
+   /* libretro key id */
+   unsigned key;
+
+   /* description */
+   char desc[32];
+} key_desc_t;
+
+/* TODO/FIXME - public global variables */
+extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
+
 /**
  * Copy parameters from the global menu_input_state to a menu_input_pointer_t
  * in order to provide access to all pointer device parameters.

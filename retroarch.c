@@ -562,8 +562,9 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
 {
    uint64_t current_usec;
    struct rarch_state *p_rarch    = &rarch_st;
+   struct menu_state *menu_st     = menu_state_get_ptr();
    settings_t     *settings       = p_rarch->configuration_settings;
-   struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
+   struct menu_bind_state *binds  = &menu_st->input_binds;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
@@ -619,7 +620,7 @@ bool menu_input_key_bind_set_mode(
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_input_t *menu_input            = &menu_st->input_state;
    settings_t     *settings            = p_rarch->configuration_settings;
-   struct menu_bind_state *binds       = &p_rarch->menu_input_binds;
+   struct menu_bind_state *binds       = &menu_st->input_binds;
    uint64_t input_bind_hold_us         = settings->uints.input_bind_hold
       * 1000000;
    uint64_t input_bind_timeout_us      = settings->uints.input_bind_timeout
@@ -675,19 +676,6 @@ bool menu_input_key_bind_set_mode(
    return true;
 }
 
-bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
-{
-   struct rarch_state *p_rarch    = &rarch_st;
-   struct menu_bind_state *binds  = &p_rarch->menu_input_binds;
-   if (!lim)
-      return false;
-
-   binds->begin = lim->min;
-   binds->last  = lim->max;
-
-   return true;
-}
-
 static bool menu_input_key_bind_iterate(
       struct rarch_state *p_rarch,
       settings_t *settings,
@@ -696,7 +684,7 @@ static bool menu_input_key_bind_iterate(
 {
    bool               timed_out   = false;
    struct menu_state *menu_st     = menu_state_get_ptr();
-   struct menu_bind_state *_binds = &p_rarch->menu_input_binds;
+   struct menu_bind_state *_binds = &menu_st->input_binds;
    menu_input_t *menu_input       = &menu_st->input_state;
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
