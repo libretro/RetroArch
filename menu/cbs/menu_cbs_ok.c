@@ -1923,11 +1923,11 @@ static int generic_action_ok(const char *path,
             bool config_save_on_exit        = settings->bools.config_save_on_exit;
             flush_type                      = MENU_SETTINGS;
 
-            gfx_display_set_msg_force(true);
+            disp_get_ptr()->msg_force       = true;
 
             if (config_replace(config_save_on_exit, action_path))
             {
-               bool pending_push = false;
+               bool pending_push            = false;
                menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
                ret = -1;
             }

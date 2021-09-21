@@ -256,7 +256,7 @@ float gfx_display_get_dpi_scale_internal(
 #endif
 
    /* Get pixel scale relative to baseline 1080p display */
-   pixel_scale = diagonal_pixels / DIAGONAL_PIXELS_1080P;
+   pixel_scale   = diagonal_pixels / DIAGONAL_PIXELS_1080P;
 
    /* Attempt to get display DPI */
    metrics.type  = DISPLAY_METRIC_DPI;
@@ -456,43 +456,40 @@ void gfx_display_scissor_begin(
       int x, int y, unsigned width, unsigned height)
 {
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (dispctx && dispctx->scissor_begin)
+   if (y < 0)
    {
-      if (y < 0)
-      {
-         if (height < (unsigned)(-y))
-            height = 0;
-         else
-            height += y;
-         y = 0;
-      }
-      if (x < 0)
-      {
-         if (width < (unsigned)(-x))
-            width = 0;
-         else
-            width += x;
-         x = 0;
-      }
-      if (y >= (int)video_height)
-      {
-         height = 0;
-         y = 0;
-      }
-      if (x >= (int)video_width)
-      {
-         width = 0;
-         x = 0;
-      }
-      if ((y + height) > video_height)
-         height = video_height - y;
-      if ((x + width) > video_width)
-         width = video_width - x;
-
-      dispctx->scissor_begin(userdata,
-            video_width, video_height,
-            x, y, width, height);
+      if (height < (unsigned)(-y))
+         height  = 0;
+      else
+         height += y;
+      y          = 0;
    }
+   if (x < 0)
+   {
+      if (width < (unsigned)(-x))
+         width   = 0;
+      else
+         width  += x;
+      x          = 0;
+   }
+   if (y >= (int)video_height)
+   {
+      height     = 0;
+      y          = 0;
+   }
+   if (x >= (int)video_width)
+   {
+      width      = 0;
+      x          = 0;
+   }
+   if ((y + height) > video_height)
+      height     = video_height - y;
+   if ((x + width) > video_width)
+      width      = video_width - x;
+
+   dispctx->scissor_begin(userdata,
+         video_width, video_height,
+         x, y, width, height);
 }
 
 font_data_t *gfx_display_font_file(
@@ -1152,12 +1149,6 @@ void gfx_display_set_framebuffer_pitch(size_t pitch)
 {
    gfx_display_t *p_disp   = disp_get_ptr();
    p_disp->framebuf_pitch = pitch;
-}
-
-void gfx_display_set_msg_force(bool state)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   p_disp->msg_force       = state;
 }
 
 void gfx_display_draw_keyboard(

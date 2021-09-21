@@ -28540,7 +28540,7 @@ static enum runloop_state runloop_check_state(
           * and exit the function to go to the next frame.
           */
          menu_entries_flush_stack(NULL, MENU_SETTINGS);
-         gfx_display_set_msg_force(true);
+         disp_get_ptr()->msg_force = true;
 
          generic_action_ok_displaylist_push("", NULL,
                "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);

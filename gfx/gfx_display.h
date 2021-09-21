@@ -264,7 +264,6 @@ void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
 void gfx_display_set_height(unsigned height);
 void gfx_display_set_framebuffer_pitch(size_t pitch);
 
-void gfx_display_set_msg_force(bool state);
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
