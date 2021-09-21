@@ -5354,13 +5354,13 @@ bool command_write_memory(command_t *cmd, const char *arg)
 }
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool retroarch_apply_shader(
       struct rarch_state *p_rarch,
       settings_t *settings,
       enum rarch_shader_type type,
       const char *preset_path, bool message)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char msg[256];
    const char      *core_name   = runloop_state.system.info.library_name;
    const char      *preset_file = NULL;
@@ -5445,11 +5445,9 @@ static bool retroarch_apply_shader(
    runloop_msg_queue_push(
          msg, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-#endif
    return false;
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
