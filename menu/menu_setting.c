@@ -10325,7 +10325,7 @@ static bool setting_append_list(
                   &settings->ints.savestate_max_direct_slot,
                   MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT,
                   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_DIRECT_SLOT,
-                  savestate_max_direct_slot,
+                  DEFAULT_SAVESTATE_MAX_DIRECT_SLOT,
                   &group_info,
                   &subgroup_info,
                   parent_group,
