@@ -153,7 +153,7 @@ int rfscanf(RFILE * stream, const char * format, ...)
    int result;
    va_list vl;
    va_start(vl, format);
-   result = filestream_scanf(stream, format, vl);
+   result = filestream_vscanf(stream, format, &vl);
    va_end(vl);
    return result;
 }
