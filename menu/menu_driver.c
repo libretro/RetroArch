@@ -2811,6 +2811,119 @@ void menu_shader_manager_apply_changes(
 
    menu_shader_manager_set_preset(NULL, type, NULL, true);
 }
+
+/**
+ * menu_shader_manager_save_preset:
+ * @shader                   : shader to save
+ * @type                     : type of shader preset which determines save path
+ * @basename                 : basename of preset
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader preset to disk.
+ **/
+bool menu_shader_manager_save_preset(const struct video_shader *shader,
+      const char *basename,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply)
+{
+   char config_directory[PATH_MAX_LENGTH];
+   const char *preset_dirs[3]  = {0};
+   settings_t *settings        = config_get_ptr();
+
+   config_directory[0]         = '\0';
+
+   if (!path_is_empty(RARCH_PATH_CONFIG))
+      fill_pathname_basedir(
+            config_directory,
+            path_get(RARCH_PATH_CONFIG),
+            sizeof(config_directory));
+
+   preset_dirs[0] = dir_video_shader;
+   preset_dirs[1] = dir_menu_config;
+   preset_dirs[2] = config_directory;
+
+   return menu_shader_manager_save_preset_internal(
+         settings->bools.video_shader_preset_save_reference_enable,
+         shader, basename,
+         dir_video_shader,
+         apply,
+         preset_dirs,
+         ARRAY_SIZE(preset_dirs));
+}
+
+/**
+ * menu_shader_manager_remove_auto_preset:
+ * @type                     : type of shader preset to delete
+ *
+ * Deletes an auto-shader.
+ **/
+bool menu_shader_manager_remove_auto_preset(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
+{
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   settings_t *settings             = config_get_ptr();
+   return menu_shader_manager_operate_auto_preset(
+         system, settings->bools.video_shader_preset_save_reference_enable,
+         AUTO_SHADER_OP_REMOVE, NULL,
+         dir_video_shader,
+         dir_menu_config,
+         type, false);
+}
+
+/**
+ * menu_shader_manager_auto_preset_exists:
+ * @type                     : type of shader preset
+ *
+ * Tests if an auto-shader of the given type exists.
+ **/
+bool menu_shader_manager_auto_preset_exists(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
+{
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   settings_t *settings             = config_get_ptr();
+   return menu_shader_manager_operate_auto_preset(
+         system, settings->bools.video_shader_preset_save_reference_enable,
+         AUTO_SHADER_OP_EXISTS, NULL,
+         dir_video_shader,
+         dir_menu_config,
+         type, false);
+}
+
+/**
+ * menu_shader_manager_save_auto_preset:
+ * @shader                   : shader to save
+ * @type                     : type of shader preset which determines save path
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader as an auto-shader to it's appropriate path:
+ *    SHADER_PRESET_GLOBAL: <target dir>/global
+ *    SHADER_PRESET_CORE:   <target dir>/<core name>/<core name>
+ *    SHADER_PRESET_PARENT: <target dir>/<core name>/<parent>
+ *    SHADER_PRESET_GAME:   <target dir>/<core name>/<game name>
+ * Needs to be consistent with load_shader_preset()
+ * Auto-shaders will be saved as a reference if possible
+ **/
+bool menu_shader_manager_save_auto_preset(
+      const struct video_shader *shader,
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply)
+{
+   struct retro_system_info *system = runloop_get_libretro_system_info();
+   settings_t *settings             = config_get_ptr();
+   return menu_shader_manager_operate_auto_preset(
+         system, settings->bools.video_shader_preset_save_reference_enable,
+         AUTO_SHADER_OP_SAVE, shader,
+         dir_video_shader,
+         dir_menu_config,
+         type, apply);
+}
 #endif
 
 enum action_iterate_type action_iterate_type(const char *label)
