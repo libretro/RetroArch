@@ -8,9 +8,6 @@ PS2_IP = 192.168.1.10
 TARGET = retroarchps2-debug.elf
 TARGET_RELEASE = retroarchps2.elf
 
-# Compile the IRXs first
-IRX_DIR = ps2/irx
-
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 	RARCH_DEFINES += -DDEBUG
@@ -72,14 +69,15 @@ endif
 
 CFLAGS += $(RARCH_DEFINES)
 
-# All the IRX objects
-EE_OBJS += $(IRX_DIR)/sio2man_irx.o $ $(IRX_DIR)/iomanX_irx.o $(IRX_DIR)/fileXio_irx.o
-EE_OBJS += $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o
-EE_OBJS += $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/bdm_irx.o $(IRX_DIR)/bdmfs_vfat_irx.o $(IRX_DIR)/usbmass_bd_irx.o
-EE_OBJS += $(IRX_DIR)/libsd_irx.o $(IRX_DIR)/audsrv_irx.o
-EE_OBJS += $(IRX_DIR)/cdfs_irx.o
-EE_OBJS += $(IRX_DIR)/ps2dev9_irx.o $(IRX_DIR)/ps2atad_irx.o $(IRX_DIR)/ps2hdd_irx.o $(IRX_DIR)/ps2fs_irx.o $(IRX_DIR)/poweroff_irx.o
-EE_OBJS += $(IRX_DIR)/mtapman_irx.o $(IRX_DIR)/padman_irx.o
+# IRX libs
+IRX_FILES += sio2man.irx iomanX.irx fileXio.irx
+IRX_FILES += mcman.irx mcserv.irx
+IRX_FILES += usbd.irx bdm.irx bdmfs_vfat.irx usbmass_bd.irx
+IRX_FILES += libsd.irx audsrv.irx
+IRX_FILES += cdfs.irx
+IRX_FILES += ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx poweroff.irx
+IRX_FILES += mtapman.irx padman.irx
+EE_OBJS += $(IRX_FILES:.irx=_irx.o)
 
 # Missing objecst on the PS2SDK
 EE_OBJS += ps2/compat_files/ps2_devices.o
@@ -96,14 +94,10 @@ EE_BIN = $(TARGET)
 EE_GPVAL = $(GPVAL)
 
 
-all: irxdir $(EE_BIN)
-
-irxdir:
-	$(MAKE) -C $(IRX_DIR)
+all: $(EE_BIN)
 
 clean:
 	rm -f $(EE_BIN) $(EE_OBJS)
-	$(MAKE) -C $(IRX_DIR) clean
 
 prepare:
 	ps2client -h $(PS2_IP) reset
@@ -117,10 +111,12 @@ sim:
 
 debug: clean all run
 
-package:
+release: all
 	ps2-packer $(EE_BIN) $(TARGET_RELEASE)
 
-release: clean all package
+# IRX files
+%_irx.c:
+	$(PS2SDK)/bin/bin2c $(PS2SDK)/iop/irx/$<.irx $@ $<irx
 
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref
