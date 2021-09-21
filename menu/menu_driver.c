@@ -4801,11 +4801,12 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
 void menu_driver_destroy(
       struct menu_state *menu_st)
 {
-   menu_st->pending_quick_menu    = false;
-   menu_st->prevent_populate      = false;
-   menu_st->data_own              = false;
-   menu_st->driver_ctx            = NULL;
-   menu_st->userdata              = NULL;
+   menu_st->pending_quick_menu          = false;
+   menu_st->prevent_populate            = false;
+   menu_st->data_own                    = false;
+   menu_st->driver_ctx                  = NULL;
+   menu_st->userdata                    = NULL;
+   menu_st->input_driver_flushing_input = 0;
 }
 
 bool menu_driver_list_get_entry(menu_ctx_list_t *list)
@@ -4927,4 +4928,62 @@ void menu_input_key_event(bool down, unsigned keycode,
    else
       menu_st->kb_key_state[key]  =
          ((menu_st->kb_key_state[key] & 1) << 1) | down;
+}
+
+const char *menu_input_dialog_get_label_setting_buffer(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   return menu_st->input_dialog_kb_label_setting;
+}
+
+const char *menu_input_dialog_get_label_buffer(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   return menu_st->input_dialog_kb_label;
+}
+
+unsigned menu_input_dialog_get_kb_idx(void)
+{
+   struct menu_state *menu_st  = &menu_driver_state;
+   return menu_st->input_dialog_kb_idx;
+}
+
+void menu_input_dialog_end(void)
+{
+   struct menu_state *menu_st                 = &menu_driver_state;
+   menu_st->input_dialog_kb_type              = 0;
+   menu_st->input_dialog_kb_idx               = 0;
+   menu_st->input_dialog_kb_display           = false;
+   menu_st->input_dialog_kb_label[0]          = '\0';
+   menu_st->input_dialog_kb_label_setting[0]  = '\0';
+
+   /* Avoid triggering states on pressing return. */
+   /* Inhibits input for 2 frames
+    * > Required, since input is ignored for 1 frame
+    *   after certain events - e.g. closing the OSK */
+   menu_st->input_driver_flushing_input       = 2;
+}
+
+void menu_dialog_unset_pending_push(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+
+   p_dialog->pending_push  = false;
+}
+
+void menu_dialog_push_pending(enum menu_dialog_type type)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+   p_dialog->current_type         = type;
+   p_dialog->pending_push         = true;
+}
+
+void menu_dialog_set_current_id(unsigned id)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+
+   p_dialog->current_id    = id;
 }

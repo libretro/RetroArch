@@ -456,19 +456,30 @@ struct menu_state
       unsigned acceleration;
    } scroll;
 
+   /* unsigned alignment */
+   unsigned input_dialog_kb_type;
+   unsigned input_dialog_kb_idx;
+   unsigned input_driver_flushing_input;
+   menu_dialog_t dialog_st;
+
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
-
-   unsigned char kb_key_state[RETROK_LAST];
-   /* Storage container for current menu datetime
-    * representation string */
-   char datetime_cache[255];
 
    /* When generating a menu list in menu_displaylist_build_list(),
     * the entry with a label matching 'pending_selection' will
     * be selected automatically */
    char pending_selection[PATH_MAX_LENGTH];
+   /* Storage container for current menu datetime
+    * representation string */
+   char datetime_cache[255];
 
+#ifdef HAVE_MENU
+   char input_dialog_kb_label_setting[256];
+   char input_dialog_kb_label[256];
+#endif
+   unsigned char kb_key_state[RETROK_LAST];
+
+   bool input_dialog_kb_display;
    /* when enabled, on next iteration the 'Quick Menu' list will
     * be pushed onto the stack */
    bool pending_quick_menu;

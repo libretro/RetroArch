@@ -1399,18 +1399,10 @@ struct rarch_state
    input_device_info_t input_device_info[MAX_INPUT_DEVICES];
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
                                           /* unsigned alignment */
-#ifdef HAVE_MENU
-   menu_dialog_t dialog_st;               /* unsigned alignment */
-#endif
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
    unsigned fastforward_after_frames;
-
-#ifdef HAVE_MENU
-   unsigned menu_input_dialog_keyboard_type;
-   unsigned menu_input_dialog_keyboard_idx;
-#endif
 
    unsigned recording_width;
    unsigned recording_height;
@@ -1425,7 +1417,6 @@ struct rarch_state
    unsigned video_driver_height;
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
-   unsigned input_driver_flushing_input;
    unsigned input_hotkey_block_counter;
 #ifdef HAVE_ACCESSIBILITY
    unsigned gamepad_input_override;
@@ -1493,10 +1484,6 @@ struct rarch_state
    char video_driver_gpu_device_string[128];
    char video_driver_gpu_api_version_string[128];
    char error_string[255];
-#ifdef HAVE_MENU
-   char menu_input_dialog_keyboard_label_setting[256];
-   char menu_input_dialog_keyboard_label[256];
-#endif
    char video_driver_window_title[512];
 #ifdef HAVE_NETWORKING
    char server_address_deferred[512];
@@ -1668,7 +1655,6 @@ struct rarch_state
    input_game_focus_state_t game_focus_state; /* bool alignment */
 
 #ifdef HAVE_MENU
-   bool menu_input_dialog_keyboard_display;
    /* Is the menu driver still running? */
    bool menu_driver_alive;
    /* Are we binding a button inside the menu? */
