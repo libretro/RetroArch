@@ -8899,7 +8899,7 @@ static void ozone_draw_footer(
                   0.0f,
                   1.0f,
                   ozone->pure_white,
-                  &mymat);
+                  mymat);
          if (dispctx->blend_end)
             dispctx->blend_end(userdata);
       }
