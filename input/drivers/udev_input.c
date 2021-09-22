@@ -124,6 +124,7 @@ struct udev_input_device
    udev_input_mouse_t mouse;
    enum udev_input_dev_type type;
    char devnode[PATH_MAX_LENGTH];
+   char ident[255]; /* could be mouse or keyboards store here */
 };
 
 typedef void (*device_handle_cb)(void *data,
@@ -604,15 +605,9 @@ static int udev_input_add_device(udev_input_t *udev,
       if (!mouse)
          goto end;
 
-      if (mouse)
-      {
-          if (has_absolutes) 
-            RARCH_LOG("[udev] ABS MOUSE\n");
-          else
-             RARCH_LOG("[udev] REL MOUSE\n");
-      }
    }
-
+   if (ioctl(fd, EVIOCGNAME(sizeof(device->ident)), device->ident) < 0)
+      device->ident[0] = '\0';
    tmp = (udev_input_device_t**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
 
@@ -640,7 +635,6 @@ static int udev_input_add_device(udev_input_t *udev,
             fd, strerror(errno));
    }
 #endif
-
    ret = 1;
 
 end:
@@ -1286,8 +1280,6 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
-   int dev_count= 0;
-   static int device_mouse                    = 0;
 
    if (!enumerate)
       return false;
@@ -1316,56 +1308,23 @@ static bool open_devices(udev_input_t *udev,
             if (check == 0)
                RARCH_LOG("[udev] udev_input_add_device error : %s (%s).\n",
                      devnode, strerror(errno));
-            else if (check == 1 )  
-            {
-               char ident[255];
-               if (ioctl(fd, EVIOCGNAME(sizeof(ident)), ident) < 0)
-                  ident[0] = '\0';
-               if (type == UDEV_INPUT_KEYBOARD)
-               {
-                  RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
-                     dev_count,
-                     ident,
-                     devnode);
-                     dev_count++;
-               }                     
-               else if (type == UDEV_INPUT_MOUSE)
-               {
-                  device_mouse = dev_count;
-                  input_config_set_mouse_display_name(dev_count, ident);
-
-                  RARCH_LOG("[udev]: Mouse(REL) #%u: \"%s\" (%s).\n",
-                     dev_count,
-                     ident,
-                     devnode);
-                     dev_count++;
-               }                     
-               else if (type == UDEV_INPUT_TOUCHPAD)
-               {
-                  input_config_set_mouse_display_name(device_mouse, ident);
-
-                  RARCH_LOG("[udev]: Mouse(ABS) #%u: \"%s\" (%s).\n",
-                     device_mouse,
-                     ident,
-                     devnode);
-                     device_mouse++;
-               }
-            }
 
             (void)check;
             close(fd);
          }
       }
-      if (type == UDEV_INPUT_MOUSE) device_mouse = dev_count;
       udev_device_unref(dev);
    }
 
    udev_enumerate_unref(enumerate);
+
    return true;
 }
 
 static void *udev_input_init(const char *joypad_driver)
 {
+   int mouse = 0;
+   int keyboard=0;
    int fd;
 #ifdef UDEV_XKB_HANDLING
    gfx_ctx_ident_t ctx_ident;
@@ -1430,6 +1389,28 @@ static void *udev_input_init(const char *joypad_driver)
    /* TODO/FIXME - this can't be hidden behind a compile-time ifdef */
    RARCH_WARN("[udev]: Full-screen pointer won't be available.\n");
 #endif
+
+   for (int i = 0; i < udev->num_devices; ++i)
+   {
+      if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
+      {
+         RARCH_LOG("[udev]: Mouse #%u: \"%s\" (%s).\n",
+            mouse,
+            udev->devices[i]->ident,
+            udev->devices[i]->devnode);
+
+         input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
+         mouse++;
+       }
+       else 
+       {
+          RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
+             keyboard,
+             udev->devices[i]->ident,
+             udev->devices[i]->devnode);
+             keyboard++;
+       }
+   }
 
    return udev;
 
