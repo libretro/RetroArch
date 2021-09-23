@@ -16,7 +16,7 @@ else
 endif
 
 ifeq ($(MUTE_WARNINGS), 1)
-   DISABLE_WARNINGS := -Wno-sign-compare -Wno-unused -Wno-parentheses
+   DISABLE_WARNINGS := -Wno-unused -Wno-format -Wno-format-truncation
 endif
 
 INCDIR = -Ilibretro-common/include
@@ -63,12 +63,12 @@ EE_OBJS = frontend/frontend_salamander.o \
 		 ps2/compat_files/ps2_devices.o
 
 # IRX libs
-IRX_FILES += sio2man.irx $ iomanX.irx fileXio.irx
+IRX_FILES += sio2man.irx iomanX.irx fileXio.irx
 IRX_FILES += mcman.irx mcserv.irx
 IRX_FILES += usbd.irx bdm.irx bdmfs_vfat.irx usbmass_bd.irx
 IRX_FILES += cdfs.irx
 IRX_FILES += ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx poweroff.irx
-EE_OBJS += $(IRX_FILES:.irx=.irx)
+EE_OBJS += $(IRX_FILES:.irx=_irx.o)
 
 EE_CFLAGS = $(CFLAGS)
 EE_CXXFLAGS = $(CFLAGS)
@@ -94,7 +94,7 @@ release: all
 
 # IRX files
 %_irx.c:
-	$(PS2SDK)/bin/bin2c $(PS2SDK)/iop/irx/$<.irx $@ $<irx
+	$(PS2SDK)/bin/bin2c $(PS2SDK)/iop/irx/$*.irx $@ $*_irx
 
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref

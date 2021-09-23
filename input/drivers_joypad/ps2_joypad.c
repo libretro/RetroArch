@@ -16,8 +16,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
+#include <kernel.h>
 
 #include "../../config.def.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../input_driver.h"
 
