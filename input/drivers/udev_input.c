@@ -677,6 +677,8 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_touchpad          = NULL;
    const char *action                = NULL;
    const char *devnode               = NULL;
+   int mouse = 0;
+   int check = 0;
    struct udev_device *dev           = udev_monitor_receive_device(
          udev->monitor);
 
@@ -714,6 +716,24 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    /* Hotplug remove */
    else if (string_is_equal(action, "remove"))
       udev_input_remove_device(udev, devnode);
+
+   /* we need to re index the mouse friendly names when a mouse is hotplugged */
+   if ( dev_type  != UDEV_INPUT_KEYBOARD)
+   {
+      /*first clear all */
+      for (int i = 0; i < MAX_USERS; i++)
+        input_config_set_mouse_display_name(i, "N/A");
+
+     /* Add what devices we have now */
+      for (int i = 0; i < udev->num_devices; ++i)
+      {
+         if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
+         {
+            input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
+            mouse++;
+         }
+       }
+   }
 
 end:
    udev_device_unref(dev);
