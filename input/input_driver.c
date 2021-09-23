@@ -21,6 +21,7 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
+#include <retro_assert.h>
 
 #include "input_driver.h"
 #include "input_keymaps.h"
@@ -463,6 +464,9 @@ bool input_driver_button_combo(
       retro_time_t current_time,
       input_bits_t* p_input)
 {
+   retro_assert(input_driver_state != NULL);
+   retro_assert(p_input != NULL);
+
    switch (mode)
    {
       case INPUT_COMBO_DOWN_Y_L_R:

@@ -28158,7 +28158,7 @@ static enum runloop_state runloop_check_state(
    if (
          ((menu_toggle_gamepad_combo != INPUT_COMBO_NONE) &&
           input_driver_button_combo(
-             &(p_rarch->input_driver_state),
+             input_driver_st,
              menu_toggle_gamepad_combo,
              current_time,
              &last_input)))
@@ -28331,7 +28331,7 @@ static enum runloop_state runloop_check_state(
       if (!trig_quit_key &&
           ((quit_gamepad_combo != INPUT_COMBO_NONE) &&
           input_driver_button_combo(
-             &(p_rarch->input_driver_state),
+             input_driver_st,
              quit_gamepad_combo,
              current_time,
              &current_bits)))
