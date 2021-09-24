@@ -454,7 +454,7 @@ static void sdl_rs90_set_scale_frame_functions(sdl_rs90_video_t *vid)
    vid->scale_frame16 = sdl_rs90_scale_frame16_integer;
    vid->scale_frame32 = sdl_rs90_scale_frame32_integer;
 
-   if (vid->scale_integer)
+   if (!vid->scale_integer)
    {
       switch (vid->softfilter_type)
       {
@@ -945,7 +945,7 @@ static void sdl_rs90_set_output(
     * (PokeMini @ 96x64 and VeMUlator @ 48x32 are probably the
     * only cores where this is an issue, but PokeMini at least
     * offers internal upscaling...) */
-   if (!vid->scale_integer)
+   if (vid->scale_integer)
    {
       if (width > SDL_RS90_WIDTH)
       {
@@ -976,7 +976,7 @@ static void sdl_rs90_set_output(
    else
    {
       /* Normal scaling */
-      if (!vid->keep_aspect)
+      if (vid->keep_aspect)
       {
          if (height * SDL_RS90_WIDTH > width * SDL_RS90_HEIGHT)
          {
