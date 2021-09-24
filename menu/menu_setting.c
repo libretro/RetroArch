@@ -6477,7 +6477,7 @@ static void setting_get_string_representation_netplay_share_analog(
 }
 #endif
 
-static void setting_get_string_representation_toggle_gamepad_combo(
+static void setting_get_string_representation_gamepad_combo(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -6486,37 +6486,37 @@ static void setting_get_string_representation_toggle_gamepad_combo(
 
    switch (*setting->value.target.unsigned_integer)
    {
-      case INPUT_TOGGLE_NONE:
+      case INPUT_COMBO_NONE:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          break;
-      case INPUT_TOGGLE_DOWN_Y_L_R:
+      case INPUT_COMBO_DOWN_Y_L_R:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R), len);
          break;
-      case INPUT_TOGGLE_L3_R3:
+      case INPUT_COMBO_L3_R3:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L3_R3), len);
          break;
-      case INPUT_TOGGLE_L1_R1_START_SELECT:
+      case INPUT_COMBO_L1_R1_START_SELECT:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L1_R1_START_SELECT), len);
          break;
-      case INPUT_TOGGLE_START_SELECT:
+      case INPUT_COMBO_START_SELECT:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_SELECT), len);
          break;
-      case INPUT_TOGGLE_L3_R:
+      case INPUT_COMBO_L3_R:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L3_R), len);
          break;
-      case INPUT_TOGGLE_L_R:
+      case INPUT_COMBO_L_R:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L_R), len);
          break;
-      case INPUT_TOGGLE_HOLD_START:
+      case INPUT_COMBO_HOLD_START:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_START), len);
          break;
-      case INPUT_TOGGLE_HOLD_SELECT:
+      case INPUT_COMBO_HOLD_SELECT:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_SELECT), len);
          break;
-      case INPUT_TOGGLE_DOWN_SELECT:
+      case INPUT_COMBO_DOWN_SELECT:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_SELECT), len);
          break;
-      case INPUT_TOGGLE_L2_R2:
+      case INPUT_COMBO_L2_R2:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L2_R2), len);
          break;
    }
@@ -13089,8 +13089,25 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_toggle_gamepad_combo;
-            menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TOGGLE_LAST-1), 1, true, true);
+               &setting_get_string_representation_gamepad_combo;
+            menu_settings_list_current_add_range(list, list_info, 0, (INPUT_COMBO_LAST-1), 1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_quit_gamepad_combo,
+                  MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
+                  MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+                  DEFAULT_QUIT_GAMEPAD_COMBO,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_gamepad_combo;
+            menu_settings_list_current_add_range(list, list_info, 0, (INPUT_COMBO_LAST-1), 1, true, true);
 
             CONFIG_UINT(
                   list, list_info,
