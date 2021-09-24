@@ -339,6 +339,16 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
    return ret;
 }
 
+int filestream_scanf(RFILE *stream, const char* format, ...)
+{
+   int result;
+   va_list vl;
+   va_start(vl, format);
+   result = filestream_vscanf(stream, format, &vl);
+   va_end(vl);
+   return result;
+}
+
 int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
 {
    int64_t output;
