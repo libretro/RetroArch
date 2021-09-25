@@ -2149,7 +2149,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       crc_str[0] = tmp[0] = thumbnail_content[0] = '\0';
 
-      snprintf(crc_str, sizeof(crc_str), "%08lX", db_info_entry->crc32);
+      snprintf(crc_str, sizeof(crc_str), "%08lX", (unsigned long)db_info_entry->crc32);
 
       /* This allows thumbnails to be shown while viewing database
        * entries...

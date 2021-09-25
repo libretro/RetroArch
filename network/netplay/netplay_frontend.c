@@ -623,7 +623,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                         NETPLAY_HOST_STR_LEN);
                   }
 
-                  snprintf(s, sizeof(s), "%ld", content_crc);
+                  snprintf(s, sizeof(s), "%ld", (long)content_crc);
                   strlcpy(ad_packet_buffer.content_crc, s,
                      NETPLAY_HOST_STR_LEN);
 
@@ -851,7 +851,7 @@ static void handshake_password(void *ignore, const char *line)
    netplay_t *netplay                    = handshake_password_netplay;
    struct netplay_connection *connection = &netplay->connections[0];
 
-   snprintf(password, sizeof(password), "%08lX", connection->salt);
+   snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
    if (!string_is_empty(line))
       strlcpy(password + 8, line, sizeof(password)-8);
 
@@ -1363,7 +1363,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
 
    /* Calculate the correct password hash(es) and compare */
    correct = false;
-   snprintf(password, sizeof(password), "%08lX", connection->salt);
+   snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
 
    if (settings->paths.netplay_password[0])
    {

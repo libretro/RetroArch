@@ -160,7 +160,7 @@ bool core_backup_get_backup_path(
          (unsigned)time_info.tm_hour,
          (unsigned)time_info.tm_min,
          (unsigned)time_info.tm_sec,
-         crc,
+         (unsigned long)crc,
          (unsigned)backup_mode,
          FILE_PATH_CORE_BACKUP_EXTENSION);
 
@@ -748,6 +748,6 @@ bool core_backup_list_get_entry_crc_str(
    if (!entry || (len < 9))
       return false;
 
-   snprintf(crc, len, "%08lx", entry->crc);
+   snprintf(crc, len, "%08lx", (unsigned long)entry->crc);
    return true;
 }

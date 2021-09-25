@@ -2969,7 +2969,7 @@ static void netplay_announce(struct rarch_state *p_rarch)
       "game_name=%s&game_crc=%08lX&port=%d&mitm_server=%s"
       "&has_password=%d&has_spectate_password=%d&force_mitm=%d"
       "&retroarch_version=%s&frontend=%s&subsystem_name=%s",
-      username, corename, coreversion, gamename, content_crc,
+      username, corename, coreversion, gamename, (unsigned long)content_crc,
       settings->uints.netplay_port,
       settings->arrays.netplay_mitm_server,
       *settings->paths.netplay_password ? 1 : 0,
