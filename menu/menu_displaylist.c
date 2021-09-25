@@ -2149,7 +2149,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       crc_str[0] = tmp[0] = thumbnail_content[0] = '\0';
 
-      snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
+      snprintf(crc_str, sizeof(crc_str), "%08lX", (unsigned long)db_info_entry->crc32);
 
       /* This allows thumbnails to be shown while viewing database
        * entries...
@@ -5594,7 +5594,6 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          {
             const char *input_driver_id  = settings->arrays.input_driver;
-            const char *joypad_driver_id = settings->arrays.input_joypad_driver;
 
             if (string_is_equal(input_driver_id, "android"))
             {

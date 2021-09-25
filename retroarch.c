@@ -2966,10 +2966,10 @@ static void netplay_announce(struct rarch_state *p_rarch)
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
-      "game_name=%s&game_crc=%08X&port=%d&mitm_server=%s"
+      "game_name=%s&game_crc=%08lX&port=%d&mitm_server=%s"
       "&has_password=%d&has_spectate_password=%d&force_mitm=%d"
       "&retroarch_version=%s&frontend=%s&subsystem_name=%s",
-      username, corename, coreversion, gamename, content_crc,
+      username, corename, coreversion, gamename, (unsigned long)content_crc,
       settings->uints.netplay_port,
       settings->arrays.netplay_mitm_server,
       *settings->paths.netplay_password ? 1 : 0,
@@ -4906,9 +4906,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
 bool menu_input_dialog_get_display_kb(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = menu_state_get_ptr();
 #ifdef HAVE_LIBNX
+   struct rarch_state *p_rarch = &rarch_st;
    SwkbdConfig kbd;
    Result rc;
    /* Indicates that we are "typing" from the swkbd
@@ -4983,7 +4983,7 @@ bool menu_input_dialog_get_display_kb(void)
       return false;
    }
    libnx_apply_overclock();
-#endif
+#endif /* HAVE_LIBNX */
    return menu_st->input_dialog_kb_display;
 }
 
@@ -19633,7 +19633,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
           * so have to do it here */
          free(buf);
          buf = NULL;
-         break;
+         break; 
       case AUDIO_MIXER_TYPE_OGG:
          handle = audio_mixer_load_ogg(buf, (int32_t)params->bufsize);
          break;
@@ -22096,6 +22096,7 @@ void video_driver_hide_mouse(void)
       p_rarch->video_driver_poke->show_mouse(p_rarch->video_driver_data, false);
 }
 
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D9) || defined(HAVE_OPENGL_CORE)
 static void video_driver_save_as_cached(struct rarch_state *p_rarch,
       settings_t *settings, const char *rdr_context_name)
 {
@@ -22108,6 +22109,7 @@ static void video_driver_save_as_cached(struct rarch_state *p_rarch,
          settings->arrays.video_driver,
          rdr_context_name);
 }
+#endif
 
 static void video_driver_restore_cached(struct rarch_state *p_rarch,
       settings_t *settings)

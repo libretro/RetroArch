@@ -30,8 +30,18 @@ extern "C" {
 
 /* return codes */
 #define SO_SUCCESS      0
+
+
 #define SO_EWOULDBLOCK  6
 #define SO_EINVAL      11
+
+#ifdef EWOULDBLOCK
+#undef EWOULDBLOCK
+#endif
+
+#ifdef EAGAIN
+#undef EAGAIN
+#endif
 
 #define EWOULDBLOCK SO_EWOULDBLOCK
 #define EAGAIN SO_EWOULDBLOCK

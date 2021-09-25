@@ -2956,13 +2956,17 @@ static bool check_menu_driver_compatibility(settings_t *settings)
  **/
 static config_file_t *open_default_config_file(void)
 {
-   char application_data[PATH_MAX_LENGTH];
    char conf_path[PATH_MAX_LENGTH];
    char app_path[PATH_MAX_LENGTH];
-   bool has_application_data              = false;
    config_file_t *conf                    = NULL;
 
-   application_data[0] = conf_path[0] = app_path[0] = '\0';
+   #ifndef RARCH_CONSOLE
+   char application_data[PATH_MAX_LENGTH];
+   bool has_application_data              = false;
+   application_data[0] = '\0';
+   #endif
+
+   conf_path[0] = app_path[0] = '\0';
 
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP

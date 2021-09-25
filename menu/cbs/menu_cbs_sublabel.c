@@ -1338,14 +1338,14 @@ static int action_bind_sublabel_netplay_room(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
    {
       snprintf(s, len,
-         "%s: %s (%s)\n%s: %s (%s)\nGame: %s (%08x)",
+         "%s: %s (%s)\n%s: %s (%s)\nGame: %s (%08lx)",
          msg_hash_to_str(MSG_PROGRAM),
          string_is_empty(ra_version)    ? na : ra_version,
          string_is_empty(frontend)      ? na : frontend,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
          corename, core_ver,
          !string_is_equal(gamename, na) ? gamename : na,
-         gamecrc);
+         (unsigned long)gamecrc);
    }
    else
    {
@@ -1382,14 +1382,14 @@ static int action_bind_sublabel_netplay_room(
       else
       {
          snprintf(s, len,
-            "%s: %s (%s)\n%s: %s (%s)\nSubsystem: %s\nGame: %s (%08x)",
+            "%s: %s (%s)\n%s: %s (%s)\nSubsystem: %s\nGame: %s (%08lx)",
             msg_hash_to_str(MSG_PROGRAM),
             string_is_empty(ra_version)    ? na : ra_version,
             string_is_empty(frontend)      ? na : frontend,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
             corename, core_ver, subsystem,
             !string_is_equal(gamename, na) ? gamename : na,
-            gamecrc);
+            (unsigned long)gamecrc);
       }
    }
    return 0;
