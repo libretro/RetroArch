@@ -1182,12 +1182,6 @@ ifeq ($(TARGET), retroarch_wiiu)
 			INCLUDE_DIRS += -Iinput/include
          OBJ += input/drivers_joypad/wiiu/hidpad_driver.o
          OBJ += input/drivers_hid/wiiu_hid.o
-         OBJ += input/connect/joypad_connection.o \
-                input/common/hid/hid_device_driver.o \
-                input/common/hid/device_wiiu_gca.o \
-                input/common/hid/device_ds3.o \
-                input/common/hid/device_ds4.o \
-                input/common/hid/device_null.o
       endif
 endif
 

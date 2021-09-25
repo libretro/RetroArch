@@ -363,17 +363,12 @@ static void log_device(HIDDevice *device)
    RARCH_LOG("    max_packet_size_tx: %d\n", device->max_packet_size_tx);
 }
 
+
 static uint8_t try_init_driver(wiiu_adapter_t *adapter)
 {
-   adapter->driver_handle = adapter->driver->init(adapter);
-   if (!adapter->driver_handle)
-   {
-     RARCH_ERR("[hid]: Failed to initialize driver: %s\n",
-        adapter->driver->name);
-     return ADAPTER_STATE_DONE;
-   }
+   int32_t pad = pad_connection_pad_init(HID_PAD_CONNECTION_PTR(0), &adapter->device_name[0], adapter->vendor_id, adapter->product_id, adapter, &wiiu_hid);
 
-   return ADAPTER_STATE_READY;
+   return (pad >= 0) ? ADAPTER_STATE_READY : ADAPTER_STATE_DONE;
 }
 
 static void synchronized_process_adapters(wiiu_hid_t *hid)
@@ -509,9 +504,10 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
       goto error;
    }
 
-   adapter->hid    = hid;
-   adapter->driver = event->driver;
-   adapter->state  = ADAPTER_STATE_NEW;
+   adapter->hid        = hid;
+   adapter->vendor_id  = event->vendor_id;
+   adapter->product_id = event->product_id;
+   adapter->state      = ADAPTER_STATE_NEW;
 
    synchronized_add_to_adapters_list(adapter);
 
@@ -775,8 +771,11 @@ static wiiu_adapter_t *new_adapter(wiiu_attach_event *event)
 
    adapter->handle          = event->handle;
    adapter->interface_index = event->interface_index;
+   adapter->product_id      = event->product_id;
+   adapter->vendor_id       = event->vendor_id;
    init_cachealigned_buffer(event->max_packet_size_rx, &adapter->rx_buffer, &adapter->rx_size);
    init_cachealigned_buffer(event->max_packet_size_tx, &adapter->tx_buffer, &adapter->tx_size);
+   memcpy(adapter->device_name, event->device_name, sizeof(adapter->device_name));
    adapter->connected       = true;
 
    return adapter;
@@ -806,20 +805,48 @@ static void delete_adapter(wiiu_adapter_t *adapter)
    free(adapter);
 }
 
+static void get_descriptor_string_ascii(wiiu_adapter_t *adapter, uint8_t *buffer, size_t buffer_size) {
+   int32_t result = HIDGetDescriptor(adapter->handle, 3, 2, 0, adapter->rx_buffer, adapter->rx_size, NULL, NULL);
+   memset(buffer, 0, buffer_size);
+   uint8_t *top;
+   if(result > 0) {
+      top = buffer;
+      for(int i = 2; i < result; i += 2) {
+         top[0] = adapter->rx_buffer[i];
+         top++;
+      }
+   } else {
+      RARCH_ERR("Failed to read descriptor string (0x%08x). Will attempt match by VID/PID\n", result);
+   }
+}
+
+
+static void get_device_name(HIDDevice *device, wiiu_attach_event *event)
+{
+   int32_t result;
+   uint8_t *name_buffer = alloc_zeroed(4, device->max_packet_size_rx);
+   uint8_t *top = &event->device_name[0];
+
+   if(name_buffer == NULL) {
+      return;
+   }
+   result = HIDGetDescriptor(device->handle, 3, 2, 0, name_buffer, device->max_packet_size_rx, NULL, NULL);
+   if(result > 0) {
+      for(int i = 2; i < result; i += 2) {
+         top[0] = name_buffer[i];
+         top++;
+      }
+   }
+   free(name_buffer);
+}
+
 static wiiu_attach_event *new_attach_event(HIDDevice *device)
 {
-   hid_device_t *driver = hid_device_driver_lookup(device->vid, device->pid);
-   if (!driver)
-   {
-      RARCH_ERR("[hid]: Failed to locate driver for device vid=%04x pid=%04x\n",
-        device->vid, device->pid);
-      return NULL;
-   }
    wiiu_attach_event *event = alloc_zeroed(4, sizeof(wiiu_attach_event));
+   
    if (!event)
       return NULL;
 
-   event->driver             = driver;
    event->handle             = device->handle;
    event->vendor_id          = device->vid;
    event->product_id         = device->pid;
@@ -830,6 +857,7 @@ static wiiu_attach_event *new_attach_event(HIDDevice *device)
          && device->protocol == 2);
    event->max_packet_size_rx = device->max_packet_size_rx;
    event->max_packet_size_tx = device->max_packet_size_tx;
+   get_device_name(device, event);
 
    return event;
 }

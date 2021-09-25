@@ -306,6 +306,9 @@ hid_driver_t *hid_drivers[] = {
 #ifdef HW_RVL
    &wiiusb_hid,
 #endif
+#if defined(WIIU) && defined(WIIU_HID)
+   &wiiu_hid,
+#endif
    &null_hid,
    NULL,
 };

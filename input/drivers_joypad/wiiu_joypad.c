@@ -27,8 +27,6 @@ static bool wiiu_joypad_ready = false;
 static void *wiiu_joypad_init(void *data)
 {
    set_connection_listener(&wiiu_pad_connection_listener);
-   hid_instance.pad_list = pad_connection_init(MAX_USERS);
-   hid_instance.max_slot = MAX_USERS;
 
    wpad_driver.init(data);
    kpad_driver.init(data);

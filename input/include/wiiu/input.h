@@ -30,7 +30,6 @@
 #include <wiiu/kpad.h>
 #include <wiiu/pad_strings.h>
 
-#include "../../common/hid/hid_device_driver.h"
 #include "../../connect/joypad_connection.h"
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
@@ -63,6 +62,14 @@ struct _wiiu_pad_functions {
    void (*read_axis_data)(uint32_t axis, axis_data *data);
    void (*connect)(unsigned pad, input_device_driver_t *driver);
 };
+
+struct hidpad_driver_t {
+   input_device_driver_t *pad_driver;
+   joypad_connection_t *pad_list;
+   unsigned max_slot;
+};
+
+typedef struct hidpad_driver_t hidpad_driver_t;
 
 extern wiiu_pad_functions_t pad_functions;
 extern input_device_driver_t wiiu_joypad;
