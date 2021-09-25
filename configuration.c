@@ -2963,7 +2963,7 @@ static config_file_t *open_default_config_file(void)
    #ifndef RARCH_CONSOLE
    char application_data[PATH_MAX_LENGTH];
    bool has_application_data              = false;
-   application_data[0] = '\0'
+   application_data[0] = '\0';
    #endif
 
    conf_path[0] = app_path[0] = '\0';
