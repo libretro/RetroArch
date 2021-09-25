@@ -187,13 +187,11 @@ static int action_start_input_desc(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings        = config_get_ptr();
-   rarch_system_info_t *system = runloop_get_system_info();
    unsigned user_idx;
    unsigned btn_idx;
    unsigned mapped_port;
-
-   (void)label;
+   settings_t *settings        = config_get_ptr();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
    if (!settings || !system)
       return 0;
@@ -283,7 +281,7 @@ static int action_start_shader_pass(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu       = menu_driver_get_ptr();
+   menu_handle_t *menu       = menu_state_get_ptr()->driver_data;
 
    if (!menu)
       return menu_cbs_exit();

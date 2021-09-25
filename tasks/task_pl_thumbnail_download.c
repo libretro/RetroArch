@@ -575,7 +575,7 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    const char *left_thumbnail_path = NULL;
    bool do_refresh                 = false;
    playlist_t *current_playlist    = playlist_get_cached();
-   menu_handle_t *menu             = menu_driver_get_ptr();
+   menu_handle_t *menu             = menu_state_get_ptr()->driver_data;
    const char *menu_driver         = menu_driver_ident(); 
    
    if (!task)

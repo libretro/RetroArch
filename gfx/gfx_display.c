@@ -256,7 +256,7 @@ float gfx_display_get_dpi_scale_internal(
 #endif
 
    /* Get pixel scale relative to baseline 1080p display */
-   pixel_scale = diagonal_pixels / DIAGONAL_PIXELS_1080P;
+   pixel_scale   = diagonal_pixels / DIAGONAL_PIXELS_1080P;
 
    /* Attempt to get display DPI */
    metrics.type  = DISPLAY_METRIC_DPI;
@@ -456,43 +456,40 @@ void gfx_display_scissor_begin(
       int x, int y, unsigned width, unsigned height)
 {
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (dispctx && dispctx->scissor_begin)
+   if (y < 0)
    {
-      if (y < 0)
-      {
-         if (height < (unsigned)(-y))
-            height = 0;
-         else
-            height += y;
-         y = 0;
-      }
-      if (x < 0)
-      {
-         if (width < (unsigned)(-x))
-            width = 0;
-         else
-            width += x;
-         x = 0;
-      }
-      if (y >= (int)video_height)
-      {
-         height = 0;
-         y = 0;
-      }
-      if (x >= (int)video_width)
-      {
-         width = 0;
-         x = 0;
-      }
-      if ((y + height) > video_height)
-         height = video_height - y;
-      if ((x + width) > video_width)
-         width = video_width - x;
-
-      dispctx->scissor_begin(userdata,
-            video_width, video_height,
-            x, y, width, height);
+      if (height < (unsigned)(-y))
+         height  = 0;
+      else
+         height += y;
+      y          = 0;
    }
+   if (x < 0)
+   {
+      if (width < (unsigned)(-x))
+         width   = 0;
+      else
+         width  += x;
+      x          = 0;
+   }
+   if (y >= (int)video_height)
+   {
+      height     = 0;
+      y          = 0;
+   }
+   if (x >= (int)video_width)
+   {
+      width      = 0;
+      x          = 0;
+   }
+   if ((y + height) > video_height)
+      height     = video_height - y;
+   if ((x + width) > video_width)
+      width      = video_width - x;
+
+   dispctx->scissor_begin(userdata,
+         video_width, video_height,
+         x, y, width, height);
 }
 
 font_data_t *gfx_display_font_file(
@@ -614,63 +611,6 @@ void gfx_display_draw_quad(
       dispctx->blend_end(data);
 }
 
-void gfx_display_draw_polygon(
-      gfx_display_t *p_disp,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x1, int y1,
-      int x2, int y2,
-      int x3, int y3,
-      int x4, int y4,
-      unsigned width, unsigned height,
-      float *color)
-{
-   float vertex[8];
-   gfx_display_ctx_draw_t draw;
-   struct video_coords coords;
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-
-   if (width == 0 || height == 0)
-      return;
-   if (!dispctx)
-      return;
-
-   vertex[0]             = x1 / (float)width;
-   vertex[1]             = y1 / (float)height;
-   vertex[2]             = x2 / (float)width;
-   vertex[3]             = y2 / (float)height;
-   vertex[4]             = x3 / (float)width;
-   vertex[5]             = y3 / (float)height;
-   vertex[6]             = x4 / (float)width;
-   vertex[7]             = y4 / (float)height;
-
-   coords.vertices       = 4;
-   coords.vertex         = &vertex[0];
-   coords.tex_coord      = NULL;
-   coords.lut_tex_coord  = NULL;
-   coords.color          = color;
-
-   draw.x                = 0;
-   draw.y                = 0;
-   draw.width            = width;
-   draw.height           = height;
-   draw.coords           = &coords;
-   draw.matrix_data      = NULL;
-   draw.texture          = gfx_white_texture;
-   draw.prim_type        = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline_id      = 0;
-   draw.scale_factor     = 1.0f;
-   draw.rotation         = 0.0f;
-
-   if (dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   if (dispctx->draw)
-      dispctx->draw(&draw, userdata, video_width, video_height);
-   if (dispctx->blend_end)
-      dispctx->blend_end(userdata);
-}
-
 /* Draw the texture split into 9 sections, without scaling the corners.
  * The middle sections will only scale in the X axis, and the side
  * sections will only scale in the Y axis. */
@@ -682,12 +622,12 @@ void gfx_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h,
       unsigned width, unsigned height,
-      float *color, unsigned offset, float scale_factor, uintptr_t texture)
+      float *color, unsigned offset, float scale_factor, uintptr_t texture,
+      math_matrix_4x4 *mymat
+)
 {
    gfx_display_ctx_draw_t draw;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    struct video_coords coords;
-   math_matrix_4x4 mymat;
    gfx_display_ctx_driver_t 
       *dispctx              = p_disp->dispctx;
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
@@ -785,12 +725,6 @@ void gfx_display_draw_texture_slice(
    T_TR[0] = tex_woff;
    T_TR[1] = 0.0f;
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0;
-   rotate_draw.scale_x      = 1.0;
-   rotate_draw.scale_y      = 1.0;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
    coords.vertices          = 4;
    coords.vertex            = vert_coord;
    coords.tex_coord         = tex_coord;
@@ -798,12 +732,10 @@ void gfx_display_draw_texture_slice(
    draw.width               = width;
    draw.height              = height;
    draw.coords              = &coords;
-   draw.matrix_data         = &mymat;
+   draw.matrix_data         = mymat;
    draw.prim_type           = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    draw.texture             = texture;
    draw.x                   = 0;
@@ -1152,12 +1084,6 @@ void gfx_display_set_framebuffer_pitch(size_t pitch)
 {
    gfx_display_t *p_disp   = disp_get_ptr();
    p_disp->framebuf_pitch = pitch;
-}
-
-void gfx_display_set_msg_force(bool state)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   p_disp->msg_force       = state;
 }
 
 void gfx_display_draw_keyboard(

@@ -264,7 +264,6 @@ void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
 void gfx_display_set_height(unsigned height);
 void gfx_display_set_framebuffer_pitch(size_t pitch);
 
-void gfx_display_set_msg_force(bool state);
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
@@ -296,18 +295,6 @@ void gfx_display_draw_quad(
       float *color,
       uintptr_t *texture);
 
-void gfx_display_draw_polygon(
-      gfx_display_t *p_disp,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x1, int y1,
-      int x2, int y2,
-      int x3, int y3,
-      int x4, int y4,
-      unsigned width, unsigned height,
-      float *color);
-
 void gfx_display_draw_texture_slice(
       gfx_display_t *p_disp,
       void *userdata,
@@ -316,7 +303,8 @@ void gfx_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h,
       unsigned width, unsigned height,
-      float *color, unsigned offset, float scale_factor, uintptr_t texture);
+      float *color, unsigned offset, float scale_factor, uintptr_t texture,
+      math_matrix_4x4 *mymat);
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
       gfx_display_ctx_rotate_draw_t *draw, void *data);

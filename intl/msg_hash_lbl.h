@@ -1535,6 +1535,10 @@ MSG_HASH(
    "input_menu_toggle_gamepad_combo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "input_quit_gamepad_combo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY,
    "input_overlay"
    )

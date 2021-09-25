@@ -188,7 +188,7 @@ static void filebrowser_parse(
    {
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         rarch_system_info_t *system          = runloop_get_system_info();
+         rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
          /* Core fully loaded, use the subsystem data */
          if (system->subsystem.data)
             subsystem = system->subsystem.data + content_get_subsystem();
@@ -218,7 +218,7 @@ static void filebrowser_parse(
 
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         rarch_system_info_t *system          = runloop_get_system_info();
+         rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
          /* Core fully loaded, use the subsystem data */
          if (system->subsystem.data)
             subsystem = system->subsystem.data + content_get_subsystem();
@@ -1255,7 +1255,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
           string_is_empty(exts))
 #endif
       {
-         struct retro_system_info *system = runloop_get_libretro_system_info();
+         struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
          const char *core_path            = core_path_current;
          const char *core_name            = system ? system->library_name : NULL;
 
@@ -2865,7 +2865,7 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
       bool quickmenu_show_resume_content  = settings->bools.quick_menu_show_resume_content;
       bool quickmenu_show_restart_content = settings->bools.quick_menu_show_restart_content;
-      rarch_system_info_t *system         = runloop_get_system_info();
+      rarch_system_info_t *system         = &runloop_state_get_ptr()->system;
 
       if (quickmenu_show_resume_content)
          if (menu_entries_append_enum(list,
@@ -3395,7 +3395,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 {
    unsigned count                   = 0;
    core_info_t   *core_info         = NULL;
-   struct retro_system_info *system = runloop_get_libretro_system_info();
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
    core_info_get_current_core(&core_info);
 
@@ -4361,7 +4361,7 @@ static unsigned menu_displaylist_parse_disk_options(
       file_list_t *list)
 {
    unsigned count                = 0;
-   rarch_system_info_t *sys_info = runloop_get_system_info();
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    bool disk_ejected             = false;
 
    /* Sanity Check */
@@ -4431,7 +4431,7 @@ static int menu_displaylist_parse_input_device_type_list(
    const struct retro_controller_description *desc = NULL;
    const char *name             = NULL;
 
-   rarch_system_info_t *system  = runloop_get_system_info();
+   rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
 
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
@@ -4530,7 +4530,7 @@ end:
 static int menu_displaylist_parse_input_device_index_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
-   rarch_system_info_t *system  = runloop_get_system_info();
+   rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info->path);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
    size_t menu_index            = 0;
@@ -4642,7 +4642,7 @@ static int menu_displaylist_parse_input_description_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
    unsigned count              = 0;
-   rarch_system_info_t *system = runloop_get_system_info();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
    size_t menu_index           = 0;
    bool current_input_mapped   = false;
    unsigned user_idx;
@@ -5496,8 +5496,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
          {
             const struct retro_subsystem_info* subsystem = subsystem_data;
-            rarch_system_info_t *sys_info                =
-               runloop_get_system_info();
+            rarch_system_info_t *sys_info                = &runloop_state_get_ptr()->system;
             /* Core not loaded completely, use the data we
              * peeked on load core */
 
@@ -5625,6 +5624,10 @@ unsigned menu_displaylist_build_list(
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
 
@@ -7155,7 +7158,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
          {
-            rarch_system_info_t *sys_info = runloop_get_system_info();
+            rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
             if (sys_info)
             {
@@ -9807,8 +9810,7 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
 bool menu_displaylist_has_subsystems(void)
 {
    const struct retro_subsystem_info* subsystem = subsystem_data;
-   rarch_system_info_t *sys_info                =
-      runloop_get_system_info();
+   rarch_system_info_t *sys_info                = &runloop_state_get_ptr()->system;
    /* Core not loaded completely, use the data we
     * peeked on load core */
    /* Core fully loaded, use the subsystem data */
@@ -9827,7 +9829,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    static bool core_selected     = false;
    unsigned count                = 0;
    int ret                       = 0;
-   menu_handle_t *menu           = menu_driver_get_ptr();
+   menu_handle_t *menu           = menu_state_get_ptr()->driver_data;
 
    disp_list.info                = info;
    disp_list.type                = type;
@@ -12224,7 +12226,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_MAIN_MENU:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
-            rarch_system_info_t *sys_info  = runloop_get_system_info();
+            rarch_system_info_t *sys_info  = &runloop_state_get_ptr()->system;
             bool show_add_content          = false;
 #if defined(HAVE_RGUI) || defined(HAVE_MATERIALUI) || defined(HAVE_OZONE) || defined(HAVE_XMB)
             const char *menu_ident         = menu_driver_ident();

@@ -92,7 +92,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
       && !state->contentless && !state->current)
    {
-      struct retro_system_info *system = runloop_get_libretro_system_info();
+      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
       RARCH_LOG("[Lobby]: Loading core %s with content file %s\n",
          state->core_path, state->content_path);
@@ -120,7 +120,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
       && state->contentless)
    {
       content_ctx_info_t content_info  = {0};
-      struct retro_system_info *system = runloop_get_libretro_system_info();
+      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
       RARCH_LOG("[Lobby]: Loading contentless core %s\n", state->core_path);
 

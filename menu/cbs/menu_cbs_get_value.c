@@ -722,7 +722,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
 
    if (remap_idx != RARCH_UNMAPPED)
-      descriptor = runloop_get_system_info()->input_desc_btn[mapped_port][remap_idx];
+      descriptor = runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx];
 
    s[0] = '-';
    s[1] = '-';
@@ -1006,7 +1006,7 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
 {
    unsigned images             = 0;
    unsigned current            = 0;
-   rarch_system_info_t *system = runloop_get_system_info();
+   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
    if (!system)
       return;

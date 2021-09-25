@@ -584,13 +584,16 @@ bool take_screenshot(
       bool silence, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool is_paused              = false;
    bool is_idle                = false;
-   bool is_slowmotion          = false;
-   bool is_perfcnt_enable      = false;
    bool ret                    = false;
 
-   runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
+   if (runloop_st)
+   {
+      is_paused                = runloop_st->paused;
+      is_idle                  = runloop_st->idle;
+   }
 
    /* No way to infer screenshot directory. */
    if (     string_is_empty(screenshot_dir)

@@ -114,8 +114,8 @@ static int append_no_spaces(char* buffer, char* stop, const char* text)
 void rcheevos_get_user_agent(rcheevos_locals_t *locals,
       char *buffer, size_t len)
 {
-   struct retro_system_info *system = runloop_get_libretro_system_info();
    char* ptr;
+   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
    /* if we haven't calculated the non-changing portion yet, do so now
     * [retroarch version + os version] */

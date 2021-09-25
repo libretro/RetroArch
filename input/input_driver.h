@@ -43,6 +43,7 @@
 #include "include/hid_driver.h"
 #include "include/gamepad.h"
 #include "../configuration.h"
+#include "../performance_counters.h"
 
 RETRO_BEGIN_DECLS
 
@@ -356,6 +357,11 @@ typedef struct
 
    /* primitives */
    bool        nonblocking_flag;
+
+   /**
+    * Array of timers, one for each entry in enum input_combo_type.
+    */
+   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
 } input_driver_state_t;
 
 
@@ -718,7 +724,8 @@ char *input_config_get_device_name_ptr(unsigned port);
  */
 size_t input_config_get_device_name_size(unsigned port);
 
-bool input_driver_toggle_button_combo(
+bool input_driver_button_combo(
+      input_driver_state_t *input_driver_state,
       unsigned mode,
       retro_time_t current_time,
       input_bits_t* p_input);

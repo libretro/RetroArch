@@ -195,14 +195,12 @@ static void rcheevos_get_core_memory_info(unsigned id, rc_libretro_core_memory_i
 
 static int rcheevos_init_memory(rcheevos_locals_t* locals)
 {
-   rarch_system_info_t* system = runloop_get_system_info();
-   rarch_memory_map_t* mmaps = &system->mmaps;
-   struct retro_memory_descriptor* descriptors;
-   struct retro_memory_map mmap;
    unsigned i;
    int result;
-
-   descriptors = (struct retro_memory_descriptor*)malloc(mmaps->num_descriptors * sizeof(*descriptors));
+   struct retro_memory_map mmap;
+   rarch_system_info_t* system                 = &runloop_state_get_ptr()->system;
+   rarch_memory_map_t* mmaps                   = &system->mmaps;
+   struct retro_memory_descriptor *descriptors = (struct retro_memory_descriptor*)malloc(mmaps->num_descriptors * sizeof(*descriptors));
    if (!descriptors)
       return 0;
 
@@ -1009,10 +1007,12 @@ void rcheevos_hardcore_enabled_changed(void)
 
 void rcheevos_validate_config_settings(void)
 {
-   const rc_disallowed_setting_t* disallowed_settings;
-   core_option_manager_t* coreopts  = NULL;
-   struct retro_system_info* system = runloop_get_libretro_system_info();
    int i;
+   const rc_disallowed_setting_t 
+      *disallowed_settings          = NULL;
+   core_option_manager_t* coreopts  = NULL;
+   struct retro_system_info *system = 
+      &runloop_state_get_ptr()->system.info;
 
    if (!system->library_name || !rcheevos_locals.hardcore_active)
       return;

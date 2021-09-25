@@ -776,7 +776,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
    retro_ctx_memory_info_t meminfo;
    bool refresh                           = false;
    bool is_search_initialization          = (setting != NULL);
-   rarch_system_info_t *system            = runloop_get_system_info();
+   rarch_system_info_t *system            = &runloop_state_get_ptr()->system;
    unsigned offset                        = 0;
    cheat_manager_t              *cheat_st = &cheat_manager_state;
 

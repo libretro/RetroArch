@@ -969,7 +969,8 @@ static void xmb_render_messagebox_internal(
       gfx_display_t *p_disp,
       unsigned video_width,
       unsigned video_height,
-      xmb_handle_t *xmb, const char *message)
+      xmb_handle_t *xmb, const char *message,
+      math_matrix_4x4 *mymat)
 {
    unsigned i, y_position;
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
@@ -1051,7 +1052,8 @@ static void xmb_render_messagebox_internal(
          video_width, video_height,
          NULL,
          xmb->margins_slice, xmb->last_scale_factor,
-         xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
+         xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE],
+         mymat);
 
    for (i = 0; i < list.size; i++)
    {
@@ -3713,7 +3715,6 @@ static void xmb_hide_fullscreen_thumbnails(
       xmb_handle_t *xmb, bool animate)
 {
    uintptr_t alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -3726,7 +3727,7 @@ static void xmb_hide_fullscreen_thumbnails(
       /* Configure fade out animation */
       animation_entry.easing_enum  = EASING_OUT_QUAD;
       animation_entry.tag          = alpha_tag;
-      animation_entry.duration     = p_gfx_thumb->fade_duration;
+      animation_entry.duration     = gfx_thumb_get_ptr()->fade_duration;
       animation_entry.target_value = 0.0f;
       animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
       animation_entry.cb           = NULL;
@@ -3754,7 +3755,6 @@ static void xmb_show_fullscreen_thumbnails(
    const char *thumbnail_label        = NULL;
    uintptr_t              alpha_tag   = (uintptr_t)
       &xmb->fullscreen_thumbnail_alpha;
-   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -3834,7 +3834,7 @@ static void xmb_show_fullscreen_thumbnails(
    /* Configure fade in animation */
    animation_entry.easing_enum  = EASING_OUT_QUAD;
    animation_entry.tag          = alpha_tag;
-   animation_entry.duration     = p_gfx_thumb->fade_duration;
+   animation_entry.duration     = gfx_thumb_get_ptr()->fade_duration;
    animation_entry.target_value = 1.0f;
    animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
    animation_entry.cb           = NULL;
@@ -5456,7 +5456,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             userdata, video_width, video_height);
       xmb_render_messagebox_internal(userdata, p_disp,
             video_width, video_height,
-            xmb, msg);
+            xmb, msg, &mymat);
    }
 
    /* Cursor image */
@@ -5705,7 +5705,7 @@ static void xmb_menu_animation_update_time(
       float *ticker_pixel_increment,
       unsigned video_width, unsigned video_height)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu = menu_state_get_ptr()->driver_data;
    xmb_handle_t *xmb   = NULL;
 
    if (!menu)
@@ -6948,7 +6948,7 @@ static int xmb_list_push(void *data, void *userdata,
          break;
       case DISPLAYLIST_MAIN_MENU:
          {
-            rarch_system_info_t *system = runloop_get_system_info();
+            rarch_system_info_t *system = &runloop_state_get_ptr()->system;
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
             if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))

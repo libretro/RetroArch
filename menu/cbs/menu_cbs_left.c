@@ -134,14 +134,13 @@ static int action_left_cheat(unsigned type, const char *label,
 static int action_left_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
-   rarch_system_info_t *system           = runloop_get_system_info();
-   settings_t *settings                  = config_get_ptr();
    unsigned btn_idx;
    unsigned user_idx;
    unsigned remap_idx;
    unsigned bind_idx;
    unsigned mapped_port;
-
+   settings_t *settings                  = config_get_ptr();
+   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
    if (!settings || !system)
       return 0;
 

@@ -81,12 +81,22 @@ typedef struct
 static void core_info_free(core_info_t* info);
 static uint32_t core_info_hash_string(const char *str);
 static core_info_cache_list_t *core_info_cache_list_new(void);
-static void core_info_cache_add(core_info_cache_list_t *list, core_info_t *info,
-      bool transfer);
+static void core_info_cache_add(core_info_cache_list_t *list,
+      core_info_t *info, bool transfer);
+
+static core_info_state_t core_info_st = {
+#ifdef HAVE_COMPRESSION
+   NULL,
+#endif
+   NULL,
+   NULL,
+   NULL
+};
 
 /* JSON Handlers START */
 
-static bool CCJSONObjectMemberHandler(void *context, const char *pValue, size_t length)
+static bool CCJSONObjectMemberHandler(void *context,
+      const char *pValue, size_t length)
 {
    CCJSONContext *pCtx = (CCJSONContext *)context;
 
@@ -223,7 +233,8 @@ static bool CCJSONObjectMemberHandler(void *context, const char *pValue, size_t 
    return true;
 }
 
-static bool CCJSONStringHandler(void *context, const char *pValue, size_t length)
+static bool CCJSONStringHandler(void *context,
+      const char *pValue, size_t length)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
@@ -247,7 +258,8 @@ static bool CCJSONStringHandler(void *context, const char *pValue, size_t length
    return true;
 }
 
-static bool CCJSONNumberHandler(void *context, const char *pValue, size_t length)
+static bool CCJSONNumberHandler(void *context,
+      const char *pValue, size_t length)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
@@ -1977,7 +1989,7 @@ static bool core_info_does_support_file(
 
 static int core_info_qsort_cmp(const void *a_, const void *b_)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo = &core_info_st;
    const core_info_t          *a = (const core_info_t*)a_;
    const core_info_t          *b = (const core_info_t*)b_;
    int support_a                 = core_info_does_support_file(a,
@@ -2031,8 +2043,9 @@ static bool core_info_list_update_missing_firmware_internal(
    return true;
 }
 
-void core_info_free_current_core(core_info_state_t *p_coreinfo)
+void core_info_free_current_core(void)
 {
+   core_info_state_t *p_coreinfo = &core_info_st;
    if (p_coreinfo->current)
       free(p_coreinfo->current);
    p_coreinfo->current = NULL;
@@ -2040,7 +2053,7 @@ void core_info_free_current_core(core_info_state_t *p_coreinfo)
 
 bool core_info_init_current_core(void)
 {
-   core_info_state_t *p_coreinfo          = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo          = &core_info_st;
    core_info_t *current                   = (core_info_t*)
       malloc(sizeof(*current));
    if (!current)
@@ -2085,7 +2098,7 @@ bool core_info_init_current_core(void)
 
 bool core_info_get_current_core(core_info_t **core)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo          = &core_info_st;
    if (!core)
       return false;
    *core = p_coreinfo->current;
@@ -2094,7 +2107,7 @@ bool core_info_get_current_core(core_info_t **core)
 
 void core_info_deinit_list(void)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo          = &core_info_st;
    if (p_coreinfo->curr_list)
       core_info_list_free(p_coreinfo->curr_list);
    p_coreinfo->curr_list = NULL;
@@ -2104,9 +2117,12 @@ bool core_info_init_list(const char *path_info, const char *dir_cores,
       const char *exts, bool dir_show_hidden_files,
       bool enable_cache, bool *cache_supported)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
-   if (!(p_coreinfo->curr_list = core_info_list_new(dir_cores,
-               !string_is_empty(path_info) ? path_info : dir_cores,
+   core_info_state_t *p_coreinfo          = &core_info_st;
+   if (!(p_coreinfo->curr_list            = core_info_list_new(
+               dir_cores,
+               !string_is_empty(path_info) 
+               ? path_info 
+               : dir_cores,
                exts,
                dir_show_hidden_files,
                enable_cache,
@@ -2117,7 +2133,7 @@ bool core_info_init_list(const char *path_info, const char *dir_cores,
 
 bool core_info_get_list(core_info_list_t **core)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo          = &core_info_st;
    if (!core)
       return false;
    *core = p_coreinfo->curr_list;
@@ -2127,7 +2143,7 @@ bool core_info_get_list(core_info_list_t **core)
 /* Returns number of installed cores */
 size_t core_info_count(void)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo          = &core_info_st;
    if (!p_coreinfo || !p_coreinfo->curr_list)
       return 0;
    return p_coreinfo->curr_list->count;
@@ -2136,7 +2152,7 @@ size_t core_info_count(void)
 bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
       bool *set_missing_bios)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo          = &core_info_st;
    if (!info)
       return false;
    return core_info_list_update_missing_firmware_internal(
@@ -2145,9 +2161,9 @@ bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
          set_missing_bios);
 }
 
-bool core_info_load(const char *core_path,
-      core_info_state_t *p_coreinfo)
+bool core_info_load(const char *core_path)
 {
+   core_info_state_t *p_coreinfo = &core_info_st;
    core_info_t    *core_info     = NULL;
 
    if (!p_coreinfo->current)
@@ -2168,7 +2184,7 @@ bool core_info_load(const char *core_path,
 bool core_info_find(const char *core_path,
       core_info_t **core_info)
 {
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo = &core_info_st;
    core_info_t *info             = NULL;
 
    if (!core_info || !p_coreinfo->curr_list)
@@ -2204,7 +2220,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 #ifdef HAVE_COMPRESSION
    struct string_list *list      = NULL;
 #endif
-   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_state_t *p_coreinfo = &core_info_st;
 
    if (!core_info_list)
       return;
@@ -2287,7 +2303,7 @@ bool core_info_database_match_archive_member(const char *database_path)
 
    path_remove_extension(database);
 
-   p_coreinfo               = coreinfo_get_ptr();
+   p_coreinfo                     = &core_info_st;
 
    if (p_coreinfo->curr_list)
    {
@@ -2326,7 +2342,7 @@ bool core_info_database_supports_content_path(
 
    path_remove_extension(database);
 
-   p_coreinfo                    = coreinfo_get_ptr();
+   p_coreinfo                    = &core_info_st;
 
    if (p_coreinfo->curr_list)
    {

@@ -1122,7 +1122,7 @@ void CoreOptionsDialog::buildLayout()
          {
             QString contentLabel;
             QString label;
-            rarch_system_info_t *system = runloop_get_system_info();
+            rarch_system_info_t *system = &runloop_state_get_ptr()->system;
 
             /* TODO/FIXME - why have this check here? system is not used */
             if (system)

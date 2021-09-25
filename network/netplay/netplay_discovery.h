@@ -102,6 +102,4 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
 extern struct netplay_room *netplay_room_list;
 extern int netplay_room_count;
 
-struct netplay_room* netplay_get_host_room(void);
-
 #endif
