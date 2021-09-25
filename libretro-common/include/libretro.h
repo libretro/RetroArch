@@ -3673,10 +3673,10 @@ struct retro_fastforwarding_override
    bool inhibit_toggle;
 };
 
-/* During normal operation, rate will be equal to the core's internal FPS. */
+/* During normal operation. Rate will be equal to the core's internal FPS. */
 #define RETRO_THROTTLE_NONE              0
 
-/* While paused or stepping single frames, rate will be 0. */
+/* While paused or stepping single frames. Rate will be 0. */
 #define RETRO_THROTTLE_FRAME_STEPPING    1
 
 /* During fast forwarding.
@@ -3686,7 +3686,7 @@ struct retro_fastforwarding_override
 /* During slow motion. Rate will be less than the core's internal FPS. */
 #define RETRO_THROTTLE_SLOW_MOTION       3
 
-/* Rewinding recorded save states. Rate can vary depending on the rewind
+/* While rewinding recorded save states. Rate can vary depending on the rewind
  * speed or be 0 if the frontend is not aiming for a specific rate. */
 #define RETRO_THROTTLE_REWINDING         4
 
@@ -3703,7 +3703,7 @@ struct retro_throttle_state
    /* The current throttling mode. Should be one of the values above. */
    unsigned mode;
 
-   /* How many times per second the frontend tries calls retro_run.
+   /* How many times per second the frontend aims to call retro_run.
     * Depending on the mode, it can be 0 if there is no known fixed rate.
     * This won't be accurate if the total processing time of the core and
     * the frontend is longer than what is available for one frame. */
