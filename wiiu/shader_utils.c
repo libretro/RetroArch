@@ -209,11 +209,11 @@ void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, 
    DEBUG_VAR(org_size);
 
    if (shader_size != org_size)
-      printf("size mismatch : 0x%08X should be 0x%08X\n", shader_size, org_size);
+      printf("size mismatch : 0x%08lX should be 0x%08lX\n", shader_size, org_size);
 
    for (i = 0; i < shader_size / 4; i += 4)
    {
-      printf("0x%08X 0x%08X 0x%08X 0x%08X          0x%08X 0x%08X 0x%08X 0x%08X\n",
+      printf("0x%08lX 0x%08lX 0x%08lX 0x%08lX          0x%08lX 0x%08lX 0x%08lX 0x%08lX\n",
              shader[i], shader[i + 1], shader[i + 2], shader[i + 3],
              org[i], org[i + 1], org[i + 2], org[i + 3]);
    }
@@ -221,7 +221,7 @@ void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, 
    for (i = 0; i < shader_size / 4; i++)
    {
       if (shader[i] != org[i])
-         printf("%i(%X): 0x%08X(0x%08X) should be 0x%08X(0x%08X) \n", i, i, shader[i], __builtin_bswap32(shader[i]), org[i],
+         printf("%i(%X): 0x%08lX(0x%08lX) should be 0x%08lX(0x%08lX) \n", i, i, shader[i], __builtin_bswap32(shader[i]), org[i],
                 __builtin_bswap32(org[i]));
    }
 }
@@ -237,7 +237,7 @@ void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 or
    if (shader_size != org_size)
    {
       different = true;
-      printf("\nsize mismatch : 0x%08X should be 0x%08X", shader_size, org_size);
+      printf("\nsize mismatch : 0x%08lX should be 0x%08lX", shader_size, org_size);
    }
 
    for (i = 0; i < shader_size / 4; i++)
@@ -245,7 +245,7 @@ void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 or
       if (shader[i] != org[i])
       {
          different = true;
-         printf("\n%i(%X): 0x%08X(0x%08X) should be 0x%08X(0x%08X)", i, i, shader[i], __builtin_bswap32(shader[i]), org[i],
+         printf("\n%i(%X): 0x%08lX(0x%08lX) should be 0x%08lX(0x%08lX)", i, i, shader[i], __builtin_bswap32(shader[i]), org[i],
                 __builtin_bswap32(org[i]));
       }
    }

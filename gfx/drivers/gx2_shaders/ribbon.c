@@ -32,7 +32,7 @@ static struct
       ALU(32, 123) KCACHE0(CB1, _0_15),
       ALU(155, 51),
       EXP_DONE(POS0,   _R7, _x, _y, _z, _w),
-      EXP_DONE(PARAM0, _R7, _x, _y, _z, _w) NO_BARRIER
+      (EXP_DONE(PARAM0, _R7, _x, _y, _z, _w) NO_BARRIER)
       END_OF_PROGRAM
       END_OF_PROGRAM
    },
