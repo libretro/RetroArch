@@ -667,7 +667,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-         glClear(GL_COLOR_BUFFER_BIT);
+         gl_clear();
 #endif
          break;
       case GFX_CTX_NONE:

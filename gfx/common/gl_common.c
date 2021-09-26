@@ -17,6 +17,11 @@
 
 #include <glsym/rglgen.h>
 
+void gl_clear(void)
+{
+   glClear(GL_COLOR_BUFFER_BIT);
+}
+
 void gl_disable(unsigned _cap)
 {
    GLenum cap = (GLenum)_cap;

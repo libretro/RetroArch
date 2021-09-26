@@ -258,7 +258,7 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
 
    go2_context_make_current(drm->context);
 
-   glClear(GL_COLOR_BUFFER_BIT);
+   gl_clear();
 
    return true;
 }
