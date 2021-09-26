@@ -82,7 +82,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_OPENGL_CORE)
-#include "../gfx/drivers_shader/shader_gl_core.cpp"
+#include "../gfx/drivers_shader/shader_gl3.cpp"
 #endif
 
 #if defined(HAVE_SPIRV_CROSS)
