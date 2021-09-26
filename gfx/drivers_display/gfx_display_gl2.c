@@ -21,7 +21,7 @@
 
 #include "../../retroarch.h"
 #include "../font_driver.h"
-#include "../common/gl_common.h"
+#include "../common/gl2_common.h"
 
 #include "../gfx_display.h"
 
@@ -68,33 +68,33 @@ static bool scissor_is_outside_rectangle(
 #define MALI_BUG
 #endif
 
-static const GLfloat gl_vertexes[] = {
+static const GLfloat gl2_vertexes[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat gl_tex_coords[] = {
+static const GLfloat gl2_tex_coords[] = {
    0, 1,
    1, 1,
    0, 0,
    1, 0
 };
 
-static const float *gfx_display_gl_get_default_vertices(void)
+static const float *gfx_display_gl2_get_default_vertices(void)
 {
-   return &gl_vertexes[0];
+   return &gl2_vertexes[0];
 }
 
-static const float *gfx_display_gl_get_default_tex_coords(void)
+static const float *gfx_display_gl2_get_default_tex_coords(void)
 {
-   return &gl_tex_coords[0];
+   return &gl2_tex_coords[0];
 }
 
-static void *gfx_display_gl_get_default_mvp(void *data)
+static void *gfx_display_gl2_get_default_mvp(void *data)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_t *gl = (gl2_t*)data;
 
    if (!gl)
       return NULL;
@@ -119,9 +119,9 @@ static GLenum gfx_display_prim_to_gl_enum(
    return 0;
 }
 
-static void gfx_display_gl_blend_begin(void *data)
+static void gfx_display_gl2_blend_begin(void *data)
 {
-   gl_t             *gl          = (gl_t*)data;
+   gl2_t             *gl          = (gl2_t*)data;
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -130,14 +130,14 @@ static void gfx_display_gl_blend_begin(void *data)
          true);
 }
 
-static void gfx_display_gl_blend_end(void *data)
+static void gfx_display_gl2_blend_end(void *data)
 {
    glDisable(GL_BLEND);
 }
 
 #ifdef MALI_BUG
 static bool 
-gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
+gfx_display_gl2_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
       unsigned width, unsigned height)
 {
    static bool mali_4xx_detected     = false;
@@ -211,16 +211,16 @@ gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
 }
 #endif
 
-static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
+static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-   gl_t             *gl  = (gl_t*)data;
+   gl2_t             *gl  = (gl2_t*)data;
 
    if (!gl || !draw)
       return;
 
 #ifdef MALI_BUG
-   if (gfx_display_gl_discard_draw_rectangle(draw, video_width,
+   if (gfx_display_gl2_discard_draw_rectangle(draw, video_width,
             video_height))
    {
       /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
@@ -230,11 +230,11 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
 #endif
 
    if (!draw->coords->vertex)
-      draw->coords->vertex        = &gl_vertexes[0];
+      draw->coords->vertex        = &gl2_vertexes[0];
    if (!draw->coords->tex_coord)
-      draw->coords->tex_coord     = &gl_tex_coords[0];
+      draw->coords->tex_coord     = &gl2_tex_coords[0];
    if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = &gl_tex_coords[0];
+      draw->coords->lut_tex_coord = &gl2_tex_coords[0];
 
    glViewport(draw->x, draw->y, draw->width, draw->height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
@@ -251,7 +251,7 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void gfx_display_gl_draw_pipeline(
+static void gfx_display_gl2_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data,
@@ -260,7 +260,7 @@ static void gfx_display_gl_draw_pipeline(
 {
 #ifdef HAVE_SHADERPIPELINE
    struct uniform_info uniform_param;
-   gl_t             *gl             = (gl_t*)data;
+   gl2_t             *gl            = (gl2_t*)data;
    static float t                   = 0;
    video_coord_array_t *ca          = &p_disp->dispca;
 
@@ -331,7 +331,7 @@ static void gfx_display_gl_draw_pipeline(
 #endif
 }
 
-static bool gfx_display_gl_font_init_first(
+static bool gfx_display_gl2_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float menu_font_size,
       bool is_threaded)
@@ -345,7 +345,7 @@ static bool gfx_display_gl_font_init_first(
    return true;
 }
 
-static void gfx_display_gl_scissor_begin(
+static void gfx_display_gl2_scissor_begin(
       void *data,
       unsigned video_width,
       unsigned video_height,
@@ -356,18 +356,18 @@ static void gfx_display_gl_scissor_begin(
    glEnable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG
    /* TODO/FIXME: If video width/height changes between
-    * a call of gfx_display_gl_scissor_begin() and the
-    * next call of gfx_display_gl_draw() (or if
-    * gfx_display_gl_scissor_begin() is called before the
-    * first call of gfx_display_gl_draw()), the scissor
+    * a call of gfx_display_gl2_scissor_begin() and the
+    * next call of gfx_display_gl2_draw() (or if
+    * gfx_display_gl2_scissor_begin() is called before the
+    * first call of gfx_display_gl2_draw()), the scissor
     * rectangle set here will be overwritten by the initialisation
-    * procedure inside gfx_display_gl_discard_draw_rectangle(),
+    * procedure inside gfx_display_gl2_discard_draw_rectangle(),
     * causing the next frame to render glitched content */
    scissor_set_rectangle(x, x + width - 1, y, y + height - 1, 1);
 #endif
 }
 
-static void gfx_display_gl_scissor_end(
+static void gfx_display_gl2_scissor_end(
       void *data,
       unsigned video_width,
       unsigned video_height)
@@ -380,17 +380,17 @@ static void gfx_display_gl_scissor_end(
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_gl = {
-   gfx_display_gl_draw,
-   gfx_display_gl_draw_pipeline,
-   gfx_display_gl_blend_begin,
-   gfx_display_gl_blend_end,
-   gfx_display_gl_get_default_mvp,
-   gfx_display_gl_get_default_vertices,
-   gfx_display_gl_get_default_tex_coords,
-   gfx_display_gl_font_init_first,
+   gfx_display_gl2_draw,
+   gfx_display_gl2_draw_pipeline,
+   gfx_display_gl2_blend_begin,
+   gfx_display_gl2_blend_end,
+   gfx_display_gl2_get_default_mvp,
+   gfx_display_gl2_get_default_vertices,
+   gfx_display_gl2_get_default_tex_coords,
+   gfx_display_gl2_font_init_first,
    GFX_VIDEO_DRIVER_OPENGL,
    "gl",
    false,
-   gfx_display_gl_scissor_begin,
-   gfx_display_gl_scissor_end
+   gfx_display_gl2_scissor_begin,
+   gfx_display_gl2_scissor_end
 };

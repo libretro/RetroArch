@@ -44,7 +44,8 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
 #include "../../verbosity.h"
-#include "../common/gl_common.h"
+/* TODO/FIXME - we should have a gl_common.h for functions like glFinish so we don't have to include gl2_common.h here */
+#include "../common/gl2_common.h"
 #include "../common/x11_common.h"
 
 #ifdef HAVE_XINERAMA
@@ -697,25 +698,25 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                 */
                {
                   int i;
-                  int gl_versions[][2] = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
+                  int (*versions)[2];
+                  int gl_versions[][2]   = {{4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0}, {3, 3}, {3, 2}, {3, 1}, {3, 0}};
 #ifdef HAVE_OPENGLES3
                   int gles_versions[][2] = {{3, 2}, {3, 1}, {3, 0}, {2, 0}, {1, 1}, {1, 0}};
 #else
                   int gles_versions[][2] = {{2, 0}, {1, 1}, {1, 0}};
 #endif
-                  int gl_version_rows = ARRAY_SIZE(gl_versions);
-                  int gles_version_rows = ARRAY_SIZE(gles_versions);
-                  int (*versions)[2];
-                  int version_rows = 0;
+                  int gl_version_rows    = ARRAY_SIZE(gl_versions);
+                  int gles_version_rows  = ARRAY_SIZE(gles_versions);
+                  int version_rows       = 0;
 
                   if (x_api == GFX_CTX_OPENGL_API)
                   {
-                     versions = gl_versions;
+                     versions     = gl_versions;
                      version_rows = gl_version_rows;
                   }
                   else
                   {
-                     versions = gles_versions;
+                     versions     = gles_versions;
                      version_rows = gles_version_rows;
                   }
 

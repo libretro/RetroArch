@@ -55,9 +55,9 @@
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-#include "../common/gl_common.h"
+#include "../common/gl2_common.h"
 #elif defined(HAVE_OPENGL_CORE)
-#include "../common/gl_core_common.h"
+#include "../common/gl3_common.h"
 #elif defined(HAVE_OPENGL1)
 #include "../common/gl1_common.h"
 #endif

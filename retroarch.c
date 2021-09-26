@@ -203,12 +203,6 @@
 #include <rthreads/rthreads.h>
 #endif
 
-#if defined(HAVE_OPENGL)
-#include "gfx/common/gl_common.h"
-#elif defined(HAVE_OPENGL_CORE)
-#include "gfx/common/gl_core_common.h"
-#endif
-
 #include "autosave.h"
 #include "command.h"
 #include "config.features.h"

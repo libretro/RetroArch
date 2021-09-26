@@ -21,7 +21,7 @@
 #include <string/stdstring.h>
 #include <retro_math.h>
 
-#include "../common/gl_common.h"
+#include "../common/gl2_common.h"
 #include "../font_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -44,7 +44,7 @@
 
 typedef struct
 {
-   gl_t *gl;
+   gl2_t *gl;
    GLuint tex;
    unsigned tex_width, tex_height;
 
@@ -187,7 +187,7 @@ static void *gl_raster_font_init_font(void *data,
    if (!font)
       return NULL;
 
-   font->gl = (gl_t*)data;
+   font->gl = (gl2_t*)data;
 
    if (!font_renderer_create_default(
             &font->font_driver,
@@ -207,7 +207,7 @@ static void *gl_raster_font_init_font(void *data,
 
    glGenTextures(1, &font->tex);
 
-   GL_BIND_TEXTURE(font->tex, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR);
+   GL2_BIND_TEXTURE(font->tex, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR);
 
    font->atlas      = font->font_driver->get_atlas(font->font_data);
    font->tex_width  = next_pow2(font->atlas->width);
@@ -290,7 +290,7 @@ static void gl_raster_font_render_line(
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
-   gl_t      *gl        = font->gl;
+   gl2_t      *gl       = font->gl;
    const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * gl->vp.width);
    int y                = roundf(pos_y * gl->vp.height);

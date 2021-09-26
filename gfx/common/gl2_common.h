@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GL_COMMON_H
-#define __GL_COMMON_H
+#ifndef __GL2_COMMON_H
+#define __GL2_COMMON_H
 
 #include <boolean.h>
 #include <string.h>
@@ -154,9 +154,9 @@ RETRO_BEGIN_DECLS
 #endif
 #endif
 
-typedef struct gl gl_t;
+typedef struct gl2 gl2_t;
 
-struct gl
+struct gl2
 {
    const shader_backend_t *shader;
    void *shader_data;
@@ -257,16 +257,14 @@ struct gl
    bool pbo_readback_enable;
 };
 
-#define GL_BIND_TEXTURE(id, wrap_mode, mag_filter, min_filter) \
+#define GL2_BIND_TEXTURE(id, wrap_mode, mag_filter, min_filter) \
    glBindTexture(GL_TEXTURE_2D, id); \
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode); \
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode); \
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter); \
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter)
 
-bool gl_query_core_context_in_use(void);
-
-bool gl_load_luts(
+bool gl2_load_luts(
       const void *shader_data,
       GLuint *textures_lut);
 
