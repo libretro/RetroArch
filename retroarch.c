@@ -22096,21 +22096,6 @@ void video_driver_hide_mouse(void)
       p_rarch->video_driver_poke->show_mouse(p_rarch->video_driver_data, false);
 }
 
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D9) || defined(HAVE_OPENGL)
-static void video_driver_save_as_cached(struct rarch_state *p_rarch,
-      settings_t *settings, const char *rdr_context_name)
-{
-   strlcpy(p_rarch->cached_video_driver,
-         settings->arrays.video_driver,
-         sizeof(p_rarch->cached_video_driver));
-   configuration_set_string(settings,
-         settings->arrays.video_driver,
-         rdr_context_name);
-   RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
-         settings->arrays.video_driver);
-}
-#endif
-
 static void video_driver_restore_cached(struct rarch_state *p_rarch,
       settings_t *settings)
 {
@@ -22155,7 +22140,16 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch,
 
                if (!string_is_equal(settings->arrays.video_driver,
                         rdr_context_name))
-                  video_driver_save_as_cached(p_rarch, settings, rdr_context_name);
+               {
+                  strlcpy(p_rarch->cached_video_driver,
+                        settings->arrays.video_driver,
+                        sizeof(p_rarch->cached_video_driver));
+                  configuration_set_string(settings,
+                        settings->arrays.video_driver,
+                        rdr_context_name);
+                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                        settings->arrays.video_driver);
+               }
 
                p_rarch->current_video = hw_render_context_driver(rdr_type, rdr_major, rdr_minor);
                return true;
@@ -22172,14 +22166,28 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch,
                if (  !string_is_equal(settings->arrays.video_driver, "gl") &&
                      !string_is_equal(settings->arrays.video_driver, "glcore"))
                {
-                  video_driver_save_as_cached(p_rarch, settings, "glcore");
+                  strlcpy(p_rarch->cached_video_driver,
+                        settings->arrays.video_driver,
+                        sizeof(p_rarch->cached_video_driver));
+                  configuration_set_string(settings,
+                        settings->arrays.video_driver,
+                        "glcore");
+                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                        settings->arrays.video_driver);
                   p_rarch->current_video = &video_gl_core;
                   return true;
                }
 #else
                if (  !string_is_equal(settings->arrays.video_driver, "gl"))
                {
-                  video_driver_save_as_cached(p_rarch, settings, "gl");
+                  strlcpy(p_rarch->cached_video_driver,
+                        settings->arrays.video_driver,
+                        sizeof(p_rarch->cached_video_driver));
+                  configuration_set_string(settings,
+                        settings->arrays.video_driver,
+                        "gl");
+                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                        settings->arrays.video_driver);
                   p_rarch->current_video = &video_gl2;
                   return true;
                }
