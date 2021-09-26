@@ -279,8 +279,8 @@ void egl_destroy(egl_ctx_data_t *egl)
 #if !defined(RARCH_MOBILE)
       if (egl->ctx != EGL_NO_CONTEXT)
       {
-         glFlush();
-         glFinish();
+         gl_flush();
+         gl_finish();
       }
 #endif
 #endif

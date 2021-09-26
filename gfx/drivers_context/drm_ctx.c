@@ -37,6 +37,10 @@
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
@@ -46,9 +50,7 @@
 #include "../common/egl_common.h"
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
+#include "../common/gl_common.h"
 
 #ifdef HAVE_OPENGLES
 

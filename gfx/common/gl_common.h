@@ -25,4 +25,6 @@ void gl_disable(unsigned cap);
 
 void gl_finish(void);
 
+void gl_flush(void);
+
 #endif

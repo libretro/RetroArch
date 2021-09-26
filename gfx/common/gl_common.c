@@ -17,6 +17,11 @@
 
 #include <glsym/rglgen.h>
 
+void gl_flush(void)
+{
+   glFlush();
+}
+
 void gl_clear(void)
 {
    glClear(GL_COLOR_BUFFER_BIT);
