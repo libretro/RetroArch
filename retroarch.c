@@ -22096,18 +22096,18 @@ void video_driver_hide_mouse(void)
       p_rarch->video_driver_poke->show_mouse(p_rarch->video_driver_data, false);
 }
 
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D9) || defined(HAVE_OPENGL_CORE)
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D9) || defined(HAVE_OPENGL)
 static void video_driver_save_as_cached(struct rarch_state *p_rarch,
       settings_t *settings, const char *rdr_context_name)
 {
-   RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
-         settings->arrays.video_driver);
    strlcpy(p_rarch->cached_video_driver,
          settings->arrays.video_driver,
          sizeof(p_rarch->cached_video_driver));
    configuration_set_string(settings,
          settings->arrays.video_driver,
          rdr_context_name);
+   RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+         settings->arrays.video_driver);
 }
 #endif
 
