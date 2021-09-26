@@ -17,7 +17,7 @@
 #ifndef __GL_COMMON_H
 #define __GL_COMMON_H
 
-void gl_clear(void)
+void gl_clear(void);
 
 void gl_enable(unsigned cap);
 
