@@ -112,7 +112,6 @@ static INLINE void d3d9_renderchain_set_vertices_on_change(
       )
 {
    struct Vertex vert[4];
-   unsigned i;
    void *verts       = NULL;
    const struct
       LinkInfo *info = (const struct LinkInfo*)&pass->info;
