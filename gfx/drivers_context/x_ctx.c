@@ -25,6 +25,7 @@
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 #include <GL/glx.h>
+#include <glsym/rglgen.h>
 
 #ifndef GLX_SAMPLE_BUFFERS
 #define GLX_SAMPLE_BUFFERS 100000
