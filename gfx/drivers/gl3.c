@@ -15,15 +15,15 @@
 
 /* Modern OpenGL driver.
  *
- * Minimum version (desktop): OpenGL 3.2+
- * Minimum version (mobile) : OpenGLES 3.0+
+ * Minimum version (desktop): OpenGL   3.2+ (2009)
+ * Minimum version (mobile) : OpenGLES 3.0+ (2012)
  */
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "../common/gl_core_common.h"
+#include "../common/gl3_common.h"
 
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>

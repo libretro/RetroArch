@@ -501,13 +501,13 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-#include "../gfx/drivers/gl_core.c"
-#include "../gfx/drivers_display/gfx_display_gl_core.c"
+#include "../gfx/drivers/gl3.c"
+#include "../gfx/drivers_display/gfx_display_gl3.c"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../gfx/drivers/gl.c"
-#include "../gfx/drivers_display/gfx_display_gl.c"
+#include "../gfx/drivers/gl2.c"
+#include "../gfx/drivers_display/gfx_display_gl2.c"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
@@ -604,11 +604,11 @@ FONTS
 #endif
 
 #if defined(HAVE_OPENGL)
-#include "../gfx/drivers_font/gl_raster_font.c"
+#include "../gfx/drivers_font/gl2_raster_font.c"
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-#include "../gfx/drivers_font/gl_core_raster_font.c"
+#include "../gfx/drivers_font/gl3_raster_font.c"
 #endif
 
 #if defined(_XBOX1)

@@ -15,6 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 8 driver.
+ *
+ * Minimum version : Direct3D 8.0 (2000)
+ * Minimum OS      : Windows 95 (8.0a), Windows 98 and XP after 8.0a
+ * Recommended OS  : Windows 98/ME and/or Windows XP
+ */
+
 #define CINTERFACE
 
 #ifdef _XBOX

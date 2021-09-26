@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 12 driver.
+ *
+ * Minimum version : Direct3D 12.0 (2015)
+ * Minimum OS      : Windows 7, Windows 8
+ * Recommended OS  : Windows 10
+ */
+
 #define CINTERFACE
 
 #include <assert.h>

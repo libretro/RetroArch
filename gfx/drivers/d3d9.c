@@ -15,6 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 9 driver.
+ *
+ * Minimum version : Direct3D 9.0 (2002)
+ * Minimum OS      : Windows 98, Windows 2000, Windows ME
+ * Recommended OS  : Windows XP
+ */
+
 #define CINTERFACE
 
 #ifdef _XBOX

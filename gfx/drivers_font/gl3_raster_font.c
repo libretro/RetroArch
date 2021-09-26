@@ -20,9 +20,8 @@
 #include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
-#include <gfx/common/gl_core_common.h>
 
-#include "../common/gl_core_common.h"
+#include "../common/gl3_common.h"
 #include "../font_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"

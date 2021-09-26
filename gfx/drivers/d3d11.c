@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 11 driver.
+ *
+ * Minimum version : Direct3D 11.0 (Feature Level 11.0) (2009)
+ * Minimum OS      : Windows Vista, Windows 7
+ * Recommended OS  : Windows 7 and/or later
+ */
+
 #define CINTERFACE
 #define COBJMACROS
 

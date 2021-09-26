@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Direct3D 10 driver.
+ *
+ * Minimum version : Direct3D 10.0 (2006)
+ * Minimum OS      : Windows Vista
+ * Recommended OS  : Windows Vista and/or later
+ */
+
 #define CINTERFACE
 #define COBJMACROS
 

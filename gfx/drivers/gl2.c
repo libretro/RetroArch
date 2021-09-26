@@ -15,10 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Middle of the road OpenGL driver.
+/* Middle of the road OpenGL 2.x driver.
  *
- * Minimum version (desktop): OpenGL 2.0+
- * Minimum version (mobile) : OpenGLES 2.0+
+ * Minimum version (desktop): OpenGL   2.0+ (2004)
+ * Minimum version (mobile) : OpenGLES 2.0+ (2007)
  */
 
 #ifdef _MSC_VER

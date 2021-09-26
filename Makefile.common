@@ -1446,10 +1446,10 @@ endif
 ifeq ($(HAVE_GL_CONTEXT), 1)
    ifeq ($(HAVE_GL_MODERN), 1)
       DEFINES += -DHAVE_OPENGL
-      OBJ += gfx/drivers/gl.o \
+      OBJ += gfx/drivers/gl2.o \
              $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-             gfx/drivers_font/gl_raster_font.o \
-				 gfx/drivers_display/gfx_display_gl.o
+             gfx/drivers_font/gl2_raster_font.o \
+	     gfx/drivers_display/gfx_display_gl2.o
    endif
 
    OBJ += $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
@@ -1458,7 +1458,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEFINES += -DHAVE_OPENGL1
       OBJ += gfx/drivers/gl1.o \
              gfx/drivers_font/gl1_raster_font.o \
-				 gfx/drivers_display/gfx_display_gl1.o
+	     gfx/drivers_display/gfx_display_gl1.o
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
@@ -1626,10 +1626,10 @@ ifeq ($(HAVE_VULKAN), 1)
 endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
-   OBJ += gfx/drivers/gl_core.o \
-          gfx/drivers_font/gl_core_raster_font.o \
-			 gfx/drivers_shader/shader_gl_core.o \
-			 gfx/drivers_display/gfx_display_gl_core.o
+   OBJ += gfx/drivers/gl3.o \
+          gfx/drivers_font/gl3_raster_font.o \
+	  gfx/drivers_shader/shader_gl3.o \
+	  gfx/drivers_display/gfx_display_gl3.o
 
    DEFINES += -DHAVE_OPENGL_CORE
    NEED_CXX_LINKER  = 1
