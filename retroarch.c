@@ -9771,6 +9771,8 @@ int rarch_main(int argc, char *argv[], void *data)
 }
 
 #if defined(EMSCRIPTEN)
+#include "gfx/common/gl_common.h"
+
 void RWebAudioRecalibrateTime(void);
 
 void emscripten_mainloop(void)
@@ -9799,7 +9801,7 @@ void emscripten_mainloop(void)
    {
       if ((emscripten_frame_count % (black_frame_insertion+1)) != 0)
       {
-         glClear(GL_COLOR_BUFFER_BIT);
+         gl_clear();
          if (p_rarch->current_video_context.swap_buffers)
             p_rarch->current_video_context.swap_buffers(
                   p_rarch->video_context_data);
