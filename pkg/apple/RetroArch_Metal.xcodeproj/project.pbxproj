@@ -349,7 +349,7 @@
 		05A8C64A20DB72F000FF7857 /* simple_snow_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = simple_snow_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64B20DB72F000FF7857 /* ribbon_simple_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ribbon_simple_sm4.hlsl.h; sourceTree = "<group>"; };
 		05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = snowflake_sm4.hlsl.h; sourceTree = "<group>"; };
-		05A8C64D20DB72F000FF7857 /* mimpapgen_sm5.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mimpapgen_sm5.h; sourceTree = "<group>"; };
+		05A8C64D20DB72F000FF7857 /* mipmapgen_sm5.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mipmapgen_sm5.h; sourceTree = "<group>"; };
 		05A8C64E20DB72F000FF7857 /* font.hlsl.d3d9.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = font.hlsl.d3d9.h; sourceTree = "<group>"; };
 		05A8C67420DB72F000FF7857 /* video_state_tracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_state_tracker.h; sourceTree = "<group>"; };
 		05A8C67520DB72F000FF7857 /* video_thread_wrapper.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_thread_wrapper.c; sourceTree = "<group>"; };
@@ -1071,7 +1071,7 @@
 				05A8C64A20DB72F000FF7857 /* simple_snow_sm4.hlsl.h */,
 				05A8C64B20DB72F000FF7857 /* ribbon_simple_sm4.hlsl.h */,
 				05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */,
-				05A8C64D20DB72F000FF7857 /* mimpapgen_sm5.h */,
+				05A8C64D20DB72F000FF7857 /* mipmapgen_sm5.h */,
 				05A8C64E20DB72F000FF7857 /* font.hlsl.d3d9.h */,
 			);
 			path = d3d_shaders;
