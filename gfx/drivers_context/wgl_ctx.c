@@ -54,12 +54,8 @@
 #endif
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-#include "../common/gl2_common.h"
-#elif defined(HAVE_OPENGL_CORE)
-#include "../common/gl3_common.h"
-#elif defined(HAVE_OPENGL1)
-#include "../common/gl1_common.h"
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+#include "../common/gl_common.h"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
@@ -548,7 +544,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          if (win32_hrc)
          {
-            glFinish();
+            gl_finish();
             wglMakeCurrent(NULL, NULL);
 
             if (!video_driver_is_video_cache_context())

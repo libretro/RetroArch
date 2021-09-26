@@ -142,9 +142,9 @@ static void gfx_ctx_ps3_set_swap_interval(void *data, int interval)
 {
 #if defined(HAVE_PSGL)
    if (interval == 1)
-      glEnable(GL_VSYNC_SCE);
+      gl_enable(GL_VSYNC_SCE);
    else
-      glDisable(GL_VSYNC_SCE);
+      gl_disable(GL_VSYNC_SCE);
 #endif
 }
 

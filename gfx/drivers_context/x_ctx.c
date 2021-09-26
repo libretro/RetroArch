@@ -44,8 +44,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
 #include "../../verbosity.h"
-/* TODO/FIXME - we should have a gl_common.h for functions like glFinish so we don't have to include gl2_common.h here */
-#include "../common/gl2_common.h"
+#include "../common/gl_common.h"
 #include "../common/x11_common.h"
 
 #ifdef HAVE_XINERAMA
@@ -173,7 +172,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
             if (x->ctx)
             {
                glXSwapBuffers(g_x11_dpy, x->glx_win);
-               glFinish();
+               gl_finish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
                if (!video_driver_is_video_cache_context())

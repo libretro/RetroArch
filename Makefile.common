@@ -1444,6 +1444,7 @@ ifeq ($(HAVE_VITAGLES), 1)
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
+   OBJ += gfx/common/gl_common.o
    ifeq ($(HAVE_GL_MODERN), 1)
       DEFINES += -DHAVE_OPENGL
       OBJ += gfx/drivers/gl2.o \
