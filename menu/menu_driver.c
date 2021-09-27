@@ -3348,6 +3348,39 @@ bool generic_menu_init_list(struct menu_state *menu_st,
    return true;
 }
 
+/* This function gets called at first startup on Android/iOS
+ * when we need to extract the APK contents/zip file. This
+ * file contains assets which then get extracted to the
+ * user's asset directories. */
+static void bundle_decompressed(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   settings_t        *settings = config_get_ptr();
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+
+   if (err)
+      RARCH_ERR("%s", err);
+
+   if (dec)
+   {
+      if (!err)
+         command_event(CMD_EVENT_REINIT, NULL);
+
+      /* delete bundle? */
+      free(dec->source_file);
+      free(dec);
+   }
+
+   configuration_set_uint(settings,
+         settings->uints.bundle_assets_extract_last_version,
+         settings->uints.bundle_assets_extract_version_current);
+
+   configuration_set_bool(settings, settings->bools.bundle_finished, true);
+
+   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+}
+
 bool rarch_menu_init(
       struct menu_state *menu_st,
       menu_dialog_t        *p_dialog,

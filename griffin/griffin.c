@@ -231,6 +231,7 @@ CHEATS
 #endif
 #include "../libretro-common/hash/lrc_hash.c"
 
+#include "../gfx/video_driver.c"
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */

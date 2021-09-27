@@ -776,10 +776,6 @@ bool menu_driver_displaylist_push(
       file_list_t *entry_list,
       file_list_t *entry_stack);
 
-void bundle_decompressed(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err);
-
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

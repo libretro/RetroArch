@@ -309,11 +309,12 @@ OBJ += \
        input/input_driver.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
-       gfx/video_coord_array.o \
-		 gfx/gfx_display.o \
+       gfx/video_driver.o \
+       gfx/gfx_display.o \
        gfx/gfx_animation.o \
-		 gfx/gfx_thumbnail_path.o \
-		 gfx/gfx_thumbnail.o \
+       gfx/gfx_thumbnail_path.o \
+       gfx/gfx_thumbnail.o \
+       gfx/video_coord_array.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
