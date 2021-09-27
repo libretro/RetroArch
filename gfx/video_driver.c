@@ -18,6 +18,19 @@
 
 #include "video_driver.h"
 
+typedef struct
+{
+   struct string_list *list;
+   enum gfx_ctx_api api;
+} gfx_api_gpu_map;
+
+static gfx_api_gpu_map gpu_map[] = {
+   { NULL,                   GFX_CTX_VULKAN_API     },
+   { NULL,                   GFX_CTX_DIRECT3D10_API },
+   { NULL,                   GFX_CTX_DIRECT3D11_API },
+   { NULL,                   GFX_CTX_DIRECT3D12_API }
+};
+
 video_driver_t *hw_render_context_driver(
       enum retro_hw_context_type type, int major, int minor)
 {
@@ -120,6 +133,37 @@ enum retro_hw_context_type hw_render_context_type(const char *s)
 #endif
    return RETRO_HW_CONTEXT_NONE;
 }
+
+/* string list stays owned by the caller and must be available at
+ * all times after the video driver is inited */
+void video_driver_set_gpu_api_devices(
+      enum gfx_ctx_api api, struct string_list *list)
+{
+   int i;
+
+   for (i = 0; i < ARRAY_SIZE(gpu_map); i++)
+   {
+      if (api == gpu_map[i].api)
+      {
+         gpu_map[i].list = list;
+         break;
+      }
+   }
+}
+
+struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
+{
+   int i;
+
+   for (i = 0; i < ARRAY_SIZE(gpu_map); i++)
+   {
+      if (api == gpu_map[i].api)
+         return gpu_map[i].list;
+   }
+
+   return NULL;
+}
+
 
 /**
  * video_driver_translate_coord_viewport:

@@ -23442,36 +23442,6 @@ const char* video_driver_get_gpu_api_version_string(void)
    return p_rarch->video_driver_gpu_api_version_string;
 }
 
-/* string list stays owned by the caller and must be available at
- * all times after the video driver is inited */
-void video_driver_set_gpu_api_devices(
-      enum gfx_ctx_api api, struct string_list *list)
-{
-   int i;
-
-   for (i = 0; i < ARRAY_SIZE(gpu_map); i++)
-   {
-      if (api == gpu_map[i].api)
-      {
-         gpu_map[i].list = list;
-         break;
-      }
-   }
-}
-
-struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
-{
-   int i;
-
-   for (i = 0; i < ARRAY_SIZE(gpu_map); i++)
-   {
-      if (api == gpu_map[i].api)
-         return gpu_map[i].list;
-   }
-
-   return NULL;
-}
-
 /* CAMERA */
 
 /**

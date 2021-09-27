@@ -936,12 +936,6 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-typedef struct
-{
-   struct string_list *list;
-   enum gfx_ctx_api api;
-} gfx_api_gpu_map;
-
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
 
@@ -1604,13 +1598,6 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { 1.0f,            "Core provided" },
    { 0.0f,            "Custom"        },
    { 1.3333f,         "Full" }
-};
-
-static gfx_api_gpu_map gpu_map[] = {
-   { NULL,                   GFX_CTX_VULKAN_API     },
-   { NULL,                   GFX_CTX_DIRECT3D10_API },
-   { NULL,                   GFX_CTX_DIRECT3D11_API },
-   { NULL,                   GFX_CTX_DIRECT3D12_API }
 };
 
 /* TODO/FIXME - turn these into static global variable */
