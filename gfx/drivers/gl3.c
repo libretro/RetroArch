@@ -1353,7 +1353,7 @@ static void *gl_core_init(const video_info_t *video,
    return gl;
 
 error:
-   video_context_driver_destroy();
+   video_context_driver_free();
    gl_core_destroy_resources(gl);
    if (gl)
       free(gl);

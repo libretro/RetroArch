@@ -20272,18 +20272,6 @@ bool video_driver_started_fullscreen(void)
 static bool get_metrics_null(void *data, enum display_metric_types type,
       float *value) { return false; }
 
-/**
- * config_get_video_driver_options:
- *
- * Get an enumerated list of all video driver names, separated by '|'.
- *
- * Returns: string listing of all video driver names, separated by '|'.
- **/
-const char* config_get_video_driver_options(void)
-{
-   return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
-}
-
 bool video_driver_is_threaded(void)
 {
 #ifdef HAVE_THREADS
@@ -20352,46 +20340,6 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data)
    return true;
 }
 
-static void video_context_driver_destroy_internal(
-      gfx_ctx_driver_t *ctx_driver)
-{
-   if (!ctx_driver)
-      return;
-
-   ctx_driver->init                       = NULL;
-   ctx_driver->bind_api                   = NULL;
-   ctx_driver->swap_interval              = NULL;
-   ctx_driver->set_video_mode             = NULL;
-   ctx_driver->get_video_size             = NULL;
-   ctx_driver->get_video_output_size      = NULL;
-   ctx_driver->get_video_output_prev      = NULL;
-   ctx_driver->get_video_output_next      = NULL;
-   ctx_driver->get_metrics                = get_metrics_null;
-   ctx_driver->translate_aspect           = NULL;
-   ctx_driver->update_window_title        = NULL;
-   ctx_driver->check_window               = NULL;
-   ctx_driver->set_resize                 = NULL;
-   ctx_driver->suppress_screensaver       = NULL;
-   ctx_driver->swap_buffers               = NULL;
-   ctx_driver->input_driver               = NULL;
-   ctx_driver->get_proc_address           = NULL;
-   ctx_driver->image_buffer_init          = NULL;
-   ctx_driver->image_buffer_write         = NULL;
-   ctx_driver->show_mouse                 = NULL;
-   ctx_driver->ident                      = NULL;
-   ctx_driver->get_flags                  = NULL;
-   ctx_driver->set_flags                  = NULL;
-   ctx_driver->bind_hw_render             = NULL;
-   ctx_driver->get_context_data           = NULL;
-   ctx_driver->make_current               = NULL;
-}
-
-void video_context_driver_destroy(void)
-{
-   struct rarch_state     *p_rarch                           = &rarch_st;
-   video_context_driver_destroy_internal(&p_rarch->current_video_context);
-}
-
 /**
  * video_driver_get_current_framebuffer:
  *
@@ -20421,7 +20369,7 @@ static retro_proc_address_t video_driver_get_proc_address(const char *sym)
 }
 
 #ifdef HAVE_VIDEO_FILTER
-static void video_driver_filter_free(void)
+void video_driver_filter_free(void)
 {
    struct rarch_state          *p_rarch = &rarch_st;
 
@@ -20443,9 +20391,7 @@ static void video_driver_filter_free(void)
    p_rarch->video_driver_state_out_bpp   = 0;
    p_rarch->video_driver_state_out_rgb32 = false;
 }
-#endif
 
-#ifdef HAVE_VIDEO_FILTER
 static void video_driver_init_filter(enum retro_pixel_format colfmt_int,
       settings_t *settings)
 {
@@ -20570,56 +20516,6 @@ static void video_driver_init_input(
    input_driver_st->current_data = new_data;
 }
 
-/**
- * video_driver_monitor_compute_fps_statistics:
- *
- * Computes monitor FPS statistics.
- **/
-static void video_driver_monitor_compute_fps_statistics(uint64_t
-      frame_time_count)
-{
-   double        avg_fps       = 0.0;
-   double        stddev        = 0.0;
-   unsigned        samples     = 0;
-
-   if (frame_time_count <
-         (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
-   {
-      RARCH_LOG(
-            "[Video]: Does not have enough samples for monitor refresh rate"
-            " estimation. Requires to run for at least %u frames.\n",
-            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
-      return;
-   }
-
-   if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
-   {
-      RARCH_LOG("[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time"
-            " deviation, based on %u last samples).\n",
-            avg_fps, 100.0f * stddev, samples);
-   }
-}
-
-static void video_driver_pixel_converter_free(
-      video_pixel_scaler_t *scalr)
-{
-   if (!scalr)
-      return;
-
-   if (scalr->scaler)
-   {
-      scaler_ctx_gen_reset(scalr->scaler);
-      free(scalr->scaler);
-   }
-   if (scalr->scaler_out)
-      free(scalr->scaler_out);
-
-   scalr->scaler     = NULL;
-   scalr->scaler_out = NULL;
-
-   free(scalr);
-}
-
 static void video_driver_free_hw_context(struct rarch_state *p_rarch)
 {
    VIDEO_DRIVER_CONTEXT_LOCK();
@@ -20695,62 +20591,7 @@ static void video_driver_free_internal(struct rarch_state *p_rarch)
       return;
 #endif
 
-   video_driver_monitor_compute_fps_statistics(p_rarch->video_driver_frame_time_count);
-}
-
-static video_pixel_scaler_t *video_driver_pixel_converter_init(
-      const enum retro_pixel_format video_driver_pix_fmt,
-      struct retro_hw_render_callback *hwr,
-      unsigned size)
-{
-   void *scalr_out                      = NULL;
-   video_pixel_scaler_t          *scalr = NULL;
-   struct scaler_ctx        *scalr_ctx  = NULL;
-
-   /* If pixel format is not 0RGB1555, we don't need to do
-    * any internal pixel conversion. */
-   if (video_driver_pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
-      return NULL;
-
-   /* No need to perform pixel conversion for HW rendering contexts. */
-   if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
-      return NULL;
-
-   RARCH_WARN("[Video]: 0RGB1555 pixel format is deprecated,"
-         " and will be slower. For 15/16-bit, RGB565"
-         " format is preferred.\n");
-
-   if (!(scalr = (video_pixel_scaler_t*)malloc(sizeof(*scalr))))
-      goto error;
-
-   scalr->scaler                            = NULL;
-   scalr->scaler_out                        = NULL;
-
-   if (!(scalr_ctx = (struct scaler_ctx*)calloc(1, sizeof(*scalr_ctx))))
-      goto error;
-
-   scalr->scaler                            = scalr_ctx;
-   scalr->scaler->scaler_type               = SCALER_TYPE_POINT;
-   scalr->scaler->in_fmt                    = SCALER_FMT_0RGB1555;
-   /* TODO/FIXME: Pick either ARGB8888 or RGB565 depending on driver. */
-   scalr->scaler->out_fmt                   = SCALER_FMT_RGB565;
-
-   if (!scaler_ctx_gen_filter(scalr_ctx))
-      goto error;
-
-   if (!(scalr_out = calloc(sizeof(uint16_t), size * size)))
-      goto error;
-
-   scalr->scaler_out                        = scalr_out;
-
-   return scalr;
-
-error:
-   video_driver_pixel_converter_free(scalr);
-#ifdef HAVE_VIDEO_FILTER
-   video_driver_filter_free();
-#endif
-   return NULL;
+   video_monitor_compute_fps_statistics(p_rarch->video_driver_frame_time_count);
 }
 
 static void video_driver_set_viewport_config(
@@ -23159,7 +23000,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 void video_context_driver_free(void)
 {
    struct rarch_state   *p_rarch = &rarch_st;
-   video_context_driver_destroy_internal(&p_rarch->current_video_context);
+   video_context_driver_destroy(&p_rarch->current_video_context);
    p_rarch->video_context_data    = NULL;
 }
 

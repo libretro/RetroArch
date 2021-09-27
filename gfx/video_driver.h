@@ -26,6 +26,9 @@
 #include "../config.h"
 #endif
 
+#include <gfx/scaler/pixconv.h>
+#include <gfx/scaler/scaler.h>
+
 #include "../input/input_driver.h"
 #include "../input/input_types.h"
 
@@ -316,6 +319,12 @@ typedef struct video_shader_ctx_texture
 {
    unsigned id;
 } video_shader_ctx_texture_t;
+
+typedef struct video_pixel_scaler
+{
+   struct scaler_ctx *scaler;
+   void *scaler_out;
+} video_pixel_scaler_t;
 
 typedef void (*gfx_ctx_proc_t)(void);
 
@@ -985,6 +994,14 @@ struct video_viewport *video_viewport_get_custom(void);
 void video_monitor_set_refresh_rate(float hz);
 
 /**
+ * video_monitor_compute_fps_statistics:
+ *
+ * Computes monitor FPS statistics.
+ **/
+void video_monitor_compute_fps_statistics(uint64_t
+      frame_time_count);
+
+/**
  * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
  * @deviation          : Deviation from measured refresh rate.
@@ -1085,8 +1102,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data);
 
-void video_context_driver_destroy(void);
-
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident);
 
 bool video_context_driver_get_refresh_rate(float *refresh_rate);
@@ -1094,6 +1109,8 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate);
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
+
+void video_context_driver_destroy(gfx_ctx_driver_t *ctx_driver);
 
 enum gfx_ctx_api video_context_driver_get_api(void);
 
@@ -1139,6 +1156,18 @@ const char *hw_render_context_name(
 
 video_driver_t *hw_render_context_driver(
       enum retro_hw_context_type type, int major, int minor);
+
+void video_driver_pixel_converter_free(
+      video_pixel_scaler_t *scalr);
+
+video_pixel_scaler_t *video_driver_pixel_converter_init(
+      const enum retro_pixel_format video_driver_pix_fmt,
+      struct retro_hw_render_callback *hwr,
+      unsigned size);
+
+#ifdef HAVE_VIDEO_FILTER
+void video_driver_filter_free(void);
+#endif
 
 extern video_driver_t video_gl_core;
 extern video_driver_t video_gl2;

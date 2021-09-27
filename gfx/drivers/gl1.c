@@ -429,7 +429,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    return gl1;
 
 error:
-   video_context_driver_destroy();
+   video_context_driver_free();
    if (gl1)
    {
       if (gl1->extensions)

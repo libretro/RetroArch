@@ -3981,7 +3981,7 @@ static void *gl2_init(const video_info_t *video,
    return gl;
 
 error:
-   video_context_driver_destroy();
+   video_context_driver_free();
    gl2_destroy_resources(gl);
    return NULL;
 }

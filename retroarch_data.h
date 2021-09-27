@@ -73,8 +73,6 @@
 #define BSV_MOVIE_IS_PLAYBACK_OFF() (p_rarch->bsv_movie_state_handle && !p_rarch->bsv_movie_state.movie_playback)
 #endif
 
-#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
@@ -929,12 +927,6 @@ enum input_game_focus_cmd_type
    GAME_FOCUS_CMD_TOGGLE,
    GAME_FOCUS_CMD_REAPPLY
 };
-
-typedef struct video_pixel_scaler
-{
-   struct scaler_ctx *scaler;
-   void *scaler_out;
-} video_pixel_scaler_t;
 
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);

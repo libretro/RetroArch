@@ -149,6 +149,8 @@ extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;
 extern ui_companion_driver_t ui_companion_win32;
 
+extern ui_msg_window_t ui_msg_window_win32;
+
 bool ui_companion_is_on_foreground(void);
 
 void ui_companion_set_foreground(unsigned enable);
