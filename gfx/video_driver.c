@@ -16,7 +16,14 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "video_driver.h"
+
+#include "../ui/ui_companion_driver.h"
+#include "../verbosity.h"
 
 typedef struct
 {
@@ -226,4 +233,67 @@ bool video_driver_translate_coord_viewport(
    *res_screen_x      = scaled_screen_x;
    *res_screen_y      = scaled_screen_y;
    return true;
+}
+
+/**
+ * video_monitor_set_refresh_rate:
+ * @hz                 : New refresh rate for monitor.
+ *
+ * Sets monitor refresh rate to new value.
+ **/
+void video_monitor_set_refresh_rate(float hz)
+{
+   char msg[128];
+   settings_t        *settings = config_get_ptr();
+
+   snprintf(msg, sizeof(msg),
+         "Setting refresh rate to: %.3f Hz.", hz);
+   if (settings->bools.notification_show_refresh_rate)
+      runloop_msg_queue_push(msg, 1, 180, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("[Video]: %s\n", msg);
+
+   configuration_set_float(settings,
+         settings->floats.video_refresh_rate,
+         hz);
+}
+
+void video_driver_force_fallback(const char *driver)
+{
+   settings_t *settings        = config_get_ptr();
+   ui_msg_window_t *msg_window = NULL;
+
+   configuration_set_string(settings,
+         settings->arrays.video_driver,
+         driver);
+
+   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
+   /* UI companion driver is not inited yet, just call into it directly */
+   msg_window = &ui_msg_window_win32;
+#endif
+
+   if (msg_window)
+   {
+      char text[PATH_MAX_LENGTH];
+      ui_msg_window_state window_state;
+      char *title          = strdup(msg_hash_to_str(MSG_ERROR));
+
+      text[0]              = '\0';
+
+      snprintf(text, sizeof(text),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
+            driver);
+
+      window_state.buttons = UI_MSG_WINDOW_OK;
+      window_state.text    = strdup(text);
+      window_state.title   = title;
+      window_state.window  = NULL;
+
+      msg_window->error(&window_state);
+
+      free(title);
+   }
+   exit(1);
 }

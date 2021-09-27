@@ -1531,12 +1531,12 @@ error:
    d3d11_gfx_free(d3d11);
 
 #ifdef HAVE_OPENGL
-   retroarch_force_video_driver_fallback("gl");
+   video_driver_force_fallback("gl");
 #elif !defined(__WINRT__)
 #ifdef HAVE_OPENGL1
-   retroarch_force_video_driver_fallback("gl1");
+   video_driver_force_fallback("gl1");
 #else
-   retroarch_force_video_driver_fallback("gdi");
+   video_driver_force_fallback("gdi");
 #endif
 #endif
 

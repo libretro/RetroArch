@@ -21478,30 +21478,6 @@ void video_driver_set_size(unsigned width, unsigned height)
 }
 
 /**
- * video_monitor_set_refresh_rate:
- * @hz                 : New refresh rate for monitor.
- *
- * Sets monitor refresh rate to new value.
- **/
-void video_monitor_set_refresh_rate(float hz)
-{
-   char msg[128];
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t        *settings = p_rarch->configuration_settings;
-
-   snprintf(msg, sizeof(msg),
-         "Setting refresh rate to: %.3f Hz.", hz);
-   if (settings->bools.notification_show_refresh_rate)
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("[Video]: %s\n", msg);
-
-   configuration_set_float(settings,
-         settings->floats.video_refresh_rate,
-         hz);
-}
-
-/**
  * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
  * @deviation          : Deviation from measured refresh rate.
@@ -29348,47 +29324,6 @@ end:
 runloop_state_t *runloop_state_get_ptr(void)
 {
    return &runloop_state;
-}
-
-void retroarch_force_video_driver_fallback(const char *driver)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t *settings        = p_rarch->configuration_settings;
-   ui_msg_window_t *msg_window = NULL;
-
-   configuration_set_string(settings,
-         settings->arrays.video_driver,
-         driver);
-
-   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
-   /* UI companion driver is not inited yet, just call into it directly */
-   msg_window = &ui_msg_window_win32;
-#endif
-
-   if (msg_window)
-   {
-      char text[PATH_MAX_LENGTH];
-      ui_msg_window_state window_state;
-      char *title          = strdup(msg_hash_to_str(MSG_ERROR));
-
-      text[0]              = '\0';
-
-      snprintf(text, sizeof(text),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
-            driver);
-
-      window_state.buttons = UI_MSG_WINDOW_OK;
-      window_state.text    = strdup(text);
-      window_state.title   = title;
-      window_state.window  = NULL;
-
-      msg_window->error(&window_state);
-
-      free(title);
-   }
-   exit(1);
 }
 
 enum retro_language rarch_get_language_from_iso(const char *iso639)

@@ -1271,12 +1271,12 @@ static void *gl_core_init(const video_info_t *video,
    }
 
 #ifdef _WIN32
-   if (string_is_equal(vendor, "Microsoft Corporation"))
+   if (   string_is_equal(vendor,   "Microsoft Corporation"))
       if (string_is_equal(renderer, "GDI Generic"))
 #ifdef HAVE_OPENGL1
-         retroarch_force_video_driver_fallback("gl1");
+         video_driver_force_fallback("gl1");
 #else
-         retroarch_force_video_driver_fallback("gdi");
+         video_driver_force_fallback("gdi");
 #endif
 #endif
 

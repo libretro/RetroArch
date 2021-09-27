@@ -424,8 +424,6 @@ void retroarch_menu_running(void);
 
 void retroarch_menu_running_finished(bool quit);
 
-void retroarch_force_video_driver_fallback(const char *driver);
-
 enum retro_language rarch_get_language_from_iso(const char *lang);
 
 void rarch_favorites_init(void);
