@@ -5268,9 +5268,3 @@ const char *menu_driver_ident(void)
          return menu_st->driver_ctx->ident;
    return NULL;
 }
-
-/* Checks if the menu is still running */
-bool menu_driver_is_alive(void)
-{
-   return menu_driver_state.alive;
-}

@@ -662,7 +662,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
 #ifdef HAVE_MENU
       /* Draw nothing if menu is currently active */
-      if (menu_driver_is_alive())
+      if (menu_state_get_ptr()->alive)
          return;
 #endif
 
