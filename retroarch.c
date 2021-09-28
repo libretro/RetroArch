@@ -30256,7 +30256,7 @@ void frontend_driver_set_screen_brightness(int value)
       frontend->set_screen_brightness(value);
 }
 
-bool frontend_driver_can_set_screen_brightness()
+bool frontend_driver_can_set_screen_brightness(void)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
