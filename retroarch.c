@@ -663,7 +663,7 @@ bool menu_input_key_bind_set_mode(
          sec_joypad,
          binds);
    menu_input_key_bind_poll_bind_state(
-         &p_rarch->input_driver_state,
+         input_driver_st,
          p_rarch->libretro_input_binds,
          settings->floats.input_axis_threshold,
          settings->uints.input_joypad_index[binds->port],
@@ -9578,7 +9578,7 @@ void main_exit(void *args)
    frontend_driver_shutdown(false);
 
    retroarch_deinit_drivers(p_rarch, &p_rarch->retro_ctx);
-   ui_companion_driver_free();
+   p_rarch->ui_companion = NULL;
    frontend_driver_free();
 
    rtime_deinit();
@@ -12922,7 +12922,7 @@ static void clear_controller_port_map(struct rarch_state *p_rarch)
       p_rarch->port_map[port] = -1;
 }
 
-static char *get_temp_directory_alloc(const char *override_dir)
+static char *get_tmpdir_alloc(const char *override_dir)
 {
    const char *src    = NULL;
    char *path         = NULL;
@@ -12977,7 +12977,7 @@ static char *get_temp_directory_alloc(const char *override_dir)
 }
 
 static bool write_file_with_random_name(char **temp_dll_path,
-      const char *retroarch_tmp_path, const void* data, ssize_t dataSize)
+      const char *tmp_path, const void* data, ssize_t dataSize)
 {
    int ext_len;
    unsigned i;
@@ -13024,7 +13024,7 @@ static bool write_file_with_random_name(char **temp_dll_path,
          free(*temp_dll_path);
       *temp_dll_path = NULL;
 
-      strcat_alloc(temp_dll_path, retroarch_tmp_path);
+      strcat_alloc(temp_dll_path, tmp_path);
       strcat_alloc(temp_dll_path, PATH_DEFAULT_SLASH());
       strcat_alloc(temp_dll_path, prefix);
       strcat_alloc(temp_dll_path, number_buf);
@@ -13044,30 +13044,30 @@ static bool write_file_with_random_name(char **temp_dll_path,
 }
 
 static char *copy_core_to_temp_file(
+      const char *core_path,
       const char *dir_libretro)
 {
-   char retroarch_tmp_path[PATH_MAX_LENGTH];
+   char tmp_path[PATH_MAX_LENGTH];
    bool  failed                = false;
-   char  *tmp_directory        = NULL;
+   char  *tmpdir               = NULL;
    char  *tmp_dll_path         = NULL;
    void  *dll_file_data        = NULL;
    int64_t  dll_file_size      = 0;
-   const char  *core_path      = path_get(RARCH_PATH_CORE);
    const char  *core_base_name = path_basename_nocompression(core_path);
 
    if (strlen(core_base_name) == 0)
       return NULL;
 
-   tmp_directory               = get_temp_directory_alloc(dir_libretro);
-   if (!tmp_directory)
+   tmpdir                      = get_tmpdir_alloc(dir_libretro);
+   if (!tmpdir)
       return NULL;
 
-   retroarch_tmp_path[0]       = '\0';
-   fill_pathname_join(retroarch_tmp_path,
-         tmp_directory, "retroarch_temp",
-         sizeof(retroarch_tmp_path));
+   tmp_path[0]                 = '\0';
+   fill_pathname_join(tmp_path,
+         tmpdir, "retroarch_temp",
+         sizeof(tmp_path));
 
-   if (!path_mkdir(retroarch_tmp_path))
+   if (!path_mkdir(tmp_path))
    {
       failed = true;
       goto end;
@@ -13079,7 +13079,7 @@ static char *copy_core_to_temp_file(
       goto end;
    }
 
-   strcat_alloc(&tmp_dll_path, retroarch_tmp_path);
+   strcat_alloc(&tmp_dll_path, tmp_path);
    strcat_alloc(&tmp_dll_path, PATH_DEFAULT_SLASH());
    strcat_alloc(&tmp_dll_path, core_base_name);
 
@@ -13087,17 +13087,17 @@ static char *copy_core_to_temp_file(
    {
       /* try other file names */
       if (!write_file_with_random_name(&tmp_dll_path,
-               retroarch_tmp_path, dll_file_data, dll_file_size))
+               tmp_path, dll_file_data, dll_file_size))
          failed = true;
    }
 
 end:
-   if (tmp_directory)
-      free(tmp_directory);
+   if (tmpdir)
+      free(tmpdir);
    if (dll_file_data)
       free(dll_file_data);
 
-   tmp_directory       = NULL;
+   tmpdir              = NULL;
    dll_file_data       = NULL;
 
    if (!failed)
@@ -13151,7 +13151,8 @@ static bool secondary_core_create(struct rarch_state *p_rarch,
       free(p_rarch->secondary_library_path);
    p_rarch->secondary_library_path = NULL;
    p_rarch->secondary_library_path = copy_core_to_temp_file(
-         settings->paths.directory_libretro);
+		   path_get(RARCH_PATH_CORE),
+		   settings->paths.directory_libretro);
 
    if (!p_rarch->secondary_library_path)
       return false;
@@ -13728,13 +13729,6 @@ void ui_companion_driver_notify_content_loaded(void)
    const ui_companion_driver_t *ui = p_rarch->ui_companion;
    if (ui && ui->notify_content_loaded)
       ui->notify_content_loaded(p_rarch->ui_companion_data);
-}
-
-void ui_companion_driver_free(void)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-
-   p_rarch->ui_companion = NULL;
 }
 
 const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void)
@@ -14484,9 +14478,6 @@ static bool bsv_movie_init_record(
 
 static void bsv_movie_free(bsv_movie_t *handle)
 {
-   if (!handle)
-      return;
-
    intfstream_close(handle->file);
    free(handle->file);
 
@@ -14525,7 +14516,8 @@ static bsv_movie_t *bsv_movie_init_internal(const char *path,
    return handle;
 
 error:
-   bsv_movie_free(handle);
+   if (handle)
+      bsv_movie_free(handle);
    return NULL;
 }
 
@@ -20905,14 +20897,15 @@ static void video_driver_set_viewport_config(
 static void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom)
 {
    unsigned len, i, aspect_x, aspect_y;
+   unsigned int rotation             = 0;
    unsigned highest                  = 1;
    unsigned width                    = geom->base_width;
    unsigned height                   = geom->base_height;
-   unsigned int rotation             = retroarch_get_rotation();
 
    if (width == 0 || height == 0)
       return;
 
+   rotation                          = retroarch_get_rotation();
    len                               = MIN(width, height);
 
    for (i = 1; i < len; i++)
@@ -29610,8 +29603,7 @@ bool core_has_set_input_descriptor(void)
 
 unsigned int retroarch_get_rotation(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t     *settings    = p_rarch->configuration_settings;
+   settings_t     *settings    = config_get_ptr();
    unsigned     video_rotation = settings->uints.video_rotation;
    return video_rotation + runloop_state.system.rotation;
 }
