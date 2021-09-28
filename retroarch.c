@@ -5233,13 +5233,6 @@ bool command_set_shader(command_t *cmd, const char *arg)
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
-static bool task_auto_translate_callback(void)
-{
-   bool was_paused                   = runloop_state.paused;
-   command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
-   return true;
-}
-
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
 static bool is_ai_service_speech_running(void)
 {
@@ -5290,7 +5283,10 @@ task_finished:
    task_set_finished(task, true);
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
-       task_auto_translate_callback();
+   {
+      bool was_paused = runloop_state.paused;
+      command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
+   }
    if (task->user_data)
        free(task->user_data);
 }
@@ -6382,6 +6378,23 @@ finish:
       rjsonwriter_free(jsonwriter);
    return !error;
 }
+
+#ifdef HAVE_ACCESSIBILITY
+static bool is_narrator_running(struct rarch_state *p_rarch,
+      bool accessibility_enable)
+{
+   if (is_accessibility_enabled(
+            accessibility_enable,
+            p_rarch->accessibility_enabled))
+   {
+      frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
+      if (frontend && frontend->is_narrator_running)
+         return frontend->is_narrator_running();
+   }
+   return true;
+}
+#endif
+
 #endif
 
 /**
@@ -7456,10 +7469,10 @@ static void retroarch_system_info_free(runloop_state_t *runloop_st)
    sys_info->info.need_fullpath                       = false;
    sys_info->info.block_extract                       = false;
 
-   runloop_state.key_event                            = NULL;
-   runloop_state.frontend_key_event                   = NULL;
+   runloop_st->key_event                              = NULL;
+   runloop_st->frontend_key_event                     = NULL;
 
-   memset(&runloop_state.system, 0, sizeof(rarch_system_info_t));
+   memset(&runloop_st->system, 0, sizeof(rarch_system_info_t));
 }
 
 static bool libretro_get_system_info(
@@ -10084,13 +10097,12 @@ static bool dynamic_verify_hw_context(
    return true;
 }
 
-static void rarch_log_libretro(
+static void libretro_log_cb(
       enum retro_log_level level,
       const char *fmt, ...)
 {
    va_list vp;
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t        *settings = p_rarch->configuration_settings;
+   settings_t        *settings = config_get_ptr();
    unsigned libretro_log_level = settings->uints.libretro_log_level;
 
    if ((unsigned)level < libretro_log_level)
@@ -10298,7 +10310,7 @@ static void runloop_core_msg_queue_push(
          category);
 }
 
-static void retroarch_deinit_core_options(
+static void runloop_deinit_core_options(
       bool game_options_active,
       const char *path_core_options,
       core_option_manager_t *core_options)
@@ -10348,7 +10360,7 @@ static void retroarch_deinit_core_options(
       core_option_manager_free(core_options);
 }
 
-static bool retroarch_validate_per_core_options(char *s,
+static bool validate_per_core_options(char *s,
       size_t len, bool mkdir,
       const char *core_name, const char *game_name)
 {
@@ -10384,7 +10396,7 @@ static bool retroarch_validate_per_core_options(char *s,
    return true;
 }
 
-static bool retroarch_validate_folder_options(
+static bool validate_folder_options(
       char *s, size_t len, bool mkdir)
 {
    char folder_name[PATH_MAX_LENGTH];
@@ -10399,33 +10411,32 @@ static bool retroarch_validate_folder_options(
    fill_pathname_parent_dir_name(folder_name,
          game_path, sizeof(folder_name));
 
-   return retroarch_validate_per_core_options(s, len, mkdir,
+   return validate_per_core_options(s, len, mkdir,
          core_name, folder_name);
 }
 
-
-static bool retroarch_validate_game_options(
+static bool validate_game_options(
       const char *core_name,
       char *s, size_t len, bool mkdir)
 {
    const char *game_name       = path_basename(path_get(RARCH_PATH_BASENAME));
-   return retroarch_validate_per_core_options(s, len, mkdir,
+   return validate_per_core_options(s, len, mkdir,
          core_name, game_name);
 }
 
 /**
- * retroarch_game_specific_options:
+ * game_specific_options:
  *
  * Returns: true (1) if a game specific core
  * options path has been found,
  * otherwise false (0).
  **/
-static bool retroarch_game_specific_options(char **output)
+static bool validate_game_specific_options(char **output)
 {
    char game_options_path[PATH_MAX_LENGTH];
    game_options_path[0] ='\0';
 
-   if (!retroarch_validate_game_options(
+   if (!validate_game_options(
             runloop_state.system.info.library_name,
             game_options_path,
             sizeof(game_options_path), false) ||
@@ -10440,19 +10451,19 @@ static bool retroarch_game_specific_options(char **output)
 }
 
 /**
- * retroarch_folder_specific_options:
+ * folder_specific_options:
  *
  * Returns: true (1) if a folder specific core
  * options path has been found,
  * otherwise false (0).
  **/
-static bool retroarch_folder_specific_options(
+static bool validate_folder_specific_options(
       char **output)
 {
    char folder_options_path[PATH_MAX_LENGTH];
    folder_options_path[0] ='\0';
 
-   if (!retroarch_validate_folder_options(
+   if (!validate_folder_options(
             folder_options_path,
             sizeof(folder_options_path), false) ||
        !path_is_valid(folder_options_path))
@@ -10476,7 +10487,7 @@ static bool retroarch_folder_specific_options(
  *   NOTE: caller must ensure 
  *   path and src_path are NULL-terminated
  *  */
-static void retroarch_init_core_options_path(
+static void runloop_init_core_options_path(
       settings_t *settings,
       char *path, size_t len,
       char *src_path, size_t src_len)
@@ -10488,7 +10499,7 @@ static void retroarch_init_core_options_path(
 
    /* Check whether game-specific options exist */
    if (game_specific_options &&
-       retroarch_game_specific_options(&game_options_path))
+       validate_game_specific_options(&game_options_path))
    {
       /* Notify system that we have a valid core options
        * override */
@@ -10503,7 +10514,7 @@ static void retroarch_init_core_options_path(
    }
    /* Check whether folder-specific options exist */
    else if (game_specific_options &&
-            retroarch_folder_specific_options(
+            validate_folder_specific_options(
                &folder_options_path))
    {
       /* Notify system that we have a valid core options
@@ -10532,10 +10543,10 @@ static void retroarch_init_core_options_path(
       {
          const char *core_name      = runloop_state.system.info.library_name;
          /* Get core-specific options path
-          * > if retroarch_validate_per_core_options() returns
+          * > if validate_per_core_options() returns
           *   false, then per-core options are disabled (due to
           *   unknown system errors...) */
-         per_core_options = retroarch_validate_per_core_options(
+         per_core_options = validate_per_core_options(
                per_core_options_path, sizeof(per_core_options_path), true,
                core_name, core_name);
 
@@ -10578,7 +10589,7 @@ static void retroarch_init_core_options_path(
    }
 }
 
-static core_option_manager_t *retroarch_init_core_options(
+static core_option_manager_t *runloop_init_core_options(
       settings_t *settings,
       const struct retro_core_options_v2 *options_v2)
 {
@@ -10591,7 +10602,7 @@ static core_option_manager_t *retroarch_init_core_options(
    src_options_path[0] = '\0';
 
    /* Get core options file path */
-   retroarch_init_core_options_path(settings,
+   runloop_init_core_options_path(settings,
          options_path, sizeof(options_path),
          src_options_path, sizeof(src_options_path));
 
@@ -10674,7 +10685,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
 #ifdef HAVE_RUNAHEAD
             if (runloop_state.core_options->updated)
-               p_rarch->has_variable_update = true;
+               runloop_state.has_variable_update = true;
 #endif
             runloop_state.core_options->updated = false;
 
@@ -10705,7 +10716,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             core_option_manager_t *new_vars = NULL;
             if (runloop_state.core_options)
             {
-               retroarch_deinit_core_options(
+               runloop_deinit_core_options(
                      runloop_state.game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_state.core_options);
@@ -10733,7 +10744,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
             if (runloop_state.core_options)
             {
-               retroarch_deinit_core_options(
+               runloop_deinit_core_options(
                      runloop_state.game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_state.core_options);
@@ -10745,7 +10756,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             if (options_v2)
             {
                /* Initialise core options */
-               core_option_manager_t *new_vars = retroarch_init_core_options(settings, options_v2);
+               core_option_manager_t *new_vars = runloop_init_core_options(settings, options_v2);
                if (new_vars)
                   runloop_state.core_options   = new_vars;
                /* Clean up */
@@ -10766,7 +10777,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
             if (runloop_state.core_options)
             {
-               retroarch_deinit_core_options(
+               runloop_deinit_core_options(
                      runloop_state.game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_state.core_options);
@@ -10778,7 +10789,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             if (options_v2)
             {
                /* Initialise core options */
-               core_option_manager_t *new_vars = retroarch_init_core_options(settings, options_v2);
+               core_option_manager_t *new_vars = runloop_init_core_options(settings, options_v2);
 
                if (new_vars)
                   runloop_state.core_options = new_vars;
@@ -10801,7 +10812,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
             if (runloop_state.core_options)
             {
-               retroarch_deinit_core_options(
+               runloop_deinit_core_options(
                      runloop_state.game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_state.core_options);
@@ -10812,7 +10823,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
             if (options_v2)
             {
-               new_vars = retroarch_init_core_options(settings, options_v2);
+               new_vars = runloop_init_core_options(settings, options_v2);
                if (new_vars)
                   runloop_state.core_options = new_vars;
             }
@@ -10840,7 +10851,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
             if (runloop_state.core_options)
             {
-               retroarch_deinit_core_options(
+               runloop_deinit_core_options(
                      runloop_state.game_options_active,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_state.core_options);
@@ -10852,7 +10863,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
             if (options_v2)
             {
                /* Initialise core options */
-               new_vars = retroarch_init_core_options(settings, options_v2);
+               new_vars = runloop_init_core_options(settings, options_v2);
                if (new_vars)
                   runloop_state.core_options = new_vars;
 
@@ -11673,7 +11684,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          struct retro_log_callback *cb = (struct retro_log_callback*)data;
 
          RARCH_LOG("[Environ]: GET_LOG_INTERFACE.\n");
-         cb->log = rarch_log_libretro;
+         cb->log = libretro_log_cb;
          break;
       }
 
@@ -12704,7 +12715,7 @@ static void uninit_libretro_symbols(
 
    if (runloop_state.core_options)
    {
-      retroarch_deinit_core_options(
+      runloop_deinit_core_options(
             runloop_state.game_options_active,
             path_get(RARCH_PATH_CORE_OPTIONS),
             runloop_state.core_options);
@@ -13103,20 +13114,19 @@ end:
 static bool retroarch_environment_secondary_core_hook(
       unsigned cmd, void *data)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   bool                 result = retroarch_environment_cb(cmd, data);
+   bool result = retroarch_environment_cb(cmd, data);
 
-   if (p_rarch->has_variable_update)
+   if (runloop_state.has_variable_update)
    {
       if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE)
       {
-         bool *bool_p                 = (bool*)data;
-         *bool_p                      = true;
-         p_rarch->has_variable_update = false;
+         bool *bool_p                      = (bool*)data;
+         *bool_p                           = true;
+         runloop_state.has_variable_update = false;
          return true;
       }
       else if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE)
-         p_rarch->has_variable_update = false;
+         runloop_state.has_variable_update = false;
    }
    return result;
 }
@@ -13157,7 +13167,7 @@ static bool secondary_core_create(struct rarch_state *p_rarch,
    p_rarch->secondary_core.retro_set_environment(
          retroarch_environment_secondary_core_hook);
 #ifdef HAVE_RUNAHEAD
-   p_rarch->has_variable_update  = true;
+   runloop_state.has_variable_update  = true;
 #endif
 
    p_rarch->secondary_core.retro_init();
@@ -13917,7 +13927,7 @@ static bool record_driver_init_first(
          continue;
 
       *backend = record_drivers[i];
-      *data = handle;
+      *data    = handle;
       return true;
    }
 
@@ -14276,10 +14286,9 @@ static bool recording_init(
 
 void recording_driver_update_streaming_url(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t     *settings    = p_rarch->configuration_settings;
-   const char     *youtube_url = "rtmp://a.rtmp.youtube.com/live2/";
-   const char     *twitch_url  = "rtmp://live.twitch.tv/app/";
+   settings_t     *settings      = config_get_ptr();
+   const char     *youtube_url   = "rtmp://a.rtmp.youtube.com/live2/";
+   const char     *twitch_url    = "rtmp://live.twitch.tv/app/";
    const char     *facebook_url  = "rtmps://live-api-s.facebook.com:443/rtmp/";
 
    if (!settings)
@@ -19882,8 +19891,7 @@ void audio_driver_load_system_sounds(void)
    char sounds_path[PATH_MAX_LENGTH];
    char sounds_fallback_path[PATH_MAX_LENGTH];
    char basename_noext[PATH_MAX_LENGTH];
-   struct rarch_state *p_rarch           = &rarch_st;
-   settings_t *settings                  = p_rarch->configuration_settings;
+   settings_t *settings                  = config_get_ptr();
    const char *dir_assets                = settings->paths.directory_assets;
    const bool audio_enable_menu          = settings->bools.audio_enable_menu;
    const bool audio_enable_menu_ok       = audio_enable_menu && settings->bools.audio_enable_menu_ok;
@@ -26851,7 +26859,7 @@ static core_option_manager_t *retroarch_init_core_variables(
    src_options_path[0] = '\0';
 
    /* Get core options file path */
-   retroarch_init_core_options_path(
+   runloop_init_core_options_path(
          settings,
          options_path, sizeof(options_path),
          src_options_path, sizeof(src_options_path));
@@ -29644,21 +29652,6 @@ static bool accessibility_speak_priority(
    return true;
 }
 
-#ifdef HAVE_TRANSLATE
-static bool is_narrator_running(struct rarch_state *p_rarch,
-      bool accessibility_enable)
-{
-   if (is_accessibility_enabled(
-            accessibility_enable,
-            p_rarch->accessibility_enabled))
-   {
-      frontend_ctx_driver_t *frontend = p_rarch->current_frontend_ctx;
-      if (frontend && frontend->is_narrator_running)
-         return frontend->is_narrator_running();
-   }
-   return true;
-}
-#endif
 #endif
 
 /* Creates folder and core options stub file for subsequent runs */
@@ -29678,7 +29671,7 @@ bool core_options_create_override(bool game_specific)
          goto error;
 
       /* Get options file path (folder-specific) */
-      if (!retroarch_validate_folder_options(
+      if (!validate_folder_options(
                options_path,
                sizeof(options_path), true))
          goto error;
@@ -29686,7 +29679,7 @@ bool core_options_create_override(bool game_specific)
    else
    {
       /* Get options file path (game-specific) */
-      if (!retroarch_validate_game_options(
+      if (!validate_game_options(
                runloop_state.system.info.library_name,
                options_path,
                sizeof(options_path), true))
@@ -29768,7 +29761,7 @@ bool core_options_remove_override(bool game_specific)
     *   check whether a folder-specific config
     *   exists */
    if (game_specific &&
-       retroarch_validate_folder_options(
+       validate_folder_options(
           new_options_path,
           sizeof(new_options_path), false) &&
        path_is_valid(new_options_path))
@@ -29783,7 +29776,7 @@ bool core_options_remove_override(bool game_specific)
       if (per_core_options)
       {
          const char *core_name = runloop_state.system.info.library_name;
-         per_core_options      = retroarch_validate_per_core_options(
+         per_core_options      = validate_per_core_options(
                new_options_path, sizeof(new_options_path), true,
                      core_name, core_name);
       }

@@ -1495,7 +1495,6 @@ struct rarch_state
    bool audio_suspended;
 
 #ifdef HAVE_RUNAHEAD
-   bool has_variable_update;
    bool runahead_save_state_size_known;
    bool request_fast_savestate;
    bool hard_disable_audio;

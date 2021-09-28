@@ -36,10 +36,6 @@ static void deinit_netplay(struct rarch_state *p_rarch);
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch,
       struct retro_callbacks *cbs);
 
-static void retroarch_deinit_core_options(
-      bool game_options_active,
-      const char *path_core_options,
-      core_option_manager_t *core_options);
 static core_option_manager_t *retroarch_init_core_variables(
       settings_t *settings,
       const struct retro_variable *vars);

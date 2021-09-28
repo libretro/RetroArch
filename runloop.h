@@ -133,6 +133,9 @@ struct runloop
    bool max_frames_screenshot;
    char max_frames_screenshot_path[PATH_MAX_LENGTH];
 #endif
+#ifdef HAVE_RUNAHEAD
+   bool has_variable_update;
+#endif
 };
 
 typedef struct runloop runloop_state_t;
