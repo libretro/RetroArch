@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -357,6 +358,40 @@ void video_context_driver_destroy(gfx_ctx_driver_t *ctx_driver)
    ctx_driver->make_current               = NULL;
 }
 
+const gfx_ctx_driver_t *video_context_driver_init(
+      bool core_set_shared_context,
+      settings_t *settings,
+      void *data,
+      const gfx_ctx_driver_t *ctx,
+      const char *ident,
+      enum gfx_ctx_api api, unsigned major,
+      unsigned minor, bool hw_render_ctx,
+      void **ctx_data)
+{
+   if (!ctx->bind_api(data, api, major, minor))
+   {
+      RARCH_WARN("Failed to bind API (#%u, version %u.%u)"
+            " on context driver \"%s\".\n",
+            (unsigned)api, major, minor, ctx->ident);
+
+      return NULL;
+   }
+
+   if (!(*ctx_data = ctx->init(data)))
+      return NULL;
+
+   if (ctx->bind_hw_render)
+   {
+      bool  video_shared_context  =
+         settings->bools.video_shared_context || core_set_shared_context;
+
+      ctx->bind_hw_render(*ctx_data,
+            video_shared_context && hw_render_ctx);
+   }
+
+   return ctx;
+}
+
 /**
  * config_get_video_driver_options:
  *
@@ -442,4 +477,42 @@ error:
    video_driver_filter_free();
 #endif
    return NULL;
+}
+
+struct video_viewport *video_viewport_get_custom(void)
+{
+   return &config_get_ptr()->video_viewport_custom;
+}
+
+bool video_driver_monitor_adjust_system_rates(
+      float timing_skew_hz,
+      float video_refresh_rate,
+      bool vrr_runloop_enable,
+      float audio_max_timing_skew,
+      double input_fps)
+{
+   if (!vrr_runloop_enable)
+   {
+      float timing_skew                    = fabs(
+            1.0f - input_fps / timing_skew_hz);
+      /* We don't want to adjust pitch too much. If we have extreme cases,
+       * just don't readjust at all. */
+      if (timing_skew <= audio_max_timing_skew)
+         return true;
+      RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
+            " (Display = %.2f Hz, Game = %.2f Hz)\n",
+            video_refresh_rate,
+            (float)input_fps);
+   }
+   return input_fps <= timing_skew_hz;
+}
+
+void video_driver_reset_custom_viewport(settings_t *settings)
+{
+   struct video_viewport *custom_vp = &settings->video_viewport_custom;
+
+   custom_vp->width  = 0;
+   custom_vp->height = 0;
+   custom_vp->x      = 0;
+   custom_vp->y      = 0;
 }

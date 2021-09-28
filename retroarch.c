@@ -1749,15 +1749,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
-            unsigned width            = 0;
-            unsigned height           = 0;
+            unsigned width            = p_rarch->video_driver_width;
+            unsigned height           = p_rarch->video_driver_height;
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
             if (!menu_st->driver_ctx || !menu_st->driver_ctx->osk_ptr_at_pos)
             {
                point->retcode = 0;
                return false;
             }
-            video_driver_get_size(&width, &height);
             point->retcode = menu_st->driver_ctx->osk_ptr_at_pos(
                   menu_st->userdata,
                   point->x, point->y, width, height);
@@ -21427,29 +21426,6 @@ void video_driver_cached_frame(void)
    p_rarch->recording_data      = recording;
 }
 
-static bool video_driver_monitor_adjust_system_rates(
-      float timing_skew_hz,
-      float video_refresh_rate,
-      bool vrr_runloop_enable,
-      float audio_max_timing_skew,
-      double input_fps)
-{
-   if (!vrr_runloop_enable)
-   {
-      float timing_skew                    = fabs(
-            1.0f - input_fps / timing_skew_hz);
-      /* We don't want to adjust pitch too much. If we have extreme cases,
-       * just don't readjust at all. */
-      if (timing_skew <= audio_max_timing_skew)
-         return true;
-      RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
-            " (Display = %.2f Hz, Game = %.2f Hz)\n",
-            video_refresh_rate,
-            (float)input_fps);
-   }
-   return input_fps <= timing_skew_hz;
-}
-
 static void video_driver_lock_new(struct rarch_state *p_rarch)
 {
    VIDEO_DRIVER_LOCK_FREE();
@@ -21531,30 +21507,6 @@ void video_driver_set_viewport_core(void)
    else
       aspectratio_lut[ASPECT_RATIO_CORE].value =
          (float)geom->base_width / geom->base_height;
-}
-
-void video_driver_set_viewport_full(void)
-{
-   unsigned width  = 0;
-   unsigned height = 0;   
-
-   video_driver_get_size(&width, &height);
-
-   if (width == 0 || height == 0)
-      return;
-
-   aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
-}
-
-void video_driver_reset_custom_viewport(void *settings_data)
-{
-   settings_t             *settings = (settings_t*)settings_data;
-   struct video_viewport *custom_vp = &settings->video_viewport_custom;
-
-   custom_vp->width  = 0;
-   custom_vp->height = 0;
-   custom_vp->x      = 0;
-   custom_vp->y      = 0;
 }
 
 void video_driver_set_rgba(void)
@@ -21666,7 +21618,13 @@ void video_driver_set_aspect_ratio(void)
          break;
 
       case ASPECT_RATIO_FULL:
-         video_driver_set_viewport_full();
+         {
+            unsigned width  = p_rarch->video_driver_width;
+            unsigned height = p_rarch->video_driver_height;
+
+            if (width != 0 && height != 0)
+               aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
+         }
          break;
 
       default:
@@ -22099,13 +22057,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    vp->height = height;
    vp->x      = padding_x / 2;
    vp->y      = padding_y / 2;
-}
-
-struct video_viewport *video_viewport_get_custom(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t        *settings = p_rarch->configuration_settings;
-   return &settings->video_viewport_custom;
 }
 
 /**
@@ -22782,57 +22733,6 @@ void video_driver_get_window_title(char *buf, unsigned len)
       strlcpy(buf, p_rarch->video_driver_window_title, len);
       p_rarch->video_driver_window_title_update = false;
    }
-}
-
-/**
- * video_context_driver_init:
- * @core_set_shared_context : Boolean value that tells us whether shared context
- *                            is set.
- * @ctx                     : Graphics context driver to initialize.
- * @ident                   : Identifier of graphics context driver to find.
- * @api                     : API of higher-level graphics API.
- * @major                   : Major version number of higher-level graphics API.
- * @minor                   : Minor version number of higher-level graphics API.
- * @hw_render_ctx           : Request a graphics context driver capable of
- *                            hardware rendering?
- *
- * Initialize graphics context driver.
- *
- * Returns: graphics context driver if successfully initialized,
- * otherwise NULL.
- **/
-static const gfx_ctx_driver_t *video_context_driver_init(
-      bool core_set_shared_context,
-      settings_t *settings,
-      void *data,
-      const gfx_ctx_driver_t *ctx,
-      const char *ident,
-      enum gfx_ctx_api api, unsigned major,
-      unsigned minor, bool hw_render_ctx,
-      void **ctx_data)
-{
-   if (!ctx->bind_api(data, api, major, minor))
-   {
-      RARCH_WARN("Failed to bind API (#%u, version %u.%u)"
-            " on context driver \"%s\".\n",
-            (unsigned)api, major, minor, ctx->ident);
-
-      return NULL;
-   }
-
-   if (!(*ctx_data = ctx->init(data)))
-      return NULL;
-
-   if (ctx->bind_hw_render)
-   {
-      bool  video_shared_context  =
-         settings->bools.video_shared_context || core_set_shared_context;
-
-      ctx->bind_hw_render(*ctx_data,
-            video_shared_context && hw_render_ctx);
-   }
-
-   return ctx;
 }
 
 #ifdef HAVE_VULKAN

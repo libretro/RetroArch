@@ -19,8 +19,10 @@
 
 #include <stddef.h>
 
+
 #include <libretro.h>
 #include <retro_common_api.h>
+#include <boolean.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -29,6 +31,7 @@
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
 
+#include "../configuration.h"
 #include "../input/input_driver.h"
 #include "../input/input_types.h"
 
@@ -837,9 +840,7 @@ bool video_driver_supports_read_frame_raw(void);
 
 void video_driver_set_viewport_core(void);
 
-void video_driver_set_viewport_full(void);
-
-void video_driver_reset_custom_viewport(void *settings_data);
+void video_driver_reset_custom_viewport(settings_t *settings);
 
 void video_driver_set_rgba(void);
 
@@ -1019,6 +1020,13 @@ void video_monitor_compute_fps_statistics(uint64_t
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
+bool video_driver_monitor_adjust_system_rates(
+      float timing_skew_hz,
+      float video_refresh_rate,
+      bool vrr_runloop_enable,
+      float audio_max_timing_skew,
+      double input_fps);
+
 void crt_switch_driver_refresh(void);
 
 char* crt_switch_core_name(void);
@@ -1063,8 +1071,6 @@ void video_driver_display_userdata_set(uintptr_t idx);
 
 void video_driver_window_set(uintptr_t idx);
 
-uintptr_t video_driver_window_get(void);
-
 bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
       uintptr_t *id);
@@ -1080,6 +1086,33 @@ void video_driver_get_window_title(char *buf, unsigned len);
 bool *video_driver_get_threaded(void);
 
 void video_driver_set_threaded(bool val);
+
+/**
+ * video_context_driver_init:
+ * @core_set_shared_context : Boolean value that tells us whether shared context
+ *                            is set.
+ * @ctx                     : Graphics context driver to initialize.
+ * @ident                   : Identifier of graphics context driver to find.
+ * @api                     : API of higher-level graphics API.
+ * @major                   : Major version number of higher-level graphics API.
+ * @minor                   : Minor version number of higher-level graphics API.
+ * @hw_render_ctx           : Request a graphics context driver capable of
+ *                            hardware rendering?
+ *
+ * Initialize graphics context driver.
+ *
+ * Returns: graphics context driver if successfully initialized,
+ * otherwise NULL.
+ **/
+const gfx_ctx_driver_t *video_context_driver_init(
+      bool core_set_shared_context,
+      settings_t *settings,
+      void *data,
+      const gfx_ctx_driver_t *ctx,
+      const char *ident,
+      enum gfx_ctx_api api, unsigned major,
+      unsigned minor, bool hw_render_ctx,
+      void **ctx_data);
 
 /**
  * video_context_driver_init_first:
