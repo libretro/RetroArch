@@ -1514,73 +1514,10 @@ static bool menu_driver_iterate(
             current_time) != -1);
 }
 
-static bool menu_driver_init_internal(
-      gfx_display_t *p_disp,
-      settings_t *settings,
-      bool video_is_threaded)
-{
-   struct menu_state *menu_st  = menu_state_get_ptr();
-   menu_ctx_environment_t menu_environ;
-
-   if (menu_st->driver_ctx)
-   {
-      const char *ident = menu_st->driver_ctx->ident;
-      /* ID must be set first, since it is required for
-       * the proper determination of pixel/dpi scaling
-       * parameters (and some menu drivers fetch the
-       * current pixel/dpi scale during 'menu_driver_ctx->init()') */
-      if (ident)
-         p_disp->menu_driver_id                  = menu_driver_set_id(ident);
-      else
-         p_disp->menu_driver_id                  = MENU_DRIVER_ID_UNKNOWN;
-
-      if (menu_st->driver_ctx->init)
-      {
-         menu_st->driver_data               = (menu_handle_t*)
-            menu_st->driver_ctx->init(&menu_st->userdata,
-                  video_is_threaded);
-         menu_st->driver_data->userdata     = menu_st->userdata;
-         menu_st->driver_data->driver_ctx   = menu_st->driver_ctx;
-      }
-   }
-
-   if (!menu_st->driver_data || !rarch_menu_init(
-            menu_st,
-            &menu_st->dialog_st,
-            menu_st->driver_ctx,
-            &menu_st->input_state,
-            &menu_st->input_pointer_hw_state,
-            settings))
-      return false;
-
-   gfx_display_init();
-
-   /* TODO/FIXME - can we get rid of this? Is this needed? */
-   configuration_set_string(settings,
-         settings->arrays.menu_driver, menu_st->driver_ctx->ident);
-
-   if (menu_st->driver_ctx->lists_init)
-   {
-      if (!menu_st->driver_ctx->lists_init(menu_st->driver_data))
-         return false;
-   }
-   else
-      generic_menu_init_list(menu_st, settings);
-
-   /* Initialise menu screensaver */
-   menu_environ.type              = MENU_ENVIRON_DISABLE_SCREENSAVER;
-   menu_environ.data              = NULL;
-   menu_st->input_last_time_us    = cpu_features_get_time_usec();
-   menu_st->screensaver_active    = false;
-   menu_st->screensaver_supported = menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
-
-   return true;
-}
-
 bool menu_driver_init(bool video_is_threaded)
 {
    gfx_display_t            *p_disp  = &rarch_st.dispgfx;
-   settings_t             *settings  = &rarch_st.configuration_settings;
+   settings_t             *settings  = rarch_st.configuration_settings;
    struct menu_state       *menu_st  = menu_state_get_ptr();
 
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
@@ -5067,7 +5004,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
    unsigned int nbytes               = 0;
    unsigned int alloc_size           = 0;
    unsigned int address              = -1;
-   unsigned int len                  = 0;
+   size_t len                        = 0;
    unsigned int max_bytes            = 0;
    const rarch_system_info_t* system = &runloop_state.system;
 

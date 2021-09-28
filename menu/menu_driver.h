@@ -852,6 +852,11 @@ void menu_input_search_cb(void *userdata, const char *str);
 void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod);
 
+bool menu_driver_init_internal(
+      gfx_display_t *p_disp,
+      settings_t *settings,
+      bool video_is_threaded);
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 RETRO_END_DECLS
