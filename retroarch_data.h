@@ -1520,13 +1520,6 @@ struct rarch_state
 
    input_game_focus_state_t game_focus_state; /* bool alignment */
 
-#ifdef HAVE_MENU
-   /* Is the menu driver still running? */
-   bool menu_driver_alive;
-   /* Are we binding a button inside the menu? */
-   bool menu_driver_is_binding;
-#endif
-
    bool recording_enable;
    bool streaming_enable;
 

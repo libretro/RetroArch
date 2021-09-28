@@ -1482,16 +1482,6 @@ int generic_menu_entry_action(
    return ret;
 }
 
-const char *menu_driver_ident(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct menu_state    *menu_st  = menu_state_get_ptr();
-   if (p_rarch->menu_driver_alive)
-      if (menu_st->driver_ctx && menu_st->driver_ctx->ident)
-         return menu_st->driver_ctx->ident;
-   return NULL;
-}
-
 /* Iterate the menu driver for one frame. */
 static bool menu_driver_iterate(
       struct rarch_state *p_rarch,
@@ -4879,13 +4869,6 @@ bool menu_input_dialog_get_display_kb(void)
 #endif /* HAVE_LIBNX */
    return menu_st->input_dialog_kb_display;
 }
-
-/* Checks if the menu is still running */
-bool menu_driver_is_alive(void)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->menu_driver_alive;
-}
 #endif
 
 /* MESSAGE QUEUE */
@@ -7273,7 +7256,7 @@ static void command_event_reinit(struct rarch_state *p_rarch,
    p_rarch->dispgfx.framebuf_dirty = true;
    if (video_fullscreen)
       video_driver_hide_mouse();
-   if (p_rarch->menu_driver_alive && p_rarch->current_video->set_nonblock_state)
+   if (menu_state_get_ptr()->alive && p_rarch->current_video->set_nonblock_state)
       p_rarch->current_video->set_nonblock_state(
             p_rarch->video_driver_data, false,
             video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
@@ -7748,7 +7731,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
-         if (p_rarch->menu_driver_alive)
+         if (menu_st->alive)
             retroarch_menu_running_finished(false);
          else
             retroarch_menu_running();
@@ -7912,7 +7895,7 @@ bool command_event(enum event_command cmd, void *data)
          /* Closing content via hotkey requires toggling menu
           * and resetting the position later on to prevent
           * going to empty Quick Menu */
-         if (!p_rarch->menu_driver_alive)
+         if (!menu_state_get_ptr()->alive)
          {
             menu_state_get_ptr()->pending_close_content = true;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
@@ -8562,7 +8545,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
-         if (p_rarch->menu_driver_alive)
+         if (menu_st->alive)
          {
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
             if (menu_pause_libretro)
@@ -9045,7 +9028,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
                   /* If menu is currently active, disable
                    * 'toggle on' functionality */
-                  if (p_rarch->menu_driver_alive)
+                  if (menu_st->alive)
                      p_rarch->game_focus_state.enabled = false;
 #endif
                   if (p_rarch->game_focus_state.enabled != current_enable_state)
@@ -14413,7 +14396,7 @@ static void input_overlay_loaded(retro_task_t *task,
    {
 #ifdef HAVE_MENU
       /* We can't display when the menu is up */
-      if (data->hide_in_menu && p_rarch->menu_driver_alive)
+      if (data->hide_in_menu && menu_state_get_ptr()->alive)
          goto abort_load;
 #endif
 
@@ -14763,7 +14746,7 @@ static void retroarch_overlay_init(struct rarch_state *p_rarch)
    /* Cancel load if 'hide_in_menu' is enabled and
     * menu is currently active */
    if (overlay_hide_in_menu)
-      load_enabled = load_enabled && !p_rarch->menu_driver_alive;
+      load_enabled = load_enabled && !menu_state_get_ptr()->alive;
 #endif
 
    /* Cancel load if 'hide_when_gamepad_connected' is
@@ -15103,7 +15086,7 @@ static void input_driver_poll(void)
 #endif
 
 #ifdef HAVE_MENU
-   if (!p_rarch->menu_driver_alive)
+   if (!menu_state_get_ptr()->alive)
 #endif
    if (input_remap_binds_enable)
    {
@@ -15514,7 +15497,7 @@ static int16_t input_state_device(
                    BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, id))
                {
 #ifdef HAVE_MENU
-                  bool menu_driver_alive        = p_rarch->menu_driver_alive;
+                  bool menu_driver_alive        = menu_state_get_ptr()->alive;
 #else
                   bool menu_driver_alive        = false;
 #endif
@@ -19808,7 +19791,7 @@ bool audio_driver_callback(void)
    struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
 #ifdef HAVE_MENU
-   bool core_paused            = runloop_state.paused || (settings->bools.menu_pause_libretro && p_rarch->menu_driver_alive);
+   bool core_paused            = runloop_state.paused || (settings->bools.menu_pause_libretro && menu_state_get_ptr()->alive);
 #else
    bool core_paused            = runloop_state.paused;
 #endif
@@ -22271,7 +22254,7 @@ static void video_driver_frame(const void *data, unsigned width,
                   msg_entry.prio,
                   false,
 #ifdef HAVE_MENU
-                  p_rarch->menu_driver_alive
+                  menu_state_get_ptr()->alive
 #else
                   false
 #endif
@@ -22599,7 +22582,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->memory_update_interval      = settings->uints.memory_update_interval;
 
 #ifdef HAVE_MENU
-   video_info->menu_is_alive               = p_rarch->menu_driver_alive;
+   video_info->menu_is_alive               = menu_state_get_ptr()->alive;
    video_info->menu_screensaver_active     = menu_state_get_ptr()->screensaver_active;
    video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
@@ -23666,7 +23649,6 @@ static void retroarch_deinit_drivers(
 #ifdef HAVE_MENU
    menu_driver_destroy(
          menu_state_get_ptr());
-   p_rarch->menu_driver_alive                       = false;
 #endif
    p_rarch->location_driver_active                  = false;
    destroy_location();
@@ -25802,7 +25784,7 @@ bool retroarch_main_init(int argc, char *argv[])
       if (   !global->launched_from_cli
           || global->cli_load_menu_on_error
 #ifdef HAVE_MENU
-          || p_rarch->menu_driver_alive
+          || menu_state_get_ptr()->alive
 #endif
          )
 #endif
@@ -26100,14 +26082,14 @@ void retroarch_menu_running(void)
       if (menu->driver_ctx && menu->driver_ctx->toggle)
          menu->driver_ctx->toggle(menu->userdata, true);
 
-      p_rarch->menu_driver_alive   = true;
+      menu_st->alive               = true;
       menu_driver_toggle(
             p_rarch->current_video,
             p_rarch->video_driver_data,
             menu,
             menu_input,
             settings,
-            p_rarch->menu_driver_alive,
+            menu_st->alive,
 #ifdef HAVE_OVERLAY
             p_rarch->overlay_ptr &&
             p_rarch->overlay_ptr->alive,
@@ -26171,14 +26153,14 @@ void retroarch_menu_running_finished(bool quit)
       if (menu->driver_ctx && menu->driver_ctx->toggle)
          menu->driver_ctx->toggle(menu->userdata, false);
 
-      p_rarch->menu_driver_alive   = false;
+      menu_st->alive   = false;
       menu_driver_toggle(
             p_rarch->current_video,
             p_rarch->video_driver_data,
             menu,
             menu_input,
             settings,
-            p_rarch->menu_driver_alive,
+            menu_st->alive,
 #ifdef HAVE_OVERLAY
             p_rarch->overlay_ptr &&
             p_rarch->overlay_ptr->alive,
@@ -26300,6 +26282,9 @@ static void runloop_task_msg_queue_push(
 {
 #if defined(HAVE_GFX_WIDGETS)
    struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_MENU
+   struct menu_state *menu_st  = menu_state_get_ptr();
+#endif
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = p_rarch->configuration_settings;
    bool accessibility_enable   = settings->bools.accessibility_enable;
@@ -26332,7 +26317,7 @@ static void runloop_task_msg_queue_push(
             prio,
             flush,
 #ifdef HAVE_MENU
-            p_rarch->menu_driver_alive
+            menu_st->alive
 #else
             false
 #endif
@@ -27213,7 +27198,7 @@ void runloop_msg_queue_push(const char *msg,
             prio,
             flush,
 #ifdef HAVE_MENU
-            p_rarch->menu_driver_alive
+            menu_state_get_ptr()->alive
 #else
             false
 #endif
@@ -27380,7 +27365,7 @@ static enum runloop_state runloop_check_state(
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
    bool menu_driver_binding_state      = menu_st->is_binding;
-   bool menu_is_alive                  = p_rarch->menu_driver_alive;
+   bool menu_is_alive                  = menu_st->alive;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
@@ -28046,7 +28031,7 @@ static enum runloop_state runloop_check_state(
                         runloop_state.idle);
             }
 
-            if (p_rarch->menu_driver_alive && !runloop_state.idle)
+            if (menu_st->alive && !runloop_state.idle)
                if (menu_display_libretro(p_rarch,
                         settings->floats.slowmotion_ratio,
                         libretro_running, current_time))
@@ -28102,7 +28087,7 @@ static enum runloop_state runloop_check_state(
 
       if (menu_st->kb_key_state[RETROK_F1] == 1)
       {
-         if (p_rarch->menu_driver_alive)
+         if (menu_st->alive)
          {
             if (rarch_is_initialized && !core_type_is_dummy)
             {
@@ -28116,7 +28101,7 @@ static enum runloop_state runloop_check_state(
                (pressed && !old_pressed)) ||
             core_type_is_dummy)
       {
-         if (p_rarch->menu_driver_alive)
+         if (menu_st->alive)
          {
             if (rarch_is_initialized && !core_type_is_dummy)
                retroarch_menu_running_finished(false);
@@ -28139,7 +28124,7 @@ static enum runloop_state runloop_check_state(
    /* Check if we have pressed the netplay host toggle button */
    HOTKEY_CHECK(RARCH_NETPLAY_HOST_TOGGLE, CMD_EVENT_NETPLAY_HOST_TOGGLE, true, NULL);
 
-   if (p_rarch->menu_driver_alive)
+   if (menu_st->alive)
    {
       float fastforward_ratio = retroarch_get_runloop_fastforward_ratio(
             settings,
@@ -28617,7 +28602,7 @@ int runloop_iterate(void)
    retro_time_t current_time                    = cpu_features_get_time_usec();
 #ifdef HAVE_MENU
    bool menu_pause_libretro                     = settings->bools.menu_pause_libretro;
-   bool core_paused                             = runloop_state.paused || (menu_pause_libretro && p_rarch->menu_driver_alive);
+   bool core_paused                             = runloop_state.paused || (menu_pause_libretro && menu_state_get_ptr()->alive);
 #else
    bool core_paused                             = runloop_state.paused;
 #endif

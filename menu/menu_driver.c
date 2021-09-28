@@ -4946,6 +4946,7 @@ void menu_driver_destroy(
    menu_st->driver_ctx                  = NULL;
    menu_st->userdata                    = NULL;
    menu_st->input_driver_flushing_input = 0;
+   menu_st->alive                       = false;
 }
 
 bool menu_driver_list_get_entry(menu_ctx_list_t *list)
@@ -5257,4 +5258,19 @@ bool menu_driver_init_internal(
    menu_st->screensaver_supported = menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
 
    return true;
+}
+
+const char *menu_driver_ident(void)
+{
+   struct menu_state    *menu_st  = &menu_driver_state;
+   if (menu_st->alive)
+      if (menu_st->driver_ctx && menu_st->driver_ctx->ident)
+         return menu_st->driver_ctx->ident;
+   return NULL;
+}
+
+/* Checks if the menu is still running */
+bool menu_driver_is_alive(void)
+{
+   return menu_driver_state.alive;
 }
