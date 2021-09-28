@@ -25537,38 +25537,6 @@ static void retroarch_validate_cpu_features(struct rarch_state *p_rarch)
 #endif
 }
 
-#ifdef HAVE_MENU
-static const menu_ctx_driver_t *menu_driver_find_driver(
-      settings_t *settings,
-      const char *prefix,
-      bool verbosity_enabled)
-{
-   int i = (int)driver_find_index("menu_driver",
-         settings->arrays.menu_driver);
-
-   if (i >= 0)
-      return (const menu_ctx_driver_t*)menu_ctx_drivers[i];
-
-   if (verbosity_enabled)
-   {
-      unsigned d;
-      RARCH_WARN("Couldn't find any %s named \"%s\"\n", prefix,
-            settings->arrays.menu_driver);
-      RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
-      for (d = 0; menu_ctx_drivers[d]; d++)
-      {
-         if (menu_ctx_drivers[d])
-         {
-            RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
-         }
-      }
-      RARCH_WARN("Going to default to first %s...\n", prefix);
-   }
-
-   return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
-}
-#endif
-
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.

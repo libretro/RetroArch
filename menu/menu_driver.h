@@ -854,6 +854,11 @@ void menu_input_search_cb(void *userdata, const char *str);
 void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod);
 
+const menu_ctx_driver_t *menu_driver_find_driver(
+      settings_t *settings,
+      const char *prefix,
+      bool verbosity_enabled);
+
 bool menu_driver_init_internal(
       gfx_display_t *p_disp,
       settings_t *settings,
