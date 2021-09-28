@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glsym/rglgen.h>
+#include <glsym/glsym.h>
 
 void gl_flush(void)
 {
