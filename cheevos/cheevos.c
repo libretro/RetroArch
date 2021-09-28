@@ -1020,7 +1020,7 @@ void rcheevos_validate_config_settings(void)
    if (!(disallowed_settings = rc_libretro_get_disallowed_settings(system->library_name)))
       return;
 
-   if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       return;
 
    for (i = 0; i < (int)coreopts->size; i++)

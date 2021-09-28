@@ -852,7 +852,7 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
             unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-            rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
+            retroarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
             command_event(CMD_EVENT_RESIZE_WINDOWED_SCALE, NULL);
          }
          else if (mode == ID_M_STATE_INDEX_AUTO)

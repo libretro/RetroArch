@@ -8263,7 +8263,7 @@ static void materialui_populate_nav_bar(
     * > Menu driver must be alive at this point, and retroarch
     *   must be initialised, so all we have to do (or can do)
     *   is check whether a non-dummy core is loaded) */
-   mui->nav_bar.resume_tab.enabled = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
+   mui->nav_bar.resume_tab.enabled = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
 
    /* Menu tabs */
 
@@ -9217,9 +9217,9 @@ static int materialui_list_push(void *data, void *userdata,
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
-               if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                {
                   MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,

@@ -1297,7 +1297,7 @@ static void menu_action_setting_disp_set_label_core_option_override_info(
 
    if (!string_is_empty(override_path))
       options_file = path_basename_nocompression(override_path);
-   else if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   else if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       const char *options_path = coreopts->conf_path;
       if (!string_is_empty(options_path))
@@ -1511,7 +1511,7 @@ static void menu_action_setting_disp_set_label_core_options(
    {
       core_option_manager_t *coreopts = NULL;
 
-      if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+      if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
          desc = core_option_manager_get_category_desc(
                coreopts, category);
    }
@@ -1539,7 +1539,7 @@ static void menu_action_setting_disp_set_label_core_option(
    *s = '\0';
    *w = 19;
 
-   if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       coreopt_label = core_option_manager_get_val_label(coreopts,
             type - MENU_SETTINGS_CORE_OPTION_START);

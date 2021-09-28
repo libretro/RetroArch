@@ -1536,7 +1536,7 @@ static int action_bind_sublabel_core_options(
    {
       core_option_manager_t *coreopts = NULL;
 
-      if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+      if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
          info = core_option_manager_get_category_info(
                coreopts, category);
    }
@@ -1565,7 +1565,7 @@ static int action_bind_sublabel_core_option(
    core_option_manager_t *opt = NULL;
    const char *info           = NULL;
 
-   if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
+   if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &opt))
       return 0;
 
    info = core_option_manager_get_info(opt,

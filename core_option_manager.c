@@ -1678,7 +1678,7 @@ void core_option_manager_set_val(core_option_manager_t *opt,
    /* Refresh menu (if required) if core option
     * visibility has changed as a result of modifying
     * the current option value */
-   if (rarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
        refresh_menu)
    {
       bool refresh = false;
@@ -1730,7 +1730,7 @@ void core_option_manager_adjust_val(core_option_manager_t* opt,
    /* Refresh menu (if required) if core option
     * visibility has changed as a result of modifying
     * the current option value */
-   if (rarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
        refresh_menu)
    {
       bool refresh = false;
@@ -1776,7 +1776,7 @@ void core_option_manager_set_default(core_option_manager_t *opt,
    /* Refresh menu (if required) if core option
     * visibility has changed as a result of modifying
     * the current option value */
-   if (rarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
        refresh_menu)
    {
       bool refresh = false;

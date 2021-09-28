@@ -43,9 +43,6 @@ static void retroarch_deinit_core_options(
 static core_option_manager_t *retroarch_init_core_variables(
       settings_t *settings,
       const struct retro_variable *vars);
-static core_option_manager_t *rarch_init_core_options(
-      settings_t *settings,
-      const struct retro_core_options_v2 *options_v2);
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch,
@@ -131,7 +128,7 @@ static bool core_load(struct rarch_state *p_rarch,
       unsigned poll_type_behavior);
 static bool core_unload_game(struct rarch_state *p_rarch);
 
-static bool rarch_environment_cb(unsigned cmd, void *data);
+static bool retroarch_environment_cb(unsigned cmd, void *data);
 
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);

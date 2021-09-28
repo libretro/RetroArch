@@ -459,7 +459,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if (!rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+   if (!retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
    {
       if (!ctr->bottom_is_idle)
       {
@@ -592,7 +592,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
    }
 
    if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE ||
-         !rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+         !retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
       return;
 
 
@@ -1218,7 +1218,7 @@ static bool ctr_frame(void* data, const void* frame,
    lcd_bottom = settings->bools.video_3ds_lcd_bottom;
    if (lcd_bottom != ctr_bottom_screen_enabled)
    {
-      if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+      if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
       {
          ctr_set_bottom_screen_enable(lcd_bottom, false);
          if (lcd_bottom)
@@ -1570,7 +1570,7 @@ static bool ctr_frame(void* data, const void* frame,
 
 #ifndef CONSOLE_LOG
    if (ctr_bottom_screen_enabled && 
-         rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+         retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
    {
       if ( !ctr->bottom_is_idle )
       {

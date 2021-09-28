@@ -366,7 +366,7 @@ static int action_start_core_setting(
    unsigned core_idx               = type - MENU_SETTINGS_CORE_OPTION_START;
    core_option_manager_t *coreopts = NULL;
 
-   if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       core_option_manager_set_default(coreopts, core_idx, true);
 
    return 0;

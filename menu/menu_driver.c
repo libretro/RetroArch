@@ -2243,7 +2243,7 @@ static bool menu_driver_displaylist_push_internal(
 
 #if 0
 #ifdef HAVE_SCREENSHOTS
-      if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
                msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),

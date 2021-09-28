@@ -490,7 +490,7 @@ static bool video_thread_alive(void *data)
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
+   if (retroarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
    {
       thread_packet_t pkt;
 

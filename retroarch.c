@@ -6715,7 +6715,7 @@ static bool command_event_init_core(
    /* reset video format to libretro's default */
    p_rarch->video_driver_pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 
-   p_rarch->current_core.retro_set_environment(rarch_environment_cb);
+   p_rarch->current_core.retro_set_environment(retroarch_environment_cb);
 
    /* Load any input remap files
     * > Note that we always cache the current global
@@ -9471,7 +9471,7 @@ void main_exit(void *args)
    if (menu_st)
       menu_st->data_own = false;
 #endif
-   rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
+   retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
    if (runloop_state.perfcnt_enable)
    {
@@ -9501,7 +9501,7 @@ void main_exit(void *args)
 
    retro_main_log_file_deinit();
 
-   rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
+   retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
    task_queue_deinit();
 
@@ -9576,7 +9576,7 @@ int rarch_main(int argc, char *argv[], void *data)
    p_rarch->configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
    retroarch_deinit_drivers(p_rarch, &p_rarch->retro_ctx);
-   rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
+   retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
 
    frontend_driver_init_first(data);
@@ -10247,8 +10247,313 @@ static void runloop_core_msg_queue_push(
          category);
 }
 
+static void retroarch_deinit_core_options(
+      bool game_options_active,
+      const char *path_core_options,
+      core_option_manager_t *core_options)
+{
+   /* Check whether game-specific options file is being used */
+   if (!string_is_empty(path_core_options))
+   {
+      config_file_t *conf_tmp = NULL;
+
+      /* We only need to save configuration settings for
+       * the current core
+       * > If game-specific options file exists, have
+       *   to read it (to ensure file only gets written
+       *   if config values change)
+       * > Otherwise, create a new, empty config_file_t
+       *   object */
+      if (path_is_valid(path_core_options))
+         conf_tmp = config_file_new_from_path_to_string(path_core_options);
+
+      if (!conf_tmp)
+         conf_tmp = config_file_new_alloc();
+
+      if (conf_tmp)
+      {
+         core_option_manager_flush(
+               core_options,
+               conf_tmp);
+         RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
+               game_options_active ? "game" : "folder", path_core_options);
+         config_file_write(conf_tmp, path_core_options, true);
+         config_file_free(conf_tmp);
+         conf_tmp = NULL;
+      }
+      path_clear(RARCH_PATH_CORE_OPTIONS);
+   }
+   else
+   {
+      const char *path = core_options->conf_path;
+      core_option_manager_flush(
+            core_options,
+            core_options->conf);
+      RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
+      config_file_write(core_options->conf, path, true);
+   }
+
+   if (core_options)
+      core_option_manager_free(core_options);
+}
+
+static bool retroarch_validate_per_core_options(char *s,
+      size_t len, bool mkdir,
+      const char *core_name, const char *game_name)
+{
+   char config_directory[PATH_MAX_LENGTH];
+   config_directory[0] = '\0';
+
+   if (!s ||
+       (len < 1) ||
+       string_is_empty(core_name) ||
+       string_is_empty(game_name))
+      return false;
+
+   fill_pathname_application_special(config_directory,
+         sizeof(config_directory), APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+
+   fill_pathname_join_special_ext(s,
+         config_directory, core_name, game_name,
+         ".opt", len);
+
+   /* No need to make a directory if file already exists... */
+   if (mkdir && !path_is_valid(s))
+   {
+      char new_path[PATH_MAX_LENGTH];
+      new_path[0]             = '\0';
+
+      fill_pathname_join(new_path,
+            config_directory, core_name, sizeof(new_path));
+
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
+   }
+
+   return true;
+}
+
+static bool retroarch_validate_folder_options(
+      char *s, size_t len, bool mkdir)
+{
+   char folder_name[PATH_MAX_LENGTH];
+   const char *core_name       = runloop_state.system.info.library_name;
+   const char *game_path       = path_get(RARCH_PATH_BASENAME);
+
+   folder_name[0] = '\0';
+
+   if (string_is_empty(game_path))
+      return false;
+
+   fill_pathname_parent_dir_name(folder_name,
+         game_path, sizeof(folder_name));
+
+   return retroarch_validate_per_core_options(s, len, mkdir,
+         core_name, folder_name);
+}
+
+
+static bool retroarch_validate_game_options(
+      const char *core_name,
+      char *s, size_t len, bool mkdir)
+{
+   const char *game_name       = path_basename(path_get(RARCH_PATH_BASENAME));
+   return retroarch_validate_per_core_options(s, len, mkdir,
+         core_name, game_name);
+}
+
 /**
- * rarch_environment_cb:
+ * retroarch_game_specific_options:
+ *
+ * Returns: true (1) if a game specific core
+ * options path has been found,
+ * otherwise false (0).
+ **/
+static bool retroarch_game_specific_options(char **output)
+{
+   char game_options_path[PATH_MAX_LENGTH];
+   game_options_path[0] ='\0';
+
+   if (!retroarch_validate_game_options(
+            runloop_state.system.info.library_name,
+            game_options_path,
+            sizeof(game_options_path), false) ||
+       !path_is_valid(game_options_path))
+      return false;
+
+   RARCH_LOG("%s %s\n",
+         msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
+         game_options_path);
+   *output = strdup(game_options_path);
+   return true;
+}
+
+/**
+ * retroarch_folder_specific_options:
+ *
+ * Returns: true (1) if a folder specific core
+ * options path has been found,
+ * otherwise false (0).
+ **/
+static bool retroarch_folder_specific_options(
+      char **output)
+{
+   char folder_options_path[PATH_MAX_LENGTH];
+   folder_options_path[0] ='\0';
+
+   if (!retroarch_validate_folder_options(
+            folder_options_path,
+            sizeof(folder_options_path), false) ||
+       !path_is_valid(folder_options_path))
+      return false;
+
+   RARCH_LOG("%s %s\n",
+         msg_hash_to_str(MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT),
+         folder_options_path);
+   *output = strdup(folder_options_path);
+   return true;
+}
+
+
+/* Fetches core options path for current core/content
+ * - path: path from which options should be read
+ *   from/saved to
+ * - src_path: in the event that 'path' file does not
+ *   yet exist, provides source path from which initial
+ *   options should be extracted
+ *
+ *   NOTE: caller must ensure 
+ *   path and src_path are NULL-terminated
+ *  */
+static void retroarch_init_core_options_path(
+      settings_t *settings,
+      char *path, size_t len,
+      char *src_path, size_t src_len)
+{
+   char *game_options_path        = NULL;
+   char *folder_options_path      = NULL;
+
+   bool game_specific_options     = settings->bools.game_specific_options;
+
+   /* Check whether game-specific options exist */
+   if (game_specific_options &&
+       retroarch_game_specific_options(&game_options_path))
+   {
+      /* Notify system that we have a valid core options
+       * override */
+      path_set(RARCH_PATH_CORE_OPTIONS, game_options_path);
+      runloop_state.game_options_active   = true;
+      runloop_state.folder_options_active = false;
+
+      /* Copy options path */
+      strlcpy(path, game_options_path, len);
+
+      free(game_options_path);
+   }
+   /* Check whether folder-specific options exist */
+   else if (game_specific_options &&
+            retroarch_folder_specific_options(
+               &folder_options_path))
+   {
+      /* Notify system that we have a valid core options
+       * override */
+      path_set(RARCH_PATH_CORE_OPTIONS, folder_options_path);
+      runloop_state.game_options_active   = false;
+      runloop_state.folder_options_active = true;
+
+      /* Copy options path */
+      strlcpy(path, folder_options_path, len);
+
+      free(folder_options_path);
+   }
+   else
+   {
+      char global_options_path[PATH_MAX_LENGTH];
+      char per_core_options_path[PATH_MAX_LENGTH];
+      bool per_core_options_exist   = false;
+      bool per_core_options         = !settings->bools.global_core_options;
+      const char *path_core_options = settings->paths.path_core_options;
+
+      global_options_path[0]        = '\0';
+      per_core_options_path[0]      = '\0';
+
+      if (per_core_options)
+      {
+         const char *core_name      = runloop_state.system.info.library_name;
+         /* Get core-specific options path
+          * > if retroarch_validate_per_core_options() returns
+          *   false, then per-core options are disabled (due to
+          *   unknown system errors...) */
+         per_core_options = retroarch_validate_per_core_options(
+               per_core_options_path, sizeof(per_core_options_path), true,
+               core_name, core_name);
+
+         /* If we can use per-core options, check whether an options
+          * file already exists */
+         if (per_core_options)
+            per_core_options_exist = path_is_valid(per_core_options_path);
+      }
+
+      /* If not using per-core options, or if a per-core options
+       * file does not yet exist, must fetch 'global' options path */
+      if (!per_core_options || !per_core_options_exist)
+      {
+         const char *options_path   = path_core_options;
+
+         if (!string_is_empty(options_path))
+            strlcpy(global_options_path,
+                  options_path, sizeof(global_options_path));
+         else if (!path_is_empty(RARCH_PATH_CONFIG))
+            fill_pathname_resolve_relative(
+                  global_options_path, path_get(RARCH_PATH_CONFIG),
+                  FILE_PATH_CORE_OPTIONS_CONFIG, sizeof(global_options_path));
+      }
+
+      /* Allocate correct path/src_path strings */
+      if (per_core_options)
+      {
+         strlcpy(path, per_core_options_path, len);
+
+         if (!per_core_options_exist)
+            strlcpy(src_path, global_options_path, src_len);
+      }
+      else
+         strlcpy(path, global_options_path, len);
+
+      /* Notify system that we *do not* have a valid core options
+       * options override */
+      runloop_state.game_options_active   = false;
+      runloop_state.folder_options_active = false;
+   }
+}
+
+static core_option_manager_t *retroarch_init_core_options(
+      settings_t *settings,
+      const struct retro_core_options_v2 *options_v2)
+{
+   bool categories_enabled = settings->bools.core_option_category_enable;
+   char options_path[PATH_MAX_LENGTH];
+   char src_options_path[PATH_MAX_LENGTH];
+
+   /* Ensure these are NULL-terminated */
+   options_path[0]     = '\0';
+   src_options_path[0] = '\0';
+
+   /* Get core options file path */
+   retroarch_init_core_options_path(settings,
+         options_path, sizeof(options_path),
+         src_options_path, sizeof(src_options_path));
+
+   if (!string_is_empty(options_path))
+      return core_option_manager_new(options_path,
+            src_options_path, options_v2,
+            categories_enabled);
+   return NULL;
+}
+
+
+/**
+ * retroarch_environment_cb:
  * @cmd                          : Identifier of command.
  * @data                         : Pointer to data.
  *
@@ -10257,7 +10562,7 @@ static void runloop_core_msg_queue_push(
  * Returns: true (1) if environment callback command could
  * be performed, otherwise false (0).
  **/
-static bool rarch_environment_cb(unsigned cmd, void *data)
+static bool retroarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
    struct rarch_state *p_rarch            = &rarch_st;
@@ -10389,9 +10694,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             if (options_v2)
             {
                /* Initialise core options */
-               core_option_manager_t *new_vars = rarch_init_core_options(settings, options_v2);
+               core_option_manager_t *new_vars = retroarch_init_core_options(settings, options_v2);
                if (new_vars)
-                  runloop_state.core_options = new_vars;
+                  runloop_state.core_options   = new_vars;
                /* Clean up */
                core_option_manager_free_converted(options_v2);
             }
@@ -10422,7 +10727,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             if (options_v2)
             {
                /* Initialise core options */
-               core_option_manager_t *new_vars = rarch_init_core_options(settings, options_v2);
+               core_option_manager_t *new_vars = retroarch_init_core_options(settings, options_v2);
 
                if (new_vars)
                   runloop_state.core_options = new_vars;
@@ -10456,7 +10761,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
             if (options_v2)
             {
-               new_vars = rarch_init_core_options(settings, options_v2);
+               new_vars = retroarch_init_core_options(settings, options_v2);
                if (new_vars)
                   runloop_state.core_options = new_vars;
             }
@@ -10496,7 +10801,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             if (options_v2)
             {
                /* Initialise core options */
-               new_vars = rarch_init_core_options(settings, options_v2);
+               new_vars = retroarch_init_core_options(settings, options_v2);
                if (new_vars)
                   runloop_state.core_options = new_vars;
 
@@ -12003,7 +12308,7 @@ static void libretro_get_environment_info(
     * Ignore any environment callbacks here in case we're running
     * on the non-current core. */
    p_rarch->ignore_environment_cb = true;
-   func(rarch_environment_cb);
+   func(retroarch_environment_cb);
    p_rarch->ignore_environment_cb = false;
 }
 
@@ -12139,7 +12444,7 @@ static bool libretro_get_system_info(
        * Ignore any environment callbacks here in case we're running
        * on the non-current core. */
       p_rarch->ignore_environment_cb = true;
-      retro_set_environment(rarch_environment_cb);
+      retro_set_environment(retroarch_environment_cb);
       p_rarch->ignore_environment_cb = false;
    }
 
@@ -12744,11 +13049,11 @@ end:
    return NULL;
 }
 
-static bool rarch_environment_secondary_core_hook(
+static bool retroarch_environment_secondary_core_hook(
       unsigned cmd, void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   bool                 result = rarch_environment_cb(cmd, data);
+   bool                 result = retroarch_environment_cb(cmd, data);
 
    if (p_rarch->has_variable_update)
    {
@@ -12799,7 +13104,7 @@ static bool secondary_core_create(struct rarch_state *p_rarch,
 
    p_rarch->secondary_core.symbols_inited = true;
    p_rarch->secondary_core.retro_set_environment(
-         rarch_environment_secondary_core_hook);
+         retroarch_environment_secondary_core_hook);
 #ifdef HAVE_RUNAHEAD
    p_rarch->has_variable_update  = true;
 #endif
@@ -24430,7 +24735,7 @@ force_input_dirty:
 }
 #endif
 
-static retro_time_t rarch_core_runtime_tick(
+static retro_time_t retroarch_core_runtime_tick(
       struct rarch_state *p_rarch,
       float slowmotion_ratio,
       retro_time_t current_time)
@@ -25446,70 +25751,6 @@ static bool retroarch_parse_input_and_config(
    return verbosity_enabled;
 }
 
-static bool retroarch_validate_per_core_options(char *s,
-      size_t len, bool mkdir,
-      const char *core_name, const char *game_name)
-{
-   char config_directory[PATH_MAX_LENGTH];
-   config_directory[0] = '\0';
-
-   if (!s ||
-       (len < 1) ||
-       string_is_empty(core_name) ||
-       string_is_empty(game_name))
-      return false;
-
-   fill_pathname_application_special(config_directory,
-         sizeof(config_directory), APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-
-   fill_pathname_join_special_ext(s,
-         config_directory, core_name, game_name,
-         ".opt", len);
-
-   /* No need to make a directory if file already exists... */
-   if (mkdir && !path_is_valid(s))
-   {
-      char new_path[PATH_MAX_LENGTH];
-      new_path[0]             = '\0';
-
-      fill_pathname_join(new_path,
-            config_directory, core_name, sizeof(new_path));
-
-      if (!path_is_directory(new_path))
-         path_mkdir(new_path);
-   }
-
-   return true;
-}
-
-static bool retroarch_validate_game_options(
-      const char *core_name,
-      char *s, size_t len, bool mkdir)
-{
-   const char *game_name       = path_basename(path_get(RARCH_PATH_BASENAME));
-   return retroarch_validate_per_core_options(s, len, mkdir,
-         core_name, game_name);
-}
-
-static bool retroarch_validate_folder_options(
-      char *s, size_t len, bool mkdir)
-{
-   char folder_name[PATH_MAX_LENGTH];
-   const char *core_name       = runloop_state.system.info.library_name;
-   const char *game_path       = path_get(RARCH_PATH_BASENAME);
-
-   folder_name[0] = '\0';
-
-   if (string_is_empty(game_path))
-      return false;
-
-   fill_pathname_parent_dir_name(folder_name,
-         game_path, sizeof(folder_name));
-
-   return retroarch_validate_per_core_options(s, len, mkdir,
-         core_name, folder_name);
-}
-
 /* Validates CPU features for given processor architecture.
  * Make sure we haven't compiled for something we cannot run.
  * Ideally, code would get swapped out depending on CPU support,
@@ -26191,58 +26432,6 @@ void retroarch_menu_running_finished(bool quit)
 #endif
 }
 
-/**
- * rarch_game_specific_options:
- *
- * Returns: true (1) if a game specific core
- * options path has been found,
- * otherwise false (0).
- **/
-static bool rarch_game_specific_options(char **output)
-{
-   char game_options_path[PATH_MAX_LENGTH];
-   game_options_path[0] ='\0';
-
-   if (!retroarch_validate_game_options(
-            runloop_state.system.info.library_name,
-            game_options_path,
-            sizeof(game_options_path), false) ||
-       !path_is_valid(game_options_path))
-      return false;
-
-   RARCH_LOG("%s %s\n",
-         msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
-         game_options_path);
-   *output = strdup(game_options_path);
-   return true;
-}
-
-/**
- * rarch_folder_specific_options:
- *
- * Returns: true (1) if a folder specific core
- * options path has been found,
- * otherwise false (0).
- **/
-static bool rarch_folder_specific_options(
-      char **output)
-{
-   char folder_options_path[PATH_MAX_LENGTH];
-   folder_options_path[0] ='\0';
-
-   if (!retroarch_validate_folder_options(
-            folder_options_path,
-            sizeof(folder_options_path), false) ||
-       !path_is_valid(folder_options_path))
-      return false;
-
-   RARCH_LOG("%s %s\n",
-         msg_hash_to_str(MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT),
-         folder_options_path);
-   *output = strdup(folder_options_path);
-   return true;
-}
-
 static void runloop_task_msg_queue_push(
       retro_task_t *task, const char *msg,
       unsigned prio, unsigned duration,
@@ -26297,142 +26486,6 @@ static void runloop_task_msg_queue_push(
       runloop_msg_queue_push(msg, prio, duration, flush, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
-/* Fetches core options path for current core/content
- * - path: path from which options should be read
- *   from/saved to
- * - src_path: in the event that 'path' file does not
- *   yet exist, provides source path from which initial
- *   options should be extracted
- *
- *   NOTE: caller must ensure 
- *   path and src_path are NULL-terminated
- *  */
-static void rarch_init_core_options_path(
-      settings_t *settings,
-      char *path, size_t len,
-      char *src_path, size_t src_len)
-{
-   char *game_options_path        = NULL;
-   char *folder_options_path      = NULL;
-
-   bool game_specific_options     = settings->bools.game_specific_options;
-
-   /* Check whether game-specific options exist */
-   if (game_specific_options &&
-       rarch_game_specific_options(&game_options_path))
-   {
-      /* Notify system that we have a valid core options
-       * override */
-      path_set(RARCH_PATH_CORE_OPTIONS, game_options_path);
-      runloop_state.game_options_active   = true;
-      runloop_state.folder_options_active = false;
-
-      /* Copy options path */
-      strlcpy(path, game_options_path, len);
-
-      free(game_options_path);
-   }
-   /* Check whether folder-specific options exist */
-   else if (game_specific_options &&
-            rarch_folder_specific_options(
-               &folder_options_path))
-   {
-      /* Notify system that we have a valid core options
-       * override */
-      path_set(RARCH_PATH_CORE_OPTIONS, folder_options_path);
-      runloop_state.game_options_active   = false;
-      runloop_state.folder_options_active = true;
-
-      /* Copy options path */
-      strlcpy(path, folder_options_path, len);
-
-      free(folder_options_path);
-   }
-   else
-   {
-      char global_options_path[PATH_MAX_LENGTH];
-      char per_core_options_path[PATH_MAX_LENGTH];
-      bool per_core_options_exist   = false;
-      bool per_core_options         = !settings->bools.global_core_options;
-      const char *path_core_options = settings->paths.path_core_options;
-
-      global_options_path[0]        = '\0';
-      per_core_options_path[0]      = '\0';
-
-      if (per_core_options)
-      {
-         const char *core_name      = runloop_state.system.info.library_name;
-         /* Get core-specific options path
-          * > if retroarch_validate_per_core_options() returns
-          *   false, then per-core options are disabled (due to
-          *   unknown system errors...) */
-         per_core_options = retroarch_validate_per_core_options(
-               per_core_options_path, sizeof(per_core_options_path), true,
-               core_name, core_name);
-
-         /* If we can use per-core options, check whether an options
-          * file already exists */
-         if (per_core_options)
-            per_core_options_exist = path_is_valid(per_core_options_path);
-      }
-
-      /* If not using per-core options, or if a per-core options
-       * file does not yet exist, must fetch 'global' options path */
-      if (!per_core_options || !per_core_options_exist)
-      {
-         const char *options_path   = path_core_options;
-
-         if (!string_is_empty(options_path))
-            strlcpy(global_options_path,
-                  options_path, sizeof(global_options_path));
-         else if (!path_is_empty(RARCH_PATH_CONFIG))
-            fill_pathname_resolve_relative(
-                  global_options_path, path_get(RARCH_PATH_CONFIG),
-                  FILE_PATH_CORE_OPTIONS_CONFIG, sizeof(global_options_path));
-      }
-
-      /* Allocate correct path/src_path strings */
-      if (per_core_options)
-      {
-         strlcpy(path, per_core_options_path, len);
-
-         if (!per_core_options_exist)
-            strlcpy(src_path, global_options_path, src_len);
-      }
-      else
-         strlcpy(path, global_options_path, len);
-
-      /* Notify system that we *do not* have a valid core options
-       * options override */
-      runloop_state.game_options_active   = false;
-      runloop_state.folder_options_active = false;
-   }
-}
-
-static core_option_manager_t *rarch_init_core_options(
-      settings_t *settings,
-      const struct retro_core_options_v2 *options_v2)
-{
-   bool categories_enabled = settings->bools.core_option_category_enable;
-   char options_path[PATH_MAX_LENGTH];
-   char src_options_path[PATH_MAX_LENGTH];
-
-   /* Ensure these are NULL-terminated */
-   options_path[0]     = '\0';
-   src_options_path[0] = '\0';
-
-   /* Get core options file path */
-   rarch_init_core_options_path(settings,
-         options_path, sizeof(options_path),
-         src_options_path, sizeof(src_options_path));
-
-   if (!string_is_empty(options_path))
-      return core_option_manager_new(options_path,
-            src_options_path, options_v2,
-            categories_enabled);
-   return NULL;
-}
-
 void retroarch_init_task_queue(void)
 {
 #ifdef HAVE_THREADS
@@ -26447,7 +26500,7 @@ void retroarch_init_task_queue(void)
    task_queue_init(threaded_enable, runloop_task_msg_queue_push);
 }
 
-bool rarch_ctl(enum rarch_ctl_state state, void *data)
+bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
 
@@ -26735,56 +26788,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-static void retroarch_deinit_core_options(
-      bool game_options_active,
-      const char *path_core_options,
-      core_option_manager_t *core_options)
-{
-   /* Check whether game-specific options file is being used */
-   if (!string_is_empty(path_core_options))
-   {
-      config_file_t *conf_tmp = NULL;
-
-      /* We only need to save configuration settings for
-       * the current core
-       * > If game-specific options file exists, have
-       *   to read it (to ensure file only gets written
-       *   if config values change)
-       * > Otherwise, create a new, empty config_file_t
-       *   object */
-      if (path_is_valid(path_core_options))
-         conf_tmp = config_file_new_from_path_to_string(path_core_options);
-
-      if (!conf_tmp)
-         conf_tmp = config_file_new_alloc();
-
-      if (conf_tmp)
-      {
-         core_option_manager_flush(
-               core_options,
-               conf_tmp);
-         RARCH_LOG("[Core Options]: Saved %s-specific core options to \"%s\"\n",
-               game_options_active ? "game" : "folder", path_core_options);
-         config_file_write(conf_tmp, path_core_options, true);
-         config_file_free(conf_tmp);
-         conf_tmp = NULL;
-      }
-      path_clear(RARCH_PATH_CORE_OPTIONS);
-   }
-   else
-   {
-      const char *path = core_options->conf_path;
-      core_option_manager_flush(
-            core_options,
-            core_options->conf);
-      RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
-      config_file_write(core_options->conf, path, true);
-   }
-
-   if (core_options)
-      core_option_manager_free(core_options);
-}
-
 static core_option_manager_t *retroarch_init_core_variables(
       settings_t *settings,
       const struct retro_variable *vars)
@@ -26797,7 +26800,7 @@ static core_option_manager_t *retroarch_init_core_variables(
    src_options_path[0] = '\0';
 
    /* Get core options file path */
-   rarch_init_core_options_path(
+   retroarch_init_core_options_path(
          settings,
          options_path, sizeof(options_path),
          src_options_path, sizeof(src_options_path));
@@ -27217,7 +27220,7 @@ static bool menu_display_libretro(
 
       core_run();
       p_rarch->libretro_core_runtime_usec        +=
-         rarch_core_runtime_tick(p_rarch, slowmotion_ratio, current_time);
+         retroarch_core_runtime_tick(p_rarch, slowmotion_ratio, current_time);
       p_rarch->input_driver_block_libretro_input  = false;
 
       return false;
@@ -27731,7 +27734,7 @@ static enum runloop_state runloop_check_state(
          {
             float target_hz = 0.0;
 
-            rarch_environment_cb(
+            retroarch_environment_cb(
                   RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
 
             runloop_msg_queue_push(msg_hash_to_str(MSG_PRESS_AGAIN_TO_QUIT), 1,
@@ -28819,7 +28822,7 @@ int runloop_iterate(void)
 
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
-   p_rarch->libretro_core_runtime_usec += rarch_core_runtime_tick(
+   p_rarch->libretro_core_runtime_usec += retroarch_core_runtime_tick(
          p_rarch,
          slowmotion_ratio,
          current_time);

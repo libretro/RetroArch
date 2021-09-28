@@ -795,7 +795,7 @@ static int core_setting_left(unsigned type, const char *label,
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
 
-   rarch_ctl(RARCH_CTL_CORE_OPTION_PREV, &idx);
+   retroarch_ctl(RARCH_CTL_CORE_OPTION_PREV, &idx);
 
    return 0;
 }

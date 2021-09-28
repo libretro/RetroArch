@@ -3401,13 +3401,13 @@ static int generic_action_ok_remap_file_operation(const char *path,
          switch (action_type)
          {
             case ACTION_OK_REMAP_FILE_SAVE_CORE:
-               rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
+               retroarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
                break;
             case ACTION_OK_REMAP_FILE_SAVE_GAME:
-               rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+               retroarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
                break;
             case ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR:
-               rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+               retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
                break;
          }
 #endif
@@ -3430,21 +3430,21 @@ static int generic_action_ok_remap_file_operation(const char *path,
          switch (action_type)
          {
             case ACTION_OK_REMAP_FILE_REMOVE_CORE:
-               if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+               if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
                {
                   input_remapping_deinit();
                   input_remapping_set_defaults(false);
                }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_GAME:
-               if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+               if (retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
                {
                   input_remapping_deinit();
                   input_remapping_set_defaults(false);
                }
                break;
             case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
-               if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+               if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
                {
                   input_remapping_deinit();
                   input_remapping_set_defaults(false);
@@ -3800,7 +3800,7 @@ int action_ok_core_option_dropdown_list(const char *path,
       goto push_dropdown_list;
 
    /* > Get core options struct */
-   if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts) ||
+   if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts) ||
        (option_index >= coreopts->size))
       goto push_dropdown_list;
 
@@ -6057,7 +6057,7 @@ static int action_ok_push_dropdown_setting_core_options_item_special(
    core_option_manager_t *coreopts = NULL;
    int core_option_idx             = (int)atoi(label);
 
-   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+   retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
    if (!coreopts)
       return -1;
@@ -6073,7 +6073,7 @@ static int action_ok_push_dropdown_setting_core_options_item(const char *path,
    core_option_manager_t *coreopts = NULL;
    int core_option_idx             = (int)atoi(label);
 
-   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+   retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
    if (!coreopts)
       return -1;
@@ -7289,7 +7289,7 @@ static int action_ok_core_delete(const char *path,
 
    /* Check if core to be deleted is currently
     * loaded - if so, unload it */
-   if (rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+   if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
       generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
    /* Delete core file */

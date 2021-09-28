@@ -901,7 +901,7 @@ bool command_event_resize_windowed_scale(settings_t *settings,
    if (!video_fullscreen)
       command_event(CMD_EVENT_REINIT, NULL);
 
-   rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
+   retroarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
 
    return true;
 }

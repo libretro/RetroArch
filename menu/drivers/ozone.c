@@ -7642,9 +7642,9 @@ static int ozone_list_push(void *data, void *userdata,
             rarch_system_info_t *system = &runloop_state_get_ptr()->system;
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
-               if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                {
                   MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,

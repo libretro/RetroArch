@@ -8217,8 +8217,8 @@ static void general_write_handler(rarch_setting_t *setting)
             if (run_ahead_enabled &&
                 (run_ahead_frames > 0) &&
                 run_ahead_secondary_instance &&
-                !rarch_ctl(RARCH_CTL_IS_SECOND_CORE_LOADED, NULL) &&
-                rarch_ctl(RARCH_CTL_IS_SECOND_CORE_AVAILABLE, NULL) &&
+                !retroarch_ctl(RARCH_CTL_IS_SECOND_CORE_LOADED, NULL) &&
+                retroarch_ctl(RARCH_CTL_IS_SECOND_CORE_AVAILABLE, NULL) &&
                 command_event(CMD_EVENT_LOAD_SECOND_CORE, NULL))
                command_event(CMD_EVENT_CHEATS_APPLY, NULL);
          }
@@ -10130,7 +10130,7 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info, "Performance Counters", &group_info, &subgroup_info,
                   parent_group);
 
-            rarch_ctl(RARCH_CTL_GET_PERFCNT, &tmp_b);
+            retroarch_ctl(RARCH_CTL_GET_PERFCNT, &tmp_b);
 
             CONFIG_BOOL(
                   list, list_info,

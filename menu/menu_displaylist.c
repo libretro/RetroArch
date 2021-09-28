@@ -616,12 +616,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info,
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
       update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
-         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
       if (update_missing_firmware)
       {
@@ -951,7 +951,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    unsigned j;
 
    /* Fetch options */
-   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+   retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
    if (!coreopts)
       goto end;
@@ -1031,10 +1031,10 @@ static unsigned menu_displaylist_parse_core_option_override_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
    unsigned count               = 0;
-   bool core_has_options        = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) &&
-         rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
-   bool game_options_active     = rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL);
-   bool folder_options_active   = rarch_ctl(RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE, NULL);
+   bool core_has_options        = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) &&
+         retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
+   bool game_options_active     = retroarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL);
+   bool folder_options_active   = retroarch_ctl(RARCH_CTL_IS_FOLDER_OPTIONS_ACTIVE, NULL);
    bool show_core_options_flush = settings ?
          settings->bools.quick_menu_show_core_options_flush : false;
 
@@ -2858,7 +2858,7 @@ static int menu_displaylist_parse_load_content_settings(
 {
    unsigned count         = 0;
 
-   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
 #ifdef HAVE_LAKKA
       bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
@@ -3123,7 +3123,7 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
-      if ((!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      if ((!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             && disk_control_enabled(&system->disk_control))
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
@@ -3199,7 +3199,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    if (playlist)
       playlist_get_index(playlist, idx, &entry);
 
-   content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+   content_loaded = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath);
 
    if (content_loaded)
@@ -3467,7 +3467,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
       count++;
 #endif
 
-   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
       if (menu_entries_append_enum(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS),
@@ -4134,7 +4134,7 @@ static unsigned menu_displaylist_parse_content_information(
    const char *db_name                 = NULL;
    bool playlist_valid                 = false;
    unsigned count                      = 0;
-   bool content_loaded                 = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+   bool content_loaded                 = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
       && string_is_equal(menu->deferred_path, loaded_content_path);
 
    core_name[0]                        = '\0';
@@ -6215,7 +6215,7 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION, 0, 0))
                count++;
 
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
                         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
@@ -6223,7 +6223,7 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
                         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
@@ -6231,7 +6231,7 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+            if (retroarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
                         msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
@@ -9516,7 +9516,7 @@ static bool history_needs_navigation_clear(
 
    /* If content is running, compare last selected path
     * with current content path */
-   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return string_is_equal(menu->deferred_path, path_get(RARCH_PATH_CONTENT));
 
    /* If content is not running, have to examine the
@@ -11487,7 +11487,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
+            if (retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
             {
                bool game_specific_options      = settings->bools.game_specific_options;
                const char *category            = info->path;
@@ -11502,7 +11502,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST, 0, 0))
                      count++;
 
-               if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+               if (retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
                {
                   nested_list_item_t *category_item = NULL;
                   nested_list_t *option_list        = NULL;
@@ -12231,9 +12231,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             const char *menu_ident         = menu_driver_ident();
 #endif
 
-            if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
+            if (retroarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
-               if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               if (!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                            MENU_ENUM_LABEL_CONTENT_SETTINGS,
                            PARSE_ACTION, false) == 0)

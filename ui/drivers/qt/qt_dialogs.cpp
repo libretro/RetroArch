@@ -1060,15 +1060,15 @@ void CoreOptionsDialog::onCoreOptionComboBoxCurrentIndexChanged(int index)
    key = combo_box->itemData(index, Qt::UserRole).toString();
    val = combo_box->itemText(index);
 
-   if (rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
+   if (retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL))
    {
-      rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
+      retroarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
 
       if (opts)
       {
          core_option_manager_t *coreopts = NULL;
 
-         rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+         retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
          if (coreopts)
          {
@@ -1104,13 +1104,13 @@ void CoreOptionsDialog::buildLayout()
    size_t opts = 0;
    QFormLayout    *form  = NULL;
    settings_t *settings  = config_get_ptr();
-   bool has_core_options = rarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
+   bool has_core_options = retroarch_ctl(RARCH_CTL_HAS_CORE_OPTIONS, NULL);
 
    clearLayout();
 
    if (has_core_options)
    {
-      rarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
+      retroarch_ctl(RARCH_CTL_GET_CORE_OPTION_SIZE, &opts);
 
       if (opts)
       {
@@ -1130,7 +1130,7 @@ void CoreOptionsDialog::buildLayout()
 
             if (!contentLabel.isEmpty())
             {
-               if (!rarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
+               if (!retroarch_ctl(RARCH_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
                   label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE);
                else
                   label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE);
@@ -1151,7 +1151,7 @@ void CoreOptionsDialog::buildLayout()
             }
          }
 
-         rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+         retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
          if (coreopts)
          {

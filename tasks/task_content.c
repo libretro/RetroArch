@@ -1467,7 +1467,7 @@ static bool content_load(content_ctx_info_t *info,
       rarch_argc_ptr = (int*)&rarch_argc;
    }
 
-   rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
+   retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
    wrap_args->argc = *rarch_argc_ptr;
    wrap_args->argv = rarch_argv_ptr;
@@ -1739,13 +1739,13 @@ static bool firmware_update_status(
          core_info->path,
          firmware_info.directory.system);
 
-   rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
    core_info_list_update_missing_firmware(&firmware_info,
          &set_missing_firmware);
 
    if (set_missing_firmware)
-      rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+      retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
    if (
          content_ctx->bios_is_missing &&
@@ -1781,12 +1781,12 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
+   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
 #endif
-   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -1822,7 +1822,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
    sys_info->load_no_content = false;
-   rarch_ctl(RARCH_CTL_STATE_FREE, NULL);
+   retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
    task_queue_deinit();
    retroarch_init_task_queue();
 
@@ -1878,12 +1878,12 @@ bool task_push_load_content_from_playlist_from_menu(
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
+   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
 #endif
-   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -1925,7 +1925,7 @@ bool task_push_load_content_from_playlist_from_menu(
     * > If so, content can be launched directly with
     *   the currently loaded core */
    if (!force_core_reload &&
-       rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+       retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
    {
       if (!content_info->environ_get)
          content_info->environ_get = menu_content_environment_get;
@@ -1972,7 +1972,7 @@ bool task_push_load_content_from_playlist_from_menu(
    /* No dynamic core loading support: if we reach
     * this point then a new instance has been
     * forked - have to shut down this one */
-   rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
    retroarch_menu_running_finished(true);
 #endif
 
@@ -2020,12 +2020,12 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
+   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
 #endif
-   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -2152,7 +2152,7 @@ bool task_push_load_content_with_new_core_from_menu(
     *   just load the content directly */
    if (!force_core_reload &&
        (type == CORE_TYPE_PLAIN) &&
-       rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+       retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
       return task_push_load_content_with_core_from_menu(
             fullpath, content_info,
             type, cb, user_data);
@@ -2160,12 +2160,12 @@ bool task_push_load_content_with_new_core_from_menu(
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
+   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
 #endif
-   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -2271,12 +2271,12 @@ static bool task_load_content_internal(
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
+   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
 #endif
-   content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
+   content_ctx.bios_is_missing                = retroarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -2754,10 +2754,10 @@ bool content_init(void)
 
    content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
 #ifdef HAVE_PATCH
-   content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
-   content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
-   content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
-   content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
+   content_ctx.is_ips_pref                    = retroarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
+   content_ctx.is_bps_pref                    = retroarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
+   content_ctx.is_ups_pref                    = retroarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
+   content_ctx.patch_is_blocked               = retroarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
 #endif
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;

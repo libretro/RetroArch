@@ -2483,12 +2483,12 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->paths.directory_system;
 
-      rarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_MISSING_BIOS, NULL);
 
       update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
-         rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
+         retroarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
       if (update_missing_firmware)
       {

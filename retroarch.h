@@ -362,7 +362,7 @@ typedef struct content_state
    bool pending_rom_crc;
 } content_state_t;
 
-bool rarch_ctl(enum rarch_ctl_state state, void *data);
+bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);

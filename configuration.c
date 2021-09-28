@@ -2641,9 +2641,9 @@ void config_set_defaults(void *data)
    *settings->paths.directory_video_filter = '\0';
    *settings->paths.directory_audio_filter = '\0';
 
-   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
    if (global)
    {
@@ -2879,9 +2879,9 @@ void config_set_defaults(void *data)
 #ifdef HAVE_CONFIGFILE
    /* Avoid reloading config on every content load */
    if (DEFAULT_BLOCK_CONFIG_READ)
-      rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
+      retroarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
    else
-      rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+      retroarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 #endif
 
 #ifdef HAVE_MENU
@@ -3263,7 +3263,7 @@ static bool config_load_file(global_t *global,
 
    /* Overrides */
 
-   if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
+   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
       override_username = strdup(settings->paths.username);
 
    /* Boolean settings */
@@ -3426,7 +3426,7 @@ static bool config_load_file(global_t *global,
 
    /* Post-settings load */
 
-   if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
+   if (retroarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
    {
       configuration_set_string(settings,
             settings->paths.username,
@@ -4023,7 +4023,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          /* msg_remap_loaded is set to MSG_GAME_REMAP_FILE_LOADED
           * by default - no need to change it here */
          goto success;
@@ -4039,7 +4039,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
          msg_remap_loaded = MSG_DIRECTORY_REMAP_FILE_LOADED;
          goto success;
       }
@@ -4054,7 +4054,7 @@ bool config_load_remap(const char *directory_input_remapping,
       RARCH_LOG("[Remaps]: Core-specific remap found at \"%s\".\n", core_path);
       if (ret)
       {
-         rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
+         retroarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          msg_remap_loaded = MSG_CORE_REMAP_FILE_LOADED;
          goto success;
       }
@@ -4513,7 +4513,7 @@ bool config_save_file(const char *path)
    if (!conf)
       conf = config_file_new_alloc();
 
-   if (!conf || rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   if (!conf || retroarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       if (conf)
          config_file_free(conf);
@@ -4660,7 +4660,7 @@ bool config_save_file(const char *path)
       config_set_bool(conf, "log_verbosity",
             verbosity_is_enabled());
    config_set_bool(conf, "perfcnt_enable",
-         rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
+         retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +
@@ -4986,7 +4986,7 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 
    path_set(RARCH_PATH_CONFIG, path);
 
-   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
    /* Load core in new (salamander) config. */
    path_clear(RARCH_PATH_CORE);
