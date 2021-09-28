@@ -1516,7 +1516,6 @@ static bool menu_driver_iterate(
 
 static bool menu_driver_init_internal(
       gfx_display_t *p_disp,
-      struct rarch_state *p_rarch,
       settings_t *settings,
       bool video_is_threaded)
 {
@@ -1580,8 +1579,8 @@ static bool menu_driver_init_internal(
 
 bool menu_driver_init(bool video_is_threaded)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
-   gfx_display_t            *p_disp  = &p_rarch->dispgfx;
+   gfx_display_t            *p_disp  = &rarch_st.dispgfx;
+   settings_t             *settings  = &rarch_st.configuration_settings;
    struct menu_state       *menu_st  = menu_state_get_ptr();
 
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
@@ -1589,9 +1588,8 @@ bool menu_driver_init(bool video_is_threaded)
 
    if (  menu_st->driver_data ||
          menu_driver_init_internal(
-            &p_rarch->dispgfx,
-            p_rarch,
-            p_rarch->configuration_settings,
+            p_disp,
+            settings,
             video_is_threaded))
    {
       if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
