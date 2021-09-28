@@ -1202,6 +1202,8 @@ video_pixel_scaler_t *video_driver_pixel_converter_init(
 void video_driver_filter_free(void);
 #endif
 
+extern const video_driver_t *video_drivers[];
+
 extern video_driver_t video_gl_core;
 extern video_driver_t video_gl2;
 extern video_driver_t video_gl1;
@@ -1240,6 +1242,7 @@ extern video_driver_t video_fpga;
 extern video_driver_t video_sixel;
 extern video_driver_t video_network;
 extern video_driver_t video_oga;
+extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
