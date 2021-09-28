@@ -496,6 +496,7 @@ struct menu_state
     * - Is screensaver currently active? */
    bool screensaver_supported;
    bool screensaver_active;
+   bool is_binding;
 };
 
 

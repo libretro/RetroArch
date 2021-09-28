@@ -857,7 +857,7 @@ static int generic_menu_iterate(
    menu->menu_state_msg[0]         = '\0';
 
    iterate_type                    = action_iterate_type(label);
-   p_rarch->menu_driver_is_binding = false;
+   menu_st->is_binding             = false;
 
    if (     action != MENU_ACTION_NOOP
          || MENU_ENTRIES_NEEDS_REFRESH(menu_st)
@@ -904,10 +904,10 @@ static int generic_menu_iterate(
          {
             menu_input_ctx_bind_t bind;
 
-            p_rarch->menu_driver_is_binding = true;
+            menu_st->is_binding = true;
 
-            bind.s   = menu->menu_state_msg;
-            bind.len = sizeof(menu->menu_state_msg);
+            bind.s              = menu->menu_state_msg;
+            bind.len            = sizeof(menu->menu_state_msg);
 
             if (menu_input_key_bind_iterate(p_rarch,
                      settings,
@@ -27379,7 +27379,7 @@ static enum runloop_state runloop_check_state(
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
-   bool menu_driver_binding_state      = p_rarch->menu_driver_is_binding;
+   bool menu_driver_binding_state      = menu_st->is_binding;
    bool menu_is_alive                  = p_rarch->menu_driver_alive;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
