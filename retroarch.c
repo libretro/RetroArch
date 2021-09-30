@@ -17151,6 +17151,7 @@ static void input_driver_init_command(struct rarch_state *p_rarch,
 
    if (input_stdin_cmd_enable)
    {
+      input_driver_state_t *input_st= input_state_get_ptr();
       bool grab_stdin               = 
          input_st->current_driver->grab_stdin &&
          input_st->current_driver->grab_stdin(input_st->current_data);
@@ -17160,7 +17161,8 @@ static void input_driver_init_command(struct rarch_state *p_rarch,
                "but input driver has already claimed stdin.\n"
                "Cannot use this command interface.\n");
       }
-      else {
+      else
+      {
          p_rarch->input_driver_command[0] = command_stdin_new();
          if (!p_rarch->input_driver_command[1])
             RARCH_ERR("Failed to initialize the stdin command interface.\n");
