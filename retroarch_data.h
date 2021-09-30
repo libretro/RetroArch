@@ -992,7 +992,6 @@ struct rarch_state
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
 #endif
-   gfx_display_t              dispgfx;                   /* ptr alignment */
    input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
    struct retro_audio_callback audio_callback;           /* ptr alignment */

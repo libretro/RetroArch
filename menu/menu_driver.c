@@ -5198,7 +5198,7 @@ int menu_entries_get_core_title(char *s, size_t len)
    return 0;
 }
 
-bool menu_driver_init_internal(
+static bool menu_driver_init_internal(
       gfx_display_t *p_disp,
       settings_t *settings,
       bool video_is_threaded)
@@ -5259,6 +5259,36 @@ bool menu_driver_init_internal(
    menu_st->screensaver_supported = menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
 
    return true;
+}
+
+bool menu_driver_init(bool video_is_threaded)
+{
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   settings_t             *settings  = config_get_ptr();
+   struct menu_state       *menu_st  = menu_state_get_ptr();
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+
+   if (  menu_st->driver_data ||
+         menu_driver_init_internal(
+            p_disp,
+            settings,
+            video_is_threaded))
+   {
+      if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
+      {
+         menu_st->driver_ctx->context_reset(menu_st->userdata,
+               video_is_threaded);
+         return true;
+      }
+   }
+
+   /* If driver initialisation failed, must reset
+    * driver id to 'unknown' */
+   p_disp->menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
+
+   return false;
 }
 
 const char *menu_driver_ident(void)

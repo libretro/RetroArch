@@ -402,12 +402,6 @@ struct retro_system_av_info *video_viewport_get_system_av_info(void)
    return &p_rarch->video_driver_av_info;
 }
 
-gfx_display_t *disp_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->dispgfx;
-}
-
 settings_t *config_get_ptr(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -1547,40 +1541,10 @@ static bool menu_driver_iterate(
             current_time) != -1);
 }
 
-bool menu_driver_init(bool video_is_threaded)
-{
-   gfx_display_t            *p_disp  = &rarch_st.dispgfx;
-   settings_t             *settings  = rarch_st.configuration_settings;
-   struct menu_state       *menu_st  = menu_state_get_ptr();
-
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-
-   if (  menu_st->driver_data ||
-         menu_driver_init_internal(
-            p_disp,
-            settings,
-            video_is_threaded))
-   {
-      if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
-      {
-         menu_st->driver_ctx->context_reset(menu_st->userdata,
-               video_is_threaded);
-         return true;
-      }
-   }
-
-   /* If driver initialisation failed, must reset
-    * driver id to 'unknown' */
-   p_disp->menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
-
-   return false;
-}
-
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
-   gfx_display_t         *p_disp  = &p_rarch->dispgfx;
+   gfx_display_t         *p_disp  = disp_get_ptr();
    struct menu_state    *menu_st  = menu_state_get_ptr();
 
    switch (state)
@@ -7282,6 +7246,7 @@ static void command_event_reinit(struct rarch_state *p_rarch,
    bool video_fullscreen          = settings->bools.video_fullscreen;
    bool adaptive_vsync            = settings->bools.video_adaptive_vsync;
    unsigned swap_interval         = settings->uints.video_swap_interval;
+   gfx_display_t *p_disp          = disp_get_ptr();
 #endif
    enum input_game_focus_cmd_type 
       game_focus_cmd              = GAME_FOCUS_CMD_REAPPLY;
@@ -7307,7 +7272,7 @@ static void command_event_reinit(struct rarch_state *p_rarch,
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
 
 #ifdef HAVE_MENU
-   p_rarch->dispgfx.framebuf_dirty = true;
+   p_disp->framebuf_dirty = true;
    if (video_fullscreen)
       video_driver_hide_mouse();
    if (menu_state_get_ptr()->alive && p_rarch->current_video->set_nonblock_state)
@@ -16439,7 +16404,7 @@ static unsigned menu_event(
 #else
    const input_device_driver_t *sec_joypad         = NULL;
 #endif
-   gfx_display_t *p_disp                           = &p_rarch->dispgfx;
+   gfx_display_t *p_disp                           = disp_get_ptr();
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_handle_t             *menu                 = menu_st->driver_data;
    bool keyboard_mapping_blocked                   = p_rarch->keyboard_mapping_blocked;
@@ -22972,7 +22937,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_nonblock_state   = input_driver_st ?
       input_driver_st->nonblocking_flag : false;
    video_info->input_driver_grab_mouse_state = p_rarch->input_driver_grab_mouse_state;
-   video_info->disp_userdata                 = &p_rarch->dispgfx;
+   video_info->disp_userdata                 = disp_get_ptr();
 
    video_info->userdata                      = VIDEO_DRIVER_GET_PTR_INTERNAL(p_rarch);
 
@@ -23641,7 +23606,7 @@ static void drivers_init(struct rarch_state *p_rarch,
    struct menu_state *menu_st  = menu_state_get_ptr();
 #endif
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL();
-   gfx_display_t *p_disp       = &p_rarch->dispgfx;
+   gfx_display_t *p_disp       = disp_get_ptr();
 #if defined(HAVE_GFX_WIDGETS)
    bool video_font_enable      = settings->bools.video_font_enable;
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
@@ -23768,7 +23733,7 @@ static void drivers_init(struct rarch_state *p_rarch,
             rarch_force_fullscreen;
 
       p_rarch->widgets_active     = gfx_widgets_init(
-            &p_rarch->dispgfx,
+            p_disp,
             anim_get_ptr(),
             settings,
             (uintptr_t)&p_rarch->widgets_active,
@@ -27373,6 +27338,7 @@ static enum runloop_state runloop_check_state(
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
+   gfx_display_t            *p_disp    = disp_get_ptr();
    bool menu_driver_binding_state      = menu_st->is_binding;
    bool menu_is_alive                  = menu_st->alive;
    bool display_kb                     = menu_input_dialog_get_display_kb();
@@ -27869,7 +27835,7 @@ static enum runloop_state runloop_check_state(
 
       RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
       gfx_widgets_iterate(
-            &p_rarch->dispgfx,
+            p_disp,
             settings,
             p_rarch->video_driver_width,
             p_rarch->video_driver_height,
@@ -27972,7 +27938,7 @@ static enum runloop_state runloop_check_state(
           * and exit the function to go to the next frame.
           */
          menu_entries_flush_stack(NULL, MENU_SETTINGS);
-         disp_get_ptr()->msg_force = true;
+         p_disp->msg_force = true;
 
          generic_action_ok_displaylist_push("", NULL,
                "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
@@ -27982,7 +27948,7 @@ static enum runloop_state runloop_check_state(
       }
       else if (!menu_driver_iterate(p_rarch,
                menu_st,
-               &p_rarch->dispgfx,
+               p_disp,
                anim_get_ptr(),
                settings,
                action, current_time))
@@ -28011,7 +27977,7 @@ static enum runloop_state runloop_check_state(
                BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
-               p_rarch->dispgfx.framebuf_dirty = true;
+               p_disp->framebuf_dirty = true;
 
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX)
                   && !string_is_empty(menu->menu_state_msg))

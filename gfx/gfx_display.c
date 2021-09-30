@@ -31,6 +31,14 @@
 /* Small 1x1 white texture used for blending purposes */
 static uintptr_t gfx_white_texture;
 
+/* ptr alignment */
+static gfx_display_t dispgfx_st = {0};
+
+gfx_display_t *disp_get_ptr(void)
+{
+   return &dispgfx_st;
+}
+
 static bool gfx_display_null_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
@@ -1060,7 +1068,7 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
 void gfx_display_get_fb_size(unsigned *fb_width,
       unsigned *fb_height, size_t *fb_pitch)
 {
-   gfx_display_t *p_disp = disp_get_ptr();
+   gfx_display_t *p_disp = &dispgfx_st;
    *fb_width             = p_disp->framebuf_width;
    *fb_height            = p_disp->framebuf_height;
    *fb_pitch             = p_disp->framebuf_pitch;
@@ -1069,20 +1077,20 @@ void gfx_display_get_fb_size(unsigned *fb_width,
 /* Set the display framebuffer's width. */
 void gfx_display_set_width(unsigned width)
 {
-   gfx_display_t *p_disp  = disp_get_ptr();
+   gfx_display_t *p_disp  = &dispgfx_st;
    p_disp->framebuf_width = width;
 }
 
 /* Set the display framebuffer's height. */
 void gfx_display_set_height(unsigned height)
 {
-   gfx_display_t *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp   = &dispgfx_st;
    p_disp->framebuf_height = height;
 }
 
 void gfx_display_set_framebuffer_pitch(size_t pitch)
 {
-   gfx_display_t *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp  = &dispgfx_st;
    p_disp->framebuf_pitch = pitch;
 }
 
@@ -1251,7 +1259,7 @@ void gfx_display_init_white_texture(void)
 
 void gfx_display_free(void)
 {
-   gfx_display_t           *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
 
    p_disp->msg_force           = false;
@@ -1265,7 +1273,7 @@ void gfx_display_free(void)
 
 void gfx_display_init(void)
 {
-   gfx_display_t       *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp         = &dispgfx_st;
    video_coord_array_t *p_dispca = &p_disp->dispca;
 
    p_disp->has_windowed          = video_driver_has_windowed();
