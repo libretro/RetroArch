@@ -18,6 +18,10 @@
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <queues/fifo_queue.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -2139,6 +2143,7 @@ void gfx_widgets_ai_service_overlay_unload(void)
 }
 #endif
 
+#ifdef HAVE_SCREENSHOTS
 void task_screenshot_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -2163,6 +2168,7 @@ void task_screenshot_callback(retro_task_t *task,
    state       = NULL;
    task->state = NULL;
 }
+#endif
 
 dispgfx_widget_t *dispwidget_get_ptr(void)
 {
