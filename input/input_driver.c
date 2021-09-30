@@ -1799,7 +1799,7 @@ void input_poll_overlay(
    uint16_t key_mod                        = 0;
    bool polled                             = false;
    bool button_pressed                     = false;
-   input_driver_state_t *input_st          = input_state_get_ptr();
+   input_driver_state_t *input_st          = &input_driver_st;
    void *input_data                        = input_st->current_data;
    input_overlay_state_t *ol_state         = &ol->overlay_state;
    input_driver_t *current_input           = input_st->current_driver;
