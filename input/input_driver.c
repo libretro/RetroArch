@@ -34,6 +34,7 @@
 #endif
 
 #include "../command.h"
+#include "../config.def.keybinds.h"
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
@@ -2600,3 +2601,419 @@ bool input_driver_ungrab_mouse(void)
    return true;
 }
 
+void input_config_reset(void)
+{
+   unsigned i;
+   input_driver_state_t *input_st = &input_driver_st;
+
+   retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
+   retro_assert(sizeof(input_config_binds[1]) >= sizeof(retro_keybinds_rest));
+
+   memcpy(input_config_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+
+   for (i = 1; i < MAX_USERS; i++)
+      memcpy(input_config_binds[i], retro_keybinds_rest,
+            sizeof(retro_keybinds_rest));
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      /* Note: Don't use input_config_clear_device_name()
+       * here, since this will re-index devices each time
+       * (not required - we are setting all 'name indices'
+       * to zero manually) */
+      input_st->input_device_info[i].name[0]          = '\0';
+      input_st->input_device_info[i].display_name[0]  = '\0';
+      input_st->input_device_info[i].config_path[0]   = '\0';
+      input_st->input_device_info[i].config_name[0]   = '\0';
+      input_st->input_device_info[i].joypad_driver[0] = '\0';
+      input_st->input_device_info[i].vid              = 0;
+      input_st->input_device_info[i].pid              = 0;
+      input_st->input_device_info[i].autoconfigured   = false;
+      input_st->input_device_info[i].name_index       = 0;
+
+      input_config_reset_autoconfig_binds(i);
+
+      input_st->libretro_input_binds[i] = input_config_binds[i];
+   }
+}
+
+void input_config_set_device(unsigned port, unsigned id)
+{
+   settings_t        *settings = config_get_ptr();
+
+   if (settings)
+      configuration_set_uint(settings,
+      settings->uints.input_libretro_device[port], id);
+}
+
+unsigned input_config_get_device(unsigned port)
+{
+   settings_t             *settings = config_get_ptr();
+   return settings->uints.input_libretro_device[port];
+}
+
+const struct retro_keybind *input_config_get_bind_auto(
+      unsigned port, unsigned id)
+{
+   settings_t        *settings = config_get_ptr();
+   unsigned        joy_idx     = settings->uints.input_joypad_index[port];
+
+   if (joy_idx < MAX_USERS)
+      return &input_autoconf_binds[joy_idx][id];
+   return NULL;
+}
+
+unsigned *input_config_get_device_ptr(unsigned port)
+{
+   settings_t             *settings = config_get_ptr();
+   return &settings->uints.input_libretro_device[port];
+}
+
+unsigned input_config_get_device_count(void)
+{
+   unsigned num_devices;
+   input_driver_state_t *input_st = &input_driver_st;
+
+   for (num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices)
+   {
+      if (string_is_empty(input_st->input_device_info[num_devices].name))
+         break;
+   }
+   return num_devices;
+}
+
+/* Adds an index to devices with the same name,
+ * so they can be uniquely identified in the
+ * frontend */
+static void input_config_reindex_device_names(input_driver_state_t *input_st)
+{
+   unsigned i;
+   unsigned j;
+   unsigned name_index;
+
+   /* Reset device name indices */
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      input_st->input_device_info[i].name_index       = 0;
+
+   /* Scan device names */
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+   {
+      const char *device_name = input_config_get_device_name(i);
+
+      /* If current device name is empty, or a non-zero
+       * name index has already been assigned, continue
+       * to the next device */
+      if (
+               string_is_empty(device_name)
+            || input_st->input_device_info[i].name_index != 0)
+         continue;
+
+      /* > Uniquely named devices have a name index
+       *   of 0
+       * > Devices with the same name have a name
+       *   index starting from 1 */
+      name_index = 1;
+
+      /* Loop over all devices following the current
+       * selection */
+      for (j = i + 1; j < MAX_INPUT_DEVICES; j++)
+      {
+         const char *next_device_name = input_config_get_device_name(j);
+
+         if (string_is_empty(next_device_name))
+            continue;
+
+         /* Check if names match */
+         if (string_is_equal(device_name, next_device_name))
+         {
+            /* If this is the first match, set a starting
+             * index for the current device selection */
+            if (input_st->input_device_info[i].name_index == 0)
+               input_st->input_device_info[i].name_index       = name_index++;
+
+            /* Set name index for the next device
+             * (will keep incrementing as more matches
+             *  are found) */
+            input_st->input_device_info[j].name_index          = name_index++;
+         }
+      }
+   }
+}
+
+const char *input_config_get_device_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(input_st->input_device_info[port].name))
+      return NULL;
+   return input_st->input_device_info[port].name;
+}
+
+
+const char *input_config_get_device_config_path(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(input_st->input_device_info[port].config_path))
+      return NULL;
+   return input_st->input_device_info[port].config_path;
+}
+
+const char *input_config_get_device_display_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(input_st->input_device_info[port].display_name))
+      return NULL;
+   return input_st->input_device_info[port].display_name;
+}
+
+const char *input_config_get_device_config_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(input_st->input_device_info[port].config_name))
+      return NULL;
+   return input_st->input_device_info[port].config_name;
+}
+
+const char *input_config_get_device_joypad_driver(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(input_st->input_device_info[port].joypad_driver))
+      return NULL;
+   return input_st->input_device_info[port].joypad_driver;
+}
+
+uint16_t input_config_get_device_vid(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].vid;
+}
+
+uint16_t input_config_get_device_pid(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].pid;
+}
+
+bool input_config_get_device_autoconfigured(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].autoconfigured;
+}
+
+unsigned input_config_get_device_name_index(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].name_index;
+}
+
+/* TODO/FIXME: This is required by linuxraw_joypad.c
+ * and parport_joypad.c. These input drivers should
+ * be refactored such that this dubious low-level
+ * access is not required */
+char *input_config_get_device_name_ptr(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return input_st->input_device_info[port].name;
+}
+
+size_t input_config_get_device_name_size(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   return sizeof(input_st->input_device_info[port].name);
+}
+
+void input_config_set_device_name(unsigned port, const char *name)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(name))
+      return;
+
+   strlcpy(input_st->input_device_info[port].name, name,
+         sizeof(input_st->input_device_info[port].name));
+
+   input_config_reindex_device_names(input_st);
+}
+
+void input_config_set_device_display_name(unsigned port, const char *name)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (!string_is_empty(name))
+      strlcpy(input_st->input_device_info[port].display_name, name,
+            sizeof(input_st->input_device_info[port].display_name));
+}
+
+void input_config_set_device_config_path(unsigned port, const char *path)
+{
+   if (!string_is_empty(path))
+   {
+      char parent_dir_name[128];
+      input_driver_state_t *input_st = &input_driver_st;
+
+      parent_dir_name[0] = '\0';
+
+      if (fill_pathname_parent_dir_name(parent_dir_name,
+               path, sizeof(parent_dir_name)))
+         fill_pathname_join(input_st->input_device_info[port].config_path,
+               parent_dir_name, path_basename(path),
+               sizeof(input_st->input_device_info[port].config_path));
+   }
+}
+
+void input_config_set_device_config_name(unsigned port, const char *name)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (!string_is_empty(name))
+      strlcpy(input_st->input_device_info[port].config_name, name,
+            sizeof(input_st->input_device_info[port].config_name));
+}
+
+void input_config_set_device_joypad_driver(unsigned port, const char *driver)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (!string_is_empty(driver))
+      strlcpy(input_st->input_device_info[port].joypad_driver, driver,
+            sizeof(input_st->input_device_info[port].joypad_driver));
+}
+
+void input_config_set_device_vid(unsigned port, uint16_t vid)
+{
+   input_driver_state_t *input_st        = &input_driver_st;
+   input_st->input_device_info[port].vid = vid;
+}
+
+void input_config_set_device_pid(unsigned port, uint16_t pid)
+{
+   input_driver_state_t *input_st        = &input_driver_st;
+   input_st->input_device_info[port].pid = pid;
+}
+
+void input_config_set_device_autoconfigured(unsigned port, bool autoconfigured)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->input_device_info[port].autoconfigured = autoconfigured;
+}
+
+void input_config_set_device_name_index(unsigned port, unsigned name_index)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->input_device_info[port].name_index = name_index;
+}
+
+void input_config_clear_device_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->input_device_info[port].name[0] = '\0';
+   input_config_reindex_device_names(input_st);
+}
+
+void input_config_clear_device_display_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->input_device_info[port].display_name[0] = '\0';
+}
+
+void input_config_clear_device_config_path(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->input_device_info[port].config_path[0] = '\0';
+}
+
+void input_config_clear_device_config_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->input_device_info[port].config_name[0] = '\0';
+}
+
+void input_config_clear_device_joypad_driver(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->input_device_info[port].joypad_driver[0] = '\0';
+}
+
+const char *input_config_get_mouse_display_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(input_st->input_mouse_info[port].display_name))
+      return NULL;
+   return input_st->input_mouse_info[port].display_name;
+}
+
+void input_config_set_mouse_display_name(unsigned port, const char *name)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (!string_is_empty(name))
+      strlcpy(input_st->input_mouse_info[port].display_name, name,
+            sizeof(input_st->input_mouse_info[port].display_name));
+}
+
+void input_keyboard_mapping_bits(unsigned mode, unsigned key)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   switch (mode)
+   {
+      case 0:
+         BIT512_CLEAR_PTR(&input_st->keyboard_mapping_bits, key);
+         break;
+      case 1:
+         BIT512_SET_PTR(&input_st->keyboard_mapping_bits, key);
+         break;
+      default:
+         break;
+   }
+}
+
+void config_read_keybinds_conf(void *data)
+{
+   unsigned i;
+   input_driver_state_t *input_st = &input_driver_st;
+   config_file_t            *conf = (config_file_t*)data;
+
+   if (!conf)
+      return;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned j;
+
+      for (j = 0; input_config_bind_map_get_valid(j); j++)
+      {
+         char str[256];
+         const struct input_bind_map *keybind =
+            (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
+         struct retro_keybind *bind = &input_config_binds[i][j];
+         bool meta                  = false;
+         const char *prefix         = NULL;
+         const char *btn            = NULL;
+         struct config_entry_list
+            *entry                  = NULL;
+
+
+         if (!bind || !bind->valid || !keybind)
+            continue;
+         if (!keybind->valid)
+            continue;
+         meta                       = keybind->meta;
+         btn                        = keybind->base;
+         prefix                     = input_config_get_prefix(i, meta);
+         if (!btn || !prefix)
+            continue;
+
+         str[0]                     = '\0';
+
+         fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
+
+         /* Clear old mapping bit */
+         BIT512_CLEAR_PTR(&input_st->keyboard_mapping_bits, bind->key);
+
+         entry                      = config_get_entry(conf, str);
+         if (entry && !string_is_empty(entry->value))
+            bind->key               = input_config_translate_str_to_rk(
+                  entry->value);
+         /* Store mapping bit */
+         BIT512_SET_PTR(&input_st->keyboard_mapping_bits, bind->key);
+
+         input_config_parse_joy_button  (str, conf, prefix, btn, bind);
+         input_config_parse_joy_axis    (str, conf, prefix, btn, bind);
+         input_config_parse_mouse_button(str, conf, prefix, btn, bind);
+      }
+   }
+}

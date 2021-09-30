@@ -5265,7 +5265,7 @@ bool menu_driver_init(bool video_is_threaded)
 {
    gfx_display_t            *p_disp  = disp_get_ptr();
    settings_t             *settings  = config_get_ptr();
-   struct menu_state       *menu_st  = menu_state_get_ptr();
+   struct menu_state       *menu_st  = &menu_driver_state;
 
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
@@ -5328,4 +5328,298 @@ const menu_ctx_driver_t *menu_driver_find_driver(
    }
 
    return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
+}
+
+bool menu_input_key_bind_custom_bind_keyboard_cb(
+      void *data, unsigned code)
+{
+   uint64_t current_usec;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = &menu_driver_state;
+   settings_t     *settings       = config_get_ptr();
+   struct menu_bind_state *binds  = &menu_st->input_binds;
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+
+   /* Clear old mapping bit */
+   BIT512_CLEAR_PTR(&input_st->keyboard_mapping_bits, binds->buffer.key);
+
+   /* store key in bind */
+   binds->buffer.key = (enum retro_key)code;
+
+   /* Store new mapping bit */
+   BIT512_SET_PTR(&input_st->keyboard_mapping_bits, binds->buffer.key);
+
+   /* write out the bind */
+   *(binds->output)  = binds->buffer;
+
+   /* next bind */
+   binds->begin++;
+   binds->output++;
+   binds->buffer    =* (binds->output);
+
+   current_usec     = cpu_features_get_time_usec();
+
+   binds->timer_hold.timeout_us     = input_bind_hold_us;
+   binds->timer_hold.current        = current_usec;
+   binds->timer_hold.timeout_end    = current_usec + input_bind_hold_us;
+   binds->timer_timeout.timeout_us  = input_bind_timeout_us;
+   binds->timer_timeout.current     = current_usec;
+   binds->timer_timeout.timeout_end = current_usec +input_bind_timeout_us; 
+
+   return (binds->begin <= binds->last);
+}
+
+bool menu_input_key_bind_set_mode(
+      enum menu_input_binds_ctl_state state, void *data)
+{
+   uint64_t current_usec;
+   unsigned index_offset;
+   rarch_setting_t  *setting           = (rarch_setting_t*)data;
+   input_driver_state_t *input_st      = input_state_get_ptr();
+   struct menu_state *menu_st          = &menu_driver_state;
+   menu_handle_t       *menu           = menu_st->driver_data;
+   const input_device_driver_t 
+      *joypad                          = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t
+      *sec_joypad                      = input_st->secondary_joypad;
+#else
+   const input_device_driver_t
+      *sec_joypad                      = NULL;
+#endif
+   menu_input_t *menu_input            = &menu_st->input_state;
+   settings_t     *settings            = config_get_ptr();
+   struct menu_bind_state *binds       = &menu_st->input_binds;
+   uint64_t input_bind_hold_us         = settings->uints.input_bind_hold
+      * 1000000;
+   uint64_t input_bind_timeout_us      = settings->uints.input_bind_timeout
+      * 1000000;
+
+   if (!setting || !menu)
+      return false;
+   if (menu_input_key_bind_set_mode_common(menu_st,
+            binds, state, setting, settings) == -1)
+      return false;
+
+   index_offset                        = setting->index_offset;
+   binds->port                         = settings->uints.input_joypad_index[
+      index_offset];
+
+   menu_input_key_bind_poll_bind_get_rested_axes(
+         joypad,
+         sec_joypad,
+         binds);
+   menu_input_key_bind_poll_bind_state(
+         input_st,
+         input_st->libretro_input_binds,
+         settings->floats.input_axis_threshold,
+         settings->uints.input_joypad_index[binds->port],
+         binds, false,
+         input_st->keyboard_mapping_blocked);
+
+   current_usec                        = cpu_features_get_time_usec();
+
+   binds->timer_hold   . timeout_us    = input_bind_hold_us;
+   binds->timer_hold   . current       = current_usec;
+   binds->timer_hold   . timeout_end   = current_usec + input_bind_hold_us;
+
+   binds->timer_timeout. timeout_us    = input_bind_timeout_us;
+   binds->timer_timeout. current       = current_usec;
+   binds->timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+
+   input_st->keyboard_press_cb         =
+      menu_input_key_bind_custom_bind_keyboard_cb;
+   input_st->keyboard_press_data       = menu;
+   /* While waiting for input, we have to block all hotkeys. */
+   input_st->keyboard_mapping_blocked  = true;
+
+   /* Upon triggering an input bind operation,
+    * pointer input must be inhibited - otherwise
+    * attempting to bind mouse buttons will cause
+    * spurious menu actions */
+   menu_input->select_inhibit         = true;
+   menu_input->cancel_inhibit         = true;
+
+   return true;
+}
+
+bool menu_input_key_bind_iterate(
+      settings_t *settings,
+      menu_input_ctx_bind_t *bind,
+      retro_time_t current_time)
+{
+   bool               timed_out   = false;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = &menu_driver_state;
+   struct menu_bind_state *_binds = &menu_st->input_binds;
+   menu_input_t *menu_input       = &menu_st->input_state;
+   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
+   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
+
+   snprintf(bind->s, bind->len,
+         "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
+         input_config_bind_map_get_desc(
+            _binds->begin - MENU_SETTINGS_BIND_BEGIN),
+         (int)(_binds->timer_timeout.timeout_us / 1000000),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
+
+   /* Tick main timers */
+   _binds->timer_timeout.current    = current_time;
+   _binds->timer_timeout.timeout_us = _binds->timer_timeout.timeout_end -
+current_time;
+   _binds->timer_hold   .current    = current_time;
+   _binds->timer_hold   .timeout_us = _binds->timer_hold   .timeout_end -
+current_time;
+
+   if (_binds->timer_timeout.timeout_us <= 0)
+   {
+      uint64_t current_usec              = cpu_features_get_time_usec();
+
+      input_st->keyboard_mapping_blocked = false;
+
+      /*skip to next bind*/
+      _binds->begin++;
+      _binds->output++;
+      _binds->timer_hold   . timeout_us    = input_bind_hold_us;
+      _binds->timer_hold   . current       = current_usec;
+      _binds->timer_hold   . timeout_end   = current_usec + input_bind_hold_us;
+
+      _binds->timer_timeout. timeout_us    = input_bind_timeout_us;
+      _binds->timer_timeout. current       = current_usec;
+      _binds->timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+
+      timed_out = true;
+   }
+
+   /* binds.begin is updated in keyboard_press callback. */
+   if (_binds->begin > _binds->last)
+   {
+      /* Avoid new binds triggering things right away. */
+      /* Inhibits input for 2 frames
+       * > Required, since input is ignored for 1 frame
+       *   after certain events - e.g. closing the OSK */
+      menu_st->input_driver_flushing_input = 2;
+
+      /* We won't be getting any key events, so just cancel early. */
+      if (timed_out)
+      {
+         input_st->keyboard_press_cb        = NULL;
+         input_st->keyboard_press_data      = NULL;
+         input_st->keyboard_mapping_blocked = false;
+      }
+
+      return true;
+   }
+
+   {
+      bool complete                         = false;
+      struct menu_bind_state new_binds      = *_binds;
+
+      input_st->keyboard_mapping_blocked    = false;
+
+      menu_input_key_bind_poll_bind_state(
+            input_st,
+            input_st->libretro_input_binds,
+            settings->floats.input_axis_threshold,
+            settings->uints.input_joypad_index[new_binds.port],
+            &new_binds, timed_out,
+            input_st->keyboard_mapping_blocked);
+
+#ifdef ANDROID
+      /* Keep resetting bind during the hold period,
+       * or we'll potentially bind joystick and mouse, etc.*/
+      new_binds.buffer                     = *(new_binds.output);
+
+      if (menu_input_key_bind_poll_find_hold(
+               settings->uints.input_max_users,
+               &new_binds, &new_binds.buffer))
+      {
+         uint64_t current_usec = cpu_features_get_time_usec();
+         /* Inhibit timeout*/
+         new_binds.timer_timeout. timeout_us    = input_bind_timeout_us;
+         new_binds.timer_timeout. current       = current_usec;
+         new_binds.timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+
+         /* Run hold timer*/
+         new_binds.timer_hold.current    = current_time;
+         new_binds.timer_hold.timeout_us = 
+            new_binds.timer_hold.timeout_end - current_time;
+
+         snprintf(bind->s, bind->len,
+               "[%s]\npress keyboard, mouse or joypad\nand hold ...",
+               input_config_bind_map_get_desc(
+                  _binds->begin - MENU_SETTINGS_BIND_BEGIN));
+
+         /* Hold complete? */
+         if (new_binds.timer_hold.timeout_us <= 0)
+            complete = true;
+      }
+      else
+      {
+         uint64_t current_usec = cpu_features_get_time_usec();
+
+         /* Reset hold countdown*/
+         new_binds.timer_hold   .timeout_us     = input_bind_hold_us;
+         new_binds.timer_hold   .current        = current_usec;
+         new_binds.timer_hold   .timeout_end    = current_usec + input_bind_hold_us;
+      }
+#else
+      if ((new_binds.skip && !_binds->skip) ||
+            menu_input_key_bind_poll_find_trigger(
+               settings->uints.input_max_users,
+               _binds, &new_binds, &(new_binds.buffer)))
+         complete = true;
+#endif
+
+      if (complete)
+      {
+	      /* Update bind */
+         uint64_t current_usec             = cpu_features_get_time_usec();
+         *(new_binds.output)               = new_binds.buffer;
+
+         input_st->keyboard_mapping_blocked= false;
+
+         /* Avoid new binds triggering things right away. */
+         /* Inhibits input for 2 frames
+          * > Required, since input is ignored for 1 frame
+          *   after certain events - e.g. closing the OSK */
+         menu_st->input_driver_flushing_input = 2;
+
+         new_binds.begin++;
+
+         if (new_binds.begin > new_binds.last)
+         {
+            input_st->keyboard_press_cb        = NULL;
+            input_st->keyboard_press_data      = NULL;
+            input_st->keyboard_mapping_blocked = false;
+            return true;
+         }
+
+         /*next bind*/
+         new_binds.output++;
+         new_binds.buffer = *(new_binds.output);
+         new_binds.timer_hold   .timeout_us     = input_bind_hold_us;
+         new_binds.timer_hold   .current        = current_usec;
+         new_binds.timer_hold   .timeout_end    = current_usec + input_bind_hold_us;
+         new_binds.timer_timeout. timeout_us    = input_bind_timeout_us;
+         new_binds.timer_timeout. current       = current_usec;
+         new_binds.timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+      }
+
+      *(_binds) = new_binds;
+   }
+
+   /* Pointer input must be inhibited on each
+    * frame that the bind operation is active -
+    * otherwise attempting to bind mouse buttons
+    * will cause spurious menu actions */
+   menu_input->select_inhibit     = true;
+   menu_input->cancel_inhibit     = true;
+
+   /* Menu screensaver should be inhibited on each
+    * frame that the bind operation is active */
+   menu_st->input_last_time_us    = menu_st->current_time_us;
+
+   return false;
 }

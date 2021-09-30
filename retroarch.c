@@ -134,7 +134,6 @@
 #endif
 
 #include "config.def.h"
-#include "config.def.keybinds.h"
 
 #include "runtime_file.h"
 #include "runloop.h"
@@ -540,314 +539,7 @@ static bool driver_find_next(const char *label, char *s, size_t len)
    return false;
 }
 
-void input_keyboard_mapping_bits(unsigned mode, unsigned key)
-{
-   struct rarch_state *p_rarch    = &rarch_st;
-   switch (mode)
-   {
-      case 0:
-         BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, key);
-         break;
-      case 1:
-         BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, key);
-         break;
-      default:
-         break;
-   }
-}
-
-
 #ifdef HAVE_MENU
-static bool menu_input_key_bind_custom_bind_keyboard_cb(
-      void *data, unsigned code)
-{
-   uint64_t current_usec;
-   struct rarch_state *p_rarch    = &rarch_st;
-   struct menu_state *menu_st     = menu_state_get_ptr();
-   settings_t     *settings       = p_rarch->configuration_settings;
-   struct menu_bind_state *binds  = &menu_st->input_binds;
-   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold    * 1000000;
-   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
-
-   /* Clear old mapping bit */
-   BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, binds->buffer.key);
-
-   /* store key in bind */
-   binds->buffer.key = (enum retro_key)code;
-
-   /* Store new mapping bit */
-   BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, binds->buffer.key);
-
-   /* write out the bind */
-   *(binds->output)  = binds->buffer;
-
-   /* next bind */
-   binds->begin++;
-   binds->output++;
-   binds->buffer    =* (binds->output);
-
-   current_usec     = cpu_features_get_time_usec();
-
-   RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-         binds->timer_hold,
-         current_usec,
-         input_bind_hold_us);
-   RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-         binds->timer_timeout,
-         current_usec, input_bind_timeout_us);
-
-   return (binds->begin <= binds->last);
-}
-
-bool menu_input_key_bind_set_mode(
-      enum menu_input_binds_ctl_state state, void *data)
-{
-   uint64_t current_usec;
-   unsigned index_offset;
-   rarch_setting_t  *setting           = (rarch_setting_t*)data;
-   struct rarch_state *p_rarch         = &rarch_st;
-   input_driver_state_t *input_st      = input_state_get_ptr();
-   struct menu_state *menu_st          = menu_state_get_ptr();
-   menu_handle_t       *menu           = menu_st->driver_data;
-   const input_device_driver_t 
-      *joypad                          = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                      = input_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                      = NULL;
-#endif
-   menu_input_t *menu_input            = &menu_st->input_state;
-   settings_t     *settings            = p_rarch->configuration_settings;
-   struct menu_bind_state *binds       = &menu_st->input_binds;
-   uint64_t input_bind_hold_us         = settings->uints.input_bind_hold
-      * 1000000;
-   uint64_t input_bind_timeout_us      = settings->uints.input_bind_timeout
-      * 1000000;
-
-   if (!setting || !menu)
-      return false;
-   if (menu_input_key_bind_set_mode_common(menu_st,
-            binds, state, setting, settings) == -1)
-      return false;
-
-   index_offset                        = setting->index_offset;
-   binds->port                         = settings->uints.input_joypad_index[
-      index_offset];
-
-   menu_input_key_bind_poll_bind_get_rested_axes(
-         joypad,
-         sec_joypad,
-         binds);
-   menu_input_key_bind_poll_bind_state(
-         input_st,
-         p_rarch->libretro_input_binds,
-         settings->floats.input_axis_threshold,
-         settings->uints.input_joypad_index[binds->port],
-         binds, false,
-         input_st->keyboard_mapping_blocked);
-
-   current_usec                        = cpu_features_get_time_usec();
-
-   RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-         binds->timer_hold,
-         current_usec,
-         input_bind_hold_us);
-   RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-         binds->timer_timeout,
-         current_usec,
-         input_bind_timeout_us);
-
-   p_rarch->keyboard_press_cb         =
-      menu_input_key_bind_custom_bind_keyboard_cb;
-   p_rarch->keyboard_press_data       = menu;
-
-   /* While waiting for input, we have to block all hotkeys. */
-   input_st->keyboard_mapping_blocked = true;
-
-   /* Upon triggering an input bind operation,
-    * pointer input must be inhibited - otherwise
-    * attempting to bind mouse buttons will cause
-    * spurious menu actions */
-   menu_input->select_inhibit         = true;
-   menu_input->cancel_inhibit         = true;
-
-   return true;
-}
-
-static bool menu_input_key_bind_iterate(
-      struct rarch_state *p_rarch,
-      settings_t *settings,
-      menu_input_ctx_bind_t *bind,
-      retro_time_t current_time)
-{
-   bool               timed_out   = false;
-   input_driver_state_t *input_st = input_state_get_ptr();
-   struct menu_state *menu_st     = menu_state_get_ptr();
-   struct menu_bind_state *_binds = &menu_st->input_binds;
-   menu_input_t *menu_input       = &menu_st->input_state;
-   uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
-   uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
-
-   snprintf(bind->s, bind->len,
-         "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
-         input_config_bind_map_get_desc(
-            _binds->begin - MENU_SETTINGS_BIND_BEGIN),
-         RARCH_TIMER_GET_TIMEOUT(_binds->timer_timeout),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
-
-   /* Tick main timers */
-   RARCH_TIMER_TICK(_binds->timer_timeout, current_time);
-   RARCH_TIMER_TICK(_binds->timer_hold, current_time);
-
-   if (RARCH_TIMER_HAS_EXPIRED(_binds->timer_timeout))
-   {
-      uint64_t current_usec              = cpu_features_get_time_usec();
-
-      input_st->keyboard_mapping_blocked = false;
-
-      /*skip to next bind*/
-      _binds->begin++;
-      _binds->output++;
-      RARCH_TIMER_BEGIN_NEW_TIME_USEC(_binds->timer_hold,
-            current_usec,
-            input_bind_hold_us);
-      RARCH_TIMER_BEGIN_NEW_TIME_USEC(_binds->timer_timeout,
-            current_usec,
-            input_bind_timeout_us);
-      timed_out = true;
-   }
-
-   /* binds.begin is updated in keyboard_press callback. */
-   if (_binds->begin > _binds->last)
-   {
-      /* Avoid new binds triggering things right away. */
-      /* Inhibits input for 2 frames
-       * > Required, since input is ignored for 1 frame
-       *   after certain events - e.g. closing the OSK */
-      menu_st->input_driver_flushing_input = 2;
-
-      /* We won't be getting any key events, so just cancel early. */
-      if (timed_out)
-      {
-         p_rarch->keyboard_press_cb         = NULL;
-         p_rarch->keyboard_press_data       = NULL;
-         input_st->keyboard_mapping_blocked = false;
-      }
-
-      return true;
-   }
-
-   {
-      bool complete                         = false;
-      struct menu_bind_state new_binds      = *_binds;
-
-      input_st->keyboard_mapping_blocked    = false;
-
-      menu_input_key_bind_poll_bind_state(
-            input_st,
-            p_rarch->libretro_input_binds,
-            settings->floats.input_axis_threshold,
-            settings->uints.input_joypad_index[new_binds.port],
-            &new_binds, timed_out,
-            input_st->keyboard_mapping_blocked);
-
-#ifdef ANDROID
-      /* Keep resetting bind during the hold period,
-       * or we'll potentially bind joystick and mouse, etc.*/
-      new_binds.buffer                     = *(new_binds.output);
-
-      if (menu_input_key_bind_poll_find_hold(
-               settings->uints.input_max_users,
-               &new_binds, &new_binds.buffer))
-      {
-         uint64_t current_usec = cpu_features_get_time_usec();
-         /* Inhibit timeout*/
-         RARCH_TIMER_BEGIN_NEW_TIME_USEC(
-               new_binds.timer_timeout,
-               current_usec,
-               input_bind_timeout_us);
-
-         /* Run hold timer*/
-         RARCH_TIMER_TICK(new_binds.timer_hold, current_time);
-
-         snprintf(bind->s, bind->len,
-               "[%s]\npress keyboard, mouse or joypad\nand hold ...",
-               input_config_bind_map_get_desc(
-                  _binds->begin - MENU_SETTINGS_BIND_BEGIN));
-
-         /* Hold complete? */
-         if (RARCH_TIMER_HAS_EXPIRED(new_binds.timer_hold))
-            complete = true;
-      }
-      else
-      {
-         uint64_t current_usec = cpu_features_get_time_usec();
-
-         /* Reset hold countdown*/
-         RARCH_TIMER_BEGIN_NEW_TIME_USEC(new_binds.timer_hold,
-               current_usec,
-               input_bind_hold_us);
-      }
-#else
-      if ((new_binds.skip && !_binds->skip) ||
-            menu_input_key_bind_poll_find_trigger(
-               settings->uints.input_max_users,
-               _binds, &new_binds, &(new_binds.buffer)))
-         complete = true;
-#endif
-
-      if (complete)
-      {
-	      /* Update bind */
-         uint64_t current_usec             = cpu_features_get_time_usec();
-         *(new_binds.output)               = new_binds.buffer;
-
-         input_st->keyboard_mapping_blocked= false;
-
-         /* Avoid new binds triggering things right away. */
-         /* Inhibits input for 2 frames
-          * > Required, since input is ignored for 1 frame
-          *   after certain events - e.g. closing the OSK */
-         menu_st->input_driver_flushing_input = 2;
-
-         new_binds.begin++;
-
-         if (new_binds.begin > new_binds.last)
-         {
-            p_rarch->keyboard_press_cb         = NULL;
-            p_rarch->keyboard_press_data       = NULL;
-            input_st->keyboard_mapping_blocked = false;
-            return true;
-         }
-
-         /*next bind*/
-         new_binds.output++;
-         new_binds.buffer = *(new_binds.output);
-         RARCH_TIMER_BEGIN_NEW_TIME_USEC(new_binds.timer_hold,
-               current_usec, input_bind_hold_us);
-         RARCH_TIMER_BEGIN_NEW_TIME_USEC(new_binds.timer_timeout,
-               current_usec, input_bind_timeout_us);
-      }
-
-      *(_binds) = new_binds;
-   }
-
-   /* Pointer input must be inhibited on each
-    * frame that the bind operation is active -
-    * otherwise attempting to bind mouse buttons
-    * will cause spurious menu actions */
-   menu_input->select_inhibit     = true;
-   menu_input->cancel_inhibit     = true;
-
-   /* Menu screensaver should be inhibited on each
-    * frame that the bind operation is active */
-   menu_st->input_last_time_us    = menu_st->current_time_us;
-
-   return false;
-}
-
 /**
  * menu_iterate:
  * @input                    : input sample for this frame
@@ -939,7 +631,7 @@ static int generic_menu_iterate(
             bind.s              = menu->menu_state_msg;
             bind.len            = sizeof(menu->menu_state_msg);
 
-            if (menu_input_key_bind_iterate(p_rarch,
+            if (menu_input_key_bind_iterate(
                      settings,
                      &bind, current_time))
             {
@@ -14972,14 +14664,14 @@ static void input_driver_poll(void)
       joypad_info[i].joy_idx                     = settings->uints.input_joypad_index[i];
       joypad_info[i].auto_binds                  = input_autoconf_binds[joypad_info[i].joy_idx];
 
-      input_st->turbo_btns.frame_enable[i] = p_rarch->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid ?
+      input_st->turbo_btns.frame_enable[i]       = input_st->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid ?
          input_state_wrap(
                input_st->current_driver,
                input_st->current_data,
                joypad,
                sec_joypad,
                &joypad_info[i],
-               p_rarch->libretro_input_binds,
+               input_st->libretro_input_binds,
                input_st->keyboard_mapping_blocked,
                (unsigned)i,
                RETRO_DEVICE_JOYPAD,
@@ -15077,7 +14769,7 @@ static void input_driver_poll(void)
                         input_st->primary_joypad,
                         sec_joypad,
                         &joypad_info[i],
-                        p_rarch->libretro_input_binds,
+                        input_st->libretro_input_binds,
                         input_st->keyboard_mapping_blocked,
                         (unsigned)i, RETRO_DEVICE_JOYPAD,
                         0, RETRO_DEVICE_ID_JOYPAD_MASK);
@@ -15087,7 +14779,7 @@ static void input_driver_poll(void)
                      if (ret & (1 << k))
                      {
                         bool valid_bind  =
-                           p_rarch->libretro_input_binds[i][k].valid;
+                           input_st->libretro_input_binds[i][k].valid;
 
                         if (valid_bind)
                         {
@@ -15098,7 +14790,7 @@ static void input_driver_poll(void)
                                     joypad,
                                     &joypad_info[i],
                                     k,
-                                    &p_rarch->libretro_input_binds[i][k]
+                                    &input_st->libretro_input_binds[i][k]
                                     );
                            if (val)
                               p_new_state->analog_buttons[k] = val;
@@ -15124,7 +14816,7 @@ static void input_driver_poll(void)
                               &joypad_info[i],
                               k,
                               j,
-                              p_rarch->libretro_input_binds[i]);
+                              input_st->libretro_input_binds[i]);
 
                         if (val >= 0)
                            p_new_state->analogs[offset]   = val;
@@ -15403,8 +15095,8 @@ static int16_t input_state_device(
             else
 #endif
             {
-               bool bind_valid       = p_rarch->libretro_input_binds[port]
-                  && p_rarch->libretro_input_binds[port][id].valid;
+               bool bind_valid       = input_st->libretro_input_binds[port]
+                  && input_st->libretro_input_binds[port][id].valid;
                unsigned remap_button = settings->uints.input_remap_ids[port][id];
 
                /* TODO/FIXME: What on earth is this code doing...? */
@@ -15613,8 +15305,8 @@ static int16_t input_state_device(
             {
                if (id < RARCH_FIRST_META_KEY)
                {
-                  bool bind_valid         = p_rarch->libretro_input_binds[port]
-                     && p_rarch->libretro_input_binds[port][id].valid;
+                  bool bind_valid         = input_st->libretro_input_binds[port]
+                     && input_st->libretro_input_binds[port][id].valid;
 
                   if (bind_valid)
                   {
@@ -15702,8 +15394,8 @@ static int16_t input_state_device(
 
          if (id < RARCH_FIRST_META_KEY)
          {
-            bool bind_valid = p_rarch->libretro_input_binds[port]
-               && p_rarch->libretro_input_binds[port][id].valid;
+            bool bind_valid = input_st->libretro_input_binds[port]
+               && input_st->libretro_input_binds[port][id].valid;
 
             if (bind_valid)
             {
@@ -15801,20 +15493,20 @@ int16_t input_state_internal(unsigned port, unsigned device,
             joypad,
             sec_joypad,
             &joypad_info,
-            p_rarch->libretro_input_binds,
+            input_st->libretro_input_binds,
             input_st->keyboard_mapping_blocked,
             mapped_port, device, idx, id);
 
       if ((device == RETRO_DEVICE_ANALOG) &&
           (ret == 0))
       {
-         if (p_rarch->libretro_input_binds[mapped_port])
+         if (input_st->libretro_input_binds[mapped_port])
          {
             if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
             {
                if (id < RARCH_FIRST_CUSTOM_BIND)
                {
-                  bool valid_bind = p_rarch->libretro_input_binds[mapped_port][id].valid;
+                  bool valid_bind = input_st->libretro_input_binds[mapped_port][id].valid;
 
                   if (valid_bind)
                   {
@@ -15824,7 +15516,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
                               input_analog_sensitivity,
                               sec_joypad, &joypad_info,
                               id,
-                              &p_rarch->libretro_input_binds[mapped_port][id]);
+                              &input_st->libretro_input_binds[mapped_port][id]);
 
                      if (joypad && (ret == 0))
                         ret = input_joypad_analog_button(
@@ -15832,7 +15524,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
                               input_analog_sensitivity,
                               joypad, &joypad_info,
                               id,
-                              &p_rarch->libretro_input_binds[mapped_port][id]);
+                              &input_st->libretro_input_binds[mapped_port][id]);
                   }
                }
             }
@@ -15847,7 +15539,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
                         &joypad_info,
                         idx,
                         id,
-                        p_rarch->libretro_input_binds[mapped_port]);
+                        input_st->libretro_input_binds[mapped_port]);
 
                if (joypad && (ret == 0))
                   ret = input_joypad_analog_axis(
@@ -15858,7 +15550,7 @@ int16_t input_state_internal(unsigned port, unsigned device,
                         &joypad_info,
                         idx,
                         id,
-                        p_rarch->libretro_input_binds[mapped_port]);
+                        input_st->libretro_input_binds[mapped_port]);
             }
          }
       }
@@ -17536,7 +17228,7 @@ void input_keyboard_event(bool down, unsigned code,
                  (code == RETROK_BACKSPACE) || /* RETRO_DEVICE_ID_JOYPAD_B */
                  (code == RETROK_RETURN)    || /* RETRO_DEVICE_ID_JOYPAD_A */
                  (code == RETROK_DELETE)    || /* RETRO_DEVICE_ID_JOYPAD_Y */
-                 BIT512_GET(p_rarch->keyboard_mapping_bits, code))))
+                 BIT512_GET(input_st->keyboard_mapping_bits, code))))
       {
          menu_ctx_environment_t menu_environ;
          menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
@@ -17599,16 +17291,16 @@ void input_keyboard_event(bool down, unsigned code,
       if (down)
          return;
 
-      p_rarch->keyboard_press_cb                       = NULL;
-      p_rarch->keyboard_press_data                     = NULL;
+      input_st->keyboard_press_cb                      = NULL;
+      input_st->keyboard_press_data                    = NULL;
       input_st->keyboard_mapping_blocked               = false;
       deferred_wait_keys                               = false;
    }
-   else if (p_rarch->keyboard_press_cb)
+   else if (input_st->keyboard_press_cb)
    {
       if (!down || code == RETROK_UNKNOWN)
          return;
-      if (p_rarch->keyboard_press_cb(p_rarch->keyboard_press_data, code))
+      if (input_st->keyboard_press_cb(input_st->keyboard_press_data, code))
          return;
       deferred_wait_keys = true;
    }
@@ -17652,7 +17344,7 @@ void input_keyboard_event(bool down, unsigned code,
        * but not with game focus, and from keyboard device type,
        * and with 'enable_hotkey' modifier set and unpressed */
       if (!p_rarch->game_focus_state.enabled &&
-            BIT512_GET(p_rarch->keyboard_mapping_bits, code))
+            BIT512_GET(input_st->keyboard_mapping_bits, code))
       {
          input_mapper_t *handle      = &input_st->mapper;
          struct retro_keybind hotkey = input_config_binds[0][RARCH_ENABLE_HOTKEY];
@@ -17672,421 +17364,6 @@ void input_keyboard_event(bool down, unsigned code,
          retro_keyboard_event_t *key_event = &runloop_state.key_event;
          if (*key_event)
             (*key_event)(down, code, character, mod);
-      }
-   }
-}
-
-/* input_device_info wrappers START */
-
-unsigned input_config_get_device_count(void)
-{
-   unsigned num_devices;
-   struct rarch_state *p_rarch = &rarch_st;
-
-   for (num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices)
-   {
-      if (string_is_empty(p_rarch->input_device_info[num_devices].name))
-         break;
-   }
-   return num_devices;
-}
-
-/* Adds an index to devices with the same name,
- * so they can be uniquely identified in the
- * frontend */
-static void input_config_reindex_device_names(struct rarch_state *p_rarch)
-{
-   unsigned i;
-   unsigned j;
-   unsigned name_index;
-
-   /* Reset device name indices */
-   for (i = 0; i < MAX_INPUT_DEVICES; i++)
-      p_rarch->input_device_info[i].name_index       = 0;
-
-   /* Scan device names */
-   for (i = 0; i < MAX_INPUT_DEVICES; i++)
-   {
-      const char *device_name = input_config_get_device_name(i);
-
-      /* If current device name is empty, or a non-zero
-       * name index has already been assigned, continue
-       * to the next device */
-      if (
-               string_is_empty(device_name)
-            || p_rarch->input_device_info[i].name_index != 0)
-         continue;
-
-      /* > Uniquely named devices have a name index
-       *   of 0
-       * > Devices with the same name have a name
-       *   index starting from 1 */
-      name_index = 1;
-
-      /* Loop over all devices following the current
-       * selection */
-      for (j = i + 1; j < MAX_INPUT_DEVICES; j++)
-      {
-         const char *next_device_name = input_config_get_device_name(j);
-
-         if (string_is_empty(next_device_name))
-            continue;
-
-         /* Check if names match */
-         if (string_is_equal(device_name, next_device_name))
-         {
-            /* If this is the first match, set a starting
-             * index for the current device selection */
-            if (p_rarch->input_device_info[i].name_index == 0)
-               p_rarch->input_device_info[i].name_index       = name_index++;
-
-            /* Set name index for the next device
-             * (will keep incrementing as more matches
-             *  are found) */
-            p_rarch->input_device_info[j].name_index          = name_index++;
-         }
-      }
-   }
-}
-
-/* > Get input_device_info */
-
-const char *input_config_get_device_name(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_device_info[port].name))
-      return NULL;
-   return p_rarch->input_device_info[port].name;
-}
-
-const char *input_config_get_device_display_name(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_device_info[port].display_name))
-      return NULL;
-   return p_rarch->input_device_info[port].display_name;
-}
-
-const char *input_config_get_mouse_display_name(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_mouse_info[port].display_name))
-      return NULL;
-   return p_rarch->input_mouse_info[port].display_name;
-}
-
-const char *input_config_get_device_config_path(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_device_info[port].config_path))
-      return NULL;
-   return p_rarch->input_device_info[port].config_path;
-}
-
-const char *input_config_get_device_config_name(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_device_info[port].config_name))
-      return NULL;
-   return p_rarch->input_device_info[port].config_name;
-}
-
-const char *input_config_get_device_joypad_driver(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (string_is_empty(p_rarch->input_device_info[port].joypad_driver))
-      return NULL;
-   return p_rarch->input_device_info[port].joypad_driver;
-}
-
-uint16_t input_config_get_device_vid(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->input_device_info[port].vid;
-}
-
-uint16_t input_config_get_device_pid(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->input_device_info[port].pid;
-}
-
-bool input_config_get_device_autoconfigured(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->input_device_info[port].autoconfigured;
-}
-
-unsigned input_config_get_device_name_index(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->input_device_info[port].name_index;
-}
-
-/* TODO/FIXME: This is required by linuxraw_joypad.c
- * and parport_joypad.c. These input drivers should
- * be refactored such that this dubious low-level
- * access is not required */
-char *input_config_get_device_name_ptr(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->input_device_info[port].name;
-}
-
-size_t input_config_get_device_name_size(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   return sizeof(p_rarch->input_device_info[port].name);
-}
-
-/* > Set input_device_info */
-
-void input_config_set_device_name(unsigned port, const char *name)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-
-   if (string_is_empty(name))
-      return;
-
-   strlcpy(p_rarch->input_device_info[port].name, name,
-         sizeof(p_rarch->input_device_info[port].name));
-
-   input_config_reindex_device_names(p_rarch);
-}
-
-void input_config_set_device_display_name(unsigned port, const char *name)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!string_is_empty(name))
-      strlcpy(p_rarch->input_device_info[port].display_name, name,
-            sizeof(p_rarch->input_device_info[port].display_name));
-}
-
-void input_config_set_mouse_display_name(unsigned port, const char *name)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!string_is_empty(name))
-      strlcpy(p_rarch->input_mouse_info[port].display_name, name,
-            sizeof(p_rarch->input_mouse_info[port].display_name));
-}
-
-void input_config_set_device_config_path(unsigned port, const char *path)
-{
-   if (!string_is_empty(path))
-   {
-      char parent_dir_name[128];
-      struct rarch_state *p_rarch = &rarch_st;
-
-      parent_dir_name[0] = '\0';
-
-      if (fill_pathname_parent_dir_name(parent_dir_name,
-               path, sizeof(parent_dir_name)))
-         fill_pathname_join(p_rarch->input_device_info[port].config_path,
-               parent_dir_name, path_basename(path),
-               sizeof(p_rarch->input_device_info[port].config_path));
-   }
-}
-
-void input_config_set_device_config_name(unsigned port, const char *name)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!string_is_empty(name))
-      strlcpy(p_rarch->input_device_info[port].config_name, name,
-            sizeof(p_rarch->input_device_info[port].config_name));
-}
-
-void input_config_set_device_joypad_driver(unsigned port, const char *driver)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!string_is_empty(driver))
-      strlcpy(p_rarch->input_device_info[port].joypad_driver, driver,
-            sizeof(p_rarch->input_device_info[port].joypad_driver));
-}
-
-void input_config_set_device_vid(unsigned port, uint16_t vid)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].vid = vid;
-}
-
-void input_config_set_device_pid(unsigned port, uint16_t pid)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].pid = pid;
-}
-
-void input_config_set_device_autoconfigured(unsigned port, bool autoconfigured)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].autoconfigured = autoconfigured;
-}
-
-void input_config_set_device_name_index(unsigned port, unsigned name_index)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].name_index = name_index;
-}
-
-/* > Clear input_device_info */
-
-void input_config_clear_device_name(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].name[0] = '\0';
-   input_config_reindex_device_names(p_rarch);
-}
-
-void input_config_clear_device_display_name(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].display_name[0] = '\0';
-}
-
-void input_config_clear_device_config_path(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].config_path[0] = '\0';
-}
-
-void input_config_clear_device_config_name(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].config_name[0] = '\0';
-}
-
-void input_config_clear_device_joypad_driver(unsigned port)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   p_rarch->input_device_info[port].joypad_driver[0] = '\0';
-}
-
-/* input_device_info wrappers END */
-
-unsigned *input_config_get_device_ptr(unsigned port)
-{
-   struct rarch_state      *p_rarch = &rarch_st;
-   settings_t             *settings = p_rarch->configuration_settings;
-   return &settings->uints.input_libretro_device[port];
-}
-
-unsigned input_config_get_device(unsigned port)
-{
-   struct rarch_state      *p_rarch = &rarch_st;
-   settings_t             *settings = p_rarch->configuration_settings;
-   return settings->uints.input_libretro_device[port];
-}
-
-void input_config_set_device(unsigned port, unsigned id)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t        *settings = p_rarch->configuration_settings;
-
-   if (settings)
-      configuration_set_uint(settings,
-      settings->uints.input_libretro_device[port], id);
-}
-
-const struct retro_keybind *input_config_get_bind_auto(
-      unsigned port, unsigned id)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   settings_t        *settings = p_rarch->configuration_settings;
-   unsigned        joy_idx     = settings->uints.input_joypad_index[port];
-
-   if (joy_idx < MAX_USERS)
-      return &input_autoconf_binds[joy_idx][id];
-   return NULL;
-}
-
-void input_config_reset(void)
-{
-   unsigned i;
-   struct rarch_state *p_rarch = &rarch_st;
-
-   retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
-   retro_assert(sizeof(input_config_binds[1]) >= sizeof(retro_keybinds_rest));
-
-   memcpy(input_config_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
-
-   for (i = 1; i < MAX_USERS; i++)
-      memcpy(input_config_binds[i], retro_keybinds_rest,
-            sizeof(retro_keybinds_rest));
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      /* Note: Don't use input_config_clear_device_name()
-       * here, since this will re-index devices each time
-       * (not required - we are setting all 'name indices'
-       * to zero manually) */
-      p_rarch->input_device_info[i].name[0]          = '\0';
-      p_rarch->input_device_info[i].display_name[0]  = '\0';
-      p_rarch->input_device_info[i].config_path[0]   = '\0';
-      p_rarch->input_device_info[i].config_name[0]   = '\0';
-      p_rarch->input_device_info[i].joypad_driver[0] = '\0';
-      p_rarch->input_device_info[i].vid              = 0;
-      p_rarch->input_device_info[i].pid              = 0;
-      p_rarch->input_device_info[i].autoconfigured   = false;
-      p_rarch->input_device_info[i].name_index       = 0;
-
-      input_config_reset_autoconfig_binds(i);
-
-      p_rarch->libretro_input_binds[i] = input_config_binds[i];
-   }
-}
-
-void config_read_keybinds_conf(void *data)
-{
-   unsigned i;
-   config_file_t         *conf = (config_file_t*)data;
-   struct rarch_state *p_rarch = &rarch_st;
-
-   if (!conf)
-      return;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      unsigned j;
-
-      for (j = 0; input_config_bind_map_get_valid(j); j++)
-      {
-         char str[256];
-         const struct input_bind_map *keybind =
-            (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
-         struct retro_keybind *bind = &input_config_binds[i][j];
-         bool meta                  = false;
-         const char *prefix         = NULL;
-         const char *btn            = NULL;
-         struct config_entry_list
-            *entry                  = NULL;
-
-
-         if (!bind || !bind->valid || !keybind)
-            continue;
-         if (!keybind->valid)
-            continue;
-         meta                       = keybind->meta;
-         btn                        = keybind->base;
-         prefix                     = input_config_get_prefix(i, meta);
-         if (!btn || !prefix)
-            continue;
-
-         str[0]                     = '\0';
-
-         fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
-
-         /* Clear old mapping bit */
-         BIT512_CLEAR_PTR(&p_rarch->keyboard_mapping_bits, bind->key);
-
-         entry                      = config_get_entry(conf, str);
-         if (entry && !string_is_empty(entry->value))
-            bind->key               = input_config_translate_str_to_rk(
-                  entry->value);
-         /* Store mapping bit */
-         BIT512_SET_PTR(&p_rarch->keyboard_mapping_bits, bind->key);
-
-         input_config_parse_joy_button  (str, conf, prefix, btn, bind);
-         input_config_parse_joy_axis    (str, conf, prefix, btn, bind);
-         input_config_parse_mouse_button(str, conf, prefix, btn, bind);
       }
    }
 }
