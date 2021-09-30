@@ -859,7 +859,6 @@ struct rarch_state
    uint64_t video_driver_frame_time_count;
    uint64_t video_driver_frame_count;
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
-   gfx_thumbnail_state_t gfx_thumb_state;     /* uint64_t alignment */
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
 #endif

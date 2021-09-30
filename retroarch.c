@@ -384,12 +384,6 @@ char **input_event_get_osk_grid(void)
    return p_rarch->osk_grid;
 }
 
-gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->gfx_thumb_state;
-}
-
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
