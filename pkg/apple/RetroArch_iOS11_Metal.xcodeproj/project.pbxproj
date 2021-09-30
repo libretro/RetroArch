@@ -254,7 +254,6 @@
 		92B9EC9824E0537500E6CFB2 /* config.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = config.def.h; path = ../../config.def.h; sourceTree = "<group>"; };
 		92B9EC9924E0537500E6CFB2 /* config.features.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = config.features.h; path = ../../config.features.h; sourceTree = "<group>"; };
 		92B9EC9A24E0537500E6CFB2 /* content.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = content.h; path = ../../content.h; sourceTree = "<group>"; };
-		92B9EC9B24E0539000E6CFB2 /* core_type.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core_type.h; path = ../../core_type.h; sourceTree = "<group>"; };
 		92B9EC9C24E0539000E6CFB2 /* core_info.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = core_info.c; path = ../../core_info.c; sourceTree = "<group>"; };
 		92B9EC9D24E0539000E6CFB2 /* core_info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core_info.h; path = ../../core_info.h; sourceTree = "<group>"; };
 		92B9EC9E24E0539000E6CFB2 /* core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core.h; path = ../../core.h; sourceTree = "<group>"; };
@@ -847,7 +846,6 @@
 				92B9ECBF24E054B500E6CFB2 /* core_backup.h */,
 				92B9EC9C24E0539000E6CFB2 /* core_info.c */,
 				92B9EC9D24E0539000E6CFB2 /* core_info.h */,
-				92B9EC9B24E0539000E6CFB2 /* core_type.h */,
 				92B9ECB024E054B400E6CFB2 /* core_updater_list.c */,
 				92B9ECB624E054B500E6CFB2 /* core_updater_list.h */,
 				92B9EC9E24E0539000E6CFB2 /* core.h */,

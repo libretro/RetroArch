@@ -22,15 +22,15 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif /* HAVE_CONFIG_H */
-
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif /* HAVE_CONFIG_H */
 
 #include "input_defines.h"
 #include "input_types.h"
@@ -45,62 +45,11 @@
 #include "../configuration.h"
 #include "../performance_counters.h"
 
+#ifdef HAVE_COMMAND
+#include "../command.h"
+#endif
+
 RETRO_BEGIN_DECLS
-
-struct retro_keybind
-{
-   /**
-    * Human-readable label for the control.
-    */
-   char     *joykey_label;
-
-   /**
-    * Human-readable label for an analog axis.
-    */
-   char     *joyaxis_label;
-
-   /**
-    * Joypad axis. Negative and positive axes are both represented by this variable.
-    */
-   uint32_t joyaxis;
-
-   /**
-    * Default joy axis binding value for resetting bind to default.
-    */
-   uint32_t def_joyaxis;
-
-   /**
-    * Used by input_{push,pop}_analog_dpad().
-    */
-   uint32_t orig_joyaxis;
-
-   enum msg_hash_enums enum_idx;
-
-   enum retro_key key;
-
-   uint16_t id;
-
-   /**
-    * What mouse button ID has been mapped to this control.
-    */
-   uint16_t mbutton;
-
-   /**
-    * Joypad key. Joypad POV (hats) are embedded into this key as well.
-    **/
-   uint16_t joykey;
-
-   /**
-    * Default key binding value (for resetting bind).
-    */
-   uint16_t def_joykey;
-
-   /**
-    * Determines whether or not the binding is valid.
-    */
-   bool valid;
-};
-
 
 /**
  * line_complete callback (when carriage return is pressed)
@@ -349,19 +298,37 @@ struct rarch_joypad_driver
 
 typedef struct
 {
+   /**
+    * Array of timers, one for each entry in enum input_combo_type.
+    */
+   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
+
    /* pointers */
    input_driver_t                *current_driver;
    void                          *current_data;
    const input_device_driver_t   *primary_joypad;        /* ptr alignment */
    const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
+#ifdef HAVE_COMMAND
+   command_t *command[MAX_CMD_DRIVERS];
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   input_remote_t *remote;
+#endif
+
+   turbo_buttons_t turbo_btns; /* int32_t alignment */
+
+   input_mapper_t mapper;          /* uint32_t alignment */
 
    /* primitives */
    bool        nonblocking_flag;
+   bool keyboard_linefeed_enable;
 
-   /**
-    * Array of timers, one for each entry in enum input_combo_type.
-    */
-   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
+   bool block_hotkey;
+   bool block_libretro_input;
+   bool grab_mouse_state;
+   bool analog_requested[MAX_USERS];
+   bool keyboard_mapping_blocked;
+
 } input_driver_state_t;
 
 
@@ -386,25 +353,23 @@ const char* config_get_input_driver_options(void);
  * @return true if the rumble state has been successfully set
  **/
 bool input_driver_set_rumble(
-         input_driver_state_t *driver_state, unsigned port, unsigned joy_idx, 
+         unsigned port, unsigned joy_idx, 
          enum retro_rumble_effect effect, uint16_t strength);
 /**
  * Sets the rumble gain.
  *
- * @param driver_state
  * @param gain             Rumble gain, 0-100 [%]
  * @param input_max_users
  *
  * @return true if the rumble gain has been successfully set
  **/
 bool input_driver_set_rumble_gain(
-         input_driver_state_t *driver_state, unsigned gain,
+         unsigned gain,
          unsigned input_max_users);
 
 /**
  * Sets the sensor state.
  * 
- * @param driver_state
  * @param port
  * @param sensors_enable
  * @param effect        Sensor action
@@ -413,13 +378,12 @@ bool input_driver_set_rumble_gain(
  * @return true if the sensor state has been successfully set
  **/
 bool input_driver_set_sensor(
-         input_driver_state_t *driver_state, unsigned port, bool sensors_enable,
+         unsigned port, bool sensors_enable,
          enum retro_sensor_action action, unsigned rate);
 
 /**
  * Retrieves the sensor state associated with the provided port and ID. 
  * 
- * @param driver_state
  * @param port
  * @param sensors_enable
  * @param id            Sensor ID
@@ -427,8 +391,18 @@ bool input_driver_set_sensor(
  * @return The current state associated with the port and ID as a float
  **/
 float input_driver_get_sensor(
-         input_driver_state_t *driver_state,
          unsigned port, bool sensors_enable, unsigned id);
+
+uint64_t input_driver_get_capabilities(void);
+
+bool video_driver_init_input(
+      input_driver_t *tmp,
+      settings_t *settings,
+      bool verbosity_enabled);
+
+bool input_driver_grab_mouse(void);
+
+bool input_driver_ungrab_mouse(void);
 
 /**
  * Get an enumerated list of all joypad driver names
@@ -515,6 +489,7 @@ struct input_keyboard_ctx_wait
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
+input_driver_state_t *input_state_get_ptr(void);
 
 /*************************************/
 #ifdef HAVE_HID
@@ -725,13 +700,11 @@ char *input_config_get_device_name_ptr(unsigned port);
 size_t input_config_get_device_name_size(unsigned port);
 
 bool input_driver_button_combo(
-      input_driver_state_t *input_driver_state,
       unsigned mode,
       retro_time_t current_time,
       input_bits_t* p_input);
 
 bool input_driver_find_driver(
-      input_driver_state_t *input_driver_state,
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled);
@@ -839,12 +812,45 @@ void input_config_get_bind_string_joykey(
 int16_t input_state_internal(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-/*****************************************************************************/
+bool input_key_pressed(int key, bool keyboard_pressed);
+
+bool input_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength);
+
+bool input_set_rumble_gain(unsigned gain);
+
+float input_get_sensor_state(unsigned port, unsigned id);
+
+bool input_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+
+void *input_driver_init_wrap(input_driver_t *input, const char *name);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 
 void input_config_reset_autoconfig_binds(unsigned port);
+
 void input_config_reset(void);
+
+const char *joypad_driver_name(unsigned i);
+
+void joypad_driver_reinit(void *data, const char *joypad_driver_name);
+
+#ifdef HAVE_OVERLAY
+/*
+ * input_poll_overlay:
+ *
+ * Poll pressed buttons/keys on currently active overlay.
+ **/
+void input_poll_overlay(
+      bool keyboard_mapping_blocked,
+      settings_t *settings,
+      void *ol_data,
+      enum overlay_visibility *overlay_visibility,
+      float opacity,
+      unsigned analog_dpad_mode,
+      float axis_threshold);
+#endif
 
 #if defined(ANDROID)
 #define DEFAULT_MAX_PADS 8

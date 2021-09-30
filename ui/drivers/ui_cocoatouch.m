@@ -111,7 +111,8 @@ void get_ios_version(int *major, int *minor)
 static void handle_touch_event(NSArray* touches)
 {
    unsigned i;
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)
+      input_state_get_ptr()->current_data;
    float scale               = cocoa_screen_get_native_scale();
 
    if (!apple)
