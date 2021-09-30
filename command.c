@@ -23,6 +23,7 @@
 #include <net/net_socket.h>
 #endif
 #include <lists/dir_list.h>
+#include <file/file_path.h>
 #include <streams/stdin_stream.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
@@ -49,6 +50,7 @@
 #include "dynamic.h"
 #include "list_special.h"
 #include "paths.h"
+#include "retroarch.h"
 #include "verbosity.h"
 #include "version.h"
 #include "version_git.h"
