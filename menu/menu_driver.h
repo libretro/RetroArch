@@ -859,11 +859,6 @@ const menu_ctx_driver_t *menu_driver_find_driver(
       const char *prefix,
       bool verbosity_enabled);
 
-bool menu_driver_init_internal(
-      gfx_display_t *p_disp,
-      settings_t *settings,
-      bool video_is_threaded);
-
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 RETRO_END_DECLS
