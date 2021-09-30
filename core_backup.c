@@ -423,6 +423,7 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
 {
    char *backup_filename           = NULL;
    core_backup_list_entry_t *entry = NULL;
+   unsigned long crc               = 0;
    unsigned backup_mode            = 0;
 
    if (!backup_list ||
@@ -452,9 +453,10 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
        ".%04u%02u%02uT%02u%02u%02u.%08lx.%u",
        &entry->date.year, &entry->date.month, &entry->date.day,
        &entry->date.hour, &entry->date.minute, &entry->date.second,
-       &entry->crc, &backup_mode) != 8)
+       &crc, &backup_mode) != 8)
       goto error;
 
+   entry->crc         = (uint32_t)crc;
    entry->backup_mode = (enum core_backup_mode)backup_mode;
 
    /* Cache backup path */
