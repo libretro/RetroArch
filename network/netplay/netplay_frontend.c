@@ -3134,7 +3134,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->catch_up)
       {
          netplay->catch_up = false;
-         input_unset_nonblock_state();
+         input_state_get_ptr()->nonblocking_flag = false;
          driver_set_nonblock_state();
       }
       return;
@@ -3327,7 +3327,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->self_frame_count + 1 >= lo_frame_count)
       {
          netplay->catch_up = false;
-         input_unset_nonblock_state();
+         input_state_get_ptr()->nonblocking_flag = false;
          driver_set_nonblock_state();
       }
 
@@ -3354,9 +3354,9 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             if (netplay->catch_up_behind <= cur_behind)
             {
                /* We're definitely falling behind! */
-               netplay->catch_up      = true;
-               netplay->catch_up_time = 0;
-               input_set_nonblock_state();
+               netplay->catch_up                       = true;
+               netplay->catch_up_time                  = 0;
+               input_state_get_ptr()->nonblocking_flag = true;
                driver_set_nonblock_state();
             }
             else

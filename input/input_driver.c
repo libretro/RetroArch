@@ -308,12 +308,36 @@ input_driver_state_t *input_state_get_ptr(void)
    return &input_driver_st;
 }
 
-/* private function prototypes */
+/**
+ * Finds first suitable joypad driver and initializes. Used as a fallback by
+ * input_joypad_init_driver when no matching driver is found.
+ *
+ * @param data  joypad state data pointer, which can be NULL and will be
+ *              initialized by the new joypad driver, if one is found.
+ *
+ * @return joypad driver if found and initialized, otherwise NULL.
+ **/
+static const input_device_driver_t *input_joypad_init_first(void *data)
+{
+   unsigned i;
 
-static const input_device_driver_t *input_joypad_init_first(void *data);
+   for (i = 0; joypad_drivers[i]; i++)
+   {
+      if (     joypad_drivers[i]
+            && joypad_drivers[i]->init)
+      {
+         void *ptr = joypad_drivers[i]->init(data);
+         if (ptr)
+         {
+            RARCH_LOG("[Joypad]: Found joypad driver: \"%s\".\n",
+                  joypad_drivers[i]->ident);
+            return joypad_drivers[i];
+         }
+      }
+   }
 
-
-/**************************************/
+   return NULL;
+}
 
 bool input_driver_set_rumble(
          unsigned port, unsigned joy_idx, 
@@ -429,36 +453,6 @@ const input_device_driver_t *input_joypad_init_driver(
    return input_joypad_init_first(data); /* fall back to first available driver */
 }
 
-/**
- * Finds first suitable joypad driver and initializes. Used as a fallback by
- * input_joypad_init_driver when no matching driver is found.
- *
- * @param data  joypad state data pointer, which can be NULL and will be
- *              initialized by the new joypad driver, if one is found.
- *
- * @return joypad driver if found and initialized, otherwise NULL.
- **/
-static const input_device_driver_t *input_joypad_init_first(void *data)
-{
-   unsigned i;
-
-   for (i = 0; joypad_drivers[i]; i++)
-   {
-      if (     joypad_drivers[i]
-            && joypad_drivers[i]->init)
-      {
-         void *ptr = joypad_drivers[i]->init(data);
-         if (ptr)
-         {
-            RARCH_LOG("[Joypad]: Found joypad driver: \"%s\".\n",
-                  joypad_drivers[i]->ident);
-            return joypad_drivers[i];
-         }
-      }
-   }
-
-   return NULL;
-}
 
 bool input_driver_button_combo(
       unsigned mode,
@@ -2187,16 +2181,6 @@ bool input_set_sensor_state(unsigned port,
       port, input_sensors_enable, action, rate);
 }
 
-void input_set_nonblock_state(void)
-{
-   input_driver_st.nonblocking_flag  = true;
-}
-
-void input_unset_nonblock_state(void)
-{
-   input_driver_st.nonblocking_flag  = false;
-}
-
 const char *joypad_driver_name(unsigned i)
 {
    if (!input_driver_st.primary_joypad || !input_driver_st.primary_joypad->name)
@@ -2208,14 +2192,14 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 {
    if (input_driver_st.primary_joypad)
    {
-      const input_device_driver_t *tmp   = input_driver_st.primary_joypad;
+      const input_device_driver_t *tmp  = input_driver_st.primary_joypad;
       input_driver_st.primary_joypad    = NULL;
       tmp->destroy();
    }
 #ifdef HAVE_MFI
    if (input_driver_st.secondary_joypad)
    {
-      const input_device_driver_t *tmp   = input_driver_st.secondary_joypad;
+      const input_device_driver_t *tmp  = input_driver_st.secondary_joypad;
       input_driver_st.secondary_joypad  = NULL;
       tmp->destroy();
    }
@@ -2288,11 +2272,6 @@ bool input_set_rumble_gain(unsigned gain)
             gain, settings->uints.input_max_users))
       return true;
    return false;
-}
-
-void *input_driver_get_data(void)
-{
-   return input_driver_st.current_data;
 }
 
 uint64_t input_driver_get_capabilities(void)

@@ -845,12 +845,31 @@ void input_config_get_bind_string_joykey(
 int16_t input_state_internal(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-/*****************************************************************************/
+bool input_key_pressed(int key, bool keyboard_pressed);
+
+bool input_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength);
+
+bool input_set_rumble_gain(unsigned gain);
+
+float input_get_sensor_state(unsigned port, unsigned id);
+
+bool input_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+
+bool input_mouse_grabbed(void);
+
+void *input_driver_init_wrap(input_driver_t *input, const char *name);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 
 void input_config_reset_autoconfig_binds(unsigned port);
+
 void input_config_reset(void);
+
+const char *joypad_driver_name(unsigned i);
+
+void joypad_driver_reinit(void *data, const char *joypad_driver_name);
 
 #if defined(ANDROID)
 #define DEFAULT_MAX_PADS 8

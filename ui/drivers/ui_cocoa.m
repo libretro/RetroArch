@@ -427,7 +427,7 @@ static ui_application_t ui_application_cocoa = {
             NSPoint pos                 = CONVERT_POINT();
             cocoa_input_data_t 
                *apple                   = (cocoa_input_data_t*)
-               input_driver_get_data();
+               input_state_get_ptr()->current_data;
             if (!apple)
                return;
             /* Relative */
@@ -456,7 +456,7 @@ static ui_application_t ui_application_cocoa = {
            NSPoint pos           = CONVERT_POINT();
            cocoa_input_data_t 
               *apple             = (cocoa_input_data_t*)
-              input_driver_get_data();
+              input_state_get_ptr()->current_data;
            if (!apple || pos.y < 0)
                return;
            apple->mouse_buttons |= (1 << number);
@@ -471,7 +471,7 @@ static ui_application_t ui_application_cocoa = {
             NSPoint pos           = CONVERT_POINT();
             cocoa_input_data_t 
               *apple              = (cocoa_input_data_t*)
-              input_driver_get_data();
+              input_state_get_ptr()->current_data;
             if (!apple || pos.y < 0)
                return;
             apple->mouse_buttons &= ~(1 << number);
