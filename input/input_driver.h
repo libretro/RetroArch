@@ -22,15 +22,15 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif /* HAVE_CONFIG_H */
-
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif /* HAVE_CONFIG_H */
 
 #include "input_defines.h"
 #include "input_types.h"
@@ -46,61 +46,6 @@
 #include "../performance_counters.h"
 
 RETRO_BEGIN_DECLS
-
-struct retro_keybind
-{
-   /**
-    * Human-readable label for the control.
-    */
-   char     *joykey_label;
-
-   /**
-    * Human-readable label for an analog axis.
-    */
-   char     *joyaxis_label;
-
-   /**
-    * Joypad axis. Negative and positive axes are both represented by this variable.
-    */
-   uint32_t joyaxis;
-
-   /**
-    * Default joy axis binding value for resetting bind to default.
-    */
-   uint32_t def_joyaxis;
-
-   /**
-    * Used by input_{push,pop}_analog_dpad().
-    */
-   uint32_t orig_joyaxis;
-
-   enum msg_hash_enums enum_idx;
-
-   enum retro_key key;
-
-   uint16_t id;
-
-   /**
-    * What mouse button ID has been mapped to this control.
-    */
-   uint16_t mbutton;
-
-   /**
-    * Joypad key. Joypad POV (hats) are embedded into this key as well.
-    **/
-   uint16_t joykey;
-
-   /**
-    * Default key binding value (for resetting bind).
-    */
-   uint16_t def_joykey;
-
-   /**
-    * Determines whether or not the binding is valid.
-    */
-   bool valid;
-};
-
 
 /**
  * line_complete callback (when carriage return is pressed)
@@ -870,6 +815,22 @@ void input_config_reset(void);
 const char *joypad_driver_name(unsigned i);
 
 void joypad_driver_reinit(void *data, const char *joypad_driver_name);
+
+#ifdef HAVE_OVERLAY
+/*
+ * input_poll_overlay:
+ *
+ * Poll pressed buttons/keys on currently active overlay.
+ **/
+void input_poll_overlay(
+      bool keyboard_mapping_blocked,
+      settings_t *settings,
+      void *ol_data,
+      enum overlay_visibility *overlay_visibility,
+      float opacity,
+      unsigned analog_dpad_mode,
+      float axis_threshold);
+#endif
 
 #if defined(ANDROID)
 #define DEFAULT_MAX_PADS 8

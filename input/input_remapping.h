@@ -23,6 +23,9 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "input_defines.h"
+#include "input_types.h"
+
 typedef struct input_mapper
 {
    /* Left X, Left Y, Right X, Right Y */
