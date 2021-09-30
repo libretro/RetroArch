@@ -20,6 +20,7 @@
 #include "../config.h"
 #endif
 
+#include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
@@ -50,6 +51,8 @@
 #define TEXT_COLOR_ERROR 0xC23B22FF
 #endif
 #define TEXT_COLOR_FAINT 0x878787FF
+
+RETRO_BEGIN_DECLS
 
 enum gfx_widgets_icon
 {
@@ -381,5 +384,7 @@ extern const gfx_widget_t gfx_widget_load_content_animation;
 extern const gfx_widget_t gfx_widget_achievement_popup;
 extern const gfx_widget_t gfx_widget_leaderboard_display;
 #endif
+
+RETRO_END_DECLS
 
 #endif
