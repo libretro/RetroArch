@@ -19,6 +19,7 @@
 
 #include "../configuration.h"
 #include "../paths.h"
+#include "../retroarch.h"
 #include "../version.h"
 
 #include <string/stdstring.h>
@@ -33,8 +34,6 @@
 #endif
 
 #include "../deps/rcheevos/include/rc_api_runtime.h"
-
-
 
 /* Define this macro to log URLs. */
 #undef CHEEVOS_LOG_URLS

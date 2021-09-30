@@ -765,18 +765,6 @@ typedef struct my_list_t
    int size;
 } my_list;
 
-typedef struct turbo_buttons turbo_buttons_t;
-
-/* Turbo support. */
-struct turbo_buttons
-{
-   int32_t turbo_pressed[MAX_USERS];
-   unsigned count;
-   uint16_t enable[MAX_USERS];
-   bool frame_enable[MAX_USERS];
-   bool mode1_enable[MAX_USERS];
-};
-
 typedef struct input_game_focus_state
 {
    bool enabled;
@@ -946,12 +934,6 @@ struct rarch_state
 
    void *keyboard_press_data;
 
-#ifdef HAVE_COMMAND
-   command_t *input_driver_command[MAX_CMD_DRIVERS];
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-   input_remote_t *input_driver_remote;
-#endif
 
 #ifdef HAVE_HID
    const void *hid_data;
@@ -1054,8 +1036,6 @@ struct rarch_state
 
    jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
-
-   turbo_buttons_t input_driver_turbo_btns; /* int32_t alignment */
    int osk_ptr;
 #if defined(HAVE_COMMAND)
 #ifdef HAVE_NETWORK_CMD
@@ -1157,8 +1137,6 @@ struct rarch_state
     */
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
-   input_mapper_t input_driver_mapper;          /* uint32_t alignment */
-
 
 #ifdef HAVE_BSV_MOVIE
    struct bsv_state bsv_movie_state;            /* char alignment */
@@ -1328,21 +1306,11 @@ struct rarch_state
    bool has_set_netplay_check_frames;
 #endif
 
-   bool input_driver_keyboard_linefeed_enable;
-
-   bool input_driver_block_hotkey;
-   bool input_driver_block_libretro_input;
-   bool input_driver_grab_mouse_state;
-   bool input_driver_analog_requested[MAX_USERS];
-
    input_game_focus_state_t game_focus_state; /* bool alignment */
 
    bool recording_enable;
    bool streaming_enable;
-
-
    bool main_ui_companion_is_on_foreground;
-   bool keyboard_mapping_blocked;
    retro_bits_512_t keyboard_mapping_bits;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

@@ -29,7 +29,7 @@
 #endif
 
 #include "../content.h"
-#include "../core_type.h"
+#include "../retroarch_types.h"
 
 RETRO_BEGIN_DECLS
 

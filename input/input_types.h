@@ -27,6 +27,16 @@ enum input_auto_game_focus_type
    AUTO_GAME_FOCUS_LAST
 };
 
+/* Turbo support. */
+struct turbo_buttons
+{
+   int32_t turbo_pressed[MAX_USERS];
+   unsigned count;
+   uint16_t enable[MAX_USERS];
+   bool frame_enable[MAX_USERS];
+   bool mode1_enable[MAX_USERS];
+};
+
 struct retro_keybind
 {
    /* Human-readable label for the control. */
@@ -65,6 +75,18 @@ typedef struct
    uint16_t analog_buttons[16];
 } input_bits_t;
 
+typedef struct input_mapper
+{
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog_value[MAX_USERS][8];
+   /* The whole keyboard state */
+   uint32_t keys[RETROK_LAST / 32 + 1];
+   /* RetroPad button state of remapped keyboard keys */
+   unsigned key_button[RETROK_LAST];
+   /* This is a bitmask of (1 << key_bind_id). */
+   input_bits_t buttons[MAX_USERS];
+} input_mapper_t;
+
 typedef struct rarch_joypad_driver input_device_driver_t;
 typedef struct input_keyboard_line input_keyboard_line_t;
 typedef struct rarch_joypad_info rarch_joypad_info_t;
@@ -73,5 +95,6 @@ typedef struct input_keyboard_ctx_wait input_keyboard_ctx_wait_t;
 
 typedef struct joypad_connection joypad_connection_t;
 typedef struct pad_connection_listener_interface pad_connection_listener_t;
+typedef struct turbo_buttons turbo_buttons_t;
 
 #endif /* __INPUT_TYPES__H */
