@@ -12,9 +12,7 @@
    _timer.current     = current_usec; \
    _timer.timeout_end = _timer.current + _timer.timeout_us
 
-#define RARCH_TIMER_GET_TIMEOUT(_timer) ((int)(_timer.timeout_us / 1000000))
-
-#define RARCH_TIMER_HAS_EXPIRED(_timer) ((_timer.timeout_us <= 0) ? true : false)
+#define RARCH_TIMER_HAS_EXPIRED(_timer) ((_timer.timeout_us <= 0))
 
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO_MASK \
