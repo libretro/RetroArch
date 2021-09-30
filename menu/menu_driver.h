@@ -846,6 +846,8 @@ extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_stripes;
 
 void menu_input_search_cb(void *userdata, const char *str);
+bool menu_input_key_bind_custom_bind_keyboard_cb(
+      void *data, unsigned code);
 /* This callback gets triggered by the keyboard whenever
  * we press or release a keyboard key. When a keyboard
  * key is being pressed down, 'down' will be true. If it
@@ -858,6 +860,11 @@ const menu_ctx_driver_t *menu_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled);
+
+bool menu_input_key_bind_iterate(
+      settings_t *settings,
+      menu_input_ctx_bind_t *bind,
+      retro_time_t current_time);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

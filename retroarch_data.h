@@ -12,9 +12,7 @@
    _timer.current     = current_usec; \
    _timer.timeout_end = _timer.current + _timer.timeout_us
 
-#define RARCH_TIMER_GET_TIMEOUT(_timer) ((int)(_timer.timeout_us / 1000000))
-
-#define RARCH_TIMER_HAS_EXPIRED(_timer) ((_timer.timeout_us <= 0) ? true : false)
+#define RARCH_TIMER_HAS_EXPIRED(_timer) ((_timer.timeout_us <= 0))
 
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO_MASK \
@@ -932,7 +930,6 @@ struct rarch_state
 
    pad_connection_listener_t *pad_connection_listener;
 
-   void *keyboard_press_data;
 
 
 #ifdef HAVE_HID
@@ -955,7 +952,6 @@ struct rarch_state
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
    struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
 
-   const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
 #ifdef HAVE_REWIND
    struct state_manager_rewind_state rewind_st;
@@ -971,7 +967,6 @@ struct rarch_state
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
 #endif
-   input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
    struct retro_audio_callback audio_callback;           /* ptr alignment */
    video_driver_frame_t frame_bak;                       /* ptr alignment */
@@ -1060,9 +1055,6 @@ struct rarch_state
    int reannounce;
 #endif
 
-   input_device_info_t input_device_info[MAX_INPUT_DEVICES];
-   input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
-                                          /* unsigned alignment */
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
@@ -1311,7 +1303,6 @@ struct rarch_state
    bool recording_enable;
    bool streaming_enable;
    bool main_ui_companion_is_on_foreground;
-   retro_bits_512_t keyboard_mapping_bits;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool shader_presets_need_reload;

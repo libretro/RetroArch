@@ -296,6 +296,20 @@ struct rarch_joypad_driver
    const char *ident;
 };
 
+/**
+ * Callback for keypress events
+ * 
+ * @param userdata The user data that was passed through from the keyboard press callback.
+ * @param code      keycode
+ **/
+typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
+
+struct input_keyboard_ctx_wait
+{
+   void *userdata;
+   input_keyboard_press_t cb;
+};
+
 typedef struct
 {
    /**
@@ -304,10 +318,13 @@ typedef struct
    rarch_timer_t combo_timers[INPUT_COMBO_LAST];
 
    /* pointers */
+   void *keyboard_press_data;
+   input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
    input_driver_t                *current_driver;
    void                          *current_data;
    const input_device_driver_t   *primary_joypad;        /* ptr alignment */
    const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
+   const struct retro_keybind *libretro_input_binds[MAX_USERS];
 #ifdef HAVE_COMMAND
    command_t *command[MAX_CMD_DRIVERS];
 #endif
@@ -318,6 +335,8 @@ typedef struct
    turbo_buttons_t turbo_btns; /* int32_t alignment */
 
    input_mapper_t mapper;          /* uint32_t alignment */
+   input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
+   input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
 
    /* primitives */
    bool        nonblocking_flag;
@@ -328,7 +347,7 @@ typedef struct
    bool grab_mouse_state;
    bool analog_requested[MAX_USERS];
    bool keyboard_mapping_blocked;
-
+   retro_bits_512_t keyboard_mapping_bits; /* bool alignment */
 } input_driver_state_t;
 
 
@@ -461,21 +480,6 @@ const input_device_driver_t *input_joypad_init_driver(
  * @param driver  Handle for joypad driver handling joystick's input
  **/
 void input_pad_connect(unsigned port, input_device_driver_t *driver);
-
-
-/**
- * Callback for keypress events
- * 
- * @param userdata The user data that was passed through from the keyboard press callback.
- * @param code      keycode
- **/
-typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
-
-struct input_keyboard_ctx_wait
-{
-   void *userdata;
-   input_keyboard_press_t cb;
-};
 
 /**
  * Called by drivers when keyboard events are fired. Interfaces with the global
