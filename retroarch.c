@@ -408,14 +408,6 @@ gfx_display_t *disp_get_ptr(void)
    return &p_rarch->dispgfx;
 }
 
-#ifdef HAVE_GFX_WIDGETS
-void *dispwidget_get_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return &p_rarch->dispwidget_st;
-}
-#endif
-
 settings_t *config_get_ptr(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -5168,8 +5160,7 @@ static bool retroarch_apply_shader(
                      );
 #ifdef HAVE_GFX_WIDGETS
             if (p_rarch->widgets_active)
-               gfx_widget_set_generic_message(&p_rarch->dispwidget_st,
-                     msg, 2000);
+               gfx_widget_set_generic_message(msg, 2000);
             else
 #endif
                runloop_msg_queue_push(msg, 1, 120, true, NULL,
@@ -5363,9 +5354,9 @@ static void handle_translation_cb(
 
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
-   if (p_rarch->dispwidget_st.ai_service_overlay_state != 0
+   if (dispwidget_get_ptr()->ai_service_overlay_state != 0
        && p_rarch->ai_service_auto == 2)
-      gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
+      gfx_widgets_ai_service_overlay_unload();
 #endif
 
 #ifdef DEBUG
@@ -5460,7 +5451,7 @@ static void handle_translation_cb(
       if (gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
-         p_rarch->dispwidget_st.ai_service_overlay_state = 2;
+         dispwidget_get_ptr()->ai_service_overlay_state = 2;
          command_event(CMD_EVENT_UNPAUSE, NULL);
       }
 #endif
@@ -5509,7 +5500,6 @@ static void handle_translation_cb(
          }
 
          ai_res = gfx_widgets_ai_service_overlay_load(
-               &p_rarch->dispwidget_st,
                raw_image_file_data, (unsigned)new_image_size,
                image_type);
 
@@ -5527,7 +5517,7 @@ static void handle_translation_cb(
             /* In this case we have to unpause and then repause for a frame */
 #ifdef HAVE_TRANSLATE
             /* Unpausing state */
-            p_rarch->dispwidget_st.ai_service_overlay_state = 2;
+            dispwidget_get_ptr()->ai_service_overlay_state = 2;
 #endif
             command_event(CMD_EVENT_UNPAUSE, NULL);
          }
@@ -6030,10 +6020,10 @@ static bool run_translation_service(
 
 #ifdef HAVE_GFX_WIDGETS
    /* For the case when ai service pause is disabled. */
-   if (  (p_rarch->dispwidget_st.ai_service_overlay_state != 0)
+   if (  (dispwidget_get_ptr()->ai_service_overlay_state != 0)
          && (p_rarch->ai_service_auto == 1))
    {
-      gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
+      gfx_widgets_ai_service_overlay_unload();
       goto finish;
    }
 #endif
@@ -7377,8 +7367,8 @@ static void retroarch_pause_checks(struct rarch_state *p_rarch)
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   if (p_rarch->dispwidget_st.ai_service_overlay_state == 1)
-      gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
+   if (dispwidget_get_ptr()->ai_service_overlay_state == 1)
+      gfx_widgets_ai_service_overlay_unload();
 #endif
 }
 
@@ -7524,8 +7514,8 @@ bool command_event(enum event_command cmd, void *data)
          /* Because the overlay is a display widget,
           * it's going to be written
           * over the menu, so we unset it here. */
-         if (p_rarch->dispwidget_st.ai_service_overlay_state != 0)
-            gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
+         if (dispwidget_get_ptr()->ai_service_overlay_state != 0)
+            gfx_widgets_ai_service_overlay_unload();
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
@@ -7615,7 +7605,7 @@ bool command_event(enum event_command cmd, void *data)
                    * toggle button, so turn it off now. */
                   p_rarch->ai_service_auto = 0;
 #ifdef HAVE_MENU_WIDGETS
-                  gfx_widgets_ai_service_overlay_unload(&p_rarch->dispwidget_st);
+                  gfx_widgets_ai_service_overlay_unload();
 #endif
                }
                else
@@ -10923,7 +10913,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #if defined(HAVE_GFX_WIDGETS)
          if (p_rarch->widgets_active)
-            gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
+            gfx_widget_set_libretro_message(
                   msg->msg,
                   roundf((float)msg->frames / 60.0f * 1000.0f));
          else
@@ -11014,7 +11004,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                /* Handle 'alternate' non-queued notifications */
                case RETRO_MESSAGE_TYPE_NOTIFICATION_ALT:
                   if (p_rarch->widgets_active)
-                     gfx_widget_set_libretro_message(&p_rarch->dispwidget_st,
+                     gfx_widget_set_libretro_message(
                            msg->msg, msg->duration);
                   else
                      runloop_core_msg_queue_push(
@@ -11025,7 +11015,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
                /* Handle 'progress' messages */
                case RETRO_MESSAGE_TYPE_PROGRESS:
                   if (p_rarch->widgets_active)
-                     gfx_widget_set_progress_message(&p_rarch->dispwidget_st,
+                     gfx_widget_set_progress_message(
                            msg->msg, msg->duration,
                            msg->priority, msg->progress);
                   else
@@ -22601,7 +22591,6 @@ static void video_driver_frame(const void *data, unsigned width,
 
          if (msg_found)
             gfx_widgets_msg_queue_push(
-                  &p_rarch->dispwidget_st,
                   NULL,
                   msg_entry.msg,
                   roundf((float)msg_entry.duration / 60.0f * 1000.0f),
@@ -22715,9 +22704,9 @@ static void video_driver_frame(const void *data, unsigned width,
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
          strlcpy(
-               p_rarch->dispwidget_st.gfx_widgets_status_text,
+               dispwidget_get_ptr()->gfx_widgets_status_text,
                status_text,
-               sizeof(p_rarch->dispwidget_st.gfx_widgets_status_text)
+               sizeof(dispwidget_get_ptr()->gfx_widgets_status_text)
                );
       else
 #endif
@@ -22914,7 +22903,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_height       = custom_vp->full_height;
 
 #if defined(HAVE_GFX_WIDGETS)
-   video_info->widgets_userdata            = &p_rarch->dispwidget_st;
+   video_info->widgets_userdata            = dispwidget_get_ptr();
    video_info->widgets_is_paused           = p_rarch->gfx_widgets_paused;
    video_info->widgets_is_fast_forwarding  = p_rarch->gfx_widgets_fast_forward;
    video_info->widgets_is_rewinding        = p_rarch->gfx_widgets_rewinding;
@@ -23779,7 +23768,6 @@ static void drivers_init(struct rarch_state *p_rarch,
             rarch_force_fullscreen;
 
       p_rarch->widgets_active     = gfx_widgets_init(
-            &p_rarch->dispwidget_st,
             &p_rarch->dispgfx,
             anim_get_ptr(),
             settings,
@@ -23872,9 +23860,9 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   if (p_rarch->dispwidget_st.widgets_inited)
+   if (dispwidget_get_ptr()->widgets_inited)
    {
-      gfx_widgets_deinit(&p_rarch->dispwidget_st, p_rarch->widgets_persisting);
+      gfx_widgets_deinit(p_rarch->widgets_persisting);
       p_rarch->widgets_active = false;
    }
 #endif
@@ -23954,9 +23942,9 @@ static void retroarch_deinit_drivers(
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   if (p_rarch->dispwidget_st.widgets_inited)
+   if (dispwidget_get_ptr()->widgets_inited)
    {
-      gfx_widgets_deinit(&p_rarch->dispwidget_st,
+      gfx_widgets_deinit(
             p_rarch->widgets_persisting);
       p_rarch->widgets_active = false;
    }
@@ -26516,7 +26504,6 @@ static void runloop_task_msg_queue_push(
                (char*)msg, 0);
 #endif
       gfx_widgets_msg_queue_push(
-            &p_rarch->dispwidget_st,
             task,
             msg,
             duration,
@@ -27211,7 +27198,6 @@ void runloop_msg_queue_push(const char *msg,
    if (widgets_active)
    {
       gfx_widgets_msg_queue_push(
-            &p_rarch->dispwidget_st,
             NULL,
             msg,
             roundf((float)duration / 60.0f * 1000.0f),
@@ -27399,10 +27385,10 @@ static enum runloop_state runloop_check_state(
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   if (p_rarch->dispwidget_st.ai_service_overlay_state == 3)
+   if (dispwidget_get_ptr()->ai_service_overlay_state == 3)
    {
       command_event(CMD_EVENT_PAUSE, NULL);
-      p_rarch->dispwidget_st.ai_service_overlay_state = 1;
+      dispwidget_get_ptr()->ai_service_overlay_state = 1;
    }
 #endif
 
@@ -27883,7 +27869,6 @@ static enum runloop_state runloop_check_state(
 
       RUNLOOP_MSG_QUEUE_LOCK(runloop_state);
       gfx_widgets_iterate(
-            &p_rarch->dispwidget_st,
             &p_rarch->dispgfx,
             settings,
             p_rarch->video_driver_width,

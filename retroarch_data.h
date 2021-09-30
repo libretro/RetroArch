@@ -843,9 +843,6 @@ struct rarch_state
 #ifdef HAVE_DISCORD
    discord_state_t discord_st;                  /* int64_t alignment */
 #endif
-#ifdef HAVE_GFX_WIDGETS
-   dispgfx_widget_t dispwidget_st;              /* uint64_t alignment */
-#endif
    struct retro_core_t        current_core;     /* uint64_t alignment */
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)

@@ -306,7 +306,6 @@ void gfx_widgets_flush_text(
 typedef struct gfx_widget gfx_widget_t;
 
 bool gfx_widgets_init(
-      void *data,
       void *data_disp,
       void *data_anim,
       void *settings_data,
@@ -315,10 +314,9 @@ bool gfx_widgets_init(
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path);
 
-void gfx_widgets_deinit(void *data, bool widgets_persisting);
+void gfx_widgets_deinit(bool widgets_persisting);
 
 void gfx_widgets_msg_queue_push(
-      void *data,
       retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
@@ -331,7 +329,6 @@ void gfx_widget_volume_update_and_show(float new_volume,
       bool mute);
 
 void gfx_widgets_iterate(
-      void *data,
       void *data_disp,
       void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
@@ -344,11 +341,10 @@ void gfx_widget_screenshot_taken(void *data,
 /* AI Service functions */
 #ifdef HAVE_TRANSLATE
 bool gfx_widgets_ai_service_overlay_load(
-      dispgfx_widget_t *p_dispwidget,
       char* buffer, unsigned buffer_len,
       enum image_type_enum image_type);
 
-void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget);
+void gfx_widgets_ai_service_overlay_unload(void);
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -357,22 +353,14 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value);
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge);
 #endif
 
-/* Warning: not thread safe! */
+/* TODO/FIXME/WARNING: Not thread safe! */
 void gfx_widget_set_generic_message(
-      void *data,
       const char *message, unsigned duration);
-
-/* Warning: not thread safe! */
 void gfx_widget_set_libretro_message(
-      void *data,
       const char *message, unsigned duration);
-
-/* Warning: not thread safe! */
-void gfx_widget_set_progress_message(void *data,
+void gfx_widget_set_progress_message(
       const char *message, unsigned duration,
       unsigned priority, int8_t progress);
-
-/* Warning: not thread safe! */
 bool gfx_widget_start_load_content_animation(void);
 
 /* All the functions below should be called in
@@ -380,7 +368,7 @@ bool gfx_widget_start_load_content_animation(void);
  * enable_menu_widgets to true for that driver */
 void gfx_widgets_frame(void *data);
 
-void *dispwidget_get_ptr(void);
+dispgfx_widget_t *dispwidget_get_ptr(void);
 
 extern const gfx_widget_t gfx_widget_screenshot;
 extern const gfx_widget_t gfx_widget_volume;

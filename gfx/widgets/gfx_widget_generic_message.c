@@ -158,11 +158,10 @@ static void gfx_widget_generic_message_slide_in_cb(void *userdata)
 }
 
 /* Widget interface */
-
-void gfx_widget_set_generic_message(void *data,
+void gfx_widget_set_generic_message(
       const char *msg, unsigned duration)
 {
-   dispgfx_widget_t *p_dispwidget            = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget            = dispwidget_get_ptr();
    gfx_widget_generic_message_state_t *state = &p_w_generic_message_st;
    unsigned last_video_width                 = p_dispwidget->last_video_width;
    int text_width                            = 0;
