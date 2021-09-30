@@ -122,12 +122,12 @@ static void gfx_widget_progress_message_fadeout(void *userdata)
 
 /* Widget interface */
 
-void gfx_widget_set_progress_message(void *data,
+void gfx_widget_set_progress_message(
       const char *message, unsigned duration,
       unsigned priority, int8_t progress)
 {
    gfx_timer_ctx_entry_t timer;
-   dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget             = dispwidget_get_ptr();
    gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;

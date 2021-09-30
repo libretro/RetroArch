@@ -57,53 +57,28 @@
 
 #include "tasks_internal.h"
 
-typedef struct screenshot_task_state screenshot_task_state_t;
-
-struct screenshot_task_state
-{
-   struct scaler_ctx scaler;
-   uint8_t *out_buffer;
-   const void *frame;
-   void *userbuf;
-
-   int pitch;
-   unsigned width;
-   unsigned height;
-   unsigned pixel_format_type;
-
-   char filename[PATH_MAX_LENGTH];
-   char shotname[256];
-
-   bool bgr24;
-   bool silence;
-   bool is_idle;
-   bool is_paused;
-   bool history_list_enable;
-   bool widgets_ready;
-};
-
 static bool screenshot_dump_direct(screenshot_task_state_t *state)
 {
-   struct scaler_ctx *scaler      = (struct scaler_ctx*)&state->scaler;
+   struct scaler_ctx scaler;
    bool ret                       = false;
 
 #if defined(HAVE_RPNG)
    if (state->bgr24)
-      scaler->in_fmt              = SCALER_FMT_BGR24;
+      scaler.in_fmt              = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
-      scaler->in_fmt              = SCALER_FMT_ARGB8888;
+      scaler.in_fmt              = SCALER_FMT_ARGB8888;
    else
-      scaler->in_fmt              = SCALER_FMT_RGB565;
+      scaler.in_fmt              = SCALER_FMT_RGB565;
 
    video_frame_convert_to_bgr24(
-         scaler,
+         &scaler,
          state->out_buffer,
          (const uint8_t*)state->frame + ((int)state->height - 1)
          * state->pitch,
          state->width, state->height,
          -state->pitch);
 
-   scaler_ctx_gen_reset(&state->scaler);
+   scaler_ctx_gen_reset(&scaler);
 
    ret = rpng_save_image_bgr24(
          state->filename,
@@ -221,30 +196,9 @@ task_finished:
 }
 
 #if defined(HAVE_GFX_WIDGETS)
-static void task_screenshot_callback(retro_task_t *task,
+void task_screenshot_callback(retro_task_t *task,
       void *task_data,
-      void *user_data, const char *error)
-{
-   screenshot_task_state_t *state = NULL;
-
-   if (!task)
-      return;
-
-   state = (screenshot_task_state_t*)task->state;
-
-   if (!state)
-      return;
-
-   if (!state->silence && state->widgets_ready)
-      gfx_widget_screenshot_taken(dispwidget_get_ptr(),
-            state->shotname, state->filename);
-
-   free(state);
-   /* Must explicitly set task->state to NULL here,
-    * to avoid potential heap-use-after-free errors */
-   state       = NULL;
-   task->state = NULL;
-}
+      void *user_data, const char *error);
 #endif
 
 /* Take frame bottom-up. */

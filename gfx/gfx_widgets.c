@@ -18,6 +18,10 @@
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <queues/fifo_queue.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -32,6 +36,7 @@
 #include "../msg_hash.h"
 
 #include "../tasks/task_content.h"
+#include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_THREADS
 #define SLOCK_LOCK(x) slock_lock(x)
@@ -60,6 +65,8 @@ static const char
 
    "menu_achievements.png"
 };
+
+static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
 
 static void INLINE gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 {
@@ -182,7 +189,6 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
 }
 
 void gfx_widgets_msg_queue_push(
-      void *data,
       retro_task_t *task,
       const char *msg,
       unsigned duration,
@@ -193,7 +199,7 @@ void gfx_widgets_msg_queue_push(
       bool menu_is_alive)
 {
    disp_widget_msg_t    *msg_widget = NULL;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    if (FIFO_WRITE_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
    {
@@ -399,7 +405,7 @@ void gfx_widgets_msg_queue_push(
 static void gfx_widgets_unfold_end(void *userdata)
 {
    disp_widget_msg_t *unfold        = (disp_widget_msg_t*)userdata;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    unfold->unfolding                = false;
    p_dispwidget->widgets_moving     = false;
@@ -407,7 +413,7 @@ static void gfx_widgets_unfold_end(void *userdata)
 
 static void gfx_widgets_move_end(void *userdata)
 {
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    if (userdata)
    {
@@ -526,7 +532,7 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
 {
    unsigned i;
    disp_widget_msg_t* msg;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    SLOCK_LOCK(p_dispwidget->current_msgs_lock);
 
@@ -896,7 +902,6 @@ static void gfx_widgets_layout(
 
 
 void gfx_widgets_iterate(
-      void *data,
       void *data_disp,
       void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
@@ -904,7 +909,7 @@ void gfx_widgets_iterate(
       bool is_threaded)
 {
    size_t i;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
     * gcc can produce inconsistent floating point results
@@ -1951,7 +1956,6 @@ static void gfx_widgets_context_reset(
 }
 
 bool gfx_widgets_init(
-      void *data,
       void *data_disp,
       void *data_anim,
       void *settings_data,
@@ -1962,7 +1966,7 @@ bool gfx_widgets_init(
 {
    unsigned i;
    unsigned color                              = 0x222222;
-   dispgfx_widget_t *p_dispwidget              = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget              = &dispwidget_st;
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
    gfx_animation_t *p_anim                     = (gfx_animation_t*)data_anim;
    settings_t *settings                        = (settings_t*)settings_data;
@@ -2068,9 +2072,9 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
 }
 
 
-void gfx_widgets_deinit(void *data, bool widgets_persisting)
+void gfx_widgets_deinit(bool widgets_persisting)
 {
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
 
    gfx_widgets_context_destroy(p_dispwidget);
 
@@ -2109,10 +2113,10 @@ static bool gfx_widgets_reset_textures_list_buffer(
 }
 
 bool gfx_widgets_ai_service_overlay_load(
-      dispgfx_widget_t *p_dispwidget,
       char* buffer, unsigned buffer_len,
       enum image_type_enum image_type)
 {
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (p_dispwidget->ai_service_overlay_state == 0)
    {
       if (!gfx_widgets_reset_textures_list_buffer(
@@ -2127,8 +2131,9 @@ bool gfx_widgets_ai_service_overlay_load(
    return true;
 }
 
-void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget)
+void gfx_widgets_ai_service_overlay_unload(void)
 {
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (p_dispwidget->ai_service_overlay_state == 1)
    {
       video_driver_texture_unload(&p_dispwidget->ai_service_overlay_texture);
@@ -2137,3 +2142,35 @@ void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget)
    }
 }
 #endif
+
+#ifdef HAVE_SCREENSHOTS
+void task_screenshot_callback(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *error)
+{
+   screenshot_task_state_t *state = NULL;
+
+   if (!task)
+      return;
+
+   state = (screenshot_task_state_t*)task->state;
+
+   if (!state)
+      return;
+
+   if (!state->silence && state->widgets_ready)
+      gfx_widget_screenshot_taken(&dispwidget_st,
+            state->shotname, state->filename);
+
+   free(state);
+   /* Must explicitly set task->state to NULL here,
+    * to avoid potential heap-use-after-free errors */
+   state       = NULL;
+   task->state = NULL;
+}
+#endif
+
+dispgfx_widget_t *dispwidget_get_ptr(void)
+{
+   return &dispwidget_st;
+}
