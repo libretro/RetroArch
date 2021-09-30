@@ -386,25 +386,23 @@ const char* config_get_input_driver_options(void);
  * @return true if the rumble state has been successfully set
  **/
 bool input_driver_set_rumble(
-         input_driver_state_t *driver_state, unsigned port, unsigned joy_idx, 
+         unsigned port, unsigned joy_idx, 
          enum retro_rumble_effect effect, uint16_t strength);
 /**
  * Sets the rumble gain.
  *
- * @param driver_state
  * @param gain             Rumble gain, 0-100 [%]
  * @param input_max_users
  *
  * @return true if the rumble gain has been successfully set
  **/
 bool input_driver_set_rumble_gain(
-         input_driver_state_t *driver_state, unsigned gain,
+         unsigned gain,
          unsigned input_max_users);
 
 /**
  * Sets the sensor state.
  * 
- * @param driver_state
  * @param port
  * @param sensors_enable
  * @param effect        Sensor action
@@ -413,13 +411,12 @@ bool input_driver_set_rumble_gain(
  * @return true if the sensor state has been successfully set
  **/
 bool input_driver_set_sensor(
-         input_driver_state_t *driver_state, unsigned port, bool sensors_enable,
+         unsigned port, bool sensors_enable,
          enum retro_sensor_action action, unsigned rate);
 
 /**
  * Retrieves the sensor state associated with the provided port and ID. 
  * 
- * @param driver_state
  * @param port
  * @param sensors_enable
  * @param id            Sensor ID
@@ -427,8 +424,18 @@ bool input_driver_set_sensor(
  * @return The current state associated with the port and ID as a float
  **/
 float input_driver_get_sensor(
-         input_driver_state_t *driver_state,
          unsigned port, bool sensors_enable, unsigned id);
+
+uint64_t input_driver_get_capabilities(void);
+
+bool video_driver_init_input(
+      input_driver_t *tmp,
+      settings_t *settings,
+      bool verbosity_enabled);
+
+bool input_driver_grab_mouse(void);
+
+bool input_driver_ungrab_mouse(void);
 
 /**
  * Get an enumerated list of all joypad driver names
@@ -515,6 +522,7 @@ struct input_keyboard_ctx_wait
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
+input_driver_state_t *input_state_get_ptr(void);
 
 /*************************************/
 #ifdef HAVE_HID
@@ -725,13 +733,11 @@ char *input_config_get_device_name_ptr(unsigned port);
 size_t input_config_get_device_name_size(unsigned port);
 
 bool input_driver_button_combo(
-      input_driver_state_t *input_driver_state,
       unsigned mode,
       retro_time_t current_time,
       input_bits_t* p_input);
 
 bool input_driver_find_driver(
-      input_driver_state_t *input_driver_state,
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled);

@@ -62,8 +62,6 @@ static void runloop_apply_fastmotion_override(
       struct rarch_state *p_rarch, runloop_state_t *p_runloop,
       settings_t *settings);
 
-static uint64_t input_driver_get_capabilities(void);
-
 static void uninit_libretro_symbols(
       struct rarch_state *p_rarch,
       struct retro_core_t *current_core);

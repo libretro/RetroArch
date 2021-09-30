@@ -822,8 +822,6 @@ typedef struct discord_state discord_state_t;
 
 struct rarch_state
 {
-   input_driver_state_t input_driver_state;
-
    double audio_source_ratio_original;
    double audio_source_ratio_current;
    struct retro_system_av_info video_driver_av_info; /* double alignment */

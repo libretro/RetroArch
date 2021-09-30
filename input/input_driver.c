@@ -299,7 +299,14 @@ hid_driver_t *hid_drivers[] = {
 };
 #endif
 
+static input_driver_state_t input_driver_st = {0}; /* double alignment */
+
 /**************************************/
+
+input_driver_state_t *input_state_get_ptr(void)
+{
+   return &input_driver_st;
+}
 
 /* private function prototypes */
 
@@ -309,18 +316,18 @@ static const input_device_driver_t *input_joypad_init_first(void *data);
 /**************************************/
 
 bool input_driver_set_rumble(
-         input_driver_state_t *driver_state, unsigned port, unsigned joy_idx, 
+         unsigned port, unsigned joy_idx, 
          enum retro_rumble_effect effect, uint16_t strength)
 {
    const input_device_driver_t  *primary_joypad;
    const input_device_driver_t      *sec_joypad;
    bool rumble_state   = false;
 
-   if (!driver_state || (joy_idx >= MAX_USERS))
+   if (joy_idx >= MAX_USERS)
       return false;
 
-   primary_joypad = driver_state->primary_joypad;
-   sec_joypad     = driver_state->secondary_joypad;
+   primary_joypad = input_driver_st.primary_joypad;
+   sec_joypad     = input_driver_st.secondary_joypad;
 
    if (primary_joypad && primary_joypad->set_rumble)
       rumble_state = primary_joypad->set_rumble(joy_idx, effect, strength);
@@ -332,38 +339,34 @@ bool input_driver_set_rumble(
    return rumble_state;
 }
 
-/**************************************/
-
 bool input_driver_set_rumble_gain(
-         input_driver_state_t *driver_state, unsigned gain,
+         unsigned gain,
          unsigned input_max_users)
 {
    unsigned i;
 
-   if (driver_state->primary_joypad
-      && driver_state->primary_joypad->set_rumble_gain)
+   if (  input_driver_st.primary_joypad
+      && input_driver_st.primary_joypad->set_rumble_gain)
    {
       for (i = 0; i < input_max_users; i++)
-         driver_state->primary_joypad->set_rumble_gain(i, gain);
+         input_driver_st.primary_joypad->set_rumble_gain(i, gain);
       return true;
    }
    return false;
 }
 
-/**************************************/
-
 bool input_driver_set_sensor(
-         input_driver_state_t *driver_state, unsigned port, bool sensors_enable,
+         unsigned port, bool sensors_enable,
          enum retro_sensor_action action, unsigned rate)
 {
    const input_driver_t *current_driver;
    void *current_data;
 
-   if (!driver_state || !driver_state->current_data)
+   if (!input_driver_st.current_data)
       return false;
 
-   current_driver = driver_state->current_driver;
-   current_data = driver_state->current_data;
+   current_driver = input_driver_st.current_driver;
+   current_data   = input_driver_st.current_data;
 
    /* If sensors are disabled, inhibit any enable
     * actions (but always allow disable actions) */
@@ -383,17 +386,16 @@ bool input_driver_set_sensor(
 /**************************************/
 
 float input_driver_get_sensor(
-         input_driver_state_t *driver_state,
          unsigned port, bool sensors_enable, unsigned id)
 {
    const input_driver_t *current_driver;
    void *current_data;
 
-   if (!driver_state || !driver_state->current_data)
+   if (!input_driver_st.current_data)
       return 0.0f;
 
-   current_driver = driver_state->current_driver;
-   current_data   = driver_state->current_data;
+   current_driver = input_driver_st.current_driver;
+   current_data   = input_driver_st.current_data;
 
    if (sensors_enable && current_driver->get_sensor_input)
       return current_driver->get_sensor_input(current_data, port, id);
@@ -459,13 +461,11 @@ static const input_device_driver_t *input_joypad_init_first(void *data)
 }
 
 bool input_driver_button_combo(
-      input_driver_state_t *input_driver_state,
       unsigned mode,
       retro_time_t current_time,
       input_bits_t* p_input)
 {
-   retro_assert(input_driver_state != NULL);
-   retro_assert(p_input != NULL);
+   retro_assert(p_input  != NULL);
 
    switch (mode)
    {
@@ -515,7 +515,7 @@ bool input_driver_button_combo(
          break;
       case INPUT_COMBO_HOLD_START:
          {
-            rarch_timer_t *timer = &input_driver_state->combo_timers[INPUT_COMBO_HOLD_START];
+            rarch_timer_t *timer = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_START];
 
             if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             {
@@ -554,7 +554,7 @@ bool input_driver_button_combo(
          break;
       case INPUT_COMBO_HOLD_SELECT:
          {
-            rarch_timer_t *timer = &input_driver_state->combo_timers[INPUT_COMBO_HOLD_SELECT];
+            rarch_timer_t *timer = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_SELECT];
 
             if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             {
@@ -2110,7 +2110,6 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
 }
 
 bool input_driver_find_driver(
-      input_driver_state_t *input_driver_state,
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled)
@@ -2121,9 +2120,9 @@ bool input_driver_find_driver(
 
    if (i >= 0)
    {
-      input_driver_state->current_driver = (input_driver_t*)input_drivers[i];
+      input_driver_st.current_driver = (input_driver_t*)input_drivers[i];
       RARCH_LOG("[Input]: Found %s: \"%s\".\n", prefix,
-            input_driver_state->current_driver->ident);
+            input_driver_st.current_driver->ident);
    }
    else
    {
@@ -2142,7 +2141,7 @@ bool input_driver_find_driver(
       tmp = (input_driver_t*)input_drivers[0];
       if (!tmp)
          return false;
-      input_driver_state->current_driver = tmp;
+      input_driver_st.current_driver = tmp;
    }
 
    return true;
@@ -2169,3 +2168,253 @@ void input_mapper_reset(void *data)
    for (i = 0; i < (RETROK_LAST / 32 + 1); i++)
       handle->keys[i]               = 0;
 }
+
+/**
+ * Sets the sensor state. Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE.
+ *
+ * @param port
+ * @param action
+ * @param rate
+ *
+ * @return true if the sensor state has been successfully set
+ **/
+bool input_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   settings_t *settings        = config_get_ptr();
+   bool input_sensors_enable   = settings->bools.input_sensors_enable;
+   return input_driver_set_sensor(
+      port, input_sensors_enable, action, rate);
+}
+
+void input_set_nonblock_state(void)
+{
+   input_driver_st.nonblocking_flag  = true;
+}
+
+void input_unset_nonblock_state(void)
+{
+   input_driver_st.nonblocking_flag  = false;
+}
+
+const char *joypad_driver_name(unsigned i)
+{
+   if (!input_driver_st.primary_joypad || !input_driver_st.primary_joypad->name)
+      return NULL;
+   return input_driver_st.primary_joypad->name(i);
+}
+
+void joypad_driver_reinit(void *data, const char *joypad_driver_name)
+{
+   if (input_driver_st.primary_joypad)
+   {
+      const input_device_driver_t *tmp   = input_driver_st.primary_joypad;
+      input_driver_st.primary_joypad    = NULL;
+      tmp->destroy();
+   }
+#ifdef HAVE_MFI
+   if (input_driver_st.secondary_joypad)
+   {
+      const input_device_driver_t *tmp   = input_driver_st.secondary_joypad;
+      input_driver_st.secondary_joypad  = NULL;
+      tmp->destroy();
+   }
+#endif
+   if (!input_driver_st.primary_joypad)
+      input_driver_st.primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
+#ifdef HAVE_MFI
+   if (!input_driver_st.secondary_joypad)
+      input_driver_st.secondary_joypad  = input_joypad_init_driver("mfi", data);
+#endif
+}
+
+/**
+ * Retrieves the sensor state associated with the provided port and ID. 
+ * 
+ * @param port
+ * @param id    Sensor ID
+ *
+ * @return The current state associated with the port and ID as a float
+ **/
+float input_get_sensor_state(unsigned port, unsigned id)
+{
+   settings_t *settings                   = config_get_ptr();
+   bool input_sensors_enable              = settings->bools.input_sensors_enable;
+
+   return input_driver_get_sensor(port, input_sensors_enable, id);
+}
+
+/**
+ * Sets the rumble state. Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
+ * 
+ * @param port      User number.
+ * @param effect    Rumble effect.
+ * @param strength  Strength of rumble effect.
+ *
+ * @return true if the rumble state has been successfully set
+ **/
+bool input_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   settings_t *settings                   = config_get_ptr();
+   unsigned joy_idx                       = settings->uints.input_joypad_index[port];
+   uint16_t scaled_strength               = strength;
+
+   /* If gain setting is not suported, do software gain control */ 
+   if (input_driver_st.primary_joypad)
+   {
+      if (!input_driver_st.primary_joypad->set_rumble_gain)
+      {
+         unsigned rumble_gain = settings->uints.input_rumble_gain;
+         scaled_strength      = (rumble_gain * strength) / 100.0;
+      }
+   }
+
+   return input_driver_set_rumble(
+      port, joy_idx, effect, scaled_strength);
+}
+
+/**
+ * Sets the rumble gain. Used by MENU_ENUM_LABEL_INPUT_RUMBLE_GAIN.
+ *
+ * @param gain  Rumble gain, 0-100 [%]
+ *
+ * @return true if the rumble gain has been successfully set
+ **/
+bool input_set_rumble_gain(unsigned gain)
+{
+   settings_t           *settings         = config_get_ptr();
+   if (input_driver_set_rumble_gain(
+            gain, settings->uints.input_max_users))
+      return true;
+   return false;
+}
+
+void *input_driver_get_data(void)
+{
+   return input_driver_st.current_data;
+}
+
+uint64_t input_driver_get_capabilities(void)
+{
+   if (  !input_driver_st.current_driver || 
+         !input_driver_st.current_driver->get_capabilities)
+      return 0;
+   return input_driver_st.current_driver->get_capabilities(input_driver_st.current_data);
+}
+
+void input_driver_init_joypads(void)
+{
+   settings_t                   *settings    = config_get_ptr();
+   if (!input_driver_st.primary_joypad)
+      input_driver_st.primary_joypad        = input_joypad_init_driver(
+         settings->arrays.input_joypad_driver,
+         input_driver_st.current_data);
+#ifdef HAVE_MFI
+   if (!input_driver_st.secondary_joypad)
+      input_driver_st.secondary_joypad      = input_joypad_init_driver(
+            "mfi",
+            input_driver_st.current_data);
+#endif
+}
+
+bool input_key_pressed(int key, bool keyboard_pressed)
+{
+   /* If a keyboard key is pressed then immediately return
+    * true, otherwise call button_is_pressed to determine
+    * if the input comes from another input device */
+   if (!(
+            (key < RARCH_BIND_LIST_END)
+            && keyboard_pressed
+        )
+      )
+   {
+      settings_t           *settings = config_get_ptr();
+      const input_device_driver_t
+         *joypad                     = (const input_device_driver_t*)
+         input_driver_st.primary_joypad;
+      const uint64_t bind_joykey     = input_config_binds[0][key].joykey;
+      const uint64_t bind_joyaxis    = input_config_binds[0][key].joyaxis;
+      const uint64_t autobind_joykey = input_autoconf_binds[0][key].joykey;
+      const uint64_t autobind_joyaxis= input_autoconf_binds[0][key].joyaxis;
+      uint16_t port                  = 0;
+      float axis_threshold           = settings->floats.input_axis_threshold;
+      const uint64_t joykey          = (bind_joykey != NO_BTN)
+         ? bind_joykey  : autobind_joykey;
+      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+         ? bind_joyaxis : autobind_joyaxis;
+
+      if ((uint16_t)joykey != NO_BTN && joypad->button(
+               port, (uint16_t)joykey))
+         return true;
+      if (joyaxis != AXIS_NONE &&
+            ((float)abs(joypad->axis(port, joyaxis))
+             / 0x8000) > axis_threshold)
+         return true;
+      return false;
+   }
+   return true;
+}
+
+bool video_driver_init_input(
+      input_driver_t *tmp,
+      settings_t *settings,
+      bool verbosity_enabled)
+{
+   void              *new_data    = NULL;
+   input_driver_t         **input = &input_driver_st.current_driver;
+   if (*input)
+      return true;
+
+   /* Video driver didn't provide an input driver,
+    * so we use configured one. */
+   RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
+         " Attempting to pick a suitable driver.\n");
+
+   if (tmp)
+      *input = tmp;
+   else
+   {
+      if (!(input_driver_find_driver(
+            settings, "input driver",
+            verbosity_enabled)))
+      {
+         RARCH_ERR("[Video]: Cannot find input driver. Exiting ...\n");
+         return false;
+      }
+   }
+
+   /* This should never really happen as tmp (driver.input) is always
+    * found before this in find_driver_input(), or we have aborted
+    * in a similar fashion anyways. */
+   if (  !input_driver_st.current_driver || 
+         !(new_data = input_driver_init_wrap(
+               input_driver_st.current_driver,
+               settings->arrays.input_joypad_driver)))
+   {
+      RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
+      return false;
+   }
+
+   input_driver_st.current_data = new_data;
+   
+   return true;
+}
+
+bool input_driver_grab_mouse(void)
+{
+   if (!input_driver_st.current_driver || !input_driver_st.current_driver->grab_mouse)
+      return false;
+   input_driver_st.current_driver->grab_mouse(
+         input_driver_st.current_data, true);
+   return true;
+}
+
+bool input_driver_ungrab_mouse(void)
+{
+   if (!input_driver_st.current_driver || !input_driver_st.current_driver->grab_mouse)
+      return false;
+   input_driver_st.current_driver->grab_mouse(input_driver_st.current_data, false);
+   return true;
+}
+
