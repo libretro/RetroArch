@@ -2313,6 +2313,10 @@ MSG_HASH(
    "Kombinacja przycisków kontrolera do przełączania menu."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Kombinacja przycisków kontrolera aby wyjść z RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "Opóźnienie aktywacji klawisza skrótu (w ramkach)"
    )
@@ -11889,24 +11893,8 @@ MSG_HASH(
    "nie znaleziono bottom_menu.png\nw folderze /ctr"
    )
 MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Br.\ndan."
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Brak\nzrz. ekr."
-   )
-MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
    "Wznów grę"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Utwórz\npunkt przyw."
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Załaduj\npkt przywr."
    )
 #endif
 #ifdef HAVE_QT

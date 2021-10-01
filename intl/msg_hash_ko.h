@@ -2389,6 +2389,14 @@ MSG_HASH(
    "메뉴를 호출하는 버튼 조합입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "종료 버튼 조합"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "RetroArch를 종료하는 버튼 조합입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "핫키 지연 시간 (프레임)"
    )
