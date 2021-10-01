@@ -5563,16 +5563,19 @@ static void ozone_draw_osk(ozone_handle_t *ozone,
    }
 
    /* Keyboard */
-   gfx_display_draw_keyboard(
-         p_disp,
-         userdata,
-         video_width,
-         video_height,
-         ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
-         ozone->fonts.entries_label.font,
-         input_event_get_osk_grid(),
-         input_event_get_osk_ptr(),
-         ozone->theme->text_rgba);
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      gfx_display_draw_keyboard(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
+            ozone->fonts.entries_label.font,
+            input_st->osk_grid,
+            input_st->osk_ptr,
+            ozone->theme->text_rgba);
+   }
 
    string_list_deinitialize(&list);
 }

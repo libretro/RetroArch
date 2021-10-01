@@ -1068,6 +1068,8 @@ static void xmb_render_messagebox_internal(
    }
 
    if (input_dialog_display_kb)
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
       gfx_display_draw_keyboard(
             p_disp,
             userdata,
@@ -1075,9 +1077,10 @@ static void xmb_render_messagebox_internal(
             video_height,
             xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
             xmb->font,
-            input_event_get_osk_grid(),
-            input_event_get_osk_ptr(),
+            input_st->osk_grid,
+            input_st->osk_ptr,
             0xffffffff);
+   }
 
    string_list_deinitialize(&list);
 }
