@@ -57,6 +57,19 @@
 #include "../performance_counters.h"
 #include "../version.h"
 
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#endif
+
+#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#include "switch_performance_profiles.h"
+#endif
+
+#ifdef HAVE_LIBNX
+/* TODO/FIXME - public global variable */
+extern u32 __nx_applet_type;
+#endif
+
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
    {RETROK_FIRST,         "Unmapped"},
@@ -5627,8 +5640,9 @@ current_time;
 
 bool menu_input_dialog_get_display_kb(void)
 {
-   struct menu_state *menu_st  = menu_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
 #ifdef HAVE_LIBNX
+   input_driver_state_t *input_st = input_state_get_ptr();
    SwkbdConfig kbd;
    Result rc;
    /* Indicates that we are "typing" from the swkbd

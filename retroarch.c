@@ -282,11 +282,6 @@ static struct rarch_state         rarch_st;
 static const void *MAGIC_POINTER                                 = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
-#ifdef HAVE_LIBNX
-/* TODO/FIXME - public global variable */
-extern u32 __nx_applet_type;
-#endif
-
 static const video_display_server_t *current_display_server      = &dispserv_null;
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
