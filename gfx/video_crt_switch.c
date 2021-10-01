@@ -122,14 +122,16 @@ static void set_aspect(videocrt_switch_t *p_switch, unsigned int width,
    }
    if (srm_width >= 1920)
    {
-      srm_xscale = srm_width/width;
-      RARCH_LOG("[CRT]: Super resolution detected. Fractal scaling check X:%f Y:%d \n", srm_xscale, (int)srm_yscale);
+      srm_xscale = (float)srm_width/width;
+      RARCH_LOG("[CRT]: Super resolution detected. Fractal scaling @ X:%f Y:%d \n", srm_xscale, (int)srm_yscale);
    }
-   if (srm_isstretched && srm_width > 0 ){
-      srm_xscale = srm_width/width;
-      srm_yscale = srm_height/height;
-      RARCH_LOG("[CRT]: Resolution is stretched. Fratcal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
+   else if (srm_isstretched && srm_width > 0 ){
+      srm_xscale = (float)srm_width/width;
+      srm_yscale = (float)srm_height/height;
+      RARCH_LOG("[CRT]: Resolution is stretched. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
    }
+   else
+      RARCH_LOG("[CRT]: SR integer scaled  X:%d Y:%d \n",srm.x_scale, srm.y_scale);
 
    scaled_width = roundf(patched_width*srm_xscale);
    scaled_height = roundf(patched_height*srm_yscale);
@@ -258,9 +260,6 @@ static void switch_res_crt(
       p_switch->sr_core_hz = srm.refresh;
 
       set_aspect(p_switch, w , h, srm.width, srm.height, (float)srm.x_scale, (float)srm.y_scale, srm.is_stretched);
-      
-      if (!srm.is_stretched)
-          RARCH_LOG("[CRT]: SR scaled  X:%d Y:%d \n",srm.x_scale, srm.y_scale);
 
    }else {
       set_aspect(p_switch, width , height, width, height ,(float)1,(float)1, false);
@@ -391,7 +390,7 @@ void crt_switch_res_core(
       /* Detect resolution change and switch */
       if (crt_check_for_changes(p_switch))
       {
-         RARCH_LOG("[CRT]: Requested Reolution: %dx%d@%f \n", native_width, height, hz);
+         RARCH_LOG("[CRT]: Requested Resolution: %dx%d@%f \n", native_width, height, hz);
          #if defined(HAVE_VIDEOCORE)
          crt_rpi_switch(p_switch, width, height, hz, 0, native_width);
          #else
