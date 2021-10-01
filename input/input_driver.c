@@ -34,6 +34,10 @@
 #include <net/net_socket.h>
 #endif
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 #include "../command.h"
 #include "../config.def.keybinds.h"
 #include "../driver.h"
@@ -42,11 +46,14 @@
 #include "../configuration.h"
 #include "../list_special.h"
 #include "../performance_counters.h"
+#include "../tasks/tasks_internal.h"
 
 #define HOLD_BTN_DELAY_SEC 2
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
+
+#define INPUT_REMOTE_KEY_PRESSED(input_st, key, port) (input_st->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 
 /**************************************/
 
@@ -3181,4 +3188,515 @@ void input_game_focus_free(void)
 
    game_focus_st->enabled        = false;
    game_focus_st->core_requested = false;
+}
+
+#ifdef HAVE_OVERLAY
+void input_overlay_deinit(void)
+{
+   input_overlay_free(input_driver_st.overlay_ptr);
+   input_driver_st.overlay_ptr = NULL;
+}
+
+void input_overlay_set_visibility(int overlay_idx,
+      enum overlay_visibility vis)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t      *ol       = input_st->overlay_ptr;
+
+   if (!input_st->overlay_visibility)
+   {
+      unsigned i;
+      input_st->overlay_visibility = (enum overlay_visibility *)calloc(
+            MAX_VISIBILITY, sizeof(enum overlay_visibility));
+
+      for (i = 0; i < MAX_VISIBILITY; i++)
+         input_st->overlay_visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
+   }
+
+   input_st->overlay_visibility[overlay_idx] = vis;
+
+   if (!ol)
+      return;
+   if (vis == OVERLAY_VISIBILITY_HIDDEN)
+      ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
+}
+
+void input_overlay_loaded(retro_task_t *task,
+      void *task_data, void *user_data, const char *err);
+
+void input_overlay_init(void)
+{
+   settings_t *settings                     = config_get_ptr();
+   bool input_overlay_enable                = settings->bools.input_overlay_enable;
+   bool input_overlay_auto_scale            = settings->bools.input_overlay_auto_scale;
+   const char *path_overlay                 = settings->paths.path_overlay;
+   float overlay_opacity                    = settings->floats.input_overlay_opacity;
+   float overlay_scale_landscape            = settings->floats.input_overlay_scale_landscape;
+   float overlay_aspect_adjust_landscape    = settings->floats.input_overlay_aspect_adjust_landscape;
+   float overlay_x_separation_landscape     = settings->floats.input_overlay_x_separation_landscape;
+   float overlay_y_separation_landscape     = settings->floats.input_overlay_y_separation_landscape;
+   float overlay_x_offset_landscape         = settings->floats.input_overlay_x_offset_landscape;
+   float overlay_y_offset_landscape         = settings->floats.input_overlay_y_offset_landscape;
+   float overlay_scale_portrait             = settings->floats.input_overlay_scale_portrait;
+   float overlay_aspect_adjust_portrait     = settings->floats.input_overlay_aspect_adjust_portrait;
+   float overlay_x_separation_portrait      = settings->floats.input_overlay_x_separation_portrait;
+   float overlay_y_separation_portrait      = settings->floats.input_overlay_y_separation_portrait;
+   float overlay_x_offset_portrait          = settings->floats.input_overlay_x_offset_portrait;
+   float overlay_y_offset_portrait          = settings->floats.input_overlay_y_offset_portrait;
+   float overlay_touch_scale                = (float)settings->uints.input_touch_scale;
+
+   bool load_enabled                        = input_overlay_enable;
+#ifdef HAVE_MENU
+   bool overlay_hide_in_menu                = settings->bools.input_overlay_hide_in_menu;
+#else
+   bool overlay_hide_in_menu                = false;
+#endif
+   bool overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
+#if defined(GEKKO)
+   /* Avoid a crash at startup or even when toggling overlay in rgui */
+   uint64_t memory_free                     = frontend_driver_get_free_memory();
+   if (memory_free < (3 * 1024 * 1024))
+      return;
+#endif
+
+   input_overlay_deinit();
+
+#ifdef HAVE_MENU
+   /* Cancel load if 'hide_in_menu' is enabled and
+    * menu is currently active */
+   if (overlay_hide_in_menu)
+      load_enabled = load_enabled && !menu_state_get_ptr()->alive;
+#endif
+
+   /* Cancel load if 'hide_when_gamepad_connected' is
+    * enabled and a gamepad is currently connected */
+   if (overlay_hide_when_gamepad_connected)
+      load_enabled = load_enabled && (input_config_get_device_name(0) == NULL);
+
+   if (load_enabled)
+   {
+      overlay_layout_desc_t layout_desc;
+
+      layout_desc.scale_landscape         = overlay_scale_landscape;
+      layout_desc.aspect_adjust_landscape = overlay_aspect_adjust_landscape;
+      layout_desc.x_separation_landscape  = overlay_x_separation_landscape;
+      layout_desc.y_separation_landscape  = overlay_y_separation_landscape;
+      layout_desc.x_offset_landscape      = overlay_x_offset_landscape;
+      layout_desc.y_offset_landscape      = overlay_y_offset_landscape;
+      layout_desc.scale_portrait          = overlay_scale_portrait;
+      layout_desc.aspect_adjust_portrait  = overlay_aspect_adjust_portrait;
+      layout_desc.x_separation_portrait   = overlay_x_separation_portrait;
+      layout_desc.y_separation_portrait   = overlay_y_separation_portrait;
+      layout_desc.x_offset_portrait       = overlay_x_offset_portrait;
+      layout_desc.y_offset_portrait       = overlay_y_offset_portrait;
+      layout_desc.touch_scale             = overlay_touch_scale;
+      layout_desc.auto_scale              = input_overlay_auto_scale;
+
+      task_push_overlay_load_default(input_overlay_loaded,
+            path_overlay,
+            overlay_hide_in_menu,
+            overlay_hide_when_gamepad_connected,
+            input_overlay_enable,
+            overlay_opacity,
+            &layout_desc,
+            NULL);
+   }
+}
+#endif
+
+void set_connection_listener(pad_connection_listener_t *listener)
+{
+   input_driver_st.pad_connection_listener = listener;
+}
+
+void input_pad_connect(unsigned port, input_device_driver_t *driver)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (port >= MAX_USERS || !driver)
+   {
+      RARCH_ERR("[Input]: input_pad_connect: bad parameters\n");
+      return;
+   }
+
+   if (input_st->pad_connection_listener)
+      input_st->pad_connection_listener->connected(port, driver);
+
+   input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
+          port, 0, 0);
+}
+
+bool input_keys_pressed_other_sources(
+      input_driver_state_t *input_st,
+      unsigned i,
+      input_bits_t* p_new_state)
+{
+#ifdef HAVE_COMMAND
+   int j;
+   for (j = 0; j < ARRAY_SIZE(input_st->command); j++)
+      if ((i < RARCH_BIND_LIST_END) && input_st->command[j]
+         && input_st->command[j]->state[i])
+         return true;
+#endif
+
+#ifdef HAVE_OVERLAY
+   if (               input_st->overlay_ptr &&
+         ((BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, i))))
+      return true;
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+   /* Only process key presses related to game input if using Remote RetroPad */
+   if (i < RARCH_CUSTOM_BIND_LIST_END
+         && input_st->remote
+         && INPUT_REMOTE_KEY_PRESSED(input_st, i, 0))
+      return true;
+#endif
+
+   return false;
+}
+
+int16_t input_state_device(
+      input_driver_state_t *input_st,
+      settings_t *settings,
+      input_mapper_t *handle,
+      unsigned input_analog_dpad_mode,
+      int16_t ret,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id,
+      bool button_mask)
+{
+   int16_t res  = 0;
+
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+
+         if (id < RARCH_FIRST_META_KEY)
+         {
+#ifdef HAVE_NETWORKGAMEPAD
+            /* Don't process binds if input is coming from Remote RetroPad */
+            if (     input_st->remote
+                  && INPUT_REMOTE_KEY_PRESSED(input_st, id, port))
+               res |= 1;
+            else
+#endif
+            {
+               bool bind_valid       = input_st->libretro_input_binds[port]
+                  && input_st->libretro_input_binds[port][id].valid;
+               unsigned remap_button = settings->uints.input_remap_ids[port][id];
+
+               /* TODO/FIXME: What on earth is this code doing...? */
+               if (!
+                     (      bind_valid
+                            && id != remap_button
+                     )
+                  )
+               {
+                  if (button_mask)
+                  {
+                     if (ret & (1 << id))
+                        res |= (1 << id);
+                  }
+                  else
+                     res = ret;
+
+               }
+
+               if (BIT256_GET(handle->buttons[port], id))
+                  res = 1;
+
+#ifdef HAVE_OVERLAY
+               /* Check if overlay is active and button
+                * corresponding to 'id' has been pressed */
+               if ((port == 0) &&
+                   input_st->overlay_ptr &&
+                   input_st->overlay_ptr->alive &&
+                   BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, id))
+               {
+#ifdef HAVE_MENU
+                  bool menu_driver_alive        = menu_state_get_ptr()->alive;
+#else
+                  bool menu_driver_alive        = false;
+#endif
+                  bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
+
+                  /* This button has already been processed
+                   * inside input_driver_poll() if all the
+                   * following are true:
+                   * > Menu driver is not running
+                   * > Input remaps are enabled
+                   * > 'id' is not equal to remapped button index
+                   * If these conditions are met, input here
+                   * is ignored */
+                  if ((menu_driver_alive || !input_remap_binds_enable) ||
+                      (id == remap_button))
+                     res |= 1;
+               }
+#endif
+            }
+
+            /* Don't allow turbo for D-pad. */
+            if (     (id  < RETRO_DEVICE_ID_JOYPAD_UP)    ||
+                  (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT) &&
+                       (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
+            {
+               /*
+                * Apply turbo button if activated.
+                */
+               unsigned turbo_mode = settings->uints.input_turbo_mode;
+
+               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC)
+               {
+                  /* Pressing turbo button toggles turbo mode on or off.
+                   * Holding the button will
+                   * pass through, else the pressed state will be modulated by a
+                   * periodic pulse defined by the configured duty cycle.
+                   */
+
+                  /* Avoid detecting the turbo button being held as multiple toggles */
+                  if (!input_st->turbo_btns.frame_enable[port])
+                     input_st->turbo_btns.turbo_pressed[port] &= ~(1 << 31);
+                  else if (input_st->turbo_btns.turbo_pressed[port]>=0)
+                  {
+                     input_st->turbo_btns.turbo_pressed[port] |= (1 << 31);
+                     /* Toggle turbo for selected buttons. */
+                     if (input_st->turbo_btns.enable[port]
+                           != (1 << settings->uints.input_turbo_default_button))
+                     {
+                        static const int button_map[]={
+                           RETRO_DEVICE_ID_JOYPAD_B,
+                           RETRO_DEVICE_ID_JOYPAD_Y,
+                           RETRO_DEVICE_ID_JOYPAD_A,
+                           RETRO_DEVICE_ID_JOYPAD_X,
+                           RETRO_DEVICE_ID_JOYPAD_L,
+                           RETRO_DEVICE_ID_JOYPAD_R,
+                           RETRO_DEVICE_ID_JOYPAD_L2,
+                           RETRO_DEVICE_ID_JOYPAD_R2,
+                           RETRO_DEVICE_ID_JOYPAD_L3,
+                           RETRO_DEVICE_ID_JOYPAD_R3};
+                        input_st->turbo_btns.enable[port] = 1 << button_map[
+                           MIN(
+                                 ARRAY_SIZE(button_map) - 1,
+                                 settings->uints.input_turbo_default_button)];
+                     }
+                     input_st->turbo_btns.mode1_enable[port] ^= 1;
+                  }
+
+                  if (input_st->turbo_btns.turbo_pressed[port] & (1 << 31))
+                  {
+                     /* Avoid detecting buttons being held as multiple toggles */
+                     if (!res)
+                        input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
+                     else if (!(input_st->turbo_btns.turbo_pressed[port] & (1 << id)) &&
+                           turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON)
+                     {
+                        uint16_t enable_new;
+                        input_st->turbo_btns.turbo_pressed[port] |= 1 << id;
+                        /* Toggle turbo for pressed button but make
+                         * sure at least one button has turbo */
+                        enable_new = input_st->turbo_btns.enable[port] ^ (1 << id);
+                        if (enable_new)
+                           input_st->turbo_btns.enable[port] = enable_new;
+                     }
+                  }
+                  else if (turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD &&
+                        input_st->turbo_btns.enable[port] &&
+                        input_st->turbo_btns.mode1_enable[port])
+                  {
+                     /* Hold mode stops turbo on release */
+                     input_st->turbo_btns.mode1_enable[port] = 0;
+                  }
+
+                  if (!res && input_st->turbo_btns.mode1_enable[port] &&
+                        input_st->turbo_btns.enable[port] & (1 << id))
+                  {
+                     /* if turbo button is enabled for this key ID */
+                     res = ((   input_st->turbo_btns.count
+                              % settings->uints.input_turbo_period)
+                           < settings->uints.input_turbo_duty_cycle);
+                  }
+               }
+               else
+               {
+                  /* If turbo button is held, all buttons pressed except
+                   * for D-pad will go into a turbo mode. Until the button is
+                   * released again, the input state will be modulated by a
+                   * periodic pulse defined by the configured duty cycle.
+                   */
+                  if (res)
+                  {
+                     if (input_st->turbo_btns.frame_enable[port])
+                        input_st->turbo_btns.enable[port] |= (1 << id);
+
+                     if (input_st->turbo_btns.enable[port] & (1 << id))
+                        /* if turbo button is enabled for this key ID */
+                        res = ((input_st->turbo_btns.count
+                                 % settings->uints.input_turbo_period)
+                              < settings->uints.input_turbo_duty_cycle);
+                  }
+                  else
+                     input_st->turbo_btns.enable[port] &= ~(1 << id);
+               }
+            }
+         }
+
+         break;
+
+
+      case RETRO_DEVICE_KEYBOARD:
+
+         res = ret;
+
+         if (id < RETROK_LAST)
+         {
+#ifdef HAVE_OVERLAY
+            if (port == 0)
+            {
+               if (input_st->overlay_ptr && input_st->overlay_ptr->alive)
+               {
+                  input_overlay_state_t
+                     *ol_state          = &input_st->overlay_ptr->overlay_state;
+
+                  if (OVERLAY_GET_KEY(ol_state, id))
+                     res               |= 1;
+               }
+            }
+#endif
+            if (MAPPER_GET_KEY(handle, id))
+               res |= 1;
+         }
+
+         break;
+
+
+      case RETRO_DEVICE_ANALOG:
+         {
+#if defined(HAVE_NETWORKGAMEPAD) || defined(HAVE_OVERLAY)
+#ifdef HAVE_NETWORKGAMEPAD
+            input_remote_state_t
+               *input_state         = &input_st->remote_st_ptr;
+
+#endif
+            unsigned base           = (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+               ? 2 : 0;
+            if (id == RETRO_DEVICE_ID_ANALOG_Y)
+               base += 1;
+#ifdef HAVE_NETWORKGAMEPAD
+            if (     input_st->remote
+                  && input_state && input_state->analog[base][port])
+               res          = input_state->analog[base][port];
+            else
+#endif
+#endif
+            {
+               if (id < RARCH_FIRST_META_KEY)
+               {
+                  bool bind_valid         = input_st->libretro_input_binds[port]
+                     && input_st->libretro_input_binds[port][id].valid;
+
+                  if (bind_valid)
+                  {
+                     /* reset_state - used to reset input state of a button
+                      * when the gamepad mapper is in action for that button*/
+                     bool reset_state        = false;
+                     if (idx < 2 && id < 2)
+                     {
+                        unsigned offset = RARCH_FIRST_CUSTOM_BIND +
+                           (idx * 4) + (id * 2);
+
+                        if (settings->uints.input_remap_ids[port][offset] != offset)
+                           reset_state = true;
+                        else if (settings->uints.input_remap_ids[port][offset+1] != (offset+1))
+                           reset_state = true;
+                     }
+
+                     if (reset_state)
+                        res = 0;
+                     else
+                     {
+                        res = ret;
+
+#ifdef HAVE_OVERLAY
+                        if (input_st->overlay_ptr &&
+                            input_st->overlay_ptr->alive &&
+                            (port == 0) &&
+                            !(((input_analog_dpad_mode == ANALOG_DPAD_LSTICK) &&
+                                 (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)) ||
+                             ((input_analog_dpad_mode == ANALOG_DPAD_RSTICK) &&
+                                 (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))))
+                        {
+                           input_overlay_state_t *ol_state =
+                              &input_st->overlay_ptr->overlay_state;
+                           int16_t ol_analog               =
+                                 ol_state->analog[base];
+
+                           /* Analog values are an integer corresponding
+                            * to the extent of the analog motion; these
+                            * cannot be OR'd together, we must instead
+                            * keep the value with the largest magnitude */
+                           if (ol_analog)
+                           {
+                              if (res == 0)
+                                 res = ol_analog;
+                              else
+                              {
+                                 int16_t ol_analog_abs = (ol_analog >= 0) ?
+                                       ol_analog : -ol_analog;
+                                 int16_t res_abs       = (res >= 0) ?
+                                       res : -res;
+
+                                 res = (ol_analog_abs > res_abs) ?
+                                       ol_analog : res;
+                              }
+                           }
+                        }
+#endif
+                     }
+                  }
+               }
+            }
+
+            if (idx < 2 && id < 2)
+            {
+               unsigned offset = 0 + (idx * 4) + (id * 2);
+               int        val1 = handle->analog_value[port][offset];
+               int        val2 = handle->analog_value[port][offset+1];
+
+               /* OR'ing these analog values is 100% incorrect,
+                * but I have no idea what this code is supposed
+                * to be doing (val1 and val2 always seem to be
+                * zero), so I will leave it alone... */
+               if (val1)
+                  res          |= val1;
+               else if (val2)
+                  res          |= val2;
+            }
+         }
+         break;
+
+      case RETRO_DEVICE_MOUSE:
+      case RETRO_DEVICE_LIGHTGUN:
+      case RETRO_DEVICE_POINTER:
+
+         if (id < RARCH_FIRST_META_KEY)
+         {
+            bool bind_valid = input_st->libretro_input_binds[port]
+               && input_st->libretro_input_binds[port][id].valid;
+
+            if (bind_valid)
+            {
+               if (button_mask)
+               {
+                  if (ret & (1 << id))
+                     res |= (1 << id);
+               }
+               else
+                  res = ret;
+            }
+         }
+
+         break;
+   }
+
+   return res;
 }

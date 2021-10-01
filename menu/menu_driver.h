@@ -866,6 +866,31 @@ bool menu_input_key_bind_iterate(
       menu_input_ctx_bind_t *bind,
       retro_time_t current_time);
 
+/*
+ * This function gets called in order to process all input events
+ * for the current frame.
+ *
+ * Sends input code to menu for one frame.
+ *
+ * It uses as input the local variables 'input' and 'trigger_input'.
+ *
+ * Mouse and touch input events get processed inside this function.
+ *
+ * NOTE: 'input' and 'trigger_input' is sourced from the keyboard and/or
+ * the gamepad. It does not contain input state derived from the mouse
+ * and/or touch - this gets dealt with separately within this function.
+ *
+ * TODO/FIXME - maybe needs to be overhauled so we can send multiple
+ * events per frame if we want to, and we shouldn't send the
+ * entire button state either but do a separate event per button
+ * state.
+ */
+unsigned menu_event(
+      settings_t *settings,
+      input_bits_t *p_input,
+      input_bits_t *p_trigger_input,
+      bool display_kb);
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 RETRO_END_DECLS

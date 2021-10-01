@@ -201,10 +201,6 @@
       old_pressed3                              = pressed3; \
    }
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#define INPUT_REMOTE_KEY_PRESSED(p_rarch, key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
-#endif
-
 /**
  * check_input_driver_block_hotkey:
  *
@@ -228,10 +224,6 @@
 )
 
 #define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
-#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-#define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
 #define CDN_URL "https://cdn.discordapp.com/avatars"
 
@@ -826,9 +818,6 @@ struct rarch_state
    uint64_t video_driver_frame_time_count;
    uint64_t video_driver_frame_count;
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
-#endif
 
    struct string_list *subsystem_fullpaths;
    struct string_list *audio_driver_devices_list;
@@ -906,13 +895,6 @@ struct rarch_state
    void *audio_driver_resampler_data;
    const audio_driver_t *current_audio;
    void *audio_driver_context_audio_data;
-#ifdef HAVE_OVERLAY
-   input_overlay_t *overlay_ptr;
-#endif
-
-   pad_connection_listener_t *pad_connection_listener;
-
-
 
 #ifdef HAVE_HID
    const void *hid_data;
@@ -1051,9 +1033,6 @@ struct rarch_state
    unsigned frame_cache_height;
    unsigned video_driver_width;
    unsigned video_driver_height;
-#ifdef HAVE_ACCESSIBILITY
-   unsigned gamepad_input_override;
-#endif
 #ifdef HAVE_NETWORKING
    unsigned server_port_deferred;
 #endif
@@ -1089,9 +1068,6 @@ struct rarch_state
 #endif
    enum rarch_display_type video_driver_display_type;
    enum poll_type_override_t core_poll_type_override;
-#ifdef HAVE_OVERLAY
-   enum overlay_visibility *overlay_visibility;
-#endif
    enum resampler_quality audio_driver_resampler_quality;
 
    /**

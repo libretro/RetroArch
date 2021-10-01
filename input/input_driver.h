@@ -94,6 +94,9 @@
 #define DEFAULT_MAX_PADS 16
 #endif /* defined(ANDROID) */
 
+#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+#define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
 RETRO_BEGIN_DECLS
 
@@ -363,6 +366,10 @@ typedef struct
     */
    rarch_timer_t combo_timers[INPUT_COMBO_LAST];
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
+#endif
+
    /* pointers */
    void *keyboard_press_data;
    input_keyboard_line_t keyboard_line;                  /* ptr alignment */
@@ -375,9 +382,14 @@ typedef struct
 #ifdef HAVE_COMMAND
    command_t *command[MAX_CMD_DRIVERS];
 #endif
+#ifdef HAVE_OVERLAY
+   input_overlay_t *overlay_ptr;
+   enum overlay_visibility *overlay_visibility;
+#endif
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
+   pad_connection_listener_t *pad_connection_listener;
    char    *osk_grid[45];                                /* ptr alignment */ 
 
    int osk_ptr;
@@ -389,6 +401,9 @@ typedef struct
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
    unsigned input_hotkey_block_counter;
+#ifdef HAVE_ACCESSIBILITY
+   unsigned gamepad_input_override;
+#endif
 
    enum osk_type osk_idx;
 
@@ -932,7 +947,29 @@ void input_poll_overlay(
       float opacity,
       unsigned analog_dpad_mode,
       float axis_threshold);
+
+void input_overlay_deinit(void);
+
+void input_overlay_set_visibility(int overlay_idx,
+      enum overlay_visibility vis);
+
+void input_overlay_init(void);
 #endif
+
+bool input_keys_pressed_other_sources(
+      input_driver_state_t *input_st,
+      unsigned i,
+      input_bits_t* p_new_state);
+
+int16_t input_state_device(
+      input_driver_state_t *input_st,
+      settings_t *settings,
+      input_mapper_t *handle,
+      unsigned input_analog_dpad_mode,
+      int16_t ret,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id,
+      bool button_mask);
 
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];

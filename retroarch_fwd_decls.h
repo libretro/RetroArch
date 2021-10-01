@@ -83,11 +83,6 @@ static bool recording_init(settings_t *settings,
       struct rarch_state *p_rarch);
 static bool recording_deinit(struct rarch_state *p_rarch);
 
-#ifdef HAVE_OVERLAY
-static void retroarch_overlay_init(struct rarch_state *p_rarch);
-static void retroarch_overlay_deinit(struct rarch_state *p_rarch);
-#endif
-
 #ifdef HAVE_AUDIOMIXER
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason);
