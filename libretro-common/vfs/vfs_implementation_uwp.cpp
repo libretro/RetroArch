@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <wrl.h>
 #include <wrl/implements.h>
-#include <windows.storage.streams.h>
 #include <robuffer.h>
 #include <collection.h>
 #include <functional>
@@ -35,12 +34,6 @@
 #include <AclAPI.h>
 #include <io.h>
 #include <fcntl.h>
-
-using namespace Windows::Foundation;
-using namespace Windows::Foundation::Collections;
-using namespace Windows::Storage;
-using namespace Windows::Storage::Streams;
-using namespace Windows::Storage::FileProperties;
 
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
@@ -58,7 +51,6 @@ using namespace Windows::Storage::FileProperties;
 #include <string/stdstring.h>
 #include <retro_environment.h>
 #include <uwp/uwp_async.h>
-#include <uwp/uwp_file_handle_access.h>
 #include <uwp/std_filesystem_compat.h>
 
 // define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING to silence warnings
@@ -84,241 +76,6 @@ namespace
    }
 }
 
-namespace
-{
-   /* Damn you, UWP, why no functions for that either */
-   template<typename T>
-   concurrency::task<T^> GetItemFromPathAsync(Platform::String^ path)
-   {
-      static_assert(false, "StorageFile and StorageFolder only");
-   }
-   template<>
-   concurrency::task<StorageFile^> GetItemFromPathAsync(Platform::String^ path)
-   {
-      return concurrency::create_task(StorageFile::GetFileFromPathAsync(path));
-   }
-   template<>
-   concurrency::task<StorageFolder^> GetItemFromPathAsync(Platform::String^ path)
-   {
-      return concurrency::create_task(StorageFolder::GetFolderFromPathAsync(path));
-   }
-
-   template<typename T>
-   concurrency::task<T^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
-   {
-      static_assert(false, "StorageFile and StorageFolder only");
-   }
-   template<>
-   concurrency::task<StorageFile^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
-   {
-      if (path->IsEmpty())
-         retro_assert(false); /* Attempt to read a folder as a file - this really should have been caught earlier */
-      return concurrency::create_task(folder->GetFileAsync(path));
-   }
-   template<>
-   concurrency::task<StorageFolder^> GetItemInFolderFromPathAsync(StorageFolder^ folder, Platform::String^ path)
-   {
-      if (path->IsEmpty())
-         return concurrency::create_task(concurrency::create_async([folder]() { return folder; }));
-      return concurrency::create_task(folder->GetFolderAsync(path));
-   }
-}
-
-namespace
-{
-   /* A list of all StorageFolder objects returned using from the file picker */
-   Platform::Collections::Vector<StorageFolder^> accessible_directories;
-
-   concurrency::task<Platform::String^> TriggerPickerAddDialog()
-   {
-      auto folderPicker = ref new Windows::Storage::Pickers::FolderPicker();
-      folderPicker->SuggestedStartLocation = Windows::Storage::Pickers::PickerLocationId::Desktop;
-      folderPicker->FileTypeFilter->Append("*");
-
-      return concurrency::create_task(folderPicker->PickSingleFolderAsync()).then([](StorageFolder^ folder) {
-         if (folder == nullptr)
-            throw ref new Platform::Exception(E_ABORT, L"Operation cancelled by user");
-
-         /* TODO: check for duplicates */
-         accessible_directories.Append(folder);
-         return folder->Path;
-      });
-   }
-
-   template<typename T>
-   concurrency::task<T^> LocateStorageItem(Platform::String^ path)
-   {
-      /* Look for a matching directory we can use */
-      for each (StorageFolder^ folder in accessible_directories)
-      {
-         std::wstring file_path;
-         std::wstring folder_path = folder->Path->Data();
-         size_t folder_path_size  = folder_path.size();
-         /* Could be C:\ or C:\Users\somebody - remove the trailing slash to unify them */
-         if (folder_path[folder_path_size - 1] == '\\')
-            folder_path.erase(folder_path_size - 1);
-
-         file_path = path->Data();
-
-         if (file_path.find(folder_path) == 0)
-         {
-            /* Found a match */
-            file_path = file_path.length() > folder_path.length() 
-               ? file_path.substr(folder_path.length() + 1) 
-               : L"";
-            return concurrency::create_task(GetItemInFolderFromPathAsync<T>(folder, ref new Platform::String(file_path.data())));
-         }
-      }
-
-      /* No matches - try accessing directly, and fallback to user prompt */
-      return concurrency::create_task(GetItemFromPathAsync<T>(path)).then([&](concurrency::task<T^> item) {
-         try
-         {
-            T^ storageItem = item.get();
-            return concurrency::create_task(concurrency::create_async([storageItem]() { return storageItem; }));
-         }
-         catch (Platform::AccessDeniedException^ e)
-         {
-            //for some reason the path is inaccessible from within here???
-            Windows::UI::Popups::MessageDialog^ dialog = ref new Windows::UI::Popups::MessageDialog("Path is not currently accessible. Please open any containing directory to access it.");
-            dialog->Commands->Append(ref new Windows::UI::Popups::UICommand("Open file picker"));
-            dialog->Commands->Append(ref new Windows::UI::Popups::UICommand("Cancel"));
-            return concurrency::create_task(dialog->ShowAsync()).then([path](Windows::UI::Popups::IUICommand^ cmd) {
-               if (cmd->Label == "Open file picker")
-               {
-                  return TriggerPickerAddDialog().then([path](Platform::String^ added_path) {
-                     // Retry
-                     return LocateStorageItem<T>(path);
-                  });
-               }
-               else
-               {
-                  throw ref new Platform::Exception(E_ABORT, L"Operation cancelled by user");
-               }
-            });
-         }
-      });
-   }
-
-   IStorageItem^ LocateStorageFileOrFolder(Platform::String^ path)
-   {
-      if (!path || path->IsEmpty())
-         return nullptr;
-
-      if (*(path->End() - 1) == '\\')
-      {
-         /* Ends with a slash, so it's definitely a directory */
-         return RunAsyncAndCatchErrors<StorageFolder^>([&]() {
-            return concurrency::create_task(LocateStorageItem<StorageFolder>(path));
-         }, nullptr);
-      }
-      else
-      {
-         /* No final slash - probably a file (since RetroArch usually slash-terminates dirs), but there is still a chance it's a directory */
-         IStorageItem^ item;
-         item = RunAsyncAndCatchErrors<StorageFile^>([&]() {
-            return concurrency::create_task(LocateStorageItem<StorageFile>(path));
-         }, nullptr);
-         if (!item)
-         {
-            item = RunAsyncAndCatchErrors<StorageFolder^>([&]() {
-               return concurrency::create_task(LocateStorageItem<StorageFolder>(path));
-            }, nullptr);
-         }
-         return item;
-      }
-   }
-}
-
-
-/* This is some pure magic and I have absolutely no idea how it works */
-/* Wraps a raw buffer into a WinRT object */
-/* https://stackoverflow.com/questions/10520335/how-to-wrap-a-char-buffer-in-a-winrt-ibuffer-in-c */
-class NativeBuffer :
-   public Microsoft::WRL::RuntimeClass<Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::RuntimeClassType::WinRtClassicComMix>,
-   ABI::Windows::Storage::Streams::IBuffer,
-   Windows::Storage::Streams::IBufferByteAccess>
-{
-public:
-   virtual ~NativeBuffer()
-   {
-   }
-
-   HRESULT __stdcall RuntimeClassInitialize(
-         byte *buffer, uint32_t capacity, uint32_t length)
-   {
-      m_buffer = buffer;
-      m_capacity = capacity;
-      m_length = length;
-      return S_OK;
-   }
-
-   HRESULT __stdcall Buffer(byte **value)
-   {
-      if (m_buffer == nullptr)
-         return E_INVALIDARG;
-      *value = m_buffer;
-      return S_OK;
-   }
-
-   HRESULT __stdcall get_Capacity(uint32_t *value)
-   {
-      *value = m_capacity;
-      return S_OK;
-   }
-
-   HRESULT __stdcall get_Length(uint32_t *value)
-   {
-      *value = m_length;
-      return S_OK;
-   }
-
-   HRESULT __stdcall put_Length(uint32_t value)
-   {
-      if (value > m_capacity)
-         return E_INVALIDARG;
-      m_length = value;
-      return S_OK;
-   }
-
-private:
-   byte *m_buffer;
-   uint32_t m_capacity;
-   uint32_t m_length;
-};
-
-IBuffer^ CreateNativeBuffer(void* buf, uint32_t capacity, uint32_t length)
-{
-   Microsoft::WRL::ComPtr<NativeBuffer> nativeBuffer;
-   Microsoft::WRL::Details::MakeAndInitialize<NativeBuffer>(&nativeBuffer, (byte *)buf, capacity, length);
-   auto iinspectable = (IInspectable *)reinterpret_cast<IInspectable *>(nativeBuffer.Get());
-   IBuffer ^buffer = reinterpret_cast<IBuffer ^>(iinspectable);
-   return buffer;
-}
-
-/* Get a Win32 file handle out of IStorageFile */
-/* https://stackoverflow.com/questions/42799235/how-can-i-get-a-win32-handle-for-a-storagefile-or-storagefolder-in-uwp */
-HRESULT GetHandleFromStorageFile(Windows::Storage::StorageFile^ file, HANDLE* handle, HANDLE_ACCESS_OPTIONS accessMode)
-{
-   Microsoft::WRL::ComPtr<IUnknown> abiPointer(reinterpret_cast<IUnknown*>(file));
-   Microsoft::WRL::ComPtr<IStorageItemHandleAccess> handleAccess;
-   if (SUCCEEDED(abiPointer.As(&handleAccess)))
-   {
-      HANDLE hFile = INVALID_HANDLE_VALUE;
-
-      if (SUCCEEDED(handleAccess->Create(accessMode,
-                  HANDLE_SHARING_OPTIONS::HSO_SHARE_READ,
-                  HANDLE_OPTIONS::HO_NONE,
-                  nullptr,
-                  &hFile)))
-      {
-         *handle = hFile;
-         return S_OK;
-      }
-   }
-
-   return E_FAIL;
-}
 
 
 #ifdef VFS_FRONTEND
@@ -1137,13 +894,4 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir* rdir)
         free(rdir->orig_path);
     free(rdir);
     return 0;
-}
-
-char* uwp_trigger_picker(void)
-{
-   return RunAsyncAndCatchErrors<char*>([&]() {
-      return TriggerPickerAddDialog().then([](Platform::String^ path) {
-         return utf16_to_utf8_string_alloc(path->Data());
-      });
-   }, NULL);
 }
