@@ -19,7 +19,6 @@
 
 #include "hid_types.h"
 #include "input.h"
-#include "../../common/hid/hid_device_driver.h"
 
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
@@ -52,8 +51,7 @@ struct wiiu_hid {
  */
 struct wiiu_adapter {
    wiiu_adapter_t *next;
-   hid_device_t *driver;
-   void *driver_handle;
+   int pad;
    wiiu_hid_t *hid;
    uint16_t vendor_id;
    uint16_t product_id;
@@ -64,7 +62,7 @@ struct wiiu_adapter {
    int32_t tx_size;
    uint32_t handle;
    uint8_t interface_index;
-   uint8_t device_name[32];
+   char device_name[32];
    bool connected;
 };
 

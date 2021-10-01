@@ -21,148 +21,205 @@
 #include <boolean.h>
 #include "joypad_connection.h"
 #include "../input_defines.h"
-#include "../common/hid/hid_device_driver.h"
-
-struct hidpad_ps3_data
-{
-   struct pad_connection* connection;
-   hid_driver_t *driver;
-   uint32_t slot;
-   uint32_t buttons;
-   uint16_t motors[2];
-   uint8_t data[512];
-   bool have_led;
-};
-
-/*
- * TODO: give these more meaningful names.
- */
+#include "verbosity.h"
 
 #define DS3_ACTIVATION_REPORT_ID 0xf4
 #define DS3_RUMBLE_REPORT_ID     0x01
 
-static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
-{
-   /* TODO: Can this be modified to turn off motion tracking? */
-   static uint8_t report_buffer[] = {
-      0x52, 0x01,
-      0x00, 0xFF, 0x00, 0xFF, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0xff, 0x27, 0x10, 0x00, 0x32,
-      0xff, 0x27, 0x10, 0x00, 0x32,
-      0xff, 0x27, 0x10, 0x00, 0x32,
-      0xff, 0x27, 0x10, 0x00, 0x32,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-   };
+typedef struct ds3_instance {
+   hid_driver_t *hid_driver;
+   void *handle;
+   int slot;
+   bool led_set;
+   uint32_t buttons;
+   int16_t analog_state[3][2];
+   uint16_t motors[2];
+   uint8_t data[64];
+} ds3_instance_t;
 
-   /* Turn on the appropriate LED */
-   report_buffer[11] = 1 << ((device->slot % 4) + 1);
-   /* Set rumble state */
-   report_buffer[4]  = device->motors[1] >> 8;
-   report_buffer[6]  = device->motors[0] >> 8;
-#ifdef HAVE_WIIUSB_HID
-   report_buffer[1]  = 0x03; /* send control message type */
-   device->driver->send_control(device->connection, &report_buffer[1], sizeof(report_buffer)-1);
-#elif defined(WIIU)
-   device->driver->set_report(device->connection,
-                              HID_REPORT_OUTPUT,
-                              DS3_RUMBLE_REPORT_ID,
-                              report_buffer+2,
-                              sizeof(report_buffer) - (2*sizeof(uint8_t)));
-#else
-   device->driver->send_control(device->connection, report_buffer, sizeof(report_buffer));
+static void ds3_update_pad_state(ds3_instance_t *instance);
+static void ds3_update_analog_state(ds3_instance_t *instance);
+
+static uint8_t ds3_activation_packet[] = {
+#if defined(IOS)
+  0x53, 0xF4,
+#elif defined(HAVE_WIIUSB_HID)
+  0x02,
 #endif
+  0x42, 0x0c, 0x00, 0x00
+};
+
+#if defined(WIIU)
+#define PACKET_OFFSET 2
+#elif defined(HAVE_WIIUSB_HID)
+#define PACKET_OFFSET 1
+#else
+#define PACKET_OFFSET 0
+#endif
+
+#define LED_OFFSET 11
+#define MOTOR1_OFFSET 4
+#define MOTOR2_OFFSET 6
+
+static uint8_t ds3_control_packet[] = {
+   0x52, 0x01,
+   0x00, 0xff, 0x00, 0xff, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00,
+   0xff, 0x27, 0x10, 0x00, 0x32,
+   0xff, 0x27, 0x10, 0x00, 0x32,
+   0xff, 0x27, 0x10, 0x00, 0x32,
+   0xff, 0x27, 0x10, 0x00, 0x32,
+   0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00
+};
+
+
+static int32_t ds3_send_control_packet(void *data, uint32_t slot, hid_driver_t *driver) {
+   int32_t result = 0;
+   uint8_t packet_buffer[64] = {0};
+   memcpy(packet_buffer, ds3_control_packet, sizeof(ds3_control_packet));
+
+   packet_buffer[LED_OFFSET] = 0;
+   packet_buffer[LED_OFFSET] = 1 << ((slot % 4) + 1);
+   packet_buffer[MOTOR1_OFFSET] = 0;
+   packet_buffer[MOTOR2_OFFSET] = 0;
+
+#if defined(HAVE_WIIUSB_HID)
+   packet_buffer[1] = 0x03;
+#endif
+
+#if defined(WIIU)   
+   result = driver->set_report(data, HID_REPORT_OUTPUT, DS3_RUMBLE_REPORT_ID, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
+#else
+   result = driver->send_control(data, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
+#endif /* WIIU */
+   return result;
 }
 
-static void* hidpad_ps3_init(void *data, uint32_t slot, hid_driver_t *driver)
+static int32_t ds3_send_activation_packet(void *data, uint32_t slot, hid_driver_t *driver) {
+   #ifdef WIIU
+   return driver->set_report(data, HID_REPORT_FEATURE, DS3_ACTIVATION_REPORT_ID, ds3_activation_packet, sizeof(ds3_activation_packet));
+   #else
+   return driver->send_control(data, ds3_activation_packet, sizeof(ds3_activation_packet));
+   #endif
+}
+
+static void *ds3_pad_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-#if defined(HAVE_WIIUSB_HID) || defined(WIIU)
-   /* Special command to enable Sixaxis, first byte defines the message type */
-   static uint8_t magic_data[]       = {0x02, 0x42, 0x0c, 0x00, 0x00};
-#elif defined(IOS)
-   /* Magic packet to start reports. */
-   static uint8_t magic_data[]       = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
-#endif
-   struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_ps3_data* device    = (struct hidpad_ps3_data*)
-      calloc(1, sizeof(struct hidpad_ps3_data));
+   ds3_instance_t *instance = (ds3_instance_t *)calloc(1, sizeof(ds3_instance_t));
+   int errors = 0;
 
-   if (!device)
-      return NULL;
+   driver->set_protocol(data, 1);
 
-   if (!connection)
+   if (ds3_send_control_packet(data, slot, driver) < 0)
+      errors++;
+
+   /* Sending activation packet.. */
+   if (ds3_send_activation_packet(data, slot, driver) < 0)
+      errors++;
+
+   if (errors)
+      goto error;
+
+   instance->hid_driver = driver;
+   instance->handle = data;
+   instance->slot = slot;
+   instance->led_set = true;
+
+   return instance;
+
+   error:
+   free(instance);
+   return NULL;
+}
+
+static void ds3_pad_deinit(void *data)
+{
+   ds3_instance_t *pad = (ds3_instance_t *)data;
+   if (pad)
+      free(pad);
+}
+
+static void ds3_get_buttons(void *data, input_bits_t *state)
+{
+   ds3_instance_t *pad = (ds3_instance_t *)data;
+
+   if (pad)
    {
-      free(device);
-      return NULL;
+      BITS_COPY16_PTR(state, pad->buttons);
+
+      if (pad->buttons & 0x10000)
+         BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
+   }
+   else
+   {
+      BIT256_CLEAR_ALL_PTR(state);
+   }
+}
+
+static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
+{
+   ds3_instance_t *instance = (ds3_instance_t *)data;
+   if(!instance) {
+      return;
    }
 
-   device->connection = connection;
-   device->slot       = slot;
-   device->driver     = driver;
+   if (!instance->led_set)
+   {
+      ds3_send_control_packet(instance->handle, instance->slot, instance->hid_driver);
+      instance->led_set = true;
+   }
 
-#if defined(IOS) || defined(HAVE_WIIUSB_HID)
-   device->driver->send_control(device->connection, magic_data, sizeof(magic_data));
-#endif
+   if (size > sizeof(instance->data))
+   {
+      RARCH_ERR("[ds3]: Expecting packet to be %d but was %d\n",
+         sizeof(instance->data), size);
+      return;
+   }
+   RARCH_LOG_BUFFER(packet, size);
 
-#ifdef WIIU
-   device->driver->set_protocol(device->connection, 1);
-   hidpad_ps3_send_control(device);
-   device->driver->set_report(device->connection,
-                              HID_REPORT_FEATURE,
-                              DS3_ACTIVATION_REPORT_ID,
-                              magic_data+1,
-                              (sizeof(magic_data) - sizeof(uint8_t)));
-#endif
-
-#ifndef HAVE_WIIUSB_HID
-   /* Without this, the digital buttons won't be reported. */
-   hidpad_ps3_send_control(device);
-#endif
-   return device;
+   memcpy(instance->data, packet, size);
+   ds3_update_pad_state(instance);
+   ds3_update_analog_state(instance);
 }
 
-static void hidpad_ps3_deinit(void *data)
+const char * ds3_get_name(void *data)
 {
-   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-
-   if (device)
-      free(device);
+	(void)data;
+	/* For now we return a single static name */
+	return "PLAYSTATION(R)3 Controller";
 }
 
-static void hidpad_ps3_get_buttons(void *data, input_bits_t *state)
-{
-	struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-	if ( device )
-	{
-		/* copy 32 bits : needed for PS button? */
-		BITS_COPY32_PTR(state, device->buttons);
-	}
-	else
-      BIT256_CLEAR_ALL_PTR(state);
-}
+static void ds3_set_rumble(void *data,
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
-static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
+static int16_t ds3_get_axis(void *data, unsigned axis)
 {
-   int val;
-   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
+   axis_data axis_data;
+   ds3_instance_t *pad = (ds3_instance_t *)data;
 
-   if (!device || axis >= 4)
+   gamepad_read_axis_data(axis, &axis_data);
+
+   if (!pad || axis_data.axis >= 4)
       return 0;
 
-   val = device->data[7 + axis];
-   val = (val << 8) - 0x8000;
-
-   if (abs(val) > 0x1000)
-      return val;
-   return 0;
+   return gamepad_get_axis_value(pad->analog_state, &axis_data);
 }
 
-static void hidpad_ps3_packet_handler(void *data,
-      uint8_t *packet, uint16_t size)
+static int32_t ds3_button(void *data, uint16_t joykey)
+{
+   ds3_instance_t *pad = (ds3_instance_t *)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
+}
+
+static void ds3_update_pad_state(ds3_instance_t *instance)
 {
    uint32_t i, pressed_keys;
+
    static const uint32_t button_mapping[17] =
    {
       RETRO_DEVICE_ID_JOYPAD_SELECT,
@@ -181,59 +238,42 @@ static void hidpad_ps3_packet_handler(void *data,
       RETRO_DEVICE_ID_JOYPAD_A,
       RETRO_DEVICE_ID_JOYPAD_B,
       RETRO_DEVICE_ID_JOYPAD_Y,
-      16 /* PS Button */
+      16 /* PS button */
    };
-   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
 
-   if (!device)
-      return;
+   instance->buttons = 0;
 
-   if (!device->have_led)
+   pressed_keys = instance->data[2]        | 
+                  (instance->data[3] << 8) |
+                  ((instance->data[4] & 0x01) << 16);
+
+   for (i = 0; i < 17; i++)
+     instance->buttons |= (pressed_keys & (1 << i)) ?
+        (1 << button_mapping[i]) : 0;
+}
+
+static void ds3_update_analog_state(ds3_instance_t *instance)
+{
+   int pad_axis;
+   int16_t interpolated;
+   unsigned stick, axis;
+
+   for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {
-      hidpad_ps3_send_control(device);
-      device->have_led = true;
+      axis         = pad_axis % 2 ? 0 : 1;
+      stick        = pad_axis / 2;
+      interpolated = instance->data[6+pad_axis];
+      instance->analog_state[stick][axis] = (interpolated - 128) * 256;
    }
-
-   memcpy(device->data, packet, size);
-
-   device->buttons     = 0;
-
-   pressed_keys        = device->data[3] | (device->data[4] << 8) |
-      ((device->data[5] & 1) << 16);
-
-   for (i = 0; i < 17; i ++)
-      device->buttons |= (pressed_keys & (1 << i)) ?
-         (1 << button_mapping[i]) : 0;
-}
-
-static void hidpad_ps3_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-   unsigned idx = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
-
-   if (!device)
-      return;
-   if (device->motors[idx] == strength)
-      return;
-
-   device->motors[idx] = strength;
-   hidpad_ps3_send_control(device);
-}
-
-const char * hidpad_ps3_get_name(void *data)
-{
-	(void)data;
-	/* For now we return a single static name */
-	return "PLAYSTATION(R)3 Controller";
 }
 
 pad_connection_interface_t pad_connection_ps3 = {
-   hidpad_ps3_init,
-   hidpad_ps3_deinit,
-   hidpad_ps3_packet_handler,
-   hidpad_ps3_set_rumble,
-   hidpad_ps3_get_buttons,
-   hidpad_ps3_get_axis,
-   hidpad_ps3_get_name,
+   ds3_pad_init,
+   ds3_pad_deinit,
+   ds3_packet_handler,
+   ds3_set_rumble,
+   ds3_get_buttons,
+   ds3_get_axis,
+   ds3_get_name,
+   ds3_button
 };

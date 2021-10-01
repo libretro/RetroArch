@@ -16,69 +16,28 @@
 
 #include "../../include/wiiu/input.h"
 
-static hidpad_driver_t instance;
-
-/* TODO/FIXME - static global variables */
-static bool hidpad_ready = false;
-
-static bool init_pad_list(unsigned slots)
-{
-   if (slots > MAX_USERS)
-      return false;
-
-   if (instance.pad_list)
-      return true;
-
-   instance.pad_list = pad_connection_init(slots);
-   if (!instance.pad_list)
-      return false;
-
-   instance.max_slot = slots;
-
-   return true;
-}
-
-static bool init_hid_driver(void)
-{
-   return init_pad_list(MAX_USERS);
-}
-
 static void hidpad_poll(void)
 {
-   if (hidpad_ready)
+   if (joypad_state.hid.ready)
       wiiu_hid.poll(hid_driver_get_data());
 }
 
 static void *hidpad_init(void *data)
 {
-   if(!init_hid_driver())
-   {
-      RARCH_ERR("Failed to initialize HID driver.\n");
-      return NULL;
-   }
-
    hidpad_poll();
-   hidpad_ready = true;
+   joypad_state.hid.ready = true;
 
    return (void*)-1;
 }
 
 static bool hidpad_query_pad(unsigned port)
 {
-   return hidpad_ready && port < MAX_USERS;
+   return joypad_state.hid.ready && port < MAX_USERS;
 }
 
 static void hidpad_destroy(void)
 {
-   hidpad_ready = false;
-
-   if(instance.pad_list) {
-      pad_connection_destroy(instance.pad_list);
-      instance.pad_list = NULL;
-   }
-
-   /* Wiping instance data.. */
-   memset(&instance, 0, sizeof(instance));
+   joypad_state.hid.ready = false;
 }
 
 static int32_t hidpad_button(unsigned port, uint16_t joykey)
@@ -126,11 +85,11 @@ static int16_t hidpad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN
-            && HID_BUTTON(port_idx, (uint16_t)joykey)
+            && wiiu_hid.button(hid_driver_get_data(), port_idx, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(HID_AXIS(port_idx, joyaxis)) 
+            ((float)abs(wiiu_hid.axis(hid_driver_get_data(), port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

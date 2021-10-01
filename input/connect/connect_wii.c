@@ -26,7 +26,6 @@
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
-#include "../common/hid/hid_device_driver.h"
 
 /* wiimote state flags*/
 #define WIIMOTE_STATE_DEV_FOUND              0x0001

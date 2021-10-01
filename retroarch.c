@@ -15434,7 +15434,7 @@ const char* config_get_joypad_driver_options(void)
 }
 
 #ifdef HAVE_HID
-const void *hid_driver_get_data(void)
+void *hid_driver_get_data(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->hid_data;

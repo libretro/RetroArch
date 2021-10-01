@@ -389,7 +389,6 @@ typedef struct
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
-   pad_connection_listener_t *pad_connection_listener;
    char    *osk_grid[45];                                /* ptr alignment */ 
 
    int osk_ptr;
@@ -588,7 +587,7 @@ const hid_driver_t *input_hid_init_first(void);
  * 
  * @return Pointer to hid_data struct
  **/
-const void *hid_driver_get_data(void);
+void *hid_driver_get_data(void);
 
 /**
  * This should be called after we've invoked free() on the HID driver; the
@@ -678,14 +677,6 @@ void input_config_set_device_name_index(unsigned port, unsigned name_index);
  * @param id The device type (RETRO_DEVICE_JOYPAD, RETRO_DEVICE_MOUSE, etc)
  */
 void input_config_set_device(unsigned port, unsigned id);
-
-/**
- * Registers a pad_connection_listener_interface with a function pointer that
- * is called when a joypad is connected. Only used by the wiiu_joypad driver.
- *
- * @param listener  a struct that implements pad_connection_listener_interface
- */
-void set_connection_listener(pad_connection_listener_t *listener);
 
 /* Clear input_device_info */
 void input_config_clear_device_name(unsigned port);
