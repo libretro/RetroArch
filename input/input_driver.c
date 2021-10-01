@@ -320,16 +320,6 @@ input_driver_state_t *input_state_get_ptr(void)
    return &input_driver_st;
 }
 
-int input_event_get_osk_ptr(void)
-{
-   return input_driver_st.osk_ptr;
-}
-
-char **input_event_get_osk_grid(void)
-{
-   return input_driver_st.osk_grid;
-}
-
 /**
  * Finds first suitable joypad driver and initializes. Used as a fallback by
  * input_joypad_init_driver when no matching driver is found.
