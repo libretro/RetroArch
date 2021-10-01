@@ -5623,3 +5623,85 @@ current_time;
 
    return false;
 }
+
+bool menu_input_dialog_get_display_kb(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+#ifdef HAVE_LIBNX
+   SwkbdConfig kbd;
+   Result rc;
+   /* Indicates that we are "typing" from the swkbd
+    * result to RetroArch with repeated calls to input_keyboard_event
+    * This prevents input_keyboard_event from calling back
+    * menu_input_dialog_get_display_kb, looping indefinintely */
+   static bool typing = false;
+
+   if (typing)
+      return false;
+
+
+   /* swkbd only works on "real" titles */
+   if (     __nx_applet_type != AppletType_Application
+         && __nx_applet_type != AppletType_SystemApplication)
+      return menu_st->input_dialog_kb_display;
+
+   if (!menu_st->input_dialog_kb_display)
+      return false;
+
+   rc = swkbdCreate(&kbd, 0);
+
+   if (R_SUCCEEDED(rc))
+   {
+      unsigned i;
+      char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
+      swkbdConfigMakePresetDefault(&kbd);
+
+      swkbdConfigSetGuideText(&kbd,
+            menu_st->input_dialog_kb_label);
+
+      rc = swkbdShow(&kbd, buf, sizeof(buf));
+
+      swkbdClose(&kbd);
+
+      /* RetroArch uses key-by-key input
+         so we need to simulate it */
+      typing = true;
+      for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
+      {
+         /* In case a previous "Enter" press closed the keyboard */
+         if (!menu_st->input_dialog_kb_display)
+            break;
+
+         if (buf[i] == '\n' || buf[i] == '\0')
+            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+         else
+         {
+            const char *word = &buf[i];
+            /* input_keyboard_line_append expects a null-terminated
+               string, so just make one (yes, the touch keyboard is
+               a list of "null-terminated characters") */
+            char oldchar     = buf[i+1];
+            buf[i+1]         = '\0';
+
+            input_keyboard_line_append(&input_st->keyboard_line, word);
+
+            osk_update_last_codepoint(
+                  &input_st->osk_last_codepoint,
+                  &input_st->osk_last_codepoint_len,
+                  word);
+            buf[i+1]     = oldchar;
+         }
+      }
+
+      /* fail-safe */
+      if (menu_st->input_dialog_kb_display)
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      typing = false;
+      libnx_apply_overclock();
+      return false;
+   }
+   libnx_apply_overclock();
+#endif /* HAVE_LIBNX */
+   return menu_st->input_dialog_kb_display;
+}

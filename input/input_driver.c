@@ -27,6 +27,7 @@
 #include "input_keymaps.h"
 #include "input_remapping.h"
 #include "input_osk.h"
+#include "input_types.h"
 
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
@@ -43,6 +44,9 @@
 #include "../performance_counters.h"
 
 #define HOLD_BTN_DELAY_SEC 2
+
+/* Depends on ASCII character values */
+#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
 
 /**************************************/
 
@@ -307,6 +311,16 @@ static input_driver_state_t input_driver_st = {0}; /* double alignment */
 input_driver_state_t *input_state_get_ptr(void)
 {
    return &input_driver_st;
+}
+
+int input_event_get_osk_ptr(void)
+{
+   return input_driver_st.osk_ptr;
+}
+
+char **input_event_get_osk_grid(void)
+{
+   return input_driver_st.osk_grid;
 }
 
 /**
@@ -3016,4 +3030,155 @@ void config_read_keybinds_conf(void *data)
          input_config_parse_mouse_button(str, conf, prefix, btn, bind);
       }
    }
+}
+
+#ifdef HAVE_COMMAND
+void input_driver_init_command(
+      input_driver_state_t *input_st,
+      settings_t *settings)
+{
+   bool input_network_cmd_enable = settings->bools.network_cmd_enable;
+   unsigned network_cmd_port     = settings->uints.network_cmd_port;
+#ifdef HAVE_STDIN_CMD
+   bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
+
+   if (input_stdin_cmd_enable)
+   {
+      input_driver_state_t *input_st= input_state_get_ptr();
+      bool grab_stdin               = 
+         input_st->current_driver->grab_stdin &&
+         input_st->current_driver->grab_stdin(input_st->current_data);
+      if (grab_stdin)
+      {
+         RARCH_WARN("stdin command interface is desired, "
+               "but input driver has already claimed stdin.\n"
+               "Cannot use this command interface.\n");
+      }
+      else
+      {
+         input_st->command[0] = command_stdin_new();
+         if (!input_st->command[1])
+            RARCH_ERR("Failed to initialize the stdin command interface.\n");
+      }
+   }
+#endif
+
+   /* Initialize the network command interface */
+#ifdef HAVE_NETWORK_CMD
+   if (input_network_cmd_enable)
+   {
+      input_st->command[1] = command_network_new(network_cmd_port);
+      if (!input_st->command[1])
+         RARCH_ERR("Failed to initialize the network command interface.\n");
+   }
+#endif
+
+#ifdef HAVE_LAKKA
+   input_st->command[2] = command_uds_new();
+   if (!input_st->command[2])
+      RARCH_ERR("Failed to initialize the UDS command interface.\n");
+#endif
+}
+
+void input_driver_deinit_command(input_driver_state_t *input_st)
+{
+   int i;
+   for (i = 0; i < ARRAY_SIZE(input_st->command); i++)
+   {
+      if (input_st->command[i])
+         input_st->command[i]->destroy(
+            input_st->command[i]);
+
+      input_st->command[i] = NULL;
+    }
+}
+#endif
+
+bool input_keyboard_line_event(
+      input_driver_state_t *input_st,
+      input_keyboard_line_t *state, uint32_t character)
+{
+   char array[2];
+   bool            ret         = false;
+   const char            *word = NULL;
+   char            c           = (character >= 128) ? '?' : character;
+
+   /* Treat extended chars as ? as we cannot support
+    * printable characters for unicode stuff. */
+
+   if (c == '\r' || c == '\n')
+   {
+      state->cb(state->userdata, state->buffer);
+
+      array[0] = c;
+      array[1] = 0;
+
+      ret      = true;
+      word     = array;
+   }
+   else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
+   {
+      if (state->ptr)
+      {
+         unsigned i;
+
+         for (i = 0; i < input_st->osk_last_codepoint_len; i++)
+         {
+            memmove(state->buffer + state->ptr - 1,
+                  state->buffer + state->ptr,
+                  state->size - state->ptr + 1);
+            state->ptr--;
+            state->size--;
+         }
+
+         word     = state->buffer;
+      }
+   }
+   else if (ISPRINT(c))
+   {
+      /* Handle left/right here when suitable */
+      char *newbuf = (char*)
+         realloc(state->buffer, state->size + 2);
+      if (!newbuf)
+         return false;
+
+      memmove(newbuf + state->ptr + 1,
+            newbuf + state->ptr,
+            state->size - state->ptr + 1);
+      newbuf[state->ptr] = c;
+      state->ptr++;
+      state->size++;
+      newbuf[state->size] = '\0';
+
+      state->buffer = newbuf;
+
+      array[0] = c;
+      array[1] = 0;
+
+      word     = array;
+   }
+
+   /* OSK - update last character */
+   if (word)
+      osk_update_last_codepoint(
+            &input_st->osk_last_codepoint,
+            &input_st->osk_last_codepoint_len,
+            word);
+
+   return ret;
+}
+
+void input_game_focus_free(void)
+{
+   input_game_focus_state_t *game_focus_st = &input_driver_st.game_focus_state;
+
+   /* Ensure that game focus mode is disabled */
+   if (game_focus_st->enabled)
+   {
+      enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
+      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+   }
+
+   game_focus_st->enabled        = false;
+   game_focus_st->core_requested = false;
 }

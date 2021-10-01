@@ -150,9 +150,6 @@
 #define BSV_MOVIE_IS_EOF(p_rarch)
 #endif
 
-/* Depends on ASCII character values */
-#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
-
 #define VIDEO_HAS_FOCUS(p_rarch) (p_rarch->current_video->focus ? (p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
 
 #if HAVE_DYNAMIC
@@ -743,14 +740,6 @@ enum poll_type_override_t
    POLL_TYPE_OVERRIDE_LATE
 };
 
-enum input_game_focus_cmd_type
-{
-   GAME_FOCUS_CMD_OFF = 0,
-   GAME_FOCUS_CMD_ON,
-   GAME_FOCUS_CMD_TOGGLE,
-   GAME_FOCUS_CMD_REAPPLY
-};
-
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
 
@@ -762,12 +751,6 @@ typedef struct my_list_t
    int capacity;
    int size;
 } my_list;
-
-typedef struct input_game_focus_state
-{
-   bool enabled;
-   bool core_requested;
-} input_game_focus_state_t;
 
 #ifdef HAVE_RUNAHEAD
 typedef bool(*runahead_load_state_function)(const void*, size_t);
@@ -853,7 +836,6 @@ struct rarch_state
    uint8_t *video_driver_record_gpu_buffer;
    bool    *load_no_content_hook;
    float   *audio_driver_output_samples_buf;
-   char    *osk_grid[45];
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
@@ -956,7 +938,6 @@ struct rarch_state
 #ifdef HAVE_REWIND
    struct state_manager_rewind_state rewind_st;
 #endif
-   input_keyboard_line_t keyboard_line; /* ptr alignment */
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
@@ -1031,7 +1012,6 @@ struct rarch_state
 
    jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
-   int osk_ptr;
 #if defined(HAVE_COMMAND)
 #ifdef HAVE_NETWORK_CMD
    int lastcmd_net_fd;
@@ -1071,9 +1051,6 @@ struct rarch_state
    unsigned frame_cache_height;
    unsigned video_driver_width;
    unsigned video_driver_height;
-   unsigned osk_last_codepoint;
-   unsigned osk_last_codepoint_len;
-   unsigned input_hotkey_block_counter;
 #ifdef HAVE_ACCESSIBILITY
    unsigned gamepad_input_override;
 #endif
@@ -1099,7 +1076,6 @@ struct rarch_state
    float audio_driver_input;
    float audio_driver_volume_gain;
 
-   enum osk_type osk_idx;
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
    enum rotation initial_screen_orientation;
@@ -1297,8 +1273,6 @@ struct rarch_state
    bool has_set_netplay_stateless_mode;
    bool has_set_netplay_check_frames;
 #endif
-
-   input_game_focus_state_t game_focus_state; /* bool alignment */
 
    bool recording_enable;
    bool streaming_enable;

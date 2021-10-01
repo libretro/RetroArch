@@ -370,18 +370,6 @@ int content_get_subsystem(void)
    return p_content->pending_subsystem_id;
 }
 
-int input_event_get_osk_ptr(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return p_rarch->osk_ptr;
-}
-
-char **input_event_get_osk_grid(void)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   return p_rarch->osk_grid;
-}
-
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -4374,7 +4362,6 @@ bool gfx_widgets_ready(void)
 #endif
 }
 
-
 #ifdef HAVE_MENU
 bool menu_input_dialog_start_search(void)
 {
@@ -4397,14 +4384,14 @@ bool menu_input_dialog_start_search(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_st->input_dialog_kb_label));
 
-   if (p_rarch->keyboard_line.buffer)
-      free(p_rarch->keyboard_line.buffer);
-   p_rarch->keyboard_line.buffer                    = NULL;
-   p_rarch->keyboard_line.ptr                       = 0;
-   p_rarch->keyboard_line.size                      = 0;
-   p_rarch->keyboard_line.cb                        = NULL;
-   p_rarch->keyboard_line.userdata                  = NULL;
-   p_rarch->keyboard_line.enabled                   = false;
+   if (input_st->keyboard_line.buffer)
+      free(input_st->keyboard_line.buffer);
+   input_st->keyboard_line.buffer                    = NULL;
+   input_st->keyboard_line.ptr                       = 0;
+   input_st->keyboard_line.size                      = 0;
+   input_st->keyboard_line.cb                        = NULL;
+   input_st->keyboard_line.userdata                  = NULL;
+   input_st->keyboard_line.enabled                   = false;
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -4418,7 +4405,7 @@ bool menu_input_dialog_start_search(void)
 
    menu_st->input_dialog_keyboard_buffer   =
       input_keyboard_start_line(menu,
-            &p_rarch->keyboard_line,
+            &input_st->keyboard_line,
             menu_input_search_cb);
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_st->keyboard_mapping_blocked = true;
@@ -4455,14 +4442,14 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    menu_st->input_dialog_kb_type   = line->type;
    menu_st->input_dialog_kb_idx    = line->idx;
 
-   if (p_rarch->keyboard_line.buffer)
-      free(p_rarch->keyboard_line.buffer);
-   p_rarch->keyboard_line.buffer                    = NULL;
-   p_rarch->keyboard_line.ptr                       = 0;
-   p_rarch->keyboard_line.size                      = 0;
-   p_rarch->keyboard_line.cb                        = NULL;
-   p_rarch->keyboard_line.userdata                  = NULL;
-   p_rarch->keyboard_line.enabled                   = false;
+   if (input_st->keyboard_line.buffer)
+      free(input_st->keyboard_line.buffer);
+   input_st->keyboard_line.buffer                    = NULL;
+   input_st->keyboard_line.ptr                       = 0;
+   input_st->keyboard_line.size                      = 0;
+   input_st->keyboard_line.cb                        = NULL;
+   input_st->keyboard_line.userdata                  = NULL;
+   input_st->keyboard_line.enabled                   = false;
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -4476,95 +4463,12 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    menu_st->input_dialog_keyboard_buffer =
       input_keyboard_start_line(menu,
-            &p_rarch->keyboard_line,
+            &input_st->keyboard_line,
             line->cb);
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_st->keyboard_mapping_blocked = true;
 
    return true;
-}
-
-bool menu_input_dialog_get_display_kb(void)
-{
-   struct menu_state *menu_st  = menu_state_get_ptr();
-#ifdef HAVE_LIBNX
-   struct rarch_state *p_rarch = &rarch_st;
-   SwkbdConfig kbd;
-   Result rc;
-   /* Indicates that we are "typing" from the swkbd
-    * result to RetroArch with repeated calls to input_keyboard_event
-    * This prevents input_keyboard_event from calling back
-    * menu_input_dialog_get_display_kb, looping indefinintely */
-   static bool typing = false;
-
-   if (typing)
-      return false;
-
-
-   /* swkbd only works on "real" titles */
-   if (     __nx_applet_type != AppletType_Application
-         && __nx_applet_type != AppletType_SystemApplication)
-      return menu_st->input_dialog_kb_display;
-
-   if (!menu_st->input_dialog_kb_display)
-      return false;
-
-   rc = swkbdCreate(&kbd, 0);
-
-   if (R_SUCCEEDED(rc))
-   {
-      unsigned i;
-      char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
-      swkbdConfigMakePresetDefault(&kbd);
-
-      swkbdConfigSetGuideText(&kbd,
-            menu_st->input_dialog_kb_label);
-
-      rc = swkbdShow(&kbd, buf, sizeof(buf));
-
-      swkbdClose(&kbd);
-
-      /* RetroArch uses key-by-key input
-         so we need to simulate it */
-      typing = true;
-      for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
-      {
-         /* In case a previous "Enter" press closed the keyboard */
-         if (!menu_st->input_dialog_kb_display)
-            break;
-
-         if (buf[i] == '\n' || buf[i] == '\0')
-            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-         else
-         {
-            const char *word = &buf[i];
-            /* input_keyboard_line_append expects a null-terminated
-               string, so just make one (yes, the touch keyboard is
-               a list of "null-terminated characters") */
-            char oldchar     = buf[i+1];
-            buf[i+1]         = '\0';
-
-            input_keyboard_line_append(&p_rarch->keyboard_line, word);
-
-            osk_update_last_codepoint(
-                  &p_rarch->osk_last_codepoint,
-                  &p_rarch->osk_last_codepoint_len,
-                  word);
-            buf[i+1]     = oldchar;
-         }
-      }
-
-      /* fail-safe */
-      if (menu_st->input_dialog_kb_display)
-         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-
-      typing = false;
-      libnx_apply_overclock();
-      return false;
-   }
-   libnx_apply_overclock();
-#endif /* HAVE_LIBNX */
-   return menu_st->input_dialog_kb_display;
 }
 #endif
 
@@ -7022,19 +6926,6 @@ static void retroarch_audio_buffer_status_free(void)
    runloop_state.audio_latency = 0;
 }
 
-static void retroarch_game_focus_free(input_game_focus_state_t *game_focus_st)
-{
-   /* Ensure that game focus mode is disabled */
-   if (game_focus_st->enabled)
-   {
-      enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
-      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
-   }
-
-   game_focus_st->enabled        = false;
-   game_focus_st->core_requested = false;
-}
-
 static void retroarch_fastmotion_override_free(
       struct rarch_state *p_rarch,
       runloop_state_t *p_runloop)
@@ -8701,7 +8592,9 @@ bool command_event(enum event_command cmd, void *data)
             bool video_fullscreen                         =
                settings->bools.video_fullscreen || p_rarch->rarch_force_fullscreen;
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
-            bool current_enable_state                     = p_rarch->game_focus_state.enabled;
+            input_driver_state_t 
+               *input_st                                  = input_state_get_ptr();
+            bool current_enable_state                     = input_st->game_focus_state.enabled;
             bool apply_update                             = false;
             bool show_message                             = false;
 
@@ -8712,8 +8605,8 @@ bool command_event(enum event_command cmd, void *data)
             {
                case GAME_FOCUS_CMD_OFF:
                   /* Force game focus off */
-                  p_rarch->game_focus_state.enabled = false;
-                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  input_st->game_focus_state.enabled = false;
+                  if (input_st->game_focus_state.enabled != current_enable_state)
                   {
                      apply_update = true;
                      show_message = true;
@@ -8721,8 +8614,8 @@ bool command_event(enum event_command cmd, void *data)
                   break;
                case GAME_FOCUS_CMD_ON:
                   /* Force game focus on */
-                  p_rarch->game_focus_state.enabled = true;
-                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  input_st->game_focus_state.enabled = true;
+                  if (input_st->game_focus_state.enabled != current_enable_state)
                   {
                      apply_update = true;
                      show_message = true;
@@ -8730,14 +8623,14 @@ bool command_event(enum event_command cmd, void *data)
                   break;
                case GAME_FOCUS_CMD_TOGGLE:
                   /* Invert current game focus state */
-                  p_rarch->game_focus_state.enabled = !p_rarch->game_focus_state.enabled;
+                  input_st->game_focus_state.enabled = !input_st->game_focus_state.enabled;
 #ifdef HAVE_MENU
                   /* If menu is currently active, disable
                    * 'toggle on' functionality */
                   if (menu_st->alive)
-                     p_rarch->game_focus_state.enabled = false;
+                     input_st->game_focus_state.enabled = false;
 #endif
-                  if (p_rarch->game_focus_state.enabled != current_enable_state)
+                  if (input_st->game_focus_state.enabled != current_enable_state)
                   {
                      apply_update = true;
                      show_message = true;
@@ -8757,7 +8650,7 @@ bool command_event(enum event_command cmd, void *data)
                input_driver_state_t 
                   *input_st          = input_state_get_ptr();
 
-               if (p_rarch->game_focus_state.enabled)
+               if (input_st->game_focus_state.enabled)
                {
                   if (input_driver_grab_mouse())
                      input_st->grab_mouse_state = true;
@@ -8773,13 +8666,13 @@ bool command_event(enum event_command cmd, void *data)
                }
 
                input_st->block_hotkey =
-                  p_rarch->game_focus_state.enabled;
+                  input_st->game_focus_state.enabled;
                input_st->keyboard_mapping_blocked  =
-                  p_rarch->game_focus_state.enabled;
+                  input_st->game_focus_state.enabled;
 
                if (show_message)
                   runloop_msg_queue_push(
-                        p_rarch->game_focus_state.enabled ?
+                        input_st->game_focus_state.enabled ?
                         msg_hash_to_str(MSG_GAME_FOCUS_ON) :
                         msg_hash_to_str(MSG_GAME_FOCUS_OFF),
                         1, 60, true,
@@ -8788,7 +8681,7 @@ bool command_event(enum event_command cmd, void *data)
 
                RARCH_LOG("[Input]: %s => %s\n",
                      "Game Focus",
-                     p_rarch->game_focus_state.enabled ? "ON" : "OFF");
+                     input_st->game_focus_state.enabled ? "ON" : "OFF");
             }
          }
          break;
@@ -10954,6 +10847,8 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
       {
+         input_driver_state_t 
+            *input_st                               = input_state_get_ptr();
          const struct retro_keyboard_callback *info =
             (const struct retro_keyboard_callback*)data;
          retro_keyboard_event_t *frontend_key_event = &runloop_state.frontend_key_event;
@@ -10968,7 +10863,7 @@ static bool retroarch_environment_cb(unsigned cmd, void *data)
 
          /* If a core calls RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK,
           * then it is assumed that game focus mode is desired */
-         p_rarch->game_focus_state.core_requested = true;
+         input_st->game_focus_state.core_requested = true;
 
          break;
       }
@@ -12380,7 +12275,7 @@ static void uninit_libretro_symbols(
    p_rarch->audio_callback.set_state                  = NULL;
    retroarch_frame_time_free();
    retroarch_audio_buffer_status_free();
-   retroarch_game_focus_free(&p_rarch->game_focus_state);
+   input_game_focus_free();
    retroarch_fastmotion_override_free(p_rarch, &runloop_state);
    retroarch_core_options_callback_free(&runloop_state);
    p_rarch->camera_driver_active      = false;
@@ -15943,44 +15838,44 @@ static unsigned menu_event(
    {
       bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
-      input_event_osk_iterate(p_rarch->osk_grid, p_rarch->osk_idx);
+      input_event_osk_iterate(input_st->osk_grid, input_st->osk_idx);
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (p_rarch->osk_ptr < 33)
-            p_rarch->osk_ptr += OSK_CHARS_PER_LINE;
+         if (input_st->osk_ptr < 33)
+            input_st->osk_ptr += OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (p_rarch->osk_ptr >= OSK_CHARS_PER_LINE)
-            p_rarch->osk_ptr -= OSK_CHARS_PER_LINE;
+         if (input_st->osk_ptr >= OSK_CHARS_PER_LINE)
+            input_st->osk_ptr -= OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (p_rarch->osk_ptr < 43)
-            p_rarch->osk_ptr += 1;
+         if (input_st->osk_ptr < 43)
+            input_st->osk_ptr += 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (p_rarch->osk_ptr >= 1)
-            p_rarch->osk_ptr -= 1;
+         if (input_st->osk_ptr >= 1)
+            input_st->osk_ptr -= 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (p_rarch->osk_idx > OSK_TYPE_UNKNOWN + 1)
-            p_rarch->osk_idx = ((enum osk_type)
-                  (p_rarch->osk_idx - 1));
+         if (input_st->osk_idx > OSK_TYPE_UNKNOWN + 1)
+            input_st->osk_idx = ((enum osk_type)
+                  (input_st->osk_idx - 1));
          else
-            p_rarch->osk_idx = ((enum osk_type)(show_osk_symbols
+            input_st->osk_idx = ((enum osk_type)(show_osk_symbols
                      ? OSK_TYPE_LAST - 1
                      : OSK_SYMBOLS_PAGE1));
       }
@@ -15988,26 +15883,26 @@ static unsigned menu_event(
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (p_rarch->osk_idx < (show_osk_symbols
+         if (input_st->osk_idx < (show_osk_symbols
                   ? OSK_TYPE_LAST - 1
                   : OSK_SYMBOLS_PAGE1))
-            p_rarch->osk_idx = ((enum osk_type)(
-                     p_rarch->osk_idx + 1));
+            input_st->osk_idx = ((enum osk_type)(
+                     input_st->osk_idx + 1));
          else
-            p_rarch->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+            input_st->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
-         if (p_rarch->osk_ptr >= 0)
+         if (input_st->osk_ptr >= 0)
             input_event_osk_append(
-                  &p_rarch->keyboard_line,
-                  &p_rarch->osk_idx,
-                  &p_rarch->osk_last_codepoint,
-                  &p_rarch->osk_last_codepoint_len,
-                  p_rarch->osk_ptr,
+                  &input_st->keyboard_line,
+                  &input_st->osk_idx,
+                  &input_st->osk_last_codepoint,
+                  &input_st->osk_last_codepoint_len,
+                  input_st->osk_ptr,
                   show_osk_symbols,
-                  p_rarch->osk_grid[p_rarch->osk_ptr]);
+                  input_st->osk_grid[input_st->osk_ptr]);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -16100,6 +15995,7 @@ static int menu_input_pointer_post_iterate(
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
    menu_handle_t *menu                             = menu_st->driver_data;
+   input_driver_state_t *input_st                  = input_state_get_ptr();
 
    /* Check whether a message box is currently
     * being shown
@@ -16130,7 +16026,7 @@ static int menu_input_pointer_post_iterate(
 
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
       if (point.retcode > -1)
-         p_rarch->osk_ptr = point.retcode;
+         input_st->osk_ptr = point.retcode;
    }
 
    /* Select + X/Y position */
@@ -16420,15 +16316,15 @@ static int menu_input_pointer_post_iterate(
                {
                   bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
-                  p_rarch->osk_ptr = point.retcode;
+                  input_st->osk_ptr = point.retcode;
                   input_event_osk_append(
-                        &p_rarch->keyboard_line,
-                        &p_rarch->osk_idx,
-                        &p_rarch->osk_last_codepoint,
-                        &p_rarch->osk_last_codepoint_len,
+                        &input_st->keyboard_line,
+                        &input_st->osk_idx,
+                        &input_st->osk_last_codepoint,
+                        &input_st->osk_last_codepoint_len,
                         point.retcode,
                         show_osk_symbols,
-                        p_rarch->osk_grid[p_rarch->osk_ptr]);
+                        input_st->osk_grid[input_st->osk_ptr]);
                }
             }
          }
@@ -16752,15 +16648,15 @@ static void input_keys_pressed(
                port, RETRO_DEVICE_JOYPAD, 0,
                RARCH_ENABLE_HOTKEY))
       {
-         if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
-            p_rarch->input_hotkey_block_counter++;
+         if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
+            input_st->input_hotkey_block_counter++;
          else
-            input_st->block_libretro_input = true;
+            input_st->block_libretro_input    = true;
       }
       else
       {
-         p_rarch->input_hotkey_block_counter           = 0;
-         input_st->block_hotkey           = true;
+         input_st->input_hotkey_block_counter = 0;
+         input_st->block_hotkey               = true;
       }
    }
 
@@ -16857,69 +16753,6 @@ static void input_keys_pressed(
    }
 }
 
-#ifdef HAVE_COMMAND
-static void input_driver_init_command(struct rarch_state *p_rarch,
-      input_driver_state_t *input_st,
-      settings_t *settings)
-{
-   bool input_network_cmd_enable = settings->bools.network_cmd_enable;
-   unsigned network_cmd_port     = settings->uints.network_cmd_port;
-#ifdef HAVE_STDIN_CMD
-   bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
-
-   if (input_stdin_cmd_enable)
-   {
-      input_driver_state_t *input_st= input_state_get_ptr();
-      bool grab_stdin               = 
-         input_st->current_driver->grab_stdin &&
-         input_st->current_driver->grab_stdin(input_st->current_data);
-      if (grab_stdin)
-      {
-         RARCH_WARN("stdin command interface is desired, "
-               "but input driver has already claimed stdin.\n"
-               "Cannot use this command interface.\n");
-      }
-      else
-      {
-         input_st->command[0] = command_stdin_new();
-         if (!input_st->command[1])
-            RARCH_ERR("Failed to initialize the stdin command interface.\n");
-      }
-   }
-#endif
-
-   /* Initialize the network command interface */
-#ifdef HAVE_NETWORK_CMD
-   if (input_network_cmd_enable)
-   {
-      input_st->command[1] = command_network_new(network_cmd_port);
-      if (!input_st->command[1])
-         RARCH_ERR("Failed to initialize the network command interface.\n");
-   }
-#endif
-
-#ifdef HAVE_LAKKA
-   input_st->command[2] = command_uds_new();
-   if (!input_st->command[2])
-      RARCH_ERR("Failed to initialize the UDS command interface.\n");
-#endif
-}
-
-static void input_driver_deinit_command(struct rarch_state *p_rarch,
-      input_driver_state_t *input_st)
-{
-   int i;
-   for (i = 0; i < ARRAY_SIZE(input_st->command); i++)
-   {
-      if (input_st->command[i])
-         input_st->command[i]->destroy(
-            input_st->command[i]);
-
-      input_st->command[i] = NULL;
-    }
-}
-#endif
-
 /**
  * config_get_joypad_driver_options:
  *
@@ -17004,89 +16837,6 @@ const hid_driver_t *input_hid_init_first(void)
    return NULL;
 }
 #endif
-
-/**
- * input_keyboard_line_event:
- * @state                    : Input keyboard line handle.
- * @character                : Inputted character.
- *
- * Called on every keyboard character event.
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-static bool input_keyboard_line_event(
-      struct rarch_state *p_rarch,
-      input_keyboard_line_t *state, uint32_t character)
-{
-   char array[2];
-   bool            ret         = false;
-   const char            *word = NULL;
-   char            c           = (character >= 128) ? '?' : character;
-
-   /* Treat extended chars as ? as we cannot support
-    * printable characters for unicode stuff. */
-
-   if (c == '\r' || c == '\n')
-   {
-      state->cb(state->userdata, state->buffer);
-
-      array[0] = c;
-      array[1] = 0;
-
-      ret      = true;
-      word     = array;
-   }
-   else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
-   {
-      if (state->ptr)
-      {
-         unsigned i;
-
-         for (i = 0; i < p_rarch->osk_last_codepoint_len; i++)
-         {
-            memmove(state->buffer + state->ptr - 1,
-                  state->buffer + state->ptr,
-                  state->size - state->ptr + 1);
-            state->ptr--;
-            state->size--;
-         }
-
-         word     = state->buffer;
-      }
-   }
-   else if (ISPRINT(c))
-   {
-      /* Handle left/right here when suitable */
-      char *newbuf = (char*)
-         realloc(state->buffer, state->size + 2);
-      if (!newbuf)
-         return false;
-
-      memmove(newbuf + state->ptr + 1,
-            newbuf + state->ptr,
-            state->size - state->ptr + 1);
-      newbuf[state->ptr] = c;
-      state->ptr++;
-      state->size++;
-      newbuf[state->size] = '\0';
-
-      state->buffer = newbuf;
-
-      array[0] = c;
-      array[1] = 0;
-
-      word     = array;
-   }
-
-   /* OSK - update last character */
-   if (word)
-      osk_update_last_codepoint(
-            &p_rarch->osk_last_codepoint,
-            &p_rarch->osk_last_codepoint_len,
-            word);
-
-   return ret;
-}
 
 #if defined(HAVE_MENU) && defined(HAVE_ACCESSIBILITY)
 static const char *accessibility_lut_name(char key)
@@ -17304,7 +17054,7 @@ void input_keyboard_event(bool down, unsigned code,
          return;
       deferred_wait_keys = true;
    }
-   else if (p_rarch->keyboard_line.enabled)
+   else if (input_st->keyboard_line.enabled)
    {
       if (!down)
          return;
@@ -17316,21 +17066,21 @@ void input_keyboard_event(bool down, unsigned code,
                character = (char)code;
             /* fall-through */
          default:
-            if (!input_keyboard_line_event(p_rarch,
-                     &p_rarch->keyboard_line, character))
+            if (!input_keyboard_line_event(input_st,
+                     &input_st->keyboard_line, character))
                return;
             break;
       }
 
       /* Line is complete, can free it now. */
-      if (p_rarch->keyboard_line.buffer)
-         free(p_rarch->keyboard_line.buffer);
-      p_rarch->keyboard_line.buffer                    = NULL;
-      p_rarch->keyboard_line.ptr                       = 0;
-      p_rarch->keyboard_line.size                      = 0;
-      p_rarch->keyboard_line.cb                        = NULL;
-      p_rarch->keyboard_line.userdata                  = NULL;
-      p_rarch->keyboard_line.enabled                   = false;
+      if (input_st->keyboard_line.buffer)
+         free(input_st->keyboard_line.buffer);
+      input_st->keyboard_line.buffer                    = NULL;
+      input_st->keyboard_line.ptr                       = 0;
+      input_st->keyboard_line.size                      = 0;
+      input_st->keyboard_line.cb                        = NULL;
+      input_st->keyboard_line.userdata                  = NULL;
+      input_st->keyboard_line.enabled                   = false;
 
       /* Unblock all hotkeys. */
       input_st->keyboard_mapping_blocked               = false;
@@ -17343,13 +17093,14 @@ void input_keyboard_event(bool down, unsigned code,
       /* Block hotkey + RetroPad mapped keyboard key events,
        * but not with game focus, and from keyboard device type,
        * and with 'enable_hotkey' modifier set and unpressed */
-      if (!p_rarch->game_focus_state.enabled &&
+      if (!input_st->game_focus_state.enabled &&
             BIT512_GET(input_st->keyboard_mapping_bits, code))
       {
          input_mapper_t *handle      = &input_st->mapper;
          struct retro_keybind hotkey = input_config_binds[0][RARCH_ENABLE_HOTKEY];
          bool hotkey_pressed         =
-               (p_rarch->input_hotkey_block_counter > 0) || (hotkey.key == code);
+                  (input_st->input_hotkey_block_counter > 0) 
+               || (hotkey.key == code);
 
          if (!(MAPPER_GET_KEY(handle, code)) &&
                !(!hotkey_pressed && (
@@ -24621,7 +24372,7 @@ bool retroarch_main_init(int argc, char *argv[])
    unsigned accessibility_narrator_speech_speed = 0;
 #endif
 
-   p_rarch->osk_idx             = OSK_LOWERCASE_LATIN;
+   input_st->osk_idx             = OSK_LOWERCASE_LATIN;
    p_rarch->video_driver_active = true;
    p_rarch->audio_driver_active = true;
 
@@ -24865,8 +24616,8 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
    drivers_init(p_rarch, settings, DRIVERS_CMD_ALL, verbosity_enabled);
 #ifdef HAVE_COMMAND
-   input_driver_deinit_command(p_rarch, input_st);
-   input_driver_init_command(p_rarch, input_st, settings);
+   input_driver_deinit_command(input_st);
+   input_driver_init_command(input_st, settings);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_st->remote)
@@ -25100,7 +24851,7 @@ void retroarch_menu_running(void)
    bool audio_enable_menu          = settings->bools.audio_enable_menu;
    bool audio_enable_menu_bgm      = settings->bools.audio_enable_menu_bgm;
 #endif
-
+   input_driver_state_t *input_st  = input_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st      = menu_state_get_ptr();
    menu_handle_t *menu             = menu_st->driver_data;
@@ -25141,7 +24892,7 @@ void retroarch_menu_running(void)
     * running the menu (note: it is not currently
     * possible for game focus to be enabled at this
     * point, but must safeguard against future changes) */
-   if (p_rarch->game_focus_state.enabled)
+   if (input_st->game_focus_state.enabled)
    {
       enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
       command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
@@ -25172,6 +24923,7 @@ void retroarch_menu_running_finished(bool quit)
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
    settings_t *settings            = p_rarch->configuration_settings;
 #endif
+   input_driver_state_t *input_st  = input_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st      = menu_state_get_ptr();
    menu_handle_t *menu             = menu_st->driver_data;
@@ -25224,7 +24976,7 @@ void retroarch_menu_running_finished(bool quit)
 
          if ((auto_game_focus_type == AUTO_GAME_FOCUS_ON) ||
                ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT) &&
-                p_rarch->game_focus_state.core_requested))
+                input_st->game_focus_state.core_requested))
          {
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_ON;
             command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
@@ -25389,7 +25141,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                return false;
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_COMMAND
-            input_driver_deinit_command(p_rarch, input_st);
+            input_driver_deinit_command(input_st);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
             if (input_st->remote)
@@ -25546,7 +25298,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_state.autosave         = false;
             retroarch_frame_time_free();
             retroarch_audio_buffer_status_free();
-            retroarch_game_focus_free(&p_rarch->game_focus_state);
+            input_game_focus_free();
             retroarch_fastmotion_override_free(p_rarch, &runloop_state);
             retroarch_core_options_callback_free(&runloop_state);
             memset(&input_st->analog_requested, 0,
