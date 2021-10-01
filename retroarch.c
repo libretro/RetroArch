@@ -4360,10 +4360,10 @@ bool gfx_widgets_ready(void)
 #ifdef HAVE_MENU
 bool menu_input_dialog_start_search(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    input_driver_state_t 
       *input_st                = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
+   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = config_get_ptr();
    bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
@@ -4410,9 +4410,9 @@ bool menu_input_dialog_start_search(void)
 
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
-   struct rarch_state *p_rarch      = &rarch_st;
    input_driver_state_t *input_st   = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
+   struct rarch_state *p_rarch      = &rarch_st;
    settings_t *settings             = p_rarch->configuration_settings;
    bool accessibility_enable        = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
@@ -14393,464 +14393,6 @@ const char* config_get_input_driver_options(void)
    return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
 }
 
-/**
- * input_poll:
- *
- * Input polling callback function.
- **/
-static void input_driver_poll(void)
-{
-   size_t i, j;
-   rarch_joypad_info_t joypad_info[MAX_USERS];
-   struct rarch_state    *p_rarch = &rarch_st;
-   input_driver_state_t 
-      *input_st                   = input_state_get_ptr();
-   settings_t *settings           = config_get_ptr();
-   const input_device_driver_t
-      *joypad                     = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                 = input_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                 = NULL;
-#endif
-#ifdef HAVE_OVERLAY
-   float input_overlay_opacity    = settings->floats.input_overlay_opacity;
-#endif
-   bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
-   uint8_t max_users              = (uint8_t)settings->uints.input_max_users;
-
-   if (     joypad && joypad->poll)
-      joypad->poll();
-   if (     sec_joypad && sec_joypad->poll)
-      sec_joypad->poll();
-   if (     input_st->current_driver
-         && input_st->current_driver->poll)
-      input_st->current_driver->poll(input_st->current_data);
-
-   input_st->turbo_btns.count++;
-
-   if (input_st->block_libretro_input)
-   {
-      for (i = 0; i < max_users; i++)
-         input_st->turbo_btns.frame_enable[i] = 0;
-      return;
-   }
-
-   /* This rarch_joypad_info_t struct contains the device index + autoconfig binds for the 
-    * controller to be queried, and also (for unknown reasons) the analog axis threshold 
-    * when mapping analog stick to dpad input. */
-   for (i = 0; i < max_users; i++)
-   {
-      joypad_info[i].axis_threshold              = settings->floats.input_axis_threshold;
-      joypad_info[i].joy_idx                     = settings->uints.input_joypad_index[i];
-      joypad_info[i].auto_binds                  = input_autoconf_binds[joypad_info[i].joy_idx];
-
-      input_st->turbo_btns.frame_enable[i]       = input_st->libretro_input_binds[i][RARCH_TURBO_ENABLE].valid ?
-         input_state_wrap(
-               input_st->current_driver,
-               input_st->current_data,
-               joypad,
-               sec_joypad,
-               &joypad_info[i],
-               input_st->libretro_input_binds,
-               input_st->keyboard_mapping_blocked,
-               (unsigned)i,
-               RETRO_DEVICE_JOYPAD,
-               0,
-               RARCH_TURBO_ENABLE) : 0;
-   }
-
-#ifdef HAVE_OVERLAY
-   if (input_st->overlay_ptr && input_st->overlay_ptr->alive)
-   {
-      unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[0];
-
-      switch (input_analog_dpad_mode)
-      {
-         case ANALOG_DPAD_LSTICK:
-         case ANALOG_DPAD_RSTICK:
-            {
-               unsigned mapped_port = settings->uints.input_remap_ports[0];
-               if (input_st->analog_requested[mapped_port])
-                  input_analog_dpad_mode = ANALOG_DPAD_NONE;
-            }
-            break;
-         case ANALOG_DPAD_LSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
-            break;
-         case ANALOG_DPAD_RSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
-            break;
-         default:
-            break;
-      }
-
-      input_poll_overlay(
-            input_st->keyboard_mapping_blocked,
-            settings,
-            input_st->overlay_ptr,
-            input_st->overlay_visibility,
-            input_overlay_opacity,
-            input_analog_dpad_mode,
-            settings->floats.input_axis_threshold);
-   }
-#endif
-
-#ifdef HAVE_MENU
-   if (!menu_state_get_ptr()->alive)
-#endif
-   if (input_remap_binds_enable)
-   {
-#ifdef HAVE_OVERLAY
-      input_overlay_t *overlay_pointer = (input_overlay_t*)input_st->overlay_ptr;
-      bool poll_overlay                = (input_st->overlay_ptr && input_st->overlay_ptr->alive);
-#endif
-      input_mapper_t *handle           = &input_st->mapper;
-      float input_analog_deadzone      = settings->floats.input_analog_deadzone;
-      float input_analog_sensitivity   = settings->floats.input_analog_sensitivity;
-
-      for (i = 0; i < max_users; i++)
-      {
-         input_bits_t current_inputs;
-         unsigned mapped_port            = settings->uints.input_remap_ports[i];
-         unsigned device                 = settings->uints.input_libretro_device[mapped_port]
-                                           & RETRO_DEVICE_MASK;
-         input_bits_t *p_new_state       = (input_bits_t*)&current_inputs;
-         unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[i];
-
-         switch (input_analog_dpad_mode)
-         {
-            case ANALOG_DPAD_LSTICK:
-            case ANALOG_DPAD_RSTICK:
-               if (input_st->analog_requested[mapped_port])
-                  input_analog_dpad_mode = ANALOG_DPAD_NONE;
-               break;
-            case ANALOG_DPAD_LSTICK_FORCED:
-               input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
-               break;
-            case ANALOG_DPAD_RSTICK_FORCED:
-               input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
-               break;
-            default:
-               break;
-         }
-
-         switch (device)
-         {
-            case RETRO_DEVICE_KEYBOARD:
-            case RETRO_DEVICE_JOYPAD:
-            case RETRO_DEVICE_ANALOG:
-               BIT256_CLEAR_ALL_PTR(&current_inputs);
-               if (joypad)
-               {
-                  unsigned k, j;
-                  int16_t ret = input_state_wrap(
-                        input_st->current_driver,
-                        input_st->current_data,
-                        input_st->primary_joypad,
-                        sec_joypad,
-                        &joypad_info[i],
-                        input_st->libretro_input_binds,
-                        input_st->keyboard_mapping_blocked,
-                        (unsigned)i, RETRO_DEVICE_JOYPAD,
-                        0, RETRO_DEVICE_ID_JOYPAD_MASK);
-
-                  for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
-                  {
-                     if (ret & (1 << k))
-                     {
-                        bool valid_bind  =
-                           input_st->libretro_input_binds[i][k].valid;
-
-                        if (valid_bind)
-                        {
-                           int16_t   val =
-                              input_joypad_analog_button(
-                                    input_analog_deadzone,
-                                    input_analog_sensitivity,
-                                    joypad,
-                                    &joypad_info[i],
-                                    k,
-                                    &input_st->libretro_input_binds[i][k]
-                                    );
-                           if (val)
-                              p_new_state->analog_buttons[k] = val;
-                        }
-
-                        BIT256_SET_PTR(p_new_state, k);
-                     }
-                  }
-
-                  /* This is the analog joypad index -
-                   * handles only the two analog axes */
-                  for (k = 0; k < 2; k++)
-                  {
-                     /* This is the analog joypad ident */
-                     for (j = 0; j < 2; j++)
-                     {
-                        unsigned offset = 0 + (k * 4) + (j * 2);
-                        int16_t     val = input_joypad_analog_axis(
-                              input_analog_dpad_mode,
-                              input_analog_deadzone,
-                              input_analog_sensitivity,
-                              joypad,
-                              &joypad_info[i],
-                              k,
-                              j,
-                              input_st->libretro_input_binds[i]);
-
-                        if (val >= 0)
-                           p_new_state->analogs[offset]   = val;
-                        else
-                           p_new_state->analogs[offset+1] = val;
-                     }
-                  }
-               }
-               break;
-            default:
-               break;
-         }
-
-         /* mapper */
-         switch (device)
-         {
-            /* keyboard to gamepad remapping */
-            case RETRO_DEVICE_KEYBOARD:
-               for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
-               {
-                  unsigned current_button_value;
-                  unsigned remap_key =
-                        settings->uints.input_keymapper_ids[i][j];
-
-                  if (remap_key == RETROK_UNKNOWN)
-                     continue;
-
-                  if (j >= RARCH_FIRST_CUSTOM_BIND && j < RARCH_ANALOG_BIND_LIST_END)
-                  {
-                     int16_t current_axis_value = p_new_state->analogs[j - RARCH_FIRST_CUSTOM_BIND];
-                     current_button_value = abs(current_axis_value) >
-                           settings->floats.input_axis_threshold
-                            * 32767;
-                  }
-                  else
-                  {
-                     current_button_value =
-                        BIT256_GET_PTR(p_new_state, j);
-                  }
-
-#ifdef HAVE_OVERLAY
-                  if (poll_overlay && i == 0)
-                  {
-                     input_overlay_state_t *ol_state  =
-                        overlay_pointer
-                        ? &overlay_pointer->overlay_state
-                        : NULL;
-                     if (ol_state)
-                        current_button_value |=
-                           BIT256_GET(ol_state->buttons, j);
-                  }
-#endif
-                  /* Press */
-                  if ((current_button_value == 1)
-                        && !MAPPER_GET_KEY(handle, remap_key))
-                  {
-                     handle->key_button[remap_key] = (unsigned)j;
-
-                     MAPPER_SET_KEY(handle, remap_key);
-                     input_keyboard_event(true,
-                           remap_key,
-                           0, 0, RETRO_DEVICE_KEYBOARD);
-                  }
-                  /* Release */
-                  else if ((current_button_value == 0)
-                        && MAPPER_GET_KEY(handle, remap_key))
-                  {
-                     if (handle->key_button[remap_key] != j)
-                        continue;
-
-                     input_keyboard_event(false,
-                           remap_key,
-                           0, 0, RETRO_DEVICE_KEYBOARD);
-                     MAPPER_UNSET_KEY(handle, remap_key);
-                  }
-               }
-               break;
-
-               /* gamepad remapping */
-            case RETRO_DEVICE_JOYPAD:
-            case RETRO_DEVICE_ANALOG:
-               /* this loop iterates on all users and all buttons,
-                * and checks if a pressed button is assigned to any
-                * other button than the default one, then it sets
-                * the bit on the mapper input bitmap, later on the
-                * original input is cleared in input_state */
-               BIT256_CLEAR_ALL(handle->buttons[i]);
-
-               for (j = 0; j < 8; j++)
-                  handle->analog_value[i][j] = 0;
-
-               for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
-               {
-                  bool remap_valid;
-                  unsigned remap_button         =
-                        settings->uints.input_remap_ids[i][j];
-                  unsigned current_button_value =
-                        BIT256_GET_PTR(p_new_state, j);
-
-#ifdef HAVE_OVERLAY
-                  if (poll_overlay && i == 0)
-                  {
-                     input_overlay_state_t *ol_state  =
-                        overlay_pointer
-                        ? &overlay_pointer->overlay_state
-                        : NULL;
-                     if (ol_state)
-                        current_button_value            |=
-                           BIT256_GET(ol_state->buttons, j);
-                  }
-#endif
-                  remap_valid                   =
-                     (current_button_value == 1) &&
-                     (j != remap_button)         &&
-                     (remap_button != RARCH_UNMAPPED);
-
-#ifdef HAVE_ACCESSIBILITY
-                  /* gamepad override */
-                  if (     (i == 0)
-                        && input_st->gamepad_input_override & (1 << j))
-                  {
-                     BIT256_SET(handle->buttons[i], j);
-                  }
-#endif
-
-                  if (remap_valid)
-                  {
-                     if (remap_button < RARCH_FIRST_CUSTOM_BIND)
-                     {
-                        BIT256_SET(handle->buttons[i], remap_button);
-                     }
-                     else
-                     {
-                        int invert = 1;
-
-                        if (remap_button % 2 != 0)
-                           invert = -1;
-
-                        handle->analog_value[i][
-                           remap_button - RARCH_FIRST_CUSTOM_BIND] =
-                              (p_new_state->analog_buttons[j]
-                               ? p_new_state->analog_buttons[j]
-                               : 32767) * invert;
-                     }
-                  }
-               }
-
-               for (j = 0; j < 8; j++)
-               {
-                  unsigned k                 = (unsigned)j + RARCH_FIRST_CUSTOM_BIND;
-                  int16_t current_axis_value = p_new_state->analogs[j];
-                  unsigned remap_axis        = settings->uints.input_remap_ids[i][k];
-
-                  if (
-                        (abs(current_axis_value) > 0 &&
-                         (k != remap_axis)            &&
-                         (remap_axis != RARCH_UNMAPPED)
-                        ))
-                  {
-                     if (remap_axis < RARCH_FIRST_CUSTOM_BIND &&
-                           abs(current_axis_value) >
-                           settings->floats.input_axis_threshold
-                            * 32767)
-                     {
-                        BIT256_SET(handle->buttons[i], remap_axis);
-                     }
-                     else
-                     {
-                        unsigned remap_axis_bind =
-                           remap_axis - RARCH_FIRST_CUSTOM_BIND;
-
-                        if (remap_axis_bind < sizeof(handle->analog_value[i]))
-                        {
-                           int invert = 1;
-                           if (  (k % 2 == 0 && remap_axis % 2 != 0) ||
-                                 (k % 2 != 0 && remap_axis % 2 == 0)
-                              )
-                              invert = -1;
-
-                           handle->analog_value[i][
-                              remap_axis_bind] =
-                                 current_axis_value * invert;
-                        }
-                     }
-                  }
-
-               }
-               break;
-            default:
-               break;
-         }
-      }
-   }
-
-#ifdef HAVE_COMMAND
-   for (i = 0; i < ARRAY_SIZE(input_st->command); i++)
-   {
-      if (input_st->command[i])
-      {
-         memset(input_st->command[i]->state,
-                0, sizeof(input_st->command[i]->state));
-
-         input_st->command[i]->poll(
-            input_st->command[i]);
-      }
-   }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-   /* Poll remote */
-   if (input_st->remote)
-   {
-      unsigned user;
-
-      for (user = 0; user < max_users; user++)
-      {
-         if (settings->bools.network_remote_enable_user[user])
-         {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-            fd_set fds;
-            ssize_t ret;
-            struct remote_message msg;
-
-            if (input_st->remote->net_fd[user] < 0)
-               return;
-
-            FD_ZERO(&fds);
-            FD_SET(input_st->remote->net_fd[user], &fds);
-
-            ret = recvfrom(input_st->remote->net_fd[user],
-                  (char*)&msg,
-                  sizeof(msg), 0, NULL, NULL);
-
-            if (ret == sizeof(msg))
-               input_remote_parse_packet(&input_st->remote_st_ptr, &msg, user);
-            else if ((ret != -1) || ((errno != EAGAIN) && (errno != ENOENT)))
-#endif
-            {
-               input_remote_state_t *input_state  = &input_st->remote_st_ptr;
-               input_state->buttons[user]         = 0;
-               input_state->analog[0][user]       = 0;
-               input_state->analog[1][user]       = 0;
-               input_state->analog[2][user]       = 0;
-               input_state->analog[3][user]       = 0;
-            }
-         }
-      }
-   }
-#endif
-}
-
 int16_t input_state_internal(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
@@ -15066,12 +14608,12 @@ int16_t input_state_internal(unsigned port, unsigned device,
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    input_driver_state_t 
       *input_st                = input_state_get_ptr();
    int16_t result              = 0;
-
 #ifdef HAVE_BSV_MOVIE
+   struct rarch_state *p_rarch = &rarch_st;
+
    /* Load input from BSV record, if enabled */
    if (BSV_MOVIE_IS_PLAYBACK_ON())
    {
@@ -16036,11 +15578,11 @@ void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
-   struct rarch_state *p_rarch   = &rarch_st;
    input_driver_state_t 
       *input_st                  = input_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   settings_t *settings          = p_rarch->configuration_settings;
+   struct rarch_state *p_rarch   = &rarch_st;
+   settings_t *settings          = config_get_ptr();
    bool accessibility_enable     = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif

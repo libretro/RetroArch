@@ -971,6 +971,13 @@ int16_t input_state_device(
       unsigned idx, unsigned id,
       bool button_mask);
 
+/**
+ * input_poll:
+ *
+ * Input polling callback function.
+ **/
+void input_driver_poll(void);
+
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];
 #ifdef HAVE_HID
