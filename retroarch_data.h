@@ -316,10 +316,6 @@
 #define BSV_MOVIE_ARG
 #endif
 
-#ifdef HAVE_LIBNX
-#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
-#endif
-
 /* Griffin hack */
 #ifdef HAVE_QT
 #ifndef HAVE_MAIN

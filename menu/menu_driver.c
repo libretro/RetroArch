@@ -66,6 +66,8 @@
 #endif
 
 #ifdef HAVE_LIBNX
+#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+
 /* TODO/FIXME - public global variable */
 extern u32 __nx_applet_type;
 #endif
