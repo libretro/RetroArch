@@ -84,8 +84,6 @@ static void gfx_widget_achievement_popup_free_all(gfx_widget_achievement_popup_s
 
       SLOCK_UNLOCK(state->queue_lock);
    }
-
-   state->dispwidget_ptr = NULL;
 }
 
 static void gfx_widget_achievement_popup_free(void)
