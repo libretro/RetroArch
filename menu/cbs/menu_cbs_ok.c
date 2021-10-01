@@ -6774,16 +6774,17 @@ static int action_ok_video_resolution(const char *path,
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         strcpy_literal(msg, "Applying: DEFAULT");
+         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT));
       else
 #endif
-         snprintf(msg, sizeof(msg),
-               "Applying: %dx%d",
-               width, height);
-         /* Add description of resolution */
+      {
          if (!string_is_empty(desc))
-            snprintf(msg, sizeof(msg), "%s - %s", msg, desc);
-         snprintf(msg, sizeof(msg), "%s\n START to reset", msg);
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DESC), 
+               width, height, desc);
+         else
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC), 
+               width, height);
+      }
       runloop_msg_queue_push(msg, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }

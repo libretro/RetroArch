@@ -7208,16 +7208,16 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_set_video_mode(width, height, true);
 
                if (width == 0 || height == 0)
-                  snprintf(msg, sizeof(msg), "%s: DEFAULT",
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION));
+                  snprintf(msg, sizeof(msg), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION_DEFAULT));
                else
                {
-                  snprintf(msg, sizeof(msg),"%s: %dx%d",
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION),
-                        width, height);
-                  /* Add description of resolution */
                   if (!string_is_empty(desc))
-                     snprintf(msg, sizeof(msg), "%s - %s", msg, desc);
+                     snprintf(msg, sizeof(msg), 
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION_DESC), 
+                        width, height, desc);
+                  else
+                     snprintf(msg, sizeof(msg), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION_NO_DESC),
+                        width, height);
                }
 
                runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

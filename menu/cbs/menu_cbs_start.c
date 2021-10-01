@@ -509,11 +509,14 @@ static int action_start_video_resolution(
          strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
       else
 #endif
-         snprintf(msg, sizeof(msg),
-               "Resetting to: %dx%d", width, height);
-         /* Add description of resolution */
+      {
          if (!string_is_empty(desc))
-            snprintf(msg, sizeof(msg), "%s - %s", msg, desc);
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_DESC), 
+               width, height, desc);
+         else
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC), 
+               width, height);
+      }
 
       runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
