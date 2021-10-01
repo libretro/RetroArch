@@ -150,9 +150,6 @@
 #define BSV_MOVIE_IS_EOF(p_rarch)
 #endif
 
-/* Depends on ASCII character values */
-#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
-
 #define VIDEO_HAS_FOCUS(p_rarch) (p_rarch->current_video->focus ? (p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
 
 #if HAVE_DYNAMIC
@@ -204,10 +201,6 @@
       old_pressed3                              = pressed3; \
    }
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#define INPUT_REMOTE_KEY_PRESSED(p_rarch, key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
-#endif
-
 /**
  * check_input_driver_block_hotkey:
  *
@@ -231,10 +224,6 @@
 )
 
 #define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
-#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-#define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
 #define CDN_URL "https://cdn.discordapp.com/avatars"
 
@@ -325,10 +314,6 @@
 #define BSV_MOVIE_ARG "P:R:M:"
 #else
 #define BSV_MOVIE_ARG
-#endif
-
-#ifdef HAVE_LIBNX
-#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 #endif
 
 /* Griffin hack */
@@ -743,14 +728,6 @@ enum poll_type_override_t
    POLL_TYPE_OVERRIDE_LATE
 };
 
-enum input_game_focus_cmd_type
-{
-   GAME_FOCUS_CMD_OFF = 0,
-   GAME_FOCUS_CMD_ON,
-   GAME_FOCUS_CMD_TOGGLE,
-   GAME_FOCUS_CMD_REAPPLY
-};
-
 typedef void *(*constructor_t)(void);
 typedef void  (*destructor_t )(void*);
 
@@ -762,12 +739,6 @@ typedef struct my_list_t
    int capacity;
    int size;
 } my_list;
-
-typedef struct input_game_focus_state
-{
-   bool enabled;
-   bool core_requested;
-} input_game_focus_state_t;
 
 #ifdef HAVE_RUNAHEAD
 typedef bool(*runahead_load_state_function)(const void*, size_t);
@@ -843,9 +814,6 @@ struct rarch_state
    uint64_t video_driver_frame_time_count;
    uint64_t video_driver_frame_count;
    struct retro_camera_callback camera_cb;    /* uint64_t alignment */
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
-#endif
 
    struct string_list *subsystem_fullpaths;
    struct string_list *audio_driver_devices_list;
@@ -853,7 +821,6 @@ struct rarch_state
    uint8_t *video_driver_record_gpu_buffer;
    bool    *load_no_content_hook;
    float   *audio_driver_output_samples_buf;
-   char    *osk_grid[45];
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
@@ -924,13 +891,6 @@ struct rarch_state
    void *audio_driver_resampler_data;
    const audio_driver_t *current_audio;
    void *audio_driver_context_audio_data;
-#ifdef HAVE_OVERLAY
-   input_overlay_t *overlay_ptr;
-#endif
-
-   pad_connection_listener_t *pad_connection_listener;
-
-
 
 #ifdef HAVE_HID
    const void *hid_data;
@@ -956,7 +916,6 @@ struct rarch_state
 #ifdef HAVE_REWIND
    struct state_manager_rewind_state rewind_st;
 #endif
-   input_keyboard_line_t keyboard_line; /* ptr alignment */
    struct retro_subsystem_rom_info
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
       [SUBSYSTEM_MAX_SUBSYSTEM_ROMS];                    /* ptr alignment */
@@ -1031,7 +990,6 @@ struct rarch_state
 
    jmp_buf error_sjlj_context;              /* 4-byte alignment,
                                                put it right before long */
-   int osk_ptr;
 #if defined(HAVE_COMMAND)
 #ifdef HAVE_NETWORK_CMD
    int lastcmd_net_fd;
@@ -1071,12 +1029,6 @@ struct rarch_state
    unsigned frame_cache_height;
    unsigned video_driver_width;
    unsigned video_driver_height;
-   unsigned osk_last_codepoint;
-   unsigned osk_last_codepoint_len;
-   unsigned input_hotkey_block_counter;
-#ifdef HAVE_ACCESSIBILITY
-   unsigned gamepad_input_override;
-#endif
 #ifdef HAVE_NETWORKING
    unsigned server_port_deferred;
 #endif
@@ -1099,7 +1051,6 @@ struct rarch_state
    float audio_driver_input;
    float audio_driver_volume_gain;
 
-   enum osk_type osk_idx;
    enum rarch_core_type current_core_type;
    enum rarch_core_type explicit_current_core_type;
    enum rotation initial_screen_orientation;
@@ -1113,9 +1064,6 @@ struct rarch_state
 #endif
    enum rarch_display_type video_driver_display_type;
    enum poll_type_override_t core_poll_type_override;
-#ifdef HAVE_OVERLAY
-   enum overlay_visibility *overlay_visibility;
-#endif
    enum resampler_quality audio_driver_resampler_quality;
 
    /**
@@ -1297,8 +1245,6 @@ struct rarch_state
    bool has_set_netplay_stateless_mode;
    bool has_set_netplay_check_frames;
 #endif
-
-   input_game_focus_state_t game_focus_state; /* bool alignment */
 
    bool recording_enable;
    bool streaming_enable;

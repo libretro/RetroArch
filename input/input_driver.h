@@ -37,6 +37,7 @@
 #ifdef HAVE_OVERLAY
 #include "input_overlay.h"
 #endif
+#include "input_osk.h"
 
 #include "../msg_hash.h"
 #include "include/hid_types.h"
@@ -48,6 +49,54 @@
 #ifdef HAVE_COMMAND
 #include "../command.h"
 #endif
+
+#if defined(ANDROID)
+#define DEFAULT_MAX_PADS 8
+#define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(_3DS)
+#define DEFAULT_MAX_PADS 1
+#elif defined(SWITCH) || defined(HAVE_LIBNX)
+#define DEFAULT_MAX_PADS 8
+#elif defined(WIIU)
+#ifdef WIIU_HID
+#define DEFAULT_MAX_PADS 16
+#else
+#define DEFAULT_MAX_PADS 5
+#endif /* WIIU_HID */
+#elif defined(DJGPP)
+#define DEFAULT_MAX_PADS 1
+#define DOS_KEYBOARD_PORT DEFAULT_MAX_PADS
+#elif defined(XENON)
+#define DEFAULT_MAX_PADS 4
+#elif defined(VITA) || defined(SN_TARGET_PSP2)
+#define DEFAULT_MAX_PADS 4
+#elif defined(PSP)
+#define DEFAULT_MAX_PADS 1
+#elif defined(PS2)
+#define DEFAULT_MAX_PADS 8
+#elif defined(GEKKO) || defined(HW_RVL)
+#define DEFAULT_MAX_PADS 4
+#elif defined(HAVE_ODROIDGO2)
+#define DEFAULT_MAX_PADS 1
+#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
+#define DEFAULT_MAX_PADS 8
+#elif defined(__QNX__)
+#define DEFAULT_MAX_PADS 8
+#elif defined(__PS3__)
+#define DEFAULT_MAX_PADS 7
+#elif defined(_XBOX)
+#define DEFAULT_MAX_PADS 4
+#elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
+#define DEFAULT_MAX_PADS 4
+#elif defined(DINGUX)
+#define DEFAULT_MAX_PADS 2
+#else
+#define DEFAULT_MAX_PADS 16
+#endif /* defined(ANDROID) */
+
+#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+#define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
 RETRO_BEGIN_DECLS
 
@@ -317,8 +366,13 @@ typedef struct
     */
    rarch_timer_t combo_timers[INPUT_COMBO_LAST];
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
+#endif
+
    /* pointers */
    void *keyboard_press_data;
+   input_keyboard_line_t keyboard_line;                  /* ptr alignment */
    input_keyboard_press_t keyboard_press_cb;             /* ptr alignment */
    input_driver_t                *current_driver;
    void                          *current_data;
@@ -328,15 +382,30 @@ typedef struct
 #ifdef HAVE_COMMAND
    command_t *command[MAX_CMD_DRIVERS];
 #endif
+#ifdef HAVE_OVERLAY
+   input_overlay_t *overlay_ptr;
+   enum overlay_visibility *overlay_visibility;
+#endif
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
+   pad_connection_listener_t *pad_connection_listener;
+   char    *osk_grid[45];                                /* ptr alignment */ 
 
+   int osk_ptr;
    turbo_buttons_t turbo_btns; /* int32_t alignment */
 
    input_mapper_t mapper;          /* uint32_t alignment */
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
+   unsigned osk_last_codepoint;
+   unsigned osk_last_codepoint_len;
+   unsigned input_hotkey_block_counter;
+#ifdef HAVE_ACCESSIBILITY
+   unsigned gamepad_input_override;
+#endif
+
+   enum osk_type osk_idx;
 
    /* primitives */
    bool        nonblocking_flag;
@@ -347,7 +416,8 @@ typedef struct
    bool grab_mouse_state;
    bool analog_requested[MAX_USERS];
    bool keyboard_mapping_blocked;
-   retro_bits_512_t keyboard_mapping_bits; /* bool alignment */
+   retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
+   input_game_focus_state_t game_focus_state; /* bool alignment */
 } input_driver_state_t;
 
 
@@ -803,6 +873,8 @@ input_remote_t *input_driver_init_remote(
 void input_remote_free(input_remote_t *handle, unsigned max_users);
 #endif
 
+void input_game_focus_free(void);
+
 void input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
       char *buf, const char *prefix,
@@ -820,6 +892,19 @@ bool input_key_pressed(int key, bool keyboard_pressed);
 
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
+
+/**
+ * input_keyboard_line_event:
+ * @state                    : Input keyboard line handle.
+ * @character                : Inputted character.
+ *
+ * Called on every keyboard character event.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
+bool input_keyboard_line_event(
+      input_driver_state_t *input_st,
+      input_keyboard_line_t *state, uint32_t character);
 
 bool input_set_rumble_gain(unsigned gain);
 
@@ -840,6 +925,14 @@ const char *joypad_driver_name(unsigned i);
 
 void joypad_driver_reinit(void *data, const char *joypad_driver_name);
 
+#ifdef HAVE_COMMAND
+void input_driver_init_command(
+      input_driver_state_t *input_st,
+      settings_t *settings);
+
+void input_driver_deinit_command(input_driver_state_t *input_st);
+#endif
+
 #ifdef HAVE_OVERLAY
 /*
  * input_poll_overlay:
@@ -854,51 +947,36 @@ void input_poll_overlay(
       float opacity,
       unsigned analog_dpad_mode,
       float axis_threshold);
+
+void input_overlay_deinit(void);
+
+void input_overlay_set_visibility(int overlay_idx,
+      enum overlay_visibility vis);
+
+void input_overlay_init(void);
 #endif
 
-#if defined(ANDROID)
-#define DEFAULT_MAX_PADS 8
-#define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
-#elif defined(_3DS)
-#define DEFAULT_MAX_PADS 1
-#elif defined(SWITCH) || defined(HAVE_LIBNX)
-#define DEFAULT_MAX_PADS 8
-#elif defined(WIIU)
-#ifdef WIIU_HID
-#define DEFAULT_MAX_PADS 16
-#else
-#define DEFAULT_MAX_PADS 5
-#endif /* WIIU_HID */
-#elif defined(DJGPP)
-#define DEFAULT_MAX_PADS 1
-#define DOS_KEYBOARD_PORT DEFAULT_MAX_PADS
-#elif defined(XENON)
-#define DEFAULT_MAX_PADS 4
-#elif defined(VITA) || defined(SN_TARGET_PSP2)
-#define DEFAULT_MAX_PADS 4
-#elif defined(PSP)
-#define DEFAULT_MAX_PADS 1
-#elif defined(PS2)
-#define DEFAULT_MAX_PADS 8
-#elif defined(GEKKO) || defined(HW_RVL)
-#define DEFAULT_MAX_PADS 4
-#elif defined(HAVE_ODROIDGO2)
-#define DEFAULT_MAX_PADS 1
-#elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
-#define DEFAULT_MAX_PADS 8
-#elif defined(__QNX__)
-#define DEFAULT_MAX_PADS 8
-#elif defined(__PS3__)
-#define DEFAULT_MAX_PADS 7
-#elif defined(_XBOX)
-#define DEFAULT_MAX_PADS 4
-#elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
-#define DEFAULT_MAX_PADS 4
-#elif defined(DINGUX)
-#define DEFAULT_MAX_PADS 2
-#else
-#define DEFAULT_MAX_PADS 16
-#endif /* defined(ANDROID) */
+bool input_keys_pressed_other_sources(
+      input_driver_state_t *input_st,
+      unsigned i,
+      input_bits_t* p_new_state);
+
+int16_t input_state_device(
+      input_driver_state_t *input_st,
+      settings_t *settings,
+      input_mapper_t *handle,
+      unsigned input_analog_dpad_mode,
+      int16_t ret,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id,
+      bool button_mask);
+
+/**
+ * input_poll:
+ *
+ * Input polling callback function.
+ **/
+void input_driver_poll(void);
 
 extern input_device_driver_t *joypad_drivers[];
 extern input_driver_t *input_drivers[];

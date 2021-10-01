@@ -51,10 +51,26 @@
 #include "../cheevos/cheevos_menu.h"
 #endif
 
+#include "../gfx/gfx_animation.h"
 #include "../input/input_driver.h"
 #include "../input/input_remapping.h"
 #include "../performance_counters.h"
 #include "../version.h"
+
+#ifdef HAVE_LIBNX
+#include <switch.h>
+#endif
+
+#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#include "../switch_performance_profiles.h"
+#endif
+
+#ifdef HAVE_LIBNX
+#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+
+/* TODO/FIXME - public global variable */
+extern u32 __nx_applet_type;
+#endif
 
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
@@ -5622,4 +5638,459 @@ current_time;
    menu_st->input_last_time_us    = menu_st->current_time_us;
 
    return false;
+}
+
+bool menu_input_dialog_get_display_kb(void)
+{
+   struct menu_state *menu_st     = menu_state_get_ptr();
+#ifdef HAVE_LIBNX
+   input_driver_state_t *input_st = input_state_get_ptr();
+   SwkbdConfig kbd;
+   Result rc;
+   /* Indicates that we are "typing" from the swkbd
+    * result to RetroArch with repeated calls to input_keyboard_event
+    * This prevents input_keyboard_event from calling back
+    * menu_input_dialog_get_display_kb, looping indefinintely */
+   static bool typing = false;
+
+   if (typing)
+      return false;
+
+
+   /* swkbd only works on "real" titles */
+   if (     __nx_applet_type != AppletType_Application
+         && __nx_applet_type != AppletType_SystemApplication)
+      return menu_st->input_dialog_kb_display;
+
+   if (!menu_st->input_dialog_kb_display)
+      return false;
+
+   rc = swkbdCreate(&kbd, 0);
+
+   if (R_SUCCEEDED(rc))
+   {
+      unsigned i;
+      char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
+      swkbdConfigMakePresetDefault(&kbd);
+
+      swkbdConfigSetGuideText(&kbd,
+            menu_st->input_dialog_kb_label);
+
+      rc = swkbdShow(&kbd, buf, sizeof(buf));
+
+      swkbdClose(&kbd);
+
+      /* RetroArch uses key-by-key input
+         so we need to simulate it */
+      typing = true;
+      for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
+      {
+         /* In case a previous "Enter" press closed the keyboard */
+         if (!menu_st->input_dialog_kb_display)
+            break;
+
+         if (buf[i] == '\n' || buf[i] == '\0')
+            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+         else
+         {
+            const char *word = &buf[i];
+            /* input_keyboard_line_append expects a null-terminated
+               string, so just make one (yes, the touch keyboard is
+               a list of "null-terminated characters") */
+            char oldchar     = buf[i+1];
+            buf[i+1]         = '\0';
+
+            input_keyboard_line_append(&input_st->keyboard_line, word);
+
+            osk_update_last_codepoint(
+                  &input_st->osk_last_codepoint,
+                  &input_st->osk_last_codepoint_len,
+                  word);
+            buf[i+1]     = oldchar;
+         }
+      }
+
+      /* fail-safe */
+      if (menu_st->input_dialog_kb_display)
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      typing = false;
+      libnx_apply_overclock();
+      return false;
+   }
+   libnx_apply_overclock();
+#endif /* HAVE_LIBNX */
+   return menu_st->input_dialog_kb_display;
+}
+
+unsigned menu_event(
+      settings_t *settings,
+      input_bits_t *p_input,
+      input_bits_t *p_trigger_input,
+      bool display_kb)
+{
+   /* Used for key repeat */
+   static float delay_timer                        = 0.0f;
+   static float delay_count                        = 0.0f;
+   static bool initial_held                        = true;
+   static bool first_held                          = false;
+   static unsigned ok_old                          = 0;
+   unsigned ret                                    = MENU_ACTION_NOOP;
+   bool set_scroll                                 = false;
+   size_t new_scroll_accel                         = 0;
+   struct menu_state                     *menu_st  = menu_state_get_ptr();
+   menu_input_t *menu_input                        = &menu_st->input_state;
+   input_driver_state_t *input_st                  = input_state_get_ptr();
+   input_driver_t *current_input                   = input_st->current_driver;
+   const input_device_driver_t
+      *joypad                                      = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad         =
+      input_st->secondary_joypad;
+#else
+   const input_device_driver_t *sec_joypad         = NULL;
+#endif
+   gfx_display_t *p_disp                           = disp_get_ptr();
+   menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
+   menu_handle_t             *menu                 = menu_st->driver_data;
+   bool keyboard_mapping_blocked                   = input_st->keyboard_mapping_blocked;
+   bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
+   bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
+   bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
+   bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
+   bool pointer_enabled                            = settings->bools.menu_pointer_enable;
+   unsigned input_touch_scale                      = settings->uints.input_touch_scale;
+   unsigned menu_scroll_delay                      =
+      settings->uints.menu_scroll_delay;
+#ifdef HAVE_OVERLAY
+   bool input_overlay_enable                       = settings->bools.input_overlay_enable;
+   bool overlay_active                             = input_overlay_enable 
+      && input_st->overlay_ptr
+      && input_st->overlay_ptr->alive;
+#else
+   bool input_overlay_enable                       = false;
+   bool overlay_active                             = false;
+#endif
+   unsigned menu_ok_btn                            = swap_ok_cancel_btns ?
+         RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
+   unsigned menu_cancel_btn                        = swap_ok_cancel_btns ?
+         RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
+   unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
+   unsigned ok_trigger                             = ok_current & ~ok_old;
+   unsigned i                                      = 0;
+   static unsigned navigation_initial              = 0;
+   unsigned navigation_current                     = 0;
+   unsigned navigation_buttons[6] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_R
+   };
+
+   ok_old                                          = ok_current;
+
+   /* Get pointer (mouse + touchscreen) input
+    * Note: Must be done regardless of menu screensaver
+    *       state */
+
+   /* > If pointer input is disabled, do nothing */
+   if (!menu_mouse_enable && !menu_pointer_enable)
+      menu_input->pointer.type = MENU_POINTER_DISABLED;
+   else
+   {
+      menu_input_pointer_hw_state_t mouse_hw_state       = {0};
+      menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
+
+      /* Read mouse */
+      if (menu_mouse_enable)
+         menu_input_get_mouse_hw_state(
+               p_disp,
+               menu,
+               input_st,
+               current_input,
+               joypad,
+               sec_joypad,
+               keyboard_mapping_blocked,
+               menu_mouse_enable,
+               input_overlay_enable,
+               overlay_active,
+               &mouse_hw_state);
+
+      /* Read touchscreen
+       * Note: Could forgo this if mouse is currently active,
+       * but this is 'cleaner' code... (if performance is a
+       * concern - and it isn't - user can just disable touch
+       * screen support) */
+      if (menu_pointer_enable)
+         menu_input_get_touchscreen_hw_state(
+               p_disp,
+               menu,
+               input_st,
+               current_input,
+               joypad,
+               sec_joypad,
+               keyboard_mapping_blocked,
+               overlay_active,
+               pointer_enabled,
+               input_touch_scale,
+               &touchscreen_hw_state);
+
+      /* Mouse takes precedence */
+      if (mouse_hw_state.active)
+         menu_input->pointer.type = MENU_POINTER_MOUSE;
+      else if (touchscreen_hw_state.active)
+         menu_input->pointer.type = MENU_POINTER_TOUCHSCREEN;
+
+      /* Copy input from the current device */
+      if (menu_input->pointer.type == MENU_POINTER_MOUSE)
+         memcpy(pointer_hw_state, &mouse_hw_state, sizeof(menu_input_pointer_hw_state_t));
+      else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
+         memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
+
+      if (pointer_hw_state->active)
+         menu_st->input_last_time_us = menu_st->current_time_us;
+   }
+
+   /* Populate menu_input_state
+    * Note: dx, dy, ptr, y_accel, etc. entries are set elsewhere */
+   menu_input->pointer.x          = pointer_hw_state->x;
+   menu_input->pointer.y          = pointer_hw_state->y;
+   if (menu_input->select_inhibit || menu_input->cancel_inhibit)
+   {
+      menu_input->pointer.active  = false;
+      menu_input->pointer.pressed = false;
+   }
+   else
+   {
+      menu_input->pointer.active  = pointer_hw_state->active;
+      menu_input->pointer.pressed = pointer_hw_state->select_pressed;
+   }
+
+   /* If menu screensaver is active, any input
+    * is intercepted and used to switch it off */
+   if (menu_st->screensaver_active)
+   {
+      /* Check pointer input */
+      bool input_active = (menu_input->pointer.type != MENU_POINTER_DISABLED) &&
+            menu_input->pointer.active;
+
+      /* Check regular input */
+      if (!input_active)
+         input_active = bits_any_set(p_input->data, ARRAY_SIZE(p_input->data));
+
+      if (!input_active)
+         input_active = bits_any_set(p_trigger_input->data, ARRAY_SIZE(p_trigger_input->data));
+
+      /* Disable screensaver if required */
+      if (input_active)
+      {
+         menu_ctx_environment_t menu_environ;
+         menu_environ.type           = MENU_ENVIRON_DISABLE_SCREENSAVER;
+         menu_environ.data           = NULL;
+         menu_st->screensaver_active = false;
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+      }
+
+      /* Annul received input */
+      menu_input->pointer.active      = false;
+      menu_input->pointer.pressed     = false;
+      menu_input->select_inhibit      = true;
+      menu_input->cancel_inhibit      = true;
+      pointer_hw_state->up_pressed    = false;
+      pointer_hw_state->down_pressed  = false;
+      pointer_hw_state->left_pressed  = false;
+      pointer_hw_state->right_pressed = false;
+      return MENU_ACTION_NOOP;
+   }
+
+   /* Accelerate only navigation buttons */
+   for (i = 0; i < 6; i++)
+   {
+      if (BIT256_GET_PTR(p_input, navigation_buttons[i]))
+         navigation_current        |= (1 << navigation_buttons[i]);
+   }
+
+   if (navigation_current)
+   {
+      if (!first_held)
+      {
+         /* Store first direction in order to block "diagonals" */
+         if (!navigation_initial)
+            navigation_initial      = navigation_current;
+
+         /* don't run anything first frame, only capture held inputs
+          * for old_input_state. */
+
+         first_held                 = true;
+         if (initial_held)
+            delay_timer             = menu_scroll_delay;
+         else
+            delay_timer             = menu_scroll_fast ? 100 : 20;
+         delay_count                = 0;
+      }
+
+      if (delay_count >= delay_timer)
+      {
+         uint32_t input_repeat      = 0;
+         for (i = 0; i < 6; i++)
+            BIT32_SET(input_repeat, navigation_buttons[i]);
+
+         set_scroll                 = true;
+         first_held                 = false;
+         p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;
+         new_scroll_accel           = menu_st->scroll.acceleration;
+
+         if (menu_scroll_fast)
+            new_scroll_accel        = MIN(new_scroll_accel + 1, 64);
+         else
+            new_scroll_accel        = MIN(new_scroll_accel + 1, 5);
+      }
+
+      initial_held                  = false;
+   }
+   else
+   {
+      set_scroll                    = true;
+      first_held                    = false;
+      initial_held                  = true;
+      navigation_initial            = 0;
+   }
+
+   if (set_scroll)
+      menu_st->scroll.acceleration  = (unsigned)(new_scroll_accel);
+
+   delay_count                     += anim_get_ptr()->delta_time;
+
+   if (display_kb)
+   {
+      bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
+
+      input_event_osk_iterate(input_st->osk_grid, input_st->osk_idx);
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_ptr < 33)
+            input_st->osk_ptr += OSK_CHARS_PER_LINE;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_ptr >= OSK_CHARS_PER_LINE)
+            input_st->osk_ptr -= OSK_CHARS_PER_LINE;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_ptr < 43)
+            input_st->osk_ptr += 1;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_ptr >= 1)
+            input_st->osk_ptr -= 1;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_idx > OSK_TYPE_UNKNOWN + 1)
+            input_st->osk_idx = ((enum osk_type)
+                  (input_st->osk_idx - 1));
+         else
+            input_st->osk_idx = ((enum osk_type)(show_osk_symbols
+                     ? OSK_TYPE_LAST - 1
+                     : OSK_SYMBOLS_PAGE1));
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      {
+         menu_st->input_last_time_us = menu_st->current_time_us;
+         if (input_st->osk_idx < (show_osk_symbols
+                  ? OSK_TYPE_LAST - 1
+                  : OSK_SYMBOLS_PAGE1))
+            input_st->osk_idx = ((enum osk_type)(
+                     input_st->osk_idx + 1));
+         else
+            input_st->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
+      {
+         if (input_st->osk_ptr >= 0)
+            input_event_osk_append(
+                  &input_st->keyboard_line,
+                  &input_st->osk_idx,
+                  &input_st->osk_last_codepoint,
+                  &input_st->osk_last_codepoint_len,
+                  input_st->osk_ptr,
+                  show_osk_symbols,
+                  input_st->osk_grid[input_st->osk_ptr]);
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+         input_keyboard_event(true, '\x7f', '\x7f',
+               0, RETRO_DEVICE_KEYBOARD);
+
+      /* send return key to close keyboard input window */
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      BIT256_CLEAR_ALL_PTR(p_trigger_input);
+   }
+   else
+   {
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+            ret = MENU_ACTION_UP;
+      }
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+            ret = MENU_ACTION_DOWN;
+      }
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+            ret = MENU_ACTION_LEFT;
+      }
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      {
+         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+            ret = MENU_ACTION_RIGHT;
+      }
+
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+         ret = MENU_ACTION_SCROLL_UP;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+         ret = MENU_ACTION_SCROLL_DOWN;
+      else if (ok_trigger)
+         ret = MENU_ACTION_OK;
+      else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+         ret = MENU_ACTION_CANCEL;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
+         ret = MENU_ACTION_SEARCH;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         ret = MENU_ACTION_SCAN;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+         ret = MENU_ACTION_START;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         ret = MENU_ACTION_INFO;
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
+         ret = MENU_ACTION_TOGGLE;
+
+      if (ret != MENU_ACTION_NOOP)
+         menu_st->input_last_time_us = menu_st->current_time_us;
+   }
+
+   return ret;
 }

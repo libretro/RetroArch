@@ -27,6 +27,14 @@ enum input_auto_game_focus_type
    AUTO_GAME_FOCUS_LAST
 };
 
+enum input_game_focus_cmd_type
+{
+   GAME_FOCUS_CMD_OFF = 0,
+   GAME_FOCUS_CMD_ON,
+   GAME_FOCUS_CMD_TOGGLE,
+   GAME_FOCUS_CMD_REAPPLY
+};
+
 /* Turbo support. */
 struct turbo_buttons
 {
@@ -86,6 +94,12 @@ typedef struct input_mapper
    /* This is a bitmask of (1 << key_bind_id). */
    input_bits_t buttons[MAX_USERS];
 } input_mapper_t;
+
+typedef struct input_game_focus_state
+{
+   bool enabled;
+   bool core_requested;
+} input_game_focus_state_t;
 
 typedef struct rarch_joypad_driver input_device_driver_t;
 typedef struct input_keyboard_line input_keyboard_line_t;
