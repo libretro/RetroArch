@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 
 #include <queues/task_queue.h>
+#include <gfx/scaler/scaler.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -210,6 +211,7 @@ typedef struct screenshot_task_state screenshot_task_state_t;
 
 struct screenshot_task_state
 {
+   struct scaler_ctx scaler;
    uint8_t *out_buffer;
    const void *frame;
    void *userbuf;
