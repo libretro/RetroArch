@@ -26,6 +26,7 @@ struct hidpad_wiiugca_data
 {
    struct pad_connection* connection;
    hid_driver_t *driver;
+   int pad_slots_map[4];
    uint8_t data[64];
    uint32_t slot;
    uint32_t buttons;
@@ -148,6 +149,14 @@ const char *hidpad_wiiugca_get_name(void *data)
   return "Wii U GC Controller Adapter";
 }
 
+static int32_t hidpad_wiiugca_button(void *data, uint16_t joykey) {
+   struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
+   if (!device || joykey > 31)
+      return 0;
+
+   return device->buttons & (1 << joykey);
+}
+
 pad_connection_interface_t pad_connection_wiiugca = {
    hidpad_wiiugca_init,
    hidpad_wiiugca_deinit,
@@ -156,4 +165,5 @@ pad_connection_interface_t pad_connection_wiiugca = {
    hidpad_wiiugca_get_buttons,
    hidpad_wiiugca_get_axis,
    hidpad_wiiugca_get_name,
+   hidpad_wiiugca_button,
 };

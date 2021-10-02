@@ -24,6 +24,26 @@
 
 #include "joypad_connection.h"
 
+
+
+/* we init the hid/vid to 0 because we need to do endian magic that we can't do during the declaration */
+joypad_connection_entry_t pad_map[] = {
+   { "Nintendo RVL-CNT-01",           0,     0,  &pad_connection_wii },
+   { "Nintendo RVL-CNT-01-UC",        0,     0,  &pad_connection_wiiupro },
+   { "Wireless Controller",           0,     0,  &pad_connection_ps4 },
+   { "PLAYSTATION(R)3 Controller",    0,     0,  &pad_connection_ps3 },
+   { "PLAYSTATION(R)3 Controller",    0,     0,  &pad_connection_ps3 },
+   { "Generic SNES USB Controller",   0,     0,  &pad_connection_snesusb },
+   { "Generic NES USB Controller",    0,     0,  &pad_connection_nesusb },
+   { "Wii U GC Controller Adapter",   0,     0,  &pad_connection_wiiugca },
+   { "PS2/PSX Controller Adapter",    0,     0,  &pad_connection_ps2adapter },
+   { "PSX to PS3 Controller Adapter", 0,     0,  &pad_connection_psxadapter },
+   { "Mayflash DolphinBar",           0,     0,  &pad_connection_wii },
+   { "Retrode",                       0,     0,  &pad_connection_retrode },
+   { "HORI mini wired PS4",           0,     0,  &pad_connection_ps4_hori_mini },
+   { 0, 0}
+};
+
 static bool joypad_is_end_of_list(joypad_connection_t *pad)
 {
   return pad
@@ -93,42 +113,7 @@ joypad_connection_t *pad_connection_init(unsigned pads)
    return joyconn;
 }
 
-int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
-   const char *name, uint16_t vid, uint16_t pid,
-   void *data, hid_driver_t *driver)
-{
-
-   static struct
-   {
-      const char* name;
-      uint16_t vid;
-      uint16_t pid;
-      pad_connection_interface_t *iface;
-   } pad_map[] =
-   {
-      { "Nintendo RVL-CNT-01",           0,     0,  &pad_connection_wii },
-      { "Nintendo RVL-CNT-01-UC",        0,     0,  &pad_connection_wiiupro },
-      { "Wireless Controller",           0,     0,  &pad_connection_ps4 },
-      { "PLAYSTATION(R)3 Controller",    0,     0,  &pad_connection_ps3 },
-      { "PLAYSTATION(R)3 Controller",    0,     0,  &pad_connection_ps3 },
-      { "Generic SNES USB Controller",   0,     0,  &pad_connection_snesusb },
-      { "Generic NES USB Controller",    0,     0,  &pad_connection_nesusb },
-      { "Wii U GC Controller Adapter",   0,     0,  &pad_connection_wiiugca },
-      { "PS2/PSX Controller Adapter",    0,     0,  &pad_connection_ps2adapter },
-      { "PSX to PS3 Controller Adapter", 0,     0,  &pad_connection_psxadapter },
-      { "Mayflash DolphinBar",           0,     0,  &pad_connection_wii },
-      { "Retrode",                       0,     0,  &pad_connection_retrode },
-      { "HORI mini wired PS4",           0,     0,  &pad_connection_ps4_hori_mini },
-      { 0, 0}
-   };
-   joypad_connection_t *s = NULL;
-   int pad                = pad_connection_find_vacant_pad(joyconn);
-
-   if (pad == -1)
-      return -1;
-
-   s = &joyconn[pad];
-
+void init_pad_map() {
    pad_map[0].vid         = VID_NINTENDO;
    pad_map[0].pid         = PID_NINTENDO_PRO;
    pad_map[1].vid         = VID_NINTENDO;
@@ -155,59 +140,62 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    pad_map[11].pid        = PID_RETRODE;
    pad_map[12].vid        = VID_HORI_1;
    pad_map[12].pid        = PID_HORI_MINI_WIRED_PS4;
+}
+
+joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name) {
+   unsigned i;
+   const bool has_name = !string_is_empty(name);
+
+   for(i = 0; pad_map[i].name != NULL; i++) {
+      const char *name_match = has_name ? strstr(pad_map[i].name, name) : NULL;
+      /* The Wii Pro Controller and Wii U pro controller have the same VID/PID, so we have to use the
+         * descriptor string to differentiate them. */
+      if(pad_map[i].vid == VID_NINTENDO && pad_map[i].pid == PID_NINTENDO_PRO)
+      {
+         if(!string_is_equal(pad_map[i].name, name))
+            continue;
+      }      
+
+      if(name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid)) {
+         return &pad_map[i];
+      }
+   }
+
+   return NULL;
+}
+
+int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
+   const char *name, uint16_t vid, uint16_t pid,
+   void *data, hid_driver_t *driver)
+{
+   joypad_connection_entry_t *entry = NULL;
+   joypad_connection_t *s = NULL;
+   int pad = -1;
+
+   if(pad_map[0].vid == 0) {
+      init_pad_map();
+   }
+
+   entry = find_connection_entry(vid, pid, name); 
+   pad = pad_connection_find_vacant_pad(joyconn);
+
+   if (pad == -1)
+      return -1;
+
+   s = &joyconn[pad];
 
    if (s)
    {
-      unsigned i;
-      
-      const bool has_name = !string_is_empty(name);
-
-      for (i = 0; name && pad_map[i].name; i++)
-      {
-         const char *name_match = has_name ? strstr(pad_map[i].name, name) : NULL;
-
-         /* Never change, Nintendo. */
-         if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)
-         {
-            if(!string_is_equal(pad_map[i].name, name))
-               continue;
-         }
-
-#if 0
-         RARCH_LOG("[connect] %s\n", pad_map[i].name);
-         RARCH_LOG("[connect] VID: Expected: %04x got: %04x\n",
-                   pad_map[i].vid, vid);
-         RARCH_LOG("[connect] PID: Expected: %04x got: %04x\n",
-                   pad_map[i].pid, pid);
-#endif
-
-         if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
-         {
-            RARCH_LOG("Pad was matched to \"%s\". Setting up an interface.\n", name_match);
-            // RARCH_DBG("Pad was matched to \"%s\". Setting up an interface.\n", name_match);
-            s->iface      = pad_map[i].iface;
-            s->data       = data;
-            s->connection = s->iface->init(data, pad, driver);
-            s->connected  = true;
-#if 0
-            RARCH_LOG("%s found \n", pad_map[i].name);
-#endif
-            break;
-         }
-#if 0
-         else
-         {
-            RARCH_LOG("%s not found \n", pad_map[i].name);
-         }
-#endif
-      }
-
-      /* We failed to find a matching pad,
-       * set up one without an interface */
-      if (!s->connected)
-      {
-         RARCH_LOG("Pad was not matched. Setting up without an interface.\n");
-        // RARCH_DBG("Pad was not matched. Setting up without an interface.\n");
+      if(entry) {
+         RARCH_DBG("Pad was matched to \"%s\". Setting up an interface.\n", entry->name);
+         s->iface      = entry->iface;
+         s->data       = data;
+         s->connection = s->iface->init(data, pad, driver);
+         s->connected  = true;
+      } else {
+         /* We failed to find a matching pad,
+          * set up one without an interface */
+         RARCH_DBG("Pad was not matched. Setting up without an interface.\n");
          s->iface     = NULL;
          s->data      = data;
          s->connected = true;

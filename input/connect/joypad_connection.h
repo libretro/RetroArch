@@ -73,8 +73,15 @@ typedef struct pad_connection_interface
    void			(*get_buttons)(void *data, input_bits_t *state);
    int16_t  	(*get_axis)(void *data, unsigned axis);
    const char*	(*get_name)(void *data);
-   int32_t      (*button)(void *data, uint16_t joykey);
+   int32_t     (*button)(void *data, uint16_t joykey);
 } pad_connection_interface_t;
+
+typedef struct joypad_connection_entry {
+   const char* name;
+   uint16_t vid;
+   uint16_t pid;
+   pad_connection_interface_t *iface;
+} joypad_connection_entry_t;
 
 extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_wiiupro;
@@ -121,5 +128,7 @@ bool pad_connection_rumble(joypad_connection_t *s,
 
 const char* pad_connection_get_name(joypad_connection_t *joyconn,
    unsigned idx);
+
+joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name);
 
 #endif
