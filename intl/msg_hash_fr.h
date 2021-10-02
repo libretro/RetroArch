@@ -2349,6 +2349,14 @@ MSG_HASH(
    "Combinaison de touches de la manette pour afficher/masquer le menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Combinaison manette pour quitter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Combinaison de touches de la manette pour quitter RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "Délai d'activation de la touche de raccourcis (en images)"
    )
