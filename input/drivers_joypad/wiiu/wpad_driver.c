@@ -85,7 +85,7 @@ static void wpad_register(unsigned channel)
       return;
 
    joypad_state.pads[slot].connected = true;
-   joypad_state.pad_drivers[slot] = &wpad_driver;
+   joypad_state.pads[slot].input_driver = &wpad_driver;
    input_pad_connect(slot, &wpad_driver);
    joypad_state.wpad.channel_slot_map[channel] = slot;
 }

@@ -51,7 +51,8 @@ struct wiiu_hid {
  */
 struct wiiu_adapter {
    wiiu_adapter_t *next;
-   int pad;
+   pad_connection_interface_t *pad_driver;
+   void *pad_driver_data;
    wiiu_hid_t *hid;
    uint16_t vendor_id;
    uint16_t product_id;

@@ -94,7 +94,6 @@ typedef struct wiiu_hidpad {
 
 typedef struct wiiu_joypad {
    joypad_connection_t pads[MAX_USERS];
-   input_device_driver_t *pad_drivers[MAX_USERS];
    int max_slot;
 
    wiiu_kpad_t kpad;

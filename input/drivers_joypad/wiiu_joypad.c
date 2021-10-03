@@ -40,8 +40,8 @@ static bool wiiu_joypad_query_pad(unsigned pad)
 {
    return ready   &&
       pad < MAX_USERS          &&
-      joypad_state.pad_drivers[pad] &&
-      joypad_state.pad_drivers[pad]->query_pad(pad);
+      joypad_state.pads[pad].input_driver &&
+      joypad_state.pads[pad].input_driver->query_pad(pad);
 }
 
 static void wiiu_joypad_destroy(void)
@@ -59,21 +59,21 @@ static int32_t wiiu_joypad_button(unsigned port, uint16_t joykey)
       return 0;
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return (joypad_state.pad_drivers[port]->button(port, joykey));
+   return (joypad_state.pads[port].input_driver->button(port, joykey));
 }
 
 static void wiiu_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
    if (!wiiu_joypad_query_pad(port))
       return;
-   joypad_state.pad_drivers[port]->get_buttons(port, state);
+   joypad_state.pads[port].input_driver->get_buttons(port, state);
 }
 
 static int16_t wiiu_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (!wiiu_joypad_query_pad(port))
       return 0;
-   return joypad_state.pad_drivers[port]->axis(port, joyaxis);
+   return joypad_state.pads[port].input_driver->axis(port, joyaxis);
 }
 
 static int16_t wiiu_joypad_state(
@@ -99,11 +99,11 @@ static int16_t wiiu_joypad_state(
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
                (uint16_t)joykey != NO_BTN 
-            && (joypad_state.pad_drivers[port]->button(port_idx, (uint16_t)joykey))
+            && (joypad_state.pads[port].input_driver->button(port_idx, (uint16_t)joykey))
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(joypad_state.pad_drivers[port]->axis(port_idx, joyaxis)) 
+            ((float)abs(joypad_state.pads[port].input_driver->axis(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -123,7 +123,7 @@ static const char* wiiu_joypad_name(unsigned pad)
    if (!wiiu_joypad_query_pad(pad))
       return "N/A";
 
-   return joypad_state.pad_drivers[pad]->name(pad);
+   return joypad_state.pads[pad].input_driver->name(pad);
 }
 
 input_device_driver_t wiiu_joypad =

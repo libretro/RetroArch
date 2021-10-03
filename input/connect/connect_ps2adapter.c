@@ -182,4 +182,6 @@ pad_connection_interface_t pad_connection_ps2adapter = {
    hidpad_ps2adapter_get_buttons,
    hidpad_ps2adapter_get_axis,
    hidpad_ps2adapter_get_name,
+   NULL,
+   false,
 };

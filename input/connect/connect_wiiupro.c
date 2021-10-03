@@ -255,5 +255,7 @@ pad_connection_interface_t pad_connection_wiiupro = {
    hidpad_wiiupro_set_rumble,
    hidpad_wiiupro_get_buttons,
    hidpad_wiiupro_get_axis,
-   NULL,
+   NULL, /* get_name */
+   NULL, /* button */
+   false
 };

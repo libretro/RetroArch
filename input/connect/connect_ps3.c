@@ -178,7 +178,6 @@ static void ds3_packet_handler(void *data, uint8_t *packet, uint16_t size)
          sizeof(instance->data), size);
       return;
    }
-   RARCH_LOG_BUFFER(packet, size);
 
    memcpy(instance->data, packet, size);
    ds3_update_pad_state(instance);
@@ -275,5 +274,6 @@ pad_connection_interface_t pad_connection_ps3 = {
    ds3_get_buttons,
    ds3_get_axis,
    ds3_get_name,
-   ds3_button
+   ds3_button,
+   false,
 };

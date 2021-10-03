@@ -147,4 +147,6 @@ pad_connection_interface_t pad_connection_nesusb = {
    hidpad_nesusb_get_buttons,
    hidpad_nesusb_get_axis,
    hidpad_nesusb_get_name,
+   NULL, /* button */
+   false,
 };

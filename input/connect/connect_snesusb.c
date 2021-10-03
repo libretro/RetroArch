@@ -148,4 +148,6 @@ pad_connection_interface_t pad_connection_snesusb = {
    hidpad_snesusb_get_buttons,
    hidpad_snesusb_get_axis,
    hidpad_snesusb_get_name,
+   NULL, /* button */
+   false
 };

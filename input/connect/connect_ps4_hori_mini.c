@@ -186,4 +186,6 @@ pad_connection_interface_t pad_connection_ps4_hori_mini = {
    hidpad_ps4_hori_mini_get_buttons,
    hidpad_ps4_hori_mini_get_axis,
    hidpad_ps4_hori_mini_get_name,
+   NULL, /* button */
+   false
 };

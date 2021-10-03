@@ -158,7 +158,7 @@ static void kpad_register(unsigned channel, uint8_t device_type)
       }
 
       joypad_state.kpad.wiimotes[channel].type = device_type;
-      joypad_state.pad_drivers[slot] = &kpad_driver;
+      joypad_state.pads[slot].input_driver = &kpad_driver;
       input_pad_connect(slot, &kpad_driver);
    }
 }

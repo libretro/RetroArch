@@ -191,4 +191,6 @@ pad_connection_interface_t pad_connection_psxadapter = {
    hidpad_psxadapter_get_buttons,
    hidpad_psxadapter_get_axis,
    hidpad_psxadapter_get_name,
+   NULL, /* button */
+   false
 };

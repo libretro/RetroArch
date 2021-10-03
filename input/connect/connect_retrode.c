@@ -197,4 +197,6 @@ pad_connection_interface_t pad_connection_retrode = {
    hidpad_retrode_get_buttons,
    hidpad_retrode_get_axis,
    hidpad_retrode_get_name,
+   NULL, /* button */
+   false,
 };
