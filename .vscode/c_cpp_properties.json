@@ -167,6 +167,23 @@
             "cStandard": "c11",
             "cppStandard": "c++11",
             "intelliSenseMode": "gcc-x64"
+        },
+        {
+            "name": "ps2sdk-ee",
+            "includePath": [
+                "${env:PS2DEV}/ps2sdk/common/include",
+                "${env:PS2DEV}/ps2sdk/ee/include",
+                "${env:PS2DEV}/gsKit/include",
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "PS2",
+                "_EE"
+            ],
+            "compilerPath": "${env:PS2DEV}/ee/bin/mips64r5900el-ps2-elf-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4
