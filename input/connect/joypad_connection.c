@@ -143,9 +143,14 @@ void init_pad_map() {
    pad_map[12].pid        = PID_HORI_MINI_WIRED_PS4;
 }
 
+
 joypad_connection_entry_t *find_connection_entry(int16_t vid, int16_t pid, const char *name) {
    unsigned i;
    const bool has_name = !string_is_empty(name);
+
+   if(pad_map[0].vid == 0) {
+      init_pad_map();
+   }
 
    for(i = 0; pad_map[i].name != NULL; i++) {
       const char *name_match = has_name ? strstr(pad_map[i].name, name) : NULL;
@@ -169,9 +174,10 @@ void pad_connection_pad_deregister(joypad_connection_t *joyconn, pad_connection_
    int i;
 
    RARCH_LOG("pad_connection_pad_deregister\n");
+   RARCH_LOG("joyconn: 0x%08lx iface: 0x%08lx pad_data: 0x%08lx\n", (unsigned long)joyconn, (unsigned long)iface, (unsigned long)pad_data);
    for(i = 0; !joypad_is_end_of_list(&joyconn[i]); i++) {
       RARCH_LOG("joyconn[i].connected = %d, joyconn[i].iface == iface = %d\n", joyconn[i].connected, joyconn[i].iface == iface);
-      if(joyconn[i].connected && joyconn[i].iface == iface) {
+      if(joyconn[i].connected && joyconn[i].iface == iface && iface != NULL) {
          if(iface->set_rumble) {
             RARCH_LOG("set_rumble");
             iface->set_rumble(joyconn[i].connection, RETRO_RUMBLE_STRONG, 0);

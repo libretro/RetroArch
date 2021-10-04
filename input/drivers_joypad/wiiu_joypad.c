@@ -25,6 +25,7 @@ wiiu_joypad_t joypad_state = {0};
 static void *wiiu_joypad_init(void *data)
 {
    memset(&joypad_state, 0, sizeof(wiiu_joypad_t));
+   joypad_state.pads[MAX_USERS].data = (void *)0xdeadbeef;
    joypad_state.max_slot = MAX_USERS;
    input_hid_init_first();
 
