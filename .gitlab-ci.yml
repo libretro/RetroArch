@@ -118,7 +118,6 @@ build-retroarch-windows-msvc10-x64:
     - |
       $ErrorActionPreference = 'Stop'
       # Build RetroArch
-      env.exe
       bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
       if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
       mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
@@ -168,7 +167,6 @@ build-retroarch-windows-msvc10-i686:
     - |
       $ErrorActionPreference = 'Stop'
       # Build RetroArch
-      env.exe
       bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
       if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
       mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
@@ -219,7 +217,6 @@ build-retroarch-windows-msvc05-i686:
     - |
       $ErrorActionPreference = 'Stop'
       # Build RetroArch
-      env.exe
       bash.exe -l -c "make -f Makefile.griffin platform=$Env:MSVC_PLATFORM"
       if ($LastExitCode -ne 0){throw "Failed to build RetroArch"}
       mt.exe -nologo -manifest "retroarch.exe.manifest" -outputresource:"retroarch.exe;#1"
