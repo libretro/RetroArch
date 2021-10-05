@@ -7213,7 +7213,7 @@ bool command_event(enum event_command cmd, void *data)
                {
                   if (!string_is_empty(desc))
                      snprintf(msg, sizeof(msg), 
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION_DESC), 
+                        msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC), 
                         width, height, desc);
                   else
                      snprintf(msg, sizeof(msg), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION_NO_DESC),
