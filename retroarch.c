@@ -15437,7 +15437,7 @@ const char* config_get_joypad_driver_options(void)
 void *hid_driver_get_data(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->hid_data;
+   return (void *)p_rarch->hid_data;
 }
 
 /* This is only to be called after we've invoked free() on the
