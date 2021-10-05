@@ -722,6 +722,8 @@ static void hidpad_wii_set_rumble(void *data,
    (void)strength;
 }
 
+/* TODO: implement hidpad_wii_button(). */
+
 pad_connection_interface_t pad_connection_wii = {
    hidpad_wii_init,
    hidpad_wii_deinit,

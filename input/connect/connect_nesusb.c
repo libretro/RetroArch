@@ -139,6 +139,14 @@ const char * hidpad_nesusb_get_name(void *data)
 	return "Generic NES USB Controller";
 }
 
+static int32_t hidpad_nesusb_button(void *data, uint16_t joykey)
+{
+      struct hidpad_nesusb_data *pad = (struct hidpad_nesusb_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
+}
+
 pad_connection_interface_t pad_connection_nesusb = {
    hidpad_nesusb_init,
    hidpad_nesusb_deinit,
@@ -147,6 +155,6 @@ pad_connection_interface_t pad_connection_nesusb = {
    hidpad_nesusb_get_buttons,
    hidpad_nesusb_get_axis,
    hidpad_nesusb_get_name,
-   NULL, /* button */
+   hidpad_nesusb_button,
    false,
 };
