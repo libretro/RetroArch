@@ -93,7 +93,7 @@ static int32_t ds3_send_control_packet(void *data, uint32_t slot, hid_driver_t *
 #if defined(WIIU)   
    result = driver->set_report(data, HID_REPORT_OUTPUT, DS3_RUMBLE_REPORT_ID, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
 #else
-   result = driver->send_control(data, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
+   driver->send_control(data, packet_buffer+PACKET_OFFSET, 64-PACKET_OFFSET);
 #endif /* WIIU */
    return result;
 }
@@ -102,7 +102,8 @@ static int32_t ds3_send_activation_packet(void *data, uint32_t slot, hid_driver_
    #ifdef WIIU
    return driver->set_report(data, HID_REPORT_FEATURE, DS3_ACTIVATION_REPORT_ID, ds3_activation_packet, sizeof(ds3_activation_packet));
    #else
-   return driver->send_control(data, ds3_activation_packet, sizeof(ds3_activation_packet));
+   driver->send_control(data, ds3_activation_packet, sizeof(ds3_activation_packet));
+   return 0;
    #endif
 }
 
