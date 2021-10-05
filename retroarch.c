@@ -7208,7 +7208,7 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_set_video_mode(width, height, true);
 
                if (width == 0 || height == 0)
-                  snprintf(msg, sizeof(msg), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION_DEFAULT));
+                  snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_DEFAULT));
                else
                {
                   if (!string_is_empty(desc))
@@ -7216,7 +7216,7 @@ bool command_event(enum event_command cmd, void *data)
                         msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC), 
                         width, height, desc);
                   else
-                     snprintf(msg, sizeof(msg), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION_NO_DESC),
+                     snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_NO_DESC),
                         width, height);
                }
 
