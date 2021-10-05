@@ -44,7 +44,6 @@ static joypad_connection_t *get_pad(wiiu_hid_t *hid, unsigned slot)
    }
    result = &joypad_state.pads[slot];
    if (!result->connected || !result->iface || !result->connection) {
-      RARCH_LOG("Pad not ready (connected: %d, iface: %08lx, connection: %08lx)\n", result->connected, (unsigned long)result->iface, (unsigned long)result->connection);
       return NULL;
    }
    return result;
@@ -430,16 +429,11 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
             adapter->state = try_init_driver(adapter);
             break;
          case ADAPTER_STATE_READY:
-            RARCH_LOG("ADAPTER_STATE_READY");
+         case ADAPTER_STATE_READING:
             if(adapter->pad_driver && adapter->pad_driver->multi_pad) {
                pad_connection_pad_refresh(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data, adapter, &hidpad_driver);
             }
-            break;
-         case ADAPTER_STATE_READING:
-            RARCH_LOG("ADAPTER_STATE_READING");
-            break;
          case ADAPTER_STATE_DONE:
-            RARCH_LOG("ADAPTER_STATE_DONE");
             break;
          case ADAPTER_STATE_GC:
             {

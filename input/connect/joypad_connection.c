@@ -220,6 +220,7 @@ void pad_connection_pad_refresh(joypad_connection_t *joyconn, pad_connection_int
       switch(state) {
          /* The pad slot is bound to a joypad that's no longer connected */
          case PAD_CONNECT_BOUND:
+            RARCH_LOG("PAD_CONNECT_BOUND (0x%02x)\n", state);
             joypad = iface->joypad(device_data, i);
             slot = joypad_to_slot(joyconn, joypad);
             input_autoconfigure_disconnect(slot, iface->get_name(joypad->connection));
@@ -236,10 +237,14 @@ void pad_connection_pad_refresh(joypad_connection_t *joyconn, pad_connection_int
                joypad->data = handle;
                joypad->iface = iface;
                joypad->input_driver = input_driver;
+               joypad->connected = true;
                input_pad_connect(slot, input_driver);
             }
             break;
          default:
+            if(state > 0x03) {
+               RARCH_LOG("Unrecognized state: 0x%02x", state);
+            }
             break;
       }
    }
@@ -260,7 +265,6 @@ void pad_connection_pad_register(joypad_connection_t *joyconn, pad_connection_in
 
    for(i = 0; i < max_pad; i++) {
       status = iface->multi_pad ? iface->status(device_data, i) : PAD_CONNECT_READY;
-      RARCH_LOG("pad %d: status = %d\n", i, status);
       if(status == PAD_CONNECT_READY) {
          found_slot = (slot == SLOT_AUTO) ? pad_connection_find_vacant_pad(joyconn) : slot;
          if(found_slot < 0) {
