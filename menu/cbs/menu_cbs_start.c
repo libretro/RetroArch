@@ -486,14 +486,15 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || !defined(__PSL1GHT__) && !defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && !defined(__PS3__)
    unsigned width = 0, height = 0;
+   char desc[64] = {0};
    global_t *global = global_get_ptr();
 
    /*  Reset the resolution id to zero */
    global->console.screen.resolutions.current.id = 0;
 
-   if (video_driver_get_video_output_size(&width, &height))
+   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
       char msg[PATH_MAX_LENGTH];
 
@@ -508,8 +509,15 @@ static int action_start_video_resolution(
          strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
       else
 #endif
-         snprintf(msg, sizeof(msg),
-               "Resetting to: %dx%d", width, height);
+      {
+         if (!string_is_empty(desc))
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_DESC), 
+               width, height, desc);
+         else
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC), 
+               width, height);
+      }
+
       runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 #endif

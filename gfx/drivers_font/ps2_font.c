@@ -148,6 +148,7 @@ static void ps2_font_render_line(
       return;
    
    /* Enable Alpha for font */
+   gsKit_set_primalpha(ps2->gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
    ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
    gsKit_set_test(ps2->gsGlobal, GS_ATEST_ON);
 

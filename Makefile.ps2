@@ -30,7 +30,7 @@ ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES += -DPS2 -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_REWIND -DRARCH_CONSOLE -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS
 RARCH_DEFINES += -DHAVE_ZLIB -DHAVE_NO_BUILTINZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -D_7ZIP_ST -DHAVE_CC_RESAMPLER -DHAVE_AUDIOMIXER
-RARCH_DEFINES += -DHAVE_VIDEO_FILTER -DHAVE_RGUI
+RARCH_DEFINES += -DHAVE_WINDOW_OFFSET -DHAVE_VIDEO_FILTER -DHAVE_RGUI
 RARCH_DEFINES += -DHAVE_DSP_FILTER
 
 LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
@@ -58,7 +58,7 @@ EE_OBJS += $(IRX_DIR)/mcman_irx.o $(IRX_DIR)/mcserv_irx.o
 EE_OBJS += $(IRX_DIR)/usbd_irx.o $(IRX_DIR)/bdm_irx.o $(IRX_DIR)/bdmfs_vfat_irx.o $(IRX_DIR)/usbmass_bd_irx.o
 EE_OBJS += $(IRX_DIR)/libsd_irx.o $(IRX_DIR)/audsrv_irx.o
 EE_OBJS += $(IRX_DIR)/cdfs_irx.o
-EE_OBJS += $(IRX_DIR)/ps2dev9_irx.o $(IRX_DIR)/ps2atad_irx.o $(IRX_DIR)/ps2hdd_irx.o $(IRX_DIR)/ps2fs_irx.o $(IRX_DIR)/poweroff_irx.o 
+EE_OBJS += $(IRX_DIR)/ps2dev9_irx.o $(IRX_DIR)/ps2atad_irx.o $(IRX_DIR)/ps2hdd_irx.o $(IRX_DIR)/ps2fs_irx.o $(IRX_DIR)/poweroff_irx.o
 EE_OBJS += $(IRX_DIR)/mtapman_irx.o $(IRX_DIR)/padman_irx.o
 
 # Missing objecst on the PS2SDK

@@ -1036,20 +1036,27 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
       char *s2, size_t len2)
 {
    unsigned width = 0, height = 0;
-
+   char desc[64] = {0};
    *w = 19;
    *s = '\0';
 
    strlcpy(s2, path, len2);
 
-   if (video_driver_get_video_output_size(&width, &height))
+   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         strcpy_literal(s, "DEFAULT");
+         snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE));
       else
 #endif
-         snprintf(s, len, "%ux%u", width, height);
+      {
+         if (!string_is_empty(desc))
+            snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_DESC), 
+               width, height, desc);
+         else
+            snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC), 
+               width, height);
+      }
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);

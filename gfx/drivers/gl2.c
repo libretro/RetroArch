@@ -4417,14 +4417,14 @@ static void gl2_apply_state_changes(void *data)
 }
 
 static void gl2_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    gl2_t *gl         = (gl2_t*)data;
    if (!gl || !gl->ctx_driver || !gl->ctx_driver->get_video_output_size)
       return;
    gl->ctx_driver->get_video_output_size(
          gl->ctx_data,
-         width, height);
+         width, height, desc, desc_len);
 }
 
 static void gl2_get_video_output_prev(void *data)

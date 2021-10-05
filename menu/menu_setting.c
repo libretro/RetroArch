@@ -11390,7 +11390,7 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-#if defined(GEKKO) || !defined(__PSL1GHT__) && defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
             if (true)
 #else
             if (!string_is_equal(video_display_server_get_ident(), "null"))
@@ -11404,6 +11404,34 @@ static bool setting_append_list(
                      &subgroup_info,
                      parent_group);
             }
+
+#if defined(HAVE_WINDOW_OFFSET)
+            CONFIG_INT(
+                  list, list_info,
+                  &settings->ints.video_window_offset_x,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+                  DEFAULT_WINDOW_OFFSET_X,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, -50, 50, 1, true, true);
+
+            CONFIG_INT(
+                  list, list_info,
+                  &settings->ints.video_window_offset_y,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_Y,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+                  DEFAULT_WINDOW_OFFSET_Y,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, -50, 50, 1, true, true);
+#endif
 
             CONFIG_UINT(
                   list, list_info,

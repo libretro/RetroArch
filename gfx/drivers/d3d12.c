@@ -2208,9 +2208,9 @@ static uint32_t d3d12_get_flags(void *data)
 
 #ifndef __WINRT__
 static void d3d12_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
-   win32_get_video_output_size(width, height);
+   win32_get_video_output_size(width, height, desc, desc_len);
 }
 
 static void d3d12_get_video_output_prev(void *data)

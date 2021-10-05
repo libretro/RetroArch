@@ -6757,11 +6757,12 @@ static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || !defined(__PSL1GHT__) && defined(__PS3__)
+#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && defined(__PS3__)
    unsigned width   = 0;
    unsigned  height = 0;
+   char desc[64] = {0};
 
-   if (video_driver_get_video_output_size(&width, &height))
+   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
       char msg[PATH_MAX_LENGTH];
 
@@ -6773,12 +6774,17 @@ static int action_ok_video_resolution(const char *path,
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         strcpy_literal(msg, "Applying: DEFAULT");
+         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT));
       else
 #endif
-         snprintf(msg, sizeof(msg),
-               "Applying: %dx%d\n START to reset",
+      {
+         if (!string_is_empty(desc))
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DESC), 
+               width, height, desc);
+         else
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC), 
                width, height);
+      }
       runloop_msg_queue_push(msg, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }

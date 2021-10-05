@@ -2527,7 +2527,7 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    return true;
 }
 
-void win32_get_video_output_size(unsigned *width, unsigned *height)
+void win32_get_video_output_size(unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    DEVMODE dm;
 
