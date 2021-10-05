@@ -1520,7 +1520,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   "Forces a certain offset horizontally to the video. The offset is applied globaly."
+   "Forces a certain offset horizontally to the video. The offset is applied globally."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
@@ -1528,7 +1528,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   "Forces a certain offset vertically to the video. The offset is applied globaly."
+   "Forces a certain offset vertically to the video. The offset is applied globally."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
